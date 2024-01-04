@@ -755,7 +755,7 @@ class TestPauliArithmeticWithADInterfaces:
         tensor = scalar * torch.ones(4)
         res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
         assert all(isinstance(val, torch.Tensor) for val in res.values())
-    
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_autograd_initialization(self, scalar):
@@ -765,7 +765,7 @@ class TestPauliArithmeticWithADInterfaces:
         tensor = scalar * pnp.ones(4)
         res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
         assert all(isinstance(val, pnp.ndarray) for val in res.values())
-    
+
     @pytest.mark.jax
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_jax_initialization(self, scalar):
@@ -775,7 +775,7 @@ class TestPauliArithmeticWithADInterfaces:
         tensor = scalar * jnp.ones(4)
         res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
         assert all(isinstance(val, jnp.ndarray) for val in res.values())
-    
+
     @pytest.mark.tf
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_tf_initialization(self, scalar):
@@ -834,3 +834,20 @@ class TestPauliArithmeticWithADInterfaces:
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
         assert all(isinstance(val, jnp.ndarray) for val in res1.values())
         assert all(isinstance(val, jnp.ndarray) for val in res2.values())
+
+    @pytest.mark.xfail
+    @pytest.mark.tf
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_tf_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with a tf tensor works and results in the correct types"""
+        import tensorflow as tf
+
+        res1 = tf.constant(scalar) * ps
+        res2 = ps * tf.constant(scalar)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert all(isinstance(val, tf.Tensor) for val in res1.values())
+        assert all(isinstance(val, tf.Tensor) for val in res2.values())

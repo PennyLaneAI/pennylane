@@ -21,6 +21,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, prod, s_prod
@@ -132,6 +133,7 @@ class PauliWord(dict):
     >>> w
     X(a) @ Y(2) @ Z(3)
     """
+
     __array_priority__ = 1000
 
     def __missing__(self, key):
@@ -440,12 +442,16 @@ class PauliSentence(dict):
             # this is legacy support and will be removed after a deprecation cycle
             return self @ other
 
-        if not qml.math.ndim(other) == 0:
-            raise ValueError(
-                f"Attempting to multiply a PauliSentence with an array of dimension {qml.math.ndim(other)}"
-            )
+        if isinstance(other, TensorLike):
+            if not qml.math.ndim(other) == 0:
+                raise ValueError(
+                    f"Attempting to multiply a PauliSentence with an array of dimension {qml.math.ndim(other)}"
+                )
 
-        return PauliSentence({key: other * value for key, value in self.items()})
+            else:
+                return PauliSentence({key: other * value for key, value in self.items()})
+
+        return NotImplemented
 
     __rmul__ = __mul__
 
