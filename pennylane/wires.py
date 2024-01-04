@@ -16,6 +16,7 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 import functools
 from collections.abc import Iterable, Sequence
+from pennylane.pytrees import register_pytree
 import itertools
 
 import numpy as np
@@ -98,6 +99,13 @@ class Wires(Sequence):
     Args:
          wires (Any): the wire label(s)
     """
+
+    def _flatten(self):
+        return self._labels, ()
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
         if _override:
@@ -481,3 +489,5 @@ class Wires(Sequence):
                     unique.append(wire)
 
         return Wires(tuple(unique), _override=True)
+
+register_pytree(Wires, Wires._flatten, Wires._unflatten)
