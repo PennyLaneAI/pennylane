@@ -114,6 +114,13 @@ class Shots:
     >>> shots.total_shots, shots.shot_vector
     (1210, (ShotCopies(10 shots x 1), ShotCopies(100 shots x 4), ShotCopies(200 shots x 4)))
 
+    Example constructing a Shots instance by multiplying an existing one by an int or float:
+
+    >>> Shots(100) * 2
+    Shots(total_shots=200, shot_vector=(ShotCopies(200 shots x 1),))
+    >>> Shots([7, (100, 2)]) * 1.5
+    Shots(total_shots=310, shot_vector=(ShotCopies(10 shots x 1), ShotCopies(150 shots x 2)))
+
     One should also note that specifying a single tuple of length 2 is considered two different
     shot values, and *not* a tuple-pair representing shots and copies to avoid special behaviour
     depending on the iterable type:
