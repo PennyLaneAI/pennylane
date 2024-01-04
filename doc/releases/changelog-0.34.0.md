@@ -699,6 +699,9 @@
 * Conversion of circuits to openqasm now decomposes to a depth of 10, allowing support 
   for operators requiring more than 2 iterations of decomposition, such as the `ApproxTimeEvolution` gate.
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
+
+* `MPLDrawer` does not add the bonus space for classical wires when no classical wires are present.
+  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
   
 <h3>Contributors ✍️</h3>
 

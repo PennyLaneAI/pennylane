@@ -42,7 +42,7 @@ class TestInitialization:
         drawer = MPLDrawer(n_wires=n_wires, n_layers=n_layers)
 
         assert drawer.fig.get_figwidth() == (n_layers + 3)
-        assert drawer.fig.get_figheight() == (n_wires + 1.5)
+        assert drawer.fig.get_figheight() == (n_wires + 1)
 
         drawer = MPLDrawer(n_wires=n_wires, n_layers=n_layers)
 
@@ -54,6 +54,20 @@ class TestInitialization:
             assert line.get_xdata() == (-1, n_layers)
             assert line.get_ydata() == (wire, wire)
         plt.close()
+
+    def test_figsize_classical_wires(self):
+        """Test the figsize is correct if classical wires are present."""
+        n_wires = 4
+        c_wires = 4
+        n_layers = 1
+
+        drawer = MPLDrawer(n_wires=n_wires, n_layers=n_layers, c_wires=c_wires)
+
+        assert drawer.fig.get_figheight() == n_wires + 1 + 0.25 * 4 + 0.5
+        assert drawer.fig.get_figwidth() == n_layers + 3
+
+        assert drawer.ax.get_xlim() == (-2, 2)
+        assert drawer.ax.get_ylim() == (n_wires + 0.25 * 4 + 0.5, -1)
 
     def test_customfigsize(self):
         """Tests a custom figsize alters the size"""
