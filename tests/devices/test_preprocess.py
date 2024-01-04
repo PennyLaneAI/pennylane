@@ -298,12 +298,12 @@ class TestValidateMeasurements:
             validate_measurements(tape, lambda obj: True)
 
 
-class TestExpandFnTransformations:
-    """Tests for the behavior of the `expand_fn` helper."""
+class TestDecomposeTransformations:
+    """Tests for the behavior of the `decompose` helper."""
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_decompose_expand_unsupported_op(self, shots):
-        """Test that expand_fn expands the tape when unsupported operators are present"""
+        """Test that decompose expands the tape when unsupported operators are present"""
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements, shots=shots)

@@ -269,7 +269,8 @@ class MPLDrawer:
         ## Creating figure and ax
 
         if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + self._cwire_scaling * c_wires + 1.5)
+            figheight = self.n_wires + self._cwire_scaling * c_wires + 1 + 0.5 * (c_wires > 0)
+            figsize = (self.n_layers + 3, figheight)
 
         if fig is None:
             self._fig = plt.figure(figsize=figsize)
@@ -282,7 +283,7 @@ class MPLDrawer:
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires + 0.5),
+            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires + 0.5 * (c_wires > 0)),
             xticks=[],
             yticks=[],
         )

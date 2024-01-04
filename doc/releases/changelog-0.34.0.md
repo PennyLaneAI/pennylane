@@ -603,6 +603,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `TransformDispatcher` now stops queuing when performing the transform when applying it to a qfunc.
+  Only the output of the transform will be queued.
+  [(#4983)](https://github.com/PennyLaneAI/pennylane/pull/4983)
+
 * `qml.map_wires` now works properly with `qml.cond` and `qml.measure`.
   [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
 
@@ -665,6 +669,9 @@
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
 
+* `qml.compile` will now always decompose to `expand_depth`, even if a target basis set is not specified.
+  [(#4800)](https://github.com/PennyLaneAI/pennylane/pull/4800)
+
 * `qml.transforms.transpile` can now handle measurements that are broadcasted onto all wires.
   [(#4793)](https://github.com/PennyLaneAI/pennylane/pull/4793)
 
@@ -699,6 +706,9 @@
 * Conversion of circuits to openqasm now decomposes to a depth of 10, allowing support 
   for operators requiring more than 2 iterations of decomposition, such as the `ApproxTimeEvolution` gate.
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
+
+* `MPLDrawer` does not add the bonus space for classical wires when no classical wires are present.
+  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
   
 <h3>Contributors ✍️</h3>
 
