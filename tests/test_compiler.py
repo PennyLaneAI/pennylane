@@ -32,7 +32,7 @@ from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-imp
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
-# TODO: remove this test after Catalyst 0.4.0 release
+# TODO: Update this test for the code coverage after Catalyst 0.4.0 release
 def test_catalyst_incompatible():
     """Test qjit with an incompatible Catalyst version < 0.4.0"""
 
@@ -52,10 +52,9 @@ def test_catalyst_incompatible():
 
 
 # Update the compiler cached value for Catalyst version < 0.4.0 to `True`
-# for checking the rest of tests (temporary!)
-# This will be removed with releasing Catalyst 0.4.0
+# for checking the rest of tests concurrently using pytest-xdist
+# TODO: Remove after Catalyst 0.4.0 release
 qml.compiler.compiler.AvailableCompilers.names_versions["catalyst"] = True
-
 
 class TestCatalyst:
     """Test ``qml.qjit`` with Catalyst"""

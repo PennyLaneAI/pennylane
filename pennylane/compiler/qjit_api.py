@@ -138,7 +138,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     if not available(compiler):
         raise CompileError(f"The {compiler} package is not installed.")  # pragma: no cover
 
-    # Check the minimum version of Catalyst if installed
+    # Check the minimum version of 'compiler' if installed
     _check_compiler_version(compiler)
 
     compilers = AvailableCompilers.names_entrypoints
