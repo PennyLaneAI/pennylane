@@ -1306,7 +1306,6 @@ class QubitDevice(Device):
         return self._reshape(prob, flat_shape)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-
         # exact expectation value
         if self.shots is None:
             try:
@@ -1335,7 +1334,6 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-
         # exact variance value
         if self.shots is None:
             try:

@@ -106,7 +106,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
@@ -121,7 +120,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         return qml.math.squeeze(qml.math.var(samples, axis=axis))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
