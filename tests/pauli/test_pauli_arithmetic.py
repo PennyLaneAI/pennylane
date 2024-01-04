@@ -135,14 +135,14 @@ class TestPauliWord:
         assert str(pw) == str_rep
         assert repr(pw) == str_rep
 
-    tup_pws_mult = (
+    tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
         (pw1, pw3, PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}), 1.0),
         (pw2, pw3, PauliWord({"a": X, "b": Y, 0: Z}), -1.0j),
         (pw3, pw4, pw3, 1.0),
     )
 
-    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_mult)
+    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_matmult)
     def test_matmul(self, word1, word2, result_pw, coeff):
         copy_pw1 = copy(word1)
         copy_pw2 = copy(word2)
@@ -161,6 +161,14 @@ class TestPauliWord:
         assert list(res1.values()) == [scalar]
         assert isinstance(res2, PauliSentence)
         assert list(res2.values()) == [scalar]
+
+    @pytest.mark.parametrize("pw", words)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_truediv(self, pw, scalar):
+        """Test scalar multiplication"""
+        res1 = pw / scalar
+        assert isinstance(res1, PauliSentence)
+        assert list(res1.values()) == [1/scalar]
 
     @pytest.mark.parametrize("pw", words)
     def test_raise_error_for_non_scalar(self, pw):
@@ -788,64 +796,80 @@ class TestPauliArithmeticWithADInterfaces:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("ps", sentences)
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
     def test_torch_scalar_multiplication(self, ps, scalar):
         """Test that multiplying with a torch tensor works and results in the correct types"""
         import torch
 
         res1 = torch.tensor(scalar) * ps
         res2 = ps * torch.tensor(scalar)
+        res3 = ps / torch.tensor(scalar)
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
         assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
         assert all(isinstance(val, torch.Tensor) for val in res1.values())
         assert all(isinstance(val, torch.Tensor) for val in res2.values())
+        assert all(isinstance(val, torch.Tensor) for val in res3.values())
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("ps", sentences)
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
     def test_autograd_scalar_multiplication(self, ps, scalar):
         """Test that multiplying with an autograd array works and results in the correct types"""
         import pennylane.numpy as pnp
 
         res1 = pnp.array(scalar) * ps
         res2 = ps * pnp.array(scalar)
+        res3 = ps / pnp.array(scalar)
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
         assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
         assert all(isinstance(val, pnp.ndarray) for val in res1.values())
         assert all(isinstance(val, pnp.ndarray) for val in res2.values())
+        assert all(isinstance(val, pnp.ndarray) for val in res3.values())
 
     @pytest.mark.jax
     @pytest.mark.parametrize("ps", sentences)
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
     def test_jax_scalar_multiplication(self, ps, scalar):
         """Test that multiplying with a jax array works and results in the correct types"""
         import jax.numpy as jnp
 
         res1 = jnp.array(scalar) * ps
         res2 = ps * jnp.array(scalar)
+        res3 = ps / jnp.array(scalar)
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
         assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
         assert all(isinstance(val, jnp.ndarray) for val in res1.values())
         assert all(isinstance(val, jnp.ndarray) for val in res2.values())
+        assert all(isinstance(val, jnp.ndarray) for val in res3.values())
 
     @pytest.mark.tf
     @pytest.mark.parametrize("ps", sentences)
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
     def test_tf_scalar_multiplication(self, ps, scalar):
         """Test that multiplying with a tf tensor works and results in the correct types"""
         import tensorflow as tf
 
         res1 = tf.constant(scalar, dtype=tf.complex64) * ps
         res2 = ps * tf.constant(scalar, dtype=tf.complex64)
+        res3 = ps / tf.constant(scalar, dtype=tf.complex64)
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
         assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
         assert all(isinstance(val, tf.Tensor) for val in res1.values())
         assert all(isinstance(val, tf.Tensor) for val in res2.values())
+        assert all(isinstance(val, tf.Tensor) for val in res3.values())

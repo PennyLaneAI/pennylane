@@ -227,6 +227,12 @@ class PauliWord(dict):
 
     __rmul__ = __mul__
 
+    def __truediv__(self, other):
+        """Divide a PauliWord by a scalar"""
+        if isinstance(other, TensorLike):
+            return self * (1/other)
+        return NotImplemented
+
     def __str__(self):
         """String representation of a PauliWord."""
         if len(self) == 0:
@@ -453,6 +459,13 @@ class PauliSentence(dict):
         return NotImplemented
 
     __rmul__ = __mul__
+
+    def __truediv__(self, other):
+        """Divide a PauliSentence by a scalar"""
+        if isinstance(other, TensorLike):
+            return self * (1/other)
+        return NotImplemented
+
 
     def __str__(self):
         """String representation of the PauliSentence."""
