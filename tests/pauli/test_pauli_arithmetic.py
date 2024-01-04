@@ -47,6 +47,8 @@ ps3 = PauliSentence({pw3: -0.5, pw4: 1})
 ps4 = PauliSentence({pw4: 1})
 ps5 = PauliSentence({})
 
+sentences = [ps1, ps2, ps3, ps4, ps5, ps1_hamiltonian, ps2_hamiltonian]
+
 
 class TestPauliWord:
     def test_identity_removed_on_init(self):
@@ -373,8 +375,8 @@ class TestPauliSentence:
     )
 
     @pytest.mark.parametrize("pauli1, pauli2, res", tup_ps_mult)
-    def test_mul(self, pauli1, pauli2, res):
-        """Test that the correct result of multiplication is produced."""
+    def test_matmul(self, pauli1, pauli2, res):
+        """Test that the correct result of matrix multiplication is produced."""
         copy_ps1 = copy(pauli1)
         copy_ps2 = copy(pauli2)
 
@@ -384,6 +386,14 @@ class TestPauliSentence:
         assert simplified_product == res
         assert pauli1 == copy_ps1
         assert pauli2 == copy_ps2
+    
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0., 0.5, 1, 1j, 0.5j+1.])
+    def test_mul(self, ps, scalar):
+        """Test scalar multiplication"""
+        res = scalar * ps
+        assert list(res.values()) == [scalar * coeff for coeff in ps.values()]
+
 
     tup_ps_add = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
