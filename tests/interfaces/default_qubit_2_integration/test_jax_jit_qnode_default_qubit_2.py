@@ -2930,7 +2930,6 @@ class TestSinglePrecision:
         jax.config.update("jax_enable_x64", False)
 
         try:
-
             tol = 2e-2 if diff_method == "finite-diff" else 1e-6
 
             @jax.jit
