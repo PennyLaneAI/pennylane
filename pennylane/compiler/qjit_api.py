@@ -13,6 +13,16 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
+from importlib import metadata
+
+import os
+import re
+
+from semantic_version import Version
+
+PL_CATALYST_MIN_VERSION = Version(os.environ.get("PL_CATALYST_MIN_VERSION", "0.4.0"))
+
+
 from .compiler import CompileError, AvailableCompilers, available, active_compiler
 
 
@@ -131,6 +141,14 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     if not available(compiler):
         raise CompileError(f"The {compiler} package is not installed.")  # pragma: no cover
+
+    # Check the minimum version of Catalyst if installed
+    if "catalyst" in AvailableCompilers.names_entrypoints:
+        catalyst_version = metadata.version("pennylane-catalyst")
+        if Version(re.sub(r"\.dev\d+", "", catalyst_version)) < PL_CATALYST_MIN_VERSION:
+            raise CompileError(
+                f"PennyLane-Catalyst {PL_CATALYST_MIN_VERSION} or greater is required, but installed {catalyst_version}"
+            )
 
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
