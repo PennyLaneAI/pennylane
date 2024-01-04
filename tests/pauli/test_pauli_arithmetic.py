@@ -759,7 +759,7 @@ class TestPauliArithmeticWithADInterfaces:
     @pytest.mark.autograd
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_autograd_initialization(self, scalar):
-        """Test initializing PauliSentence from torch tensor"""
+        """Test initializing PauliSentence from autograd array"""
         import pennylane.numpy as pnp
 
         torch_tensor = scalar * pnp.ones(4)
@@ -768,8 +768,8 @@ class TestPauliArithmeticWithADInterfaces:
     
     @pytest.mark.jax
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
-    def test_autograd_initialization(self, scalar):
-        """Test initializing PauliSentence from torch tensor"""
+    def test_jax_initialization(self, scalar):
+        """Test initializing PauliSentence from jax array"""
         import jax.numpy as jnp
 
         torch_tensor = scalar * jnp.ones(4)
@@ -780,7 +780,7 @@ class TestPauliArithmeticWithADInterfaces:
     @pytest.mark.parametrize("ps", sentences)
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_torch_scalar_multiplication(self, ps, scalar):
-        """Test that multiplying with a torch tensor results in the correct types"""
+        """Test that multiplying with a torch tensor works and results in the correct types"""
         import torch
 
         res1 = torch.tensor(scalar) * ps
@@ -791,12 +791,12 @@ class TestPauliArithmeticWithADInterfaces:
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
         assert all(isinstance(val, torch.Tensor) for val in res1.values())
         assert all(isinstance(val, torch.Tensor) for val in res2.values())
-    
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("ps", sentences)
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
-    def test_torch_scalar_multiplication(self, ps, scalar):
-        """Test that multiplying with a torch tensor results in the correct types"""
+    def test_autograd_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with an autograd array works and results in the correct types"""
         import pennylane.numpy as pnp
 
         res1 = pnp.array(scalar) * ps
@@ -807,3 +807,20 @@ class TestPauliArithmeticWithADInterfaces:
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
         assert all(isinstance(val, pnp.ndarray) for val in res1.values())
         assert all(isinstance(val, pnp.ndarray) for val in res2.values())
+
+    @pytest.mark.xfail
+    @pytest.mark.jax
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_jax_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with a jax array works and results in the correct types"""
+        import jax.numpy as jnp
+
+        res1 = jnp.array(scalar) * ps
+        res2 = ps * jnp.array(scalar)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert all(isinstance(val, jnp.ndarray) for val in res1.values())
+        assert all(isinstance(val, jnp.ndarray) for val in res2.values())
