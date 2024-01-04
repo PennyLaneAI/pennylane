@@ -72,9 +72,7 @@ class TestConstruction:
 
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp fails"""
-        with pytest.raises(
-            TypeError, match="Can't instantiate abstract class CompositeOp with abstract methods"
-        ):
+        with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
             _ = CompositeOp(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
 
     def test_raise_error_fewer_than_2_operands(self):
