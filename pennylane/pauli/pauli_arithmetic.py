@@ -172,7 +172,7 @@ class PauliWord(dict):
     def __hash__(self):
         return hash(frozenset(self.items()))
 
-    def __mul__(self, other):
+    def __matmul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
         and the tensor product otherwise.
 
@@ -201,6 +201,26 @@ class PauliWord(dict):
                 result[wire] = term
 
         return PauliWord(result), coeff
+    
+    def __mul__(self, other):
+        """Multiply a PauliWord by a scalar
+        
+        Args:
+            other (Scalar): The scalar to multiply the PauliWord with
+        
+        Returns:
+            PauliSentence
+        """
+        if isinstance(other, PauliWord):
+            # this is legacy support and will be removed after a deprecation cycle
+            return self @ other
+
+        if not qml.math.ndim(other) == 0:
+            raise ValueError(f"Attempting to multiply a PauliWord with an array of dimension {qml.math.ndim(other)}")
+
+        return PauliSentence({self:other})
+    
+    __rmul__ = __mul__
 
     def __str__(self):
         """String representation of a PauliWord."""
@@ -394,8 +414,8 @@ class PauliSentence(dict):
         memo[id(self)] = res
         return res
 
-    def __mul__(self, other):
-        """Multiply two Pauli sentences by iterating over each sentence and multiplying
+    def __matmul__(self, other):
+        """Matrix / tensor product between two PauliSentences by iterating over each sentence and multiplying
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
 
@@ -404,10 +424,23 @@ class PauliSentence(dict):
 
         for pw1 in self:
             for pw2 in other:
-                prod_pw, coeff = pw1 * pw2
+                prod_pw, coeff = pw1 @ pw2
                 final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps
+
+    def __mul__(self, other):
+        """Multiply a PauliSentence by a scalar"""
+        if isinstance(other, PauliSentence):
+            # this is legacy support and will be removed after a deprecation cycle
+            return self @ other
+        
+        if not qml.math.ndim(other) == 0:
+            raise ValueError(f"Attempting to multiply a PauliSentence with an array of dimension {qml.math.ndim(other)}")
+        
+        return PauliSentence({key: other*value for key, value in self.items()})
+    
+    __rmul__ = __mul__
 
     def __str__(self):
         """String representation of the PauliSentence."""

@@ -122,11 +122,11 @@ class TestPauliWord:
     )
 
     @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_mult)
-    def test_mul(self, word1, word2, result_pw, coeff):
+    def test_matmul(self, word1, word2, result_pw, coeff):
         copy_pw1 = copy(word1)
         copy_pw2 = copy(word2)
 
-        assert word1 * word2 == (result_pw, coeff)
+        assert word1 @ word2 == (result_pw, coeff)
         assert copy_pw1 == word1  # check for mutation of the pw themselves
         assert copy_pw2 == word2
 
@@ -378,7 +378,7 @@ class TestPauliSentence:
         copy_ps1 = copy(string1)
         copy_ps2 = copy(string2)
 
-        simplified_product = string1 * string2
+        simplified_product = string1 @ string2
         simplified_product.simplify()
 
         assert simplified_product == res
