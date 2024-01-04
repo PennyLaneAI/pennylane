@@ -46,14 +46,14 @@ class AvailableCompilers:
 
     # The dictionary of installed compiler packages
     # and their entry point loaders.
-    names_entrypoints = {}
+    names_entrypoints = defaultdict(dict)
 
     # The map consists of supported compiler names (str) and their version compatibility (bool).
     # This boolean indicates whether the installed version of a compiler package is greater
     # than or equal to the minimum version.
     # This value will be updated in `_check_compiler_version` to reduce the required
     # version checks of installed compiler packages at runtime.
-    names_versions = {"catalyst": False}
+    names_versions = defaultdict(dict)
 
 
 def _check_compiler_version(name):
@@ -78,10 +78,6 @@ def _refresh_compilers():
     """Scan installed PennyLane compiler packages to refresh the compilers
     names and entry points.
     """
-
-    # Refresh the list of compilers
-    AvailableCompilers.names_entrypoints = defaultdict(dict)
-
     # Iterator packages entry-points with the 'pennylane.compilers' group name
     entries = (
         defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
