@@ -372,18 +372,18 @@ class TestPauliSentence:
         ),
     )
 
-    @pytest.mark.parametrize("string1, string2, res", tup_ps_mult)
-    def test_mul(self, string1, string2, res):
+    @pytest.mark.parametrize("pauli1, pauli2, res", tup_ps_mult)
+    def test_mul(self, pauli1, pauli2, res):
         """Test that the correct result of multiplication is produced."""
-        copy_ps1 = copy(string1)
-        copy_ps2 = copy(string2)
+        copy_ps1 = copy(pauli1)
+        copy_ps2 = copy(pauli2)
 
-        simplified_product = string1 @ string2
+        simplified_product = pauli1 @ pauli2
         simplified_product.simplify()
 
         assert simplified_product == res
-        assert string1 == copy_ps1
-        assert string2 == copy_ps2
+        assert pauli1 == copy_ps1
+        assert pauli2 == copy_ps2
 
     tup_ps_add = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
