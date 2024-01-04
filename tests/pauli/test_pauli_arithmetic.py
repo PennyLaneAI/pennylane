@@ -51,17 +51,22 @@ ps5 = PauliSentence({})
 
 sentences = [ps1, ps2, ps3, ps4, ps5, ps1_hamiltonian, ps2_hamiltonian]
 
-@pytest.mark.parametrize("pw1", words)
-@pytest.mark.parametrize("pw2", words)
-def test_legacy_multiplication_pwords(pw1, pw2):
-    """Test the legacy behavior for using the star operator for matrix multiplication of pauli words"""
-    assert pw1 * pw1 == pw1 @ pw2
 
-@pytest.mark.parametrize("ps1", sentences)
-@pytest.mark.parametrize("ps2", sentences)
-def test_legacy_multiplication_psentences(ps1, ps2):
+@pytest.mark.parametrize("pauli1", words)
+@pytest.mark.parametrize("pauli2", words)
+def test_legacy_multiplication_pwords(pauli1, pauli2):
+    """Test the legacy behavior for using the star operator for matrix multiplication of pauli words"""
+    res1, coeff1 = pauli1 * pauli2
+    res2, coeff2 = pauli1 @ pauli2
+    assert res1 == res2
+    assert coeff1 == coeff2
+
+
+@pytest.mark.parametrize("pauli1", sentences)
+@pytest.mark.parametrize("pauli2", sentences)
+def test_legacy_multiplication_psentences(pauli1, pauli2):
     """Test the legacy behavior for using the star operator for matrix multiplication of pauli sentences"""
-    assert ps1 * ps1 == ps1 @ ps2
+    assert pauli1 * pauli2 == pauli1 @ pauli2
 
 
 class TestPauliWord:
@@ -740,25 +745,27 @@ class TestPauliSentence:
 @pytest.mark.all_interfaces
 class TestPauliArithmeticWithADInterfaces:
     """Test pauli arithmetic with different automatic differentiation interfaces"""
+
     @pytest.mark.torch
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_torch_initialization(self, scalar):
         """Test initializing PauliSentence from torch tensor"""
         import torch
+
         torch_tensor = scalar * torch.ones(4)
-        res = PauliSentence({pw:coeff for pw, coeff in zip(words, torch_tensor)})
+        res = PauliSentence({pw: coeff for pw, coeff in zip(words, torch_tensor)})
         assert all(isinstance(val, torch.Tensor) for val in res.values())
-    
+
     @pytest.mark.torch
     @pytest.mark.parametrize("ps", sentences)
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_torch_scalar_multiplication(self, ps, scalar):
         """Test that multiplying with a torch tensor results in the correct types"""
         import torch
+
         res1 = torch.tensor(scalar) * ps
         res2 = ps * torch.tensor(scalar)
         assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
         assert all(isinstance(val, torch.Tensor) for val in res1.values())
         assert all(isinstance(val, torch.Tensor) for val in res2.values())
-
