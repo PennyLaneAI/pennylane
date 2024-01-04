@@ -230,7 +230,7 @@ class PauliWord(dict):
     def __truediv__(self, other):
         """Divide a PauliWord by a scalar"""
         if isinstance(other, TensorLike):
-            return self * (1/other)
+            return self * (1 / other)
         return NotImplemented
 
     def __str__(self):
@@ -463,9 +463,8 @@ class PauliSentence(dict):
     def __truediv__(self, other):
         """Divide a PauliSentence by a scalar"""
         if isinstance(other, TensorLike):
-            return self * (1/other)
+            return self * (1 / other)
         return NotImplemented
-
 
     def __str__(self):
         """String representation of the PauliSentence."""

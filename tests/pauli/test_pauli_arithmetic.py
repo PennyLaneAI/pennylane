@@ -168,13 +168,13 @@ class TestPauliWord:
         """Test scalar multiplication"""
         res1 = pw / scalar
         assert isinstance(res1, PauliSentence)
-        assert list(res1.values()) == [1/scalar]
+        assert list(res1.values()) == [1 / scalar]
 
     @pytest.mark.parametrize("pw", words)
     def test_raise_error_for_non_scalar(self, pw):
         """Test that the correct error is raised when attempting to multiply a PauliWord by a sclar"""
         with pytest.raises(ValueError, match="Attempting to multiply"):
-            [0.5] * pw
+            _ = [0.5] * pw
 
     tup_pws_mat_wire = (
         (pw1, [2, 0, 1], np.kron(np.kron(matY, matI), matX)),
@@ -444,7 +444,7 @@ class TestPauliSentence:
     def test_raise_error_for_non_scalar(self, ps):
         """Test that the correct error is raised when attempting to multiply a PauliSentence by a sclar"""
         with pytest.raises(ValueError, match="Attempting to multiply"):
-            [0.5] * ps
+            _ = [0.5] * ps
 
     tup_ps_add = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
@@ -761,18 +761,17 @@ class TestPauliArithmeticWithADInterfaces:
         import torch
 
         tensor = scalar * torch.ones(4)
-        res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
+        res = PauliSentence(dict(zip(words, tensor)))
         assert all(isinstance(val, torch.Tensor) for val in res.values())
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_autograd_initialization(self, scalar):
         """Test initializing PauliSentence from autograd array"""
-        import pennylane.numpy as pnp
 
-        tensor = scalar * pnp.ones(4)
-        res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
-        assert all(isinstance(val, pnp.ndarray) for val in res.values())
+        tensor = scalar * np.ones(4)
+        res = PauliSentence(dict(zip(words, tensor)))
+        assert all(isinstance(val, np.ndarray) for val in res.values())
 
     @pytest.mark.jax
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
@@ -781,7 +780,7 @@ class TestPauliArithmeticWithADInterfaces:
         import jax.numpy as jnp
 
         tensor = scalar * jnp.ones(4)
-        res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
+        res = PauliSentence(dict(zip(words, tensor)))
         assert all(isinstance(val, jnp.ndarray) for val in res.values())
 
     @pytest.mark.tf
@@ -791,7 +790,7 @@ class TestPauliArithmeticWithADInterfaces:
         import tensorflow as tf
 
         tensor = scalar * tf.ones(4, dtype=tf.complex64)
-        res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
+        res = PauliSentence(dict(zip(words, tensor)))
         assert all(isinstance(val, tf.Tensor) for val in res.values())
 
     @pytest.mark.torch
@@ -819,20 +818,19 @@ class TestPauliArithmeticWithADInterfaces:
     @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
     def test_autograd_scalar_multiplication(self, ps, scalar):
         """Test that multiplying with an autograd array works and results in the correct types"""
-        import pennylane.numpy as pnp
 
-        res1 = pnp.array(scalar) * ps
-        res2 = ps * pnp.array(scalar)
-        res3 = ps / pnp.array(scalar)
+        res1 = np.array(scalar) * ps
+        res2 = ps * np.array(scalar)
+        res3 = ps / np.array(scalar)
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)
         assert isinstance(res3, PauliSentence)
         assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
-        assert all(isinstance(val, pnp.ndarray) for val in res1.values())
-        assert all(isinstance(val, pnp.ndarray) for val in res2.values())
-        assert all(isinstance(val, pnp.ndarray) for val in res3.values())
+        assert all(isinstance(val, np.ndarray) for val in res1.values())
+        assert all(isinstance(val, np.ndarray) for val in res2.values())
+        assert all(isinstance(val, np.ndarray) for val in res3.values())
 
     @pytest.mark.jax
     @pytest.mark.parametrize("ps", sentences)
