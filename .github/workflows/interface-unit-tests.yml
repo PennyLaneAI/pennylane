@@ -371,8 +371,6 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst matplotlib
-      env: # TODO: remove this after Catalyst v0.4.0 release
-        PL_CATALYST_MIN_VERSION: "0.3.2"
 
 
   qcut-tests:

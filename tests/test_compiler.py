@@ -26,6 +26,9 @@ jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.external
 
+# TODO: Remove this function after releasing Catalyst v0.4.0
+qml.compiler.compiler.AvailableCompilers.names_versions["catalyst"] = True
+
 from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
 from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
 

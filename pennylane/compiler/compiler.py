@@ -18,6 +18,11 @@ from sys import version_info
 from importlib import reload, metadata
 from collections import defaultdict
 import dataclasses
+import re
+
+from semantic_version import Version
+
+PL_CATALYST_MIN_VERSION = Version("0.4.0")
 
 
 class CompileError(Exception):
@@ -42,6 +47,32 @@ class AvailableCompilers:
     # The dictionary of installed compiler packages
     # and their entry point loaders.
     names_entrypoints = {}
+
+    # The map of supported compiler names (string) and their version compatibility (boolean).
+    # This boolean represents whether the installed version of a compiler package is greater
+    # than or equal to the minimum version.
+    # This value is updated in `_check_compiler_version` and it will reduce the required
+    # version checks of installed compiler packages at runtime.
+    names_versions = {"catalyst": False}
+
+
+def _check_compiler_version(name):
+    """Check whether the installed version of the given compiler is greater than or equal
+    to the required minimum version.
+    """
+    if AvailableCompilers.names_versions[name]:
+        return  # Used the cached value!
+
+    if name == "catalyst":
+        installed_catalyst_version = metadata.version("pennylane-catalyst")
+        if Version(re.sub(r"\.dev\d+", "", installed_catalyst_version)) < PL_CATALYST_MIN_VERSION:
+            raise CompileError(
+                f"PennyLane-Catalyst {PL_CATALYST_MIN_VERSION} or greater is required, but installed {installed_catalyst_version}"
+            )
+        # else (installed_catalyst_version >= PL_CATALYST_MIN_VERSION):
+        AvailableCompilers.names_versions[name] = True
+
+    raise CompileError(f"The compiler package {name} is not supported in PennyLane.")
 
 
 def _refresh_compilers():
