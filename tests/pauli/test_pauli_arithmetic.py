@@ -180,7 +180,7 @@ class TestPauliWord:
         """Test that TypeError is raised when trying to multiply by non-numerical data"""
         with pytest.raises(TypeError, match="PauliWord can only"):
             _ = "0.5" * pw1
-    
+
     def test_mul_raise_not_implemented_non_numerical_data(self):
         """Test that TypeError is raised when trying to multiply by non-numerical data"""
         with pytest.raises(TypeError, match="PauliWord can only"):
@@ -454,12 +454,12 @@ class TestPauliSentence:
         res2 = ps * scalar
         assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
-    
+
     def test_mul_raise_not_implemented_non_numerical_data_recursive(self):
         """Test that TypeError is raised when trying to multiply by non-numerical data"""
         with pytest.raises(TypeError, match="PauliSentence can only"):
             _ = "0.5" * ps1
-    
+
     def test_mul_raise_not_implemented_non_numerical_data(self):
         """Test that TypeError is raised when trying to multiply by non-numerical data"""
         with pytest.raises(TypeError, match="PauliSentence can only"):
