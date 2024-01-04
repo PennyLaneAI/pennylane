@@ -484,6 +484,8 @@ class DefaultClifford(Device):
 
         stim = _import_stim()
 
+        # Account for custom labelled wires
+        # TODO: Fix custom integer ordering :)
         circuit = circuit.map_to_standard_wires()
 
         if circuit.shots:
@@ -491,16 +493,17 @@ class DefaultClifford(Device):
                 "default.clifford currently doesn't support computation with shots."
             )
 
+        # Build a stim circuit, tableau and simulator
+        stim_ct = stim.Circuit()
+        initial_tableau = stim.Tableau.from_circuit(stim_ct)
+        tableau_simulator = stim.TableauSimulator()
+
+        # Account for state preparation operation
         prep = None
         if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
             prep = circuit[0]
-
-        stim_ct = stim.Circuit()
-        initial_tableau = stim.Tableau.from_circuit(stim_ct)
-
-        tableau_simulator = stim.TableauSimulator()
-
         use_prep_ops = bool(prep)
+
         if use_prep_ops:
             initial_tableau = stim.Tableau.from_state_vector(
                 qml.math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
@@ -510,7 +513,7 @@ class DefaultClifford(Device):
 
         global_phase_ops = []
         for op in circuit.operations[use_prep_ops:]:
-            gate, wires = _GATE_OPERATIONS[op.name], op.wires
+            gate, wires = self.pl_to_stim(op)
             if gate is not None:
                 stim_ct.append(gate, wires)
             else:
@@ -535,6 +538,11 @@ class DefaultClifford(Device):
 
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
         return self.measure(circuit, tableau_simulator, global_phase, stim)
+
+    @staticmethod
+    def pl_to_stim(op):
+        """Convert PennyLane operation to a Stim operation"""
+        return _GATE_OPERATIONS[op.name], op.wires
 
     def measure(self, circuit, tableau_simulator, global_phase, stim):
         """Given a circuit, compute and return the measurement results."""

@@ -174,6 +174,23 @@ def test_prep_snap_clifford(circuit):
     assert np.allclose(qml.grad(qnode_clfrd)(), qml.grad(qnode_qubit)())
 
 
+@pytest.mark.parametrize(
+    "pl_op,stim_op",
+    [
+        (qml.PauliX(0), ("X", [0])),
+        (qml.CNOT(["a", "b"]), ("CNOT", ["a", "b"])),
+        (qml.GlobalPhase(1.0), (None, [])),
+        (qml.Snapshot(), (None, [])),
+    ],
+)
+def test_pl_to_stim(pl_op, stim_op):
+    """Test that the PennyLane operation get converted to Stim operation"""
+    dev_c = qml.device("default.clifford")
+    op, wires = dev_c.pl_to_stim(pl_op)
+    assert op == stim_op[0]
+    assert wires == qml.wires.Wires(stim_op[1])
+
+
 def test_max_worker_clifford():
     """Test that the execution of multiple tapes is possible with multiprocessing on this device."""
 
