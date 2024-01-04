@@ -726,8 +726,27 @@ class TestPauliSentence:
 
 
 @pytest.mark.all_interfaces
-class TestPauliADInterfaces:
-    def test_interfaces(
-        self,
-    ):
-        assert True
+class TestPauliArithmeticWithADInterfaces:
+    """Test pauli arithmetic with different automatic differentiation interfaces"""
+    @pytest.mark.torch
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_torch_initialization(self, scalar):
+        """Test initializing PauliSentence from torch tensor"""
+        import torch
+        torch_tensor = scalar * torch.ones(4)
+        res = PauliSentence({pw:coeff for pw, coeff in zip(words, torch_tensor)})
+        assert all(isinstance(val, torch.Tensor) for val in res.values())
+    
+    @pytest.mark.torch
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_torch_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with a torch tensor results in the correct types"""
+        import torch
+        res1 = torch.tensor(scalar) * ps
+        res2 = ps * torch.tensor(scalar)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert all(isinstance(val, torch.Tensor) for val in res1.values())
+        assert all(isinstance(val, torch.Tensor) for val in res2.values())
+
