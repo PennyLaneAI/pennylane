@@ -755,6 +755,16 @@ class TestPauliArithmeticWithADInterfaces:
         torch_tensor = scalar * torch.ones(4)
         res = PauliSentence({pw: coeff for pw, coeff in zip(words, torch_tensor)})
         assert all(isinstance(val, torch.Tensor) for val in res.values())
+    
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_autograd_initialization(self, scalar):
+        """Test initializing PauliSentence from torch tensor"""
+        import pennylane.numpy as pnp
+
+        torch_tensor = scalar * pnp.ones(4)
+        res = PauliSentence({pw: coeff for pw, coeff in zip(words, torch_tensor)})
+        assert all(isinstance(val, pnp.ndarray) for val in res.values())
 
     @pytest.mark.torch
     @pytest.mark.parametrize("ps", sentences)
