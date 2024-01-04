@@ -71,11 +71,13 @@ def _set_parameters_on_copy(tapes, params):
 
 
 def _jax_dtype(m_type):
-    if m_type != float:
-        return jnp.dtype(m_type)
-    if jax.config.jax_enable_x64:
-        return jnp.float64
-    return jnp.float32
+    if m_type == int:
+        return jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+    if m_type == float:
+        return jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+    if m_type == complex:
+        return jnp.complex128 if jax.config.jax_enable_x64 else jnp.complex64
+    return jnp.dtype(m_type)
 
 
 def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
