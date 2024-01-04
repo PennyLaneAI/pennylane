@@ -238,7 +238,8 @@ class TransformDispatcher:
                 qfunc_output = qfunc(*args, **kwargs)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
+            with qml.QueuingManager.stop_recording():
+                transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
 
             if len(transformed_tapes) != 1:
                 raise TransformError(
