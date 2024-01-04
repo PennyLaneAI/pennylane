@@ -36,6 +36,7 @@ from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-imp
 def test_catalyst_incompatible():
     """Test qjit with an incompatible Catalyst version < 0.4.0"""
 
+    qml.compiler.compiler.AvailableCompilers.names_versions["catalyst"] = False
     dev = qml.device("lightning.qubit", wires=1)
 
     @qml.qnode(dev)
@@ -47,11 +48,13 @@ def test_catalyst_incompatible():
         CompileError, match="PennyLane-Catalyst 0.4.0 or greater is required, but installed"
     ):
         qml.qjit(circuit)()
-
-    # Update the compiler cached value for Catalyst version < 0.4.0 to `True`
-    # for checking the rest of tests (temporary!)
-    # This will be removed with releasing Catalyst 0.4.0
     qml.compiler.compiler.AvailableCompilers.names_versions["catalyst"] = True
+
+
+# Update the compiler cached value for Catalyst version < 0.4.0 to `True`
+# for checking the rest of tests (temporary!)
+# This will be removed with releasing Catalyst 0.4.0
+qml.compiler.compiler.AvailableCompilers.names_versions["catalyst"] = True
 
 
 class TestCatalyst:
