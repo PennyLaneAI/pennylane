@@ -39,6 +39,8 @@ pw2 = PauliWord({"a": X, "b": X, "c": Z})
 pw3 = PauliWord({0: Z, "b": Z, "c": Z})
 pw4 = PauliWord({})
 
+words = [pw1, pw2, pw3, pw4]
+
 ps1 = PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5})
 ps2 = PauliSentence({pw1: -1.23, pw2: -4j, pw3: 0.5})
 ps1_hamiltonian = PauliSentence({pw1: 1.23, pw2: 4, pw3: -0.5})
@@ -131,6 +133,23 @@ class TestPauliWord:
         assert word1 @ word2 == (result_pw, coeff)
         assert copy_pw1 == word1  # check for mutation of the pw themselves
         assert copy_pw2 == word2
+    
+    @pytest.mark.parametrize("pw", words)
+    @pytest.mark.parametrize("scalar", [0., 0.5, 1, 1j, 0.5j+1.])
+    def test_mul(self, pw, scalar):
+        """Test scalar multiplication"""
+        res1 = scalar * pw
+        res2 = pw * scalar
+        assert isinstance(res1, PauliSentence)
+        assert list(res1.values()) == [scalar]
+        assert isinstance(res2, PauliSentence)
+        assert list(res2.values()) == [scalar]
+
+    @pytest.mark.parametrize("pw", words)
+    def test_raise_error_for_non_scalar(self, pw):
+        """Test that the correct error is raised when attempting to multiply a PauliWord by a sclar"""
+        with pytest.raises(ValueError, match="Attempting to multiply"):
+            [0.5] * pw
 
     tup_pws_mat_wire = (
         (pw1, [2, 0, 1], np.kron(np.kron(matY, matI), matX)),
@@ -391,8 +410,16 @@ class TestPauliSentence:
     @pytest.mark.parametrize("scalar", [0., 0.5, 1, 1j, 0.5j+1.])
     def test_mul(self, ps, scalar):
         """Test scalar multiplication"""
-        res = scalar * ps
-        assert list(res.values()) == [scalar * coeff for coeff in ps.values()]
+        res1 = scalar * ps
+        res2 = ps * scalar
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+
+    @pytest.mark.parametrize("ps", sentences)
+    def test_raise_error_for_non_scalar(self, ps):
+        """Test that the correct error is raised when attempting to multiply a PauliSentence by a sclar"""
+        with pytest.raises(ValueError, match="Attempting to multiply"):
+            [0.5] * ps
 
 
     tup_ps_add = (  # computed by hand
@@ -697,3 +724,8 @@ class TestPauliSentence:
                 PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
             }
         )
+
+@pytest.mark.all_interfaces
+class TestPauliADInterfaces:
+    def test_interfaces(self,):
+        assert True
