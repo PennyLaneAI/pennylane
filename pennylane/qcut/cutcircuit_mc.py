@@ -18,11 +18,11 @@ Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragm
 import inspect
 from functools import partial
 from typing import Callable, List, Optional, Sequence, Tuple, Union
+import numpy as np
 
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.measurements import SampleMP
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape

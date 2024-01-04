@@ -102,7 +102,7 @@ def _check_matrix_matches_decomp(op):
     """Check that if both the matrix and decomposition are defined, they match."""
     if op.has_matrix and op.has_decomposition:
         mat = op.matrix()
-        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
+        decomp_mat = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=op.wires)
         failure_comment = (
             f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
         )
@@ -146,7 +146,7 @@ def _check_eigendecomposition(op):
         assert qml.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
     if has_eigvals and op.has_diagonalizing_gates:
-        dg = qml.prod(*dg) if len(dg) > 0 else qml.Identity(op.wires)
+        dg = qml.prod(*dg[::-1]) if len(dg) > 0 else qml.Identity(op.wires)
         eg = qml.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qml.prod(qml.adjoint(dg), eg, dg)
         decomp_mat = qml.matrix(decomp)

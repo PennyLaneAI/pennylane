@@ -26,6 +26,7 @@ from os import environ
 from pathlib import Path
 from functools import partial
 
+import numpy as onp
 import pytest
 from flaky import flaky
 from networkx import MultiDiGraph, number_of_selfloops
@@ -1851,7 +1852,7 @@ class TestExpandFragmentTapesMC:
 
         fixed_choice = np.array([[4, 0, 1]])
         with monkeypatch.context() as m:
-            m.setattr(np.random, "choice", lambda a, size, replace: fixed_choice)
+            m.setattr(onp.random, "choice", lambda a, size, replace: fixed_choice)
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 tapes, communication_graph, 3
             )
@@ -1917,7 +1918,7 @@ class TestExpandFragmentTapesMC:
         fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
         with monkeypatch.context() as m:
             m.setattr(
-                np.random,
+                onp.random,
                 "choice",
                 lambda a, size, replace: fixed_choice,
             )

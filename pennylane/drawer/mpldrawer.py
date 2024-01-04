@@ -16,6 +16,7 @@ This module contains the MPLDrawer class for creating circuit diagrams with matp
 """
 from collections.abc import Iterable
 import warnings
+from typing import Sequence
 
 has_mpl = True
 try:
@@ -70,6 +71,7 @@ class MPLDrawer:
         wire_options=None (dict): matplotlib configuration options for drawing the wire lines
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
+        fig=None (matplotlib Figure): Allows users to specify the figure window to plot to.
 
     **Example**
 
@@ -254,7 +256,7 @@ class MPLDrawer:
     _cwire_scaling = 0.25
     """The distance between successive control wires."""
 
-    def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None):
+    def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None, fig=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
@@ -267,16 +269,25 @@ class MPLDrawer:
         ## Creating figure and ax
 
         if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + self._cwire_scaling * c_wires + 1)
+            figheight = self.n_wires + self._cwire_scaling * c_wires + 1 + 0.5 * (c_wires > 0)
+            figsize = (self.n_layers + 3, figheight)
 
-        self._fig = plt.figure(figsize=figsize)
+        if fig is None:
+            self._fig = plt.figure(figsize=figsize)
+        else:
+            fig.clear()
+            fig.set_figwidth(figsize[0])
+            fig.set_figheight(figsize[1])
+            self._fig = fig
+
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires),
+            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires + 0.5 * (c_wires > 0)),
             xticks=[],
             yticks=[],
         )
+
         self._ax.axis("off")
 
         self._ax.invert_yaxis()
@@ -847,20 +858,29 @@ class MPLDrawer:
         if "zorder" not in lines_options:
             lines_options["zorder"] = 3
 
+        if not isinstance(wires, Sequence):
+            wires = (wires,)
+
+        wires = tuple(self._y(w) for w in wires)
+
+        box_min = min(wires)
+        box_max = max(wires)
+        box_center = (box_max + box_min) / 2.0
+
         x_loc = layer - self._box_length / 2.0 + self._pad
-        y_loc = wires - self._box_length / 2.0 + self._pad
+        y_loc = box_min - self._box_length / 2.0 + self._pad
 
         box = patches.FancyBboxPatch(
             (x_loc, y_loc),
             self._box_length - 2 * self._pad,
-            self._box_length - 2 * self._pad,
+            box_max - box_min + self._box_length - 2 * self._pad,
             boxstyle=self._boxstyle,
             **box_options,
         )
         self._ax.add_patch(box)
 
         arc = patches.Arc(
-            (layer, wires + 0.15 * self._box_length),
+            (layer, box_center + 0.15 * self._box_length),
             0.6 * self._box_length,
             0.55 * self._box_length,
             theta1=180,
@@ -871,7 +891,7 @@ class MPLDrawer:
 
         # can experiment with the specific numbers to make it look decent
         arrow_start_x = layer - 0.15 * self._box_length
-        arrow_start_y = wires + 0.3 * self._box_length
+        arrow_start_y = box_center + 0.3 * self._box_length
         arrow_width = 0.3 * self._box_length
         arrow_height = -0.5 * self._box_length
 
@@ -886,18 +906,21 @@ class MPLDrawer:
         )
         if text:
             self._ax.text(
-                layer + 0.05 * self._box_length, wires + 0.225, text, fontsize=(self.fontsize - 2)
+                layer + 0.05 * self._box_length,
+                box_center + 0.225,
+                text,
+                fontsize=(self.fontsize - 2),
             )
 
     def _y(self, wire):
         """Used for determining the correct y coordinate for classical wires.
         Classical wires should be enumerated starting at the number of quantum wires the drawer has.
         For example, if the drawer has ``3`` quantum wires, the first classical wire should be located at ``3``
-        which corresponds to a ``y`` coordinate of ``2.6``.
+        which corresponds to a ``y`` coordinate of ``2.9``.
         """
         if wire < self.n_wires:
             return wire
-        return self.n_wires + self._cwire_scaling * (wire - self.n_wires) - 0.4
+        return self.n_wires + self._cwire_scaling * (wire - self.n_wires)
 
     def classical_wire(self, layers, wires) -> None:
         """Draw a classical control line.
