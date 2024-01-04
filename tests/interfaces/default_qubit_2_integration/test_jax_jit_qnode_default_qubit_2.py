@@ -2903,3 +2903,22 @@ class TestSubsetArgnums:
         else:
             assert np.allclose(jac[0], expected[0], atol=tol)
             assert np.allclose(jac[1], expected[1], atol=tol)
+
+
+@pytest.mark.parametrize("diff_method", ("adjoint", "parameter-shift"))
+def test_float32_return(diff_method):
+    """Test that jax jit works when float64 mode is disabled."""
+    jax.config.update("jax_enable_x64", False)
+
+    try:
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit"), diff_method=diff_method)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        grad = jax.grad(circuit)(jax.numpy.array(0.1))
+        assert qml.math.allclose(grad, -np.sin(0.1))
+    finally:
+        jax.config.update("jax_enable_x64", True)

@@ -703,6 +703,8 @@
 * `MPLDrawer` does not add the bonus space for classical wires when no classical wires are present.
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
   
+* The jax-jit interface can now be used with float32 mode.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
