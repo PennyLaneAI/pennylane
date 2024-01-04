@@ -132,6 +132,7 @@ class PauliWord(dict):
     >>> w
     X(a) @ Y(2) @ Z(3)
     """
+    __array_priority__ = 1000
 
     def __missing__(self, key):
         """If the wire is not in the Pauli word,
@@ -378,6 +379,8 @@ class PauliSentence(dict):
     1.23 * X(0) @ Y(1)
     + (-0-0.45j) * Z(2) @ Y(0)
     """
+
+    __array_priority__ = 1000
 
     def __missing__(self, key):
         """If the PauliWord is not in the sentence then the coefficient
