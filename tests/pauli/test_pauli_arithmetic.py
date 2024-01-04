@@ -818,7 +818,6 @@ class TestPauliArithmeticWithADInterfaces:
         assert all(isinstance(val, pnp.ndarray) for val in res1.values())
         assert all(isinstance(val, pnp.ndarray) for val in res2.values())
 
-    @pytest.mark.xfail
     @pytest.mark.jax
     @pytest.mark.parametrize("ps", sentences)
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
