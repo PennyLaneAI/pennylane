@@ -448,8 +448,7 @@ class PauliSentence(dict):
                     f"Attempting to multiply a PauliSentence with an array of dimension {qml.math.ndim(other)}"
                 )
 
-            else:
-                return PauliSentence({key: other * value for key, value in self.items()})
+            return PauliSentence({key: other * value for key, value in self.items()})
 
         return NotImplemented
 
