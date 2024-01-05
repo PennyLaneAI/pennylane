@@ -365,11 +365,10 @@ class TestWires:
         assert wires._hash == h
 
     @pytest.mark.parametrize(
-        "source",
-        [1, -2, "a", "q1", -1.4, np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)]
+        "source", [1, -2, "a", "q1", -1.4, np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)]
     )
     def test_wires_pytree(self, source):
-        """ Test that Wires class supports the PyTree flattening interface """
+        """Test that Wires class supports the PyTree flattening interface"""
         wires = Wires(source)
         wires_flat, tree = tree_flatten(wires)
         wires2 = tree_unflatten(tree, wires_flat)

@@ -100,12 +100,12 @@ class Wires(Sequence):
     """
 
     def _flatten(self):
-        """ Serialize Wires into a flattened representation according to the PyTree convension. """
+        """Serialize Wires into a flattened representation according to the PyTree convension."""
         return self._labels, ()
 
     @classmethod
     def _unflatten(cls, data, _metadata):
-        """ De-serialize flattened representation back into the Wires object. """
+        """De-serialize flattened representation back into the Wires object."""
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
@@ -491,5 +491,6 @@ class Wires(Sequence):
 
         return Wires(tuple(unique), _override=True)
 
+
 # Register Wires as a PyTree-serializable class
-register_pytree(Wires, Wires._flatten, Wires._unflatten) # pylint: disable=protected-access
+register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
