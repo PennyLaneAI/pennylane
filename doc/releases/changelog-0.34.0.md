@@ -728,7 +728,7 @@
   properly when they are named "weights".
   [(#5008)](https://github.com/PennyLaneAI/pennylane/pull/5008)
 
-* `StatePrep` no longer raises unexpected errors during forward calls with `torch.nn`.
+* `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#4996)](https://github.com/PennyLaneAI/pennylane/pull/4996)
 
 <h3>Contributors ✍️</h3>
