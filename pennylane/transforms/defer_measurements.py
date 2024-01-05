@@ -14,7 +14,7 @@
 """Code for the tape transform implementing the deferred measurement principle."""
 from typing import Sequence, Callable
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP, ProbabilityMP, SampleMP, CountsMP
+from pennylane.measurements import MidMeasureMP, ProbabilityMP, SampleMP, CountsMP, MeasurementValue
 from pennylane.ops.op_math import ctrl
 
 from pennylane.tape import QuantumTape
@@ -143,7 +143,8 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         tape (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
+        transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -248,8 +249,9 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
                         if op.postselect is None:
                             new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
                         elif op.postselect == 1:
-                            # We know that the measured wire will be in the |1> state if postselected
-                            # |1>. So we can just apply a PauliX instead of a CNOT to reset
+                            # We know that the measured wire will be in the |1> state if
+                            # postselected |1>. So we can just apply a PauliX instead of
+                            # a CNOT to reset
                             new_operations.append(qml.PauliX(op.wires[0]))
 
                 cur_wire += 1
@@ -266,10 +268,33 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
     for mp in tape.measurements:
         if mp.mv is not None:
-            # Update measurement value wires
-            wire_map = {m.wires[0]: control_wires[m.id] for m in mp.mv.measurements}
-            mp = qml.map_wires(mp, wire_map=wire_map)
-        new_measurements.append(mp)
+            # Update measurement value wires. We can't use `qml.map_wires` because the same
+            # wire can map to different control wires when multiple mid-circuit measurements
+            # are made on the same wire. This mapping is determined by the id of the
+            # MidMeasureMPs. Thus, we need to manually map wires for each MidMeasureMP.
+            if isinstance(mp.mv, MeasurementValue):
+                new_ms = [
+                    qml.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements
+                ]
+                new_m = MeasurementValue(new_ms, mp.mv.processing_fn)
+            else:
+                new_m = []
+                for val in mp.mv:
+                    new_ms = [
+                        qml.map_wires(m, {m.wires[0]: control_wires[m.id]})
+                        for m in val.measurements
+                    ]
+                    new_m.append(MeasurementValue(new_ms, val.processing_fn))
+
+            with QueuingManager.stop_recording():
+                new_mp = (
+                    type(mp)(obs=new_m)
+                    if not isinstance(mp, CountsMP)
+                    else CountsMP(obs=new_m, all_outcomes=mp.all_outcomes)
+                )
+        else:
+            new_mp = mp
+        new_measurements.append(new_mp)
 
     new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
 

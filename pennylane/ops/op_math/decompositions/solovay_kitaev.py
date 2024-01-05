@@ -21,20 +21,6 @@ from scipy.spatial import KDTree
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript
-from pennylane.transforms.optimization import cancel_inverses
-
-# Defining Clifford+T basis
-_CLIFFORD_T_BASIS = {
-    "I": qml.Identity(0),
-    "X": qml.PauliX(0),
-    "Y": qml.PauliY(0),
-    "Z": qml.PauliZ(0),
-    "H": qml.Hadamard(0),
-    "T": qml.T(0),
-    "T*": qml.adjoint(qml.T(0)),
-    "S": qml.S(0),
-    "S*": qml.adjoint(qml.S(0)),
-}
 
 
 def _SU2_transform(matrix):
@@ -114,6 +100,18 @@ def _approximate_set(basis_gates, max_length=10):
         Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of
         Solovay-Kitaev algorithm, with their corresponding SU(2) representations, global phases, and quaternion representations.
     """
+    # Defining Clifford+T basis
+    _CLIFFORD_T_BASIS = {
+        "I": qml.Identity(0),
+        "X": qml.PauliX(0),
+        "Y": qml.PauliY(0),
+        "Z": qml.PauliZ(0),
+        "H": qml.Hadamard(0),
+        "T": qml.T(0),
+        "T*": qml.adjoint(qml.T(0)),
+        "S": qml.S(0),
+        "S*": qml.adjoint(qml.S(0)),
+    }
     # Maintains the basis gates
     basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
 
@@ -249,7 +247,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         op  = qml.RZ(np.pi/3, wires=0)
 
         # Get the gate decomposition in ['T', 'T*', 'H']
-        ops = qml.transforms.decompositions.sk_decomposition(op, epsilon=1e-3)
+        ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
 
         # Get the approximate matrix from the ops
         matrix_sk = qml.prod(*reversed(ops)).matrix()
@@ -277,7 +275,9 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         kd_tree = KDTree(qml.math.array(approx_set_qat))
 
         # Obtain the SU(2) and quaternion for the operation
-        gate_mat, gate_gph = _SU2_transform(op.matrix())
+        op_matrix = op.matrix()
+        interface = qml.math.get_deep_interface(op_matrix)
+        gate_mat, gate_gph = _SU2_transform(qml.math.unwrap(op_matrix))
         gate_qat = _quaternion_transform(gate_mat)
 
         def _solovay_kitaev(umat, n, u_n1_ids, u_n1_mat):
@@ -333,15 +333,16 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             decomposition, u_prime = _solovay_kitaev(gate_mat, depth + 1, decomposition, u_prime)
 
         # Remove inverses if any in the decomposition and handle trivial case
-        [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))
+        [new_tape], _ = qml.transforms.cancel_inverses(
+            QuantumScript(decomposition or [qml.Identity(0)])
+        )
 
     # Map the wires to that of the operation and queue
     [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
 
     # Get phase information based on the decomposition effort
-    global_phase = qml.GlobalPhase(
-        approx_set_gph[index] - gate_gph if depth or qml.math.isclose(gate_gph, 0.0) else 0.0
-    )
+    phase = approx_set_gph[index] - gate_gph if depth or qml.math.allclose(gate_gph, 0.0) else 0.0
+    global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase
     return map_tape.operations + [global_phase]

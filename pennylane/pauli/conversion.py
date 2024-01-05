@@ -340,7 +340,7 @@ def pauli_sentence(op):
     Returns:
         .PauliSentence: the PauliSentence representation of an arithmetic operator or Hamiltonian
     """
-    if (ps := op._pauli_rep) is not None:  # pylint: disable=protected-access
+    if (ps := op.pauli_rep) is not None:
         return ps
 
     return _pauli_sentence(op)
@@ -348,7 +348,7 @@ def pauli_sentence(op):
 
 def is_pauli_sentence(op):
     """Returns True of the operator is a PauliSentence and False otherwise."""
-    if op._pauli_rep is not None:  # pylint: disable=protected-access
+    if op.pauli_rep is not None:
         return True
     if isinstance(op, Hamiltonian):
         return all(is_pauli_word(o) for o in op.ops)

@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains methods related to Clifford+T decomposition"""
+r"""This module contains decompositions for (numerically-specified) arbitrary
+unitary operations into sequences of elementary operations.
+"""
 
+from .single_qubit_unitary import one_qubit_decomposition
+from .two_qubit_unitary import two_qubit_decomposition
 from .solovay_kitaev import sk_decomposition

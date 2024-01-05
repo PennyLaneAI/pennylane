@@ -72,9 +72,7 @@ class TestConstruction:
 
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp fails"""
-        with pytest.raises(
-            TypeError, match="Can't instantiate abstract class CompositeOp with abstract methods"
-        ):
+        with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
             _ = CompositeOp(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
 
     def test_raise_error_fewer_than_2_operands(self):
@@ -143,10 +141,11 @@ class TestConstruction:
     def test_different_batch_sizes_raises_error(self):
         """Test that an error is raised if the operands have different batch sizes."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
+            _ = op.batch_size
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
@@ -199,8 +198,8 @@ class TestConstruction:
         assert mapped_op.wires == Wires([5, 7])
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
-        assert mapped_op._pauli_rep is not diag_op._pauli_rep
-        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+        assert mapped_op.pauli_rep is not diag_op.pauli_rep
+        assert mapped_op.pauli_rep == qml.pauli.PauliSentence(
             {qml.pauli.PauliWord({5: "X", 7: "Y"}): 1}
         )
 

@@ -23,6 +23,7 @@ from warnings import warn
 
 import numpy as np
 from scipy.special import factorial
+from scipy.linalg import solve as linalg_solve
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP
@@ -146,7 +147,11 @@ def finite_diff_coeffs(n, approx_order, strategy):
     A = shifts ** np.arange(len(shifts)).reshape(-1, 1)
     b = np.zeros_like(shifts)
     b[n] = factorial(n)
-    coeffs = np.linalg.solve(A, b)
+
+    # Note: using np.linalg.solve instead of scipy.linalg.solve can cause a bus error when this
+    # is inside a tf.py_function inside a tf.function, as occurs with the tensorflow-autograph interface
+    # Bus errors were potentially specific to the M1 Mac. Change with caution.
+    coeffs = linalg_solve(A, b)
 
     coeffs_and_shifts = np.stack([coeffs, shifts])
 
@@ -359,7 +364,8 @@ def finite_diff(
             "Finite differences with float32 detected. Answers may be inaccurate. float64 is recommended.",
             UserWarning,
         )
-
+    number_parameters = len(tape.trainable_params)
+    number_measurements = len(tape.measurements)
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
@@ -408,7 +414,6 @@ def finite_diff(
     def _single_shot_batch_result(results):
         """Auxiliary function for post-processing one batch of results corresponding to finite shots or a single
         component of a shot vector"""
-
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
@@ -443,13 +448,13 @@ def finite_diff(
 
             pre_grads = []
 
-            if len(tape.measurements) == 1:
+            if number_measurements == 1:
                 res = qml.math.stack(res)
                 c = qml.math.convert_like(coeffs, res)
                 lin_comb = qml.math.tensordot(res, c, [[0], [0]])
                 pre_grads.append(lin_comb)
             else:
-                for i in range(len(tape.measurements)):
+                for i in range(number_measurements):
                     r = qml.math.stack([r[i] for r in res])
                     c = qml.math.convert_like(coeffs, r)
                     lin_comb = qml.math.tensordot(r, c, [[0], [0]])
@@ -457,11 +462,11 @@ def finite_diff(
 
             # Add on the unshifted term
             if c0 is not None:
-                if len(tape.measurements) == 1:
+                if number_measurements == 1:
                     c = qml.math.convert_like(c0, r0)
                     pre_grads = [pre_grads[0] + r0 * c]
                 else:
-                    for i in range(len(tape.measurements)):
+                    for i in range(number_measurements):
                         r_i = r0[i]
                         c = qml.math.convert_like(c0, r_i)
                         pre_grads[i] = pre_grads[i] + r_i * c
@@ -479,19 +484,19 @@ def finite_diff(
 
             grads.append(pre_grads)
         # Single measurement
-        if len(tape.measurements) == 1:
-            if len(tape.trainable_params) == 1:
+        if number_measurements == 1:
+            if number_parameters == 1:
                 return grads[0]
             return tuple(grads)
 
         # Reordering to match the right shape for multiple measurements
-        grads_reorder = [[0] * len(tape.trainable_params) for _ in range(len(tape.measurements))]
-        for i in range(len(tape.measurements)):
-            for j in range(len(tape.trainable_params)):
+        grads_reorder = [[0] * number_parameters for _ in range(len(tape.measurements))]
+        for i in range(number_measurements):
+            for j in range(number_parameters):
                 grads_reorder[i][j] = grads[j][i]
 
         # To tuple
-        if len(tape.trainable_params) == 1:
+        if number_parameters == 1:
             return tuple(elem[0] for elem in grads_reorder)
         return tuple(tuple(elem) for elem in grads_reorder)
 

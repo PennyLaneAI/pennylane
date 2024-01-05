@@ -190,10 +190,13 @@ class TestCond:
             m_0 = qml.measure(1)
             qml.cond(m_0, g, f)()  # Check that the same error is raised when f and g are swapped
 
+
+class TestAdditionalCond:
+    """Test additional/misc functionality relating to qml.cond"""
+
     @pytest.mark.parametrize("inp", [1, "string", qml.PauliZ(0)])
-    def test_cond_error_unrecognized_input(self, inp, terminal_measurement):
+    def test_cond_error_unrecognized_input(self, inp):
         """Test that an error is raised when the input is not recognized."""
-        # pylint: disable=unused-argument
 
         with pytest.raises(
             ConditionalTransformError,
@@ -201,6 +204,17 @@ class TestCond:
         ):
             m_0 = qml.measure(1)
             qml.cond(m_0, inp)()
+
+    def test_map_wires(self):
+        """Tests the cond.map_wires function."""
+        with qml.queuing.AnnotatedQueue() as q:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.PauliX)(1)
+
+        meas, cond_op = q.queue
+        mapped_cond = cond_op.map_wires({0: "a", 1: "b"})
+        assert mapped_cond.meas_val.measurements == [meas.map_wires({0: "a"})]
+        assert mapped_cond.then_op == qml.PauliX("b")
 
 
 @pytest.mark.parametrize("op_class", [qml.PauliY, qml.Toffoli, qml.Hadamard, qml.CZ])
@@ -305,3 +319,35 @@ class TestOtherTransforms:
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement
+
+    @pytest.mark.parametrize(
+        "op_fn, fn_additional_args",
+        [
+            (qml.adjoint, ()),
+            (qml.ctrl, ([1, 2],)),
+            (qml.simplify, ()),
+            (qml.evolve, (1.5,)),
+            (qml.exp, (1.5,)),
+            (qml.pow, (3,)),
+            (qml.prod, (qml.prod(qml.PauliX(1), qml.PauliZ(1)),)),
+        ],
+    )
+    def test_ops_as_args(self, op_fn, fn_additional_args, terminal_measurement):
+        """Test that operations given are arguments to a conditioned function are not queued."""
+
+        # Need to construct now so that id is not random
+        mp = qml.measurements.MidMeasureMP(0, id="foo")
+        mv = qml.measurements.MeasurementValue([mp], lambda v: v)
+
+        def circuit():
+            qml.Hadamard(0)
+            qml.apply(mp)
+            qml.cond(mv, op_fn)(qml.T(0), *fn_additional_args)
+            return qml.apply(terminal_measurement)
+
+        tape = qml.tape.make_qscript(circuit)()
+        assert len(tape) == 4
+        assert tape[0] == qml.Hadamard(0)
+        assert tape[1] == mp
+        assert isinstance(tape[2], qml.ops.Conditional)
+        assert tape[3] == terminal_measurement

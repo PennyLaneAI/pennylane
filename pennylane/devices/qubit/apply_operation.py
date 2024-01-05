@@ -236,7 +236,7 @@ def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False, debugger
     n_dim = math.ndim(state)
 
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
-        return apply_operation_tensordot(op, state)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
@@ -254,7 +254,7 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
     n_dim = math.ndim(state)
 
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
-        return apply_operation_tensordot(op, state)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, control_axes, n_dim)
     sl_1 = _get_slice(1, control_axes, n_dim)
@@ -361,11 +361,16 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
 def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
     """Take a snapshot of the state"""
     if debugger is not None and debugger.active:
-        flat_state = math.flatten(state)
-        if op.tag:
-            debugger.snapshots[op.tag] = flat_state
+        measurement = op.hyperparameters["measurement"]
+        if measurement:
+            snapshot = qml.devices.qubit.measure(measurement, state)
         else:
-            debugger.snapshots[len(debugger.snapshots)] = flat_state
+            flat_shape = (math.shape(state)[0], -1) if is_state_batched else (-1,)
+            snapshot = math.cast(math.reshape(state, flat_shape), complex)
+        if op.tag:
+            debugger.snapshots[op.tag] = snapshot
+        else:
+            debugger.snapshots[len(debugger.snapshots)] = snapshot
     return state
 
 
