@@ -57,7 +57,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
     kraus_dagger = math.cast(math.reshape(kraus_dagger, kraus_shape), complex)
 
-    # Tensor indices of the state. For each qubit, need an index for rows *and* columns
+    # Tensor indices of the state. For each qutrit, need an index for rows *and* columns
     state_indices = alphabet[:rho_dim]
 
     # row indices of the quantum state affected by this operation

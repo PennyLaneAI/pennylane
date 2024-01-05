@@ -102,6 +102,7 @@ ml_frameworks_list = [
 
 
 methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
+subspaces = [(0, 1), (0, 2), (1, 2)]
 
 
 def test_custom_operator_with_matrix():
@@ -137,7 +138,7 @@ def test_custom_operator_with_matrix():
 @pytest.mark.parametrize("method", methods)
 @pytest.mark.parametrize("wire", (0, 1))
 class TestTwoQubitStateSpecialCases:
-    """Test the special cases on a two qubit state.  Also tests the special cases for einsum and tensor application methods
+    """Test the special cases on a two qutrit state.  Also tests the special cases for einsum and tensor application methods
     for additional testing of these generic matrix application methods."""
 
     def test_TAdd(self, method, wire, ml_framework):
@@ -241,6 +242,25 @@ class TestTwoQubitStateSpecialCases:
         new2 = math.take(new_state, 2, axis=wire)
         check_second_roll(w2 * initial2, new2)
 
+    @pytest.mark.parametrize("subspace", subspaces)
+    def test_THadamard(self, method, wire, ml_framework, subspace):
+        initial_state = math.asarray(density_matrix, like=ml_framework)
+        op = qml.THadamard(wire, subspace=subspace)
+        new_state = method(op, initial_state)
+
+        flattened_state = initial_state.reshape(9,9)
+        sizes = [3, 3]
+        sizes[wire] = 1
+        expanded_mat = np.kron(np.kron(np.eye(sizes[0]), op.matrix()), np.eye(sizes[1]))
+        adjoint_mat = np.conj(expanded_mat).T
+        expected = (expanded_mat @ flattened_state @ adjoint_mat).reshape([3]*4)
+
+        assert math.allclose(expected, new_state)
+
+
+
+
+
     # TODO: Add more tests as Special cases are added
 
 
@@ -293,10 +313,7 @@ class TestSnapshot:
         assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, (9, 9)))
 
 
-subspaces = [(0, 1), (0, 2), (1, 2)]
-
-
-@pytest.mark.parametrize("method", methods)  # TODO
+@pytest.mark.parametrize("method", methods)
 @pytest.mark.parametrize("subspace", subspaces)
 class TestTRXCalcGrad:
     """Tests the application and differentiation of an TRX gate in the different interfaces."""
@@ -304,12 +321,11 @@ class TestTRXCalcGrad:
     state = density_matrix
 
     def compare_expected_result(self, phi, state, new_state, g, subspace):
-        """Compare TODO"""
         matrix = qml.TRX.compute_matrix(phi, subspace=subspace)
         expanded_mat = np.kron(matrix, np.eye(3))
         expanded_adjoint = np.conj(expanded_mat).T
         flattened_state = state.reshape(9, 9)
-        res = expanded_mat @ flattened_state @ expanded_adjoint
+        res = (expanded_mat @ flattened_state @ expanded_adjoint).reshape([3]*4)
 
         assert math.allclose(new_state, res)
 
