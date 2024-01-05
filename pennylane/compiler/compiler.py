@@ -80,6 +80,10 @@ def _refresh_compilers():
     """Scan installed PennyLane compiler packages to refresh the compilers
     names and entry points.
     """
+
+    # Refresh the list of compilers
+    AvailableCompilers.names_entrypoints = defaultdict(dict)
+
     # Iterator packages entry-points with the 'pennylane.compilers' group name
     entries = (
         defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
