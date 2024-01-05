@@ -236,18 +236,18 @@ class PauliWord(dict):
     #     if isinstance(other, PauliSentence):
     #         res = copy(other)
     #         return res + PauliSentence({self:1.})
-        
+
     #     elif isinstance(other, TensorLike):
     #         IdWord = PauliWord({0:I})
     #         res = PauliSentence({self:1., IdWord: other})
     #         return res
-        
+
     #     elif isinstance(other, PauliWord):
     #         return PauliSentence({self: 1., other: 1.})
     #     raise TypeError(
     #         f"PauliWord can only be added to other PauliWords or PauliSentences. Attempting to add by {other} of type {type(other)}"
     #     )
-    
+
     # __radd__ = __add__
 
     def __truediv__(self, other):
@@ -431,24 +431,26 @@ class PauliSentence(dict):
                 larger_ps[key] += smaller_ps[key]
 
             return larger_ps
-        
+
         elif isinstance(other, PauliWord):
             res = copy(self)
-            if len(other)==0:
-                # Note that empty PauliWord is treated as Identity
-                return res
-            return res + PauliSentence({other:1.})
-        
-        elif isinstance(other, TensorLike):
-            res = copy(self)
-            IdWord = PauliWord({0:I})
-            res[IdWord] = 1.
+            if other in res:
+                res[other] += 1.0
+            else:
+                res[other] = 1.0
             return res
 
-        raise TypeError(
-            f"Cannot add {other} of type {type(other)} to PauliSentence"
-        )
-    
+        elif isinstance(other, TensorLike):
+            res = copy(self)
+            IdWord = PauliWord({})
+            if IdWord in res:
+                res[IdWord] += other
+            else:
+                res[IdWord] = other
+            return res
+
+        raise TypeError(f"Cannot add {other} of type {type(other)} to PauliSentence")
+
     __radd__ = __add__
 
     def __iadd__(self, other):

@@ -38,6 +38,7 @@ pw1 = PauliWord({0: I, 1: X, 2: Y})
 pw2 = PauliWord({"a": X, "b": X, "c": Z})
 pw3 = PauliWord({0: Z, "b": Z, "c": Z})
 pw4 = PauliWord({})
+pw_id = pw4  # Identity PauliWord
 
 words = [pw1, pw2, pw3, pw4]
 
@@ -495,17 +496,35 @@ class TestPauliSentence:
         assert simplified_product == result
         assert string1 == copy_ps1
         assert string2 == copy_ps2
-    
-    def test_add_PS_and_PW(self):
+
+    add_ps_pw = list(enumerate(words))  # tuples of (i, pw_i)
+
+    @pytest.mark.parametrize("i, pw", add_ps_pw)
+    def test_add_PS_and_PW(self, i, pw):
         """Test adding PauliSentence and PauliWord"""
         ps = PauliSentence(dict(zip(words, list(range(len(words))))))
-        for i, pw in enumerate(words):
-            res1 = ps + pw
-            res2 = pw + ps
-            true_res = list(range(len(words)))
-            true_res[i] += 1
-            assert list(res1.values()) == true_res
-            assert list(res2.values()) == true_res
+        res1 = ps + pw
+        res2 = pw + ps
+        true_res = list(range(len(words)))
+        true_res[i] += 1
+        assert list(res1.values()) == true_res
+        assert list(res2.values()) == true_res
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_add_PS_and_scalar(self, scalar):
+        """Test adding PauliSentence and scalar"""
+        res1 = ps1 + scalar
+        res2 = scalar + ps1
+        assert res1[pw_id] == scalar
+        assert res2[pw_id] == scalar
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_add_PS_and_scalar_with_1_present(self, scalar):
+        """Test adding scalar to a PauliSentence that already contains identity"""
+        res1 = ps4 + scalar
+        res2 = scalar + ps4
+        assert res1[pw_id] == 1 + scalar
+        assert res2[pw_id] == 1 + scalar
 
     ps_match = (
         (ps4, "Can't get the matrix of an empty PauliWord."),
