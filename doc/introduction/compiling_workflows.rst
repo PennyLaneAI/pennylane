@@ -85,7 +85,7 @@ using ``@jax.jit``, for example when training models:
 
         return params
 
-Compiling the entire hybrid workflow using ``@qjit`` however will lead to better
+Compiling the entire hybrid workflow using ``@qml.qjit`` however will lead to better
 performance. For more details, please see
 `the Catalyst documentation <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/sharp_bits.html#try-and-compile-the-full-workflow>`__.
 
