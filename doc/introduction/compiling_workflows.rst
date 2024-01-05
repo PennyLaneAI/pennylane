@@ -76,7 +76,7 @@ using ``@jax.jit``, for example when training models:
         params = jnp.array([0.54, 0.3154])
 
         # define the optimizer
-        opt = jaxopt.GradientDescent(cost, stepsize=0.4)
+        opt = jaxopt.GradientDescent(circuit, stepsize=0.4)
         update = lambda i, args: tuple(opt.update(*args))
 
         # perform optimization loop
