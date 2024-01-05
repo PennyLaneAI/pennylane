@@ -66,7 +66,6 @@ def _check_compiler_version(name):
 
     if name == "catalyst":
         installed_catalyst_version = metadata.version("pennylane-catalyst")
-        print(installed_catalyst_version)
         if Version(re.sub(r"\.dev\d+", "", installed_catalyst_version)) < PL_CATALYST_MIN_VERSION:
             raise CompileError(
                 f"PennyLane-Catalyst {PL_CATALYST_MIN_VERSION} or greater is required, but installed {installed_catalyst_version}"
