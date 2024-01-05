@@ -185,8 +185,8 @@
 
   ``` pycon
   >>> workflow(np.array([2.0, 1.0]))
-  array([[-1.32116540e-07,  1.33781874e-07],
-          [-4.20735506e-01,  4.20735506e-01]])
+  array([[ 3.48786850e-16, -4.20735492e-01],
+         [-8.71967125e-17,  4.20735492e-01]])
   ```
 
 * JIT-compatible functionality for control flow has been added via `qml.for_loop`,
@@ -440,6 +440,9 @@
   [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
 
 <h4>Other improvements</h4>
+
+* PennyLane now supports Python 3.12.
+  [(#4985)](https://github.com/PennyLaneAI/pennylane/pull/4985)
 
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
