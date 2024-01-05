@@ -365,7 +365,8 @@
 * The function `qml.draw_mpl` now accept a keyword argument `fig` to specify the output figure window.
   [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
 
-<h4>Better support for batching</h4>
+* The function ``qml.draw_mpl`` now accept a keyword argument ``fig`` to specify the output figure window.
+  [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
 
 * `qml.AmplitudeEmbedding` now supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)

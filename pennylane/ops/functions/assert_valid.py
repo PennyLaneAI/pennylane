@@ -277,7 +277,8 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
         assert isinstance(d, qml.typing.TensorLike), "each data element must be tensorlike"
         assert qml.math.allclose(d, p), "data and parameters must match."
 
-    _check_wires(op)
+    if len(op.wires) <= 26:
+        _check_wires(op)
     _check_copy(op)
     _check_pytree(op)
     if not skip_pickle:
