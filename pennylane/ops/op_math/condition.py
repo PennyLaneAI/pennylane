@@ -158,7 +158,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             def ansatz_false():
                 qml.RY(x, wires=0)
 
-            qml.cond(x > 1.4, ansatz_true, ansatz_false)
+            qml.cond(x > 1.4, ansatz_true, ansatz_false)()
 
             return qml.expval(qml.PauliZ(0))
 
@@ -184,7 +184,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             def false_fn():
                 qml.RX(x ** 2, wires=0)
 
-            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))
+            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))()
             return qml.expval(qml.PauliZ(0))
 
     >>> circuit(1.2)
@@ -319,7 +319,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
         if false_fn:
             cond_func.otherwise(false_fn)
 
-        return cond_func()
+        return cond_func
 
     if elifs:
         raise ConditionalTransformError("'elif' branches are not supported in interpreted mode.")

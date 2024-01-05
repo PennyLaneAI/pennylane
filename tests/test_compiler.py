@@ -262,12 +262,18 @@ class TestCatalyst:
             def func(arg):
                 qml.RX(theta, wires=arg)
 
+            def cond_fn():
+                qml.RY(theta, wires=w)
+
             qml.ctrl(func, control=[cw])(w)
+            qml.ctrl(qml.cond(theta > 0.0, cond_fn), control=[cw])()
             qml.ctrl(qml.RZ, control=[cw])(theta, wires=w)
             qml.ctrl(qml.RY(theta, wires=w), control=[cw])
             return qml.probs()
 
-        assert jnp.allclose(workflow(jnp.pi / 4, 1, 0), jnp.array([0.25, 0.25, 0.125, 0.375]))
+        assert jnp.allclose(
+            workflow(jnp.pi / 4, 1, 0), jnp.array([0.25, 0.25, 0.03661165, 0.46338835])
+        )
 
 
 class TestCatalystControlFlow:
@@ -373,7 +379,7 @@ class TestCatalystControlFlow:
                 qml.RX(x, wires=0)
                 qml.Hadamard(wires=0)
 
-            qml.cond(x > 1.4, ansatz_true)
+            qml.cond(x > 1.4, ansatz_true)()
 
             return qml.expval(qml.PauliZ(0))
 
@@ -394,7 +400,7 @@ class TestCatalystControlFlow:
             def ansatz_false():
                 qml.RY(x, wires=0)
 
-            qml.cond(x > 1.4, ansatz_true, ansatz_false)
+            qml.cond(x > 1.4, ansatz_true, ansatz_false)()
 
             return qml.expval(qml.PauliZ(0))
 
@@ -417,7 +423,7 @@ class TestCatalystControlFlow:
             def false_fn():
                 qml.RX(x**2, wires=0)
 
-            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))
+            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))()
 
             return qml.expval(qml.PauliZ(0))
 
@@ -443,7 +449,7 @@ class TestCatalystControlFlow:
             def false_fn():
                 qml.RX(x**2, wires=0)
 
-            qml.cond(x > 2.7, true_fn, false_fn, ((x > 2.4, elif1_fn), (x > 1.4, elif2_fn)))
+            qml.cond(x > 2.7, true_fn, false_fn, ((x > 2.4, elif1_fn), (x > 1.4, elif2_fn)))()
 
             return qml.expval(qml.PauliZ(0))
 
@@ -462,7 +468,7 @@ class TestCatalystControlFlow:
             def elif_fn():
                 qml.RX(x**2, wires=0)
 
-            qml.cond(x > 2.7, true_fn, None, ((x > 1.4, elif_fn),))
+            qml.cond(x > 2.7, true_fn, None, ((x > 1.4, elif_fn),))()
 
             return qml.expval(qml.PauliZ(0))
 
