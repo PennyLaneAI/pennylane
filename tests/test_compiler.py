@@ -41,6 +41,7 @@ def catalyst_incompatible_version():
         yield
 
 
+# TODO: Remove this fixture after the Catalyst v0.4.0 release
 @pytest.fixture
 def catalyst_compatible_version():
     """A compatible (high) version for Catalyst"""
