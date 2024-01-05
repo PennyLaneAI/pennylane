@@ -121,6 +121,7 @@
   The [qml.compiler](https://docs.pennylane.ai/en/latest/code/qml_compiler.html) 
   module provides support for hybrid quantum-classical compilation. 
   [(#4692)](https://github.com/PennyLaneAI/pennylane/pull/4692)
+  [(#4979)](https://github.com/PennyLaneAI/pennylane/pull/4979)
 
   Through the use of the `qml.qjit` decorator, entire workflows can be JIT
   compiled — including both quantum and classical processing — down to a machine binary on
@@ -514,6 +515,10 @@
   (with potentially negative eigenvalues) onto the closest valid density matrix.
   [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
 
+* The `ControlledSequence.compute_decomposition` default now decomposes the `Pow` operators, 
+  improving compatibility with machine learning interfaces. 
+  [(#4995)](https://github.com/PennyLaneAI/pennylane/pull/4995)
+
 <h3>Breaking changes 💔</h3>
 
 * The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, and
@@ -718,6 +723,10 @@
   
 * The jax-jit interface can now be used with float32 mode.
   [(#4990)](https://github.com/PennyLaneAI/pennylane/pull/4990)
+
+* Keras models with a `qnn.KerasLayer` no longer fail to save and load weights
+  properly when they are named "weights".
+  [(#5008)](https://github.com/PennyLaneAI/pennylane/pull/5008)
 
 <h3>Contributors ✍️</h3>
 
