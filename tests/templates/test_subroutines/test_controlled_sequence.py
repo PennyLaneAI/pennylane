@@ -178,9 +178,9 @@ class TestMethods:
 
         decomp = op.decomposition()
         expected_decomp = [
-            qml.ops.op_math.Controlled(qml.RX(0.25**4, wires=3), control_wires="a"),
-            qml.ops.op_math.Controlled(qml.RX(0.25**2, wires=3), control_wires=1),
-            qml.ops.op_math.Controlled(qml.RX(0.25**1, wires=3), control_wires="blue"),
+            qml.ops.op_math.Controlled(qml.RX(0.25 * 4, wires=3), control_wires="a"),
+            qml.ops.op_math.Controlled(qml.RX(0.25 * 2, wires=3), control_wires=1),
+            qml.ops.op_math.Controlled(qml.RX(0.25 * 1, wires=3), control_wires="blue"),
         ]
 
         for op1, op2 in zip(decomp, expected_decomp):
@@ -339,7 +339,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def circuit(thetas):
-            qml.ControlledSequence(U(thetas, wires=[0, 1]), control=[2, 3])
+            qml.ControlledSequence(U(thetas), control=[2, 3])
             return qml.expval(qml.PauliZ(0))
 
         thetas = pnp.array([1.0, 1.0], requires_grad=True)
