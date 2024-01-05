@@ -98,8 +98,6 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     .. code-block:: python
 
-        import catalyst
-
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit
@@ -111,7 +109,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
             def func(arg):
               qml.RX(theta, wires=arg)
 
-            @catalyst.cond(theta > 0.0)
+            @qml.cond(theta > 0.0)
             def cond_fn():
               qml.RY(theta, wires=w)
 
