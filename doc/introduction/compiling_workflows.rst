@@ -63,8 +63,8 @@ that is, functions that include both QNodes and classical processing.
         return jnp.abs(grad - x) ** 2
 
 In addition, functions that are compiled with ``@jax.jit`` can contain calls
-to qjit-compiled functions. For example, below we compile the full optimization loop,
-using ``@jax.jit``, for example when training models:
+to qjit-compiled functions. For example, below we compile a full optimization loop,
+using ``@jax.jit``:
 
 .. code-block:: python
 
