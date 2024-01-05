@@ -624,6 +624,17 @@ class TestSnapshot:
         assert debugger.snapshots[0].shape == ()
         assert debugger.snapshots[0] == qml.devices.qubit.measure(measurement, initial_state)
 
+    def test_batched_state(self, ml_framework):
+        """Test that batched states create batched snapshots."""
+        initial_state = qml.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)
+        debugger = self.Debugger()
+        new_state = apply_operation(
+            qml.Snapshot(), initial_state, is_state_batched=True, debugger=debugger
+        )
+        assert new_state.shape == initial_state.shape
+        assert set(debugger.snapshots) == {0}
+        assert np.array_equal(debugger.snapshots[0], initial_state)
+
 
 @pytest.mark.parametrize("method", methods)
 class TestRXCalcGrad:

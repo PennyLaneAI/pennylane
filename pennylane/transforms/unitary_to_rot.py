@@ -21,7 +21,7 @@ from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
 
 import pennylane as qml
-from pennylane.transforms.decompositions import one_qubit_decomposition, two_qubit_decomposition
+from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 
 
 @transform

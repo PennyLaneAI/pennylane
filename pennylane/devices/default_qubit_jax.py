@@ -25,7 +25,6 @@ from pennylane.typing import TensorLike
 try:
     import jax
     import jax.numpy as jnp
-    from jax.config import config as jax_config
     from jax.experimental.ode import odeint
 
     from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
@@ -166,7 +165,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
     operations = DefaultQubitLegacy.operations.union({"ParametrizedEvolution"})
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
-        if jax_config.read("jax_enable_x64"):
+        if jax.config.read("jax_enable_x64"):
             c_dtype = jnp.complex128
             r_dtype = jnp.float64
         else:
