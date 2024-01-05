@@ -23,8 +23,6 @@ from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
-from pennylane.interfaces.jax_jit import _jax_dtype
-
 qubit_device_and_diff_method = [
     [DefaultQubit(), "backprop", True, False],
     [DefaultQubit(), "finite-diff", False, False],
@@ -2907,8 +2905,14 @@ class TestSubsetArgnums:
 
 
 class TestSinglePrecision:
+    """Tests for compatibility with single precision mode."""
+
     def test_type_conversion_fallback(self):
         """Test that if the type isn't int, float, or complex, we still have a fallback."""
+        from pennylane.interfaces.jax_jit import (
+            _jax_dtype,
+        )  # pylint: disable=import-outside-toplevel
+
         assert _jax_dtype(bool) == jax.numpy.dtype(bool)
 
     @pytest.mark.parametrize("diff_method", ("adjoint", "parameter-shift"))
