@@ -223,6 +223,24 @@ class TestStateVector:
         assert qml.math.get_interface(result) == "torch"
         assert qml.math.shape(result) == (2,)
 
+    @pytest.mark.torch
+    def test_StatePrep_backprop_torch(self):
+        """Test backprop with torch, getting state.grad"""
+        import torch
+
+        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        def circuit(state):
+            qml.StatePrep(state, wires=(0,))
+            qml.S(1)
+            return qml.expval(qml.PauliZ(0))
+
+        state = torch.tensor([1.0, 0.0], requires_grad=True)
+        res = circuit(state)
+        res.backward()
+        grad = state.grad
+        assert qml.math.get_interface(grad) == "torch"
+        assert np.array_equal(grad, [2.0, 0.0])
+
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [
