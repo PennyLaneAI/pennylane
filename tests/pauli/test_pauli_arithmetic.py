@@ -517,8 +517,8 @@ class TestPauliSentence:
     add_ps_pw = list(enumerate(words))  # tuples of (i, pw_i)
     add_ps_pw = (
         (ps1, pw1, PauliSentence({pw1: 2.23, pw2: 4j, pw3: -0.5})),
-        (ps1, pw2, PauliSentence({pw1: 1.23, pw2: 1+4j, pw3: -0.5})),
-        (ps1, pw4, PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5, pw4: 1.})),
+        (ps1, pw2, PauliSentence({pw1: 1.23, pw2: 1 + 4j, pw3: -0.5})),
+        (ps1, pw4, PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5, pw4: 1.0})),
     )
 
     @pytest.mark.parametrize("ps, pw, true_res", add_ps_pw)
@@ -574,15 +574,15 @@ class TestPauliSentence:
 
         assert copied_string1 == result  # Check if the modified object matches the expected result
         assert copied_string2 == string2  # Ensure the original object is not modified
-    
+
     @pytest.mark.parametrize("ps, pw, res", add_ps_pw)
     def test_iadd_ps_pw(self, ps, pw, res):
         """Test that the correct result of inplace addition with PauliWord is produced and other object is not changed."""
         copy_ps1 = copy(ps)
         copy_ps2 = copy(ps)
         copy_ps1 += pw
-        assert copy_ps1 == res # Check if the modified object matches the expected result
-        assert copy_ps2 == ps # Ensure the original object is not modified
+        assert copy_ps1 == res  # Check if the modified object matches the expected result
+        assert copy_ps2 == ps  # Ensure the original object is not modified
 
     @pytest.mark.parametrize("ps, match", ps_match)
     def test_to_mat_error_empty(self, ps, match):

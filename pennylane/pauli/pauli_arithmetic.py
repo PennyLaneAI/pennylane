@@ -454,12 +454,12 @@ class PauliSentence(dict):
                 else:
                     self[key] = other[key]
             return self
-        
+
         if isinstance(other, PauliWord):
             if other in self:
-                self[other] += 1.
+                self[other] += 1.0
             else:
-                self[other] = 1.
+                self[other] = 1.0
             return self
 
     def __copy__(self):
