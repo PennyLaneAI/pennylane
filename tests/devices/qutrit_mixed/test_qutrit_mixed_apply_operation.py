@@ -420,6 +420,44 @@ class TestTRXCalcGrad:
         self.compare_expected_result(phi, state, new_state, phi_grad, subspace)
 
 
+def test_broadcasted_op_simple():  # TODO=========================================================
+    """Tests that batched operations are applied correctly to an unbatched state. Simple TODO"""
+    num_qutrits = 3
+    num_batched = 2
+    state = get_random_mixed_state(num_qutrits)
+    flattened_state = state.reshape([3**num_qutrits]*2)
+
+    method = apply_operation_einsum
+    ml_framework = "numpy"
+    op = qml.TRX(np.array([np.pi, np.pi / 2]), wires=0, subspace=(0, 1))
+    mat = op.matrix()
+    missing_wires = num_qutrits - len(op.wires)
+    expanded_mats = [
+        np.kron(mat[i], np.eye(3 ** missing_wires)) if missing_wires else mat[i]
+        for i in range(num_batched)
+    ]
+
+
+    res = method(op, qml.math.asarray(state, like=ml_framework))
+    expected = []
+
+    for i in range(num_batched):
+        expanded_mat = expanded_mats[i]
+        adjoint_mat = np.conj(expanded_mat).T
+        expected.append((expanded_mat @ flattened_state @ adjoint_mat).reshape([3] * (2*num_qutrits)))
+
+    assert qml.math.get_interface(res) == ml_framework
+    print()
+    print(res)
+    print("----------------------------------------------------------")
+    print(expected)
+    print("----------------------------------------------------------")
+    print(res.shape)
+    print(expected[0].shape)
+    print(expected[1].shape)
+
+    assert qml.math.allclose(res, expected)
+
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
 class TestBroadcasting:  # pylint: disable=too-few-public-methods
@@ -492,7 +530,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op_broadcasted_state(self, op, method, ml_framework):
         """Tests that batched operations are applied correctly to a batched state."""
-        state = [get_random_mixed_state(3) for _ in range(3)]
+        state = [get_random_mixed_state(3) for _ in range(3)] #TODO shouldn't be tested for tensordot
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)

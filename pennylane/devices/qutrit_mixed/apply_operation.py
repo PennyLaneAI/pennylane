@@ -40,7 +40,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     # Shape kraus operators
     kraus_shape = [len(kraus)] + [qudit_dim] * num_ch_wires * 2
 
-    if isinstance(op, Channel):
+    if isinstance(op, Channel): #TODO??
         is_mat_batched = False
         # TODO Channels broadcasting is causing issues currently
         # TODO need to talk to PennyLane team to find out more
@@ -82,10 +82,10 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
         state_indices,
     )
 
-    # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
+    # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
     einsum_indices = (
-        f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
-        f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
+        f"...{kraus_index}{new_row_indices}{row_indices},...{state_indices},"
+        f"...{kraus_index}{col_indices}{new_col_indices}->...{new_state_indices}"
     )
 
     return math.einsum(einsum_indices, kraus, state, kraus_dagger)
