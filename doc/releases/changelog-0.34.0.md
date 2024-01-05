@@ -514,6 +514,10 @@
   (with potentially negative eigenvalues) onto the closest valid density matrix.
   [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
 
+* The `ControlledSequence.compute_decomposition` default now decomposes the `Pow` operators, 
+  improving compatibility with machine learning interfaces. 
+  [(#4995)](https://github.com/PennyLaneAI/pennylane/pull/4995)
+
 <h3>Breaking changes 💔</h3>
 
 * The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, and
