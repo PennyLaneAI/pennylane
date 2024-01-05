@@ -470,6 +470,14 @@ class PauliSentence(dict):
                 self[IdWord] = other
             return self
 
+    def __sub__(self, other):
+        """Subtract other PauliSentence, PauliWord, or scalar"""
+        return self + -1 * other
+
+    def __rsub__(self, other):
+        """Subtract other PauliSentence, PauliWord, or scalar"""
+        return -1 * self + other
+
     def __copy__(self):
         """Copy the PauliSentence instance."""
         copied_ps = {}

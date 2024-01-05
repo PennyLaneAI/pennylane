@@ -563,6 +563,87 @@ class TestPauliSentence:
         assert copy_ps1[pw_id] == 1 + scalar
         assert copy_ps2 == ps4
 
+    psx = PauliSentence(
+        {pw1: 1.5, pw2: 4j, pw3: -0.5}
+    )  # problems with numerical accuracy for subtracting 1.23 - 1 = 0.2299999998
+    sub_ps_pw = (
+        (
+            psx,
+            pw1,
+            PauliSentence({pw1: 0.5, pw2: 4j, pw3: -0.5}),
+            PauliSentence({pw1: -0.5, pw2: -4j, pw3: +0.5}),
+        ),
+        (
+            psx,
+            pw2,
+            PauliSentence({pw1: 1.5, pw2: -1.0 + 4j, pw3: -0.5}),
+            PauliSentence({pw1: -1.5, pw2: 1.0 - 4j, pw3: +0.5}),
+        ),
+        (
+            psx,
+            pw4,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw4: -1.0}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: +0.5, pw4: 1.0}),
+        ),
+        (
+            ps3,
+            pw1,
+            PauliSentence({pw1: -1.0, pw3: -0.5, pw4: 1}),
+            PauliSentence({pw1: 1.0, pw3: 0.5, pw4: -1}),
+        ),
+    )
+
+    @pytest.mark.parametrize("ps, pw, true_res1, true_res2", sub_ps_pw)
+    def test_sub_PS_and_PW(self, ps, pw, true_res1, true_res2):
+        """Test subtracting PauliWord from PauliSentence"""
+        res1 = ps - pw
+        res2 = pw - ps
+        assert res1 == true_res1
+        assert res2 == true_res2
+
+    # psx does not contain identity, so simply add it to the definition with pw_id
+    # ps3 does contain ideneity, so copy ps3 and modify identity entry (here pw4)
+    sub_ps_scalar = (
+        (
+            psx,
+            1.0,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -1}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 1}),
+        ),
+        (
+            psx,
+            0.5,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -0.5}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 0.5}),
+        ),
+        (
+            psx,
+            0.5j,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -0.5j}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 0.5j}),
+        ),
+        (
+            psx,
+            0.5 + 0.5j,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -0.5 - 0.5j}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 0.5 + 0.5j}),
+        ),
+        (
+            ps3,
+            0.5 + 0.5j,
+            PauliSentence({pw3: -0.5, pw4: 0.5 - 0.5j}),
+            PauliSentence({pw3: 0.5, pw4: -0.5 + 0.5j}),
+        ),
+    )
+
+    @pytest.mark.parametrize("ps, scalar, true_res1, true_res2", sub_ps_pw)
+    def test_sub_PS_and_scalar(self, ps, scalar, true_res1, true_res2):
+        """Test subtracting scalar from PauliSentence"""
+        res1 = ps - scalar
+        res2 = scalar - ps
+        assert res1 == true_res1
+        assert res2 == true_res2
+
     ps_match = (
         (ps4, "Can't get the matrix of an empty PauliWord."),
         (ps5, "Can't get the matrix of an empty PauliSentence."),
