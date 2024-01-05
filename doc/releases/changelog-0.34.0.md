@@ -121,6 +121,7 @@
   The [qml.compiler](https://docs.pennylane.ai/en/latest/code/qml_compiler.html) 
   module provides support for hybrid quantum-classical compilation. 
   [(#4692)](https://github.com/PennyLaneAI/pennylane/pull/4692)
+  [(#4979)](https://github.com/PennyLaneAI/pennylane/pull/4979)
 
   Through the use of the `qml.qjit` decorator, entire workflows can be JIT
   compiled — including both quantum and classical processing — down to a machine binary on
