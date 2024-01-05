@@ -206,7 +206,7 @@ class TestStateVector:
             weight_shapes = {"weights": (1)}
             return qml.qnn.TorchLayer(qlayer, weight_shapes)
 
-        class SimpleQuantumModel(torch.nn.Module):
+        class SimpleQuantumModel(torch.nn.Module):  # pylint:disable=too-few-public-methods
             def __init__(self):
                 super().__init__()
                 self.quantum_layer = QuantumLayer()
