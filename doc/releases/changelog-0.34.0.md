@@ -121,6 +121,7 @@
   The [qml.compiler](https://docs.pennylane.ai/en/latest/code/qml_compiler.html) 
   module provides support for hybrid quantum-classical compilation. 
   [(#4692)](https://github.com/PennyLaneAI/pennylane/pull/4692)
+  [(#4979)](https://github.com/PennyLaneAI/pennylane/pull/4979)
 
   Through the use of the `qml.qjit` decorator, entire workflows can be JIT
   compiled — including both quantum and classical processing — down to a machine binary on
@@ -185,8 +186,8 @@
 
   ``` pycon
   >>> workflow(np.array([2.0, 1.0]))
-  array([[-1.32116540e-07,  1.33781874e-07],
-          [-4.20735506e-01,  4.20735506e-01]])
+  array([[ 3.48786850e-16, -4.20735492e-01],
+         [-8.71967125e-17,  4.20735492e-01]])
   ```
 
 * JIT-compatible functionality for control flow has been added via `qml.for_loop`,
@@ -441,6 +442,9 @@
 
 <h4>Other improvements</h4>
 
+* PennyLane now supports Python 3.12.
+  [(#4985)](https://github.com/PennyLaneAI/pennylane/pull/4985)
+
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
   [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
@@ -510,6 +514,10 @@
   [1106.5458](https://arxiv.org/abs/1106.5458) to project the approximate density matrix
   (with potentially negative eigenvalues) onto the closest valid density matrix.
   [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
+
+* The `ControlledSequence.compute_decomposition` default now decomposes the `Pow` operators, 
+  improving compatibility with machine learning interfaces. 
+  [(#4995)](https://github.com/PennyLaneAI/pennylane/pull/4995)
 
 <h3>Breaking changes 💔</h3>
 
@@ -708,8 +716,18 @@
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
 
 * `MPLDrawer` does not add the bonus space for classical wires when no classical wires are present.
-  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
+  [(#4987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
+
+* `Projector` now works with parameter-broadcasting.
+  [(#4993)](https://github.com/PennyLaneAI/pennylane/pull/4993)
   
+* The jax-jit interface can now be used with float32 mode.
+  [(#4990)](https://github.com/PennyLaneAI/pennylane/pull/4990)
+
+* Keras models with a `qnn.KerasLayer` no longer fail to save and load weights
+  properly when they are named "weights".
+  [(#5008)](https://github.com/PennyLaneAI/pennylane/pull/5008)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
