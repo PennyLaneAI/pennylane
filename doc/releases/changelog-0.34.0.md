@@ -724,6 +724,10 @@
 * The jax-jit interface can now be used with float32 mode.
   [(#4990)](https://github.com/PennyLaneAI/pennylane/pull/4990)
 
+* Keras models with a `qnn.KerasLayer` no longer fail to save and load weights
+  properly when they are named "weights".
+  [(#5008)](https://github.com/PennyLaneAI/pennylane/pull/5008)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
