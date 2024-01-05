@@ -494,6 +494,12 @@ class TestPauliSentence:
         with pytest.raises(TypeError, match="Cannot add"):
             _ = ps1 + "asd"
 
+        with pytest.raises(TypeError, match="Cannot add"):
+            ps1 += qml.PauliX(0)
+
+        with pytest.raises(TypeError, match="Cannot add"):
+            ps1 += "asd"
+
     add_ps_ps = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
         (ps1, ps2, PauliSentence({})),

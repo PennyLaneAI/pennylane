@@ -424,7 +424,7 @@ class PauliSentence(dict):
 
             return larger_ps
 
-        elif isinstance(other, PauliWord):
+        if isinstance(other, PauliWord):
             res = copy(self)
             if other in res:
                 res[other] += 1.0
@@ -432,7 +432,7 @@ class PauliSentence(dict):
                 res[other] = 1.0
             return res
 
-        elif isinstance(other, TensorLike):
+        if isinstance(other, TensorLike):
             res = copy(self)
             IdWord = PauliWord({})
             if IdWord in res:
@@ -469,6 +469,8 @@ class PauliSentence(dict):
             else:
                 self[IdWord] = other
             return self
+
+        raise TypeError(f"Cannot add {other} of type {type(other)} to PauliSentence")
 
     def __sub__(self, other):
         """Subtract other PauliSentence, PauliWord, or scalar"""
