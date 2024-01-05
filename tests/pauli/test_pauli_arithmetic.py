@@ -136,6 +136,12 @@ class TestPauliWord:
         assert str(pw) == str_rep
         assert repr(pw) == str_rep
 
+    def test_add_pw_pw(self):
+        """Test adding two pauli words"""
+        res1 = pw1 + pw2
+        true_res1 = PauliSentence({pw1: 1.0, pw2: 1.0})
+        assert res1 == true_res1
+
     tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
         (pw1, pw3, PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}), 1.0),
@@ -477,14 +483,25 @@ class TestPauliSentence:
         with pytest.raises(ValueError, match="Attempting to multiply"):
             _ = [0.5] * ps
 
-    tup_ps_add = (  # computed by hand
+    def test_add_raises_other_types(self):
+        """Test that adding types other than PauliWord, PauliSentence or a scalar raises an error"""
+        with pytest.raises(TypeError, match="Cannot add"):
+            _ = ps1 + qml.PauliX(0)
+
+        with pytest.raises(TypeError, match="Cannot add"):
+            _ = qml.PauliX(0) + ps1
+
+        with pytest.raises(TypeError, match="Cannot add"):
+            _ = ps1 + "asd"
+
+    add_ps_ps = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
         (ps1, ps2, PauliSentence({})),
         (ps1, ps3, PauliSentence({pw1: 1.23, pw2: 4j, pw3: -1, pw4: 1})),
         (ps2, ps5, ps2),
     )
 
-    @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
+    @pytest.mark.parametrize("string1, string2, result", add_ps_ps)
     def test_add_PS_and_PS(self, string1, string2, result):
         """Test adding two PauliSentences"""
         copy_ps1 = copy(string1)
@@ -498,17 +515,33 @@ class TestPauliSentence:
         assert string2 == copy_ps2
 
     add_ps_pw = list(enumerate(words))  # tuples of (i, pw_i)
+    add_ps_pw = (
+        (ps1, pw1, PauliSentence({pw1: 2.23, pw2: 4j, pw3: -0.5})),
+        (ps1, pw2, PauliSentence({pw1: 1.23, pw2: 1+4j, pw3: -0.5})),
+        (ps1, pw4, PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5, pw4: 1.})),
+    )
 
-    @pytest.mark.parametrize("i, pw", add_ps_pw)
-    def test_add_PS_and_PW(self, i, pw):
+    @pytest.mark.parametrize("ps, pw, true_res", add_ps_pw)
+    def test_add_PS_and_PW(self, ps, pw, true_res):
         """Test adding PauliSentence and PauliWord"""
-        ps = PauliSentence(dict(zip(words, list(range(len(words))))))
         res1 = ps + pw
         res2 = pw + ps
-        true_res = list(range(len(words)))
-        true_res[i] += 1
-        assert list(res1.values()) == true_res
-        assert list(res2.values()) == true_res
+        assert res1 == true_res
+        assert res2 == true_res
+
+    def test_add_PS_and_PW_non_existent(self):
+        """Test adding PW to PS that is not already present"""
+        res11 = ps1 + pw4
+        res12 = pw4 + ps1
+        true_res1 = PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5, pw4: 1.0})
+        assert res11 == true_res1
+        assert res12 == true_res1
+
+        res21 = ps4 + pw1
+        res22 = pw1 + ps4
+        true_res2 = PauliSentence({pw4: 1, pw1: 1.0})
+        assert res21 == true_res2
+        assert res22 == true_res2
 
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
     def test_add_PS_and_scalar(self, scalar):
@@ -531,9 +564,9 @@ class TestPauliSentence:
         (ps5, "Can't get the matrix of an empty PauliSentence."),
     )
 
-    @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
-    def test_iadd(self, string1, string2, result):
-        """Test that the correct result of inplace addition is produced and other object is not changed."""
+    @pytest.mark.parametrize("string1, string2, result", add_ps_ps)
+    def test_iadd_ps_ps(self, string1, string2, result):
+        """Test that the correct result of inplace addition with PauliSentence is produced and other object is not changed."""
         copied_string1 = copy(string1)
         copied_string2 = copy(string2)
         copied_string1 += copied_string2
@@ -541,6 +574,15 @@ class TestPauliSentence:
 
         assert copied_string1 == result  # Check if the modified object matches the expected result
         assert copied_string2 == string2  # Ensure the original object is not modified
+    
+    @pytest.mark.parametrize("ps, pw, res", add_ps_pw)
+    def test_iadd_ps_pw(self, ps, pw, res):
+        """Test that the correct result of inplace addition with PauliWord is produced and other object is not changed."""
+        copy_ps1 = copy(ps)
+        copy_ps2 = copy(ps)
+        copy_ps1 += pw
+        assert copy_ps1 == res # Check if the modified object matches the expected result
+        assert copy_ps2 == ps # Ensure the original object is not modified
 
     @pytest.mark.parametrize("ps, match", ps_match)
     def test_to_mat_error_empty(self, ps, match):

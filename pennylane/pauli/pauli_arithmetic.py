@@ -231,24 +231,16 @@ class PauliWord(dict):
 
     __rmul__ = __mul__
 
-    # def __add__(self, other):
-    #     """Add PauliWords/Sentences"""
-    #     if isinstance(other, PauliSentence):
-    #         res = copy(other)
-    #         return res + PauliSentence({self:1.})
+    def __add__(self, other):
+        """Add PauliWords/Sentences"""
+        if isinstance(other, PauliWord):
+            return PauliSentence({self: 1.0, other: 1.0})
+        return NotImplemented
+        # raise TypeError(
+        #     f"PauliWord can only be added to other PauliWords or PauliSentences. Attempting to add {other} of type {type(other)} to {self}"
+        # )
 
-    #     elif isinstance(other, TensorLike):
-    #         IdWord = PauliWord({0:I})
-    #         res = PauliSentence({self:1., IdWord: other})
-    #         return res
-
-    #     elif isinstance(other, PauliWord):
-    #         return PauliSentence({self: 1., other: 1.})
-    #     raise TypeError(
-    #         f"PauliWord can only be added to other PauliWords or PauliSentences. Attempting to add by {other} of type {type(other)}"
-    #     )
-
-    # __radd__ = __add__
+    __radd__ = __add__
 
     def __truediv__(self, other):
         """Divide a PauliWord by a scalar"""
@@ -455,12 +447,20 @@ class PauliSentence(dict):
 
     def __iadd__(self, other):
         """Inplace addition of two Pauli sentence together by adding terms of other to self"""
-        for key in other:
-            if key in self:
-                self[key] += other[key]
+        if isinstance(other, PauliSentence):
+            for key in other:
+                if key in self:
+                    self[key] += other[key]
+                else:
+                    self[key] = other[key]
+            return self
+        
+        if isinstance(other, PauliWord):
+            if other in self:
+                self[other] += 1.
             else:
-                self[key] = other[key]
-        return self
+                self[other] = 1.
+            return self
 
     def __copy__(self):
         """Copy the PauliSentence instance."""
