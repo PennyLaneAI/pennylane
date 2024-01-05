@@ -128,6 +128,11 @@ class PauliWord(dict):
     associating wires with their respective operators.
     Can be constructed from a standard dictionary.
 
+    .. note::
+
+        An empty :class:`~.PauliWord` will be treated as the multiplicative
+        identity (i.e identity on all wires).
+
     >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
     >>> w
     X(a) @ Y(2) @ Z(3)
@@ -175,6 +180,8 @@ class PauliWord(dict):
     def __mul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
         and the tensor product otherwise.
+
+        Empty Pauli words are treated as the Identity operator on all wires.
 
         Args:
             other (PauliWord): The Pauli word to multiply with
@@ -348,6 +355,11 @@ class PauliSentence(dict):
     """Dictionary representing a linear combination of Pauli words, with the keys
     as PauliWord instances and the values correspond to coefficients.
 
+    .. note::
+
+        An empty :class:`~.PauliSentence` will be treated as the additive
+        identity (i.e 0 * Identity on all wires).
+
     >>> ps = qml.pauli.PauliSentence({
             qml.pauli.PauliWord({0:'X', 1:'Y'}): 1.23,
             qml.pauli.PauliWord({2:'Z', 0:'Y'}): -0.45j
@@ -364,7 +376,11 @@ class PauliSentence(dict):
 
     def __add__(self, other):
         """Add two Pauli sentence together by iterating over the smaller
-        one and adding its terms to the larger one."""
+        one and adding its terms to the larger one.
+
+        Empty Pauli sentences are treated as the additive identity
+        (i.e 0 * Identity on all wires). The non-empty Pauli sentence is returned.
+        """
         smaller_ps, larger_ps = (
             (self, copy(other)) if len(self) < len(other) else (other, copy(self))
         )
@@ -396,7 +412,11 @@ class PauliSentence(dict):
 
     def __mul__(self, other):
         """Multiply two Pauli sentences by iterating over each sentence and multiplying
-        the Pauli words pair-wise"""
+        the Pauli words pair-wise.
+
+        Empty Pauli sentences are treated as 0. The product returns another
+        empty Pauli sentence (i.e 0).
+        """
         final_ps = PauliSentence()
 
         if len(self) == 0 or len(other) == 0:

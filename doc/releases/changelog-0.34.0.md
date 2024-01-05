@@ -442,6 +442,9 @@
 
 <h4>Other improvements</h4>
 
+* PennyLane now supports Python 3.12.
+  [(#4985)](https://github.com/PennyLaneAI/pennylane/pull/4985)
+
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
   [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
@@ -709,7 +712,10 @@
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
 
 * `MPLDrawer` does not add the bonus space for classical wires when no classical wires are present.
-  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
+  [(#4987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
+
+* `Projector` now works with parameter-broadcasting.
+  [(#4993)](https://github.com/PennyLaneAI/pennylane/pull/4993)
   
 * The jax-jit interface can now be used with float32 mode.
   [(#4990)](https://github.com/PennyLaneAI/pennylane/pull/4990)
