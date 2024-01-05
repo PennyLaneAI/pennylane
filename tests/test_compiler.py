@@ -15,6 +15,7 @@
 Unit tests for the compiler subpackage.
 """
 # pylint: disable=import-outside-toplevel
+from unittest.mock import patch
 import pytest
 import pennylane as qml
 from pennylane.compiler.compiler import CompileError
@@ -32,6 +33,41 @@ from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-imp
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
+@pytest.fixture
+def catalyst_incompatible_version():
+    """An incompatible (low) version for Catalyst"""
+    with patch("importlib.metadata.version") as mock_version:
+        mock_version.return_value = "0.0.1"
+        yield
+
+
+# TODO: Remove this fixture after the Catalyst v0.4.0 release
+@pytest.fixture
+def catalyst_compatible_version():
+    """A compatible (high) version for Catalyst"""
+    with patch("importlib.metadata.version") as mock_version:
+        mock_version.return_value = "0.4.0"
+        yield
+
+
+@pytest.mark.usefixtures("catalyst_incompatible_version")
+def test_catalyst_incompatible():
+    """Test qjit with an incompatible Catalyst version < 0.4.0"""
+
+    dev = qml.device("lightning.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.PauliX(0)
+        return qml.state()
+
+    with pytest.raises(
+        CompileError, match="PennyLane-Catalyst 0.4.0 or greater is required, but installed 0.0.1"
+    ):
+        qml.qjit(circuit)()
+
+
+@pytest.mark.usefixtures("catalyst_compatible_version")
 class TestCatalyst:
     """Test ``qml.qjit`` with Catalyst"""
 
@@ -270,6 +306,7 @@ class TestCatalyst:
         assert jnp.allclose(workflow(jnp.pi / 4, 1, 0), jnp.array([0.25, 0.25, 0.125, 0.375]))
 
 
+@pytest.mark.usefixtures("catalyst_compatible_version")
 class TestCatalystControlFlow:
     """Test ``qml.qjit`` with Catalyst's control-flow operations"""
 
@@ -473,6 +510,7 @@ class TestCatalystControlFlow:
             circuit(1.5)
 
 
+@pytest.mark.usefixtures("catalyst_compatible_version")
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 
