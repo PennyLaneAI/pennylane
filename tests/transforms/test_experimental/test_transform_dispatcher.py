@@ -100,6 +100,7 @@ def first_valid_transform(
     """A valid transform."""
     tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
+    _ = (qml.PauliX(0), qml.S(0))
     return [tape], lambda x: x
 
 
