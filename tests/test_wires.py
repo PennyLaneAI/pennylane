@@ -16,9 +16,9 @@ Unit tests for :mod:`pennylane.wires`.
 """
 import pytest
 import numpy as np
+from jax.tree_util import tree_flatten, tree_unflatten
 import pennylane as qml
 from pennylane.wires import Wires, WireError
-from jax.tree_util import tree_flatten, tree_unflatten
 
 
 # pylint: disable=too-many-public-methods
@@ -375,4 +375,3 @@ class TestWires:
         wires2 = tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
-

@@ -15,11 +15,10 @@
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
 import functools
-from collections.abc import Iterable, Sequence
-from pennylane.pytrees import register_pytree
 import itertools
-
+from collections.abc import Iterable, Sequence
 import numpy as np
+from pennylane.pytrees import register_pytree
 
 
 class WireError(Exception):
@@ -105,7 +104,7 @@ class Wires(Sequence):
         return self._labels, ()
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(cls, data, _metadata):
         """ De-serialize flattened representation back into the Wires object. """
         return cls(data, _override=True)
 
@@ -493,4 +492,4 @@ class Wires(Sequence):
         return Wires(tuple(unique), _override=True)
 
 # Register Wires as a PyTree-serializable class
-register_pytree(Wires, Wires._flatten, Wires._unflatten)
+register_pytree(Wires, Wires._flatten, Wires._unflatten) # pylint: disable=protected-access
