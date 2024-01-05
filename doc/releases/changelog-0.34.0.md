@@ -522,11 +522,6 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, and
-  `qml.transforms.sk_decomposition` were moved to `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, and
-  `qml.ops.sk_decomposition`, respectively.
-  [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
-
 * The function `qml.transforms.classical_jacobian` has been moved to the gradients module
   and is now accessible as `qml.gradients.classical_jacobian`.
   [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
