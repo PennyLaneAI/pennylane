@@ -61,7 +61,7 @@ models:
 
     import jaxopt
 
-    @jax.jit
+    @qml.qjit
     def optimization():
         # initial parameter
         params = jnp.array([0.54, 0.3154])
