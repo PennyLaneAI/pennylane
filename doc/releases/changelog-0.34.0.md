@@ -368,8 +368,6 @@
 * The function ``qml.draw_mpl`` now accept a keyword argument ``fig`` to specify the output figure window.
   [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
 
-<h4>Better support for batching</h4>
-
 * `qml.AmplitudeEmbedding` now supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
@@ -443,6 +441,9 @@
   [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
 
 <h4>Other improvements</h4>
+
+* PennyLane now supports Python 3.12.
+  [(#4985)](https://github.com/PennyLaneAI/pennylane/pull/4985)
 
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
@@ -606,6 +607,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `TransformDispatcher` now stops queuing when performing the transform when applying it to a qfunc.
+  Only the output of the transform will be queued.
+  [(#4983)](https://github.com/PennyLaneAI/pennylane/pull/4983)
+
 * `qml.map_wires` now works properly with `qml.cond` and `qml.measure`.
   [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
 
@@ -668,6 +673,9 @@
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
 
+* `qml.compile` will now always decompose to `expand_depth`, even if a target basis set is not specified.
+  [(#4800)](https://github.com/PennyLaneAI/pennylane/pull/4800)
+
 * `qml.transforms.transpile` can now handle measurements that are broadcasted onto all wires.
   [(#4793)](https://github.com/PennyLaneAI/pennylane/pull/4793)
 
@@ -704,8 +712,14 @@
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
 
 * `MPLDrawer` does not add the bonus space for classical wires when no classical wires are present.
-  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
+  [(#4987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
+
+* `Projector` now works with parameter-broadcasting.
+  [(#4993)](https://github.com/PennyLaneAI/pennylane/pull/4993)
   
+* The jax-jit interface can now be used with float32 mode.
+  [(#4990)](https://github.com/PennyLaneAI/pennylane/pull/4990)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
