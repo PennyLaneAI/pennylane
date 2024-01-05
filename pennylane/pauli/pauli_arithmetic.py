@@ -462,6 +462,14 @@ class PauliSentence(dict):
                 self[other] = 1.0
             return self
 
+        if isinstance(other, TensorLike):
+            IdWord = PauliWord({})
+            if IdWord in self:
+                self[IdWord] += other
+            else:
+                self[IdWord] = other
+            return self
+
     def __copy__(self):
         """Copy the PauliSentence instance."""
         copied_ps = {}

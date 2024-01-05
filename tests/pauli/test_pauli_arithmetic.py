@@ -514,11 +514,11 @@ class TestPauliSentence:
         assert string1 == copy_ps1
         assert string2 == copy_ps2
 
-    add_ps_pw = list(enumerate(words))  # tuples of (i, pw_i)
     add_ps_pw = (
         (ps1, pw1, PauliSentence({pw1: 2.23, pw2: 4j, pw3: -0.5})),
         (ps1, pw2, PauliSentence({pw1: 1.23, pw2: 1 + 4j, pw3: -0.5})),
         (ps1, pw4, PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5, pw4: 1.0})),
+        (ps3, pw1, PauliSentence({pw1: 1.0, pw3: -0.5, pw4: 1})),
     )
 
     @pytest.mark.parametrize("ps, pw, true_res", add_ps_pw)
@@ -529,20 +529,6 @@ class TestPauliSentence:
         assert res1 == true_res
         assert res2 == true_res
 
-    def test_add_PS_and_PW_non_existent(self):
-        """Test adding PW to PS that is not already present"""
-        res11 = ps1 + pw4
-        res12 = pw4 + ps1
-        true_res1 = PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5, pw4: 1.0})
-        assert res11 == true_res1
-        assert res12 == true_res1
-
-        res21 = ps4 + pw1
-        res22 = pw1 + ps4
-        true_res2 = PauliSentence({pw4: 1, pw1: 1.0})
-        assert res21 == true_res2
-        assert res22 == true_res2
-
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
     def test_add_PS_and_scalar(self, scalar):
         """Test adding PauliSentence and scalar"""
@@ -552,12 +538,30 @@ class TestPauliSentence:
         assert res2[pw_id] == scalar
 
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_iadd_PS_and_scalar(self, scalar):
+        """Test inplace adding PauliSentence and scalar"""
+        copy_ps1 = copy(ps1)
+        copy_ps2 = copy(ps1)
+        copy_ps1 += scalar
+        assert copy_ps1[pw_id] == scalar
+        assert copy_ps2 == ps1
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
     def test_add_PS_and_scalar_with_1_present(self, scalar):
         """Test adding scalar to a PauliSentence that already contains identity"""
         res1 = ps4 + scalar
         res2 = scalar + ps4
         assert res1[pw_id] == 1 + scalar
         assert res2[pw_id] == 1 + scalar
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_iadd_PS_and_scalar_1_present(self, scalar):
+        """Test inplace adding scalar to PauliSentence that already contains identity"""
+        copy_ps1 = copy(ps4)
+        copy_ps2 = copy(ps4)
+        copy_ps1 += scalar
+        assert copy_ps1[pw_id] == 1 + scalar
+        assert copy_ps2 == ps4
 
     ps_match = (
         (ps4, "Can't get the matrix of an empty PauliWord."),
