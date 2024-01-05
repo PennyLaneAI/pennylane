@@ -167,8 +167,10 @@ class ControlledSequence(SymbolicOp, Operation):
         the `compute_decompostion` method can be used with `lazy=True`.
 
         .. code-block:: python
+
             dev = qml.device("default.qubit")
             op = qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+
             @qml.qnode(dev)
             def circuit():
                 op.compute_decomposition(base=op.base, control_wires=op.control, lazy=True)
