@@ -720,6 +720,7 @@
   [(#4990)](https://github.com/PennyLaneAI/pennylane/pull/4990)
 
 * `StatePrep` no longer raises unexpected errors during forward calls with `torch.nn`.
+  [(#4996)](https://github.com/PennyLaneAI/pennylane/pull/4996)
 
 <h3>Contributors ✍️</h3>
 
