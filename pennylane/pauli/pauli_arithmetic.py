@@ -231,6 +231,25 @@ class PauliWord(dict):
 
     __rmul__ = __mul__
 
+    # def __add__(self, other):
+    #     """Add PauliWords/Sentences"""
+    #     if isinstance(other, PauliSentence):
+    #         res = copy(other)
+    #         return res + PauliSentence({self:1.})
+        
+    #     elif isinstance(other, TensorLike):
+    #         IdWord = PauliWord({0:I})
+    #         res = PauliSentence({self:1., IdWord: other})
+    #         return res
+        
+    #     elif isinstance(other, PauliWord):
+    #         return PauliSentence({self: 1., other: 1.})
+    #     raise TypeError(
+    #         f"PauliWord can only be added to other PauliWords or PauliSentences. Attempting to add by {other} of type {type(other)}"
+    #     )
+    
+    # __radd__ = __add__
+
     def __truediv__(self, other):
         """Divide a PauliWord by a scalar"""
         if isinstance(other, TensorLike):
@@ -404,13 +423,33 @@ class PauliSentence(dict):
     def __add__(self, other):
         """Add two Pauli sentence together by iterating over the smaller
         one and adding its terms to the larger one."""
-        smaller_ps, larger_ps = (
-            (self, copy(other)) if len(self) < len(other) else (other, copy(self))
-        )
-        for key in smaller_ps:
-            larger_ps[key] += smaller_ps[key]
+        if isinstance(other, PauliSentence):
+            smaller_ps, larger_ps = (
+                (self, copy(other)) if len(self) < len(other) else (other, copy(self))
+            )
+            for key in smaller_ps:
+                larger_ps[key] += smaller_ps[key]
 
-        return larger_ps
+            return larger_ps
+        
+        elif isinstance(other, PauliWord):
+            res = copy(self)
+            if len(other)==0:
+                # Note that empty PauliWord is treated as Identity
+                return res
+            return res + PauliSentence({other:1.})
+        
+        elif isinstance(other, TensorLike):
+            res = copy(self)
+            IdWord = PauliWord({0:I})
+            res[IdWord] = 1.
+            return res
+
+        raise TypeError(
+            f"Cannot add {other} of type {type(other)} to PauliSentence"
+        )
+    
+    __radd__ = __add__
 
     def __iadd__(self, other):
         """Inplace addition of two Pauli sentence together by adding terms of other to self"""

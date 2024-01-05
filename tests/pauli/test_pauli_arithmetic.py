@@ -484,8 +484,8 @@ class TestPauliSentence:
     )
 
     @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
-    def test_add(self, string1, string2, result):
-        """Test that the correct result of addition is produced."""
+    def test_add_PS_and_PS(self, string1, string2, result):
+        """Test adding two PauliSentences"""
         copy_ps1 = copy(string1)
         copy_ps2 = copy(string2)
 
@@ -495,6 +495,17 @@ class TestPauliSentence:
         assert simplified_product == result
         assert string1 == copy_ps1
         assert string2 == copy_ps2
+    
+    def test_add_PS_and_PW(self):
+        """Test adding PauliSentence and PauliWord"""
+        ps = PauliSentence(dict(zip(words, list(range(len(words))))))
+        for i, pw in enumerate(words):
+            res1 = ps + pw
+            res2 = pw + ps
+            true_res = list(range(len(words)))
+            true_res[i] += 1
+            assert list(res1.values()) == true_res
+            assert list(res2.values()) == true_res
 
     ps_match = (
         (ps4, "Can't get the matrix of an empty PauliWord."),
