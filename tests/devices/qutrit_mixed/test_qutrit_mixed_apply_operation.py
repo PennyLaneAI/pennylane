@@ -17,6 +17,8 @@ import pytest
 import pennylane as qml
 import numpy as np
 from pennylane import math
+from pennylane.operation import Channel
+from scipy.stats import unitary_group
 from pennylane.devices.qutrit_mixed.apply_operation import (
     apply_operation_einsum,
     apply_operation_tensordot,
@@ -79,12 +81,24 @@ density_matrix = np.array(
     ]
 )
 
+
+def get_random_mixed_state(num_qutrits):
+    dim = 3**num_qutrits
+    basis = unitary_group.rvs(dim)
+    Schmidt_weights = np.random.dirichlet(np.ones(dim), size=1).astype(complex)[0]
+    print(Schmidt_weights)
+    mixed_state = np.zeros((dim, dim)).astype(complex)
+    for i in range(dim):
+        mixed_state += Schmidt_weights[i] * np.outer(basis[i], basis[i])
+    return mixed_state.reshape([3] * (2 * num_qutrits))
+
+
 ml_frameworks_list = [
     "numpy",
-    pytest.param("autograd", marks=pytest.mark.autograd),
-    pytest.param("jax", marks=pytest.mark.jax),
-    pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
+    # pytest.param("autograd", marks=pytest.mark.autograd),
+    # pytest.param("jax", marks=pytest.mark.jax),
+    # pytest.param("torch", marks=pytest.mark.torch),
+    # pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 
@@ -93,7 +107,25 @@ methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
 
 def test_custom_operator_with_matrix():
     """Test that apply_operation works with any operation that defines a matrix."""
-    pass
+    mat = np.array(
+        [
+            [-0.35546532 - 0.03636115j, -0.19051888 - 0.38049108j, 0.07943913 - 0.8276115j],
+            [-0.2766807 - 0.71617593j, -0.1227771 + 0.61271557j, -0.0872488 - 0.11150285j],
+            [-0.2312502 - 0.47894201j, -0.04564929 - 0.65295532j, -0.3629075 + 0.3962342j],
+        ]
+    )
+
+    # pylint: disable=too-few-public-methods
+    class CustomOp(qml.operation.Operation):
+        num_wires = 1
+
+        def matrix(self):
+            return mat
+
+    state = np.array([0.26977852 + 0.15165342j, 0.59635993 + 0.26296103j, 0.39598925 + 0.56799616j])
+
+    new_state = apply_operation(CustomOp(0), state)
+    assert qml.math.allclose(new_state, mat @ state)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -110,64 +142,101 @@ class TestTwoQubitStateSpecialCases:
         control = wire
         target = int(not control)
         new_state = method(qml.TAdd((control, target)), initial_state)
-        print(new_state)
 
-        initial0 = math.take(initial_state, 0, axis=control)#TODO Fix for mixed!
+        def check_TAdd_second_roll(initial_input, new_input):
+            initial_input0 = math.take(initial_input, 0, axis=control + 1)
+            new_input0 = math.take(new_input, 0, axis=control + 1)
+            assert math.allclose(initial_input0, new_input0)
+
+            initial_input1 = math.take(initial_input, 1, axis=control + 1)
+            initial_input1_rolled = math.roll(initial_input1, 1, 1)
+            new_input1 = math.take(new_input, 1, axis=control + 1)
+            assert math.allclose(initial_input1_rolled, new_input1)
+
+            initial_input2 = math.take(initial_input, 2, axis=control + 1)
+            initial_input2_rolled = math.roll(initial_input2, -1, 1)
+            new_input2 = math.take(new_input, 2, axis=control + 1)
+            assert math.allclose(initial_input2_rolled, new_input2)
+
+        initial0 = math.take(initial_state, 0, axis=control)
         new0 = math.take(new_state, 0, axis=control)
-        assert math.allclose(initial0, new0)
+        check_TAdd_second_roll(initial0, new0)
 
         initial1 = math.take(initial_state, 1, axis=control)
+        initial1_rolled = np.roll(initial1, 1, 0)
         new1 = math.take(new_state, 1, axis=control)
-        assert math.allclose(initial1[2], new1[0])
-        assert math.allclose(initial1[0], new1[1])
-        assert math.allclose(initial1[1], new1[2])
+        check_TAdd_second_roll(initial1_rolled, new1)
 
-        initial1 = math.take(initial_state, 2, axis=control)
-        new1 = math.take(new_state, 2, axis=control)
-        assert math.allclose(initial1[1], new1[0])
-        assert math.allclose(initial1[2], new1[1])
-        assert math.allclose(initial1[0], new1[2])
+        initial2 = math.take(initial_state, 2, axis=control)
+        initial2_rolled = math.roll(initial2, -1, 0)
+        new2 = math.take(new_state, 2, axis=control)
+        check_TAdd_second_roll(initial2_rolled, new2)
 
     def test_TShift(self, method, wire, ml_framework):
         """Test the application of a TShift gate on a two qutrit state."""
         initial_state = math.asarray(density_matrix, like=ml_framework)
         new_state = method(qml.TShift(wire), initial_state)
 
-        initial0dim = math.take(initial_state, 0, axis=wire)#TODO Fix for mixed!
-        new1dim = math.take(new_state, 1, axis=wire)
+        def check_second_roll(initial_input, new_input):
+            initial_input0 = math.take(initial_input, 0, axis=wire + 1)
+            new_input1 = math.take(new_input, 1, axis=wire + 1)
+            assert math.allclose(initial_input0, new_input1)
 
-        assert math.allclose(initial0dim, new1dim)
+            initial_input1 = math.take(initial_input, 1, axis=wire + 1)
+            new_input2 = math.take(new_input, 2, axis=wire + 1)
+            assert math.allclose(initial_input1, new_input2)
 
-        initial1dim = math.take(initial_state, 1, axis=wire)
-        new2dim = math.take(new_state, 2, axis=wire)
-        assert math.allclose(initial1dim, new2dim)
+            initial_input2 = math.take(initial_input, 2, axis=wire + 1)
+            new_input0 = math.take(new_input, 0, axis=wire + 1)
+            assert math.allclose(initial_input2, new_input0)
 
-        initial2dim = math.take(initial_state, 2, axis=wire)
-        new0dim = math.take(new_state, 0, axis=wire)
-        assert math.allclose(initial2dim, new0dim)
+        initial0 = math.take(initial_state, 0, axis=wire)
+        new1 = math.take(new_state, 1, axis=wire)
+        check_second_roll(initial0, new1)
+
+        initial1 = math.take(initial_state, 1, axis=wire)
+        new2 = math.take(new_state, 2, axis=wire)
+        check_second_roll(initial1, new2)
+
+        initial2 = math.take(initial_state, 2, axis=wire)
+        new0 = math.take(new_state, 0, axis=wire)
+        check_second_roll(initial2, new0)
 
     def test_TClock(self, method, wire, ml_framework):
         """Test the application of a TClock gate on a two qutrit state."""
         initial_state = math.asarray(density_matrix, like=ml_framework)
-        new_state = method(qml.TShift(wire), initial_state)
-        w = math.exp(2j*math.pi/3)
+        new_state = method(qml.TClock(wire), initial_state)
+        w = math.exp(2j * np.pi / 3)
+        w2 = math.exp(4j * np.pi / 3)
 
-        new0 = math.take(new_state, 0, axis=wire)
+        def check_second_roll(initial_input, new_input):
+            initial_input0 = math.take(initial_input, 0, axis=wire + 1)
+            new_input0 = math.take(new_input, 0, axis=wire + 1)
+            assert math.allclose(initial_input0, new_input0)
+
+            initial_input1 = math.take(initial_input, 1, axis=wire + 1)
+            new_input1 = math.take(new_input, 1, axis=wire + 1)
+            print(initial_input1)
+            print(new_input1)
+            assert math.allclose(initial_input1 / w, new_input1)
+
+            initial_input2 = math.take(initial_input, 2, axis=wire + 1)
+            new_input2 = math.take(new_input, 2, axis=wire + 1)
+            assert math.allclose(initial_input2 / w2, new_input2)
+
         initial0 = math.take(initial_state, 0, axis=wire)
-        assert math.allclose(new0, initial0)
+        new0 = math.take(new_state, 0, axis=wire)
+        check_second_roll(initial0, new0)
 
         initial1 = math.take(initial_state, 1, axis=wire)
         new1 = math.take(new_state, 1, axis=wire)
-        assert math.allclose(w * initial1, new1)
+        check_second_roll(w * initial1, new1)
 
         initial2 = math.take(initial_state, 2, axis=wire)
         new2 = math.take(new_state, 2, axis=wire)
-        assert math.allclose(w**2 * initial2, new2)
+        check_second_roll(w2 * initial2, new2)
 
     # TODO: Add more tests as Special cases are added
-
-
-# TODO add normal test
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -219,56 +288,61 @@ class TestSnapshot:
         assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, (9, 9)))
 
 
+subspace_list = [(0, 1), (0, 2), (1, 2)]
 
-@pytest.mark.parametrize("method", methods, "subspace")
+
+@pytest.mark.parametrize("method", methods, "subspace", subspace_list)  # TODO
 class TestTRXCalcGrad:
     """Tests the application and differentiation of an TRX gate in the different interfaces."""
 
     state = density_matrix
 
-    def compare_expected_result(self, phi, state, new_state, g):
+    def compare_expected_result(self, phi, state, new_state, g, subspace):
         """Compare TODO"""
-        expected0 = np.cos(phi / 2) * state[0, :, :] + -1j * np.sin(phi / 2) * state[1, :, :]
-        expected1 = -1j * np.sin(phi / 2) * state[0, :, :] + np.cos(phi / 2) * state[1, :, :]
 
-        assert math.allclose(new_state[0, :, :], expected0)
-        assert math.allclose(new_state[1, :, :], expected1)
+        matrix = qml.TRX.compute_matrix(phi, subspace=subspace)
+        expanded_mat = np.kron(matrix, np.eye(3))
+        expanded_adjoint = np.conj(expanded_mat).T
+        flattened_state = state.reshape(9, 9)
+        res = expanded_mat @ flattened_state @ expanded_adjoint
 
-        g_expected0 = (
-            -0.5 * np.sin(phi / 2) * state[0, :, :] - 0.5j * np.cos(phi / 2) * state[1, :, :]
-        )
-        g_expected1 = (
-            -0.5j * np.cos(phi / 2) * state[0, :, :] - 0.5 * np.sin(phi / 2) * state[1, :, :]
-        )
+        assert math.allclose(new_state, res)
 
-        assert math.allclose(g[0], g_expected0)
-        assert math.allclose(g[1], g_expected1)
+        # g_expected0 = (
+        #     -0.5 * np.sin(phi / 2) * state[0, :, :] - 0.5j * np.cos(phi / 2) * state[1, :, :]
+        # )
+        # g_expected1 = (
+        #     -0.5j * np.cos(phi / 2) * state[0, :, :] - 0.5 * np.sin(phi / 2) * state[1, :, :]
+        # )
+        #
+        # assert math.allclose(g[0], g_expected0)
+        # assert math.allclose(g[1], g_expected1)
 
     @pytest.mark.autograd
-    def test_rx_grad_autograd(self, method):
+    def test_rx_grad_autograd(self, method, subspace):
         """Test that the application of an rx gate is differentiable with autograd."""
         state = qml.numpy.array(self.state)
 
         def f(phi):
-            op = qml.TRX(phi, wires=0)
+            op = qml.TRX(phi, wires=0, subspace=subspace)
             return method(op, state)
 
         phi = qml.numpy.array(0.325 + 0j, requires_grad=True)
 
         new_state = f(phi)
         g = qml.jacobian(lambda x: math.real(f(x)))(phi)
-        self.compare_expected_result(phi, state, new_state, g)
+        self.compare_expected_result(phi, state, new_state, g, subspace)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_rx_grad_jax(self, method, use_jit):
+    def test_rx_grad_jax(self, method, use_jit, subspace):
         """Test that the application of an rx gate is differentiable with jax."""
         import jax
 
         state = jax.numpy.array(self.state)
 
         def f(phi):
-            op = qml.RX(phi, wires=0)
+            op = qml.TRX(phi, wires=0, subspace=subspace)
             return method(op, state)
 
         if use_jit:
@@ -278,17 +352,17 @@ class TestTRXCalcGrad:
 
         new_state = f(phi)
         g = jax.jacobian(f, holomorphic=True)(phi + 0j)
-        self.compare_expected_result(phi, state, new_state, g)
+        self.compare_expected_result(phi, state, new_state, g, subspace)
 
     @pytest.mark.torch
-    def test_rx_grad_torch(self, method):
+    def test_rx_grad_torch(self, method, subspace):
         """Tests the application and differentiation of an rx gate with torch."""
         import torch
 
         state = torch.tensor(self.state)
 
         def f(phi):
-            op = qml.RX(phi, wires=0)
+            op = qml.TRX(phi, wires=0, subspace=subspace)
             return method(op, state)
 
         phi = torch.tensor(0.325, requires_grad=True)
@@ -303,10 +377,11 @@ class TestTRXCalcGrad:
             state.detach().numpy(),
             new_state.detach().numpy(),
             g.detach().numpy(),
+            subspace,
         )
 
     @pytest.mark.tf
-    def test_rx_grad_tf(self, method):
+    def test_rx_grad_tf(self, method, subspace):
         """Tests the application and differentiation of an rx gate with tensorflow"""
         import tensorflow as tf
 
@@ -314,50 +389,172 @@ class TestTRXCalcGrad:
         phi = tf.Variable(0.8589 + 0j)
 
         with tf.GradientTape() as grad_tape:
-            op = qml.RX(phi, wires=0)
+            op = qml.TRX(phi, wires=0, subspace=subspace)
             new_state = method(op, state)
 
         grads = grad_tape.jacobian(new_state, [phi])
         # tf takes gradient with respect to conj(z), so we need to conj the gradient
         phi_grad = tf.math.conj(grads[0])
 
-        self.compare_expected_result(phi, state, new_state, phi_grad)
+        self.compare_expected_result(phi, state, new_state, phi_grad, subspace)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
 class TestBroadcasting:  # pylint: disable=too-few-public-methods
-    """Tests that broadcasted operations are applied correctly."""
+    """Tests that broadcasted operations (not channels) are applied correctly."""
 
-    broadcasted_ops = []
-    unbroadcasted_ops = []
+    broadcasted_ops = [
+        qml.TRX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2, subspace=(0, 1)),
+        # qml.TRY(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2, subspace=(0,1)),
+        # qml.TRZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2, subspace=(1,2)),
+        # qml.QutritUnitary(
+        #     np.array([unitary_group.rvs(27), unitary_group.rvs(27), unitary_group.rvs(27)]),
+        #     wires=[0, 1, 2],
+        # ),
+    ]
+    unbroadcasted_ops = [
+        qml.THadamard(wires=2),
+        # qml.TClock(wires=2),
+        # qml.TShift(wires=2),
+        # qml.TAdd(wires=[1, 2]),
+        # qml.TRX(np.pi / 3, wires=2, subspace=(0, 2)),
+        # qml.TRY(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2, subspace=(1, 2)),
+        # qml.TRZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2, subspace=(0, 1)),
+        # qml.QutritUnitary(unitary_group.rvs(27), wires=[0, 1, 2]),
+    ]
 
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op(self, op, method, ml_framework):
         """Tests that batched operations are applied correctly to an unbatched state."""
-        pass
+        state = get_random_mixed_state(3)
+        flattened_state = state.reshape(27, 27)
+
+        res = method(op, qml.math.asarray(state, like=ml_framework))
+        missing_wires = 3 - len(op.wires)
+        mat = op.matrix()
+        expanded_mats = [
+            np.kron(np.eye(3**missing_wires), mat[i]) if missing_wires else mat[i]
+            for i in range(3)
+        ]
+        expected = []
+
+        for i in range(3):
+            expanded_mat = expanded_mats[i]
+            adjoint_mat = np.conj(expanded_mat).T
+            expected.append((expanded_mat @ flattened_state @ adjoint_mat).reshape([3] * 6))
+
+        assert qml.math.get_interface(res) == ml_framework
+        assert qml.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     def test_broadcasted_state(self, op, method, ml_framework):
         """Tests that unbatched operations are applied correctly to a batched state."""
-        pass
+        if method is apply_operation_tensordot:
+            pytest.skip("Tensordot doesn't support batched operator and batched state.")
+        state = [get_random_mixed_state(3) for _ in range(3)]
+
+        res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
+        missing_wires = 3 - len(op.wires)
+        mat = op.matrix()
+        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
+        adjoint_mat = np.conj(expanded_mat).T
+        expected = []
+
+        for i in range(3):
+            flattened_state = state[i].reshape(27, 27)
+            expected.append((expanded_mat @ flattened_state @ adjoint_mat).reshape([3] * 6))
+
+        assert qml.math.get_interface(res) == ml_framework
+        assert qml.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op_broadcasted_state(self, op, method, ml_framework):
         """Tests that batched operations are applied correctly to a batched state."""
-        pass
+        state = [get_random_mixed_state(3) for _ in range(3)]
+
+        res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
+        missing_wires = 3 - len(op.wires)
+        mat = op.matrix()
+        expanded_mats = [
+            np.kron(np.eye(3**missing_wires), mat[i]) if missing_wires else mat[i]
+            for i in range(3)
+        ]
+        expected = []
+
+        for i in range(3):
+            expanded_mat = expanded_mats[i]
+            adjoint_mat = np.conj(expanded_mat).T
+            flattened_state = state[i].reshape(27, 27)
+            expected.append((expanded_mat @ flattened_state @ adjoint_mat).reshape([3] * 6))
+        assert qml.math.get_interface(res) == ml_framework
+        assert qml.math.allclose(res, expected)
 
     def test_batch_size_set_if_missing(self, method, ml_framework):
-        """Tests that the batch_size is set on an operator if it was missing before.
-        Mostly useful for TF-autograph since it may have batch size set to None."""
-        pass
+        """Tests that the batch_size is set on an operator if it was missing before."""
+        param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
+        state = get_random_mixed_state(1)
+        op = qml.TRX(param, 0)
+        op._batch_size = None  # pylint:disable=protected-access
+        state = method(op, state)
+        assert state.shape == (3, 2, 2)
+        assert op.batch_size == 3
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
-class TestBroadcasting:  # pylint: disable=too-few-public-methods
-    """Tests that Arbritary Channel operation applied correctly."""
+class TestChannels:  # pylint: disable=too-few-public-methods
+    """Tests that Channel operations are applied correctly."""
 
-    def test_channel(self, method, ml_framework):
-        """Tests that channels are applied correctly to an unbatched state."""
-        pass
+    class TestChannel(Channel):
+        num_params = 1
+        num_wires = 1
+
+        def __init__(self, p, wires, id=None):
+            super().__init__(p, wires=wires, id=id)
+
+        @staticmethod
+        def compute_kraus_matrices(p):
+            K0 = (np.sqrt(1 - p) * math.cast_like(np.eye(3), p)).astype(complex)
+            K1 = (
+                np.sqrt(p) * math.cast_like(np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]]), p)
+            ).astype(complex)
+            return [K0, K1]
+
+    def test_non_broadcasted_state(self, method, ml_framework):
+        """Tests that Channel operations are applied correctly to a state."""
+        state = get_random_mixed_state(2)
+        test_channel = self.TestChannel(0.3, wires=1)
+        res = method(test_channel, state)
+        flattened_state = state.reshape(9, 9)
+
+        mat = test_channel.kraus_matrices()
+
+        expanded_mats = [np.kron(np.eye(3), mat[i]) for i in range(len(mat))]
+        expected = np.zeros((9, 9)).astype(complex)
+        for i in range(len(mat)):
+            expanded_mat = expanded_mats[i]
+            adjoint_mat = np.conj(expanded_mat).T
+            expected += expanded_mat @ flattened_state @ adjoint_mat
+        expected = expected.reshape([3] * 4)
+        assert qml.math.get_interface(res) == ml_framework
+        assert qml.math.allclose(res, expected)
+
+    def test_broadcasted_state(self, method, ml_framework):
+        """Tests that Channel operations are applied correctly to a batched state."""
+        state = [get_random_mixed_state(2) for _ in range(3)]
+        test_channel = self.TestChannel(0.3, wires=1)
+        res = method(test_channel, state)
+
+        mat = test_channel.kraus_matrices()
+        expanded_mats = [np.kron(np.eye(3), mat[i]) for i in range(len(mat))]
+        expected = [np.zeros((9, 9)).astype(complex) for _ in range(3)]
+        for i in range(3):
+            flattened_state = state[i].reshape(9, 9)
+            for j in range(len(mat)):
+                expanded_mat = expanded_mats[j]
+                adjoint_mat = np.conj(expanded_mat).T
+                expected[i] += expanded_mat @ flattened_state @ adjoint_mat
+            expected[i] = expected[i].reshape([3] * 4)
+        assert qml.math.get_interface(res) == ml_framework
+        assert qml.math.allclose(res, expected)

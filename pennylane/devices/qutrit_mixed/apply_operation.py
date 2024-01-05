@@ -40,9 +40,11 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     # Shape kraus operators
     kraus_shape = [len(kraus)] + [qudit_dim] * num_ch_wires * 2
 
-    if not isinstance(op, Channel):
+    if isinstance(op, Channel):
+        is_mat_batched = False
         # TODO Channels broadcasting is causing issues currently
         # TODO need to talk to PennyLane team to find out more
+    else:
         mat = op.matrix()
         dim = qudit_dim**num_ch_wires
         batch_size = qml.math.get_batch_size(mat, (dim, dim), dim**2)
@@ -107,9 +109,11 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     # Shape kraus operators and cast them to complex data type
     kraus_shape = [qudit_dim] * (num_ch_wires * 2)
 
-    if not isinstance(op, Channel):
+    if isinstance(op, Channel):
+        is_mat_batched = False
         # TODO Channels broadcasting is causing issues currently,
         # TODO need to talk to PennyLane team to find out more
+    else:
         mat = op.matrix()
         dim = qudit_dim**num_ch_wires
         batch_size = qml.math.get_batch_size(mat, (dim, dim), dim**2)
@@ -230,6 +234,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
 
 # TODO add diagonal for speed up.
+
 
 @apply_operation.register
 def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
