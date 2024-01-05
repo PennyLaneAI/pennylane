@@ -124,7 +124,7 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
                 op._batch_size = batch_size  # pylint:disable=protected-access
 
     # row indices of the quantum state affected by this operation
-    row_wires_list = op.wires.toarray() + int(is_state_batched)
+    row_wires_list = list(op.wires.toarray() + int(is_state_batched))
     # column indices are shifted by the number of wires
     col_wires_list = [w + num_wires for w in row_wires_list]
 
@@ -165,6 +165,8 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
         source_right += [-1]
         dest_right += [-1]
 
+    print(source_left + source_right)
+    print(dest_left + dest_right)
     return math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
 

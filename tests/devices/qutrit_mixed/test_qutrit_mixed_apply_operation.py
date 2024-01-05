@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for create_initial_state in devices/apply_operation."""
+"""Unit tests for create_initial_state in devices/qutrit_mixed/apply_operation."""
 
 import pytest
 import pennylane as qml
@@ -86,7 +86,6 @@ def get_random_mixed_state(num_qutrits):
     dim = 3**num_qutrits
     basis = unitary_group.rvs(dim)
     Schmidt_weights = np.random.dirichlet(np.ones(dim), size=1).astype(complex)[0]
-    print(Schmidt_weights)
     mixed_state = np.zeros((dim, dim)).astype(complex)
     for i in range(dim):
         mixed_state += Schmidt_weights[i] * np.outer(basis[i], basis[i])
@@ -95,10 +94,10 @@ def get_random_mixed_state(num_qutrits):
 
 ml_frameworks_list = [
     "numpy",
-    # pytest.param("autograd", marks=pytest.mark.autograd),
-    # pytest.param("jax", marks=pytest.mark.jax),
-    # pytest.param("torch", marks=pytest.mark.torch),
-    # pytest.param("tensorflow", marks=pytest.mark.tf),
+    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("jax", marks=pytest.mark.jax),
+    pytest.param("torch", marks=pytest.mark.torch),
+    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 
@@ -122,10 +121,16 @@ def test_custom_operator_with_matrix():
         def matrix(self):
             return mat
 
-    state = np.array([0.26977852 + 0.15165342j, 0.59635993 + 0.26296103j, 0.39598925 + 0.56799616j])
+    state = np.array(
+        [
+            [0.26159747 - 0.1906562j, -0.22592805 + 0.10450939j, 0.19576415 + 0.19025104j],
+            [-0.22592805 + 0.10450939j, 0.05110554 + 0.16562366j, -0.04140423 - 0.17584095j],
+            [0.19576415 + 0.19025104j, -0.04140423 - 0.17584095j, -0.18278332 - 0.04529327j],
+        ]
+    )
 
     new_state = apply_operation(CustomOp(0), state)
-    assert qml.math.allclose(new_state, mat @ state)
+    assert qml.math.allclose(new_state, mat @ state @ np.conj(mat).T)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -288,10 +293,11 @@ class TestSnapshot:
         assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, (9, 9)))
 
 
-subspace_list = [(0, 1), (0, 2), (1, 2)]
+subspaces = [(0, 1), (0, 2), (1, 2)]
 
 
-@pytest.mark.parametrize("method", methods, "subspace", subspace_list)  # TODO
+@pytest.mark.parametrize("method", methods)  # TODO
+@pytest.mark.parametrize("subspace", subspaces)
 class TestTRXCalcGrad:
     """Tests the application and differentiation of an TRX gate in the different interfaces."""
 
@@ -299,7 +305,6 @@ class TestTRXCalcGrad:
 
     def compare_expected_result(self, phi, state, new_state, g, subspace):
         """Compare TODO"""
-
         matrix = qml.TRX.compute_matrix(phi, subspace=subspace)
         expanded_mat = np.kron(matrix, np.eye(3))
         expanded_adjoint = np.conj(expanded_mat).T
@@ -319,7 +324,7 @@ class TestTRXCalcGrad:
         # assert math.allclose(g[1], g_expected1)
 
     @pytest.mark.autograd
-    def test_rx_grad_autograd(self, method, subspace):
+    def test_trx_grad_autograd(self, method, subspace):
         """Test that the application of an rx gate is differentiable with autograd."""
         state = qml.numpy.array(self.state)
 
@@ -335,7 +340,7 @@ class TestTRXCalcGrad:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_rx_grad_jax(self, method, use_jit, subspace):
+    def test_trx_grad_jax(self, method, use_jit, subspace):
         """Test that the application of an rx gate is differentiable with jax."""
         import jax
 
@@ -355,7 +360,7 @@ class TestTRXCalcGrad:
         self.compare_expected_result(phi, state, new_state, g, subspace)
 
     @pytest.mark.torch
-    def test_rx_grad_torch(self, method, subspace):
+    def test_trx_grad_torch(self, method, subspace):
         """Tests the application and differentiation of an rx gate with torch."""
         import torch
 
@@ -381,7 +386,7 @@ class TestTRXCalcGrad:
         )
 
     @pytest.mark.tf
-    def test_rx_grad_tf(self, method, subspace):
+    def test_trx_grad_tf(self, method, subspace):
         """Tests the application and differentiation of an rx gate with tensorflow"""
         import tensorflow as tf
 
@@ -506,7 +511,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 class TestChannels:  # pylint: disable=too-few-public-methods
     """Tests that Channel operations are applied correctly."""
 
-    class TestChannel(Channel):
+    class CustomChannel(Channel):
         num_params = 1
         num_wires = 1
 
@@ -524,7 +529,7 @@ class TestChannels:  # pylint: disable=too-few-public-methods
     def test_non_broadcasted_state(self, method, ml_framework):
         """Tests that Channel operations are applied correctly to a state."""
         state = get_random_mixed_state(2)
-        test_channel = self.TestChannel(0.3, wires=1)
+        test_channel = self.CustomChannel(0.3, wires=1)
         res = method(test_channel, state)
         flattened_state = state.reshape(9, 9)
 
@@ -537,13 +542,17 @@ class TestChannels:  # pylint: disable=too-few-public-methods
             adjoint_mat = np.conj(expanded_mat).T
             expected += expanded_mat @ flattened_state @ adjoint_mat
         expected = expected.reshape([3] * 4)
-        assert qml.math.get_interface(res) == ml_framework
+        if ml_framework == "autograd":
+            assert qml.math.get_interface(res) == "numpy"
+        else:
+            assert qml.math.get_interface(res) == ml_framework
+
         assert qml.math.allclose(res, expected)
 
     def test_broadcasted_state(self, method, ml_framework):
         """Tests that Channel operations are applied correctly to a batched state."""
         state = [get_random_mixed_state(2) for _ in range(3)]
-        test_channel = self.TestChannel(0.3, wires=1)
+        test_channel = self.CustomChannel(0.3, wires=1)
         res = method(test_channel, state)
 
         mat = test_channel.kraus_matrices()
