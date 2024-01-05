@@ -192,6 +192,7 @@
 * JIT-compatible functionality for control flow has been added via `qml.for_loop`,
   `qml.while_loop`, and `qml.cond`.
   [(#4698)](https://github.com/PennyLaneAI/pennylane/pull/4698)
+  [(#5006)](https://github.com/PennyLaneAI/pennylane/pull/5006)
 
   `qml.for_loop` and `qml.while_loop` can be deployed as decorators on functions that are the 
   body of the loop. The arguments to both follow typical conventions: 
