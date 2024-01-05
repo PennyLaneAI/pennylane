@@ -27,7 +27,15 @@ from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.measurements import ExpectationMP, StateMP, DensityMatrixMP, PurityMP
+from pennylane.measurements import (
+    ExpectationMP,
+    StateMP,
+    DensityMatrixMP,
+    PurityMP,
+    VnEntropyMP,
+    MutualInfoMP,
+)
+from pennylane.ops.op_math import Prod, SProd, Sum
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 
 from . import Device
@@ -557,13 +565,34 @@ class DefaultClifford(Device):
                 elif isinstance(meas, StateMP):
                     res = self._measure_state(tableau_simulator, circuit, global_phase)
 
-                # Computing purity via tableaus
-                elif isinstance(meas, PurityMP):
-                    res = self._measure_purity(meas, circuit)
-
                 # Computing expectation values via measurement
                 elif isinstance(meas, ExpectationMP):
                     res = self._measure_expectation(tableau_simulator, meas, stim)
+
+                # Computing entropy via tableaus
+                elif isinstance(meas, VnEntropyMP):
+                    tableau = tableau_simulator.current_inverse_tableau() ** -1
+                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                    res = self._stabilizer_vn_entropy(zs, list(meas.wires))
+
+                # Computing purity via tableaus
+                elif isinstance(meas, PurityMP):
+                    tableau = tableau_simulator.current_inverse_tableau() ** -1
+                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                    res = (
+                        qml.math.array(1.0)
+                        if circuit.op_wires != meas.wires
+                        else self._measure_purity(zs, list(meas.wires))
+                    )
+
+                # Computing mutual-info via tableaus
+                elif isinstance(meas, MutualInfoMP):
+                    tableau = tableau_simulator.current_inverse_tableau() ** -1
+                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                    indices0, indices1 = getattr(meas, "_wires")
+                    res = self._stabilizer_vn_entropy(
+                        zs, list(indices0)
+                    ) + self._stabilizer_vn_entropy(zs, list(indices1))
 
                 # Computing more measurements
                 else:
@@ -603,32 +632,26 @@ class DefaultClifford(Device):
         state_vector = qml.math.array(tableau_simulator.state_vector(endian="big"))
         return qml.math.einsum("i, j->ij", state_vector, state_vector)
 
-    @staticmethod
-    def _measure_purity(meas_op, circuit):
-        """Measure the purity of the state of simulator device"""
-        if circuit.op_wires != meas_op.wires:
-            raise NotImplementedError(
-                "default.clifford doesn't support measuring the purity of a subset of wires at the moment."
-            )
-        return qml.math.array(1.0)  # // Trivial
-
+    # pylint:disable = too-many-return-statements
     def _measure_expectation(self, tableau_simulator, meas_op, stim):
         """Measure the expectation value with respect to the state of simulator device."""
+        # Get the observable for the expectation value measurement
+        meas_obs = meas_op.obs
 
         # Case for simple Pauli terms
-        if isinstance(meas_op.obs, (qml.PauliZ, qml.PauliX, qml.PauliY)):
-            pauli = stim.PauliString(_GATE_OPERATIONS[meas_op.obs.name])
+        if isinstance(meas_obs, (qml.PauliZ, qml.PauliX, qml.PauliY)):
+            pauli = stim.PauliString(_GATE_OPERATIONS[meas_obs.name])
             return qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
 
         # Case for simple Pauli tensor
-        if isinstance(meas_op.obs, qml.operation.Tensor):
-            expec = "".join([_GATE_OPERATIONS[name] for name in meas_op.obs.name])
+        if isinstance(meas_obs, qml.operation.Tensor):
+            expec = "".join([_GATE_OPERATIONS[name] for name in meas_obs.name])
             pauli = stim.PauliString(expec)
             return qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
 
         # Case for a Hamiltonian
-        if isinstance(meas_op.obs, qml.Hamiltonian):
-            coeffs, obs = meas_op.obs.terms()
+        if isinstance(meas_obs, qml.Hamiltonian):
+            coeffs, obs = meas_obs.terms()
             expecs = qml.math.zeros_like(coeffs)
             for idx, ob in enumerate(obs):
                 expec = "".join([_GATE_OPERATIONS[name] for name in ob.name])
@@ -636,56 +659,45 @@ class DefaultClifford(Device):
                 expecs[idx] = tableau_simulator.peek_observable_expectation(pauli)
             return qml.math.dot(coeffs, expecs)
 
-        # Case for Prod
-        if isinstance(meas_op.obs, qml.ops.op_math.Prod):
-            if meas_op.obs.arithmetic_depth == 1:
-                expec = "".join([_GATE_OPERATIONS[op.name] for op in meas_op.obs.terms()[1][0]])
-                pauli = stim.PauliString(expec)
-                return qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
-            else:
-                if qml.operation.active_new_opmath():
-                    return self._measure_expectation(
-                        tableau_simulator, ExpectationMP(meas_op.obs.simplify()), stim
-                    )
-                qml.operation.enable_new_opmath()
-                expec_res = self._measure_expectation(
-                    tableau_simulator, ExpectationMP(meas_op.obs.simplify()), stim
-                )
-                qml.operation.disable_new_opmath()
-                return expec_res
-
-        # Case for SProd
-        if isinstance(meas_op.obs, qml.ops.op_math.SProd):
-            if meas_op.obs.arithmetic_depth == 1:
-                coeffs, ops = meas_op.obs.terms()
-                expec = "".join([_GATE_OPERATIONS[name] for name in ops])
-                pauli = stim.PauliString(expec)
-                expecs = qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
-                return qml.math.dot(coeffs, expecs)
-            else:
-                if qml.operation.active_new_opmath():
-                    return self._measure_expectation(
-                        tableau_simulator, ExpectationMP(meas_op.obs.simplify()), stim
-                    )
-                qml.operation.enable_new_opmath()
-                expec_res = self._measure_expectation(
-                    tableau_simulator, ExpectationMP(meas_op.obs.simplify()), stim
-                )
-                qml.operation.disable_new_opmath()
-                return expec_res
-
         # Case for Sum
-        if isinstance(meas_op.obs, qml.ops.op_math.Sum):
+        if isinstance(meas_obs, Sum):
             return qml.math.sum(
                 [
                     self._measure_expectation(tableau_simulator, ExpectationMP(op), stim)
-                    for op in meas_op.obs
+                    for op in meas_obs
                 ]
             )
 
+        # Case for higher arithmetic depth for prod-type observables
+        if meas_obs.arithmetic_depth > 1 and isinstance(meas_obs, (Prod, SProd)):
+            if qml.operation.active_new_opmath():
+                return self._measure_expectation(
+                    tableau_simulator, ExpectationMP(meas_obs.simplify()), stim
+                )
+            qml.operation.enable_new_opmath()
+            expec_res = self._measure_expectation(
+                tableau_simulator, ExpectationMP(meas_obs.simplify()), stim
+            )
+            qml.operation.disable_new_opmath()
+            return expec_res
+
+        # Case for Prod
+        if isinstance(meas_obs, Prod):
+            expec = "".join([_GATE_OPERATIONS[op.name] for op in meas_obs.terms()[1][0]])
+            pauli = stim.PauliString(expec)
+            return qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
+
+        # Case for SProd
+        if isinstance(meas_obs, SProd):
+            coeffs, ops = meas_obs.terms()
+            expec = "".join([_GATE_OPERATIONS[name] for name in ops])
+            pauli = stim.PauliString(expec)
+            expecs = qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
+            return qml.math.dot(coeffs, expecs)
+
         # Add support for more case when the time is right
         raise NotImplementedError(
-            f"default.clifford doesn't support expectation value calculation with {type(meas_op.obs)} at the moment."
+            f"default.clifford doesn't support expectation value calculation with {type(meas_obs)} at the moment."
         )
 
     # pylint: disable=protected-access
@@ -705,7 +717,6 @@ class DefaultClifford(Device):
 
         Returns:
             (float): entanglement entropy of the subsystem
-
         """
         # Get the number of qubits for the system
         num_qubits = qml.math.shape(stabilizer)[0]
@@ -730,7 +741,8 @@ class DefaultClifford(Device):
             )
         )
 
-        # Use the reduced row echelon form for finding rank efficiently (tapering always come handy)
+        # Use the reduced row echelon form for finding rank efficiently
+        # tapering always come handy :)
         rank = qml.math.sum(
             qml.math.any(qml.qchem.tapering._reduced_row_echelon(partition_mat), axis=1)
         )
@@ -743,3 +755,21 @@ class DefaultClifford(Device):
             return entropy
 
         return entropy / qml.math.log(log_base)
+
+    def _measure_purity(self, stabilizer, wires):
+        """Measure the purity of the state of simulator device
+
+        Computes the state purity using the monotonically decreasing second-order Rényi entropy
+        form given in `Sci Rep 13, 4601 (2023) <https://www.nature.com/articles/s41598-023-31273-9>`_.
+        We utilize the fact that Rényi entropies are independent of the Rényi indices `n` for the
+        stabilizer states.
+
+        Args:
+            stabilizer (TensorLike): stabilizer set for the system
+            wires (Iterable): wires describing the subsystem
+            log_base (int): base for the logarithm.
+
+        Returns:
+            (float): entanglement entropy of the subsystem
+        """
+        return self._measure_stabilizer_vn_entropy(stabilizer, wires, log_base=2)
