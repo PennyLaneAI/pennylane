@@ -16,7 +16,6 @@ Unit tests for :mod:`pennylane.wires`.
 """
 import pytest
 import numpy as np
-from jax.tree_util import tree_flatten, tree_unflatten
 import pennylane as qml
 from pennylane.wires import Wires, WireError
 
@@ -364,11 +363,14 @@ class TestWires:
         h = hash(wires)
         assert wires._hash == h
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "source", [1, -2, "a", "q1", -1.4, np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)]
     )
     def test_wires_pytree(self, source):
         """Test that Wires class supports the PyTree flattening interface"""
+        from jax.tree_util import tree_flatten, tree_unflatten
+
         wires = Wires(source)
         wires_flat, tree = tree_flatten(wires)
         wires2 = tree_unflatten(tree, wires_flat)
