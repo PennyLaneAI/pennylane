@@ -637,6 +637,19 @@ class TestBasisStateProjector:
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
+    @pytest.mark.parametrize(
+        "dev", (qml.device("default.qubit"), qml.device("default.qubit.legacy", wires=1))
+    )
+    def test_integration_batched_state(self, dev):
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Projector([0], wires=0))
+
+        x = np.array([0.4, 0.8, 1.2])
+        res = circuit(x)
+        assert qml.math.allclose(res, np.cos(x / 2) ** 2)
+
 
 class TestStateVectorProjector:
     """Tests for state vector projector observable."""
