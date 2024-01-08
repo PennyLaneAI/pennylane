@@ -45,17 +45,26 @@ compile your hybrid workflows:
 
     @qml.qjit
     @qml.qnode(dev)
-    def cost(params):
+    def circuit(params):
         qml.Hadamard(0)
         qml.RX(jnp.sin(params[0]) ** 2, wires=1)
         qml.CRY(params[0], wires=[0, 1])
         qml.RX(jnp.sqrt(params[1]), wires=1)
         return qml.expval(qml.PauliZ(1))
 
-The :func:`~.qjit` decorator can also be used on hybrid cost functions --
-that is, cost functions that include both QNodes and classical processing. We
-can even JIT compile the full optimization loop, for example when training
-models:
+The :func:`~.qjit` decorator can also be used on hybrid functions --
+that is, functions that include both QNodes and classical processing.
+
+.. code-block:: python
+
+    @qml.qjit
+    def hybrid_function(params, x):
+        grad = qml.grad(circuit)(params)[0]
+        return jnp.abs(grad - x) ** 2
+
+In addition, functions that are compiled with ``@jax.jit`` can contain calls
+to qjit-compiled functions. For example, below we compile a full optimization loop,
+using ``@jax.jit``:
 
 .. code-block:: python
 
@@ -67,7 +76,7 @@ models:
         params = jnp.array([0.54, 0.3154])
 
         # define the optimizer
-        opt = jaxopt.GradientDescent(cost, stepsize=0.4)
+        opt = jaxopt.GradientDescent(circuit, stepsize=0.4)
         update = lambda i, args: tuple(opt.update(*args))
 
         # perform optimization loop
@@ -75,6 +84,10 @@ models:
         (params, _) = jax.lax.fori_loop(0, 100, update, (params, state))
 
         return params
+
+Compiling the entire hybrid workflow using ``@qml.qjit`` however will lead to better
+performance. For more details, please see
+`the Catalyst documentation <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/sharp_bits.html#try-and-compile-the-full-workflow>`__.
 
 Control flow
 ------------

@@ -121,6 +121,7 @@
   The [qml.compiler](https://docs.pennylane.ai/en/latest/code/qml_compiler.html) 
   module provides support for hybrid quantum-classical compilation. 
   [(#4692)](https://github.com/PennyLaneAI/pennylane/pull/4692)
+  [(#4979)](https://github.com/PennyLaneAI/pennylane/pull/4979)
 
   Through the use of the `qml.qjit` decorator, entire workflows can be JIT
   compiled — including both quantum and classical processing — down to a machine binary on
@@ -185,13 +186,27 @@
 
   ``` pycon
   >>> workflow(np.array([2.0, 1.0]))
-  array([[-1.32116540e-07,  1.33781874e-07],
-          [-4.20735506e-01,  4.20735506e-01]])
+  array([[ 3.48786850e-16, -4.20735492e-01],
+         [-8.71967125e-17,  4.20735492e-01]])
   ```
 
 * JIT-compatible functionality for control flow has been added via `qml.for_loop`,
   `qml.while_loop`, and `qml.cond`.
   [(#4698)](https://github.com/PennyLaneAI/pennylane/pull/4698)
+  [(#5006)](https://github.com/PennyLaneAI/pennylane/pull/5006)
+
+  `qml.for_loop` and `qml.while_loop` can be deployed as decorators on functions that are the 
+  body of the loop. The arguments to both follow typical conventions: 
+
+  ```
+  @qml.for_loop(lower_bound, upper_bound, step)
+  ```
+
+  ```
+  @qml.while_loop(cond_function)
+  ```
+
+  Here is a concrete example with `qml.for_loop`:
 
   `qml.for_loop` and `qml.while_loop` can be deployed as decorators on functions that are the 
   body of the loop. The arguments to both follow typical conventions: 
@@ -254,6 +269,7 @@
       return qml.state()
 
   circuit = qml.clifford_t_decomposition(circuit, epsilon=0.1)
+
   ```
   ```pycon
   >>> print(qml.draw(circuit)())
@@ -365,8 +381,9 @@
 * The function `qml.draw_mpl` now accept a keyword argument `fig` to specify the output figure window.
   [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
 
-* The function ``qml.draw_mpl`` now accept a keyword argument ``fig`` to specify the output figure window.
-  [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
+* `qml.equal` now supports the comparison of `QuantumScript` and `BasisRotation` objects.
+  [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
+  [(#4919)](https://github.com/PennyLaneAI/pennylane/pull/4919)
 
 * `qml.AmplitudeEmbedding` now supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
@@ -515,12 +532,11 @@
   (with potentially negative eigenvalues) onto the closest valid density matrix.
   [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
 
-<h3>Breaking changes 💔</h3>
+* The `ControlledSequence.compute_decomposition` default now decomposes the `Pow` operators, 
+  improving compatibility with machine learning interfaces. 
+  [(#4995)](https://github.com/PennyLaneAI/pennylane/pull/4995)
 
-* The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, and
-  `qml.transforms.sk_decomposition` were moved to `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, and
-  `qml.ops.sk_decomposition`, respectively.
-  [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
+<h3>Breaking changes 💔</h3>
 
 * The function `qml.transforms.classical_jacobian` has been moved to the gradients module
   and is now accessible as `qml.gradients.classical_jacobian`.
@@ -719,6 +735,10 @@
   
 * The jax-jit interface can now be used with float32 mode.
   [(#4990)](https://github.com/PennyLaneAI/pennylane/pull/4990)
+
+* Keras models with a `qnn.KerasLayer` no longer fail to save and load weights
+  properly when they are named "weights".
+  [(#5008)](https://github.com/PennyLaneAI/pennylane/pull/5008)
 
 <h3>Contributors ✍️</h3>
 
