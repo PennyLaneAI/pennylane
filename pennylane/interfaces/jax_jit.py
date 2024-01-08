@@ -27,7 +27,7 @@ For example:
 >>> jax.jit(f)(x)
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
 >>> def g(x):
-...     expected_output_shape = jax.ShapeDtypeStruct((), jnp.float64)
+...     expected_output_shape = jax.ShapeDtypeStruct((), jax.numpy.float64)
 ...     return jax.pure_callback(f, expected_output_shape, x)
 >>> jax.jit(g)(x)
 Array(1., dtype=float64)
@@ -209,7 +209,7 @@ _execute_vjp_jit.defvjp(_vjp_fwd, _vjp_bwd)
 
 
 def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
-    """Execute a batch of tapes with JAX parameters using VJP derivatives.
+    """Execute a batch of tapes with JAX parameters using JVP derivatives.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
