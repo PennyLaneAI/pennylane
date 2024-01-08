@@ -129,9 +129,26 @@ class PauliWord(dict):
     associating wires with their respective operators.
     Can be constructed from a standard dictionary.
 
+    **Examples**
+
+    Initializing a Pauli word:
+
     >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
     >>> w
     X(a) @ Y(2) @ Z(3)
+
+    When multiplying Pauli words together we obtain the resulting word and the scalar coefficient.
+
+    >>> w1 = PauliWord({0:"X", 1:"Y"})
+    >>> w2 = PauliWord({1:"X", 2:"Z"})
+    >>> w1 @ w2
+    (Z(1) @ Z(2) @ X(0), -1j)
+
+    We can multiply scalars to Pauli words or add/subtract them, resulting in a :class:`~PauliSentence` instance.
+    >>> 0.5 * w1 - 1.5 * w2 + 2
+    0.5 * X(0) @ Y(1)
+    + -1.5 * X(1) @ Z(2)
+    + 2 * I
     """
 
     __array_priority__ = 1000
@@ -408,13 +425,26 @@ class PauliSentence(dict):
     """Dictionary representing a linear combination of Pauli words, with the keys
     as PauliWord instances and the values correspond to coefficients.
 
-    >>> ps = qml.pauli.PauliSentence({
-            qml.pauli.PauliWord({0:'X', 1:'Y'}): 1.23,
-            qml.pauli.PauliWord({2:'Z', 0:'Y'}): -0.45j
+    **Examples**
+
+    >>> ps = PauliSentence({
+            PauliWord({0:'X', 1:'Y'}): 1.23,
+            PauliWord({2:'Z', 0:'Y'}): -0.45j
         })
     >>> ps
     1.23 * X(0) @ Y(1)
     + (-0-0.45j) * Z(2) @ Y(0)
+
+    Combining Pauli words automatically results in Pauli sentences that can be used to construct more complicated operators.
+
+    >>> w1 = PauliWord({0:"X", 1:"Y"})
+    >>> w2 = PauliWord({1:"X", 2:"Z"})
+    >>> ps = 0.5 * w1 - 1.5 * w2 + 2
+    >>> ps + PauliWord({3:"Z"}) - 1
+    0.5 * X(0) @ Y(1)
+    + -1.5 * X(1) @ Z(2)
+    + 1 * I
+    + 1.0 * Z(3)
     """
 
     __array_priority__ = 1000
