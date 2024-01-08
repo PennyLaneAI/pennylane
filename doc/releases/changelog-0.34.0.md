@@ -208,6 +208,19 @@
 
   Here is a concrete example with `qml.for_loop`:
 
+  `qml.for_loop` and `qml.while_loop` can be deployed as decorators on functions that are the 
+  body of the loop. The arguments to both follow typical conventions: 
+
+  ```
+  @qml.for_loop(lower_bound, upper_bound, step)
+  ```
+
+  ```
+  @qml.while_loop(cond_function)
+  ```
+
+  Here is a concrete example with `qml.for_loop`:
+
   ``` python
   dev = qml.device("lightning.qubit", wires=1)
 
@@ -247,7 +260,7 @@
   gateset. To account for this, a desired total circuit decomposition error, `epsilon`, must be 
   specified when using `qml.clifford_t_decomposition`:
 
-  ```python
+  ``` python
   dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
@@ -257,7 +270,8 @@
 
   circuit = qml.clifford_t_decomposition(circuit, epsilon=0.1)
   ```
-  ```pycon
+  
+  ``` pycon
   >>> print(qml.draw(circuit)())
   0: ──T†──H──T†──H──T──H──T──H──T──H──T──H──T†──H──T†──T†──H──T†──H──T──H──T──H──T──H──T──H──T†──H
 
@@ -367,7 +381,9 @@
 * The function `qml.draw_mpl` now accept a keyword argument `fig` to specify the output figure window.
   [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
 
-<h4>Better support for batching</h4>
+* `qml.equal` now supports the comparison of `QuantumScript` and `BasisRotation` objects.
+  [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
+  [(#4919)](https://github.com/PennyLaneAI/pennylane/pull/4919)
 
 * `qml.AmplitudeEmbedding` now supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
