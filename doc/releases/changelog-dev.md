@@ -10,7 +10,7 @@
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
-  [(#)]()
+  [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
   
 <h4>Community contributions 🥳</h4>
 
