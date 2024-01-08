@@ -998,32 +998,48 @@ class TestPauliSentence:
             }
         )
 
+
 class TestPauliArithmeticIntegration:
     def test_pauli_arithmetic_integration(self):
         """Test creating operators from PauliWord, PauliSentence and scalars"""
-        res = 1. + 3. * pw1 + 1j * ps3 - 1. * ps1
-        true_res = PauliSentence({pw1: -1.23+3, pw2: -4j, pw3: 0.5-0.5j, pw_id: 1+1j})
+        res = 1.0 + 3.0 * pw1 + 1j * ps3 - 1.0 * ps1
+        true_res = PauliSentence({pw1: -1.23 + 3, pw2: -4j, pw3: 0.5 - 0.5j, pw_id: 1 + 1j})
         assert res == true_res
-    
+
     def test_construct_XXZ_model(self):
         """Test that constructing the XXZ model results in the correct matrix"""
         n_wires = 4
         J_orthogonal = 1.5
         J_zz = 0.5
-        h = 2.
+        h = 2.0
         # Construct XXZ Hamiltonian using paulis
-        paulis = [J_orthogonal * (PauliWord({i:"X", (i+1)%n_wires:"X"}) + PauliWord({i:"Y", (i+1)%n_wires:"Y"})) for i in range(n_wires)]
-        paulis += [J_zz * PauliWord({i:"Z", (i+1)%n_wires:"Z"}) for i in range(n_wires)]
-        paulis += [h * PauliWord({i:"Z"}) for i in range(n_wires)]
-        H = sum(paulis) + 10.
+        paulis = [
+            J_orthogonal
+            * (
+                PauliWord({i: "X", (i + 1) % n_wires: "X"})
+                + PauliWord({i: "Y", (i + 1) % n_wires: "Y"})
+            )
+            for i in range(n_wires)
+        ]
+        paulis += [J_zz * PauliWord({i: "Z", (i + 1) % n_wires: "Z"}) for i in range(n_wires)]
+        paulis += [h * PauliWord({i: "Z"}) for i in range(n_wires)]
+        H = sum(paulis) + 10.0
 
         # Construct XXZ Hamiltonian using PL ops
-        ops = [J_orthogonal * (qml.PauliX(i) @ qml.PauliX((i+1)%n_wires) + qml.PauliY(i) @ qml.PauliY((i+1)%n_wires)) for i in range(n_wires)]
-        ops += [J_zz * qml.PauliZ(i) @ qml.PauliZ((i+1)%n_wires) for i in range(n_wires)]
+        ops = [
+            J_orthogonal
+            * (
+                qml.PauliX(i) @ qml.PauliX((i + 1) % n_wires)
+                + qml.PauliY(i) @ qml.PauliY((i + 1) % n_wires)
+            )
+            for i in range(n_wires)
+        ]
+        ops += [J_zz * qml.PauliZ(i) @ qml.PauliZ((i + 1) % n_wires) for i in range(n_wires)]
         ops += [h * qml.PauliZ(i) for i in range(n_wires)]
-        H_true = qml.sum(*ops) + 10.
+        H_true = qml.sum(*ops) + 10.0
 
         assert qml.math.allclose(H.to_mat(), qml.matrix(H_true))
+
 
 @pytest.mark.all_interfaces
 class TestPauliArithmeticWithADInterfaces:
