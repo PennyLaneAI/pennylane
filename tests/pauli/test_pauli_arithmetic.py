@@ -196,6 +196,53 @@ class TestPauliWord:
         assert res1 == true_res1
         assert res2 == pw_id  # original pw is unaltered after copy
 
+    sub_pw_pw = (
+        (
+            pw1,
+            pw1,
+            PauliSentence({pw1: 0.0}),
+            PauliSentence({pw1: 0.0}),
+        ),
+        (
+            pw1,
+            pw2,
+            PauliSentence({pw1: 1.0, pw2: -1.0}),
+            PauliSentence({pw1: -1.0, pw2: 1.0}),
+        ),
+    )
+
+    @pytest.mark.parametrize("pauli1, pauli2, true_res1, true_res2", sub_pw_pw)
+    def test_sub_PW_and_PW(self, pauli1, pauli2, true_res1, true_res2):
+        """Test subtracting PauliWord from PauliWord"""
+        res1 = pauli1 - pauli2
+        res2 = pauli2 - pauli1
+        assert res1 == true_res1
+        assert res2 == true_res2
+
+    # psx does not contain identity, so simply add it to the definition with pw_id
+    sub_pw_scalar = (
+        (
+            pw1,
+            1.0,
+            PauliSentence({pw1: 1.0, pw_id: -1}),
+            PauliSentence({pw1: -1, pw_id: 1}),
+        ),
+        (
+            pw_id,
+            0.5,
+            PauliSentence({pw_id: 0.5}),
+            PauliSentence({pw_id: -0.5}),
+        ),
+    )
+
+    @pytest.mark.parametrize("pw, scalar, true_res1, true_res2", sub_pw_scalar)
+    def test_sub_PW_and_scalar(self, pw, scalar, true_res1, true_res2):
+        """Test subtracting scalar from PauliWord"""
+        res1 = pw - scalar
+        res2 = scalar - pw
+        assert res1 == true_res1
+        assert res2 == true_res2
+
     tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
         (pw1, pw3, PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}), 1.0),
@@ -267,11 +314,6 @@ class TestPauliWord:
 
         with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
             pw4.to_mat(wire_order=Wires([]))
-
-    pw1 = PauliWord({0: I, 1: X, 2: Y})
-    pw2 = PauliWord({"a": X, "b": X, "c": Z})
-    pw3 = PauliWord({0: Z, "b": Z, "c": Z})
-    pw4 = PauliWord({})
 
     pw_wire_order = ((pw1, [0, 1]), (pw1, [0, 1, 3]), (pw2, [0]))
 
@@ -664,7 +706,6 @@ class TestPauliSentence:
         assert res2 == true_res2
 
     # psx does not contain identity, so simply add it to the definition with pw_id
-    # ps3 does contain ideneity, so copy ps3 and modify identity entry (here pw4)
     sub_ps_scalar = (
         (
             psx,
@@ -698,7 +739,7 @@ class TestPauliSentence:
         ),
     )
 
-    @pytest.mark.parametrize("ps, scalar, true_res1, true_res2", sub_ps_pw)
+    @pytest.mark.parametrize("ps, scalar, true_res1, true_res2", sub_ps_scalar)
     def test_sub_PS_and_scalar(self, ps, scalar, true_res1, true_res2):
         """Test subtracting scalar from PauliSentence"""
         res1 = ps - scalar

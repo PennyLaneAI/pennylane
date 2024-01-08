@@ -254,6 +254,14 @@ class PauliWord(dict):
         """Inplace addition of PauliWords"""
         return self + other
 
+    def __sub__(self, other):
+        """Subtract other PauliSentence, PauliWord, or scalar"""
+        return self + -1 * other
+
+    def __rsub__(self, other):
+        """Subtract other PauliSentence, PauliWord, or scalar"""
+        return -1 * self + other
+
     def __truediv__(self, other):
         """Divide a PauliWord by a scalar"""
         if isinstance(other, TensorLike):
