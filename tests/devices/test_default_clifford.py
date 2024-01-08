@@ -147,7 +147,7 @@ def test_meas_clifford(circuit, meas_type):
 
     def circuit_fn():
         circuit()
-        return qml.density_matrix([0, 1]) if meas_type == "dm" else qml.purity([0, 1])
+        return qml.density_matrix([1]) if meas_type == "dm" else qml.purity([1])
 
     qnode_clfrd = qml.QNode(circuit_fn, dev_c)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)

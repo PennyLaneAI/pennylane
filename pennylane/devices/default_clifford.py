@@ -492,13 +492,7 @@ class DefaultClifford(Device):
         stim = _import_stim()
 
         # Account for custom labelled wires
-        # TODO: Fix custom integer ordering :)
         circuit = circuit.map_to_standard_wires()
-
-        if circuit.shots:
-            raise NotImplementedError(
-                "default.clifford currently doesn't support computation with shots."
-            )
 
         # Build a stim circuit, tableau and simulator
         stim_ct = stim.Circuit()
@@ -544,65 +538,86 @@ class DefaultClifford(Device):
         tableau_simulator.do_circuit(stim_ct)
 
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
-        return self.measure(circuit, tableau_simulator, global_phase, stim)
+
+        meas_results = (
+            self.measure_statistical(circuit, initial_tableau, rng=None)
+            if circuit.shots
+            else self.measure_analytic(circuit, tableau_simulator, global_phase, stim)
+        )
+
+        return meas_results[0] if len(meas_results) == 1 else tuple(meas_results)
 
     @staticmethod
     def pl_to_stim(op):
         """Convert PennyLane operation to a Stim operation"""
         return _GATE_OPERATIONS[op.name], op.wires
 
-    def measure(self, circuit, tableau_simulator, global_phase, stim):
-        """Given a circuit, compute and return the measurement results."""
+    def measure_statistical(self, circuit, initial_tableau, rng=None):
+        """Given a circuit, compute samples and return the statistical measurement results."""
+        # Compute samples via circuits from tableau
+        sample_seed = rng if isinstance(rng, int) else self._seed
+        sample_circuit = initial_tableau.to_circuit() + circuit
+        sample_circuit.append("M", circuit.wires)
+        sampler = sample_circuit.compile_sampler(seed=sample_seed)
+        samples = qml.math.array(sampler.sample(shots=circuit.shots.total_shots), dtype=int)
+
+        # Compute results via process_samples method for measurements
+        results = [
+            meas.process_samples(samples=samples, wire_order=circuit.wires)
+            for meas in circuit.measurements
+        ]
+        return results
+
+    def measure_analytic(self, circuit, tableau_simulator, global_phase, stim):
+        """Given a circuit, compute tableau and return the analytical measurement results."""
         results = []
         for meas in circuit.measurements:
-            # Analytic case
-            if not circuit.shots:
-                # Computing density matrix via tableaus
-                if isinstance(meas, DensityMatrixMP):  # do first because it is a child of StateMP
-                    res = self._measure_density_matrix(tableau_simulator)
+            # Computing density matrix via tableaus
+            if isinstance(meas, DensityMatrixMP):  # do first because it is a child of StateMP
+                res = self._measure_density_matrix(tableau_simulator, list(meas.wires))
 
-                # Computing statevector via tableaus
-                elif isinstance(meas, StateMP):
-                    res = self._measure_state(tableau_simulator, circuit, global_phase)
+            # Computing statevector via tableaus
+            elif isinstance(meas, StateMP):
+                res = self._measure_state(tableau_simulator, circuit, global_phase)
 
-                # Computing expectation values via measurement
-                elif isinstance(meas, ExpectationMP):
-                    res = self._measure_expectation(tableau_simulator, meas, stim)
+            # Computing expectation values via measurement
+            elif isinstance(meas, ExpectationMP):
+                res = self._measure_expectation(tableau_simulator, meas, stim)
 
-                # Computing entropy via tableaus
-                elif isinstance(meas, VnEntropyMP):
-                    tableau = tableau_simulator.current_inverse_tableau() ** -1
-                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
-                    res = self._stabilizer_vn_entropy(zs, list(meas.wires))
+            # Computing entropy via tableaus
+            elif isinstance(meas, VnEntropyMP):
+                tableau = tableau_simulator.current_inverse_tableau() ** -1
+                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                res = self._stabilizer_vn_entropy(zs, list(meas.wires))
 
-                # Computing purity via tableaus
-                elif isinstance(meas, PurityMP):
-                    tableau = tableau_simulator.current_inverse_tableau() ** -1
-                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
-                    res = (
-                        qml.math.array(1.0)
-                        if circuit.op_wires != meas.wires
-                        else self._measure_purity(zs, list(meas.wires))
-                    )
+            # Computing purity via tableaus
+            elif isinstance(meas, PurityMP):
+                tableau = tableau_simulator.current_inverse_tableau() ** -1
+                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                res = (
+                    qml.math.array(1.0)
+                    if circuit.op_wires == meas.wires
+                    else self._measure_purity(zs, list(meas.wires))
+                )
 
-                # Computing mutual-info via tableaus
-                elif isinstance(meas, MutualInfoMP):
-                    tableau = tableau_simulator.current_inverse_tableau() ** -1
-                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
-                    indices0, indices1 = getattr(meas, "_wires")
-                    res = self._stabilizer_vn_entropy(
-                        zs, list(indices0)
-                    ) + self._stabilizer_vn_entropy(zs, list(indices1))
+            # Computing mutual-info via tableaus
+            elif isinstance(meas, MutualInfoMP):
+                tableau = tableau_simulator.current_inverse_tableau() ** -1
+                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                indices0, indices1 = getattr(meas, "_wires")
+                res = self._stabilizer_vn_entropy(zs, list(indices0)) + self._stabilizer_vn_entropy(
+                    zs, list(indices1)
+                )
 
-                # Computing more measurements
-                else:
-                    raise NotImplementedError(
-                        f"default.clifford doesn't support the {type(meas)} measurement at the moment."
-                    )
+            # Computing more measurements
+            else:
+                raise NotImplementedError(
+                    f"default.clifford doesn't support the {type(meas)} measurement at the moment."
+                )
 
-                results.append(res)
+            results.append(res)
 
-        return results[0] if len(results) == 1 else tuple(results)
+        return results
 
     def _measure_state(self, tableau_simulator, circuit, global_phase):
         """Measure the state of the simualtor device."""
@@ -627,10 +642,10 @@ class DefaultClifford(Device):
         return state * qml.matrix(global_phase)
 
     @staticmethod
-    def _measure_density_matrix(tableau_simulator):
+    def _measure_density_matrix(tableau_simulator, wires):
         """Measure the density matrix from the state of simulator device."""
         state_vector = qml.math.array(tableau_simulator.state_vector(endian="big"))
-        return qml.math.einsum("i, j->ij", state_vector, state_vector)
+        return qml.math.reduce_dm(qml.math.einsum("i, j->ij", state_vector, state_vector), wires)
 
     # pylint:disable = too-many-return-statements
     def _measure_expectation(self, tableau_simulator, meas_op, stim):
@@ -772,4 +787,4 @@ class DefaultClifford(Device):
         Returns:
             (float): entanglement entropy of the subsystem
         """
-        return self._measure_stabilizer_vn_entropy(stabilizer, wires, log_base=2)
+        return 2 ** (-self._measure_stabilizer_vn_entropy(stabilizer, wires, log_base=2))
