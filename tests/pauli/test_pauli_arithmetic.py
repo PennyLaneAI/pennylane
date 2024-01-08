@@ -998,6 +998,12 @@ class TestPauliSentence:
             }
         )
 
+class TestPauliArithmeticIntegration:
+    def test_pauli_arithmetic_integration(self):
+        """Test creating operators from PauliWord, PauliSentence and scalars"""
+        res = 1. + 3. * pw1 + 1j * ps3 - 1. * ps1
+        true_res = PauliSentence({pw1: -1.23+3, pw2: -4j, pw3: 0.5-0.5j, pw_id: 1+1j})
+        assert res == true_res
 
 @pytest.mark.all_interfaces
 class TestPauliArithmeticWithADInterfaces:
