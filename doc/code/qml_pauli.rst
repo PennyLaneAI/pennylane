@@ -83,7 +83,8 @@ the spin-1/2 XXZ model Hamiltonian,
 Here we look at the simple topology of a on a one-dimensional chain with periodic boundary conditions (i.e. qubit number :math:`n+1 \equiv 1`).
 In code we can do this via the following example with 4 qubits.
 
-.. code::
+.. code-block:: python3
+
     n_wires = 4
     J_orthogonal = 1.5
     ops = [J_orthogonal * (PauliWord({i:"X", (i+1)%n_wires:"X"}) + PauliWord({i:"Y", (i+1)%n_wires:"Y"})) for i in range(n_wires)]
