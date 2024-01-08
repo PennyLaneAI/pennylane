@@ -400,7 +400,7 @@ class TestCustomWireOrdering:
         """Test changing the wire order when using PauliWord"""
         pw = PauliWord({0: "X", 1: "Y", 2: "Z"})
         op = qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2)
-        assert qml.matrix(pw, wire_order) == qml.matrix(op, wire_order)
+        assert qml.math.allclose(qml.matrix(pw, wire_order), qml.matrix(op, wire_order))
 
     @pytest.mark.parametrize("wire_order", [[0, 2, 1], [1, 0, 2], [2, 1, 0]])
     def test_pauli_sentence_wireorder(self, wire_order):
@@ -412,7 +412,7 @@ class TestCustomWireOrdering:
         op1 = qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2)
         op2 = qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(2)
         op = 1.5 * op1 + 0.5 * op2
-        assert qml.matrix(ps, wire_order) == qml.matrix(op, wire_order)
+        assert qml.math.allclose(qml.matrix(ps, wire_order), qml.matrix(op, wire_order))
 
 
 pw1 = PauliWord({0: "X", 1: "Z"})
@@ -431,14 +431,14 @@ class TestPauliWordPauliSentence:
         """Test that a PauliWord is correctly transformed using qml.matrix"""
         res = qml.matrix(pw)
         true_res = qml.matrix(op)
-        assert res == true_res
+        assert qml.math.allclose(res, true_res)
 
     @pytest.mark.parametrize("pw, op", op_pairs)
     def test_PauliSentence_matrix(self, pw, op):
         """Test that a PauliWord is correctly transformed using qml.matrix"""
         res = qml.matrix(PauliSentence({pw: 0.5}))
         true_res = qml.matrix(0.5 * op)
-        assert res == true_res
+        assert qml.math.allclose(res, true_res)
 
 
 class TestTemplates:
