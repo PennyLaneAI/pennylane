@@ -168,7 +168,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 
     """
     if not isinstance(op, qml.operation.Operator):
-        if isinstance(op, qml.pauli.PauliWord) or isinstance(op, qml.pauli.PauliSentence):
+        if isinstance(op, (qml.pauli.PauliWord, qml.pauli.PauliSentence)):
             return op.to_mat(wire_order=wire_order)
 
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
