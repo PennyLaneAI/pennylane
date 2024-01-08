@@ -475,7 +475,7 @@ class DefaultClifford(Device):
         This function assumes that all operations are Clifford.
 
         >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.PauliZ(0)), qml.state()])
-        >>> simulate(qs)
+        >>> qml.devices.DefaultClifford().simulate(qs)
         (array(0),
          array([[0, 1, 0],
                 [1, 0, 0]]))
