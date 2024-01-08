@@ -8,6 +8,9 @@
 
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
+
+* Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
+  [(#)]()
   
 <h4>Community contributions 🥳</h4>
 
