@@ -270,7 +270,6 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
 
     # One dimension for number of expectation values, one dimension for batch size.
     batched_cotangents = qml.math.ndim(cotangents) == 2
-
     batch_size = qml.math.shape(cotangents)[1] if batched_cotangents else None
     new_obs = []
     zero_inds = []
@@ -298,7 +297,7 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
                 new_os.append(o)
 
         if len(new_cs) == 0:
-            return tuple(0.0 for _ in tape.trainable_params)
+            return None, batch_size
 
         new_obs.append(qml.dot(new_cs, new_os))
 
@@ -357,6 +356,8 @@ def adjoint_vjp(
     ket = state if state is not None else get_final_state(tape)[0]
 
     bras, batch_size = _get_vjp_bras_and_batch_size(tape, cotangents, ket)
+    if batch_size is None and np.allclose(cotangents, 0.0):
+        return tuple(0.0 for _ in tape.trainable_params)
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
 
