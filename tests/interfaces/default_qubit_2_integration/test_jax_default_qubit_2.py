@@ -202,10 +202,6 @@ class TestJaxExecuteIntegration:
 
     def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
-        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
-            "device_vjp", False
-        ):
-            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
 
         a = jnp.array(0.1)
         b = jnp.array(0.2)
@@ -287,11 +283,6 @@ class TestJaxExecuteIntegration:
     # pylint: disable=too-many-statements
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
         """Test that tapes wit different can be executed and differentiated."""
-
-        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
-            "device_vjp", False
-        ):
-            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -780,8 +771,6 @@ class TestHamiltonianWorkflows:
 
         if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
-        if execute_kwargs["gradient_fn"] == "adjoint" and execute_kwargs.get("device_vjp", False):
-            pytest.xfail("adjoint vjp does not yet support jax jacobians.")
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
         coeffs2 = jnp.array([0.7])

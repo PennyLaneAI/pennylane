@@ -289,7 +289,6 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
                 new_obs.append(qml.dot(new_cs, new_os))
 
     else:
-        # cotangents = (cotangents,) if qml.math.shape(cotangents) == tuple() else cotangents
         new_cs, new_os = [], []
         for c, o in zip(cotangents, tape.observables):
             if not np.allclose(c, 0.0):
