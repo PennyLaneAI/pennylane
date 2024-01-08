@@ -136,11 +136,65 @@ class TestPauliWord:
         assert str(pw) == str_rep
         assert repr(pw) == str_rep
 
-    def test_add_pw_pw(self):
-        """Test adding two pauli words"""
+    def test_add_pw_pw_different(self):
+        """Test adding two pauli words that are distinct"""
         res1 = pw1 + pw2
         true_res1 = PauliSentence({pw1: 1.0, pw2: 1.0})
         assert res1 == true_res1
+
+    def test_add_pw_pw_same(self):
+        """Test adding two pauli words that are the same"""
+        res1 = pw1 + pw1
+        true_res1 = PauliSentence({pw1: 2.0})
+        assert res1 == true_res1
+
+    def test_add_pw_sclar_different(self):
+        """Test adding pauli word and scalar that are distinct (i.e. non-identity)"""
+        res1 = pw1 + 1.5
+        true_res1 = PauliSentence({pw1: 1.0, pw_id: 1.5})
+        assert res1 == true_res1
+
+    def test_add_pw_scalar_same(self):
+        """Test adding pauli word and scalar that are the same (i.e. both identity)"""
+        res1 = pw_id + 1.5
+        true_res1 = PauliSentence({pw_id: 2.5})
+        assert res1 == true_res1
+
+    def test_iadd_pw_pw_different(self):
+        """Test inplace-adding two pauli words that are distinct"""
+        res1 = copy(pw1)
+        res2 = copy(pw1)
+        res1 += pw2
+        true_res1 = PauliSentence({pw1: 1.0, pw2: 1.0})
+        assert res1 == true_res1
+        assert res2 == pw1  # original pw is unaltered after copy
+
+    def test_iadd_pw_pw_same(self):
+        """Test inplace-adding two pauli words that are the same"""
+        res1 = copy(pw1)
+        res2 = copy(pw1)
+        res1 += pw1
+        true_res1 = PauliSentence({pw1: 2.0})
+        assert res1 == true_res1
+        assert res2 == pw1  # original pw is unaltered after copy
+
+    def test_iadd_pw_scalar_different(self):
+        """Test inplace-adding pauli word and scalar that are distinct (i.e. non-identity)"""
+        res1 = copy(pw1)
+        res2 = copy(pw1)
+        res1 += 1.5
+        true_res1 = PauliSentence({pw1: 1.0, pw_id: 1.5})
+        assert res1 == true_res1
+        assert res2 == pw1  # original pw is unaltered after copy
+
+    def test_iadd_pw_scalar_same(self):
+        """Test inplace-adding two pauli words that are the same (i.e. both identity)"""
+        res1 = copy(pw_id)
+        res2 = copy(pw_id)
+        res1 += 1.5
+        true_res1 = PauliSentence({pw_id: 2.5})
+        assert res1 == true_res1
+        assert res2 == pw_id  # original pw is unaltered after copy
 
     tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
