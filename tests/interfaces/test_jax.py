@@ -18,7 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.jax
 
@@ -497,7 +497,7 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         results = jax.grad(cost)(params, cache=None)
@@ -692,7 +692,7 @@ class TestVectorValued:
                 qml.expval(qml.PauliZ(1))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jacobian(cost)(params, cache=None)
@@ -719,7 +719,7 @@ class TestVectorValued:
                 qml.expval(qml.PauliZ(1))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jacobian(cost)(params, cache=None)

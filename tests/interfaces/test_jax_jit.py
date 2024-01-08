@@ -19,7 +19,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.jax
 
@@ -496,7 +496,7 @@ class TestJaxExecuteIntegration:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         cost = jax.jit(cost)
@@ -706,7 +706,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jit(cost)(params, cache=None)
@@ -733,7 +733,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
@@ -778,7 +778,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         res = jax.jit(cost, static_argnums=1)(params, cache=None)
@@ -812,7 +812,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         res = jax.jit(cost, static_argnums=1)(params, cache=None)
@@ -833,7 +833,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res[0] + res[1]
 
         res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)

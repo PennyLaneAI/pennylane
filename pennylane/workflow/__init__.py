@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Deprecated module. Please see ``pennylane.workflow``.
+This module contains the core objects for managing a PennyLane workflow.
 
 """
-
-from pennylane import workflow
-
-
-def __getattr__(name):
-    return getattr(workflow, name)
+import pennylane.workflow.interfaces
+from .set_shots import set_shots
+from .execution import execute, SUPPORTED_INTERFACES, INTERFACE_MAP
+from .qnode import QNode, qnode
