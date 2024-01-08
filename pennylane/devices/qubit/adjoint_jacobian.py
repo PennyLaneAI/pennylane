@@ -218,6 +218,104 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
     return tuple(np.array(t) for t in tangents_out)
 
 
+def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
+    """Helper function for getting the bras for adjoint vjp, as well as the batch size of the
+    cotangents.
+
+    Args:
+        tape (QuantumTape): circuit that the function takes the gradient of.
+        tangents (Tuple[Number]): gradient vector for input parameters.
+        ket (TensorLike): the final state of the circuit.
+
+    Returns:
+        Tuple[TensorLike, int]: Final bra for batch size ``None``, else array of bras, and
+        the batch size
+    """
+
+    if isinstance(tape.measurements[0], qml.measurements.StateMP):
+        batched_cotangents = qml.math.ndim(cotangents) == 2
+        batch_size = qml.math.shape(cotangents)[0] if batched_cotangents else None
+        bras = np.squeeze(np.conj(cotangents.reshape(-1, *ket.shape)))
+        return bras, batch_size
+
+    # If not state measurement, measurements are guaranteed to be expectation values
+
+    single_cotangent = len(tape.measurements) == 1
+
+    if not single_cotangent:
+        # inner_shape will only be None if cotangents is a vector
+        inner_shape = next(
+            (qml.math.shape(cot) for cot in cotangents if qml.math.shape(cot) != ()), None
+        )
+        if inner_shape is not None:
+            # Batched cotangents. Find scalar zeros and pad to make the shape of cotangents
+            # homogenous
+            new_cotangents = []
+
+            for i, c in enumerate(cotangents):
+                if qml.math.shape(c) == () and np.allclose(c, 0.0):
+                    new_cotangents.append(np.zeros(inner_shape))
+                else:
+                    new_cotangents.append(c)
+
+            cotangents = new_cotangents
+
+    cotangents = np.array(cotangents)
+    if single_cotangent:
+        # Expand dimensions for cases when there is a single broadcasted cotangent
+        # so that the cotangent has 2 dimensions, which is expected in the rest of the
+        # function for batched cotangents. For unbatched cases, this will make a scalar
+        # cotangent a one-item array
+        cotangents = np.expand_dims(cotangents, 0)
+
+    # One dimension for number of expectation values, one dimension for batch size.
+    batched_cotangents = qml.math.ndim(cotangents) == 2
+
+    batch_size = qml.math.shape(cotangents)[1] if batched_cotangents else None
+    new_obs = []
+    zero_inds = []
+
+    # Collect list of observables to use for the adjoint algorithm. These will be used
+    # to construct the initial bras
+    if batched_cotangents:
+        for i, cots in enumerate(cotangents.T):
+            new_cs, new_os = [], []
+            for c, o in zip(cots, tape.observables):
+                if not np.allclose(c, 0.0):
+                    new_cs.append(c)
+                    new_os.append(o)
+            if len(new_cs) == 0:
+                zero_inds.append(i)
+            else:
+                new_obs.append(qml.dot(new_cs, new_os))
+
+    else:
+        # cotangents = (cotangents,) if qml.math.shape(cotangents) == tuple() else cotangents
+        new_cs, new_os = [], []
+        for c, o in zip(cotangents, tape.observables):
+            if not np.allclose(c, 0.0):
+                new_cs.append(c)
+                new_os.append(o)
+
+        if len(new_cs) == 0:
+            return tuple(0.0 for _ in tape.trainable_params)
+
+        new_obs.append(qml.dot(new_cs, new_os))
+
+    bras = np.empty((len(new_obs), *ket.shape), dtype=ket.dtype)
+
+    for kk, obs in enumerate(new_obs):
+        if obs.pauli_rep is not None:
+            flat_bra = obs.pauli_rep.dot(ket.flatten(), wire_order=list(range(tape.num_wires)))
+            bras[kk] = 2 * flat_bra.reshape(ket.shape)
+        else:
+            bras[kk] = 2 * apply_operation(obs, ket)
+
+    bras = bras if batched_cotangents else np.squeeze(bras)
+
+    return bras, batch_size
+
+
 def adjoint_vjp(
     tape: QuantumTape, cotangents: Tuple[Number], state=None
 ):  # pylint: disable=too-many-statements
@@ -250,8 +348,7 @@ def adjoint_vjp(
     """
     # See ``adjoint_jacobian.md`` to more information on the algorithm.
 
-    # Map wires if custom wire labels used
-    print(cotangents)
+    # Map wires if custom wire labels used)
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tapes, fn = qml.map_wires(tape, wire_map)
@@ -259,62 +356,14 @@ def adjoint_vjp(
 
     ket = state if state is not None else get_final_state(tape)[0]
 
-    # One dimension for number of expectation values, one dimension for batch size.
+    bras, batch_size = _get_vjp_bras_and_batch_size(tape, cotangents, ket)
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
-        batched_cotangents = qml.math.ndim(cotangents) == 2
-        batch_size = qml.math.shape(cotangents)[0] if batched_cotangents else None
-        bras = np.squeeze(np.conj(cotangents.reshape(-1, *ket.shape)))
 
         def real_if_expval(val):
             return val
 
     else:
-        single_cotangent = len(tape.measurements) == 1
-        cotangents = np.array(cotangents)
-        if single_cotangent:
-            cotangents = np.expand_dims(cotangents, 0)
-        batched_cotangents = qml.math.ndim(cotangents) == 2
-
-        batch_size = qml.math.shape(cotangents)[1] if batched_cotangents else None
-        new_obs = []
-        zero_inds = []
-
-        if batched_cotangents:
-            for i, cots in enumerate(cotangents.T):
-                new_cs, new_os = [], []
-                for c, o in zip(cots, tape.observables):
-                    if not np.allclose(c, 0.0):
-                        new_cs.append(c)
-                        new_os.append(o)
-                if len(new_cs) == 0:
-                    zero_inds.append(i)
-                else:
-                    new_obs.append(qml.dot(new_cs, new_os))
-
-        else:
-            cotangents = (cotangents,) if qml.math.shape(cotangents) == tuple() else cotangents
-            new_cs, new_os = [], []
-            for c, o in zip(cotangents, tape.observables):
-                if not np.allclose(c, 0.0):
-                    new_cs.append(c)
-                    new_os.append(o)
-
-            if len(new_cs) == 0:
-                return tuple(0.0 for _ in tape.trainable_params)
-
-            new_obs.append(qml.dot(new_cs, new_os))
-
-        bras = np.empty((len(new_obs), *ket.shape), dtype=ket.dtype)
-
-        for kk, obs in enumerate(new_obs):
-            if obs.pauli_rep is not None:
-                flat_bra = obs.pauli_rep.dot(ket.flatten(), wire_order=list(range(tape.num_wires)))
-                bras[kk] = 2 * flat_bra.reshape(ket.shape)
-            else:
-                bras[kk] = 2 * apply_operation(obs, ket)
-
-        bras = bras if batched_cotangents else np.squeeze(bras)
 
         def real_if_expval(val):
             return np.real(val)
@@ -327,8 +376,8 @@ def adjoint_vjp(
         if batch_size is None
         else (len(tape.trainable_params), batch_size)
     )
-    cotangents_in = np.zeros(res_shape, dtype=tape.measurements[0].numeric_type)
-    summing_axis = tuple(range(1, qml.math.ndim(bras))) if batched_cotangents else None
+    cotangents_in = np.empty(res_shape, dtype=tape.measurements[0].numeric_type)
+    summing_axis = None if batch_size is None else tuple(range(1, qml.math.ndim(bras)))
 
     for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)
@@ -346,6 +395,6 @@ def adjoint_vjp(
                 trainable_param_number -= 1
             param_number -= 1
 
-        bras = apply_operation(adj_op, bras, is_state_batched=batched_cotangents)
+        bras = apply_operation(adj_op, bras, is_state_batched=bool(batch_size))
 
     return tuple(cotangents_in)
