@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the clifford simulator based on stim
+This module contains the clifford simulator using stim
 """
 
 from dataclasses import replace
@@ -121,8 +121,8 @@ class DefaultClifford(Device):
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
         max_error (float): The maximum permissible operator norm error for decomposing circuits with non-Clifford gate operations
             into Clifford+T basis. The default is ``None`` as this device currently supports only Clifford simulations.
-        tableau (bool): Determines what should be returned when the device's state is computed with ``qml.state``. Default is
-            ``True``, which makes it return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
+        tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
+            Default is ``True``, which makes it return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
@@ -350,7 +350,7 @@ class DefaultClifford(Device):
 
         if self._check_clifford:
             transform_program.add_transform(
-                decompose, stopping_condition=operation_stopping_condition, name="default.clifford"
+                decompose, stopping_condition=operation_stopping_condition, name=self.name
             )
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
@@ -474,7 +474,7 @@ class DefaultClifford(Device):
 
         This function assumes that all operations are Clifford.
 
-        >>> qs = qml.tape.QuantumScript([qml.Hadamard(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.state(wires=(0,1))])
+        >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.PauliZ(0)), qml.state()])
         >>> simulate(qs)
         (array(0),
          array([[0, 1, 0],
@@ -607,7 +607,7 @@ class DefaultClifford(Device):
     @staticmethod
     def _measure_purity(meas_op, circuit):
         """Measure the purity of the state of simulator device"""
-        if circuit.op_wires != meas_op.wires:
+        if circuit.wires != meas_op.wires:
             raise NotImplementedError(
                 "default.clifford doesn't support measuring the purity of a subset of wires at the moment."
             )
