@@ -86,7 +86,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "Snapshot":
         return True
-    if op.__class__.__name__ == "Pow" and qml.operation.is_trainable(op):
+    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
 
     return op.has_matrix
@@ -138,9 +138,8 @@ def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callab
     params = tape.get_parameters()
     complex_data = [qml.math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
-    state_tape = qml.tape.QuantumScript(
-        tape.operations, [qml.measurements.StateMP(wires=tape.wires)]
-    )
+    new_mp = qml.measurements.StateMP(wires=tape.wires)
+    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
     return (state_tape,), partial(
         all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
     )

@@ -484,14 +484,14 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
         params(List[Array]): List (or a tuple) of arguments for `f` specifying the point to calculate
                              VJP at. A subset of these parameters are declared as
                              differentiable by listing their indices in the ``argnum`` parameter.
-        cotangents(List[Array]): List (or a tuple) of tangent values to use in JVP. The list size
+        cotangents(List[Array]): List (or a tuple) of tangent values to use in VJP. The list size
                                  and shapes must match the size and shape of ``f`` outputs.
         method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
         argnum (Union[int, List[int]]): the params' indices to differentiate.
 
     Returns:
-        Tuple[Array]: Return values of ``f`` paired with the JVP values.
+        Tuple[Array]: Return values of ``f`` paired with the VJP values.
 
     Raises:
         TypeError: invalid parameter types
