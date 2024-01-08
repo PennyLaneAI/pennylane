@@ -13,7 +13,13 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-from .compiler import CompileError, AvailableCompilers, available, active_compiler
+from .compiler import (
+    _check_compiler_version,
+    CompileError,
+    AvailableCompilers,
+    available,
+    active_compiler,
+)
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
@@ -131,6 +137,9 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     if not available(compiler):
         raise CompileError(f"The {compiler} package is not installed.")  # pragma: no cover
+
+    # Check the minimum version of 'compiler' if installed
+    _check_compiler_version(compiler)
 
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
