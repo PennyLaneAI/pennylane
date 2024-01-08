@@ -42,13 +42,17 @@
   
 <h4>Community contributions 🥳</h4>
 
-* The transform ``split_non_commuting`` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
+* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
+  [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
+
+* A typo in a code example in the `qml.transforms` API has been fixed.
+  [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -58,4 +62,5 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Isaac De Vlugt,
 Matthew Silverman.
