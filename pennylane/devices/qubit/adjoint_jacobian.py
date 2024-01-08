@@ -235,7 +235,8 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
         batched_cotangents = qml.math.ndim(cotangents) == 2
         batch_size = qml.math.shape(cotangents)[0] if batched_cotangents else None
-        bras = np.squeeze(np.conj(cotangents.reshape(-1, *ket.shape)))
+        bras = np.conj(cotangents.reshape(-1, *ket.shape))
+        bras = bras if batched_cotangents else np.squeeze(bras)
         return bras, batch_size
 
     # If not state measurement, measurements are guaranteed to be expectation values

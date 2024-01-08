@@ -1853,6 +1853,8 @@ class TestJIT:
         gradient_kwargs = {}
         if dev.name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
+        elif jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("device vjps are not compatible with forward differentiation.")
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
@@ -2042,6 +2044,8 @@ class TestReturn:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         @qnode(
             dev,
@@ -2071,6 +2075,8 @@ class TestReturn:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         @qnode(
             dev,
@@ -2106,6 +2112,8 @@ class TestReturn:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         @qnode(
             dev,
@@ -2218,6 +2226,10 @@ class TestReturn:
             pytest.skip("Test does not supports hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+        if diff_method == "adjoint":
+            pytest.skip("adjoint supports either all expvals or only diagonal measurements")
 
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
@@ -2266,6 +2278,10 @@ class TestReturn:
             pytest.skip("Test does not supports hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+        if diff_method == "adjoint":
+            pytest.skip("adjoint supports either all expvals or only diagonal measurements")
 
         @qnode(
             dev,
@@ -2336,6 +2352,8 @@ class TestReturn:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         @qnode(
             dev,
@@ -2379,6 +2397,8 @@ class TestReturn:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         @qnode(
             dev,
