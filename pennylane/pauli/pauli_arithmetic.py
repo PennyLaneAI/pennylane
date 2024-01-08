@@ -233,14 +233,26 @@ class PauliWord(dict):
 
     def __add__(self, other):
         """Add PauliWords/Sentences"""
+        # Note that the case of PauliWord + PauliSentence is covered in PauliSentence
         if isinstance(other, PauliWord):
+            if other == self:
+                return PauliSentence({self: 2.0})
             return PauliSentence({self: 1.0, other: 1.0})
+
+        if isinstance(other, TensorLike):
+            # Scalars are interepreted as scalar * Identity
+            IdWord = PauliWord({})
+            if IdWord == self:
+                return PauliSentence({self: 1.0 + other})
+            return PauliSentence({self: 1.0, IdWord: other})
+
         return NotImplemented
-        # raise TypeError(
-        #     f"PauliWord can only be added to other PauliWords or PauliSentences. Attempting to add {other} of type {type(other)} to {self}"
-        # )
 
     __radd__ = __add__
+
+    def __iadd__(self, other):
+        """Inplace addition of PauliWords"""
+        return self + other
 
     def __truediv__(self, other):
         """Divide a PauliWord by a scalar"""
@@ -433,6 +445,7 @@ class PauliSentence(dict):
             return res
 
         if isinstance(other, TensorLike):
+            # Scalars are interepreted as scalar * Identity
             res = copy(self)
             IdWord = PauliWord({})
             if IdWord in res:
