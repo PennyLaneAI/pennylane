@@ -11,7 +11,7 @@
   
 <h4>Community contributions 🥳</h4>
 
-* The transform ``split_non_commuting`` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
+* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 <h3>Breaking changes 💔</h3>
