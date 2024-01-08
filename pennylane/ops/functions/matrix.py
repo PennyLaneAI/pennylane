@@ -28,7 +28,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
     Args:
-        op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
+        op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
         wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
             The default wire order depends on the type of ``op``:
 
@@ -168,6 +168,9 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 
     """
     if not isinstance(op, qml.operation.Operator):
+        if isinstance(op, qml.pauli.PauliWord) or isinstance(op, qml.pauli.PauliSentence):
+            return op.to_mat(wire_order=wire_order)
+
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
             raise OperationTransformError(
                 "Input is not an Operator, tape, QNode, or quantum function"

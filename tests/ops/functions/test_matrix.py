@@ -24,6 +24,7 @@ from gate_data import I, X, Y, Z, H, S, CNOT, Rotx as RX, Roty as RY
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.pauli import PauliWord, PauliSentence
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -393,6 +394,51 @@ class TestCustomWireOrdering:
 
         expected_matrix = np.kron(RY(x), np.kron(X, Z))
         assert np.allclose(testcircuit2(x), expected_matrix)
+
+    @pytest.mark.parametrize("wire_order", [[0, 2, 1], [1, 0, 2], [2, 1, 0]])
+    def test_pauli_word_wireorder(self, wire_order):
+        """Test changing the wire order when using PauliWord"""
+        pw = PauliWord({0: "X", 1: "Y", 2: "Z"})
+        op = qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2)
+        assert qml.matrix(pw, wire_order) == qml.matrix(op, wire_order)
+
+    @pytest.mark.parametrize("wire_order", [[0, 2, 1], [1, 0, 2], [2, 1, 0]])
+    def test_pauli_sentence_wireorder(self, wire_order):
+        """Test changing the wire order when using PauliWord"""
+        pauli1 = PauliWord({0: "X", 1: "Y", 2: "Z"})
+        pauli2 = PauliWord({0: "Y", 1: "Z", 2: "X"})
+        ps = PauliSentence({pauli1: 1.5, pauli2: 0.5})
+
+        op1 = qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2)
+        op2 = qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(2)
+        op = 1.5 * op1 + 0.5 * op2
+        assert qml.matrix(ps, wire_order) == qml.matrix(op, wire_order)
+
+
+pw1 = PauliWord({0: "X", 1: "Z"})
+pw2 = PauliWord({0: "Y", 1: "Z"})
+pw3 = PauliWord({"a": "Y", "b": "Z"})
+op_pairs = (
+    (pw1, qml.PauliX(0) @ qml.PauliZ(1)),
+    (pw2, qml.PauliY(0) @ qml.PauliZ(1)),
+    (pw3, qml.PauliY("a") @ qml.PauliZ("b")),
+)
+
+
+class TestPauliWordPauliSentence:
+    @pytest.mark.parametrize("pw, op", op_pairs)
+    def test_PauliWord_matrix(self, pw, op):
+        """Test that a PauliWord is correctly transformed using qml.matrix"""
+        res = qml.matrix(pw)
+        true_res = qml.matrix(op)
+        assert res == true_res
+
+    @pytest.mark.parametrize("pw, op", op_pairs)
+    def test_PauliSentence_matrix(self, pw, op):
+        """Test that a PauliWord is correctly transformed using qml.matrix"""
+        res = qml.matrix(PauliSentence({pw: 0.5}))
+        true_res = qml.matrix(0.5 * op)
+        assert res == true_res
 
 
 class TestTemplates:
