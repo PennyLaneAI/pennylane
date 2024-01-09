@@ -564,7 +564,8 @@ class TestAdjointVJP:
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize(
-        "cotangents", ((0, 1.23), (1.232, -2.098, 0.323, 1.112), (5.212, -0.354, -2.575))
+        "cotangents",
+        ((0, 1.23), (1.232, -2.098, 0.323, 1.112), (5.212, -0.354, -2.575), (0.0, 0.0, 0.0)),
     )
     def test_single_param_single_obs_batched(self, cotangents, tol):
         """Test that batched cotangents with adjoint VJP give correct results when
@@ -594,6 +595,11 @@ class TestAdjointVJP:
                 np.array([-0.323, 0.573, -1.449, -0.573]),
                 np.array([0, 1, 1.232, 1.232]),
             ),
+            (
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+            ),
         ],
     )
     def test_single_param_multi_obs_batched(self, cotangents, tol):
@@ -618,7 +624,8 @@ class TestAdjointVJP:
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize(
-        "cotangents", ((0, 1.23), (1.232, -2.098, 0.323, 1.112), (5.212, -0.354, -2.575))
+        "cotangents",
+        ((0, 1.23), (1.232, -2.098, 0.323, 1.112), (5.212, -0.354, -2.575), (0.0, 0.0, 0.0)),
     )
     def test_multi_param_single_obs_batched(self, cotangents, tol):
         """Test that batched cotangents with adjoint VJP give correct results when
@@ -649,6 +656,11 @@ class TestAdjointVJP:
                 np.array([0.653, 0, 0, -1.234]),
                 np.array([-0.323, 0.573, -1.449, -0.573]),
                 np.array([0, 1, 1.232, 1.232]),
+            ),
+            (
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
             ),
         ],
     )
