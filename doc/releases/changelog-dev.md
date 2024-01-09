@@ -8,6 +8,12 @@
 
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
+
+* Upgrade Pauli arithmetic with multiplying by scalars, addition and subtraction. You can now construct operators like `0.5 * w1 - 1.5 * w2 + 2`.
+  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+  [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
+  [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
+  [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
   
 <h4>Community contributions 🥳</h4>
 
@@ -26,4 +32,5 @@
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
+Korbinian Kottmann,
 Matthew Silverman.
