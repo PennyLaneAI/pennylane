@@ -159,6 +159,7 @@ def parity_transform(
     tol: float = None,
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the parity mapping.
+    
     In parity mapping, qubit :math:`j` stores the parity of all :math:`j-1` qubits before it
     whereas in Jordan-Wigner, qubit :math:`j` stores the occupation number of qubit :math:`j`.
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
@@ -211,7 +212,9 @@ def parity_transform(
     + (0.25+0j) * X(2)
     + 0.25j * Y(2) @ Z(3)
     """
-    warnings.warn("This mapping is not, yet, fully compatible with other parts of PennyLane", UserWarning)
+    warnings.warn(
+        "This mapping is not, yet, fully compatible with other parts of PennyLane", UserWarning
+    )
 
     return _parity_transform_dispatch(fermi_operator, n, ps, wire_map, tol)
 
@@ -277,6 +280,8 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
 
             if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    qubit_operator.simplify(tol=1e-16)
 
     if not ps:
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
