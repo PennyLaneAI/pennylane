@@ -34,6 +34,11 @@ from pennylane.measurements import (
     PurityMP,
     VnEntropyMP,
     MutualInfoMP,
+    VarianceMP,
+    ProbabilityMP,
+    SampleMP,
+    ClassicalShadowMP,
+    ShadowExpvalMP,
 )
 from pennylane.ops.op_math import Prod, SProd, Sum
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
@@ -293,6 +298,7 @@ class DefaultClifford(Device):
             )
 
         self._tableau = tableau
+        self._prob_states = None
 
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         self._rng = np.random.default_rng(seed)
@@ -539,11 +545,11 @@ class DefaultClifford(Device):
 
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
 
-        meas_results = (
-            self.measure_statistical(circuit, initial_tableau, rng=None)
-            if circuit.shots
-            else self.measure_analytic(circuit, tableau_simulator, global_phase, stim)
-        )
+        if circuit.shots:
+            stim_circuit = tableau_simulator.current_inverse_tableau().inverse().to_circuit()
+            meas_results = self.measure_statistical(circuit, stim_circuit, stim, rng=None)
+        else:
+            meas_results = self.measure_analytical(circuit, tableau_simulator, global_phase, stim)
 
         return meas_results[0] if len(meas_results) == 1 else tuple(meas_results)
 
@@ -552,23 +558,36 @@ class DefaultClifford(Device):
         """Convert PennyLane operation to a Stim operation"""
         return _GATE_OPERATIONS[op.name], op.wires
 
-    def measure_statistical(self, circuit, initial_tableau, rng=None):
+    # pylint:disable=protected-access
+    def measure_statistical(self, circuit, stim_circuit, stim, rng=None):
         """Given a circuit, compute samples and return the statistical measurement results."""
         # Compute samples via circuits from tableau
         sample_seed = rng if isinstance(rng, int) else self._seed
-        sample_circuit = initial_tableau.to_circuit() + circuit
-        sample_circuit.append("M", circuit.wires)
-        sampler = sample_circuit.compile_sampler(seed=sample_seed)
+        stim_circ = stim_circuit.copy()
+        stim_circ.append("M", circuit.wires)
+        sampler = stim_circ.compile_sampler(seed=sample_seed)
         samples = qml.math.array(sampler.sample(shots=circuit.shots.total_shots), dtype=int)
 
-        # Compute results via process_samples method for measurements
-        results = [
-            meas.process_samples(samples=samples, wire_order=circuit.wires)
-            for meas in circuit.measurements
-        ]
+        results = []
+        for meas in circuit.measurements:
+            # Computing samples via stim's compiled sampler
+            if isinstance(meas, SampleMP):
+                results.append(samples)
+
+            # Computing classical shadows via manual single sampling
+            elif isinstance(meas, ClassicalShadowMP):
+                results.append(self._measure_classical_shadow(stim_circuit, circuit, meas, stim))
+
+            # Computing observable expectation value using above classical shadows
+            elif isinstance(meas, ShadowExpvalMP):
+                results.append(self._measure_expval_shadow(stim_circuit, circuit, meas, stim))
+
+            # Computing rest of the measurement by processing samples
+            else:
+                results.append(meas.process_samples(samples=samples, wire_order=circuit.wires))
         return results
 
-    def measure_analytic(self, circuit, tableau_simulator, global_phase, stim):
+    def measure_analytical(self, circuit, tableau_simulator, global_phase, stim):
         """Given a circuit, compute tableau and return the analytical measurement results."""
         results = []
         for meas in circuit.measurements:
@@ -584,11 +603,28 @@ class DefaultClifford(Device):
             elif isinstance(meas, ExpectationMP):
                 res = self._measure_expectation(tableau_simulator, meas, stim)
 
+            # Computing variance via measurement
+            elif isinstance(meas, VarianceMP):
+                res = self._measure_variance(tableau_simulator, meas, stim)
+
+            # Computing probabilities via tableau
+            elif isinstance(meas, ProbabilityMP):
+                res = self._measure_probability(tableau_simulator, circuit, meas, stim)
+
             # Computing entropy via tableaus
             elif isinstance(meas, VnEntropyMP):
                 tableau = tableau_simulator.current_inverse_tableau() ** -1
                 zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
                 res = self._stabilizer_vn_entropy(zs, list(meas.wires))
+
+            # Computing mutual-info via tableaus
+            elif isinstance(meas, MutualInfoMP):
+                tableau = tableau_simulator.current_inverse_tableau() ** -1
+                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                indices0, indices1 = getattr(meas, "_wires")
+                res = self._stabilizer_vn_entropy(zs, list(indices0)) + self._stabilizer_vn_entropy(
+                    zs, list(indices1)
+                )
 
             # Computing purity via tableaus
             elif isinstance(meas, PurityMP):
@@ -598,15 +634,6 @@ class DefaultClifford(Device):
                     qml.math.array(1.0)
                     if circuit.op_wires == meas.wires
                     else self._measure_purity(zs, list(meas.wires))
-                )
-
-            # Computing mutual-info via tableaus
-            elif isinstance(meas, MutualInfoMP):
-                tableau = tableau_simulator.current_inverse_tableau() ** -1
-                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
-                indices0, indices1 = getattr(meas, "_wires")
-                res = self._stabilizer_vn_entropy(zs, list(indices0)) + self._stabilizer_vn_entropy(
-                    zs, list(indices1)
                 )
 
             # Computing more measurements
@@ -715,6 +742,22 @@ class DefaultClifford(Device):
             f"default.clifford doesn't support expectation value calculation with {type(meas_obs)} at the moment."
         )
 
+    def _measure_variance(self, tableau_simulator, meas_op, stim):
+        """Measure the variance with respect to the state of simulator device."""
+        # TODO: find a better pythonic way to deal with this enable-disable
+        check_op_math = qml.operation.active_new_opmath()
+        qml.operation.enable_new_opmath()
+        meas_obs1 = meas_op.obs.simplify()
+        meas_obs2 = (meas_obs1**2).simplify()
+        if not check_op_math:
+            qml.operation.disable_new_opmath()
+
+        # use the naive formula for variance, i.e., Var(Q) = ⟨𝑄^2⟩−⟨𝑄⟩^2
+        return (
+            self._measure_expectation(tableau_simulator, ExpectationMP(meas_obs2), stim)
+            - self._measure_expectation(tableau_simulator, ExpectationMP(meas_obs1), stim) ** 2
+        )
+
     # pylint: disable=protected-access
     @staticmethod
     def _measure_stabilizer_vn_entropy(stabilizer, wires, log_base=None):
@@ -757,7 +800,7 @@ class DefaultClifford(Device):
         )
 
         # Use the reduced row echelon form for finding rank efficiently
-        # tapering always come handy :)
+        # tapering always come in handy :)
         rank = qml.math.sum(
             qml.math.any(qml.qchem.tapering._reduced_row_echelon(partition_mat), axis=1)
         )
@@ -772,11 +815,11 @@ class DefaultClifford(Device):
         return entropy / qml.math.log(log_base)
 
     def _measure_purity(self, stabilizer, wires):
-        """Measure the purity of the state of simulator device
+        r"""Measure the purity of the state of simulator device
 
         Computes the state purity using the monotonically decreasing second-order Rényi entropy
         form given in `Sci Rep 13, 4601 (2023) <https://www.nature.com/articles/s41598-023-31273-9>`_.
-        We utilize the fact that Rényi entropies are independent of the Rényi indices `n` for the
+        We utilize the fact that Rényi entropies are independent of the Rényi indices ``n`` for the
         stabilizer states.
 
         Args:
@@ -788,3 +831,93 @@ class DefaultClifford(Device):
             (float): entanglement entropy of the subsystem
         """
         return 2 ** (-self._measure_stabilizer_vn_entropy(stabilizer, wires, log_base=2))
+
+    @property
+    def probability_target(self):
+        """Get the target computational basis states for computing outcome probability."""
+        return self._prob_states
+
+    @probability_target.setter
+    def probability_target(self, basis_states):
+        """Set the target computational basis states for computing outcome probability."""
+        self._prob_states = qml.math.stack(
+            basis_states if len(qml.math.shape(basis_states)) > 1 else [basis_states]
+        )
+
+    def _measure_probability(self, tableau_simulator, circuit, meas_op, stim):
+        """Measure the probability of each computational basis state."""
+        if not self._tableau:
+            state = self._measure_state(tableau_simulator, circuit, 0.0)
+            return meas_op.process_state(state, wire_order=circuit.wires)
+
+        if self._prob_state is None:
+            raise ValueError(
+                "In order to maintain computational efficiency,\
+                with ``tableau=True``, the clifford device supports returning\
+                probability only for selected target computational basis states.\
+                Please use `probability_target()` method to set them."
+            )
+        assert self._prob_states.shape[1] == len(meas_op.wires)
+
+        # we might be able to skip the inverse done below
+        # as the distribution for the inverted tableau should remain same
+        diagonalizing_cit = tableau_simulator.current_inverse_tableau().inverse().to_circuit()
+        diagonalizing_ops = meas_op.obs.diagonalizing_gates()
+        for ops in diagonalizing_ops:
+            # Check if it is Clifford
+            if ops not in _GATE_OPERATIONS:
+                raise ValueError(
+                    f"Currently, we only support observables whose diagonalizing gates are Clifford, got {ops}"
+                )
+            # Add to the circuit to rotate the basis
+            stim_op = self.pl_to_stim(ops)
+            if stim_op is not None:
+                diagonalizing_cit.append(ops)
+
+        # Iterate over the instructions and perform post-selection to obtain possible solutions
+        num_states = self._prob_states.shape[0]
+        prob_res = qml.math.ones(num_states)
+        for ind in range(num_states):
+            diagonalizing_sim = stim.TableauSimulator().do_circuit(diagonalizing_cit)
+            for idx, wire in enumerate(meas_op.wires):
+                outcome = self._prob_state[idx]
+                expectaction = diagonalizing_sim.peek_z(wire)
+                if not expectaction:
+                    prob_res[ind] /= 2.0
+                elif expectaction != (-1 if outcome else 1):
+                    prob_res[ind] = 0.0
+                    break
+                diagonalizing_sim.postselect_z(wire, desired_value=outcome)
+
+        return prob_res
+
+    @staticmethod
+    def _measure_single_sample(stim_circuit, meas_obs, stim):
+        """Single sample output from a stim circuit"""
+        stim_ct = stim_circuit.copy()
+        stim_ct.append(f"{meas_obs[0]} {meas_obs[1]}")
+        return int(stim.TableauSimulator().do_circuit(stim_ct).current_measurement_record()[0])
+
+    def _measure_classical_shadow(self, stim_circuit, circuit, meas_op, stim):
+        """Measures classical shadows from the state of simulator device"""
+        meas_dict = {0: "MX", 1: "MY", 2: "MZ"}
+        meas_seed = meas_op.seed or np.random.randint(2**30)
+
+        bits = []
+        recipes = np.random.RandomState(meas_seed).randint(3, size=(circuit.shots, circuit.wires))
+        for recipe in recipes:
+            bits.apppend(
+                [
+                    self._measure_single_sample(stim_circuit, [meas_dict[rec], idx], stim)
+                    for idx, rec in enumerate(recipe)
+                ]
+            )
+
+        return np.asarray(bits, dtype=int), np.asarray(recipes, dtype=int)
+
+    def _measure_expval_shadow(self, stim_circuit, circuit, meas_op, stim):
+        """Measures expectation value of a Pauli observable using classical shadows
+        from the state of simulator device"""
+        bits, recipes = self._measure_classical_shadow(stim_circuit, circuit, meas_op, stim)
+        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=circuit.wires.tolist())
+        return shadow.expval(meas_op.H, meas_op.k)
