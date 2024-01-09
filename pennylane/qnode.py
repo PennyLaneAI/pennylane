@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Deprecated module. Please see ``pennylane.workflow``.
+A deprecated location for ``QNode`` and ``qnode``. Please see the ``workflow`` module instead.
 """
 from warnings import warn
 
 import pennylane as qml
-from pennylane import workflow
+from pennylane.workflow import qnode, QNode
 
 
 def __getattr__(name):
     warn(
-        "pennylane.interfaces has been moved into pennylane.workflow. Please import from there instead.",
+        "pennylane.qnode has been moved to pennylane.workflow.qnode. Please import from pennylane or pennylane.workflow instead.",
         qml.PennyLaneDeprecationWarning,
     )
-    return getattr(workflow, name)
+    if name == "qnode":
+        return qnode
+    if name == "QNode":
+        return QNode
+    raise AttributeError(f"No module contents {name}")

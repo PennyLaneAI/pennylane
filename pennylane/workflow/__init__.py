@@ -14,8 +14,44 @@
 """
 This module contains the core objects for managing a PennyLane workflow.
 
+.. currentmodule:: pennylane
+
+Execution functions and utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~execute
+    ~workflow.cache_execute
+    ~workflow.set_shots
+
+Supported interfaces
+~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~workflow.interfaces.autograd
+    ~workflow.interfaces.jax
+    ~workflow.interfaces.jax_jit
+    ~workflow.interfaces.tensorflow
+    ~workflow.interfaces.tensorflow_autograph
+    ~workflow.interfaces.torch
+
+Jacobian Product Calculation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~workflow.jacobian_products.JacobianProductCalculator
+    ~workflow.jacobian_products.TransformJacobianProducts
+    ~workflow.jacobian_products.DeviceDerivatives
+    ~workflow.jacobian_products.DeviceJacobianProducts
+
+
 """
-import pennylane.workflow.interfaces
 from .set_shots import set_shots
-from .execution import execute, SUPPORTED_INTERFACES, INTERFACE_MAP
+from .execution import execute, cache_execute, SUPPORTED_INTERFACES, INTERFACE_MAP
 from .qnode import QNode, qnode

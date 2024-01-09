@@ -14,43 +14,6 @@
 """
 This subpackage defines functions for interfacing devices' execution
 capabilities with different machine learning libraries.
-
-.. currentmodule:: pennylane
-
-Execution functions and utilities
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~execute
-    ~workflow.cache_execute
-    ~workflow.set_shots
-
-Supported interfaces
-~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~workflow.interfaces.autograd
-    ~workflow.interfaces.jax
-    ~workflow.interfaces.jax_jit
-    ~workflow.interfaces.tensorflow
-    ~workflow.interfaces.tensorflow_autograph
-    ~workflow.interfaces.torch
-
-Jacobian Product Calculation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~workflow.jacobian_products.JacobianProductCalculator
-    ~workflow.jacobian_products.TransformJacobianProducts
-    ~workflow.jacobian_products.DeviceDerivatives
-    ~workflow.jacobian_products.DeviceJacobianProducts
-
 """
 
 

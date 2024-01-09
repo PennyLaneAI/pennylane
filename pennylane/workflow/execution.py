@@ -240,7 +240,9 @@ def _make_inner_execute(
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    cached_device_execution = cache_execute(device_execution, cache, return_tuple=False)
+    cached_device_execution = qml.workflow.cache_execute(
+        device_execution, cache, return_tuple=False
+    )
 
     def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
@@ -747,7 +749,7 @@ def execute(
 
             # replace the backward gradient computation
             gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
-            cached_gradient_fn = cache_execute(
+            cached_gradient_fn = qml.workflow.cache_execute(
                 gradient_fn_with_shots,
                 cache,
                 pass_kwargs=True,
