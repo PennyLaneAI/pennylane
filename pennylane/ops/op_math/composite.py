@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, _UNSET_BATCH_SIZE
+from pennylane.operation import Operator, Tensor, _UNSET_BATCH_SIZE
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -50,6 +50,14 @@ class CompositeOp(Operator):
     def _unflatten(cls, data, metadata):
         return cls(*data)
 
+    @staticmethod
+    def _from_hamiltonian_or_tensor(op):
+        if isinstance(op, qml.Hamiltonian):
+            return qml.dot(*op.terms())
+        if isinstance(op, Tensor):
+            return qml.prod(*op.obs)
+        return op
+
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
     def __init__(self, *operands: Operator, id=None):  # pylint: disable=super-init-not-called
@@ -60,7 +68,7 @@ class CompositeOp(Operator):
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
 
-        self.operands = operands
+        self.operands = tuple(self._from_hamiltonian_or_tensor(op) for op in operands)
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
