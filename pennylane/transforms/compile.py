@@ -52,14 +52,15 @@ def compile(
             tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
-            reached. If no basis set is specified, no expansion will be done.
+            reached. If no basis set is specified, a default of
+            ``pennylane.ops.__all__`` will be used. This decomposes templates and
+            operator arithmetic.
         num_passes (int): The number of times to apply the set of transforms in
             ``pipeline``. The default is to perform each transform once;
             however, doing so may produce a new circuit where applying the set
             of transforms again may yield further improvement, so the number of
             such passes can be adjusted.
-        expand_depth (int): When ``basis_set`` is specified, the depth to use
-            for tape expansion into the basis gates.
+        expand_depth (int): The depth to use for tape expansion into the basis gates.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The compiled circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
@@ -181,17 +182,12 @@ def compile(
     # don't queue anything as a result of the expansion or transform pipeline
 
     with QueuingManager.stop_recording():
-        if basis_set is not None:
-            expanded_tape = tape.expand(
-                depth=expand_depth, stop_at=lambda obj: obj.name in basis_set
-            )
-        else:
-            # Expands out anything that is not a single operation (i.e., the templates)
-            # expand barriers when `only_visual=True`
-            def stop_at(obj):
-                return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+        basis_set = basis_set or all_ops
 
-            expanded_tape = tape.expand(stop_at=stop_at)
+        def stop_at(obj):
+            return obj.name in basis_set and (not getattr(obj, "only_visual", False))
+
+        expanded_tape = tape.expand(depth=expand_depth, stop_at=stop_at)
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Setup file for package installation."""
+# pylint: disable=unspecified-encoding, consider-using-with
 
 from setuptools import setup, find_packages
 
@@ -30,7 +31,7 @@ requirements = [
     "semantic-version>=2.7",
     "autoray>=0.6.1",
     "cachetools",
-    "pennylane-lightning>=0.33",
+    "pennylane-lightning>=0.34",
     "requests",
     "typing_extensions",
 ]
@@ -85,6 +86,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Physics",
 ]

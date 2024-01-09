@@ -107,14 +107,13 @@ def ctrl(op, control, control_values=None, work_wires=None):
             qml.Hadamard(wires=[1])
 
             def func(arg):
-              qml.RX(theta, wires=arg)
+                qml.RX(theta, wires=arg)
 
-            @qml.cond(theta > 0.0)
             def cond_fn():
-              qml.RY(theta, wires=w)
+                qml.RY(theta, wires=w)
 
             qml.ctrl(func, control=[cw])(w)
-            qml.ctrl(cond_fn, control=[cw])()
+            qml.ctrl(qml.cond(theta > 0.0, cond_fn), control=[cw])()
             qml.ctrl(qml.RZ, control=[cw])(theta, wires=w)
             qml.ctrl(qml.RY(theta, wires=w), control=[cw])
             return qml.probs()
