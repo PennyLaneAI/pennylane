@@ -79,8 +79,6 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
 
         The adjoint differentiation method has the following restrictions:
 
-        * Only expectation values are supported as measurements.
-
         * Cannot differentiate with respect to observables.
 
         * Observable being measured must have a matrix.
@@ -155,8 +153,6 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
     .. note::
 
         The adjoint differentiation method has the following restrictions:
-
-        * Only expectation values are supported as measurements.
 
         * Cannot differentiate with respect to observables.
 
@@ -333,15 +329,21 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
         The adjoint differentiation method has the following restrictions:
 
-        * Only expectation values are supported as measurements.
-
         * Cannot differentiate with respect to observables.
 
         * Observable being measured must have a matrix.
 
     Args:
         tape (QuantumTape): circuit that the function takes the gradient of
-        cotangents (Tuple[Number]): gradient vector for output parameters
+        cotangents (Tuple[Number]): gradient vector for output parameters. For computing
+            the full Jacobian, the cotangents can be batched to vectorize the computation.
+            In this case, the cotangents can have the following shapes. ``batch_size``
+            below refers to the number of entries in the Jacobian:
+
+            * For a state measurement, cotangents must have shape ``(batch_size, 2 ** n_wires)``.
+            * For ``n`` expectation values, the cotangents must have shape ``(n, batch_size)``.
+                If ``n = 1``, then the shape must be ``(batch_size,)``.
+
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape
 

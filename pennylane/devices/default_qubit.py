@@ -804,9 +804,9 @@ class DefaultQubit(Device):
         the cotangents can be batched to vectorize the computation. In this case, the cotangents can have the following
         shapes. ``batch_size`` below refers to the number of entries in the Jacobian:
 
-            * For a state measurement, the cotangents must have shape ``(batch_size, 2 ** n_wires)``
-            * For ``n`` expectation values, the cotangents must have shape ``(n, batch_size)``. If ``n == 1``,
-              then the shape must be ``(batch_size,)``.
+        * For a state measurement, the cotangents must have shape ``(batch_size, 2 ** n_wires)``
+        * For ``n`` expectation values, the cotangents must have shape ``(n, batch_size)``. If ``n = 1``,
+            then the shape must be ``(batch_size,)``.
 
         """
         is_single_circuit = False
