@@ -145,7 +145,7 @@ def test_validate_adjoint_trainable_params_obs_warning():
 
 def test_validate_adjoint_trainable_params_state_prep_error():
     """Tests error raised for validate_adjoint_trainable_params with trainable state-preps."""
-    tape = qml.tape.QuantumScript([qml.StatePrep([1.0, 0.0], wires=[0])])
+    tape = qml.tape.QuantumScript([qml.StatePrep(qml.numpy.array([1.0, 0.0]), wires=[0])])
     with pytest.raises(qml.QuantumFunctionError, match="Differentiating with respect to"):
         validate_adjoint_trainable_params(tape)
 

@@ -215,15 +215,14 @@ def validate_adjoint_trainable_params(
     for adjoint differentiation.
     """
 
-    num_preps = tape.num_preps
-    for k in tape.trainable_params:
-        op_idx = tape._par_info[k]["op_idx"]
-        if op_idx < num_preps:
+    for op in tape.operations[: tape.num_preps]:
+        if qml.operation.is_trainable(op):
             raise qml.QuantumFunctionError(
                 "Differentiating with respect to the input parameters of state-prep operations "
                 "is not supported with the adjoint differentiation method."
             )
-        mp_or_op = tape[op_idx]
+    for k in tape.trainable_params:
+        mp_or_op = tape[tape._par_info[k]["op_idx"]]
         if isinstance(mp_or_op, MeasurementProcess):
             warnings.warn(
                 "Differentiating with respect to the input parameters of "
