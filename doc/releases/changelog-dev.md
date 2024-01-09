@@ -12,7 +12,7 @@
 * Composite operations (eg. those made with `qml.prod` and `qml.sum`) convert `Hamiltonian` and
   `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
   incompatible operator types.
-  [()](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
 
 <h4>Community contributions 🥳</h4>
 
