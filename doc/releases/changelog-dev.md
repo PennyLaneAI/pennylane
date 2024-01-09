@@ -23,6 +23,9 @@
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
+* Documentation for `qml.data` has been updated.
+  [(#5029)](https://github.com/PennyLaneAI/pennylane/pull/5029)
+
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
@@ -31,4 +34,5 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Isaac De Vlugt,
+Diego Guala,
 Matthew Silverman.
