@@ -27,35 +27,8 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
         array[complex]: output_state
     """
     num_ch_wires = len(op.wires)
-    num_wires = int(len(qml.math.shape(state)) / 2 - is_state_batched)
+    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
     rho_dim = 2 * num_wires
-
-    kraus = _get_kraus(op)
-    # Computes K^\dagger, needed for the transformation K \rho K^\dagger
-    kraus_dagger = [math.conj(math.transpose(k)) for k in kraus]
-
-    kraus = math.stack(kraus)
-    kraus_dagger = math.stack(kraus_dagger)
-
-    # Shape kraus operators
-    kraus_shape = [len(kraus)] + [qudit_dim] * num_ch_wires * 2
-
-    if isinstance(op, Channel): #TODO??
-        is_mat_batched = False
-        # TODO Channels broadcasting is causing issues currently
-        # TODO need to talk to PennyLane team to find out more
-    else:
-        mat = op.matrix()
-        dim = qudit_dim**num_ch_wires
-        batch_size = qml.math.get_batch_size(mat, (dim, dim), dim**2)
-        if batch_size is not None:
-            # Add broadcasting dimension to shape
-            kraus_shape = [batch_size] + kraus_shape
-            if op.batch_size is None:
-                op._batch_size = batch_size  # pylint:disable=protected-access
-
-    kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
-    kraus_dagger = math.cast(math.reshape(kraus_dagger, kraus_shape), complex)
 
     # Tensor indices of the state. For each qutrit, need an index for rows *and* columns
     state_indices = alphabet[:rho_dim]
@@ -88,6 +61,35 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
         f"...{kraus_index}{col_indices}{new_col_indices}->...{new_state_indices}"
     )
 
+    kraus = _get_kraus(op)
+
+    # Shape kraus operators
+    kraus_shape = [len(kraus)] + [qudit_dim] * num_ch_wires * 2
+    kraus_dagger = []
+    if not isinstance(op, Channel):
+        # TODO Channels broadcasting is causing issues currently
+        # TODO need to talk to PennyLane team to find out more
+        mat = op.matrix()
+        dim = qudit_dim**num_ch_wires
+        batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
+        if batch_size is not None:
+            # Add broadcasting dimension to shape
+            kraus_shape = [batch_size] + kraus_shape
+            if op.batch_size is None:
+                op._batch_size = batch_size  # pylint:disable=protected-access
+            # Computes K^\dagger, needed for the transformation K \rho K^\dagger
+            for op_mats in kraus:
+                kraus_dagger.append([math.conj(math.transpose(k)) for k in op_mats])
+    if not kraus_dagger:
+        # Computes K^\dagger, needed for the transformation K \rho K^\dagger
+        kraus_dagger = [math.conj(math.transpose(k)) for k in kraus]
+
+    kraus = math.stack(kraus)
+    kraus_dagger = math.stack(kraus_dagger)
+
+    kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
+    kraus_dagger = math.cast(math.reshape(kraus_dagger, kraus_shape), complex)
+
     return math.einsum(einsum_indices, kraus, state, kraus_dagger)
 
 
@@ -109,19 +111,19 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     # Shape kraus operators and cast them to complex data type
     kraus_shape = [qudit_dim] * (num_ch_wires * 2)
 
-    if isinstance(op, Channel):
-        is_mat_batched = False
-        # TODO Channels broadcasting is causing issues currently,
-        # TODO need to talk to PennyLane team to find out more
-    else:
-        mat = op.matrix()
-        dim = qudit_dim**num_ch_wires
-        batch_size = qml.math.get_batch_size(mat, (dim, dim), dim**2)
-        if is_mat_batched := batch_size is not None:
-            # Add broadcasting dimension to shape
-            kraus_shape = [batch_size] + kraus_shape
-            if op.batch_size is None:
-                op._batch_size = batch_size  # pylint:disable=protected-access
+    # if isinstance(op, Channel):
+    #     is_mat_batched = False
+    #     # TODO Channels broadcasting is causing issues currently,
+    #     # TODO need to talk to PennyLane team to find out more
+    # else:
+    #     mat = op.matrix()
+    #     dim = qudit_dim**num_ch_wires
+    #     batch_size = qml.math.get_batch_size(mat, (dim, dim), dim**2)
+    #     if is_mat_batched := batch_size is not None:
+    #         # Add broadcasting dimension to shape
+    #         kraus_shape = [batch_size] + kraus_shape
+    #         if op.batch_size is None:
+    #             op._batch_size = batch_size  # pylint:disable=protected-access
 
     # row indices of the quantum state affected by this operation
     row_wires_list = list(op.wires.toarray() + int(is_state_batched))
@@ -156,14 +158,14 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     source_right = list(range(-num_ch_wires, 0))
     dest_right = col_wires_list
 
-    if is_mat_batched:
-        source_left = [0] + [i + 1 for i in source_left]
-        source_right = [i + 1 for i in source_right]
-        dest_left = [0] + [i + 1 for i in source_left]
-        dest_right = [i + 1 for i in source_right]
-    if is_state_batched:
-        source_right += [-1]
-        dest_right += [-1]
+    # if is_mat_batched:
+    #     source_left = [0] + [i + 1 for i in source_left]
+    #     source_right = [i + 1 for i in source_right]
+    #     dest_left = [0] + [i + 1 for i in source_left]
+    #     dest_right = [i + 1 for i in source_right]
+    # if is_state_batched:
+    #     source_right += [-1]
+    #     dest_right += [-1]
 
     print(source_left + source_right)
     print(dest_left + dest_right)
@@ -230,7 +232,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
     if (
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
-    ) or (op.batch_size and is_state_batched):
+    ) or (op.batch_size or is_state_batched):
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
