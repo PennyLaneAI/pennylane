@@ -38,7 +38,7 @@ class TestAutogradExecuteUnitTests:
         mock.side_effect = ImportError()
 
         try:
-            del sys.modules["pennylane.interfaces.autograd"]
+            del sys.modules["pennylane.workflow.interfaces.autograd"]
         except KeyError:
             pass
 

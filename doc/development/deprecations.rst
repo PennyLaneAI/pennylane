@@ -9,6 +9,8 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
+
 * ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are deprecated. Instead,
   you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition`` .
 
