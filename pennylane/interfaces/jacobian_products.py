@@ -721,7 +721,7 @@ class LightningVJPs(DeviceDerivatives):
     def __init__(self, device, gradient_kwargs=None):
         super().__init__(device, gradient_kwargs=gradient_kwargs)
         self._processed_gradient_kwargs = {
-            key: value for key, value in gradient_kwargs.items() if key != "method"
+            key: value for key, value in self._gradient_kwargs.items() if key != "method"
         }
 
     def compute_vjp(self, tapes, dy):
@@ -732,7 +732,9 @@ class LightningVJPs(DeviceDerivatives):
         results = []
         for dyi, tape in zip(dy, tapes):
             numpy_tape = qml.transforms.convert_to_numpy_parameters(tape)
-            dyi = qml.math.hstack(qml.math.unwrap(dyi))
+            if len(tape.measurements) == 1:
+                dyi = (dyi,)
+            dyi = np.array(qml.math.unwrap(dyi))
             if qml.math.ndim(dyi) > 1:
                 raise NotImplementedError(
                     "Lightning device VJPs are not supported with jax jacobians."

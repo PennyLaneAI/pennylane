@@ -576,6 +576,8 @@ def execute(
         # Only need to calculate derivatives with jax when we know it will be executed later.
         if interface in {"jax", "jax-jit"}:
             grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
+    if interface == "jax-jit" and device_vjp and "use_device_state" in gradient_kwargs:
+        gradient_kwargs["use_device_state"] = False
 
     if (
         device_vjp
@@ -662,7 +664,7 @@ def execute(
     if device_vjp and "lightning" in getattr(device, "short_name", ""):
         tapes = [expand_fn(t) for t in tapes]
         tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
-        jpc = LightningVJPs(device)
+        jpc = LightningVJPs(device, gradient_kwargs=gradient_kwargs)
 
     elif config.use_device_jacobian_product and interface in jpc_interfaces:
         jpc = DeviceJacobianProducts(device, config)

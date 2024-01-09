@@ -836,7 +836,7 @@ class TestQubitIntegration:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
-        dev1 = dev
+        dev1 = qml.device("default.qubit")
 
         @qnode(dev1, **kwargs)
         def circuit1(a, b, c):
