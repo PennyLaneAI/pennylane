@@ -218,9 +218,9 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
     return tuple(np.array(t) for t in tangents_out)
 
 
-def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
-    """Helper function for getting the bras for adjoint vjp, as well as the batch size of the
-    cotangents.
+def _get_vjp_bras(tape, cotangents, ket):
+    """Helper function for getting the bras for adjoint vjp, the batch size of the
+    cotangents, as well as a list of indices for which the cotangents are zero.
 
     Args:
         tape (QuantumTape): circuit that the function takes the gradient of.
@@ -228,8 +228,11 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
         ket (TensorLike): the final state of the circuit.
 
     Returns:
-        Tuple[TensorLike, int]: Final bra for batch size ``None``, else array of bras, and
-        the batch size
+        Tuple[TensorLike, int, List]: The return contains the following:
+            * Final bra for batch size ``None``, else array of bras
+            * Batch size. None if cotangents are not batched
+            * List containing batch indices that are zero. Empty for unbatched
+              cotangents
     """
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
@@ -237,14 +240,16 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
         batch_size = qml.math.shape(cotangents)[0] if batched_cotangents else None
         bras = np.conj(cotangents.reshape(-1, *ket.shape))
         bras = bras if batched_cotangents else np.squeeze(bras)
-        return bras, batch_size
+        return bras, batch_size, []
 
     # If not state measurement, measurements are guaranteed to be expectation values
 
     single_cotangent = len(tape.measurements) == 1
 
     if not single_cotangent:
-        # inner_shape will only be None if cotangents is a vector
+        # Pad cotangents if shape is inhomogenous
+        # inner_shape will only be None if cotangents is a vector. We assume that for
+        # inhomogenous cotangents,
         inner_shape = next(
             (qml.math.shape(cot) for cot in cotangents if qml.math.shape(cot) != ()), None
         )
@@ -270,10 +275,12 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
         cotangents = np.expand_dims(cotangents, 0)
 
     # One dimension for number of expectation values, one dimension for batch size.
-    batched_cotangents = qml.math.ndim(cotangents) == 2
-    batch_size = qml.math.shape(cotangents)[1] if batched_cotangents else None
-    new_obs = []
-    zero_inds = []
+    batched_cotangents = np.ndim(cotangents) == 2
+    batch_size = cotangents.shape[1] if batched_cotangents else None
+    if np.allclose(cotangents, 0.0):
+        return None, batch_size, []
+
+    new_obs, null_batch_indices = [], []
 
     # Collect list of observables to use for the adjoint algorithm. These will be used
     # to construct the initial bras
@@ -285,7 +292,7 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
                     new_cs.append(c)
                     new_os.append(o)
             if len(new_cs) == 0:
-                zero_inds.append(i)
+                null_batch_indices.append(i)
             else:
                 new_obs.append(qml.dot(new_cs, new_os))
 
@@ -296,11 +303,9 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
                 new_cs.append(c)
                 new_os.append(o)
 
-        if len(new_cs) == 0:
-            return None, batch_size
-
         new_obs.append(qml.dot(new_cs, new_os))
 
+    # Create bra(s) by taking product of observable(s) with the final state
     bras = np.empty((len(new_obs), *ket.shape), dtype=ket.dtype)
 
     for kk, obs in enumerate(new_obs):
@@ -312,12 +317,10 @@ def _get_vjp_bras_and_batch_size(tape, cotangents, ket):
 
     bras = bras if batched_cotangents else np.squeeze(bras)
 
-    return bras, batch_size
+    return bras, batch_size, null_batch_indices
 
 
-def adjoint_vjp(
-    tape: QuantumTape, cotangents: Tuple[Number], state=None
-):  # pylint: disable=too-many-statements
+def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     """The vector jacobian product used in reverse-mode differentiation.
 
     Implements the adjoint method outlined in
@@ -355,9 +358,12 @@ def adjoint_vjp(
 
     ket = state if state is not None else get_final_state(tape)[0]
 
-    bras, batch_size = _get_vjp_bras_and_batch_size(tape, cotangents, ket)
-    if batch_size is None and np.allclose(cotangents, 0.0):
-        return tuple(0.0 for _ in tape.trainable_params)
+    bras, batch_size, null_batch_indices = _get_vjp_bras(tape, cotangents, ket)
+    if bras is None:
+        # Cotangents are zeros
+        if batch_size is None:
+            return tuple(0.0 for _ in tape.trainable_params)
+        return tuple(np.zeros(len(tape.trainable_params, batch_size)))
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
 
@@ -389,9 +395,11 @@ def adjoint_vjp(
                 d_op_matrix = operation_derivative(op)
                 ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
 
-                cotangents_in[trainable_param_number] = real_if_expval(
-                    np.sum(np.conj(bras) * ket_temp, axis=summing_axis)
-                )
+                # Pad cotangent in with zeros for batch number with zero cotangents
+                cot_in = real_if_expval(np.sum(np.conj(bras) * ket_temp, axis=summing_axis))
+                for i in null_batch_indices:
+                    cot_in = np.insert(cot_in, i, 0.0)
+                cotangents_in[trainable_param_number] = cot_in
 
                 trainable_param_number -= 1
             param_number -= 1
