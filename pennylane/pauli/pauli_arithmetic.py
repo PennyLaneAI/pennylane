@@ -449,6 +449,14 @@ class PauliSentence(dict):
 
     __array_priority__ = 1000
 
+    # def __init__(self, mapping):
+    #     """Strip identities from PauliSentence"""
+    #     IdWord = PauliWord({})
+    #     for op, _ in mapping.copy().items():
+    #         if op == IdWord:
+    #             del mapping[op]
+    #     super().__init__(mapping)
+
     def __missing__(self, key):
         """If the PauliWord is not in the sentence then the coefficient
         associated with it should be 0."""

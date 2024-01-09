@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops import Hamiltonian, Prod, SProd, Sum
-from pennylane.pauli.pauli_arithmetic import PauliSentence
+from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
 
 
 class TestDotSum:
@@ -275,3 +275,38 @@ class TestDotPauliSentence:
             }
         )
         assert ps == ps_2
+
+
+pw1 = PauliWord({0: I, 1: X, 2: Y})
+pw2 = PauliWord({"a": X, "b": X, "c": Z})
+pw3 = PauliWord({0: Z, "b": Z, "c": Z})
+pw_id = PauliWord({})
+
+words = [pw1, pw2, pw3, pw_id]
+
+ps1 = PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5})
+ps2 = PauliSentence({pw1: -1.23, pw2: -4j, pw3: 0.5})
+ps1_hamiltonian = PauliSentence({pw1: 1.23, pw2: 4, pw3: -0.5})
+ps2_hamiltonian = PauliSentence({pw1: -1.23, pw2: -4, pw3: 0.5})
+ps3 = PauliSentence({pw3: -0.5, pw_id: 1})
+ps4 = PauliSentence({pw_id: 1})
+ps5 = PauliSentence({})
+
+
+class TestPauliWordSentenceDot:
+    """Tests for when the input to dot is a PauliWord/Sentence"""
+
+    def test_dot_with_just_words(self):
+        """Test operators that are just pauli words"""
+        coeffs = list(range(4))
+        dot_res = qml.dot(coeffs, words)
+        assert dot_res == PauliSentence({pw1: 0, pw2: 1, pw3: 2, pw4: 3})
+
+    def test_dot_with_words_and_sentences(self):
+        """Test operators that are PauliWords and PauliSentences"""
+
+    def test_dot_with_words_sentences_and_ops(self):
+        """Test operators that are PauliWords, PauliSentences and qml.Operators"""
+
+    def test_dot_with_words_sentences_and_ops_with_identity(self):
+        """Test operators that are PauliWords, PauliSentences and qml.Operators"""

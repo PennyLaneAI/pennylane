@@ -21,11 +21,14 @@ from typing import Sequence, Union, Callable
 import pennylane as qml
 from pennylane.operation import Operator, Tensor
 from pennylane.pulse import ParametrizedHamiltonian
+from pennylane.pauli import PauliWord, PauliSentence
 
 
 def dot(
-    coeffs: Sequence[Union[float, Callable]], ops: Sequence[Operator], pauli=False
-) -> Union[Operator, ParametrizedHamiltonian]:
+    coeffs: Sequence[Union[float, Callable]],
+    ops: Sequence[Union[Operator, PauliWord, PauliSentence]],
+    pauli=False,
+) -> Union[Operator, ParametrizedHamiltonian, PauliSentence]:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
     This function returns the following linear combination: :math:`\sum_{k} c_k O_k`, where
@@ -85,6 +88,30 @@ def dot(
 
     if pauli:
         return _pauli_dot(coeffs, ops)
+
+    if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
+        if all(isinstance(pauli, PauliWord) for pauli in ops):
+            return PauliSentence(dict(zip(ops, coeffs)))
+
+        summands = [c * op for c, op in zip(coeffs, ops)]
+        return sum(summands)
+
+    if any(isinstance(op, (PauliWord, PauliSentence)) for op in ops):
+        # promote any PauliWord/Sentence instances to operators
+        IdWord = PauliWord({})
+        IdSentence = PauliSentence({})
+        new_ops = []
+        for op in ops:
+            if isinstance(op, (PauliWord, PauliSentence)):
+                if op in [IdWord, IdSentence]:
+                    new_ops.append(qml.Identity(0))
+                else:
+                    new_ops.append(op.operation())
+            else:
+                new_ops.append(op)
+        ops = new_ops
+        # Looks a bit complicated, mainly due to the fact of having so single out identities since they currently dont have an .operation()
+        # else we could just do ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
     # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
     ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
