@@ -2227,6 +2227,9 @@ class Tensor(Observable):
         elif isinstance(other, Observable):
             self.obs.append(other)
 
+        elif isinstance(other, Operator):
+            return qml.prod(*self.obs, other)
+
         else:
             return NotImplemented
 
