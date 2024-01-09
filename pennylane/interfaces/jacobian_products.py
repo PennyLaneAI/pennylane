@@ -704,7 +704,7 @@ class LightningVJPs(DeviceDerivatives):
         gradient_kwargs (Optional[dict]):  Any gradient options.
 
     >>> dev = qml.device('lightning.qubit', wires=5)
-    >>> jpc = LightningVJPs(dev, gradient_kwargs={"use_device_state": True})
+    >>> jpc = LightningVJPs(dev, gradient_kwargs={"use_device_state": True, "method": "adjoint_jacobian"})
     >>> tape = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))])
     >>> dev.batch_execute((tape,))
     [array(0.36235775)]
@@ -720,6 +720,9 @@ class LightningVJPs(DeviceDerivatives):
 
     def __init__(self, device, gradient_kwargs=None):
         super().__init__(device, gradient_kwargs=gradient_kwargs)
+        self._processed_gradient_kwargs = {
+            key: value for key, value in gradient_kwargs.items() if key != "method"
+        }
 
     def compute_vjp(self, tapes, dy):
         if not all(
@@ -727,14 +730,16 @@ class LightningVJPs(DeviceDerivatives):
         ):
             raise NotImplementedError("Lightning device VJPs only support expectation values.")
         results = []
-        for tape in tapes:
+        for dyi, tape in zip(dy, tapes):
             numpy_tape = qml.transforms.convert_to_numpy_parameters(tape)
-            dy = qml.math.hstack(qml.math.unwrap(dy))
-            if qml.math.ndim(dy) > 1:
+            dyi = qml.math.hstack(qml.math.unwrap(dyi))
+            if qml.math.ndim(dyi) > 1:
                 raise NotImplementedError(
                     "Lightning device VJPs are not supported with jax jacobians."
                 )
-            vjp_f = self._device.vjp(numpy_tape.measurements, dy, **self._gradient_kwargs)
+            vjp_f = self._device.vjp(
+                numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
+            )
             out = vjp_f(numpy_tape)
             if len(tape.trainable_params) == 1:
                 out = (out,)

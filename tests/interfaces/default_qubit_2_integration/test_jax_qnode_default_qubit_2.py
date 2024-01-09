@@ -617,7 +617,9 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
-        if device_vjp:
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measureing probabilities with adjoint.")
+        elif device_vjp:
             with pytest.raises(NotImplementedError):
                 jax.jacobian(circuit, argnums=[0])(x, y)
             return

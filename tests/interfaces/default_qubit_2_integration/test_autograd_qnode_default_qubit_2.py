@@ -207,8 +207,8 @@ class TestQNode:
 
     def test_jacobian_options(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test setting jacobian options"""
-        if diff_method != "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "finite-diff":
+            pytest.skip("Test only supports finite diff.")
 
         a = np.array([0.1, 0.2], requires_grad=True)
 

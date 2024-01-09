@@ -27,10 +27,12 @@ from pennylane.interfaces.jacobian_products import (
     TransformJacobianProducts,
     DeviceDerivatives,
     DeviceJacobianProducts,
+    LightningVJPs,
 )
 
 dev = qml.device("default.qubit")
 dev_old = qml.device("default.qubit.legacy", wires=5)
+dev_lightning = qml.device("lightning.qubit", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 dev_ps = ParamShiftDerivativesDevice()
 ps_config = qml.devices.ExecutionConfig(gradient_method="parameter-shift")
@@ -52,6 +54,7 @@ legacy_device_jacs = DeviceDerivatives(dev_old, gradient_kwargs={"method": "adjo
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
 device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
+lightning_vjps = LightningVJPs(dev_lightning, {"method": "adjoint_jacobian"})
 
 transform_jpc_matrix = [param_shift_jpc, param_shift_cached_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs, device_ps_jacs]
@@ -64,6 +67,7 @@ jpc_matrix = [
     device_ps_jacs,
     device_native_jps,
     device_ps_native_jps,
+    lightning_vjps,
 ]
 
 
