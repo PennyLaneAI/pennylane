@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Adjoint differentiation is now supported with `jax.jacobian`.
+  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
+
 <h3>Improvements 🛠</h3>
 
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
@@ -31,4 +34,5 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Isaac De Vlugt,
+Mudit Pandey,
 Matthew Silverman.

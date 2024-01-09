@@ -1911,7 +1911,9 @@ class TestJIT:
         dev = qml.device(dev_name, wires=num_wires)
 
         gradient_kwargs = {}
-        if diff_method == "spsa":
+        if diff_method == "adjoint":
+            pytest.xfail(reason="Adjoint does not support probs.")
+        elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
 

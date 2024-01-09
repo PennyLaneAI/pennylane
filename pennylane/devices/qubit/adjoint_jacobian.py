@@ -249,7 +249,7 @@ def _get_vjp_bras(tape, cotangents, ket):
     if not single_cotangent:
         # Pad cotangents if shape is inhomogenous
         # inner_shape will only be None if cotangents is a vector. We assume that for
-        # inhomogenous cotangents,
+        # inhomogenous cotangents, all non-scalar values have the same shape.
         inner_shape = next(
             (qml.math.shape(cot) for cot in cotangents if qml.math.shape(cot) != ()), None
         )
@@ -363,7 +363,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         # Cotangents are zeros
         if batch_size is None:
             return tuple(0.0 for _ in tape.trainable_params)
-        return tuple(np.zeros(len(tape.trainable_params, batch_size)))
+        return tuple(np.zeros((len(tape.trainable_params), batch_size)))
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
 
