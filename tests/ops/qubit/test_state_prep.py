@@ -223,6 +223,19 @@ class TestStateVector:
         assert qml.math.get_interface(result) == "torch"
         assert qml.math.shape(result) == (2,)
 
+    def test_StatePrep_backprop_autograd(self):
+        """Test backprop with autograd"""
+
+        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        def circuit(state):
+            qml.StatePrep(state, wires=(0,))
+            qml.S(1)
+            return qml.expval(qml.PauliZ(0))
+
+        state = qml.numpy.array([1.0, 0.0])
+        grad = qml.jacobian(circuit)(state)
+        assert np.array_equal(grad, [2.0, 0.0])
+
     @pytest.mark.torch
     def test_StatePrep_backprop_torch(self):
         """Test backprop with torch, getting state.grad"""
@@ -239,6 +252,41 @@ class TestStateVector:
         res.backward()
         grad = state.grad
         assert qml.math.get_interface(grad) == "torch"
+        assert np.array_equal(grad, [2.0, 0.0])
+
+    @pytest.mark.jax
+    def test_StatePrep_backprop_jax(self):
+        """Test backprop with jax"""
+        import jax
+
+        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        def circuit(state):
+            qml.StatePrep(state, wires=(0,))
+            qml.S(1)
+            return qml.expval(qml.PauliZ(0))
+
+        state = jax.numpy.array([1.0, 0.0])
+        grad = jax.jacobian(circuit)(state)
+        assert qml.math.get_interface(grad) == "jax"
+        assert np.array_equal(grad, [2.0, 0.0])
+
+    @pytest.mark.tf
+    def test_StatePrep_backprop_tf(self):
+        """Test backprop with tf"""
+        import tensorflow as tf
+
+        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        def circuit(state):
+            qml.StatePrep(state, wires=(0,))
+            qml.S(1)
+            return qml.expval(qml.PauliZ(0))
+
+        state = tf.Variable([1.0, 0.0])
+        with tf.GradientTape() as tape:
+            res = circuit(state)
+
+        grad = tape.jacobian(res, state)
+        assert qml.math.get_interface(grad) == "tensorflow"
         assert np.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.parametrize(
