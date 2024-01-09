@@ -284,13 +284,8 @@ pw_id = PauliWord({})
 
 words = [pw1, pw2, pw3, pw_id]
 
-ps1 = PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5})
-ps2 = PauliSentence({pw1: -1.23, pw2: -4j, pw3: 0.5})
-ps1_hamiltonian = PauliSentence({pw1: 1.23, pw2: 4, pw3: -0.5})
-ps2_hamiltonian = PauliSentence({pw1: -1.23, pw2: -4, pw3: 0.5})
-ps3 = PauliSentence({pw3: -0.5, pw_id: 1})
-ps4 = PauliSentence({pw_id: 1})
-ps5 = PauliSentence({})
+ps1 = PauliSentence({pw1: 1., pw2: 2., pw3: 3.})
+ps2 = PauliSentence({pw1: 1.5, pw2: 2.5, pw3: 3.5})
 
 
 class TestPauliWordSentenceDot:
@@ -300,7 +295,7 @@ class TestPauliWordSentenceDot:
         """Test operators that are just pauli words"""
         coeffs = list(range(4))
         dot_res = qml.dot(coeffs, words)
-        assert dot_res == PauliSentence({pw1: 0, pw2: 1, pw3: 2, pw4: 3})
+        assert dot_res == PauliSentence({pw1: 0, pw2: 1, pw3: 2, pw_id: 3})
 
     def test_dot_with_words_and_sentences(self):
         """Test operators that are PauliWords and PauliSentences"""
