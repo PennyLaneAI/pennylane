@@ -135,7 +135,7 @@ it from the file:
 
 Since opened datasets stream data from the disk, it is not possible to simultaneously access the same dataset
 from multiple variables, from separately running scripts, or multiple notebooks. To get around this, either make a
-copy of the dataset in the disk or access the dataset using ``mode="copy"``. 
+copy of the dataset in the disk or access the dataset using ``mode="copy"``.
 
 Attribute Metadata
 ------------------
