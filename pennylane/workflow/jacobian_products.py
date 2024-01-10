@@ -735,7 +735,6 @@ class LightningVJPs(DeviceDerivatives):
             if len(tape.measurements) == 1:
                 dyi = (dyi,)
             dyi = np.array(qml.math.unwrap(dyi))
-            print(dyi)
             if qml.math.ndim(dyi) > 1:
                 raise NotImplementedError(
                     "Lightning device VJPs are not supported with jax jacobians."
