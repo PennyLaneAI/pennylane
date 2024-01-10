@@ -14,11 +14,11 @@
 """Unit tests for create_initial_state in devices/qutrit_mixed/apply_operation."""
 
 import pytest
-import pennylane as qml
 import numpy as np
+from scipy.stats import unitary_group
+import pennylane as qml
 from pennylane import math
 from pennylane.operation import Channel
-from scipy.stats import unitary_group
 from pennylane.devices.qutrit_mixed.apply_operation import (
     apply_operation_einsum,
     apply_operation_tensordot,
