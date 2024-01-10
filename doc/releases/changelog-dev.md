@@ -12,6 +12,8 @@
 * Upgrade Pauli arithmetic with multiplying by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   
+* A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
@@ -33,6 +35,7 @@
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
+Christina Lee,
 Isaac De Vlugt,
 Korbinian Kottmann,
 Matthew Silverman.
