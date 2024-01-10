@@ -125,37 +125,37 @@ mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
 
 
 class PauliWord(dict):
-    """Immutable dictionary used to represent a Pauli Word,
-        associating wires with their respective operators.
-        Can be constructed from a standard dictionary.
+    r"""
+    Immutable dictionary used to represent a Pauli Word,
+    associating wires with their respective operators.
+    Can be constructed from a standard dictionary.
 
-    <<<<<<< HEAD
-        **Examples**
+    .. note::
 
-        Initializing a Pauli word:
-    =======
-        .. note::
+        An empty :class:`~.PauliWord` will be treated as the multiplicative
+        identity (i.e identity on all wires).
 
-            An empty :class:`~.PauliWord` will be treated as the multiplicative
-            identity (i.e identity on all wires).
-    >>>>>>> 2188e7574d103511960fd62e8abcbefc2f05229b
+    **Examples**
 
-        >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
-        >>> w
-        X(a) @ Y(2) @ Z(3)
+    Initializing a Pauli word:
 
-        When multiplying Pauli words together we obtain the resulting word and the scalar coefficient.
+    >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
+    >>> w
+    X(a) @ Y(2) @ Z(3)
 
-        >>> w1 = PauliWord({0:"X", 1:"Y"})
-        >>> w2 = PauliWord({1:"X", 2:"Z"})
-        >>> w1 @ w2
-        (Z(1) @ Z(2) @ X(0), -1j)
+    When multiplying Pauli words together we obtain the resulting word and the scalar coefficient.
 
-        We can multiply scalars to Pauli words or add/subtract them, resulting in a :class:`~PauliSentence` instance.
-        >>> 0.5 * w1 - 1.5 * w2 + 2
-        0.5 * X(0) @ Y(1)
-        + -1.5 * X(1) @ Z(2)
-        + 2 * I
+    >>> w1 = PauliWord({0:"X", 1:"Y"})
+    >>> w2 = PauliWord({1:"X", 2:"Z"})
+    >>> w1 @ w2
+    (Z(1) @ Z(2) @ X(0), -1j)
+
+    We can multiply scalars to Pauli words or add/subtract them, resulting in a :class:`~PauliSentence` instance.
+    >>> 0.5 * w1 - 1.5 * w2 + 2
+    0.5 * X(0) @ Y(1)
+    + -1.5 * X(1) @ Z(2)
+    + 2 * I
+
     """
 
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * pw1
@@ -441,40 +441,35 @@ class PauliWord(dict):
 
 
 class PauliSentence(dict):
-    """Dictionary representing a linear combination of Pauli words, with the keys
-        as PauliWord instances and the values correspond to coefficients.
+    r"""Dictionary representing a linear combination of Pauli words, with the keys
+    as PauliWord instances and the values correspond to coefficients.
 
-    <<<<<<< HEAD
-        **Examples**
+    .. note::
 
-        >>> ps = PauliSentence({
-                PauliWord({0:'X', 1:'Y'}): 1.23,
-                PauliWord({2:'Z', 0:'Y'}): -0.45j
-    =======
-        .. note::
+        An empty :class:`~.PauliSentence` will be treated as the additive
+        identity (i.e 0 * Identity on all wires).
 
-            An empty :class:`~.PauliSentence` will be treated as the additive
-            identity (i.e 0 * Identity on all wires).
+    **Examples**
 
-        >>> ps = qml.pauli.PauliSentence({
-                qml.pauli.PauliWord({0:'X', 1:'Y'}): 1.23,
-                qml.pauli.PauliWord({2:'Z', 0:'Y'}): -0.45j
-    >>>>>>> 2188e7574d103511960fd62e8abcbefc2f05229b
-            })
-        >>> ps
-        1.23 * X(0) @ Y(1)
-        + (-0-0.45j) * Z(2) @ Y(0)
+    >>> ps = PauliSentence({
+            PauliWord({0:'X', 1:'Y'}): 1.23,
+            PauliWord({2:'Z', 0:'Y'}): -0.45j
+        })
+    >>> ps
+    1.23 * X(0) @ Y(1)
+    + (-0-0.45j) * Z(2) @ Y(0)
 
-        Combining Pauli words automatically results in Pauli sentences that can be used to construct more complicated operators.
+    Combining Pauli words automatically results in Pauli sentences that can be used to construct more complicated operators.
 
-        >>> w1 = PauliWord({0:"X", 1:"Y"})
-        >>> w2 = PauliWord({1:"X", 2:"Z"})
-        >>> ps = 0.5 * w1 - 1.5 * w2 + 2
-        >>> ps + PauliWord({3:"Z"}) - 1
-        0.5 * X(0) @ Y(1)
-        + -1.5 * X(1) @ Z(2)
-        + 1 * I
-        + 1.0 * Z(3)
+    >>> w1 = PauliWord({0:"X", 1:"Y"})
+    >>> w2 = PauliWord({1:"X", 2:"Z"})
+    >>> ps = 0.5 * w1 - 1.5 * w2 + 2
+    >>> ps + PauliWord({3:"Z"}) - 1
+    0.5 * X(0) @ Y(1)
+    + -1.5 * X(1) @ Z(2)
+    + 1 * I
+    + 1.0 * Z(3)
+
     """
 
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
