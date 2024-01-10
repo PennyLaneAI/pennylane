@@ -3390,9 +3390,7 @@ class TestHamiltonianExpvalGradients:
         # assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         # assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
-    # TODO: Torch support for param-shift
     @pytest.mark.torch
-    @pytest.mark.xfail
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
     def test_torch(self, dev_name, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
