@@ -31,13 +31,12 @@ from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
-
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_tape_batching,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
+    get_trainable_params,
+    find_and_validate_gradient_methods,
     _no_trainable_grad,
 )
 
@@ -369,14 +368,14 @@ def finite_diff(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    if validate_params:
-        diff_methods = gradient_analysis_and_validation(
-            tape, "numeric", grad_fn=finite_diff, overwrite=False
-        )
-    else:
-        diff_methods = ["F" for i in tape.trainable_params]
+    trainable_params = get_trainable_params(tape, argnum)
+    diff_methods = (
+        {idx: "F" for idx in trainable_params}
+        if not validate_params
+        else find_and_validate_gradient_methods(tape, "numeric", trainable_params)
+    )
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
     gradient_tapes = []
@@ -399,10 +398,8 @@ def finite_diff(
         shifts = shifts[1:]
         coeffs = coeffs[1:]
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    for i, _ in enumerate(tape.trainable_params):
-        if i not in method_map or method_map[i] == "0":
+    for i, idx in enumerate(tape.trainable_params):
+        if idx not in diff_methods or diff_methods[idx] == "0":
             # parameter has zero gradient
             shapes.append(0)
             continue
