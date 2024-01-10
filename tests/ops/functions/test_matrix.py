@@ -16,6 +16,7 @@ Unit tests for the get_unitary_matrix transform
 """
 # pylint: disable=too-few-public-methods,too-many-function-args
 from functools import reduce, partial
+from warnings import catch_warnings
 
 import pytest
 
@@ -735,6 +736,44 @@ class TestMeasurements:
         """Test that the matrix of a script with only observables is Identity."""
         qscript = qml.tape.QuantumScript(measurements=measurements)
         assert np.array_equal(qml.matrix(qscript), np.eye(N))
+
+
+class TestWireOrderDeprecation:
+    """Test that wire_order=None is deprecated for the qml.matrix transform."""
+
+    def test_warning_tape(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a tape."""
+        qs = qml.tape.QuantumScript([qml.PauliX(0)])
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(qs)
+
+    def test_warning_qnode(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a QNode."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(circuit)
+
+    def test_warning_qfunc(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a qfunc."""
+
+        def circuit():
+            qml.PauliX(0)
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(circuit)
+
+    def test_no_warning_op(self):
+        """Test that a warning is not raised when calling qml.matrix on an operator."""
+
+        with catch_warnings(record=True) as record:
+            qml.matrix(qml.PauliX(0))
+
+        assert len(record) == 0
 
 
 @pytest.mark.jax

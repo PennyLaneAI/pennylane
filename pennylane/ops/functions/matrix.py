@@ -17,6 +17,7 @@ This module contains the qml.matrix function.
 # pylint: disable=protected-access
 from typing import Sequence, Callable
 from functools import partial
+from warnings import warn
 
 import pennylane as qml
 from pennylane.transforms.op_transforms import OperationTransformError
@@ -171,6 +172,13 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
             raise OperationTransformError(
                 "Input is not an Operator, tape, QNode, or quantum function"
+            )
+        if wire_order is None:
+            warn(
+                "Calling qml.matrix() on a QuantumTape, QNode or quantum function without "
+                "specifying a value for wire_order is deprecated. Please provide a wire_order "
+                "value to avoid future issues.",
+                qml.PennyLaneDeprecationWarning,
             )
         return _matrix_transform(op, wire_order=wire_order)
 
