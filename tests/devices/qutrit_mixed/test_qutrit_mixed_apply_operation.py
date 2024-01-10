@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -166,16 +166,16 @@ class TestTwoQubitStateSpecialCases:
             new_input2 = math.take(new_input, 2, axis=control + 1)
             assert math.allclose(initial_input2_rolled, new_input2)
 
-        initial0 = math.take(initial_state, 0, axis=control)
+        initial0 = math.take(density_matrix, 0, axis=control)
         new0 = math.take(new_state, 0, axis=control)
         check_TAdd_second_roll(initial0, new0)
 
-        initial1 = math.take(initial_state, 1, axis=control)
+        initial1 = math.take(density_matrix, 1, axis=control)
         initial1_rolled = np.roll(initial1, 1, 0)
         new1 = math.take(new_state, 1, axis=control)
         check_TAdd_second_roll(initial1_rolled, new1)
 
-        initial2 = math.take(initial_state, 2, axis=control)
+        initial2 = math.take(density_matrix, 2, axis=control)
         initial2_rolled = math.roll(initial2, -1, 0)
         new2 = math.take(new_state, 2, axis=control)
         check_TAdd_second_roll(initial2_rolled, new2)
@@ -198,15 +198,15 @@ class TestTwoQubitStateSpecialCases:
             new_input0 = math.take(new_input, 0, axis=wire + 1)
             assert math.allclose(initial_input2, new_input0)
 
-        initial0 = math.take(initial_state, 0, axis=wire)
+        initial0 = math.take(density_matrix, 0, axis=wire)
         new1 = math.take(new_state, 1, axis=wire)
         check_second_roll(initial0, new1)
 
-        initial1 = math.take(initial_state, 1, axis=wire)
+        initial1 = math.take(density_matrix, 1, axis=wire)
         new2 = math.take(new_state, 2, axis=wire)
         check_second_roll(initial1, new2)
 
-        initial2 = math.take(initial_state, 2, axis=wire)
+        initial2 = math.take(density_matrix, 2, axis=wire)
         new0 = math.take(new_state, 0, axis=wire)
         check_second_roll(initial2, new0)
 
@@ -232,15 +232,15 @@ class TestTwoQubitStateSpecialCases:
             new_input2 = math.take(new_input, 2, axis=wire + 1)
             assert math.allclose(initial_input2 / w2, new_input2)
 
-        initial0 = math.take(initial_state, 0, axis=wire)
+        initial0 = math.take(density_matrix, 0, axis=wire)
         new0 = math.take(new_state, 0, axis=wire)
         check_second_roll(initial0, new0)
 
-        initial1 = math.take(initial_state, 1, axis=wire)
+        initial1 = math.take(density_matrix, 1, axis=wire)
         new1 = math.take(new_state, 1, axis=wire)
         check_second_roll(w * initial1, new1)
 
-        initial2 = math.take(initial_state, 2, axis=wire)
+        initial2 = math.take(density_matrix, 2, axis=wire)
         new2 = math.take(new_state, 2, axis=wire)
         check_second_roll(w2 * initial2, new2)
 
@@ -250,7 +250,7 @@ class TestTwoQubitStateSpecialCases:
         op = qml.THadamard(wire, subspace=subspace)
         new_state = method(op, initial_state)
 
-        flattened_state = initial_state.reshape(9, 9)
+        flattened_state = density_matrix.reshape(9, 9)
         sizes = [3, 3]
         sizes[wire] = 1
         expanded_mat = np.kron(np.kron(np.eye(sizes[0]), op.matrix()), np.eye(sizes[1]))
