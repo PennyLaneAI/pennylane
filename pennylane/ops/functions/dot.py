@@ -97,46 +97,54 @@ def dot(
     if any(callable(c) for c in coeffs):
         return ParametrizedHamiltonian(coeffs, ops)
 
-    if pauli:
-        if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
-            # Use pauli arithmetic when ops are just PauliWord and PauliSentence instances
-            return _dot_pure_paulis(coeffs, ops)
+    if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
+        res = _dot_pure_paulis(coeffs, ops)
 
-        # Else, transform all ops to pauli sentences
-        return _dot_with_ops_and_paulis(coeffs, ops)
+    else:
+        res = _dot_with_ops_and_paulis(coeffs, ops)
 
-    if any(isinstance(op, (PauliWord, PauliSentence)) for op in ops):
-        # promote any PauliWord/Sentence instances to operators
-        # Looks a bit complicated, mainly due to the fact of having so single out identities since they currently dont have an .operation()
-        # else we could just do ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
-        IdWord = PauliWord({})
-        new_ops = []
-        for op in ops:
-            if isinstance(op, (PauliWord, PauliSentence)):
-                if op == IdWord:
-                    new_ops.append(qml.Identity(0))
-                else:
-                    new_ops.append(op.operation())
-            else:
-                new_ops.append(op)
-        ops = new_ops
+    return res if pauli else res.operation()
 
-    # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
-    ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
+    # if pauli:
+    #     if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
+    #         # Use pauli arithmetic when ops are just PauliWord and PauliSentence instances
+    #         return _dot_pure_paulis(coeffs, ops)
 
-    if coeffs[0] != 1 and qml.math.allequal(coeffs[0], coeffs):
-        # Coefficients have the same value (different to 1)
-        return qml.s_prod(coeffs[0], ops[0] if len(ops) == 1 else qml.sum(*ops))
+    #     # Else, transform all ops to pauli sentences
+    #     return _dot_with_ops_and_paulis(coeffs, ops)
 
-    abs_coeffs = qml.math.abs(coeffs)
-    if abs_coeffs[0] != 1 and qml.math.allequal(abs_coeffs[0], abs_coeffs):
-        # Coefficients have the same absolute value (different to 1)
-        gcd = abs(coeffs[0])
-        coeffs = [c / gcd for c in coeffs]
-        return qml.s_prod(gcd, qml.dot(coeffs, ops))
+    # if any(isinstance(op, (PauliWord, PauliSentence)) for op in ops):
+    #     # promote any PauliWord/Sentence instances to operators
+    #     # Looks a bit complicated, mainly due to the fact of having so single out identities since they currently dont have an .operation()
+    #     # else we could just do ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
+    #     IdWord = PauliWord({})
+    #     new_ops = []
+    #     for op in ops:
+    #         if isinstance(op, (PauliWord, PauliSentence)):
+    #             if op == IdWord:
+    #                 new_ops.append(qml.Identity(0))
+    #             else:
+    #                 new_ops.append(op.operation())
+    #         else:
+    #             new_ops.append(op)
+    #     ops = new_ops
 
-    operands = [op if coeff == 1 else qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
-    return operands[0] if len(operands) == 1 else qml.sum(*operands)
+    # # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
+    # ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
+
+    # if coeffs[0] != 1 and qml.math.allequal(coeffs[0], coeffs):
+    #     # Coefficients have the same value (different to 1)
+    #     return qml.s_prod(coeffs[0], ops[0] if len(ops) == 1 else qml.sum(*ops))
+
+    # abs_coeffs = qml.math.abs(coeffs)
+    # if abs_coeffs[0] != 1 and qml.math.allequal(abs_coeffs[0], abs_coeffs):
+    #     # Coefficients have the same absolute value (different to 1)
+    #     gcd = abs(coeffs[0])
+    #     coeffs = [c / gcd for c in coeffs]
+    #     return qml.s_prod(gcd, qml.dot(coeffs, ops))
+
+    # operands = [op if coeff == 1 else qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
+    # return operands[0] if len(operands) == 1 else qml.sum(*operands)
 
 
 def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
