@@ -37,11 +37,7 @@ from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
-from .gradient_transform import (
-    choose_grad_methods,
-    _grad_method_validation,
-    _no_trainable_grad,
-)
+from .gradient_transform import _no_trainable_grad
 from .parameter_shift import _get_operation_recipe, expval_param_shift
 
 
@@ -144,12 +140,73 @@ def _gradient_analysis_cv(tape):
         info["grad_method"] = _grad_method(tape, idx)
 
 
+def _grad_method_validation_cv(method, tape):
+    """Validates if the gradient method requested is supported by the trainable
+    parameters of a tape, and returns the allowed parameter gradient methods."""
+    diff_methods = {
+        idx: info["grad_method"]
+        for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access
+        if idx in tape.trainable_params
+    }
+
+    # check and raise an error if any parameters are non-differentiable
+    if nondiff_params := {idx for idx, g in diff_methods.items() if g is None}:
+        raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+
+    numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
+
+    # If explicitly using analytic mode, ensure that all parameters
+    # support analytic differentiation.
+    if method == "analytic" and numeric_params:
+        raise ValueError(
+            f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
+        )
+
+    return tuple(diff_methods.values())
+
+
 def _gradient_analysis_and_validation_cv(tape, method):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter. Subsequently validate the
     gradient methods and return diff_methods."""
     _gradient_analysis_cv(tape)
-    return _grad_method_validation(method, tape)
+    return _grad_method_validation_cv(method, tape)
+
+
+def choose_grad_methods_cv(diff_methods, argnum):
+    """Chooses the trainable parameters to use for computing the Jacobian
+    by returning a map of their indices and differentiation methods.
+
+    When there are fewer parameters specified than the total number of
+    trainable parameters, the Jacobian is estimated by using the parameters
+    specified using the ``argnum`` keyword argument.
+
+    Args:
+        diff_methods (list): the ordered list of differentiation methods
+            for each parameter
+        argnum (int, list(int), None): Indices for argument(s) with respect
+            to which to compute the Jacobian.
+
+    Returns:
+        dict: map of the trainable parameter indices and
+        differentiation methods
+    """
+    if argnum is None:
+        return dict(enumerate(diff_methods))
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+
+    num_params = len(argnum)
+
+    if num_params == 0:
+        warnings.warn(
+            "No trainable parameters were specified for computing the Jacobian.",
+            UserWarning,
+        )
+        return {}
+
+    return {idx: diff_methods[idx] for idx in argnum}
 
 
 def _transform_observable(obs, Z, device_wires):
@@ -720,7 +777,7 @@ def param_shift_cv(
     if all(g == "0" for g in diff_methods):
         return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    method_map = choose_grad_methods(diff_methods, argnum)
+    method_map = choose_grad_methods_cv(diff_methods, argnum)
     var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
 
     unsupported_params = []
