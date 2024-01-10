@@ -230,8 +230,8 @@ class TestDotSum:
         assert dot_res == res
 
 
-coeffs = [0.12345, 1.2345, 12.345, 123.45, 1234.5, 12345]
-ops = [
+coeffs0 = [0.12345, 1.2345, 12.345, 123.45, 1234.5, 12345]
+ops0 = [
     qml.PauliX(0),
     qml.PauliY(1),
     qml.PauliZ(2),
@@ -246,15 +246,15 @@ class TestDotPauliSentence:
 
     def test_dot_returns_pauli_sentence(self):
         """Test that the dot function returns a PauliSentence class."""
-        ps = qml.dot(coeffs, ops, pauli=True)
+        ps = qml.dot(coeffs0, ops0, pauli=True)
         assert isinstance(ps, PauliSentence)
 
     def test_coeffs_and_ops(self):
         """Test that the coefficients and operators of the returned PauliSentence are correct."""
-        ps = qml.dot(coeffs, ops, pauli=True)
+        ps = qml.dot(coeffs0, ops0, pauli=True)
         h = ps.hamiltonian()
-        assert qml.math.allequal(h.coeffs, coeffs)
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(h.ops, ops))
+        assert qml.math.allequal(h.coeffs, coeffs0)
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(h.ops, ops0))
 
     def test_dot_simplifies_linear_combination(self):
         """Test that the dot function groups equal pauli words."""
@@ -269,9 +269,9 @@ class TestDotPauliSentence:
     def test_dot_returns_hamiltonian_simplified(self):
         """Test that hamiltonian computed from the PauliSentence created by the dot function is equal
         to the simplified hamiltonian."""
-        ps = qml.dot(coeffs, ops, pauli=True)
+        ps = qml.dot(coeffs0, ops0, pauli=True)
         h_ps = ps.hamiltonian()
-        h = Hamiltonian(coeffs, ops)
+        h = Hamiltonian(coeffs0, ops0)
         h.simplify()
         assert qml.equal(h_ps, h)
 
