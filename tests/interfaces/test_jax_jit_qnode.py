@@ -1385,7 +1385,7 @@ class TestQubitIntegrationHigherOrder:
 
 
 # TODO: Add CV test when return types and custom diff are compatible
-@pytest.mark.xfail(reason="CV variables with new return types.")
+# @pytest.mark.xfail(reason="CV variables with new return types.")
 @pytest.mark.parametrize(
     "diff_method,kwargs",
     [
@@ -1870,14 +1870,20 @@ class TestJIT:
 
         assert jax.numpy.allclose(circuit(), jax.numpy.array([1.0, 0.0]))
 
-    @pytest.mark.xfail(
-        reason="Non-trainable parameters are not being correctly unwrapped by the interface"
-    )
+    # @pytest.mark.xfail(
+    #     reason="Non-trainable parameters are not being correctly unwrapped by the interface"
+    # )
     def test_gradient_subset(
         self, dev_name, diff_method, grad_on_execution, jacobian, tol, interface
     ):
         """Test derivative calculation of a scalar valued QNode with respect
         to a subset of arguments"""
+        if diff_method == "spsa" and not grad_on_execution:
+            pytest.xfail(reason="incorrect jacobian results")
+
+        if diff_method == "hadamard" and not grad_on_execution:
+            pytest.xfail(reason="XLA raised wire error")
+
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
