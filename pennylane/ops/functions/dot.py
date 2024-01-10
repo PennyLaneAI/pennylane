@@ -58,6 +58,16 @@ def dot(
     1.1 * X(0)
     + 2.2 * Y(0)
 
+    Note that additions of the same operator are not executed by default.
+
+    >>> qml.dot([1., 1.], [qml.PauliX(0), qml.PauliX(0)])
+    PauliX(wires=[0]) + PauliX(wires=[0])
+
+    You can obtain a cleaner version by simplifying the resulting expression.
+
+    >>> qml.dot([1., 1.], [qml.PauliX(0), qml.PauliX(0)]).simplify()
+    2.0*(PauliX(wires=[0]))
+
     ``pauli=True`` can be used to construct a more efficient, simplified version of the operator.
     Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
     specialized representation can be converted to an operator:
