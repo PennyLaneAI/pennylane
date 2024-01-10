@@ -461,14 +461,13 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
 
-    @pytest.mark.parametrize("broadcasting_method", broadcasting_methods)
-    def test_broadcasted_state(self, broadcasting_method, ml_framework):
+    def test_broadcasted_state(self, method, ml_framework):
         """Tests that Channel operations are applied correctly to a batched state."""
-        if broadcasting_method is apply_operation_tensordot:
+        if method is apply_operation_tensordot:
             pytest.skip("Tensordot doesn't support batched operations.")
         state = [get_random_mixed_state(2) for _ in range(3)]
         test_channel = self.CustomChannel(0.3, wires=1)
-        res = broadcasting_method(test_channel, math.asarray(state, like=ml_framework))
+        res = method(test_channel, math.asarray(state, like=ml_framework))
 
         mat = test_channel.kraus_matrices()
         expanded_mats = [np.kron(np.eye(3), mat[i]) for i in range(len(mat))]
