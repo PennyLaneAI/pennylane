@@ -9,7 +9,7 @@
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
-* Upgrade Pauli arithmetic with multiplying by scalars `0.5 * PauliWord({0:"X"})`
+* Upgrade Pauli arithmetic with multiplying by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   
 <h4>Community contributions 🥳</h4>
@@ -34,4 +34,5 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Isaac De Vlugt,
+Korbinian Kottmann,
 Matthew Silverman.
