@@ -129,11 +129,18 @@ class PauliWord(dict):
     associating wires with their respective operators.
     Can be constructed from a standard dictionary.
 
+    .. note::
+
+        An empty :class:`~.PauliWord` will be treated as the multiplicative
+        identity (i.e identity on all wires).
+
     >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
     >>> w
     X(a) @ Y(2) @ Z(3)
     """
 
+    # this allows scalar multiplication from left with numpy arrays np.array(0.5) * pw1
+    # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
     def __missing__(self, key):
@@ -178,6 +185,8 @@ class PauliWord(dict):
     def __matmul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
         and the tensor product otherwise.
+
+        Empty Pauli words are treated as the Identity operator on all wires.
 
         Args:
             other (PauliWord): The Pauli word to multiply with
@@ -416,6 +425,11 @@ class PauliSentence(dict):
     """Dictionary representing a linear combination of Pauli words, with the keys
     as PauliWord instances and the values correspond to coefficients.
 
+    .. note::
+
+        An empty :class:`~.PauliSentence` will be treated as the additive
+        identity (i.e 0 * Identity on all wires).
+
     >>> ps = qml.pauli.PauliSentence({
             qml.pauli.PauliWord({0:'X', 1:'Y'}): 1.23,
             qml.pauli.PauliWord({2:'Z', 0:'Y'}): -0.45j
@@ -425,6 +439,8 @@ class PauliSentence(dict):
     + (-0-0.45j) * Z(2) @ Y(0)
     """
 
+    # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
+    # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
     def __missing__(self, key):
@@ -529,7 +545,14 @@ class PauliSentence(dict):
         return final_ps
 
     def __mul__(self, other):
-        """Multiply a PauliSentence by a scalar"""
+        """Multiply a PauliWord by a scalar#
+
+        Args:
+            other (Scalar): The scalar to multiply the PauliWord with
+
+        Returns:
+            PauliSentence
+        """
         if isinstance(other, PauliSentence):
             # this is legacy support and will be removed after a deprecation cycle
             return self @ other

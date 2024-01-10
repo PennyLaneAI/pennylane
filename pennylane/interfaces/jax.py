@@ -33,7 +33,7 @@ See JAX documentation on this process `here <https://jax.readthedocs.io/en/lates
 
     registered_f_jvp.defjvp(f_and_jvp)
 
->>> jax.grad(registered_f)(jax.numpy.array(2.0))
+>>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
 in custom jvp function:  2.0 Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>
 Array(4., dtype=float64, weak_type=True)
 
