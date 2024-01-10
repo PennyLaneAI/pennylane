@@ -19,7 +19,7 @@ from collections import defaultdict
 from typing import Sequence, Union, Callable
 
 import pennylane as qml
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.pauli import PauliWord, PauliSentence
 
