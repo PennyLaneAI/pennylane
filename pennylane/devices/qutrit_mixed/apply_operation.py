@@ -9,7 +9,7 @@ from pennylane.operation import Channel
 alphabet_array = np.array(list(alphabet))
 
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
-EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
+EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13  # TODO placeholder value, need to ask how to find these
 
 qudit_dim = 3  # specifies qudit dimension
 
@@ -67,8 +67,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     kraus_shape = [len(kraus)] + [qudit_dim] * num_ch_wires * 2
     kraus_dagger = []
     if not isinstance(op, Channel):
-        # TODO Channels broadcasting is causing issues currently
-        # TODO need to talk to PennyLane team to find out more
+        # TODO Channels broadcasting doesn't seem to be implemented for qubits, should they be for qutrit?
         mat = op.matrix()
         dim = qudit_dim**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
@@ -93,40 +92,25 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     return math.einsum(einsum_indices, kraus, state, kraus_dagger)
 
 
-def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batched: bool = False):
+def apply_operation_tensordot(op: qml.operation.Operator, state):
     r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
     quantum state. For a unitary gate, there is a single Kraus operator.
 
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
-        is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
         array[complex]: output_state
     """
     num_ch_wires = len(op.wires)
-    num_wires = int(len(qml.math.shape(state)) / 2 - is_state_batched)
+    num_wires = int(len(qml.math.shape(state)) / 2)
 
     # Shape kraus operators and cast them to complex data type
     kraus_shape = [qudit_dim] * (num_ch_wires * 2)
 
-    # if isinstance(op, Channel):
-    #     is_mat_batched = False
-    #     # TODO Channels broadcasting is causing issues currently,
-    #     # TODO need to talk to PennyLane team to find out more
-    # else:
-    #     mat = op.matrix()
-    #     dim = qudit_dim**num_ch_wires
-    #     batch_size = qml.math.get_batch_size(mat, (dim, dim), dim**2)
-    #     if is_mat_batched := batch_size is not None:
-    #         # Add broadcasting dimension to shape
-    #         kraus_shape = [batch_size] + kraus_shape
-    #         if op.batch_size is None:
-    #             op._batch_size = batch_size  # pylint:disable=protected-access
-
     # row indices of the quantum state affected by this operation
-    row_wires_list = list(op.wires.toarray() + int(is_state_batched))
+    row_wires_list = list(op.wires.toarray())
     # column indices are shifted by the number of wires
     col_wires_list = [w + num_wires for w in row_wires_list]
 
@@ -158,15 +142,6 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     source_right = list(range(-num_ch_wires, 0))
     dest_right = col_wires_list
 
-    # if is_mat_batched:
-    #     source_left = [0] + [i + 1 for i in source_left]
-    #     source_right = [i + 1 for i in source_right]
-    #     dest_left = [0] + [i + 1 for i in source_left]
-    #     dest_right = [i + 1 for i in source_right]
-    # if is_state_batched:
-    #     source_right += [-1]
-    #     dest_right += [-1]
-
     print(source_left + source_right)
     print(dest_left + dest_right)
     return math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
@@ -197,7 +172,8 @@ def apply_operation(
         This function assumes that the wires of the operator correspond to indices
         of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
 
-        The shape of state should be ``[qudit_dim]*(num_wires * 2)``.
+        The shape of state should be ``[qudit_dim]*(num_wires * 2)``, where ``qudit_dim`` is
+        the dimension of the system.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels
     for specific operations can be registered like:
@@ -234,6 +210,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
     ) or (op.batch_size or is_state_batched):
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+    # TODO fix state batching on tensordot
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
@@ -252,7 +229,7 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
     return state
 
 
-# TODO add TAdd speedup
+# TODO add special case speedups
 
 
 def _get_kraus(operation):  # pylint: disable=no-self-use
