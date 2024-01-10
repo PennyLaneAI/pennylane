@@ -1,8 +1,23 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Functions to apply operations to a qutrit mixed state."""
+
 import functools
 from functools import singledispatch
+from string import ascii_letters as alphabet
 import pennylane as qml
 from pennylane import math
-from string import ascii_letters as alphabet
 from pennylane import numpy as np
 from pennylane.operation import Channel
 
@@ -219,13 +234,24 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
 @apply_operation.register
 def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
+    """Take a snapshot of the mixed state"""
     if debugger and debugger.active:
-        dim = int(np.sqrt(state.size))
-        density_matrix = math.reshape(state, (dim, dim))
-        if op.tag:
-            debugger.snapshots[op.tag] = density_matrix
+        measurement = op.hyperparameters["measurement"]
+        if measurement:
+            snapshot = qml.devices.qubit.measure(measurement, state)
         else:
-            debugger.snapshots[len(debugger.snapshots)] = density_matrix
+            if is_state_batched:
+                dim = int(np.sqrt(math.size(state[0])))
+                flat_shape = [math.shape(state)[0], dim, dim]
+            else:
+                dim = int(np.sqrt(math.size(state)))
+                flat_shape = [dim, dim]
+
+            snapshot = math.reshape(state, flat_shape)
+        if op.tag:
+            debugger.snapshots[op.tag] = snapshot
+        else:
+            debugger.snapshots[len(debugger.snapshots)] = snapshot
     return state
 
 
