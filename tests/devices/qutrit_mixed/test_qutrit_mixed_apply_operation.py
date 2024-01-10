@@ -262,7 +262,14 @@ class TestTwoQubitStateSpecialCases:
     # TODO: Add more tests as Special cases are added
 
 
+states_and_shapes = [
+    (density_matrix, (9, 9)),
+    ([get_random_mixed_state(2), get_random_mixed_state(2)], (2, 9, 9)),
+]
+
+
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+@pytest.mark.parametrize("state,shape", states_and_shapes)
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
 
@@ -273,42 +280,46 @@ class TestSnapshot:
             self.active = True
             self.snapshots = {}
 
-    def test_no_debugger(self, ml_framework):
+    def test_no_debugger(self, ml_framework, state, shape):  # pylint: disable=unused-argument
         """Test nothing happens when there is no debugger"""
-        initial_state = math.asarray(density_matrix, like=ml_framework)
-        new_state = apply_operation(qml.Snapshot(), initial_state)
+        initial_state = math.asarray(state, like=ml_framework)
+        new_state = apply_operation(qml.Snapshot(), initial_state, is_state_batched=len(shape) != 2)
 
         assert new_state.shape == initial_state.shape
         assert math.allclose(new_state, initial_state)
 
-    def test_empty_tag(self, ml_framework):
+    def test_empty_tag(self, ml_framework, state, shape):
         """Test a snapshot is recorded properly when there is no tag"""
-        initial_state = math.asarray(density_matrix, like=ml_framework)
+        initial_state = math.asarray(state, like=ml_framework)
 
         debugger = self.Debugger()
-        new_state = apply_operation(qml.Snapshot(), initial_state, debugger=debugger)
+        new_state = apply_operation(
+            qml.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+        )
 
         assert new_state.shape == initial_state.shape
         assert math.allclose(new_state, initial_state)
 
         assert list(debugger.snapshots.keys()) == [0]
-        assert debugger.snapshots[0].shape == (9, 9)
-        assert math.allclose(debugger.snapshots[0], math.reshape(initial_state, (9, 9)))
+        assert debugger.snapshots[0].shape == shape
+        assert math.allclose(debugger.snapshots[0], math.reshape(initial_state, shape))
 
-    def test_provided_tag(self, ml_framework):
+    def test_provided_tag(self, ml_framework, state, shape):
         """Test a snapshot is recorded property when provided a tag"""
-        initial_state = math.asarray(density_matrix, like=ml_framework)
+        initial_state = math.asarray(state, like=ml_framework)
 
         debugger = self.Debugger()
         tag = "dense"
-        new_state = apply_operation(qml.Snapshot(tag), initial_state, debugger=debugger)
+        new_state = apply_operation(
+            qml.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+        )
 
         assert new_state.shape == initial_state.shape
         assert math.allclose(new_state, initial_state)
 
         assert list(debugger.snapshots.keys()) == [tag]
-        assert debugger.snapshots[tag].shape == (9, 9)
-        assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, (9, 9)))
+        assert debugger.snapshots[tag].shape == shape
+        assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, shape))
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
