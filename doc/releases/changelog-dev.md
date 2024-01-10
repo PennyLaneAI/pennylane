@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* Adjoint differentiation is now supported with `jax.jacobian`.
+* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
+  is now strictly faster for jax.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
 <h3>Improvements 🛠</h3>
