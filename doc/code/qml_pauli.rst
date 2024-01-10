@@ -75,12 +75,12 @@ array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
        [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
        [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
 
-We can intuitively use pauli arithmetic to construct Hamiltonians consisting of PauliWords and PauliSentences like
+We can intuitively use Pauli arithmetic to construct Hamiltonians consisting of ``PauliWord`` and ``PauliSentence`` objects like
 the spin-1/2 XXZ model Hamiltonian,
 
 .. math:: H_\text{XXZ} = \sum_j [J^\bot (X_j X_{j+1} + Y_j Y_{j+1}) + J^\text{ZZ} Z_j Z_{j+1} + h Z_j].
 
-Here we look at the simple topology of a on a one-dimensional chain with periodic boundary conditions (i.e. qubit number :math:`n+1 \equiv 1`).
+Here we look at the simple topology of a one-dimensional chain with periodic boundary conditions (i.e. qubit number :math:`n+1 \equiv 1`).
 In code we can do this via the following example with 4 qubits.
 
 .. code-block:: python3

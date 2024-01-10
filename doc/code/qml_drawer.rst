@@ -64,6 +64,9 @@ Currently Available Styles
 .. |pls| image:: ../_static/style/pennylane_style.png
     :width: 100%
 
+.. |plw| image:: ../_static/style/pennylane_sketch_style.png
+    :width: 100%
+
 .. |skd| image:: ../_static/style/sketch_dark_style.png
     :width: 100%
 
@@ -79,7 +82,7 @@ Currently Available Styles
 +-----+-----+-----+
 +|bws|+|bwd|+|sks|+
 +-----+-----+-----+
-+|pls|+|skd|+|sol|+
++|pls|+|plw|+|skd|+
 +-----+-----+-----+
-+|sod|+|def|+     +
++|sol|+|sod|+|def|+
 +-----+-----+-----+
