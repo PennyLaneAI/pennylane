@@ -303,7 +303,7 @@ class TestJacobianProductResults:
             dy2 = (0.4, 0.5)
             dy = (dy1, dy2)
         else:
-            dy = ((0.5, 0.6), (0.9,))
+            dy = ((0.5, 0.6), 0.9)
 
         vjps = jpc.compute_vjp((tape1, tape2), dy)
 
