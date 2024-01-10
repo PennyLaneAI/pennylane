@@ -813,7 +813,11 @@ class PauliSentence(dict):
         summands = []
         wire_order = wire_order or self.wires
         for pw, coeff in self.items():
-            pw_op = pw.operation(wire_order=list(wire_order))
+            if pw == PauliWord({}):
+                id_wires = wire_order if len(wire_order)!=0 else 0 # dummy value when no wires provided
+                pw_op = Identity(wires=id_wires)
+            else:
+                pw_op = pw.operation(wire_order=list(wire_order))
             summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
         return summands[0] if len(summands) == 1 else qml.sum(*summands)
 

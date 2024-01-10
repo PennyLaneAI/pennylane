@@ -40,7 +40,7 @@ def dot(
         pauli (bool, optional): If ``True``, a :class:`~.PauliSentence`
             operator is used to represent the linear combination. If False, a :class:`Sum` operator
             is returned. Defaults to ``False``. Note that when ``ops`` consists solely of ``PauliWord``
-            and ``PauliSentence`` instances, the pauli
+            and ``PauliSentence`` instances, the function still returns a PennyLane operator when ``pauli=False``.
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty
@@ -88,31 +88,26 @@ def dot(
         return ParametrizedHamiltonian(coeffs, ops)
 
     if pauli:
-        return _pauli_dot(coeffs, ops)
+        if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
+            return _dot_pure_paulis(coeffs, ops)
 
-    if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
-        if all(isinstance(pauli, PauliWord) for pauli in ops):
-            return PauliSentence(dict(zip(ops, coeffs)))
-
-        summands = [c * op for c, op in zip(coeffs, ops)]
-        return sum(summands)
+        return _dot_with_ops_and_paulis(coeffs, ops)
 
     if any(isinstance(op, (PauliWord, PauliSentence)) for op in ops):
         # promote any PauliWord/Sentence instances to operators
+        # Looks a bit complicated, mainly due to the fact of having so single out identities since they currently dont have an .operation()
+        # else we could just do ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
         IdWord = PauliWord({})
-        IdSentence = PauliSentence({})
         new_ops = []
         for op in ops:
             if isinstance(op, (PauliWord, PauliSentence)):
-                if op in [IdWord, IdSentence]:
+                if op == IdWord:
                     new_ops.append(qml.Identity(0))
                 else:
                     new_ops.append(op.operation())
             else:
                 new_ops.append(op)
         ops = new_ops
-        # Looks a bit complicated, mainly due to the fact of having so single out identities since they currently dont have an .operation()
-        # else we could just do ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
     # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
     ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
@@ -132,7 +127,7 @@ def dot(
     return operands[0] if len(operands) == 1 else qml.sum(*operands)
 
 
-def _pauli_dot(coeffs: Sequence[float], ops: Sequence[Operator]):
+def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
     pauli_words = defaultdict(lambda: 0)
     for coeff, op in zip(coeffs, ops):
         sentence = qml.pauli.pauli_sentence(op)
@@ -140,3 +135,10 @@ def _pauli_dot(coeffs: Sequence[float], ops: Sequence[Operator]):
             pauli_words[pw] += sentence[pw] * coeff
 
     return qml.pauli.PauliSentence(pauli_words)
+
+def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[Union[PauliWord, PauliSentence]]):
+    if all(isinstance(pauli, PauliWord) for pauli in ops):
+        return PauliSentence(dict(zip(ops, coeffs)))
+
+    summands = [c * op for c, op in zip(coeffs, ops)]
+    return sum(summands)
