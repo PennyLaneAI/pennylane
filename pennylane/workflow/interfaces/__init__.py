@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Deprecated module. Please see ``pennylane.workflow``.
+This subpackage defines functions for interfacing devices' execution
+capabilities with different machine learning libraries.
 """
-from warnings import warn
-
-import pennylane as qml
-from pennylane import workflow
 
 
-def __getattr__(name):
-    warn(
-        "pennylane.interfaces has been moved into pennylane.workflow. Please import from there instead.",
-        qml.PennyLaneDeprecationWarning,
-    )
-    return getattr(workflow, name)
+class InterfaceUnsupportedError(NotImplementedError):
+    """Exception raised when features not supported by an interface are
+    attempted to be used."""
