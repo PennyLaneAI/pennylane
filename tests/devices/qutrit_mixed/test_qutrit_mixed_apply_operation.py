@@ -452,7 +452,7 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         """Tests that Channel operations are applied correctly to a state."""
         state = get_random_mixed_state(2)
         test_channel = self.CustomChannel(0.3, wires=1)
-        res = method(test_channel, state)
+        res = method(test_channel, math.asarray(state, like=ml_framework))
         flattened_state = state.reshape(9, 9)
 
         mat = test_channel.kraus_matrices()
@@ -465,7 +465,7 @@ class TestChannels:  # pylint: disable=too-few-public-methods
             expected += expanded_mat @ flattened_state @ adjoint_mat
         expected = expected.reshape([3] * 4)
 
-        check_ml_framework(res, ml_framework)
+        assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
 
     def test_broadcasted_state(self, method, ml_framework):
@@ -474,7 +474,7 @@ class TestChannels:  # pylint: disable=too-few-public-methods
             pytest.skip("Tensordot doesn't support batched operations.")
         state = [get_random_mixed_state(2) for _ in range(3)]
         test_channel = self.CustomChannel(0.3, wires=1)
-        res = method(test_channel, state)
+        res = method(test_channel, math.asarray(state, like=ml_framework))
 
         mat = test_channel.kraus_matrices()
         expanded_mats = [np.kron(np.eye(3), mat[i]) for i in range(len(mat))]
@@ -487,5 +487,5 @@ class TestChannels:  # pylint: disable=too-few-public-methods
                 expected[i] += expanded_mat @ flattened_state @ adjoint_mat
             expected[i] = expected[i].reshape([3] * 4)
 
-        check_ml_framework(res, ml_framework)
+        assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
