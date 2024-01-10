@@ -323,7 +323,7 @@ def finite_diff(
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
 
-        Note that `argnum` refers to the index of a parameter within the list of trainable
+        Note that ``argnum`` refers to the index of a parameter within the list of trainable
         parameters. For example, if we have:
 
         >>> tape = qml.tape.QuantumScript(

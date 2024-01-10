@@ -337,7 +337,8 @@ def stoch_pulse_grad(
         tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         num_split_times (int): number of time samples to use in the stochastic parameter-shift
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic

@@ -430,7 +430,8 @@ def pulse_odegen(
         tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
