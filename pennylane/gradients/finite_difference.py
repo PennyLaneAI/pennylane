@@ -285,9 +285,10 @@ def finite_diff(
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
-        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
-        of the QNode decorator, and differentiating with your preferred machine learning framework.
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
+        objects. However, for performance reasons, we recommend providing the gradient transform
+        as the ``diff_method`` argument of the QNode decorator, and differentiating with your
+        preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
@@ -322,8 +323,19 @@ def finite_diff(
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
 
-        The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
+        Note that `argnum` refers to the index of a parameter within the list of trainable
+        parameters. For example, if we have:
+
+        >>> tape = qml.tape.QuantumScript(
+        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
+        ...     [qml.expval(qml.PauliZ(0))],
+        ...     trainable_params = [1, 2]
+        ... )
+        >>> qml.gradients.finite_diff(tape, argnum=1)
+
+        The code above will differentiate the third parameter rather than the second.
+
+        The output tapes can then be evaluated and post-processed to retrieve the gradient:
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
@@ -398,7 +410,7 @@ def finite_diff(
         shifts = shifts[1:]
         coeffs = coeffs[1:]
 
-    for i, idx in enumerate(tape.trainable_params):
+    for i, _ in enumerate(tape.trainable_params):
         if i not in diff_methods or diff_methods[i] == "0":
             # parameter has zero gradient
             shapes.append(0)
