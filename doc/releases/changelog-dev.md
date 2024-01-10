@@ -11,6 +11,9 @@
 
 * Upgrade Pauli arithmetic with multiplying by scalars `0.5 * PauliWord({0:"X"})`
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+
+* Upgrade Pauli arithmetic addition `pw1 + pw2` or `ps1 + ps2`.
+  [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
   
 <h4>Community contributions 🥳</h4>
 
