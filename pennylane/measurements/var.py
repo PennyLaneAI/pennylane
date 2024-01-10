@@ -20,7 +20,6 @@ from typing import Sequence, Tuple
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
@@ -126,16 +125,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if isinstance(self.obs, BasisStateProjector):
-            # branch specifically to handle the basis state projector observable
-            idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
-            # we use ``self.wires`` instead of ``self.obs`` because the observable was
-            # already applied before the sampling
-            probs = qml.probs(wires=self.wires).process_samples(
-                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
-            )
-            return probs[idx] - probs[idx] ** 2
-
         # estimate the variance
         with qml.queuing.QueuingManager.stop_recording():
             samples = SampleMP(obs=self.obs, mv=self.mv).process_samples(
@@ -149,17 +138,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         return qml.math.squeeze(qml.math.var(samples, axis=axis))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        if isinstance(self.obs, BasisStateProjector):
-            # branch specifically to handle the basis state projector observable
-            idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
-            # we use ``self.wires`` instead of ``self.obs`` because the observable was
-            # already applied to the state
-            with qml.queuing.QueuingManager.stop_recording():
-                probs = qml.probs(wires=self.wires).process_state(
-                    state=state, wire_order=wire_order
-                )
-            return probs[idx] - probs[idx] ** 2
-
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")

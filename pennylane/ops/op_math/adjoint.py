@@ -136,7 +136,7 @@ def adjoint(fn, lazy=True):
             return qml.probs()
 
     >>> workflow(jnp.pi/2, 3, 0)
-    [1.00000000e+00 7.39557099e-32]
+    array([0.5, 0.5])
 
     .. warning::
 

@@ -284,7 +284,7 @@ class ClassicalShadowMP(MeasurementTransform):
         n_snapshots = device.shots
         seed = self.seed
 
-        with qml.interfaces.set_shots(device, shots=1):
+        with qml.workflow.set_shots(device, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(device.map_wires(wires))

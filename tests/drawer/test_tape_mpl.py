@@ -58,6 +58,17 @@ def test_fontsize():
     plt.close()
 
 
+def test_fig_argument():
+    """Test figure argument is used correctly"""
+
+    fig = plt.figure()
+    output_fig, ax = tape_mpl(tape1, fontsize=20, fig=fig)
+
+    assert ax.get_figure() == fig
+    assert output_fig == fig
+    plt.close()
+
+
 label_data = [
     ({}, ["0", "a", "1.234"]),  # default behaviour
     ({"wire_order": [1.234, "a", 0]}, ["1.234", "a", "0"]),  # provide standard wire order
