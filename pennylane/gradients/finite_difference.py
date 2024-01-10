@@ -35,7 +35,7 @@ from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_tape_batching,
-    get_trainable_params,
+    choose_trainable_params,
     find_and_validate_gradient_methods,
     _no_trainable_grad,
 )
@@ -368,7 +368,7 @@ def finite_diff(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    trainable_params = get_trainable_params(tape, argnum)
+    trainable_params = choose_trainable_params(tape, argnum)
     diff_methods = (
         {idx: "F" for idx in trainable_params}
         if not validate_params

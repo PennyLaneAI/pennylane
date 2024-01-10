@@ -30,7 +30,7 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_tape_batching,
     assert_no_variance,
-    get_trainable_params,
+    choose_trainable_params,
     find_and_validate_gradient_methods,
     _no_trainable_grad,
 )
@@ -230,7 +230,7 @@ def hadamard_grad(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    trainable_params = get_trainable_params(tape, argnum)
+    trainable_params = choose_trainable_params(tape, argnum)
     diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
 
     if all(g == "0" for g in diff_methods.values()):

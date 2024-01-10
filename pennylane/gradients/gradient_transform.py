@@ -114,7 +114,7 @@ def assert_no_tape_batching(tape, transform_name):
         )
 
 
-def get_trainable_params(tape, argnum=None):
+def choose_trainable_params(tape, argnum=None):
     """Returns a list of trainable parameters in the tape.
 
     If argnum is provided, only the parameters specified by argnum will be returned.
@@ -157,6 +157,7 @@ def _try_zero_grad_from_graph_or_get_gradient_method(tape, index, use_graph=True
 
     """
 
+    # pylint:disable=protected-access
     par_info = tape._par_info[index]
 
     if use_graph:
@@ -171,6 +172,7 @@ def _try_zero_grad_from_graph_or_get_gradient_method(tape, index, use_graph=True
 def _find_gradient_methods(tape, parameters, use_graph=True):
     """Returns a dictionary with gradient information of each parameter."""
 
+    # pylint:disable=protected-access
     return {
         idx: _try_zero_grad_from_graph_or_get_gradient_method(tape, idx, use_graph)
         for idx, info in enumerate(tape._par_info)
