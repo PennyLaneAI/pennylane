@@ -30,8 +30,8 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_tape_batching,
     assert_no_variance,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
+    get_trainable_params,
+    find_and_validate_gradient_methods,
     _no_trainable_grad,
 )
 
@@ -230,14 +230,13 @@ def hadamard_grad(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hadamard_grad)
+    trainable_params = get_trainable_params(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     # Validate or get default for aux_wire
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
@@ -263,13 +262,13 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         for idx, m in enumerate(tape.measurements)
         if isinstance(m, qml.measurements.ProbabilityMP)
     ]
-    for id_argnum, _ in enumerate(tape.trainable_params):
-        if id_argnum not in argnums:
+    for i, param_idx in enumerate(tape.trainable_params):
+        if param_idx not in argnums:
             # parameter has zero gradient
             gradient_data.append(0)
             continue
 
-        trainable_op, idx, p_idx = tape.get_operation(id_argnum)
+        trainable_op, idx, p_idx = tape.get_operation(i)
 
         ops_to_trainable_op = tape.operations[: idx + 1]
         ops_after_trainable_op = tape.operations[idx + 1 :]
