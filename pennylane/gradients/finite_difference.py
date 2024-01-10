@@ -399,7 +399,7 @@ def finite_diff(
         coeffs = coeffs[1:]
 
     for i, idx in enumerate(tape.trainable_params):
-        if idx not in diff_methods or diff_methods[idx] == "0":
+        if i not in diff_methods or diff_methods[i] == "0":
             # parameter has zero gradient
             shapes.append(0)
             continue

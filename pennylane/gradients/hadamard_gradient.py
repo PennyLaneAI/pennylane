@@ -262,13 +262,13 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         for idx, m in enumerate(tape.measurements)
         if isinstance(m, qml.measurements.ProbabilityMP)
     ]
-    for i, param_idx in enumerate(tape.trainable_params):
-        if param_idx not in argnums:
+    for trainable_param_idx, _ in enumerate(tape.trainable_params):
+        if trainable_param_idx not in argnums:
             # parameter has zero gradient
             gradient_data.append(0)
             continue
 
-        trainable_op, idx, p_idx = tape.get_operation(i)
+        trainable_op, idx, p_idx = tape.get_operation(trainable_param_idx)
 
         ops_to_trainable_op = tape.operations[: idx + 1]
         ops_after_trainable_op = tape.operations[idx + 1 :]

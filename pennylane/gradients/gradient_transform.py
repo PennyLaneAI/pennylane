@@ -115,13 +115,16 @@ def assert_no_tape_batching(tape, transform_name):
 
 
 def choose_trainable_params(tape, argnum=None):
-    """Returns a list of trainable parameters in the tape.
+    """Returns a list of trainable parameter indices in the tape.
 
-    If argnum is provided, only the parameters specified by argnum will be returned.
+    Chooses the subset of trainable parameters to compute the Jacobian for. The function
+    returns a list of indices with respect to the list of trainable parameters. If argnum
+    is not provided, all trainable parameters are considered.
 
     Args:
         tape (`~.QuantumScript`): the tape to analyze
-        argnum (int, list(int), None): Indices for parameters(s) to compute the Jacobian for.
+        argnum (int, list(int), None): Indices for trainable parameters(s)
+            to compute the Jacobian for.
 
     Returns:
         list: list of the trainable parameter indices
@@ -129,36 +132,34 @@ def choose_trainable_params(tape, argnum=None):
     """
 
     if argnum is None:
-        return tape.trainable_params
+        return [idx for idx, _ in enumerate(tape.trainable_params)]
 
     if isinstance(argnum, int):
         argnum = [argnum]
 
-    params = [idx for idx in argnum if idx in tape.trainable_params]
-
-    if len(params) == 0:
+    if len(argnum) == 0:
         warnings.warn(
             "No trainable parameters were specified for computing the Jacobian.",
             UserWarning,
         )
 
-    return params
+    return argnum
 
 
-def _try_zero_grad_from_graph_or_get_gradient_method(tape, index, use_graph=True):
+def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=True):
     """Gets the gradient method of a parameter. If use_graph=True, analyze the
     circuit graph to find if the parameter has zero gradient.
 
     Args:
         tape (`~.QuantumScript`): the tape to analyze
-        index (int): the index of the parameter to analyze
+        param_index (int): the index of the parameter to analyze
         use_graph (bool): whether to use the circuit graph to find if
             a parameter has zero gradient
 
     """
 
     # pylint:disable=protected-access
-    par_info = tape._par_info[index]
+    par_info = tape._par_info[param_index]
 
     if use_graph:
         op_or_mp = tape[par_info["op_idx"]]
@@ -169,29 +170,29 @@ def _try_zero_grad_from_graph_or_get_gradient_method(tape, index, use_graph=True
     return par_info["op"].grad_method
 
 
-def _find_gradient_methods(tape, parameters, use_graph=True):
-    """Returns a dictionary with gradient information of each parameter."""
+def _find_gradient_methods(tape, trainable_param_indices, use_graph=True):
+    """Returns a dictionary with gradient information of each trainable parameter."""
 
-    # pylint:disable=protected-access
     return {
-        idx: _try_zero_grad_from_graph_or_get_gradient_method(tape, idx, use_graph)
-        for idx, info in enumerate(tape._par_info)
-        if idx in parameters
+        idx: _try_zero_grad_from_graph_or_get_grad_method(
+            tape, tape.trainable_params[idx], use_graph
+        )
+        for idx in trainable_param_indices
     }
 
 
-def _validate_gradient_methods(method, diff_methods):
+def _validate_gradient_methods(tape, method, diff_methods):
     """Validates if the gradient method requested is supported by the trainable
     parameters of a tape, and returns the allowed parameter gradient methods."""
 
     # check and raise an error if any parameters are non-differentiable
-    nondiff_params = [idx for idx, m in diff_methods.items() if m is None]
+    nondiff_params = [tape.trainable_params[idx] for idx, m in diff_methods.items() if m is None]
     if nondiff_params:
         raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
 
     # If explicitly using analytic mode, ensure that all
     # parameters support analytic differentiation.
-    numeric_params = [idx for idx, m in diff_methods.items() if m == "F"]
+    numeric_params = [tape.trainable_params[idx] for idx, m in diff_methods.items() if m == "F"]
     if method == "analytic" and numeric_params:
         raise ValueError(
             f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
@@ -229,7 +230,7 @@ def find_and_validate_gradient_methods(tape, method, parameters, use_graph=True)
 
     """
     diff_methods = _find_gradient_methods(tape, parameters, use_graph=use_graph)
-    _validate_gradient_methods(method, diff_methods)
+    _validate_gradient_methods(tape, method, diff_methods)
     return diff_methods
 
 
