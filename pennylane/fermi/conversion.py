@@ -183,7 +183,7 @@ def parity_transform(
     Args:
         fermi_operator(FermiWord, FermiSentence): the fermionic operator
         n (int): Number of qubits, i.e., spin orbitals in the system
-        ps (bool): whether to return the result as a PauliSentence instead of an
+        ps (bool): whether to return the result as a :class:`~.PauliSentence` instead of an
             Operator. Defaults to False.
         wire_map (dict): a dictionary defining how to map the orbitals of
             the Fermi operator to qubit wires. If None, the integers used to
