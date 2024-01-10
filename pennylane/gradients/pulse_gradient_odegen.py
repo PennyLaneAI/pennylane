@@ -32,8 +32,8 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_tape_batching,
     assert_no_variance,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
+    choose_trainable_params,
+    find_and_validate_gradient_methods,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -684,14 +684,13 @@ def pulse_odegen(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=pulse_odegen)
+    trainable_params = choose_trainable_params(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     return _expval_pulse_odegen(tape, argnum, atol)
 

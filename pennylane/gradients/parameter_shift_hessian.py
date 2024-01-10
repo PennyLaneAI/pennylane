@@ -30,11 +30,7 @@ from .general_shift_rules import (
     generate_multishifted_tapes,
     generate_shifted_tapes,
 )
-from .gradient_transform import (
-    choose_trainable_params,
-    find_and_validate_gradient_methods,
-    gradient_analysis_and_validation,
-)
+from .gradient_transform import find_and_validate_gradient_methods
 from .parameter_shift import _get_operation_recipe
 from .hessian_transform import _process_jacs
 
