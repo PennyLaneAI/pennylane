@@ -99,8 +99,10 @@ def dot(
 
     if pauli:
         if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
+            # Use pauli arithmetic when ops are just PauliWord and PauliSentence instances
             return _dot_pure_paulis(coeffs, ops)
 
+        # Else, transform all ops to pauli sentences
         return _dot_with_ops_and_paulis(coeffs, ops)
 
     if any(isinstance(op, (PauliWord, PauliSentence)) for op in ops):
@@ -138,6 +140,8 @@ def dot(
 
 
 def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
+    """Compute dot when operators are a mix of pennylane operators, PauliWord and PauliSentence by turning them all into a PauliSentence instance.
+    Returns a PauliSentence instance"""
     pauli_words = defaultdict(lambda: 0)
     for coeff, op in zip(coeffs, ops):
         sentence = qml.pauli.pauli_sentence(op)
@@ -148,6 +152,7 @@ def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
 
 
 def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[Union[PauliWord, PauliSentence]]):
+    """Faster computation of dot when all ops are PauliSentences or PauliWords"""
     if all(isinstance(pauli, PauliWord) for pauli in ops):
         return PauliSentence(dict(zip(ops, coeffs)))
 
