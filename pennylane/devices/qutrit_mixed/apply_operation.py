@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply operations to a qutrit mixed state."""
+# pylint: disable=unused-argument
 
 import functools
 from functools import singledispatch
@@ -226,7 +227,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
     ) or (op.batch_size or is_state_batched):
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
     # TODO fix state batching on tensordot
-    return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+    return apply_operation_tensordot(op, state)
 
 
 # TODO add diagonal for speed up.
