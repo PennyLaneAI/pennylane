@@ -114,6 +114,123 @@ def assert_no_tape_batching(tape, transform_name):
         )
 
 
+def get_trainable_params(tape, argnum=None):
+    """Returns a list of trainable parameters in the tape.
+
+    If argnum is provided, only the parameters specified by argnum will be returned.
+
+    Args:
+        tape (`~.QuantumScript`): the tape to analyze
+        argnum (int, list(int), None): Indices for parameters(s) to compute the Jacobian for.
+
+    Returns:
+        list: list of the trainable parameter indices
+
+    """
+
+    if argnum is None:
+        return tape.trainable_params
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+
+    params = [idx for idx in argnum if idx in tape.trainable_params]
+
+    if len(params) == 0:
+        warnings.warn(
+            "No trainable parameters were specified for computing the Jacobian.",
+            UserWarning,
+        )
+
+    return params
+
+
+def _try_zero_grad_from_graph_or_get_gradient_method(tape, index, use_graph=True):
+    """Gets the gradient method of a parameter. If use_graph=True, analyze the
+    circuit graph to find if the parameter has zero gradient.
+
+    Args:
+        tape (`~.QuantumScript`): the tape to analyze
+        index (int): the index of the parameter to analyze
+        use_graph (bool): whether to use the circuit graph to find if
+            a parameter has zero gradient
+
+    """
+
+    par_info = tape._par_info[index]
+
+    if use_graph:
+        op_or_mp = tape[par_info["op_idx"]]
+        if not any(tape.graph.has_path(op_or_mp, mp) for mp in tape.measurements):
+            # there is no influence of this operation on any of the observables
+            return "0"
+
+    return par_info["op"].grad_method
+
+
+def _find_gradient_methods(tape, parameters, use_graph=True):
+    """Returns a dictionary with gradient information of each parameter."""
+
+    return {
+        idx: _try_zero_grad_from_graph_or_get_gradient_method(tape, idx, use_graph)
+        for idx, info in enumerate(tape._par_info)
+        if idx in parameters
+    }
+
+
+def _validate_gradient_methods(method, diff_methods):
+    """Validates if the gradient method requested is supported by the trainable
+    parameters of a tape, and returns the allowed parameter gradient methods."""
+
+    # check and raise an error if any parameters are non-differentiable
+    nondiff_params = [idx for idx, m in diff_methods.items() if m is None]
+    if nondiff_params:
+        raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+
+    # If explicitly using analytic mode, ensure that all
+    # parameters support analytic differentiation.
+    numeric_params = [idx for idx, m in diff_methods.items() if m == "F"]
+    if method == "analytic" and numeric_params:
+        raise ValueError(
+            f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
+        )
+
+
+def find_and_validate_gradient_methods(tape, method, parameters, use_graph=True):
+    """Returns a dictionary of gradient methods for each trainable parameter after
+    validating if the gradient method requested is supported by the trainable parameters
+
+    Parameter gradient methods include:
+
+    * ``None``: the parameter does not support differentiation.
+
+    * ``"0"``: the variational circuit output does not depend on this
+      parameter (the partial derivative is zero).
+
+    In addition, the operator might define its own grad method
+    via :attr:`.Operator.grad_method`.
+
+    Args:
+        tape (`~.QuantumScript`): the tape to analyze
+        method (str): the gradient method to use
+        parameters (list[int]): the indices of the parameters to compute the Jacobian for
+        use_graph (bool): whether to use the circuit graph to find if
+            a parameter has zero gradient
+
+    Returns:
+        dict: dictionary of the gradient methods for each trainable parameter
+
+    Raises:
+        ValueError: If there exist non-differentiable trainable parameters on the tape.
+        ValueError: If the Jacobian method is ``"analytic"`` but there exist some trainable
+            parameters on the tape that only support numeric differentiation.
+
+    """
+    diff_methods = _find_gradient_methods(tape, parameters, use_graph=use_graph)
+    _validate_gradient_methods(method, diff_methods)
+    return diff_methods
+
+
 def _gradient_analysis(tape, use_graph=True, grad_fn=None):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter.
