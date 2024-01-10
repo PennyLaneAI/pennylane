@@ -27,7 +27,7 @@ For example:
 >>> jax.jit(f)(x)
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
 >>> def g(x):
-...     expected_output_shape = jax.ShapeDtypeStruct((), jnp.float64)
+...     expected_output_shape = jax.ShapeDtypeStruct((), jax.numpy.float64)
 ...     return jax.pure_callback(f, expected_output_shape, x)
 >>> jax.jit(g)(x)
 Array(1., dtype=float64)
@@ -42,7 +42,7 @@ import jax.numpy as jnp
 import pennylane as qml
 from pennylane.typing import ResultBatch
 
-from .jacobian_products import _compute_jvps
+from ..jacobian_products import _compute_jvps
 
 from .jax import _NonPytreeWrapper
 
@@ -70,6 +70,7 @@ def _set_parameters_on_copy(tapes, params):
     return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
 
 
+# pylint: disable=no-member
 def _jax_dtype(m_type):
     if m_type == int:
         return jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
@@ -209,7 +210,7 @@ _execute_vjp_jit.defvjp(_vjp_fwd, _vjp_bwd)
 
 
 def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
-    """Execute a batch of tapes with JAX parameters using VJP derivatives.
+    """Execute a batch of tapes with JAX parameters using JVP derivatives.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute

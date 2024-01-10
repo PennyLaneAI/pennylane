@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.torch
 torch = pytest.importorskip("torch")
@@ -170,7 +170,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -196,7 +196,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1099,7 +1099,8 @@ class TestHigherOrderDerivatives:
         )
         assert torch.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
-        jac_fn = lambda x: torch_functional.jacobian(circuit, x, create_graph=True)
+        def jac_fn(x):
+            return torch_functional.jacobian(circuit, x, create_graph=True)
 
         g = jac_fn(x)
 
