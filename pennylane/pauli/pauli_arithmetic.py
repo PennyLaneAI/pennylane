@@ -442,39 +442,33 @@ class PauliWord(dict):
 
 class PauliSentence(dict):
     """Dictionary representing a linear combination of Pauli words, with the keys
-        as PauliWord instances and the values correspond to coefficients.
+    as PauliWord instances and the values correspond to coefficients.
 
-    <<<<<<< HEAD
-        **Examples**
+    .. note::
 
-        >>> ps = PauliSentence({
-                PauliWord({0:'X', 1:'Y'}): 1.23,
-                PauliWord({2:'Z', 0:'Y'}): -0.45j
-    =======
-        .. note::
+        An empty :class:`~.PauliSentence` will be treated as the additive
+        identity (i.e 0 * Identity on all wires).
 
-            An empty :class:`~.PauliSentence` will be treated as the additive
-            identity (i.e 0 * Identity on all wires).
+    **Examples**
 
-        >>> ps = qml.pauli.PauliSentence({
-                qml.pauli.PauliWord({0:'X', 1:'Y'}): 1.23,
-                qml.pauli.PauliWord({2:'Z', 0:'Y'}): -0.45j
-    >>>>>>> 2188e7574d103511960fd62e8abcbefc2f05229b
-            })
-        >>> ps
-        1.23 * X(0) @ Y(1)
-        + (-0-0.45j) * Z(2) @ Y(0)
+    >>> ps = PauliSentence({
+            PauliWord({0:'X', 1:'Y'}): 1.23,
+            PauliWord({2:'Z', 0:'Y'}): -0.45j
+        })
+    >>> ps
+    1.23 * X(0) @ Y(1)
+    + (-0-0.45j) * Z(2) @ Y(0)
 
-        Combining Pauli words automatically results in Pauli sentences that can be used to construct more complicated operators.
+    Combining Pauli words automatically results in Pauli sentences that can be used to construct more complicated operators.
 
-        >>> w1 = PauliWord({0:"X", 1:"Y"})
-        >>> w2 = PauliWord({1:"X", 2:"Z"})
-        >>> ps = 0.5 * w1 - 1.5 * w2 + 2
-        >>> ps + PauliWord({3:"Z"}) - 1
-        0.5 * X(0) @ Y(1)
-        + -1.5 * X(1) @ Z(2)
-        + 1 * I
-        + 1.0 * Z(3)
+    >>> w1 = PauliWord({0:"X", 1:"Y"})
+    >>> w2 = PauliWord({1:"X", 2:"Z"})
+    >>> ps = 0.5 * w1 - 1.5 * w2 + 2
+    >>> ps + PauliWord({3:"Z"}) - 1
+    0.5 * X(0) @ Y(1)
+    + -1.5 * X(1) @ Z(2)
+    + 1 * I
+    + 1.0 * Z(3)
     """
 
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1

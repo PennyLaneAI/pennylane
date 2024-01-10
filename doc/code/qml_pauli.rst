@@ -52,12 +52,10 @@ array([[ 0,  0,  1,  0],
        [ 1,  0,  0,  0],
        [ 0, -1,  0,  0]])
 
-
 The :class:`~pennylane.pauli.PauliSentence` class represents linear combinations of
 Pauli words. Using a similar dictionary based approach we can efficiently add, multiply
 and extract the matrix of operators in this representation.
 
->>> from pennylane.pauli import PauliSentence
 >>> ps1 = PauliSentence({pw1: 1.2, pw2: 0.5j})
 >>> ps2 = PauliSentence({pw1: -1.2})
 >>> ps1
@@ -75,8 +73,8 @@ array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
        [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
        [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
 
-We can intuitively use Pauli arithmetic to construct Hamiltonians consisting of ``PauliWord`` and ``PauliSentence`` objects like
-the spin-1/2 XXZ model Hamiltonian,
+We can intuitively use Pauli arithmetic to construct Hamiltonians consisting of :class:`~pennylane.pauli.PauliWord`
+and :class:`~pennylane.pauli.PauliSentence` objects like the spin-1/2 XXZ model Hamiltonian,
 
 .. math:: H_\text{XXZ} = \sum_j [J^\bot (X_j X_{j+1} + Y_j Y_{j+1}) + J^\text{ZZ} Z_j Z_{j+1} + h Z_j].
 
