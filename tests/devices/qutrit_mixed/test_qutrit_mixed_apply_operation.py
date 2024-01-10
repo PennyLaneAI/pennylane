@@ -421,13 +421,6 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert op.batch_size == self.num_batched
 
 
-def check_ml_framework(res, ml_framework):
-    if ml_framework == "autograd":
-        assert qml.math.get_interface(res) == "numpy"
-    else:
-        assert qml.math.get_interface(res) == ml_framework
-
-
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
 class TestChannels:  # pylint: disable=too-few-public-methods
@@ -468,13 +461,14 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
 
-    def test_broadcasted_state(self, method, ml_framework):
+    @pytest.mark.parametrize("broadcasting_method", broadcasting_methods)
+    def test_broadcasted_state(self, broadcasting_method, ml_framework):
         """Tests that Channel operations are applied correctly to a batched state."""
-        if method is apply_operation_tensordot:
+        if broadcasting_method is apply_operation_tensordot:
             pytest.skip("Tensordot doesn't support batched operations.")
         state = [get_random_mixed_state(2) for _ in range(3)]
         test_channel = self.CustomChannel(0.3, wires=1)
-        res = method(test_channel, math.asarray(state, like=ml_framework))
+        res = broadcasting_method(test_channel, math.asarray(state, like=ml_framework))
 
         mat = test_channel.kraus_matrices()
         expanded_mats = [np.kron(np.eye(3), mat[i]) for i in range(len(mat))]
