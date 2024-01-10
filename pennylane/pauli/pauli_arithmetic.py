@@ -814,7 +814,9 @@ class PauliSentence(dict):
         wire_order = wire_order or self.wires
         for pw, coeff in self.items():
             if pw == PauliWord({}):
-                id_wires = wire_order if len(wire_order)!=0 else 0 # dummy value when no wires provided
+                id_wires = (
+                    wire_order if len(wire_order) != 0 else 0
+                )  # dummy value when no wires provided
                 pw_op = Identity(wires=id_wires)
             else:
                 pw_op = pw.operation(wire_order=list(wire_order))

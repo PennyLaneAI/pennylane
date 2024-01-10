@@ -136,6 +136,7 @@ def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
 
     return qml.pauli.PauliSentence(pauli_words)
 
+
 def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[Union[PauliWord, PauliSentence]]):
     if all(isinstance(pauli, PauliWord) for pauli in ops):
         return PauliSentence(dict(zip(ops, coeffs)))

@@ -26,14 +26,15 @@ pw3 = PauliWord({"a": X, "b": X, "c": Z})
 pw4 = PauliWord({"a": Y, "b": Z, "c": X})
 pw_id = PauliWord({})
 
-ps1 = PauliSentence({pw1: 1., pw2: 2.})
-ps2 = PauliSentence({pw3: 1., pw4: 2.})
+ps1 = PauliSentence({pw1: 1.0, pw2: 2.0})
+ps2 = PauliSentence({pw3: 1.0, pw4: 2.0})
 
 op1 = qml.prod(qml.PauliX(1), qml.PauliY(2))
 op2 = qml.prod(qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(4))
 op3 = qml.prod(qml.PauliX("a"), qml.PauliX("b"), qml.PauliZ("c"))
 op4 = qml.prod(qml.PauliY("a"), qml.PauliZ("b"), qml.PauliX("c"))
 op_id = qml.Identity(0)
+
 
 class TestDotSum:
     """Unittests for the dot function when ``pauli=False``."""
@@ -175,9 +176,10 @@ class TestDotSum:
         assert qml.equal(op_sum, op_sum_2)
 
     data_just_words_pauli_false = (
-        ([1., 2., 3.], [pw1, pw2, pw_id], [op1, op2, op_id]),
-        ([1., 2., 3.], [pw1, pw2, pw_id], [op1, op2, op_id]),
+        ([1.0, 2.0, 3.0], [pw1, pw2, pw_id], [op1, op2, op_id]),
+        ([1.0, 2.0, 3.0], [pw1, pw2, pw_id], [op1, op2, op_id]),
     )
+
     @pytest.mark.parametrize("coeff, words, ops", data_just_words_pauli_false)
     def test_dot_with_just_words_pauli_false(self, coeff, words, ops):
         """Test operators that are just pauli words"""
@@ -300,27 +302,38 @@ class TestDotPauliSentence:
             }
         )
         assert ps == ps_2
-    
+
     data_just_words = (
-        ([1., 2., 3., 4.], [pw1, pw2, pw3, pw_id], PauliSentence({pw1: 1., pw2: 2., pw3: 3., pw_id: 4.})),
-        ([1.5, 2.5, 3.5, 4.5j], [pw1, pw2, pw3, pw_id], PauliSentence({pw1: 1.5, pw2: 2.5, pw3: 3.5, pw_id: 4.5j})),
+        (
+            [1.0, 2.0, 3.0, 4.0],
+            [pw1, pw2, pw3, pw_id],
+            PauliSentence({pw1: 1.0, pw2: 2.0, pw3: 3.0, pw_id: 4.0}),
+        ),
+        (
+            [1.5, 2.5, 3.5, 4.5j],
+            [pw1, pw2, pw3, pw_id],
+            PauliSentence({pw1: 1.5, pw2: 2.5, pw3: 3.5, pw_id: 4.5j}),
+        ),
         ([1.5, 2.5, 3.5], [pw3, pw2, pw1], PauliSentence({pw3: 1.5, pw2: 2.5, pw1: 3.5})),
     )
+
     @pytest.mark.parametrize("coeff, ops, res", data_just_words)
     def test_dot_with_just_words(self, coeff, ops, res):
         """Test operators that are just pauli words"""
         dot_res = qml.dot(coeff, ops, pauli=True)
         assert dot_res == res
-    
+
     data_words_and_sentences = (
-        ([1., 2., 3.], [pw1, pw2, ps1], PauliSentence({pw1: 3.*1+1, pw2: 3*2.+2})),
-        ([1., 2., 3.], [pw2, pw4, ps2], PauliSentence({pw3: 3.*1+1, pw4: 3*2.+2})),
+        ([1.0, 2.0, 3.0], [pw1, pw2, ps1], PauliSentence({pw1: 3.0 * 1 + 1, pw2: 3 * 2.0 + 2})),
+        ([1.0, 2.0, 3.0], [pw2, pw4, ps2], PauliSentence({pw3: 3.0 * 1 + 1, pw4: 3 * 2.0 + 2})),
     )
+
     @pytest.mark.parametrize("coeff, ops, res", data_words_and_sentences)
     def test_dot_with_words_and_sentences(self, coeff, ops, res):
         """Test operators that are a mix of pauli words and pauli sentences"""
         dot_res = qml.dot(coeff, ops, pauli=True)
         assert dot_res == res
+
 
 pw1 = PauliWord({0: I, 1: X, 2: Y})
 pw2 = PauliWord({0: Z, 2: Z, 4: Z})
@@ -328,13 +341,12 @@ pw3 = PauliWord({"a": X, "b": X, "c": Z})
 pw4 = PauliWord({"a": Y, "b": Z, "c": X})
 pw_id = PauliWord({})
 
-ps1 = PauliSentence({pw1: 1., pw2: 2.})
-ps2 = PauliSentence({pw3: 1., pw4: 2.})
+ps1 = PauliSentence({pw1: 1.0, pw2: 2.0})
+ps2 = PauliSentence({pw3: 1.0, pw4: 2.0})
+
 
 class TestPauliWordSentenceDot:
     """Tests for when the input to dot is a PauliWord/Sentence"""
-
-    
 
     def test_dot_with_words_and_sentences(self):
         """Test operators that are PauliWords and PauliSentences"""
