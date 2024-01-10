@@ -81,7 +81,8 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
 
     # Shape kraus operators
     kraus_shape = [len(kraus)] + [qudit_dim] * num_ch_wires * 2
-    kraus_dagger = []
+    # Compute K^T, will be list of lists if broadcasting
+    kraus_transpose = []
     if not isinstance(op, Channel):
         # TODO Channels broadcasting doesn't seem to be implemented for qubits, should they be for qutrit?
         mat = op.matrix()
@@ -92,15 +93,15 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
             kraus_shape = [batch_size] + kraus_shape
             if op.batch_size is None:
                 op._batch_size = batch_size  # pylint:disable=protected-access
-            # Computes K^\dagger, needed for the transformation K \rho K^\dagger
             for op_mats in kraus:
-                kraus_dagger.append([math.conj(math.transpose(k)) for k in op_mats])
-    if not kraus_dagger:
-        # Computes K^\dagger, needed for the transformation K \rho K^\dagger
-        kraus_dagger = [math.conj(math.transpose(k)) for k in kraus]
+                kraus_transpose.append([math.transpose(k) for k in op_mats])
+    if not kraus_transpose:
+        kraus_transpose = [math.transpose(k) for k in kraus]
 
     kraus = math.stack(kraus)
-    kraus_dagger = math.stack(kraus_dagger)
+    kraus_transpose = math.stack(kraus_transpose)
+    # Torch throws error if math.conj is used before stack
+    kraus_dagger = math.conj(kraus_transpose)
 
     kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
     kraus_dagger = math.cast(math.reshape(kraus_dagger, kraus_shape), complex)
