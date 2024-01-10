@@ -39,7 +39,8 @@ def dot(
         ops (Sequence[Operator]): sequence containing the operators of the linear combination
         pauli (bool, optional): If ``True``, a :class:`~.PauliSentence`
             operator is used to represent the linear combination. If False, a :class:`Sum` operator
-            is returned. Defaults to ``False``.
+            is returned. Defaults to ``False``. Note that when ``ops`` consists solely of ``PauliWord``
+            and ``PauliSentence`` instances, the pauli
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty

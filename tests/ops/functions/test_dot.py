@@ -291,11 +291,16 @@ ps2 = PauliSentence({pw1: 1.5, pw2: 2.5, pw3: 3.5})
 class TestPauliWordSentenceDot:
     """Tests for when the input to dot is a PauliWord/Sentence"""
 
-    def test_dot_with_just_words(self):
+    data_just_words = (
+        ([1., 2., 3., 4.], [pw1, pw2, pw3, pw_id], PauliSentence({pw1: 1., pw2: 2., pw3: 3., pw_id: 4.})),
+        ([1.5, 2.5, 3.5, 4.5j], [pw1, pw2, pw3, pw_id], PauliSentence({pw1: 1.5, pw2: 2.5, pw3: 3.5, pw_id: 4.5j})),
+        ([1.5, 2.5, 3.5], [pw3, pw2, pw1], PauliSentence({pw3: 1.5, pw2: 2.5, pw1: 3.5})),
+    )
+    @pytest.mark.parametrize("coeffs, ops, res", data_just_words)
+    def test_dot_with_just_words(self, coeffs, ops, res):
         """Test operators that are just pauli words"""
-        coeffs = list(range(4))
-        dot_res = qml.dot(coeffs, words)
-        assert dot_res == PauliSentence({pw1: 0, pw2: 1, pw3: 2, pw_id: 3})
+        dot_res = qml.dot(coeffs, ops)
+        assert dot_res == res
 
     def test_dot_with_words_and_sentences(self):
         """Test operators that are PauliWords and PauliSentences"""
