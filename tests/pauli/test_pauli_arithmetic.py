@@ -70,6 +70,30 @@ def test_legacy_multiplication_psentences(pauli1, pauli2):
     assert pauli1 * pauli2 == pauli1 @ pauli2
 
 
+def test_legacy_pw_pw_multiplication_non_commutativity():
+    """Test that legacy pauli word matrix multiplication is non-commutative and returns correct result"""
+    pauliX = PauliWord({0: "X"})
+    pauliY = PauliWord({0: "Y"})
+    pauliZ = PauliWord({0: "Z"})
+
+    res1 = pauliX * pauliY
+    res2 = pauliY * pauliX
+    assert res1 == (pauliZ, 1j)
+    assert res2 == (pauliZ, -1j)
+
+
+def test_legacy_ps_ps_multiplication_non_commutativity():
+    """Test that legacy pauli sentence matrix multiplication is non-commutative and returns correct result"""
+    pauliX = PauliSentence({PauliWord({0: "X"}): 1.0})
+    pauliY = PauliSentence({PauliWord({0: "Y"}): 1.0})
+    pauliZ = PauliSentence({PauliWord({0: "Z"}): 1j})
+
+    res1 = pauliX * pauliY
+    res2 = pauliY * pauliX
+    assert res1 == pauliZ
+    assert res2 == -1 * pauliZ
+
+
 class TestPauliWord:
     def test_identity_removed_on_init(self):
         """Test that identities are removed on init."""
