@@ -469,7 +469,7 @@ class PauliSentence(dict):
         return final_ps
 
     def __mul__(self, other):
-        """Multiply a PauliWord by a scalar#
+        """Multiply a PauliWord by a scalar
 
         Args:
             other (Scalar): The scalar to multiply the PauliWord with
