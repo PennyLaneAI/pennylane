@@ -481,14 +481,6 @@ class PauliSentence(dict):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
-    # def __init__(self, mapping):
-    #     """Strip identities from PauliSentence"""
-    #     IdWord = PauliWord({})
-    #     for op, _ in mapping.copy().items():
-    #         if op == IdWord:
-    #             del mapping[op]
-    #     super().__init__(mapping)
-
     def __missing__(self, key):
         """If the PauliWord is not in the sentence then the coefficient
         associated with it should be 0."""
