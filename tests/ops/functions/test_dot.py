@@ -187,6 +187,21 @@ class TestDotSum:
         true_res = qml.dot(coeff, ops)
         assert dot_res == true_res
 
+    data_words_and_sentences_pauli_false = (
+        (
+            [1.0, 2.0, 3.0],
+            [pw1, pw2, ps1],
+            qml.sum(qml.s_prod((3.0 * 1 + 1), op1), qml.s_prod((3 * 2.0 + 2), op2)),
+        ),
+        # ([1.0, 2.0, 3.0], [pw3, pw4, ps2], qml.sum(qml.s_prod((3.0 * 1 + 1), op3), qml.s_prod((3 * 2.0 + 2), op4))), # comparisons for Sum objects with string valued wires does not work atm see https://github.com/PennyLaneAI/pennylane/issues/5033
+    )
+
+    @pytest.mark.parametrize("coeff, ops, res", data_words_and_sentences_pauli_false)
+    def test_dot_with_words_and_sentences_pauli_false(self, coeff, ops, res):
+        """Test operators that are a mix of pauli words and pauli sentences"""
+        dot_res = qml.dot(coeff, ops, pauli=False).simplify()
+        assert dot_res == res
+
 
 coeffs = [0.12345, 1.2345, 12.345, 123.45, 1234.5, 12345]
 ops = [
@@ -325,7 +340,7 @@ class TestDotPauliSentence:
 
     data_words_and_sentences = (
         ([1.0, 2.0, 3.0], [pw1, pw2, ps1], PauliSentence({pw1: 3.0 * 1 + 1, pw2: 3 * 2.0 + 2})),
-        ([1.0, 2.0, 3.0], [pw2, pw4, ps2], PauliSentence({pw3: 3.0 * 1 + 1, pw4: 3 * 2.0 + 2})),
+        ([1.0, 2.0, 3.0], [pw3, pw4, ps2], PauliSentence({pw3: 3.0 * 1 + 1, pw4: 3 * 2.0 + 2})),
     )
 
     @pytest.mark.parametrize("coeff, ops, res", data_words_and_sentences)

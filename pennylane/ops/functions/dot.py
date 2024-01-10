@@ -142,4 +142,4 @@ def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[Union[PauliWord, Pau
         return PauliSentence(dict(zip(ops, coeffs)))
 
     summands = [c * op for c, op in zip(coeffs, ops)]
-    return sum(summands)
+    return sum(summands[1:], start=summands[0])
