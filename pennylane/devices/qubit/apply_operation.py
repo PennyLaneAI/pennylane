@@ -365,7 +365,8 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
         if measurement:
             snapshot = qml.devices.qubit.measure(measurement, state)
         else:
-            snapshot = math.flatten(state)
+            flat_shape = (math.shape(state)[0], -1) if is_state_batched else (-1,)
+            snapshot = math.cast(math.reshape(state, flat_shape), complex)
         if op.tag:
             debugger.snapshots[op.tag] = snapshot
         else:
