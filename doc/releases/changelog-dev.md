@@ -4,8 +4,6 @@
 
 <h3>New features since last release</h3>
 
-<h3>New features since last release</h3>
-
 * `default.clifford` device enables efficient simulation of larger-scale Clifford circuits
   defined in PennyLane using [stim](https://github.com/quantumlib/Stim).
   [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
