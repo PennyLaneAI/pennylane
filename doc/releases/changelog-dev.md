@@ -430,25 +430,4 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-
-Abhishek Abhishek,
-Utkarsh Azad,
-Gabriel Bottrill,
-Astral Cai,
-Isaac De Vlugt,
-Diksha Dhawan,
-Eugenio Gigante,
-Diego Guala,
-Soran Jahangiri,
-Korbinian Kottmann,
-Christina Lee,
-Xiaoran Li,
-Vincent Michaud-Rioux,
-Romain Moyard,
-Pablo Antonio Moreno Casares,
-Lee J. O'Riordan,
-Mudit Pandey,
-Alex Preciado,
-Matthew Silverman,
-Jay Soni.
-
+.
