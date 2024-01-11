@@ -203,17 +203,15 @@ class DefaultClifford(Device):
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
         * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
-        * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
-        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or
-          :meth:`~.execute_and_compute_derivatives`.
+        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives`.
 
     .. details::
         :title: Accelerate calculations with multiprocessing
         :href: clifford-multiprocessing
 
-        See the details in :class:`DefaultQubit`'s "Accelerate calculations with multiprocessing" section. 
-        Additional information regarding multiprocessing can be found in the
-            `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
+        See the details in :class:`~pennylane.devices.DefaultQubit`'s "Accelerate calculations with multiprocessing"
+        section. Additional information regarding multiprocessing can be found in the
+        `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
     """
 
     @property
@@ -490,11 +488,12 @@ class DefaultClifford(Device):
     @staticmethod
     def pl_to_stim(op):
         """Convert PennyLane operation to a Stim operation"""
-        stim_op = _GATE_OPERATIONS.get(op.name, "DoesNotExist")
-        if stim_op == "DoesNotExist":
+        try:
+            stim_op = _GATE_OPERATIONS[op.name]
+        except KeyError as e:
             raise DeviceError(
                 f"Operator {op} not supported on default.clifford and does not provide a decomposition."
-            )
+            ) from e
         return stim_op, op.wires
 
     def measure(self, circuit, tableau_simulator, global_phase, stim):
