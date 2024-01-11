@@ -22,6 +22,7 @@ from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
+from pennylane.math import expand_matrix
 from pennylane.operation import (
     AnyWires,
     DecompositionUndefinedError,
@@ -390,10 +391,10 @@ class Exp(ScalarSymbolicOp, Operation):
                     else math.diag(eigvals)
                 )
                 if len(self.diagonalizing_gates()) == 0:
-                    return math.expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
+                    return expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
                 diagonalizing_mat = qml.matrix(self.diagonalizing_gates, wire_order=self.wires)()
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
-                return math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+                return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
             except OperatorPropertyUndefined:
                 warn(
                     f"The autograd matrix for {self} is not differentiable. "

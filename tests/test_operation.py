@@ -2673,6 +2673,7 @@ class TestNewOpMath:
         qml.IsingYY(1.23, wires=[1, 0]),
         qml.IsingZZ(1.23, wires=[1, 0]),
         qml.PSWAP(1.23, wires=[1, 0]),
+        qml.CRX(0.123, [1, 0]),
     ],
 )
 def test_symmetric_matrix_early_return(op, mocker):
@@ -2684,7 +2685,7 @@ def test_symmetric_matrix_early_return(op, mocker):
             "which overrides Operator.matrix(), this test will fail."
         )
 
-    spy = mocker.spy(qml.math, "expand_matrix")
+    spy = mocker.spy(qml.operation, "expand_matrix")
     actual = op.matrix(wire_order=list(range(len(op.wires))))
 
     spy.assert_not_called()
