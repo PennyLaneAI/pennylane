@@ -762,7 +762,6 @@ class Operator(abc.ABC):
         """
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
-    # pylint:disable=no-member
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
