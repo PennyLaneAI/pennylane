@@ -24,6 +24,18 @@ from pennylane import numpy as np
 class TestSingleTapeTransform:
     """Tests for the single_tape_transform decorator"""
 
+    def test_single_tape_transform_is_deprecated(self):
+        """Test that the single_tape_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning,
+            match="Use of `single_tape_transform` to create a custom transform is deprecated",
+        ):
+            _ = qml.single_tape_transform(func)
+
     def test_error_invalid_callable(self):
         """Test that an error is raised if the transform
         is applied to an invalid function"""
@@ -77,6 +89,17 @@ class TestSingleTapeTransform:
 class TestQFuncTransforms:
     """Tests for the qfunc_transform decorator"""
 
+    def test_qfunc_transform_is_deprecated(self):
+        """Test that the qfunc_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning, match="Use of `qfunc_transform` to create a custom transform is deprecated"
+        ):
+            _ = qml.qfunc_transform(func)
+
     def test_error_invalid_transform_callable(self):
         """Test that an error is raised if the transform
         is applied to an invalid function"""
@@ -120,7 +143,7 @@ class TestQFuncTransforms:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        new_qfunc = my_transform(qfunc)
+        new_qfunc = my_transform(qfunc)  # pylint:disable=assignment-from-no-return
         x = 0.543
 
         ops = qml.tape.make_qscript(new_qfunc)(x).operations

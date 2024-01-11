@@ -34,9 +34,6 @@ class Evolution(Exp):
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
-        do_queue (bool): determines if the sum operator will be queued.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): id for the Evolution operator. Default is None.
 
     Returns:
@@ -81,10 +78,8 @@ class Evolution(Exp):
     num_params = 1
 
     # pylint: disable=too-many-arguments
-    def __init__(self, generator, param=1, num_steps=None, do_queue=None, id=None):
-        super().__init__(
-            generator, coeff=-1j * param, num_steps=num_steps, do_queue=do_queue, id=id
-        )
+    def __init__(self, generator, param=1, num_steps=None, id=None):
+        super().__init__(generator, coeff=-1j * param, num_steps=num_steps, id=id)
         self._data = (param,)
 
     def __repr__(self):

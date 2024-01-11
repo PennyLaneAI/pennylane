@@ -22,6 +22,7 @@ from collections import namedtuple
 import numpy as np
 import rustworkx as rx
 
+from pennylane.measurements import MeasurementProcess
 from pennylane.resource import ResourcesOperation
 
 
@@ -48,7 +49,7 @@ def _is_observable(x):
     Returns:
         bool: True iff x is an observable
     """
-    return getattr(x, "return_type", None) is not None
+    return isinstance(x, MeasurementProcess)
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
@@ -206,8 +207,9 @@ class CircuitGraph:
         # name of the operation and wires
         serialization_string += "|||"
 
-        for obs in self.observables_in_order:
-            serialization_string += str(obs.return_type)
+        for mp in self.observables_in_order:
+            obs = mp.obs or mp
+            serialization_string += str(mp.return_type)
             serialization_string += delimiter
             serialization_string += str(obs.name)
             for param in obs.data:
@@ -296,16 +298,14 @@ class CircuitGraph:
             ops (Iterable[Operator]): set of operators in the circuit
 
         Returns:
-            set[Operator]: ancestors of the given operators
+            list[Operator]: ancestors of the given operators
         """
-        anc = set(
-            self._graph.get_node_data(n)
-            for n in set().union(
-                # rx.ancestors() returns node indexes instead of node-values
-                *(rx.ancestors(self._graph, self._indices[id(o)]) for o in ops)
-            )
-        )
-        return anc - set(ops)
+        # rx.ancestors() returns node indices instead of node-values
+        all_indices = set().union(*(rx.ancestors(self._graph, self._indices[id(o)]) for o in ops))
+        double_op_indices = set(self._indices[id(o)] for o in ops)
+        ancestor_indices = all_indices - double_op_indices
+
+        return list(self._graph.get_node_data(n) for n in ancestor_indices)
 
     def descendants(self, ops):
         """Descendants of a given set of operators.
@@ -314,16 +314,14 @@ class CircuitGraph:
             ops (Iterable[Operator]): set of operators in the circuit
 
         Returns:
-            set[Operator]: descendants of the given operators
+            list[Operator]: descendants of the given operators
         """
-        des = set(
-            self._graph.get_node_data(n)
-            for n in set().union(
-                # rx.descendants() returns node indexes instead of node-values
-                *(rx.descendants(self._graph, self._indices[id(o)]) for o in ops)
-            )
-        )
-        return des - set(ops)
+        # rx.descendants() returns node indices instead of node-values
+        all_indices = set().union(*(rx.descendants(self._graph, self._indices[id(o)]) for o in ops))
+        double_op_indices = set(self._indices[id(o)] for o in ops)
+        ancestor_indices = all_indices - double_op_indices
+
+        return list(self._graph.get_node_data(n) for n in ancestor_indices)
 
     def _in_topological_order(self, ops):
         """Sorts a set of operators in the circuit in a topological order.
@@ -376,13 +374,14 @@ class CircuitGraph:
             b (Operator): final node
 
         Returns:
-            set[Operator]: nodes on all the directed paths between a and b
+            list[Operator]: nodes on all the directed paths between a and b
         """
         A = self.descendants([a])
-        A.add(a)
+        A.append(a)
         B = self.ancestors([b])
-        B.add(b)
-        return A & B
+        B.append(b)
+
+        return [B.pop(i) for op1 in A for i, op2 in enumerate(B) if op1 is op2]
 
     @property
     def parametrized_layers(self):
@@ -405,7 +404,7 @@ class CircuitGraph:
 
                 # check if any of the dependents are in the
                 # currently assembled layer
-                if set(current.ops) & sub:
+                if any(o1 is o2 for o1 in current.ops for o2 in sub):
                     # operator depends on current layer, start a new layer
                     current = Layer([], [])
                     layers.append(current)
@@ -525,7 +524,7 @@ class CircuitGraph:
         Returns:
             bool: returns ``True`` if a path exists
         """
-        if a == b:
+        if a is b:
             return True
 
         return (

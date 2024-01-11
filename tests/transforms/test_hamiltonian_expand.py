@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the ``hamiltonian_expand`` transform.
+"""
 import numpy as np
 import pytest
 
@@ -21,11 +23,10 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import hamiltonian_expand, sum_expand
 
+# Defines the device used for all tests
 dev = qml.device("default.qubit", wires=4)
-"""Defines the device used for all tests"""
 
-
-"""Defines circuits to be used in queueing/output tests"""
+# Defines circuits to be used in queueing/output tests
 with AnnotatedQueue() as q_tape1:
     qml.PauliX(0)
     H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
@@ -99,14 +100,14 @@ class TestHamiltonianExpand:
         """Tests that the hamiltonian_expand transform returns the correct value"""
 
         tapes, fn = hamiltonian_expand(tape)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
 
         qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = hamiltonian_expand(qs)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
         assert np.isclose(output, expval)
 
@@ -116,14 +117,14 @@ class TestHamiltonianExpand:
         if we switch grouping off"""
 
         tapes, fn = hamiltonian_expand(tape, group=False)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
 
         qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = hamiltonian_expand(qs, group=False)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
@@ -142,11 +143,11 @@ class TestHamiltonianExpand:
             qml.expval(H)
 
         tape = QuantumScript.from_queue(q)
-        tapes, fn = hamiltonian_expand(tape, group=False)
+        tapes, _ = hamiltonian_expand(tape, group=False)
         assert len(tapes) == 2
 
         qs = QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = hamiltonian_expand(qs, group=False)
+        tapes, _ = hamiltonian_expand(qs, group=False)
         assert len(tapes) == 2
 
     def test_number_of_tapes(self):
@@ -161,10 +162,10 @@ class TestHamiltonianExpand:
             qml.expval(H)
 
         tape = QuantumScript.from_queue(q)
-        tapes, fn = hamiltonian_expand(tape, group=False)
+        tapes, _ = hamiltonian_expand(tape, group=False)
         assert len(tapes) == 3
 
-        tapes, fn = hamiltonian_expand(tape, group=True)
+        tapes, _ = hamiltonian_expand(tape, group=True)
         assert len(tapes) == 2
 
     def test_number_of_qscripts(self):
@@ -173,10 +174,10 @@ class TestHamiltonianExpand:
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
         qs = QuantumScript(measurements=[qml.expval(H)])
 
-        tapes, fn = hamiltonian_expand(qs, group=False)
+        tapes, _ = hamiltonian_expand(qs, group=False)
         assert len(tapes) == 3
 
-        tapes, fn = hamiltonian_expand(qs, group=True)
+        tapes, _ = hamiltonian_expand(qs, group=True)
         assert len(tapes) == 2
 
     @pytest.mark.parametrize("shots", [None, 100])
@@ -201,7 +202,7 @@ class TestHamiltonianExpand:
         qscript = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
 
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
-            tapes, fn = qml.transforms.hamiltonian_expand(qscript)
+            qml.transforms.hamiltonian_expand(qscript)
 
     @pytest.mark.autograd
     def test_hamiltonian_dif_autograd(self, tol):
@@ -239,8 +240,8 @@ class TestHamiltonianExpand:
         tape = QuantumScript.from_queue(q)
 
         def cost(x):
-            tape.set_parameters(x, trainable_only=False)
-            tapes, fn = hamiltonian_expand(tape)
+            new_tape = tape.bind_new_parameters(x, list(range(9)))
+            tapes, fn = hamiltonian_expand(new_tape)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -273,10 +274,10 @@ class TestHamiltonianExpand:
 
         with tf.GradientTape() as gtape:
             with AnnotatedQueue() as q:
-                for i in range(2):
-                    qml.RX(var[i, 0], wires=0)
-                    qml.RX(var[i, 1], wires=1)
-                    qml.RX(var[i, 2], wires=2)
+                for _i in range(2):
+                    qml.RX(var[_i, 0], wires=0)
+                    qml.RX(var[_i, 1], wires=1)
+                    qml.RX(var[_i, 2], wires=2)
                     qml.CNOT(wires=[0, 1])
                     qml.CNOT(wires=[1, 2])
                     qml.CNOT(wires=[2, 0])
@@ -290,6 +291,25 @@ class TestHamiltonianExpand:
 
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
+
+    def test_processing_function_conditional_clause(self):
+        """Test the conditional logic for `len(c_group) == 1` and `len(r_group) != 1`
+        in the processing function returned by hamiltonian_expand, accessed when
+        using a shot vector and grouping if the terms don't commute with each other."""
+
+        dev_with_shot_vector = qml.device("default.qubit", shots=(10, 10, 10))
+
+        H = qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)])
+        H.compute_grouping()
+
+        @qml.transforms.hamiltonian_expand
+        @qml.qnode(dev_with_shot_vector)
+        def circuit():
+            return qml.expval(H)
+
+        res = circuit()
+
+        assert res.shape == (3,)
 
 
 with AnnotatedQueue() as s_tape1:
@@ -396,7 +416,7 @@ class TestSumExpand:
         obs2 = qml.prod(qml.PauliX(0), qml.PauliY(1))
 
         circuit = QuantumScript(measurements=[qml.expval(obs1), qml.expval(obs2)])
-        batch, post_processing_fn = sum_expand(circuit)
+        batch, _ = sum_expand(circuit)
         assert len(batch) == 2
         assert qml.equal(batch[0][0], qml.expval(obs1))
         assert qml.equal(batch[1][0], qml.expval(obs2))
@@ -404,8 +424,21 @@ class TestSumExpand:
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
+        processed, _ = dev.preprocess()[0]([qscript])
+        assert len(processed) == 1
+        qscript = processed[0]
         tapes, fn = sum_expand(qscript)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
+        expval = fn(results)
+
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
+
+    @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
+    def test_sums_legacy(self, qscript, output):
+        """Tests that the sum_expand transform returns the correct value"""
+        dev_old = qml.device("default.qubit.legacy", wires=4)
+        tapes, fn = sum_expand(qscript)
+        results = dev_old.batch_execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
@@ -414,8 +447,11 @@ class TestSumExpand:
     def test_sums_no_grouping(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value
         if we switch grouping off"""
+        processed, _ = dev.preprocess()[0]([qscript])
+        assert len(processed) == 1
+        qscript = processed[0]
         tapes, fn = sum_expand(qscript, group=False)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
@@ -432,7 +468,7 @@ class TestSumExpand:
 
         qscript = QuantumScript.from_queue(q)
 
-        tapes, fn = sum_expand(qscript, group=True)
+        tapes, _ = sum_expand(qscript, group=True)
         assert len(tapes) == 2
 
     def test_number_of_qscripts(self):
@@ -441,10 +477,10 @@ class TestSumExpand:
         S = qml.sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
         qs = QuantumScript(measurements=[qml.expval(S)])
 
-        tapes, fn = sum_expand(qs, group=False)
+        tapes, _ = sum_expand(qs, group=False)
         assert len(tapes) == 3
 
-        tapes, fn = sum_expand(qs, group=True)
+        tapes, _ = sum_expand(qs, group=True)
         assert len(tapes) == 2
 
     @pytest.mark.parametrize("shots", [None, 100])
@@ -479,7 +515,7 @@ class TestSumExpand:
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
         # Old return types return a list for a single value:
         # e.g. qml.expval(qml.PauliX(0)) = [1.23]
-        res = [1.23] if qml.active_return() else [[1.23]]
+        res = [1.23]
         assert fn(res) == 1.23
 
     def test_multiple_sum_tape(self):
@@ -522,8 +558,8 @@ class TestSumExpand:
         qscript = QuantumScript.from_queue(q)
 
         def cost(x):
-            qscript.set_parameters(x, trainable_only=False)
-            tapes, fn = sum_expand(qscript)
+            new_qscript = qscript.bind_new_parameters(x, list(range(9)))
+            tapes, fn = sum_expand(new_qscript)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -558,10 +594,10 @@ class TestSumExpand:
 
         with tf.GradientTape() as gtape:
             with AnnotatedQueue() as q:
-                for i in range(2):
-                    qml.RX(var[i, 0], wires=0)
-                    qml.RX(var[i, 1], wires=1)
-                    qml.RX(var[i, 2], wires=2)
+                for _i in range(2):
+                    qml.RX(var[_i, 0], wires=0)
+                    qml.RX(var[_i, 1], wires=1)
+                    qml.RX(var[_i, 2], wires=2)
                     qml.CNOT(wires=[0, 1])
                     qml.CNOT(wires=[1, 2])
                     qml.CNOT(wires=[2, 0])
@@ -616,8 +652,8 @@ class TestSumExpand:
         qscript = QuantumScript.from_queue(q)
 
         def cost(x):
-            qscript.set_parameters(x, trainable_only=False)
-            tapes, fn = sum_expand(qscript)
+            new_qscript = qscript.bind_new_parameters(x, list(range(9)))
+            tapes, fn = sum_expand(new_qscript)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 

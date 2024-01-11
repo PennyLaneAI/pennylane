@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
+# pylint: disable=unused-argument
 import pytest
 from flaky import flaky
-from scipy.stats import multinomial
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -36,7 +36,7 @@ class TestExceptions:
         H = qml.Hamiltonian([0.3, 0.1], [qml.PauliX(0), qml.PauliZ(0)])
         dev = qml.device("default.qubit", wires=1, shots=None)
 
-        def ansatz(x, **kwargs):
+        def ansatz(x):
             qml.RX(x, wires=0)
 
         expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
@@ -82,31 +82,22 @@ class TestExceptions:
         with pytest.raises(ValueError, match=f"The learning rate must be less than {2 / 1}"):
             opt.step(expval_cost.qnodes[0], np.array(0.5, requires_grad=True))
 
-    def test_unknown_objective_function(self):
-        """Test that an exception is raised if an unknown objective function is passed"""
-        dev = qml.device("default.qubit", wires=1, shots=100)
 
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+def ansatz0(x, **kwargs):
+    qml.RX(x, wires=0)
 
-        def cost(x):
-            return np.sin(circuit(x))
 
-        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+def ansatz1(x, **kwargs):
+    qml.RX(x[0, 0], wires=0)
+    qml.RY(x[0, 1], wires=0)
+    qml.RZ(x[0, 2], wires=0)
+    qml.RX(x[1, 0], wires=0)
+    qml.RY(x[1, 1], wires=0)
+    qml.RZ(x[1, 2], wires=0)
 
-        # test expval cost
-        with pytest.raises(
-            ValueError, match="The objective function must either be encoded as a single QNode"
-        ):
-            opt.step(cost, np.array(0.5, requires_grad=True))
 
-        # defining the device attribute allows it to proceed
-        cost.device = circuit.device
-        new_x = opt.step(cost, np.array(0.5, requires_grad=True))
-
-        assert isinstance(new_x, np.tensor)
+def ansatz2(x, **kwargs):
+    qml.StronglyEntanglingLayers(x, wires=[0, 1])
 
 
 class TestSingleShotGradientIntegration:
@@ -116,13 +107,11 @@ class TestSingleShotGradientIntegration:
     dev = qml.device("default.qubit", wires=1, shots=100)
     H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
 
-    def ansatz(x, **kwargs):
-        qml.RX(x, wires=0)
-
-    expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
+    expval_cost = catch_warn_ExpvalCost(ansatz0, H, dev)
 
     @qml.qnode(dev)
     def qnode(x):
+        # pylint: disable=no-self-argument
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
@@ -131,6 +120,7 @@ class TestSingleShotGradientIntegration:
     def test_single_argument_step(self, cost_fn, mocker, monkeypatch):
         """Test that a simple QNode with a single argument correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
+        # pylint: disable=protected-access
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy_single_shot_expval = mocker.spy(opt, "_single_shot_expval_gradients")
@@ -184,21 +174,14 @@ class TestSingleShotGradientIntegration:
         assert np.allclose(grad, np.mean(single_shot_grads[0][:5]))
         assert np.allclose(grad_variance, np.var(single_shot_grads[0][:5], ddof=1))
 
-    def ansatz(x, **kwargs):
-        qml.RX(x[0, 0], wires=0)
-        qml.RY(x[0, 1], wires=0)
-        qml.RZ(x[0, 2], wires=0)
-        qml.RX(x[1, 0], wires=0)
-        qml.RY(x[1, 1], wires=0)
-        qml.RZ(x[1, 2], wires=0)
-
-    expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
+    expval_cost = catch_warn_ExpvalCost(ansatz1, H, dev)
     qnode = expval_cost.qnodes[0]
 
     @pytest.mark.parametrize("cost_fn", [qnode, expval_cost])
     def test_single_array_argument_step(self, cost_fn, mocker, monkeypatch):
         """Test that a simple QNode with a single array argument correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
+        # pylint: disable=protected-access
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy_single_shot_expval = mocker.spy(opt, "_single_shot_expval_gradients")
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
@@ -264,10 +247,7 @@ class TestSingleShotGradientIntegration:
 
     dev = qml.device("default.qubit", wires=2, shots=100)
 
-    def ansatz(x, **kwargs):
-        qml.StronglyEntanglingLayers(x, wires=[0, 1])
-
-    expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
+    expval_cost = catch_warn_ExpvalCost(ansatz2, H, dev)
     qnode = expval_cost.qnodes[0]
 
     @pytest.mark.parametrize("cost_fn", [qnode, expval_cost])
@@ -275,6 +255,7 @@ class TestSingleShotGradientIntegration:
         """Test that a simple QNode with a single array argument with extra dimensions correctly
         performs an optimization step, and that the single-shot gradients generated have the
         correct shape"""
+        # pylint: disable=protected-access
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy_single_shot_expval = mocker.spy(opt, "_single_shot_expval_gradients")
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
@@ -351,6 +332,7 @@ class TestSingleShotGradientIntegration:
     def test_multiple_argument_step(self, mocker, monkeypatch):
         """Test that a simple QNode with multiple scalar arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
+        # pylint: disable=protected-access
         dev = qml.device("default.qubit", wires=1, shots=100)
 
         @qml.qnode(dev)
@@ -407,6 +389,7 @@ class TestSingleShotGradientIntegration:
     def test_multiple_array_argument_step(self, mocker, monkeypatch):
         """Test that a simple QNode with multiple array arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
+        # pylint: disable=protected-access
         dev = qml.device("default.qubit", wires=1, shots=100)
 
         @qml.qnode(dev)
@@ -507,7 +490,7 @@ class TestWeightedRandomSampling:
         expval_cost = catch_warn_ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
-        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
         spy = mocker.spy(opt, "weighted_random_sampling")
 
         _ = opt.step(expval_cost, weights)
@@ -530,7 +513,7 @@ class TestWeightedRandomSampling:
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling=None)
         spy = mocker.spy(opt, "weighted_random_sampling")
 
-        new_weights = opt.step(expval_cost, weights)
+        opt.step(expval_cost, weights)
         spy.assert_not_called()
 
     def test_unknown_term_sampling_method(self):
@@ -547,7 +530,7 @@ class TestWeightedRandomSampling:
         with pytest.raises(ValueError, match="Unknown Hamiltonian term sampling method"):
             opt.step(expval_cost, weights)
 
-    def test_zero_shots(self, mocker, monkeypatch):
+    def test_zero_shots(self, mocker):
         """Test that, if the shot budget for a single term is 0,
         that the jacobian computation is skipped"""
         coeffs = [0.2, 0.1, 0.1]
@@ -568,7 +551,7 @@ class TestWeightedRandomSampling:
         assert len(grads) == 1
         assert grads[0].shape == (10, *weights.shape)
 
-    def test_single_shots(self, mocker, monkeypatch):
+    def test_single_shots(self, mocker):
         """Test that, if the shot budget for a single term is 1,
         that the number of dimensions for the returned Jacobian is expanded"""
         coeffs = [0.2, 0.1, 0.1]
@@ -585,6 +568,154 @@ class TestWeightedRandomSampling:
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
         )
         grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
+
+        assert len(spy.call_args_list) == 3
+        assert len(grads) == 1
+        assert grads[0].shape == (10, *weights.shape)
+
+
+class TestQNodeWeightedRandomSampling:
+    """Tests for weighted random Hamiltonian term sampling"""
+
+    def test_wrs_qnode(self, mocker):
+        """Checks that cost functions that are qnodes can make use of weighted random sampling"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights, x):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        x = np.array(1.1)
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
+        spy = mocker.spy(opt, "qnode_weighted_random_sampling")
+
+        _ = opt.step(circuit, weights, x)
+        spy.assert_called_once()
+
+        grads = opt.qnode_weighted_random_sampling(circuit, coeffs, H.ops, 10, [0], weights, x)
+        assert len(grads) == 1
+        assert grads[0].shape == (10, *weights.shape)
+
+    def test_wrs_qnode_multiple_args(self, mocker):
+        """Checks that cost functions that are qnodes works with multiple args"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights, x):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        x = np.array(1.1)
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
+        spy = mocker.spy(opt, "qnode_weighted_random_sampling")
+
+        _ = opt.step(circuit, weights, x)
+        spy.assert_called_once()
+
+        weight_grad, x_grad = opt.qnode_weighted_random_sampling(
+            circuit, coeffs, H.ops, 10, [0, 1], weights, x
+        )
+        assert weight_grad.shape == (10, *weights.shape)
+        assert x_grad.shape == (10,)
+
+    def test_wrs_disabled(self, mocker):
+        """Checks that cost functions that are qnodes can
+
+        disable use of weighted random sampling"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling=None)
+        spy = mocker.spy(opt, "qnode_weighted_random_sampling")
+
+        opt.step(circuit, weights)
+        spy.assert_not_called()
+
+    def test_unknown_term_sampling_method(self):
+        """Checks that an exception is raised if the term sampling method is unknown"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="uniform_random_sampling")
+
+        with pytest.raises(ValueError, match="Unknown Hamiltonian term sampling method"):
+            opt.step(circuit, weights)
+
+    def test_zero_shots(self, mocker):
+        """Test that, if the shot budget for a single term is 0,
+        that the jacobian computation is skipped"""
+        coeffs = [0.2, 0.1, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        spy = mocker.spy(qml, "jacobian")
+        mocker.patch(
+            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]])
+        )
+        grads = opt.qnode_weighted_random_sampling(circuit, coeffs, H.ops, 10, [0], weights)
+
+        assert len(spy.call_args_list) == 2
+        assert len(grads) == 1
+        assert grads[0].shape == (10, *weights.shape)
+
+    def test_single_shots(self, mocker):
+        """Test that, if the shot budget for a single term is 1,
+        that the number of dimensions for the returned Jacobian is expanded"""
+        coeffs = [0.2, 0.1, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+
+        spy = mocker.spy(qml, "jacobian")
+        mocker.patch(
+            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
+        )
+        grads = opt.qnode_weighted_random_sampling(circuit, coeffs, H.ops, 10, [0], weights)
 
         assert len(spy.call_args_list) == 3
         assert len(grads) == 1
@@ -614,7 +745,7 @@ class TestOptimization:
         loss = initial_loss
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        for i in range(100):
+        for _ in range(100):
             params = opt.step(circuit, params)
             loss = circuit(params)
 
@@ -647,7 +778,7 @@ class TestOptimization:
         loss = initial_loss
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        for i in range(100):
+        for _ in range(100):
             params = opt.step(cost, params)
             loss = cost(params)
 
@@ -677,7 +808,7 @@ class TestStepAndCost:
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        for i in range(100):
+        for _ in range(100):
             params, res = opt.step_and_cost(circuit, params)
 
         assert np.allclose(res, -1, atol=tol, rtol=0)
@@ -698,7 +829,7 @@ class TestStepAndCost:
         params = np.array([0.1, 0.3], requires_grad=True)
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        for i in range(100):
+        for _ in range(100):
             params, res = opt.step_and_cost(circuit, params)
 
         assert np.allclose(res, -1, atol=tol, rtol=0)

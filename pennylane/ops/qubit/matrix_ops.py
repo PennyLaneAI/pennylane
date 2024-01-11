@@ -20,6 +20,7 @@ import warnings
 from itertools import product
 
 import numpy as np
+from scipy.linalg import fractional_matrix_power
 from pennylane.math import norm, cast, eye, zeros, transpose, conj, sqrt, sqrt_matrix
 from pennylane import numpy as pnp
 
@@ -62,14 +63,14 @@ def _walsh_hadamard_transform(D, n=None):
         new_shape = (orig_shape[0],) + (2,) * n
     else:
         new_shape = (2,) * n
-    D = D.reshape(new_shape)
+    D = qml.math.reshape(D, new_shape)
     # Apply Hadamard transform to each axis, shifted by one for broadcasting
     for i in range(broadcasted, n + broadcasted):
         D = qml.math.tensordot(_walsh_hadamard_matrix, D, axes=[[1], [i]])
     # The axes are in reverted order after all matrix multiplications, so we need to transpose;
     # If D was broadcasted, this moves the broadcasting axis to first position as well.
     # Finally, reshape to original shape
-    return qml.math.transpose(D).reshape(orig_shape)
+    return qml.math.reshape(qml.math.transpose(D), orig_shape)
 
 
 class QubitUnitary(Operation):
@@ -86,10 +87,6 @@ class QubitUnitary(Operation):
     Args:
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
         unitary_check (bool): check for unitarity of the given matrix
@@ -121,7 +118,7 @@ class QubitUnitary(Operation):
     """Gradient computation method."""
 
     def __init__(
-        self, U, wires, do_queue=None, id=None, unitary_check=False
+        self, U, wires, id=None, unitary_check=False
     ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
@@ -151,7 +148,7 @@ class QubitUnitary(Operation):
                 UserWarning,
             )
 
-        super().__init__(U, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(U, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
@@ -186,7 +183,7 @@ class QubitUnitary(Operation):
         A decomposition is only defined for matrices that act on either one or two wires. For more
         than two wires, this method raises a ``DecompositionUndefined``.
 
-        See :func:`~.transforms.one_qubit_decomposition` and :func:`~.transforms.two_qubit_decomposition`
+        See :func:`~.transforms.one_qubit_decomposition` and :func:`~.ops.two_qubit_decomposition`
         for more information on how the decompositions are computed.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
@@ -213,7 +210,7 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            return qml.transforms.decompositions.one_qubit_decomposition(U, Wires(wires)[0])
+            return qml.ops.one_qubit_decomposition(U, Wires(wires)[0])
 
         if shape_without_batch_dim == (4, 4):
             # TODO[dwierichs]: Implement decomposition of broadcasted unitary
@@ -222,18 +219,28 @@ class QubitUnitary(Operation):
                     "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
                 )
 
-            return qml.transforms.two_qubit_decomposition(U, Wires(wires))
+            return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return len(self.wires) < 3
 
     def adjoint(self):
         U = self.matrix()
         return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
 
     def pow(self, z):
-        if isinstance(z, int):
-            return [QubitUnitary(qml.math.linalg.matrix_power(self.matrix(), z), wires=self.wires)]
-        return super().pow(z)
+        mat = self.matrix()
+        if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow":
+            pow_mat = qml.math.linalg.matrix_power(mat, z)
+        elif self.batch_size is not None or qml.math.shape(z) != ():
+            return super().pow(z)
+        else:
+            pow_mat = qml.math.convert_like(fractional_matrix_power(mat, z), mat)
+        return [QubitUnitary(pow_mat, wires=self.wires)]
 
     def _controlled(self, wire):
         return qml.ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
@@ -292,7 +299,9 @@ class DiagonalQubitUnitary(Operation):
         """
         D = qml.math.asarray(D)
 
-        if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
+        if not qml.math.is_abstract(D) and not qml.math.allclose(
+            D * qml.math.conj(D), qml.math.ones_like(D)
+        ):
             raise ValueError("Operator must be unitary.")
 
         # The diagonal is supposed to have one-dimension. If it is broadcasted, it has two
@@ -443,10 +452,6 @@ class BlockEncode(Operation):
     Args:
         A (tensor_like): a general :math:`(n \times m)` matrix to be encoded
         wires (Iterable[int, str], Wires): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     Raises:
@@ -507,7 +512,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A, wires, do_queue=None, id=None):
+    def __init__(self, A, wires, id=None):
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
             A = qml.math.reshape(A, [1, 1])
@@ -533,9 +538,12 @@ class BlockEncode(Operation):
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
 
-        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(A, wires=wires, id=id)
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
+
+    def _flatten(self):
+        return self.data, (self.wires, ())
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):

@@ -123,9 +123,6 @@ class Exp(ScalarSymbolicOp, Operation):
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
-        do_queue (bool): determines if the sum operator will be queued.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): id for the Exp operator. Default is None.
 
     **Example**
@@ -170,9 +167,18 @@ class Exp(ScalarSymbolicOp, Operation):
     control_wires = Wires([])
     _name = "Exp"
 
+    def _flatten(self):
+        return (self.base, self.data[0]), (self.num_steps,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0], data[1], num_steps=metadata[0])
+
     # pylint: disable=too-many-arguments
-    def __init__(self, base, coeff=1, num_steps=None, do_queue=None, id=None):
-        super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
+    def __init__(self, base, coeff=1, num_steps=None, id=None):
+        if not isinstance(base, Operator):
+            raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
+        super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
         self.num_steps = num_steps
 
@@ -309,11 +315,20 @@ class Exp(ScalarSymbolicOp, Operation):
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
 
-        raise DecompositionUndefinedError(
-            f"The decomposition of the {self} operator is not defined. "
-            "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
-            "if a Suzuki-Trotter decomposition is required."
-        )
+        error_msg = f"The decomposition of the {self} operator is not defined. "
+
+        if not self.num_steps:  # if num_steps was not set
+            error_msg += (
+                "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+                "if a Suzuki-Trotter decomposition is required. "
+            )
+
+        if math.real(self.coeff) != 0 and self.base.is_hermitian:
+            error_msg += (
+                "Decomposition is not defined for real coefficients of hermitian operators."
+            )
+
+        raise DecompositionUndefinedError(error_msg)
 
     @staticmethod
     def _pauli_rot_decomposition(base: Operator, coeff: complex):
@@ -371,7 +386,7 @@ class Exp(ScalarSymbolicOp, Operation):
             try:
                 eigvals = self.eigvals()
                 eigvals_mat = (
-                    math.stack(math.diag(e) for e in eigvals)
+                    math.stack([math.diag(e) for e in eigvals])
                     if qml.math.ndim(self.scalar) > 0
                     else math.diag(eigvals)
                 )

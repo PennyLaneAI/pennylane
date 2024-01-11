@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math import CompositeOp
+from pennylane.ops.op_math import CompositeOp, Prod, Sum, SProd
 from pennylane.wires import Wires
 
 ops = (
@@ -72,10 +72,8 @@ class TestConstruction:
 
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp fails"""
-        with pytest.raises(
-            TypeError, match="Can't instantiate abstract class CompositeOp with abstract methods"
-        ):
-            _ = CompositeOp(*self.simple_operands)
+        with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
+            _ = CompositeOp(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
 
     def test_raise_error_fewer_than_2_operands(self):
         """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
@@ -143,10 +141,11 @@ class TestConstruction:
     def test_different_batch_sizes_raises_error(self):
         """Test that an error is raised if the operands have different batch sizes."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
+            _ = op.batch_size
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
@@ -199,8 +198,8 @@ class TestConstruction:
         assert mapped_op.wires == Wires([5, 7])
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
-        assert mapped_op._pauli_rep is not diag_op._pauli_rep
-        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+        assert mapped_op.pauli_rep is not diag_op.pauli_rep
+        assert mapped_op.pauli_rep == qml.pauli.PauliSentence(
             {qml.pauli.PauliWord({5: "X", 7: "Y"}): 1}
         )
 
@@ -209,20 +208,26 @@ class TestConstruction:
         op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
 
-    @pytest.mark.parametrize("do_queue", [True, False])
-    def test_composite_do_queue_deprecation(self, do_queue):
-        """Test that CompositeOp raises a deprecation warning when do_queue is not None."""
-        factors = (qml.PauliX(0), qml.PauliY(0))
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+    def test_tensor_and_hamiltonian_converted(self):
+        """Test that Tensor and Hamiltonian instances get converted to Prod and Sum."""
+        operands = [
+            qml.Hamiltonian(
+                [1.1, 2.2], [qml.PauliZ(0), qml.operation.Tensor(qml.PauliX(0), qml.PauliZ(1))]
+            ),
+            qml.prod(qml.PauliX(0), qml.PauliZ(1)),
+            qml.operation.Tensor(qml.PauliX(2), qml.PauliZ(3)),
+        ]
+        op = ValidOp(*operands)
+        assert isinstance(op[0], Sum)
+        assert isinstance(op[0][1], SProd)
+        assert isinstance(op[0][1].base, Prod)
+        assert op[1] is operands[1]
+        assert isinstance(op[2], Prod)
+        assert op.operands == (
+            qml.dot([1.1, 2.2], [qml.PauliZ(0), qml.prod(qml.PauliX(0), qml.PauliZ(1))]),
+            operands[1],
+            qml.prod(qml.PauliX(2), qml.PauliZ(3)),
         )
-
-        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            qml.prod(*factors, do_queue=do_queue)
-
-        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            qml.sum(*factors, do_queue=do_queue)
 
 
 class TestMscMethods:
@@ -290,6 +295,19 @@ class TestMscMethods:
         op = ValidOp(*ops_lst)
         for i, operand in enumerate(ops_lst):
             assert op[i] == operand
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_flatten_unflatten(self, ops_lst):
+        """Test _flatten and _unflatten."""
+        op = ValidOp(*ops_lst)
+        data, metadata = op._flatten()
+        for data_op, input_op in zip(data, ops_lst):
+            assert data_op is input_op
+
+        assert metadata == tuple()
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
 
 
 class TestProperties:

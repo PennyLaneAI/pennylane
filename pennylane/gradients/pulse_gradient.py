@@ -15,22 +15,24 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
+from typing import Sequence, Callable
+from functools import partial
 import warnings
 import numpy as np
 
 import pennylane as qml
 from pennylane.pulse import ParametrizedEvolution, HardwareHamiltonian
+from pennylane import transform
 
 from .parameter_shift import _make_zero_rep
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from .gradient_transform import (
     _all_zero_grad,
-    assert_active_return,
     assert_no_state_returns,
+    assert_no_tape_batching,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -281,9 +283,14 @@ def _parshift_and_integrate(
 
 
 # pylint: disable=too-many-arguments
-def _stoch_pulse_grad(
-    tape, argnum=None, num_split_times=1, sampler_seed=None, shots=None, use_broadcasting=False
-):
+@partial(transform, final_transform=True)
+def stoch_pulse_grad(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    num_split_times=1,
+    sampler_seed=None,
+    use_broadcasting=False,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 
@@ -327,7 +334,7 @@ def _stoch_pulse_grad(
     of the envelopes :math:`\partial f_j / \partial v_k` at the sampled times suitably.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -335,27 +342,17 @@ def _stoch_pulse_grad(
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
             parameter-shift rule
-        shots (None, int, list[int]): The shots of the device used to execute the tapes which are
-            returned by this transform. Note that this argument does not *influence* the shots
-            used for execution, but informs the transform about the shots to ensure a compatible
-            return value structure.
         use_broadcasting (bool): Whether to use broadcasting across the different sampled
             splitting times. If ``False`` (the default), one set of modified tapes per
             splitting time is created, if ``True`` only a single set of broadcasted, modified
             tapes is created, increasing performance on simulators.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     This transform realizes the stochastic parameter-shift rule for pulse sequences, as introduced
     in `Banchi and Crooks (2018) <https://quantum-journal.org/papers/q-2021-01-25-386/>`_ and
@@ -608,9 +605,9 @@ def _stoch_pulse_grad(
     # pylint:disable=unused-argument
     transform_name = "stochastic pulse parameter-shift"
     _assert_has_jax(transform_name)
-    assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
+    assert_no_tape_batching(tape, transform_name)
 
     if num_split_times < 1:
         raise ValueError(
@@ -618,9 +615,8 @@ def _stoch_pulse_grad(
             f"parameter-shift gradient, got {num_split_times}."
         )
 
-    shots = qml.measurements.Shots(shots)
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad(tape, shots)
+        return _no_trainable_grad(tape)
 
     if use_broadcasting and tape.batch_size is not None:
         raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
@@ -628,7 +624,7 @@ def _stoch_pulse_grad(
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=stoch_pulse_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad(tape, shots)
+        return _all_zero_grad(tape)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
@@ -637,7 +633,7 @@ def _stoch_pulse_grad(
     sampler_seed = sampler_seed or np.random.randint(18421)
     key = jax.random.PRNGKey(sampler_seed)
 
-    return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting)
+    return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting)
 
 
 def _generate_tapes_and_cjacs(
@@ -784,7 +780,7 @@ def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting
 
 
 # pylint: disable=too-many-arguments
-def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting):
+def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
     See the main function for the signature.
@@ -822,8 +818,8 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
     num_params = len(tape.trainable_params)
-    has_partitioned_shots = shots.has_partitioned_shots
-    tape_specs = (single_measure, num_params, num_measurements, shots)
+    has_partitioned_shots = tape.shots.has_partitioned_shots
+    tape_specs = (single_measure, num_params, num_measurements, tape.shots)
 
     def processing_fn(results):
         start = 0
@@ -859,24 +855,10 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
     return tapes, processing_fn
 
 
-def expand_invalid_trainable_stoch_pulse_grad(x, *args, **kwargs):
-    r"""Do not expand any operation. We expect the ``stoch_pulse_grad`` to be used
-    on pulse programs and we do not expect decomposition pipelines between pulses
-    and gate-based circuits yet.
-    """
-    # pylint:disable=unused-argument
-    return x
-
-
-stoch_pulse_grad = gradient_transform(
-    _stoch_pulse_grad, expand_fn=expand_invalid_trainable_stoch_pulse_grad
-)
-
-
-@stoch_pulse_grad.custom_qnode_wrapper
+@stoch_pulse_grad.custom_qnode_transform
 def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
     """A custom QNode wrapper for the gradient transform :func:`~.stoch_pulse_grad`.
-    It raises an error, so that applying ``pulse_generator`` to a ``QNode`` directly
+    It raises an error, so that applying ``stoch_pulse_grad`` to a ``QNode`` directly
     is not supported.
     """
     # pylint:disable=unused-argument

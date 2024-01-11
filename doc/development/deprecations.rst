@@ -3,90 +3,90 @@
 Deprecations
 ============
 
+All PennyLane deprecations will raise a ``qml.PennyLaneDeprecationWarning``. Pending and completed
+deprecations are listed below.
+
 Pending deprecations
 --------------------
 
-* The ``grouping_type`` and ``grouping_method`` arguments of ``qchem.molecular_hamiltonian()`` are deprecated.
+* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
 
-  - Deprecated in v0.31
-  - Will be removed in v0.32
+  - Contents moved in v0.35
+  - Old import path removed in v0.36.
 
-  Instead, simply construct a new instance of ``Hamiltonian`` with the grouping specified:
+* ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are deprecated. Instead,
+  you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition`` .
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
+* ``Observable.return_type`` is deprecated. Instead, you should inspect the type
+  of the surrounding measurement process.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
+  deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.36
+
+* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` are deprecated. Users should now validate
+  these properties manually.
 
   .. code-block:: python
 
-    H, qubits = molecular_hamiltonian(symbols, coordinates)
-    grouped_h = qml.Hamiltonian(
-        H.coeffs,
-        H.ops,
-        grouping_type=grouping_type,
-        method=grouping_method,
-    )
+    from pennylane.measurements import *
+    sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+    is_sample_type = [isinstance(m, sample_types) for m in tape.measurements]
+    is_sampled = any(is_sample_type)
+    all_sampled = all(is_sample_type)
 
-* ``zyz_decomposition`` and ``xyx_decomposition`` are deprecated, use ``one_qubit_decomposition`` with a rotations
-  keyword instead.
+  - Deprecated in v0.34
+  - Will be removed in v0.35
 
-  - Deprecated in v0.31
-  - Will be removed in v0.32
+* Passing additional arguments to a transform that decorates a QNode should now be done through use
+  of ``functools.partial``. For example, the :func:`~pennylane.metric_tensor` transform has an
+  optional ``approx`` argument which should now be set using:
 
-* The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
-  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
-  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
+  .. code-block:: python
 
-  - Deprecated in v0.31
-  - Will be removed in v0.32
+    from functools import partial
 
-* ``LieAlgebraOptimizer`` has been renamed. Please use ``RiemannianGradientOptimizer`` instead.
+    @partial(qml.metric_tensor, approx="block-diag")
+    @qml.qnode(dev)
+    def circuit(weights):
+        ...
 
-  - Deprecated in v0.31
-  - Will be removed in v0.32
+  The previously-recommended approach is now deprecated:
 
-* The ``Operation.base_name`` property is deprecated. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
+  .. code-block:: python
 
-  - Still accessible in v0.31
-  - Removed in v0.32
+    @qml.metric_tensor(approx="block-diag")
+    @qml.qnode(dev)
+    def circuit(weights):
+        ...
 
-* ``qml.math.reduced_dm`` has been deprecated. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
+  Alternatively, consider calling the transform directly:
 
-  - Still accessible in v0.31
-  - Removed in v0.32
+  .. code-block:: python
 
-* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
-  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
-  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+    @qml.qnode(dev)
+    def circuit(weights):
+        ...
 
-  - Still accepted in v0.31
-  - Removed in v0.32
+    transformed_circuit = qml.metric_tensor(circuit, approx="block-diag")
 
-* The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
-  these quantities can be accessed as fields of the new ``Resources`` object saved under
-  ``specs_dict["resources"]``:
-
-  - ``num_operations`` will no longer be supported, use ``specs_dict["resources"].num_gates``
-  - ``num_used_wires`` will no longer be supported, use ``specs_dict["resources"].num_wires``
-  - ``gate_types`` will no longer be supported, use ``specs_dict["resources"].gate_types``
-  - ``gate_sizes`` will no longer be supported, use ``specs_dict["resources"].gate_sizes``
-  - ``depth`` will no longer be supported, use ``specs_dict["resources"].depth``
-
-  These keys are still accessible in v0.31 and will be removed in v0.32.
-
-* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
-  This also affects ``QuantumTape`` and ``OperationRecorder``.
-
-  - Deprecated in v0.31
-  - Will be removed in v0.32
-
-* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
-  instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
-  ``QuantumTape`` instead.
-
-  - Still accessible in v0.28, v0.29, v0.30
-  - Will be removed in v0.31
+  - Deprecated in v0.33
+  - Will be removed in v0.35
 
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-  
+
   - Deprecated in v0.24
-  - Will be removed in v0.32
+  - Will be removed in v0.35
 
   Instead, it is recommended to simply
   pass Hamiltonians to the ``qml.expval`` function inside QNodes:
@@ -98,18 +98,44 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
+* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better 
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
+Completed deprecation cycles
+----------------------------
+
+* Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
+
+  - Deprecated in v0.25
+  - Removed in v0.34
+
+* ``qml.gradients.pulse_generator`` has become ``qml.gradients.pulse_odegen`` to adhere to paper naming conventions.
+
+  - Deprecated in v0.33
+  - Removed in v0.34
+
+* The ``prep`` keyword argument in ``QuantumScript`` has been removed.
+  ``StatePrepBase`` operations should be placed at the beginning of the ``ops`` list instead.
+
+  - Deprecated in v0.33
+  - Removed in v0.34
+
 * The public methods of ``DefaultQubit`` are pending changes to
-  follow the new device API, as used in ``DefaultQubit2``.
+  follow the new device API.
 
   We will be switching to the new device interface in a coming release.
   In this new interface, simulation implementation details
   will be abstracted away from the device class itself and provided by composition, rather than inheritance.
   Therefore, some public and private methods from ``DefaultQubit`` will no longer exist, though its behaviour
   in a workflow will remain the same.
-  
+
   If you directly interact with device methods, please consult
-  :class:`pennylane.devices.experimental.Device` and
-  :class:`pennylane.devices.experimental.DefaultQubit2`
+  :class:`pennylane.devices.Device` and
+  :class:`pennylane.devices.DefaultQubit`
   for more information on what the new interface will look like and be prepared
   to make updates in a coming release. If you have any feedback on these
   changes, please create an
@@ -117,10 +143,185 @@ Pending deprecations
   `discussion forum <https://discuss.pennylane.ai/>`_.
 
   - Deprecated in v0.31
+  - Changed in v0.33
+
+* The behaviour of ``Operator.__eq__`` and ``Operator.__hash__`` has been updated. Their documentation
+  has been updated to reflect the incoming changes.
+
+  The changes to operator equality allow users to use operator equality the same way as
+  with ``qml.equal``. With the changes to hashing, unique operators that are equal now have the same
+  hash. These changes now allow behaviour such as the following:
+
+  >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
+  True
+  >>> {qml.PauliZ(0), qml.PauliZ(0)}
+  {PauliZ(wires=[0])}
+
+  Meanwhile, the previous behaviour is shown below:
+
+  >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
+  False
+  >>> {qml.PauliZ(0), qml.PauliZ(0)}
+  {PauliZ(wires=[0]), PauliZ(wires=[0])}
+
+  - Added in v0.32
+  - Behaviour changed in v0.33
+
+* ``qml.qchem.jordan_wigner`` had been removed.
+  Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
+  is no longer accepted; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
+  ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
+  :mod:`pennylane.fermi` module documentation and the
+  `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
+  tutorial for more details.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``tuple`` input type in ``qubit_observable`` has been removed. Please use a fermionic
+  operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
+  ``fermionic_observable`` has been removed and these functions will return a fermionic operator
+  by default.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
+  Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
+  ``np.random.default_rng(seed)``.
+  The advantage of passing a PRNG is that one can reuse that PRNG when calling ``spsa_grad``
+  multiple times, for instance during an optimization procedure.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
+  been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``observables`` argument in ``QubitDevice.statistics`` is removed. Please use ``circuit``
+  instead. Using a list of observables in ``QubitDevice.statistics`` is removed. Please use a
+  ``QuantumTape`` instead.
+
+  - Still accessible in v0.28-v0.31
+  - Removed in v0.32
 
 
-Completed deprecation cycles
-----------------------------
+* The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
+  removed.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+  Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
+
+  .. code-block:: python
+
+    from pennylane.transforms import convert_to_numpy_parameters
+
+    qscript = qml.tape.QuantumTape([qml.RX(torch.tensor(0.1234), 0)],
+                                     [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
+    unwrapped_qscript = convert_to_numpy_parameters(qscript)
+
+    torch_params = qscript.get_parameters()
+    numpy_params = unwrapped_qscript.get_parameters()
+
+* ``qml.enable_return`` and ``qml.disable_return`` have been removed. The old return types are no longer available.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``mode`` keyword argument in ``QNode`` has been removed, as it was only used in the old return
+  system (which has also been removed). Please use ``grad_on_execution`` instead.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
+  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
+  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+
+  - Still accepted in v0.31
+  - Removed in v0.32
+
+* The ``do_queue`` keyword argument in ``qml.operation.Operator`` has been removed. This affects
+  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
+  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
+
+* The ``qml.specs`` dictionary longer supports direct key access to certain keys. Instead
+  these quantities can be accessed as fields of the new ``Resources`` object saved under
+  ``specs_dict["resources"]``:
+
+  - ``num_operations`` is no longer supported, use ``specs_dict["resources"].num_gates``
+  - ``num_used_wires`` is no longer supported, use ``specs_dict["resources"].num_wires``
+  - ``gate_types`` is no longer supported, use ``specs_dict["resources"].gate_types``
+  - ``gate_sizes`` is no longer supported, use ``specs_dict["resources"].gate_sizes``
+  - ``depth`` is no longer supported, use ``specs_dict["resources"].depth``
+
+  These keys were still accessible in v0.31 and removed in v0.32.
+
+* ``qml.math.reduced_dm`` has been removed. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``QuantumScript``'s ``name`` keyword argument and property are removed.
+  This also affects ``QuantumTape`` and ``OperationRecorder``.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
+
+* The ``Operation.base_name`` property is removed. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``LieAlgebraOptimizer`` has been renamed. Please use ``RiemannianGradientOptimizer`` instead.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
+
+
+* The ``grouping_type`` and ``grouping_method`` arguments of ``qchem.molecular_hamiltonian()`` are removed.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
+
+  Instead, simply construct a new instance of ``Hamiltonian`` with the grouping specified:
+
+  .. code-block:: python
+
+    H, qubits = molecular_hamiltonian(symbols, coordinates)
+    grouped_h = qml.Hamiltonian(
+        H.coeffs,
+        H.ops,
+        grouping_type=grouping_type,
+        groupingmethod=grouping_method,
+    )
+
+* ``zyz_decomposition`` and ``xyx_decomposition`` are removed, use ``one_qubit_decomposition`` with a rotations
+  keyword instead.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
 
 * The ``qml.utils.sparse_hamiltonian`` function has been removed. ``~.Hamiltonian.sparse_matrix`` should be used instead.
 
@@ -132,7 +333,7 @@ Completed deprecation cycles
   - Deprecated in v0.29
   - Removed in v0.31
 
-* ``qml.op_sum``` has been removed. Users should use ``qml.sum`` instead.
+* ``qml.op_sum`` has been removed. Users should use ``qml.sum`` instead.
 
   - Deprecated in v0.29.
   - Removed in v0.31.

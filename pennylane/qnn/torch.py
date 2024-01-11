@@ -13,14 +13,15 @@
 # limitations under the License.
 """This module contains the classes and functions for integrating QNodes with the Torch Module
 API."""
+
+import contextlib
 import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable, Dict, Union, Any, Text
+from typing import Callable, Dict, Union, Any
 
-import pennylane as qml
-from pennylane.qnode import QNode
+from pennylane import QNode
 
 try:
     import torch
@@ -37,7 +38,7 @@ except ImportError:
 
 
 class TorchLayer(Module):
-    r"""Converts a :func:`~.QNode` to a Torch layer.
+    r"""Converts a :class:`~.QNode` to a Torch layer.
 
     The result can be used within the ``torch.nn``
     `Sequential <https://pytorch.org/docs/stable/nn.html#sequential>`__ or
@@ -397,15 +398,8 @@ class TorchLayer(Module):
             batch_dims = inputs.shape[:-1]
             inputs = torch.reshape(inputs, (-1, inputs.shape[-1]))
 
-        if not qml.active_return() and has_batch_dim:
-            # If the input has a batch dimension and we want to execute each data point separately,
-            # unstack the input along its first dimension, execute the QNode on each of the yielded
-            # tensors, and then stack the outputs back into the correct shape
-            reconstructor = [self._evaluate_qnode(x) for x in torch.unbind(inputs)]
-            results = torch.stack(reconstructor)
-        else:
-            # calculate the forward pass as usual
-            results = self._evaluate_qnode(inputs)
+        # calculate the forward pass as usual
+        results = self._evaluate_qnode(inputs)
 
         # reshape to the correct number of batch dims
         if has_batch_dim:
@@ -455,21 +449,20 @@ class TorchLayer(Module):
         self.qnode.construct((), kwargs)
 
     def __getattr__(self, item):
-        """If the given attribute does not exist in the class, look for it in the wrapped QNode."""
+        """If the qnode is initialized, first check to see if the attribute is on the qnode."""
         if self._initialized:
-            return getattr(self.qnode, item)
+            with contextlib.suppress(AttributeError):
+                return getattr(self.qnode, item)
 
-        try:
-            return self.__dict__[item]
-        except KeyError as exc:
-            raise AttributeError(item) from exc
+        return super().__getattr__(item)
 
     def __setattr__(self, item, val):
-        """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
-        if self._initialized:
+        """If the qnode is initialized and item is already a qnode property, update it on the qnode, else
+        just update the torch layer itself."""
+        if self._initialized and item in self.qnode.__dict__:
             setattr(self.qnode, item, val)
         else:
-            self.__dict__[item] = val
+            super().__setattr__(item, val)
 
     def _init_weights(
         self,
@@ -537,7 +530,7 @@ class TorchLayer(Module):
         return self._input_arg
 
     @staticmethod
-    def set_input_argument(input_name: Text = "inputs") -> None:
+    def set_input_argument(input_name: str = "inputs") -> None:
         """
         Set the name of the input argument.
 

@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@ This submodule defines the symbolic operation that stands for the power of an op
 """
 import copy
 from typing import Union
-import warnings
 
 from scipy.linalg import fractional_matrix_power
 
@@ -32,12 +31,12 @@ from pennylane.operation import (
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
 
-from .symbolicop import ScalarSymbolicOp, SymbolicOp
+from .symbolicop import ScalarSymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
-def pow(base, z=1, lazy=True, do_queue=None, id=None):
+def pow(base, z=1, lazy=True, id=None):
     """Raise an Operator to a power.
 
     Args:
@@ -47,10 +46,6 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -93,11 +88,11 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
 
     """
     if lazy:
-        return Pow(base, z, do_queue=do_queue, id=id)
+        return Pow(base, z, id=id)
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        return Pow(base, z, do_queue=do_queue, id=id)
+        return Pow(base, z, id=id)
 
     num_ops = len(pow_ops)
     if num_ops == 0:
@@ -106,54 +101,9 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
         pow_op = pow_ops[0]
     else:
         pow_op = qml.prod(*pow_ops)
-
-    if do_queue is not None:
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-        warnings.warn(do_queue_deprecation_warning, UserWarning)
-
-    if do_queue or do_queue is None:
-        QueuingManager.remove(base)
+    QueuingManager.remove(base)
 
     return pow_op
-
-
-# pylint: disable=no-member
-class PowOperation(Operation):
-    """Operation-specific methods and properties for the ``Pow`` class.
-
-    Dynamically mixed in based on the provided base operator.  If the base operator is an
-    Operation, this class will be mixed in.
-
-    When we no longer rely on certain functionality through `Operation`, we can get rid of this
-    class.
-    """
-
-    # until we add gradient support
-    grad_method = None
-
-    @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self._name
-
-    @property
-    def name(self):
-        return self._name
-
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
-
-    @property
-    def control_wires(self):
-        return self.base.control_wires
 
 
 class Pow(ScalarSymbolicOp):
@@ -180,12 +130,15 @@ class Pow(ScalarSymbolicOp):
 
     """
 
-    _operation_type = None  # type if base inherits from operation and not observable
-    _operation_observable_type = None  # type if base inherits from both operation and observable
-    _observable_type = None  # type if base inherits from observable and not oepration
+    def _flatten(self):
+        return (self.base, self.z), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return pow(data[0], z=data[1])
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, z=1, do_queue=None, id=None):
+    def __new__(cls, base=None, z=1, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Pow", their *identity* and location in memory will be
@@ -207,37 +160,28 @@ class Pow(ScalarSymbolicOp):
 
         if isinstance(base, Operation):
             if isinstance(base, Observable):
-                if cls._operation_observable_type is None:
-                    base_classes = (PowOperation, Pow, SymbolicOp, Observable, Operation)
-                    cls._operation_observable_type = type("Pow", base_classes, dict(cls.__dict__))
-                return object.__new__(cls._operation_observable_type)
+                return object.__new__(PowOpObs)
 
             # not an observable
-            if cls._operation_type is None:
-                base_classes = (PowOperation, Pow, SymbolicOp, Operation)
-                cls._operation_type = type("Pow", base_classes, dict(cls.__dict__))
-            return object.__new__(cls._operation_type)
+            return object.__new__(PowOperation)
 
         if isinstance(base, Observable):
-            if cls._observable_type is None:
-                base_classes = (Pow, SymbolicOp, Observable)
-                cls._observable_type = type("Pow", base_classes, dict(cls.__dict__))
-            return object.__new__(cls._observable_type)
+            return object.__new__(PowObs)
 
         return object.__new__(Pow)
 
-    def __init__(self, base=None, z=1, do_queue=None, id=None):
+    def __init__(self, base=None, z=1, id=None):
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
-        super().__init__(base, scalar=z, do_queue=do_queue, id=id)
+        super().__init__(base, scalar=z, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
             if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
                 self.batch_size is None
             ):
-                pr = qml.pauli.PauliSentence({})
-                for _ in range(self.z):
+                pr = base_pauli_rep
+                for _ in range(self.z - 1):
                     pr = pr * base_pauli_rep
                 self._pauli_rep = pr
             else:
@@ -279,7 +223,7 @@ class Pow(ScalarSymbolicOp):
 
     @staticmethod
     def _matrix(scalar, mat):
-        if isinstance(scalar, int):
+        if isinstance(scalar, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             return qmlmath.linalg.matrix_power(mat, scalar)
         return fractional_matrix_power(mat, scalar)
 
@@ -377,7 +321,7 @@ class Pow(ScalarSymbolicOp):
 
     def simplify(self) -> Union["Pow", Identity]:
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 
@@ -390,3 +334,46 @@ class Pow(ScalarSymbolicOp):
             return op.simplify()
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
+
+
+# pylint: disable=no-member
+class PowOperation(Pow, Operation):
+    """Operation-specific methods and properties for the ``Pow`` class.
+
+    Dynamically mixed in based on the provided base operator.  If the base operator is an
+    Operation, this class will be mixed in.
+
+    When we no longer rely on certain functionality through `Operation`, we can get rid of this
+    class.
+    """
+
+    def __new__(cls, *_, **__):
+        return object.__new__(cls)
+
+    # until we add gradient support
+    grad_method = None
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def control_wires(self):
+        return self.base.control_wires
+
+
+class PowObs(Pow, Observable):
+    """A child class of ``Pow`` that also inherits from ``Observable``."""
+
+    def __new__(cls, *_, **__):
+        return object.__new__(cls)
+
+
+# pylint: disable=too-many-ancestors
+class PowOpObs(PowOperation, Observable):
+    """A child class of ``Pow`` that inherits from both
+    ``Observable`` and ``Operation``.
+    """
+
+    def __new__(cls, *_, **__):
+        return object.__new__(cls)

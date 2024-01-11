@@ -16,12 +16,11 @@ This submodule defines a base class for symbolic operations representing operato
 """
 from abc import abstractmethod
 from copy import copy
-import warnings
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Operator, _UNSET_BATCH_SIZE
 from pennylane.queuing import QueuingManager
 
 
@@ -30,10 +29,6 @@ class SymbolicOp(Operator):
 
     Args:
         base (~.operation.Operator): the base operation that is modified symbolicly
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -69,21 +64,12 @@ class SymbolicOp(Operator):
         return copied_op
 
     # pylint: disable=super-init-not-called
-    def __init__(self, base, do_queue=None, id=None):
+    def __init__(self, base, id=None):
         self.hyperparameters["base"] = base
         self._id = id
         self.queue_idx = None
         self._pauli_rep = None
-
-        if do_queue is not None:
-            do_queue_deprecation_warning = (
-                "The do_queue keyword argument is deprecated. "
-                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-            )
-            warnings.warn(do_queue_deprecation_warning, UserWarning)
-
-        if do_queue or do_queue is None:
-            self.queue()
+        self.queue()
 
     @property
     def batch_size(self):
@@ -110,6 +96,11 @@ class SymbolicOp(Operator):
     @property
     def wires(self):
         return self.base.wires
+
+    # pylint:disable = missing-function-docstring
+    @property
+    def basis(self):
+        return self.base.basis
 
     @property
     def num_wires(self):
@@ -148,11 +139,10 @@ class SymbolicOp(Operator):
         )
 
     def map_wires(self, wire_map: dict):
-        # pylint:disable=protected-access
         new_op = copy(self)
         new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
-        if (p_rep := new_op._pauli_rep) is not None:
-            new_op._pauli_rep = p_rep.map_wires(wire_map)
+        if (p_rep := new_op.pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)  # pylint:disable=protected-access
         return new_op
 
 
@@ -163,9 +153,6 @@ class ScalarSymbolicOp(SymbolicOp):
     Args:
         base (~.operation.Operator): the base operation that is modified symbolicly
         scalar (float): the scalar coefficient
-        do_queue (bool): indicates whether the operator should be recorded when created in a tape
-            context. This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance, can be useful for some applications
             where the instance has to be identified
 
@@ -175,13 +162,27 @@ class ScalarSymbolicOp(SymbolicOp):
 
     _name = "ScalarSymbolicOp"
 
-    def __init__(self, base, scalar: float, do_queue=None, id=None):
+    def __init__(self, base, scalar: float, id=None):
         self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
-        super().__init__(base, do_queue=do_queue, id=id)
-        self._batch_size = self._check_and_compute_batch_size(scalar)
+        super().__init__(base, id=id)
+        self._batch_size = _UNSET_BATCH_SIZE
 
     @property
     def batch_size(self):
+        if self._batch_size is _UNSET_BATCH_SIZE:
+            base_batch_size = self.base.batch_size
+            if qml.math.ndim(self.scalar) == 0:
+                # coeff is not batched
+                self._batch_size = base_batch_size
+            else:
+                # coeff is batched
+                scalar_size = qml.math.size(self.scalar)
+                if base_batch_size is not None and base_batch_size != scalar_size:
+                    raise ValueError(
+                        "Broadcasting was attempted but the broadcasted dimensions "
+                        f"do not match: {scalar_size}, {base_batch_size}."
+                    )
+                self._batch_size = scalar_size
         return self._batch_size
 
     @property
@@ -193,19 +194,9 @@ class ScalarSymbolicOp(SymbolicOp):
         self.scalar = new_data[0]
         self.base.data = new_data[1:]
 
-    def _check_and_compute_batch_size(self, scalar):
-        batched_scalar = qml.math.ndim(scalar) > 0
-        scalar_size = qml.math.size(scalar)
-        if not batched_scalar:
-            # coeff is not batched
-            return self.base.batch_size
-        # coeff is batched
-        if self.base.batch_size is not None and self.base.batch_size != scalar_size:
-            raise ValueError(
-                "Broadcasting was attempted but the broadcasted dimensions "
-                f"do not match: {scalar_size}, {self.base.batch_size}."
-            )
-        return scalar_size
+    @property
+    def has_matrix(self):
+        return self.base.has_matrix or isinstance(self.base, qml.Hamiltonian)
 
     @property
     def hash(self):

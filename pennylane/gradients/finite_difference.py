@@ -15,24 +15,30 @@
 This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+from typing import Sequence, Callable
 import functools
-from collections.abc import Sequence
+from functools import partial
+from warnings import warn
 
 import numpy as np
 from scipy.special import factorial
+from scipy.linalg import solve as linalg_solve
 
 import pennylane as qml
-from pennylane.measurements import ProbabilityMP, Shots
+from pennylane.measurements import ProbabilityMP
+from pennylane import transform
+from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+
 
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
+    assert_no_tape_batching,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
-    _no_trainable_grad_legacy,
 )
 
 
@@ -141,7 +147,11 @@ def finite_diff_coeffs(n, approx_order, strategy):
     A = shifts ** np.arange(len(shifts)).reshape(-1, 1)
     b = np.zeros_like(shifts)
     b[n] = factorial(n)
-    coeffs = np.linalg.solve(A, b)
+
+    # Note: using np.linalg.solve instead of scipy.linalg.solve can cause a bus error when this
+    # is inside a tf.py_function inside a tf.function, as occurs with the tensorflow-autograph interface
+    # Bus errors were potentially specific to the M1 Mac. Change with caution.
+    coeffs = linalg_solve(A, b)
 
     coeffs_and_shifts = np.stack([coeffs, shifts])
 
@@ -156,7 +166,7 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
-def _processing_fn(results, shots: Shots = Shots(None), single_shot_batch_fn=None):
+def _processing_fn(results, shots, single_shot_batch_fn):
     if not shots.has_partitioned_shots:
         return single_shot_batch_fn(results)
     grads_tuple = []
@@ -167,9 +177,8 @@ def _processing_fn(results, shots: Shots = Shots(None), single_shot_batch_fn=Non
     return tuple(grads_tuple)
 
 
-@gradient_transform
-def finite_diff(
-    tape,
+def _expand_transform_finite_diff(
+    tape: qml.tape.QuantumTape,
     argnum=None,
     h=1e-7,
     approx_order=1,
@@ -177,12 +186,39 @@ def finite_diff(
     strategy="forward",
     f0=None,
     validate_params=True,
-    shots=None,
-):
-    r"""Transform a QNode to compute the finite-difference gradient of all gate parameters with respect to its inputs.
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Expand function to be applied before finite difference."""
+    expanded_tape = expand_invalid_trainable(tape)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [expanded_tape], null_postprocessing
+
+
+@partial(
+    transform,
+    expand_transform=_expand_transform_finite_diff,
+    classical_cotransform=_contract_qjac_with_cjac,
+    final_transform=True,
+)
+def finite_diff(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    h=1e-7,
+    approx_order=1,
+    n=1,
+    strategy="forward",
+    f0=None,
+    validate_params=True,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    r"""Transform a circuit to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -204,23 +240,13 @@ def finite_diff(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
-        shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that will
-            be used to execute the tapes outputted by this transform. Note that this argument doesn't
-
-            influence the shots used for tape execution, but provides information about the shots.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     **Example**
 
@@ -260,7 +286,9 @@ def finite_diff(
     .. details::
         :title: Usage Details
 
-        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
+        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
+        of the QNode decorator, and differentiating with your preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
@@ -300,11 +328,14 @@ def finite_diff(
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        ((array(-0.38751724), array(-0.18884792), array(-0.38355709)),
-         (array(0.69916868), array(0.34072432), array(0.69202366)))
+        ((tensor(-0.56464251, requires_grad=True),
+         tensor(-0.56464251, requires_grad=True),
+         tensor(-0.56464251, requires_grad=True)),
+        (tensor(0.93203912, requires_grad=True),
+         tensor(0.93203912, requires_grad=True),
+         tensor(0.93203912, requires_grad=True)))
 
-        Devices that have a shot vector defined can also be used for execution, provided
-        the ``shots`` argument was passed to the transform:
+        This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
         >>> dev = qml.device("default.qubit", wires=2, shots=shots)
@@ -315,7 +346,7 @@ def finite_diff(
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.finite_diff(circuit, shots=shots, h=10e-2)(params)
+        >>> qml.gradients.finite_diff(circuit, h=10e-2)(params)
         (((array(-2.), array(-2.), array(0.)), (array(3.6), array(3.6), array(0.))),
          ((array(1.), array(0.4), array(1.)),
           (array(-1.62), array(-0.624), array(-1.62))),
@@ -324,21 +355,19 @@ def finite_diff(
 
         The outermost tuple contains results corresponding to each element of the shot vector.
     """
-    if not qml.active_return():
-        return _finite_diff_legacy(
-            tape,
-            argnum=argnum,
-            h=h,
-            approx_order=approx_order,
-            n=n,
-            strategy=strategy,
-            f0=f0,
-            validate_params=validate_params,
-            shots=shots,
+
+    transform_name = "finite difference"
+    assert_no_tape_batching(tape, transform_name)
+
+    if any(qml.math.get_dtype_name(p) == "float32" for p in tape.get_parameters()):
+        warn(
+            "Finite differences with float32 detected. Answers may be inaccurate. float64 is recommended.",
+            UserWarning,
         )
-    shots = Shots(shots)
+    number_parameters = len(tape.trainable_params)
+    number_measurements = len(tape.measurements)
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad(tape, shots)
+        return _no_trainable_grad(tape)
 
     if validate_params:
         diff_methods = gradient_analysis_and_validation(
@@ -348,7 +377,7 @@ def finite_diff(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad(tape, shots)
+        return _all_zero_grad(tape)
 
     gradient_tapes = []
     shapes = []
@@ -385,7 +414,6 @@ def finite_diff(
     def _single_shot_batch_result(results):
         """Auxiliary function for post-processing one batch of results corresponding to finite shots or a single
         component of a shot vector"""
-
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
@@ -420,13 +448,13 @@ def finite_diff(
 
             pre_grads = []
 
-            if len(tape.measurements) == 1:
+            if number_measurements == 1:
                 res = qml.math.stack(res)
                 c = qml.math.convert_like(coeffs, res)
                 lin_comb = qml.math.tensordot(res, c, [[0], [0]])
                 pre_grads.append(lin_comb)
             else:
-                for i in range(len(tape.measurements)):
+                for i in range(number_measurements):
                     r = qml.math.stack([r[i] for r in res])
                     c = qml.math.convert_like(coeffs, r)
                     lin_comb = qml.math.tensordot(r, c, [[0], [0]])
@@ -434,11 +462,11 @@ def finite_diff(
 
             # Add on the unshifted term
             if c0 is not None:
-                if len(tape.measurements) == 1:
+                if number_measurements == 1:
                     c = qml.math.convert_like(c0, r0)
                     pre_grads = [pre_grads[0] + r0 * c]
                 else:
-                    for i in range(len(tape.measurements)):
+                    for i in range(number_measurements):
                         r_i = r0[i]
                         c = qml.math.convert_like(c0, r_i)
                         pre_grads[i] = pre_grads[i] + r_i * c
@@ -456,229 +484,24 @@ def finite_diff(
 
             grads.append(pre_grads)
         # Single measurement
-        if len(tape.measurements) == 1:
-            if len(tape.trainable_params) == 1:
+        if number_measurements == 1:
+            if number_parameters == 1:
                 return grads[0]
             return tuple(grads)
 
         # Reordering to match the right shape for multiple measurements
-        grads_reorder = [[0] * len(tape.trainable_params) for _ in range(len(tape.measurements))]
-        for i in range(len(tape.measurements)):
-            for j in range(len(tape.trainable_params)):
+        grads_reorder = [[0] * number_parameters for _ in range(len(tape.measurements))]
+        for i in range(number_measurements):
+            for j in range(number_parameters):
                 grads_reorder[i][j] = grads[j][i]
 
         # To tuple
-        if len(tape.trainable_params) == 1:
+        if number_parameters == 1:
             return tuple(elem[0] for elem in grads_reorder)
         return tuple(tuple(elem) for elem in grads_reorder)
 
     processing_fn = functools.partial(
-        _processing_fn, shots=shots, single_shot_batch_fn=_single_shot_batch_result
+        _processing_fn, shots=tape.shots, single_shot_batch_fn=_single_shot_batch_result
     )
-
-    return gradient_tapes, processing_fn
-
-
-# pylint: disable=unused-argument
-@gradient_transform
-def _finite_diff_legacy(
-    tape,
-    argnum=None,
-    h=1e-7,
-    approx_order=1,
-    n=1,
-    strategy="forward",
-    f0=None,
-    validate_params=True,
-    shots=None,
-):
-    r"""Transform a QNode to compute the finite-difference gradient of all gate
-    parameters with respect to its inputs.
-
-    Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
-        argnum (int or list[int] or None): Trainable parameter indices to differentiate
-            with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
-        h (float): finite difference method step size
-        approx_order (int): The approximation order of the finite-difference method to use.
-        n (int): compute the :math:`n`-th derivative
-        strategy (str): The strategy of the finite difference method. Must be one of
-            ``"forward"``, ``"center"``, or ``"backward"``.
-            For the ``"forward"`` strategy, the finite-difference shifts occur at the points
-            :math:`x_0, x_0+h, x_0+2h,\dots`, where :math:`h` is some small
-            stepsize. The ``"backwards"`` strategy is similar, but in
-            reverse: :math:`x_0, x_0-h, x_0-2h, \dots`. Finally, the
-            ``"center"`` strategy results in shifts symmetric around the
-            unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
-        f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
-            and the gradient recipe contains an unshifted term, this value is used,
-            saving a quantum evaluation.
-        validate_params (bool): Whether to validate the tape parameters or not. If ``True``,
-            the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
-            to determine if the trainable parameters support the finite-difference method.
-            If ``False``, the finite-difference method will be applied to all parameters.
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
-            information to the transform about the shots.
-
-    Returns:
-        function or tuple[list[QuantumTape], function]:
-
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
-
-    **Example**
-
-    This transform can be registered directly as the quantum gradient transform
-    to use during autodifferentiation:
-
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev, diff_method=qml.gradients.finite_diff)
-    ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.jacobian(circuit)(params)
-    tensor([[-0.38751725, -0.18884792, -0.38355708],
-            [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
-
-
-    .. details::
-        :title: Usage Details
-
-        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
-
-        >>> @qml.qnode(dev)
-        ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-        >>> qml.gradients.finite_diff(circuit)(params)
-        tensor([[-0.38751725, -0.18884792, -0.38355708],
-                [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
-
-        This quantum gradient transform can also be applied to low-level
-        :class:`~.QuantumTape` objects. This will result in no implicit quantum
-        device evaluation. Instead, the processed tapes, and post-processing
-        function, which together define the gradient are directly returned:
-
-        >>> ops = [qml.RX(p, wires=0) for p in params]
-        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
-        >>> tape = qml.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
-        >>> gradient_tapes
-        [<QuantumTape: wires=[0], params=3>,
-         <QuantumTape: wires=[0], params=3>,
-         <QuantumTape: wires=[0], params=3>,
-         <QuantumTape: wires=[0], params=3>]
-
-        This can be useful if the underlying circuits representing the gradient
-        computation need to be analyzed.
-
-        The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
-
-        >>> dev = qml.device("default.qubit", wires=2)
-        >>> fn(qml.execute(gradient_tapes, dev, None))
-        [[-0.38751721 -0.18884787 -0.38355704]
-         [ 0.69916862  0.34072424  0.69202359]]
-    """
-
-    if argnum is None and not tape.trainable_params:
-        _no_trainable_grad_legacy(tape)
-
-    if validate_params:
-        diff_methods = gradient_analysis_and_validation(
-            tape, "numeric", grad_fn=finite_diff, overwrite=False
-        )
-    else:
-        diff_methods = ["F" for i in tape.trainable_params]
-
-    if all(g == "0" for g in diff_methods):
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
-
-    gradient_tapes = []
-    shapes = []
-    c0 = None
-
-    coeffs, shifts = finite_diff_coeffs(n=n, approx_order=approx_order, strategy=strategy)
-
-    if 0 in shifts:
-        # Finite difference formula includes a term with zero shift.
-
-        if f0 is None:
-            # Ensure that the unshifted tape is appended
-            # to the gradient tapes, if not already.
-            gradient_tapes.append(tape)
-
-        # Store the unshifted coefficient. We know that
-        # it will always be the first coefficient due to processing.
-        c0 = coeffs[0]
-        shifts = shifts[1:]
-        coeffs = coeffs[1:]
-
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    for i, _ in enumerate(tape.trainable_params):
-        if i not in method_map or method_map[i] == "0":
-            # parameter has zero gradient
-            shapes.append(0)
-            continue
-
-        g_tapes = generate_shifted_tapes(tape, i, shifts * h)
-        gradient_tapes.extend(g_tapes)
-        shapes.append(len(g_tapes))
-
-    def processing_fn(results):
-        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
-        # pylint: disable=protected-access
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-            results = [qml.math.squeeze(res) for res in results]
-
-        grads = []
-        start = 1 if c0 is not None and f0 is None else 0
-        r0 = f0 or results[0]
-
-        for s in shapes:
-            if s == 0:
-                # parameter has zero gradient
-                g = qml.math.zeros_like(results[0])
-                grads.append(g)
-                continue
-
-            res = results[start : start + s]
-            start = start + s
-
-            # compute the linear combination of results and coefficients
-            res = qml.math.stack(res)
-            g = sum(r * c for c, r in zip(coeffs, res))
-
-            if c0 is not None:
-                # add on the unshifted term
-                g = g + r0 * c0
-
-            grads.append(g * (h ** (-n)))
-
-        # The following is for backwards compatibility; currently,
-        # the device stacks multiple measurement arrays, even if not the same
-        # size, resulting in a ragged array.
-        # In the future, we might want to change this so that only tuples
-        # of arrays are returned.
-        for i, g in enumerate(grads):
-            if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                if qml.math.ndim(g) > 0:
-                    grads[i] = qml.math.hstack(g)
-
-        return qml.math.T(qml.math.stack(grads))
 
     return gradient_tapes, processing_fn

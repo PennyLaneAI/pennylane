@@ -18,11 +18,13 @@
 This file contains the ``ParametrizedEvolution`` operator.
 """
 
-from typing import List, Union
+from typing import List, Union, Sequence
 import warnings
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.typing import TensorLike
+from pennylane.ops import functions
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .hardware_hamiltonian import HardwareHamiltonian
@@ -40,7 +42,7 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=None, id=None, **odeint_kwargs)
+    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, id=None, **odeint_kwargs)
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to
     the :func:`~.pennylane.evolve` function
@@ -69,9 +71,6 @@ class ParametrizedEvolution(Operation):
             ``ParametrizedEvolution`` and will not affect other gates.
             To return the matrix at intermediate evolution times, activate ``return_intermediate``
             (see below).
-        do_queue (bool): determines if the scalar product operator will be queued.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:
@@ -376,7 +375,6 @@ class ParametrizedEvolution(Operation):
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
-        do_queue=None,
         id=None,
         **odeint_kwargs,
     ):
@@ -407,7 +405,7 @@ class ParametrizedEvolution(Operation):
                     f"in the Hamiltonian must be the same. Received {len(params)=} parameters but "
                     f"expected {len(H.coeffs_parametrized)} parameters."
                 )
-        super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=H.wires, id=id)
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
@@ -442,7 +440,6 @@ class ParametrizedEvolution(Operation):
             return_intermediate=return_intermediate,
             complementary=complementary,
             dense=dense,
-            do_queue=None,
             id=self.id,
             **odeint_kwargs,
         )
@@ -452,8 +449,13 @@ class ParametrizedEvolution(Operation):
         if not self.hyperparameters["return_intermediate"] or self.t is None:
             return
         # Subtract 1 because the identity is never returned by `matrix`. If `complementary=True`,
-        # subtract and additional 1 because the full time evolution is not being returned.
+        # subtract an additional 1 because the full time evolution is not being returned.
         self._batch_size = self.t.shape[0]
+
+    def map_wires(self, wire_map):
+        mapped_op = super().map_wires(wire_map)
+        mapped_op.H = self.H.map_wires(wire_map)
+        return mapped_op
 
     @property
     def hash(self):
@@ -468,6 +470,35 @@ class ParametrizedEvolution(Operation):
                 self.H,
                 str(self.odeint_kwargs.values()),
             )
+        )
+
+    def _flatten(self):
+        data = self.data
+        odeint_kwargs_tuples = tuple((key, value) for key, value in self.odeint_kwargs.items())
+        t = self.t if self.t is None else tuple(self.t)
+        metadata = (
+            t,
+            self.H,
+            self.hyperparameters["return_intermediate"],
+            self.hyperparameters["complementary"],
+            self.dense,
+            odeint_kwargs_tuples,
+        )
+
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        t, H, return_intermediate, complementary, dense, odeint_kwargs = metadata
+
+        return cls(
+            H,
+            None if len(data) == 0 else data,
+            t,
+            return_intermediate=return_intermediate,
+            complementary=complementary,
+            dense=dense,
+            **dict(odeint_kwargs),
         )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -507,3 +538,77 @@ class ParametrizedEvolution(Operation):
         elif not self.hyperparameters["return_intermediate"]:
             mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> H = qml.PauliX(1) + qml.pulse.constant * qml.PauliY(0) + jnp.polyval * qml.PauliY(1)
+        >>> params = [0.2, [1, 2, 3]]
+        >>> op = qml.evolve(H)(params, t=2)
+        >>> cache = {'matrices': []}
+
+        >>> op.label()
+        "Parametrized\nEvolution"
+        >>> op.label(decimals=2, cache=cache)
+        "Parametrized\nEvolution\n(p=[0.20,M0], t=[0. 2.])"
+        >>> op.label(base_label="my_label")
+        "my_label"
+        >>> op.label(decimals=2, base_label="my_label", cache=cache)
+        "my_label\n(p=[0.20,M0], t=[0. 2.])"
+
+        Array-like parameters are stored in ``cache['matrices']``.
+        """
+        op_label = base_label or "Parametrized\nEvolution"
+
+        if self.num_params == 0:
+            return op_label
+
+        if decimals is None:
+            return op_label
+
+        params = self.parameters
+        has_cache = cache and isinstance(cache.get("matrices", None), list)
+
+        if any(qml.math.ndim(p) for p in params) and not has_cache:
+            return op_label
+
+        def _format_number(x):
+            return format(qml.math.toarray(x), f".{decimals}f")
+
+        def _format_arraylike(x):
+            for i, mat in enumerate(cache["matrices"]):
+                if qml.math.shape(x) == qml.math.shape(mat) and qml.math.allclose(x, mat):
+                    return f"M{i}"
+            mat_num = len(cache["matrices"])
+            cache["matrices"].append(x)
+            return f"M{mat_num}"
+
+        param_strings = [_format_arraylike(p) if p.shape else _format_number(p) for p in params]
+
+        p = ",".join(s for s in param_strings)
+        return f"{op_label}\n(p=[{p}], t={self.t})"
+
+
+@functions.bind_new_parameters.register
+def _bind_new_parameters_parametrized_evol(op: ParametrizedEvolution, params: Sequence[TensorLike]):
+    return ParametrizedEvolution(
+        op.H,
+        params=params,
+        t=op.t,
+        return_intermediate=op.hyperparameters["return_intermediate"],
+        complementary=op.hyperparameters["complementary"],
+        dense=op.dense,
+        **op.odeint_kwargs,
+    )

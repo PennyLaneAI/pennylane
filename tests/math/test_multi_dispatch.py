@@ -13,6 +13,7 @@
 # limitations under the License.
 """ Assertion test for multi_dispatch function/decorator
 """
+# pylint: disable=unused-argument,no-value-for-parameter,too-few-public-methods
 import autoray
 import numpy as onp
 import pytest
@@ -28,6 +29,7 @@ pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 test_multi_dispatch_stack_data = [
@@ -132,10 +134,6 @@ def test_multi_dispatch_decorate_non_dispatch(values):
 @pytest.mark.all_interfaces
 def test_unwrap():
     """Test that unwrap converts lists to lists and interface variables to numpy."""
-    import tensorflow as tf
-    import torch
-    from jax import numpy as jnp
-
     params = [
         [torch.tensor(2)],
         [[3, 4], torch.tensor([5, 6])],
@@ -215,8 +213,6 @@ def test_dot_autograd():
 class TestMatmul:
     @pytest.mark.torch
     def test_matmul_torch(self):
-        import torch
-
         m1 = torch.tensor([[1, 0], [0, 1]])
         m2 = [[1, 2], [3, 4]]
         assert fn.allequal(fn.matmul(m1, m2), m2)
@@ -249,7 +245,6 @@ class TestDetach:
     @pytest.mark.parametrize("use_jit", [True, False])
     def test_jax(self, use_jit):
         """Test that detach works with JAX."""
-        import jax
 
         x = jax.numpy.array(0.3)
         func = jax.jit(fn.detach, static_argnums=1) if use_jit else fn.detach
@@ -258,7 +253,6 @@ class TestDetach:
 
     def test_torch(self):
         """Test that detach works with Torch."""
-        import torch
 
         x = torch.tensor(0.3, requires_grad=True)
         assert x.requires_grad is True
@@ -269,7 +263,6 @@ class TestDetach:
 
     def test_tf(self):
         """Test that detach works with Tensorflow."""
-        import tensorflow as tf
 
         x = tf.Variable(0.3)
         assert x.trainable is True
@@ -283,10 +276,6 @@ class TestDetach:
 
 @pytest.mark.all_interfaces
 class TestNorm:
-    import tensorflow as tf
-    import torch
-    from jax import numpy as jnp
-
     mats_intrf_norm = (
         (np.array([0.5, -1, 2]), "numpy", np.array(2), dict()),
         (np.array([[5, 6], [-2, 3]]), "numpy", np.array(11), dict()),
@@ -304,3 +293,38 @@ class TestNorm:
         computed_norm = fn.norm(arr, ord=np.inf, **kwargs)
         assert np.allclose(computed_norm, expected_norm)
         assert fn.get_interface(computed_norm) == expected_intrf
+
+    @pytest.mark.parametrize(
+        "arr",
+        [
+            np.array([1.0, 2.0, 3.0, 4.0, 5.0]),
+            np.array(
+                [
+                    [[0.123, 0.456, 0.789], [-0.123, -0.456, -0.789]],
+                    [[1.23, 4.56, 7.89], [-1.23, -4.56, -7.89]],
+                ]
+            ),
+            np.array(
+                [
+                    [
+                        [0.123 - 0.789j, 0.456 + 0.456j, 0.789 - 0.123j],
+                        [-0.123 + 0.789j, -0.456 - 0.456j, -0.789 + 0.123j],
+                    ],
+                    [
+                        [1.23 + 4.56j, 4.56 - 7.89j, 7.89 + 1.23j],
+                        [-1.23 - 7.89j, -4.56 + 1.23j, -7.89 - 4.56j],
+                    ],
+                ]
+            ),
+        ],
+    )
+    def test_autograd_norm_gradient(self, arr):
+        """Test that qml.math.norm has the correct gradient with autograd
+        when the order and axis are not specified."""
+        norm = fn.norm(arr)
+        expected_norm = onp.linalg.norm(arr)
+        assert np.isclose(norm, expected_norm)
+
+        grad = qml_grad(fn.norm)(arr)
+        expected_grad = (norm**-1) * arr.conj()
+        assert fn.allclose(grad, expected_grad)

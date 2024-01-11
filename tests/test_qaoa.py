@@ -166,7 +166,7 @@ class TestMixerHamiltonians:
         assert all(qml.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
         # check that the 1-group grouping information was set
         assert mixer_hamiltonian.grouping_indices is not None
-        assert mixer_hamiltonian.grouping_indices == [[0, 1, 2, 3]]
+        assert mixer_hamiltonian.grouping_indices == ((0, 1, 2, 3),)
 
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
@@ -960,7 +960,7 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
     @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MIS)
     def test_mis_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
@@ -981,7 +981,7 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
     @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MVC)
     def test_mvc_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
@@ -1002,7 +1002,7 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
     @pytest.mark.parametrize(
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MAXCLIQUE
@@ -1025,7 +1025,7 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
@@ -1060,7 +1060,7 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
 
 # pylint: disable=too-few-public-methods

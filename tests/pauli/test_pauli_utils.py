@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
+# pylint: disable=too-few-public-methods,too-many-public-methods
 import numpy as np
 import pytest
 
@@ -196,7 +197,6 @@ class TestGroupingUtils:
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
 
-        n_qubits = 3
         wire_map = {0: 0, "a": 1, "b": 2}
         p1_vec = pauli_to_binary(PauliX(0) @ PauliY("a"), wire_map=wire_map)
         p2_vec = pauli_to_binary(PauliX(0) @ Identity("a") @ PauliX("b"), wire_map=wire_map)
@@ -540,7 +540,7 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1))
-        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1)])
+        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
 
     def test_one_qubit_pauli_group_valid_float_input(self):
         """Test that the single-qubit Pauli group is constructed correctly when a float
@@ -548,7 +548,7 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1.0))
-        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1)])
+        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
 
     def test_one_qubit_pauli_group_string_wire_map(self):
         """Test that the single-qubit Pauli group is constructed correctly with a wire
@@ -562,12 +562,7 @@ class TestPauliGroup:
             PauliY("qubit"),
         ]
         pg_1_wires = list(pauli_group(1, wire_map=wire_map))
-        assert all(
-            [
-                expected.compare(obtained)
-                for expected, obtained in zip(expected_pg_1_wires, pg_1_wires)
-            ]
-        )
+        assert all(exp.compare(ob) for exp, ob in zip(expected_pg_1_wires, pg_1_wires))
 
     def test_two_qubit_pauli_group(self):
         """Test that the two-qubit Pauli group is constructed correctly."""
@@ -594,7 +589,7 @@ class TestPauliGroup:
         ]
 
         pg_2 = list(pauli_group(2, wire_map=wire_map))
-        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_2, pg_2)])
+        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_2, pg_2))
 
     @pytest.mark.parametrize(
         "pauli_word_1,pauli_word_2,wire_map,expected_product",
@@ -810,10 +805,8 @@ class TestMeasurementTransformations:
         qwc_rot = qwc_rotation(pauli_ops)
 
         assert all(
-            [
-                self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
-                for i in range(len(qwc_rot))
-            ]
+            self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
+            for i in range(len(qwc_rot))
         )
 
     invalid_qwc_rotation_inputs = [
@@ -902,16 +895,12 @@ class TestMeasurementTransformations:
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple
 
         assert all(
-            [
-                self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
-                for i in range(len(qwc_rot))
-            ]
+            self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
+            for i in range(len(qwc_rot))
         )
         assert all(
-            [
-                are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
-                for i in range(len(diag_qwc_grouping))
-            ]
+            are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
+            for i in range(len(diag_qwc_grouping))
         )
 
     not_qwc_groupings = [
@@ -943,6 +932,7 @@ class TestObservableHF:
     )
     def test_pauli_mult(self, p1, p2, p_ref):
         r"""Test that _pauli_mult returns the correct operator."""
+        # pylint: disable=protected-access
         result = qml.pauli.utils._pauli_mult(p1, p2)
 
         assert result == p_ref
@@ -1063,12 +1053,14 @@ class TestTapering:
     @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix(self, terms, num_qubits, result):
         r"""Test that _binary_matrix returns the correct result."""
+        # pylint: disable=protected-access
         binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
         assert (binary_matrix == result).all()
 
     @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix_from_pws(self, terms, num_qubits, result):
         r"""Test that _binary_matrix_from_pws returns the correct result."""
+        # pylint: disable=protected-access
         pws_lst = [list(qml.pauli.pauli_sentence(t))[0] for t in terms]
         binary_matrix = qml.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
         assert (binary_matrix == result).all()

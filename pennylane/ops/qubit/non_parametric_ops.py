@@ -202,8 +202,8 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -357,8 +357,8 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -509,8 +509,8 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1254,10 +1254,6 @@ class ECR(Operation):
 
     Args:
         wires (int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
 
@@ -2067,15 +2063,20 @@ class MultiControlledX(Operation):
 
     grad_method = None
 
+    def _flatten(self):
+        hyperparameters = (
+            ("wires", self.wires),
+            ("control_values", self.hyperparameters["control_values"]),
+            ("work_wires", self.hyperparameters["work_wires"]),
+        )
+        return tuple(), hyperparameters
+
+    @classmethod
+    def _unflatten(cls, _, metadata):
+        return cls(**dict(metadata))
+
     # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        control_wires=None,
-        wires=None,
-        control_values=None,
-        work_wires=None,
-        do_queue=None,
-    ):
+    def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
         if wires is None:
             raise ValueError("Must specify the wires where the operation acts on")
         if control_wires is None:
@@ -2115,7 +2116,7 @@ class MultiControlledX(Operation):
         self.hyperparameters["control_values"] = control_values
         self.total_wires = total_wires
 
-        super().__init__(wires=self.total_wires, do_queue=do_queue)
+        super().__init__(wires=self.total_wires)
 
     def __repr__(self):
         return f'MultiControlledX(wires={list(self.total_wires._labels)}, control_values="{self.hyperparameters["control_values"]}")'
@@ -2333,132 +2334,3 @@ class MultiControlledX(Operation):
     @property
     def is_hermitian(self):
         return True
-
-
-class Barrier(Operation):
-    r"""Barrier(wires)
-    The Barrier operator, used to separate the compilation process into blocks or as a visual tool.
-
-    **Details:**
-
-    * Number of wires: AnyWires
-    * Number of parameters: 0
-
-    Args:
-        only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
-        wires (Sequence[int] or int): the wires the operation acts on
-    """
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    num_wires = AnyWires
-    par_domain = None
-
-    def __init__(self, wires=Wires([]), only_visual=False, do_queue=None, id=None):
-        self.only_visual = only_visual
-        self.hyperparameters["only_visual"] = only_visual
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
-
-    @staticmethod
-    def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.Barrier.decomposition`.
-
-        ``Barrier`` decomposes into an empty list for all arguments.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-            only_visual (Bool): True if we do not want it to have an impact on the compilation process. Default is False.
-
-        Returns:
-            list: decomposition of the operator
-
-        **Example:**
-
-        >>> print(qml.Barrier.compute_decomposition(0))
-        []
-
-        """
-        return []
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return "||"
-
-    def _controlled(self, _):
-        return copy(self).queue()
-
-    def adjoint(self):
-        return copy(self)
-
-    def pow(self, z):
-        return [copy(self)]
-
-    def simplify(self):
-        if self.only_visual:
-            if len(self.wires) == 1:
-                return qml.Identity(self.wires[0])
-            return qml.prod(*(qml.Identity(w) for w in self.wires))
-        return self
-
-
-class WireCut(Operation):
-    r"""WireCut(wires)
-    The wire cut operation, used to manually mark locations for wire cuts.
-
-    .. note::
-
-        This operation is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
-
-    **Details:**
-
-    * Number of wires: AnyWires
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int] or int): the wires the operation acts on
-    """
-    num_params = 0
-    num_wires = AnyWires
-    grad_method = None
-
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
-        if wires == []:
-            raise ValueError(
-                f"{self.__class__.__name__}: wrong number of wires. "
-                f"At least one wire has to be given."
-            )
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
-
-    @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=unused-argument
-        r"""Representation of the operator as a product of other operators (static method).
-
-        Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
-
-        Args:
-            wires (Any, Wires): Wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-
-        **Example:**
-
-        >>> print(qml.WireCut.compute_decomposition(0))
-        []
-
-        """
-        return []
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return "//"
-
-    def adjoint(self):
-        return WireCut(wires=self.wires)
-
-    def pow(self, z):
-        return [copy(self)]

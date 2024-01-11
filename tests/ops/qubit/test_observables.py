@@ -12,19 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for qubit observables."""
+# pylint: disable=protected-access
 import functools
+import pickle
 import pytest
-import pennylane as qml
 import numpy as np
-from pennylane.ops.qubit.observables import _BasisStateProjector, _StateVectorProjector
 
-from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-)
+from gate_data import I, X, Y, Z, H
+import pennylane as qml
+from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
 
 
 @pytest.fixture(autouse=True)
@@ -108,8 +104,8 @@ projector_sv = [qml.Projector(np.array([0.5, 0.5, 0.5, 0.5]), [0, 1])]
 class TestSimpleObservables:
     """Tests for simple single-qubit observables"""
 
-    @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
-    def test_diagonalization(self, obs, mat, eigs, tol):
+    @pytest.mark.parametrize("obs, _, eigs", OBSERVABLES)
+    def test_diagonalization(self, obs, _, eigs, tol):
         """Test the method transforms standard observables into the Z-gate."""
         ob = obs(wires=0)
         A = ob.matrix()
@@ -165,15 +161,15 @@ class TestSimpleObservables:
         """Test the static compute_diagonalizing_gates method for the PauliZ observable."""
         assert qml.PauliZ.compute_diagonalizing_gates(wires=1) == []
 
-    @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
-    def test_eigvals(self, obs, mat, eigs, tol):
+    @pytest.mark.parametrize("obs, _, eigs", OBSERVABLES)
+    def test_eigvals(self, obs, _, eigs, tol):
         """Test eigenvalues of standard observables are correct"""
         obs = obs(wires=0)
         res = obs.eigvals()
         assert np.allclose(res, eigs, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
-    def test_matrices(self, obs, mat, eigs, tol):
+    @pytest.mark.parametrize("obs, mat, _", OBSERVABLES)
+    def test_matrices(self, obs, mat, _, tol):
         """Test matrices of standard observables are correct"""
         obs = obs(wires=0)
         res = obs.matrix()
@@ -196,11 +192,11 @@ class TestHermitian:
 
     def test_hermitian_creation_exceptions(self):
         """Tests that the hermitian matrix method raises the proper errors."""
-        H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        ham = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.Hermitian(H[1:], wires=0)
+            qml.Hermitian(ham[1:], wires=0)
 
         H1 = np.array([[1]]) / np.sqrt(2)
 
@@ -209,20 +205,17 @@ class TestHermitian:
             qml.Hermitian(H1, wires=[0])
 
         # test non-Hermitian matrix
-        H2 = H.copy()
+        H2 = ham.copy()
         H2[0, 1] = 2
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.Hermitian(H2, wires=0)
 
     def test_ragged_input_raises(self):
         """Tests that an error is raised if the input to Hermitian is ragged."""
-        H = [[1, 0], [0, 1, 2]]
+        ham = [[1, 0], [0, 1, 2]]
 
-        with pytest.warns(
-            np.VisibleDeprecationWarning, match="Creating an ndarray from ragged nested sequences"
-        ):
-            with pytest.raises(ValueError, match="must be a square matrix"):
-                qml.Hermitian(H, wires=0)
+        with pytest.raises(ValueError, match="The requested array has an inhomogeneous shape"):
+            qml.Hermitian(ham, wires=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigegendecomposition_single_wire(self, observable, eigvals, eigvecs, tol):
@@ -313,6 +306,7 @@ class TestHermitian:
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol, mocker):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
+        # pylint: disable=too-many-arguments
 
         # check calling `diagonalizing_gates` when `observable` is not in `_eigs` adds expected entry to `_eigs`
         spy = mocker.spy(np.linalg, "eigh")
@@ -406,8 +400,8 @@ class TestHermitian:
         assert np.allclose(qubit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-    @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
-    def test_hermitian_diagonalizing_gates_integration(self, observable, eigvals, eigvecs, tol):
+    @pytest.mark.parametrize("observable, eigvals, _", EIGVALS_TEST_DATA)
+    def test_hermitian_diagonalizing_gates_integration(self, observable, eigvals, _, tol):
         """Tests that the diagonalizing_gates method of the Hermitian class
         diagonalizes the given observable."""
         tensor_obs = np.kron(observable, observable)
@@ -423,25 +417,25 @@ class TestHermitian:
 
     def test_hermitian_matrix(self, tol):
         """Test that the hermitian matrix method produces the correct output."""
-        H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        out = qml.Hermitian(H, wires=0).matrix()
+        ham = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        out = qml.Hermitian(ham, wires=0).matrix()
 
         # verify output type
         assert isinstance(out, np.ndarray)
 
         # verify equivalent to input state
-        assert np.allclose(out, H, atol=tol, rtol=0)
+        assert np.allclose(out, ham, atol=tol, rtol=0)
 
     def test_hermitian_exceptions(self):
         """Tests that the hermitian matrix method raises the proper errors."""
-        H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        ham = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.Hermitian(H[1:], wires=0).matrix()
+            qml.Hermitian(ham[1:], wires=0).matrix()
 
         # test non-Hermitian matrix
-        H2 = H.copy()
+        H2 = ham.copy()
         H2[0, 1] = 2
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.Hermitian(H2, wires=0).matrix()
@@ -471,20 +465,24 @@ class TestProjector:
         basis_state = [0, 1, 1, 0]
         wires = range(len(basis_state))
         basis_state_projector = qml.Projector(basis_state, wires)
-        assert isinstance(basis_state_projector, _BasisStateProjector)
+        assert isinstance(basis_state_projector, BasisStateProjector)
 
         second_projector = qml.Projector(basis_state, wires)
         assert qml.equal(second_projector, basis_state_projector)
+
+        qml.ops.functions.assert_valid(basis_state_projector)
 
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when input is a state vector."""
         state_vector = np.array([1, 1, 1, 1]) / 2
         wires = [0, 1]
         state_vector_projector = qml.Projector(state_vector, wires)
-        assert isinstance(state_vector_projector, _StateVectorProjector)
+        assert isinstance(state_vector_projector, StateVectorProjector)
 
         second_projector = qml.Projector(state_vector, wires)
         assert qml.equal(second_projector, state_vector_projector)
+
+        qml.ops.functions.assert_valid(state_vector_projector)
 
     def test_pow_zero(self):
         """Assert that the projector raised to zero is an empty list."""
@@ -522,6 +520,25 @@ class TestProjector:
             state = np.random.randint(2, size=(2, 4))
             qml.Projector(state, range(4))
 
+    def test_serialization(self):
+        """Tests that Projector is pickle-able."""
+        # Basis state projector
+        proj = qml.Projector([1], wires=[0], id="Timmy")
+        serialization = pickle.dumps(proj)
+        new_proj = pickle.loads(serialization)
+        assert type(new_proj) is type(proj)
+        assert qml.equal(new_proj, proj)
+        assert new_proj.id == proj.id  # Ensure they are identical
+
+        # State vector projector
+        proj = qml.Projector([0, 1], wires=[0])
+        serialization = pickle.dumps(proj)
+        new_proj = pickle.loads(serialization)
+
+        assert type(new_proj) is type(proj)
+        assert qml.equal(new_proj, proj)
+        assert new_proj.id == proj.id  # Ensure they are identical
+
 
 class TestBasisStateProjector:
     """Tests for the basis state projector observable."""
@@ -555,7 +572,7 @@ class TestBasisStateProjector:
         diag_gates = qml.Projector(basis_state, wires=range(num_wires)).diagonalizing_gates()
         assert diag_gates == []
 
-        diag_gates_static = _BasisStateProjector.compute_diagonalizing_gates(
+        diag_gates_static = BasisStateProjector.compute_diagonalizing_gates(
             basis_state, wires=range(num_wires)
         )
         assert diag_gates_static == []
@@ -616,9 +633,22 @@ class TestBasisStateProjector:
     def test_matrix_representation(self, basis_state, expected, n_wires, tol):
         """Test that the matrix representation is defined correctly"""
         res_dynamic = qml.Projector(basis_state, wires=range(n_wires)).matrix()
-        res_static = _BasisStateProjector.compute_matrix(basis_state)
+        res_static = BasisStateProjector.compute_matrix(basis_state)
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "dev", (qml.device("default.qubit"), qml.device("default.qubit.legacy", wires=1))
+    )
+    def test_integration_batched_state(self, dev):
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Projector([0], wires=0))
+
+        x = np.array([0.4, 0.8, 1.2])
+        res = circuit(x)
+        assert qml.math.allclose(res, np.cos(x / 2) ** 2)
 
 
 class TestStateVectorProjector:
@@ -641,7 +671,7 @@ class TestStateVectorProjector:
         num_wires = np.log2(len(state_vector)).astype(int)
         proj = qml.Projector(state_vector, wires=range(num_wires))
         diag_gates = proj.diagonalizing_gates()
-        diag_gates_static = _StateVectorProjector.compute_diagonalizing_gates(
+        diag_gates_static = StateVectorProjector.compute_diagonalizing_gates(
             state_vector, wires=range(num_wires)
         )
 
@@ -658,7 +688,7 @@ class TestStateVectorProjector:
         """Test that the matrix representation is defined correctly"""
         num_wires = np.log2(len(state_vector)).astype(int)
         res_dynamic = qml.Projector(state_vector, wires=range(num_wires)).matrix()
-        res_static = _StateVectorProjector.compute_matrix(state_vector)
+        res_static = StateVectorProjector.compute_matrix(state_vector)
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
@@ -708,9 +738,9 @@ def test_hermitian_labelling_w_cache():
     op = qml.Hermitian(X, wires=0)
 
     cache = {"matrices": [Z]}
-    op.label(cache=cache) == "𝓗(M1)"
+    assert op.label(cache=cache) == "𝓗(M1)"
     assert qml.math.allclose(cache["matrices"][1], X)
 
     cache = {"matrices": [Z, Y, X]}
-    op.label(cache=cache) == "𝓗(M2)"
+    assert op.label(cache=cache) == "𝓗(M2)"
     assert len(cache["matrices"]) == 3

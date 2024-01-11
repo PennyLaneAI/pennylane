@@ -79,10 +79,8 @@ class TestOptimizeMeasurements:
         assert len(diagonalized_groupings) == n_partitions
         # assert each partition is of the correct length:
         assert all(
-            [
-                len(diagonalized_groupings[i]) == len(diagonalized_groupings_sol[i])
-                for i in range(n_partitions)
-            ]
+            len(diagonalized_groupings[i]) == len(diagonalized_groupings_sol[i])
+            for i in range(n_partitions)
         )
         # assert each partition contains the same Pauli terms as the solution partition:
         for i, partition in enumerate(diagonalized_groupings):
@@ -95,18 +93,13 @@ class TestOptimizeMeasurements:
         observables = [PauliY(0), PauliX(0) @ PauliX(1), PauliZ(1)]
         coefficients = [1.43, 4.21, 0.97]
 
-        diagonalized_groupings_sol = [
-            [PauliZ(wires=[0]) @ PauliZ(wires=[1])],
-            [PauliZ(wires=[0]), PauliZ(wires=[1])],
-        ]
-
         grouped_coeffs_sol = [[4.21], [1.43, 0.97]]
 
         grouped_coeffs = optimize_measurements(
             observables, coefficients, grouping="qwc", colouring_method="rlf"
         )[2]
 
-        assert len(grouped_coeffs) == len(grouped_coeffs)
+        assert len(grouped_coeffs) == len(grouped_coeffs_sol)
 
         assert all(
             np.allclose(grouped_coeffs[i], grouped_coeffs_sol[i])
@@ -130,8 +123,6 @@ class TestOptimizeMeasurements:
         multiple times can ensure that there is no unexpected behaviour.
         """
         coefficients = [1.43, 4.21]
-
-        diagonalized_groupings_sol = [obs]
 
         grouped_coeffs_sol = [[1.43, 4.21]]
 

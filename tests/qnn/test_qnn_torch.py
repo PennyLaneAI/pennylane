@@ -350,6 +350,9 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             )
             assert weight.requires_grad
 
+        assert layer.w1 is layer._parameters["w1"]  # pylint: disable=protected-access
+        assert layer.w2 is layer._parameters["w2"]  # pylint: disable=protected-access
+
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_evaluate_qnode(self, get_circuit, n_qubits):  # pylint: disable=no-self-use
         """Test if the _evaluate_qnode() method works correctly, i.e., that it gives the same
@@ -663,8 +666,6 @@ def test_vjp_is_unwrapped_for_param_shift():
             z = params[0]
             return np.diag([z, z])
 
-    device.operations.add("DummyOp")
-
     @qml.qnode(device=device, interface="torch", diff_method="parameter-shift")
     def circ(inputs, w0):  # pylint: disable=unused-argument
         DummyOp(inputs[0], wires=0)
@@ -774,6 +775,7 @@ def test_draw():
     expected = (
         f"0: ─╭AngleEmbedding(M0)──RX({w1})─╭StronglyEntanglingLayers(M1)─┤  <Z>\n"
         f"1: ─╰AngleEmbedding(M0)───────────╰StronglyEntanglingLayers(M1)─┤  <Z>\n"
+        f"\n"
         f"M0 = \n{x}\n"
         f"M1 = \n{m1}"
     )
@@ -844,14 +846,9 @@ def test_specs():
     )
     assert info["resources"] == expected_resources
 
-    assert info["gate_sizes"] == gate_sizes
-    assert info["gate_types"] == gate_types
-    assert info["num_operations"] == 3
     assert info["num_observables"] == 2
     assert info["num_diagonalizing_gates"] == 0
-    assert info["num_used_wires"] == 2
-    assert info["depth"] == 3
-    assert info["num_device_wires"] == 3
+    assert info["num_device_wires"] == 2
     assert info["num_trainable_params"] == 0
     assert info["interface"] == "torch"
-    assert info["device_name"] == "default.qubit.torch"
+    assert info["device_name"] == "default.qubit"

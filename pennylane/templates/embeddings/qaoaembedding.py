@@ -64,7 +64,8 @@ class QAOAEmbedding(Operation):
         features (tensor_like): tensor of features to encode
         weights (tensor_like): tensor of weights
         wires (Iterable): wires that the template acts on
-        local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``
+        local_field (str, type): type of local field used, either one of ``'X'``, ``'Y'``, or ``'Z'`` or
+            :class:`~.RX`, :class:`~.RY`, or :class:`~.RZ`.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -159,14 +160,16 @@ class QAOAEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, weights, wires, local_field="Y", do_queue=None, id=None):
+    def __init__(self, features, weights, wires, local_field="Y", id=None):
         if local_field == "Z":
             local_field = qml.RZ
         elif local_field == "X":
             local_field = qml.RX
         elif local_field == "Y":
             local_field = qml.RY
-        else:
+        elif not (
+            isinstance(local_field, type) and issubclass(local_field, (qml.RX, qml.RY, qml.RZ))
+        ):
             raise ValueError(f"did not recognize local field {local_field}")
 
         shape = qml.math.shape(features)
@@ -203,7 +206,7 @@ class QAOAEmbedding(Operation):
             raise ValueError(f"Weights tensor must be of shape {exp_shape}; got {shape}")
 
         self._hyperparameters = {"local_field": local_field}
-        super().__init__(features, weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(features, weights, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -230,7 +233,7 @@ class QAOAEmbedding(Operation):
             features (tensor_like): tensor of features to encode
             weights (tensor_like): tensor of weights
             wires (Any or Iterable[Any]): wires that the template acts on
-            local_field (.Operator): class of local field gate
+            local_field (type): type of :class:`~.Operator` for local field gate
 
         Returns:
             list[.Operator]: decomposition of the operator

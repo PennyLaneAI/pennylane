@@ -13,12 +13,26 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper and the adjoint constructor."""
 
+import pickle
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
+
+
+# pylint: disable=too-few-public-methods
+class PlainOperator(qml.operation.Operator):
+    """just an operator."""
+
+
+@pytest.mark.parametrize("target", (qml.PauliZ(0), qml.Rot(1.2, 2.3, 3.4, wires=0)))
+def test_basic_validity(target):
+    """Run basic operator validity fucntions."""
+    op = qml.adjoint(target)
+    qml.ops.functions.assert_valid(op)
 
 
 class TestInheritanceMixins:
@@ -28,11 +42,7 @@ class TestInheritanceMixins:
         """Test when base directly inherits from Operator, Adjoint only inherits
         from Adjoint and Operator."""
 
-        # pylint: disable=too-few-public-methods
-        class Tester(qml.operation.Operator):
-            num_wires = 1
-
-        base = Tester(1.234, wires=0)
+        base = PlainOperator(1.234, wires=0)
         op = Adjoint(base)
 
         assert isinstance(op, Adjoint)
@@ -90,6 +100,25 @@ class TestInheritanceMixins:
         # check the dir
         assert "return_type" in dir(ob)
         assert "grad_recipe" not in dir(ob)
+
+    @pytest.mark.parametrize(
+        "op",
+        (
+            PlainOperator(1.2, wires=0),
+            qml.RX(1.2, wires=0),
+            qml.operation.Tensor(qml.PauliX(0), qml.PauliX(1)),
+            qml.PauliX(0),
+        ),
+    )
+    def test_pickling(self, op):
+        """Test that pickling works for all inheritance combinations."""
+        adj_op = Adjoint(op)
+
+        pickled_adj_op = pickle.dumps(adj_op)
+        unpickled_op = pickle.loads(pickled_adj_op)
+
+        assert type(adj_op) is type(unpickled_op)
+        assert qml.equal(adj_op, unpickled_op)
 
 
 class TestInitialization:
@@ -198,7 +227,7 @@ class TestProperties:
 
     def test_has_matrix_false(self):
         """Test has_matrix property carries over when base op does not define a matrix."""
-        base = qml.QubitStateVector([1, 0], wires=0)
+        base = qml.StatePrep([1, 0], wires=0)
         op = Adjoint(base)
 
         assert op.has_matrix is False
@@ -421,19 +450,28 @@ class TestMiscMethods:
         assert isinstance(diag_gate, qml.RY)
         assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
 
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        """Test the flatten and unflatten methods."""
+
+        # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
+            pass
+
+        op = CustomOp(1.2, 2.3, wires=0)
+        adj_op = Adjoint(op)
+        data, metadata = adj_op._flatten()
+        assert len(data) == 1
+        assert data[0] is op
+
+        assert metadata == tuple()
+
+        new_op = type(adj_op)._unflatten(*adj_op._flatten())
+        assert qml.equal(adj_op, new_op)
+
 
 class TestAdjointOperation:
     """Test methods in the AdjointOperation mixin."""
-
-    @pytest.mark.parametrize(
-        "base, adjoint_base_name",
-        ((qml.PauliX(0), "Adjoint(PauliX)"), (qml.RX(1.2, wires=0), "Adjoint(RX)")),
-    )
-    def test_base_name(self, base, adjoint_base_name):
-        """Test the base_name property of AdjointOperation."""
-        op = Adjoint(base)
-        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
-            assert op.base_name == adjoint_base_name
 
     def test_has_generator_true(self):
         """Test `has_generator` property carries over when base op defines generator."""
@@ -533,7 +571,7 @@ class TestQueueing:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             _ = Adjoint(base)
 
-        assert base not in q.queue
+        assert base not in q
         assert len(q) == 1
 
     def test_queuing_base_defined_outside(self):
@@ -544,21 +582,7 @@ class TestQueueing:
             op = Adjoint(base)
 
         assert len(q) == 1
-        assert q.queue[0] == op
-
-    def test_do_queue_False(self):
-        """Test that when `do_queue` is specified, the operation is not queued."""
-        base = qml.PauliX(0)
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-
-        with qml.queuing.AnnotatedQueue() as q:
-            with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-                _ = Adjoint(base, do_queue=False)
-
-        assert len(q) == 0
+        assert q.queue[0] is op
 
 
 class TestMatrix:
@@ -687,7 +711,7 @@ class TestEigvals:
 
     def test_no_matrix_defined_eigvals(self):
         """Test that if the base does not define eigvals, The Adjoint raises the same error."""
-        base = qml.QubitStateVector([1, 0], wires=0)
+        base = qml.StatePrep([1, 0], wires=0)
 
         with pytest.raises(qml.operation.EigvalsUndefinedError):
             Adjoint(base).eigvals()
@@ -863,11 +887,9 @@ class TestAdjointConstructorDifferentCallableTypes:
             out = adjoint(qml.RX)(1.234, wires="a")
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        assert out == tape[0]
+        assert out is tape[0]
         assert isinstance(out, Adjoint)
-        assert out.base.__class__ is qml.RX
-        assert out.data == (1.234,)
-        assert out.wires == qml.wires.Wires("a")
+        assert qml.equal(out.base, qml.RX(1.234, "a"))
 
     def test_adjoint_template(self):
         """Test the adjoint transform on a template."""
@@ -877,7 +899,7 @@ class TestAdjointConstructorDifferentCallableTypes:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 1
-        assert out == tape[0]
+        assert out is tape[0]
         assert isinstance(out, Adjoint)
         assert out.base.__class__ is qml.QFT
         assert out.wires == qml.wires.Wires((0, 1, 2))

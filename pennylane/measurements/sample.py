@@ -16,16 +16,17 @@ This module contains the qml.sample measurement.
 """
 import functools
 import warnings
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import MeasurementShapeError, Sample, SampleMeasurement
+from .mid_measure import MeasurementValue
 
 
-def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
+def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -35,7 +36,8 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
     specified on the device.
 
     Args:
-        op (Observable or None): a quantum observable object
+        op (Observable or MeasurementValue): a quantum observable object. To get samples
+            for mid-circuit measurements, ``op`` should be a``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``
 
@@ -49,6 +51,14 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
     is the corresponding basis state from the observable's eigenbasis.
+
+    .. note::
+
+        QNodes that return samples cannot, in general, be differentiated, since the derivative
+        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
+        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
+        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
+        observable ``obs``.
 
     **Example**
 
@@ -92,14 +102,20 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
            [1, 1],
            [0, 0]])
 
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
-        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
-        observable ``obs``.
     """
+    if isinstance(op, MeasurementValue):
+        return SampleMP(obs=op)
+
+    if isinstance(op, Sequence):
+        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+            raise qml.QuantumFunctionError(
+                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "MeasurementValues manipulated using arithmetic operators cannot be used when "
+                "collecting statistics for a sequence of mid-circuit measurements."
+            )
+
+        return SampleMP(obs=op)
+
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
@@ -121,9 +137,9 @@ class SampleMP(SampleMeasurement):
     Please refer to :func:`sample` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -149,30 +165,7 @@ class SampleMP(SampleMeasurement):
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 
-    def _shape_legacy(self, device, shots):
-        if not shots:
-            raise MeasurementShapeError(
-                "Shots are required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
-        if shots.has_partitioned_shots:
-            if self.obs is None:
-                # TODO: revisit when qml.sample without an observable fully
-                # supports shot vectors
-                raise MeasurementShapeError(
-                    "Getting the output shape of a measurement returning samples along with "
-                    "a device with a shot vector is not supported."
-                )
-            return tuple(
-                (s.shots,) * s.copies if s.shots != 1 else tuple() * s.copies
-                for s in shots.shot_vector
-            )
-        len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
-        return (1, shots.total_shots) if self.obs is not None else (1, shots.total_shots, len_wires)
-
     def shape(self, device, shots):
-        if not qml.active_return():
-            return self._shape_legacy(device, shots)
         if not shots:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
@@ -222,13 +215,15 @@ class SampleMP(SampleMeasurement):
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 
-        if self.obs is None:
+        # If we're sampling wires or a list of mid-circuit measurements
+        if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
+        # If we're sampling observables
         if str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * qml.math.squeeze(samples)
+            samples = 1 - 2 * qml.math.squeeze(samples, axis=-1)
         else:
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
@@ -236,7 +231,9 @@ class SampleMP(SampleMeasurement):
             indices = samples @ powers_of_two
             indices = qml.math.array(indices)  # Add np.array here for Jax support.
             try:
-                samples = self.obs.eigvals()[indices]
+                # This also covers statistics for mid-circuit measurements manipulated using
+                # arithmetic operators
+                samples = self.eigvals()[indices]
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(

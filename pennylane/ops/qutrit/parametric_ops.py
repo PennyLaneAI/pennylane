@@ -16,10 +16,12 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parameterized gates for qutrits.
 """
-import itertools
+import functools
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
+
+stack_last = functools.partial(qml.math.stack, axis=-1)
 
 
 class TRX(Operation):
@@ -50,10 +52,6 @@ class TRX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         subspace (Sequence[int]): the 2D subspace on which to apply operation
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -92,12 +90,12 @@ class TRX(Operation):
     def generator(self):
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
-    def __init__(self, phi, wires, subspace=(0, 1), do_queue=True, id=None):
+    def __init__(self, phi, wires, subspace=(0, 1), id=None):
         self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(phi, wires=wires, id=id)
 
     @property
     def subspace(self):
@@ -146,27 +144,24 @@ class TRX(Operation):
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = -1j * s
+        one = qml.math.ones_like(c)
+        z = qml.math.zeros_like(c)
 
-        shape = qml.math.shape(theta)
-        is_broadcasted = len(shape) != 0
-        # Construct identity matrices and cast to complex type
-        mat = (
-            qml.math.tensordot([1] * shape[0], qml.math.eye(3), axes=0)
-            if is_broadcasted
-            else qml.math.eye(3)
+        diags = [one, one, one]
+        diags[subspace[0]] = c
+        diags[subspace[1]] = c
+
+        off_diags = [z, z, z]
+        off_diags[qml.math.sum(subspace) - 1] = js
+
+        return qml.math.stack(
+            [
+                stack_last([diags[0], off_diags[0], off_diags[1]]),
+                stack_last([off_diags[0], diags[1], off_diags[2]]),
+                stack_last([off_diags[1], off_diags[2], diags[2]]),
+            ],
+            axis=-2,
         )
-        mat = qml.math.cast_like(mat, js)
-
-        # Create slices that determine the indices at which the rotation terms of the matrix should be
-        slices = tuple(itertools.product(subspace, subspace))
-        if is_broadcasted:
-            slices = [(Ellipsis, *s) for s in slices]
-
-        # Put rotation terms in the appropriate indices using the slices
-        mat[slices[0]] = mat[slices[3]] = c
-        mat[slices[1]] = mat[slices[2]] = js
-
-        return qml.math.convert_like(mat, theta)
 
     def adjoint(self):
         return TRX(-self.data[0], wires=self.wires, subspace=self.subspace)
@@ -201,10 +196,6 @@ class TRY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         subspace (Sequence[int]): the 2D subspace on which to apply operation
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -243,12 +234,12 @@ class TRY(Operation):
     def generator(self):
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
-    def __init__(self, phi, wires, subspace=(0, 1), do_queue=None, id=None):
+    def __init__(self, phi, wires, subspace=(0, 1), id=None):
         self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(phi, wires=wires, id=id)
 
     @property
     def subspace(self):
@@ -287,7 +278,6 @@ class TRY(Operation):
         """
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-
         if qml.math.get_interface(theta) == "tensorflow":
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
@@ -295,27 +285,24 @@ class TRY(Operation):
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         s = (1 + 0j) * s
+        one = qml.math.ones_like(c)
+        z = qml.math.zeros_like(c)
 
-        shape = qml.math.shape(theta)
-        is_broadcasted = len(shape) != 0
-        # Construct identity matrices and cast to complex type
-        mat = (
-            qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
-            if is_broadcasted
-            else qml.math.eye(3)
+        diags = [one, one, one]
+        diags[subspace[0]] = c
+        diags[subspace[1]] = c
+
+        off_diags = [z, z, z]
+        off_diags[qml.math.sum(subspace) - 1] = s
+
+        return qml.math.stack(
+            [
+                stack_last([diags[0], -off_diags[0], -off_diags[1]]),
+                stack_last([off_diags[0], diags[1], -off_diags[2]]),
+                stack_last([off_diags[1], off_diags[2], diags[2]]),
+            ],
+            axis=-2,
         )
-        mat = qml.math.cast_like(mat, s)
-
-        slices = tuple(itertools.product(subspace, subspace))
-        if is_broadcasted:
-            slices = [(Ellipsis, *s) for s in slices]
-
-        # Put rotation terms in the appropriate indices using the slices
-        mat[slices[0]] = mat[slices[3]] = c
-        mat[slices[1]] = -s
-        mat[slices[2]] = s
-
-        return qml.math.convert_like(mat, theta)
 
     def adjoint(self):
         return TRY(-self.data[0], wires=self.wires, subspace=self.subspace)
@@ -349,8 +336,6 @@ class TRZ(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         subspace (Sequence[int]): the 2D subspace on which to apply operation
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -396,12 +381,12 @@ class TRZ(Operation):
         obs = [qml.GellMann(wires=self.wires, index=3), qml.GellMann(wires=self.wires, index=8)]
         return qml.dot(coeffs, obs)
 
-    def __init__(self, phi, wires, subspace=(0, 1), do_queue=True, id=None):
+    def __init__(self, phi, wires, subspace=(0, 1), id=None):
         self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(phi, wires=wires, id=id)
 
     @property
     def subspace(self):
@@ -441,23 +426,21 @@ class TRZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
         p = qml.math.exp(-1j * theta / 2)
+        one = qml.math.ones_like(p)
+        z = qml.math.zeros_like(p)
 
-        shape = qml.math.shape(theta)
-        is_broadcasted = len(shape) != 0
-        # Construct identity matrices and cast to complex type
-        mat = (
-            qml.math.tensordot([1] * shape[0], qml.math.eye(3), axes=0)
-            if is_broadcasted
-            else qml.math.eye(3)
+        diags = [one, one, one]
+        diags[subspace[0]] = p
+        diags[subspace[1]] = qml.math.conj(p)
+
+        return qml.math.stack(
+            [
+                stack_last([diags[0], z, z]),
+                stack_last([z, diags[1], z]),
+                stack_last([z, z, diags[2]]),
+            ],
+            axis=-2,
         )
-        mat = qml.math.cast_like(mat, p)
-
-        slices = [(Ellipsis, i, i) for i in subspace]
-
-        mat[slices[0]] = p
-        mat[slices[1]] = qml.math.conj(p)
-
-        return qml.math.convert_like(mat, theta)
 
     def adjoint(self):
         return TRZ(-self.data[0], wires=self.wires, subspace=self.subspace)

@@ -34,7 +34,7 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, reduce_matrices
+from .matrix_manipulation import expand_matrix, reduce_matrices, get_batch_size
 from .multi_dispatch import (
     add,
     array,
@@ -67,11 +67,9 @@ from .multi_dispatch import (
 from .quantum import (
     cov_matrix,
     dm_from_state_vector,
-    fidelity,
     marginal_prob,
     mutual_info,
     purity,
-    reduced_dm,
     reduce_dm,
     reduce_statevector,
     relative_entropy,
@@ -80,12 +78,14 @@ from .quantum import (
     max_entropy,
     trace_distance,
 )
+from .fidelity import fidelity, fidelity_statevector
 from .utils import (
     allclose,
     allequal,
     cast,
     cast_like,
     convert_like,
+    get_deep_interface,
     get_interface,
     in_backprop,
     is_abstract,
@@ -95,6 +95,16 @@ from .utils import (
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
+
+
+def get_dtype_name(x) -> str:
+    """An interface independent way of getting the name of the datatype.
+
+    >>> x = tf.Variable(0.1)
+    >>> qml.math.get_dtype_name(tf.Variable(0.1))
+    'float32'
+    """
+    return ar.get_dtype_name(x)
 
 
 class NumpyMimic(ar.autoray.NumpyMimic):
@@ -139,8 +149,11 @@ __all__ = [
     "expand_matrix",
     "eye",
     "fidelity",
+    "fidelity_statevector",
     "frobenius_inner_product",
+    "get_dtype_name",
     "get_interface",
+    "get_deep_interface",
     "get_trainable_indices",
     "in_backprop",
     "is_abstract",
@@ -153,9 +166,8 @@ __all__ = [
     "ones_like",
     "purity",
     "reduce_dm",
-    "reduced_dm",
-    "relative_entropy",
     "reduce_statevector",
+    "relative_entropy",
     "requires_grad",
     "sqrt_matrix",
     "scatter_element_add",

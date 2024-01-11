@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for differentiable quantum entropies.
 """
-
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -69,6 +69,23 @@ class TestVonNeumannEntropy:
 
     parameters = np.linspace(0, 2 * np.pi, 10)
     devices = ["default.qubit", "default.mixed", "lightning.qubit"]
+
+    def test_vn_entropy_cannot_specify_device(self):
+        """Test that an error is raised if a device or device wires are given
+        to the vn_entropy transform manually."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
+            _ = qml.qinfo.vn_entropy(circuit, wires=[0], device=dev)
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
+            _ = qml.qinfo.vn_entropy(circuit, wires=[0], device_wires=dev.wires)
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
@@ -363,6 +380,30 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(entropy, expected_entropy)
 
+    @pytest.mark.parametrize("device", devices)
+    def test_entropy_wire_labels(self, device, tol):
+        """Test that vn_entropy is correct with custom wire labels"""
+        param = np.array(1.234)
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=wires[0])
+            qml.IsingXX(x, wires=wires)
+            return qml.state()
+
+        entropy0 = qml.qinfo.vn_entropy(circuit, wires=[wires[0]])(param)
+        eigs0 = [np.sin(param / 2) ** 2, np.cos(param / 2) ** 2]
+        exp0 = -np.sum(eigs0 * np.log(eigs0))
+
+        entropy1 = qml.qinfo.vn_entropy(circuit, wires=[wires[1]])(param)
+        eigs1 = [np.cos(param / 2) ** 2, np.sin(param / 2) ** 2]
+        exp1 = -np.sum(eigs1 * np.log(eigs1))
+
+        assert np.allclose(exp0, entropy0, atol=tol)
+        assert np.allclose(exp1, entropy1, atol=tol)
+
 
 class TestRelativeEntropy:
     """Tests for the mutual information functions"""
@@ -556,13 +597,13 @@ class TestRelativeEntropy:
         with the autograd interface"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit2(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -598,13 +639,13 @@ class TestRelativeEntropy:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit2(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -638,23 +679,17 @@ class TestRelativeEntropy:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit2(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
-
-            first_expected = (
-                np.sin(param[0] / 2)
-                * np.cos(param[0] / 2)
-                * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2))
-            )
 
         expected = [
             np.sin(param[0] / 2)
@@ -695,7 +730,7 @@ class TestRelativeEntropy:
 
         msg = "The two states must have the same number of wires"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0, 1])
+            qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0, 1])
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_full_wires(self, device):
@@ -717,7 +752,7 @@ class TestRelativeEntropy:
         x, y = np.array(0.3), np.array(0.7)
 
         # test that the circuit executes
-        actual = rel_ent_circuit(x, y)
+        rel_ent_circuit(x, y)
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_qnode_no_args(self, device):
@@ -739,7 +774,7 @@ class TestRelativeEntropy:
         rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
 
         # test that the circuit executes
-        actual = rel_ent_circuit()
+        rel_ent_circuit()
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_qnode_kwargs(self, device):
@@ -769,6 +804,33 @@ class TestRelativeEntropy:
         ) + (np.sin(x / 2) ** 2 * (np.log(np.sin(x / 2) ** 2) - np.log(np.sin(y / 2) ** 2)))
 
         assert np.allclose(actual, expected)
+
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    def test_entropy_wire_labels(self, device, tol):
+        """Test that relative_entropy is correct with custom wire labels"""
+        param = np.array([0.678, 1.234])
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(param):
+            qml.RY(param, wires=wires[0])
+            qml.CNOT(wires=wires)
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit, circuit, [wires[0]], [wires[1]])
+        actual = rel_ent_circuit((param[0],), (param[1],))
+
+        # compare transform results with analytic results
+        first_term = np.cos(param[0] / 2) ** 2 * (
+            np.log(np.cos(param[0] / 2) ** 2) - np.log(np.cos(param[1] / 2) ** 2)
+        )
+        second_term = np.sin(param[0] / 2) ** 2 * (
+            np.log(np.sin(param[0] / 2) ** 2) - np.log(np.sin(param[1] / 2) ** 2)
+        )
+        expected = first_term + second_term
+
+        assert np.allclose(actual, expected, atol=tol)
 
 
 @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])

@@ -21,10 +21,46 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.drawer import tape_text
-from pennylane.drawer.tape_text import _add_grouping_symbols, _add_measurement, _add_op
+from pennylane.drawer.tape_text import (
+    _add_grouping_symbols,
+    _add_cond_grouping_symbols,
+    _add_mid_measure_grouping_symbols,
+    _add_cwire_measurement_grouping_symbols,
+    _add_cwire_measurement,
+    _add_measurement,
+    _add_op,
+    _Config,
+)
 from pennylane.tape import QuantumScript, QuantumTape
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
+default_bit_map = {}
+
+default_mid_measure_1 = qml.measurements.MidMeasureMP(0, id="1")
+default_mid_measure_2 = qml.measurements.MidMeasureMP(0, id="2")
+default_mid_measure_3 = qml.measurements.MidMeasureMP(0, id="3")
+default_measurement_value_1 = qml.measurements.MeasurementValue(
+    [default_mid_measure_1], lambda v: v
+)
+default_measurement_value_2 = qml.measurements.MeasurementValue(
+    [default_mid_measure_2], lambda v: v
+)
+default_measurement_value_3 = qml.measurements.MeasurementValue(
+    [default_mid_measure_3], lambda v: v
+)
+cond_bit_map_1 = {default_mid_measure_1: 0}
+cond_bit_map_2 = {default_mid_measure_1: 0, default_mid_measure_2: 1}
+stats_bit_map_1 = {default_mid_measure_1: 0, default_mid_measure_2: 1, default_mid_measure_3: 2}
+
+
+def get_conditional_op(mv, true_fn, *args, **kwargs):
+    """Helper to get conditional operator."""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.cond(mv, true_fn)(*args, **kwargs)
+
+    return q.queue[0]
+
 
 with qml.queuing.AnnotatedQueue() as q_tape:
     qml.RX(1.23456, wires=0)
@@ -35,7 +71,7 @@ with qml.queuing.AnnotatedQueue() as q_tape:
 tape = qml.tape.QuantumScript.from_queue(q_tape)
 
 
-class TestHelperFunctions:
+class TestHelperFunctions:  # pylint: disable=too-many-arguments
     """Test helper functions for the tape text."""
 
     @pytest.mark.parametrize(
@@ -48,7 +84,155 @@ class TestHelperFunctions:
     )
     def test_add_grouping_symbols(self, op, out):
         """Test private _add_grouping_symbols function renders as expected."""
-        assert out == _add_grouping_symbols(op, ["", "", "", ""], default_wire_map)
+        assert out == _add_grouping_symbols(
+            op, ["", "", "", ""], _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
+
+    @pytest.mark.parametrize(
+        "op, bit_map, layer_str, out",
+        [
+            (default_mid_measure_1, default_bit_map, ["", "", "", ""], ["", "", "", ""]),
+            (
+                default_mid_measure_1,
+                cond_bit_map_1,
+                ["", "", "", "", ""],
+                ["", "─║", "─║", "─║", " ╚"],
+            ),
+            (
+                default_mid_measure_2,
+                cond_bit_map_2,
+                ["─", "─", "─", "─", " ", " "],
+                ["─", "──║", "──║", "──║", "  ║", "  ╚"],
+            ),
+        ],
+    )
+    def test_add_mid_measure_grouping_symbols(self, op, layer_str, bit_map, out):
+        """Test private _add_grouping_symbols function renders as expected for MidMeasureMPs."""
+        assert out == _add_mid_measure_grouping_symbols(
+            op, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map)
+        )
+
+    @pytest.mark.parametrize(
+        "cond_op, args, kwargs, out, bit_map, mv, cur_layer",
+        [
+            (
+                qml.PauliX,
+                [],
+                {"wires": 0},
+                ["─", "─║", "─║", "─║", "═╩"],
+                cond_bit_map_1,
+                default_measurement_value_1,
+                1,
+            ),
+            (
+                qml.MultiRZ,
+                [0.5],
+                {"wires": [0, 1]},
+                ["─", "─", "─║", "─║", "═╩"],
+                cond_bit_map_1,
+                default_measurement_value_1,
+                1,
+            ),
+            (
+                qml.Toffoli,
+                [],
+                {"wires": [0, 1, 2]},
+                ["─", "─", "─", "─║", " ║", "═╝"],
+                cond_bit_map_2,
+                default_measurement_value_2,
+                1,
+            ),
+            (
+                qml.Toffoli,
+                [],
+                {"wires": [0, 1, 2]},
+                ["─", "─", "─", "─║", "═╬", "═╝"],
+                cond_bit_map_2,
+                default_measurement_value_1 & default_measurement_value_2,
+                1,
+            ),
+            (
+                qml.Toffoli,
+                [],
+                {"wires": [0, 1, 2]},
+                ["─", "─", "─", "─║", "═╣", "═╩"],
+                cond_bit_map_2,
+                default_measurement_value_1 & default_measurement_value_2,
+                0,
+            ),
+        ],
+    )
+    def test_add_cond_grouping_symbols(self, cond_op, bit_map, mv, cur_layer, args, kwargs, out):
+        """Test private _add_grouping_symbols function renders as expected for Conditionals."""
+        op = get_conditional_op(mv, cond_op, *args, **kwargs)
+        layer_str = ["─", "─", "─", ""] + [" "] * len(bit_map)
+
+        assert out == _add_cond_grouping_symbols(
+            op,
+            layer_str,
+            _Config(
+                wire_map=default_wire_map,
+                bit_map=bit_map,
+                cur_layer=cur_layer,
+                cwire_layers=[[0], [1]],
+            ),
+        )
+
+    @pytest.mark.parametrize(
+        "mps, bit_map, out",
+        [
+            ([default_mid_measure_1], stats_bit_map_1, [" "] * (4 + len(stats_bit_map_1))),
+            (
+                [default_mid_measure_1, default_mid_measure_3],
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭", "│", "╰"],
+            ),
+            (
+                [default_mid_measure_1, default_mid_measure_2, default_mid_measure_3],
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭", "├", "╰"],
+            ),
+        ],
+    )
+    def test_add_cwire_measurement_grouping_symbols(self, mps, bit_map, out):
+        """Test private _add_cwire_measurement_grouping_symbols renders as expected."""
+        layer_str = [" "] * (len(default_wire_map) + len(bit_map))
+
+        assert out == _add_cwire_measurement_grouping_symbols(
+            mps, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map)
+        )
+
+    @pytest.mark.parametrize(
+        "mp, bit_map, out",
+        [
+            (
+                qml.sample([default_measurement_value_1]),
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + [" Sample[MCM]", " ", " "],
+            ),
+            (
+                qml.expval(default_measurement_value_1 * default_measurement_value_3),
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭<MCM>", "│", "╰<MCM>"],
+            ),
+            (
+                qml.counts(
+                    default_measurement_value_1
+                    + default_measurement_value_2
+                    - default_measurement_value_3
+                ),
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭Counts[MCM]", "├Counts[MCM]", "╰Counts[MCM]"],
+            ),
+        ],
+    )
+    def test_add_cwire_measurement(self, mp, bit_map, out):
+        """Test private _add_cwire_measurement renders as expected."""
+        layer_str = [" "] * (len(default_wire_map) + len(bit_map))
+
+        assert out == _add_cwire_measurement(
+            mp, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map)
+        )
 
     @pytest.mark.parametrize(
         "op, out",
@@ -58,23 +242,38 @@ class TestHelperFunctions:
             (qml.var(qml.PauliX(1)), ["", "Var[X]", "", ""]),
             (qml.state(), ["State", "State", "State", "State"]),
             (qml.sample(), ["Sample", "Sample", "Sample", "Sample"]),
+            (qml.purity(0), ["purity", "", "", ""]),
+            (qml.vn_entropy([2, 1]), ["", "╭vnentropy", "╰vnentropy", ""]),
+            (qml.mutual_info(3, 1), ["", "╭mutualinfo", "│", "╰mutualinfo"]),
         ],
     )
     def test_add_measurements(self, op, out):
         """Test private _add_measurement function renders as expected."""
-        assert out == _add_measurement(op, [""] * 4, default_wire_map, None, None)
+        assert out == _add_measurement(
+            op, [""] * 4, _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
 
     def test_add_measurements_cache(self):
         """Test private _add_measurement function with a matrix cache."""
         cache = {"matrices": []}
         op = qml.expval(qml.Hermitian(np.eye(2), wires=0))
-        assert _add_measurement(op, ["", ""], {0: 0, 1: 1}, None, cache) == ["<𝓗(M0)>", ""]
+        assert _add_measurement(
+            op, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
+        ) == [
+            "<𝓗(M0)>",
+            "",
+        ]
 
         assert qml.math.allclose(cache["matrices"][0], np.eye(2))
 
         op2 = qml.expval(qml.Hermitian(np.eye(2), wires=1))
         # new op with same matrix, should have same M0 designation
-        assert _add_measurement(op2, ["", ""], {0: 0, 1: 1}, None, cache) == ["", "<𝓗(M0)>"]
+        assert _add_measurement(
+            op2, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
+        ) == [
+            "",
+            "<𝓗(M0)>",
+        ]
 
     @pytest.mark.parametrize(
         "op, out",
@@ -90,7 +289,73 @@ class TestHelperFunctions:
     )
     def test_add_op(self, op, out):
         """Test adding the first operation to array of strings"""
-        assert out == _add_op(op, ["─"] * 4, default_wire_map, None, None)
+        assert out == _add_op(
+            op, ["─"] * 4, _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
+
+    @pytest.mark.parametrize(
+        "op, bit_map, layer_str, out",
+        [
+            (default_mid_measure_1, default_bit_map, ["─", "─", "─", "─"], ["─┤↗├", "─", "─", "─"]),
+            (
+                default_mid_measure_1,
+                cond_bit_map_1,
+                ["─", "─", "─", "─", " "],
+                ["─┤↗├", "──║", "──║", "──║", "  ╚"],
+            ),
+            (
+                default_mid_measure_2,
+                cond_bit_map_2,
+                ["─", "─", "─", "─", " ", " "],
+                ["─┤↗├", "──║", "──║", "──║", "  ║", "  ╚"],
+            ),
+        ],
+    )
+    def test_add_mid_measure_op(self, op, layer_str, bit_map, out):
+        """Test adding the first MidMeasureMP to array of strings"""
+        assert out == _add_op(op, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map))
+
+    @pytest.mark.parametrize(
+        "cond_op, args, kwargs, out, bit_map, mv",
+        [
+            (
+                qml.MultiRZ,
+                [0.5],
+                {"wires": [0, 1]},
+                ["╭MultiRZ", "╰MultiRZ", "─║", "─║", "═╩"],
+                cond_bit_map_1,
+                default_measurement_value_1,
+            ),
+            (
+                qml.Toffoli,
+                [],
+                {"wires": [0, 1, 2]},
+                ["╭●", "├●", "╰X", "─║", "═╩"],
+                cond_bit_map_1,
+                default_measurement_value_1,
+            ),
+            (
+                qml.PauliX,
+                [],
+                {"wires": 1},
+                ["─", "─X", "─║", "─║", " ║", "═╝"],
+                cond_bit_map_2,
+                default_measurement_value_2,
+            ),
+        ],
+    )
+    def test_add_cond_op(self, cond_op, bit_map, mv, args, kwargs, out):
+        """Test adding the first Conditional to array of strings"""
+        op = get_conditional_op(mv, cond_op, *args, **kwargs)
+        layer_str = ["─", "─", "─", ""] + [" "] * len(bit_map)
+
+        assert out == _add_op(
+            op,
+            layer_str,
+            _Config(
+                wire_map=default_wire_map, bit_map=bit_map, cur_layer=1, cwire_layers=[[0], [1]]
+            ),
+        )
 
     @pytest.mark.parametrize(
         "op, out",
@@ -102,18 +367,26 @@ class TestHelperFunctions:
     )
     def test_add_second_op(self, op, out):
         """Test adding a second operation to the array of strings"""
-        start = _add_op(qml.PauliX(0), ["─"] * 4, default_wire_map, None, None)
-        assert out == _add_op(op, start, default_wire_map, None, None)
+        start = _add_op(
+            qml.PauliX(0), ["─"] * 4, _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
+        assert out == _add_op(
+            op, start, _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
 
     def test_add_op_cache(self):
         """Test private _add_op method functions with a matrix cache."""
         cache = {"matrices": []}
         op1 = qml.QubitUnitary(np.eye(2), wires=0)
-        assert _add_op(op1, ["", ""], {0: 0, 1: 1}, None, cache) == ["U(M0)", ""]
+        assert _add_op(
+            op1, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
+        ) == ["U(M0)", ""]
 
         assert qml.math.allclose(cache["matrices"][0], np.eye(2))
         op2 = qml.QubitUnitary(np.eye(2), wires=1)
-        assert _add_op(op2, ["", ""], {0: 0, 1: 1}, None, cache) == ["", "U(M0)"]
+        assert _add_op(
+            op2, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
+        ) == ["", "U(M0)"]
 
 
 class TestEmptyTapes:
@@ -281,8 +554,8 @@ single_op_tests_data = [
     (qml.QubitSum(wires=(0, 1, 2)), "0: ─╭Σ─┤  \n1: ─├Σ─┤  \n2: ─╰Σ─┤  "),
     (qml.AmplitudeDamping(0.98, wires=0), "0: ──AmplitudeDamping(0.98)─┤  "),
     (
-        qml.QubitStateVector([0, 1, 0, 0], wires=(0, 1)),
-        "0: ─╭QubitStateVector(M0)─┤  \n1: ─╰QubitStateVector(M0)─┤  ",
+        qml.StatePrep([0, 1, 0, 0], wires=(0, 1)),
+        "0: ─╭|Ψ⟩─┤  \n1: ─╰|Ψ⟩─┤  ",
     ),
     (qml.Kerr(1.234, wires=0), "0: ──Kerr(1.23)─┤  "),
     (
@@ -383,8 +656,7 @@ class TestLayering:
 
 
 tape_matrices = qml.tape.QuantumScript(
-    prep=[qml.QubitStateVector([1.0, 0.0, 0.0, 0.0], wires=(0, 1))],
-    ops=[qml.QubitUnitary(np.eye(2), wires=0)],
+    ops=[qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1)), qml.QubitUnitary(np.eye(2), wires=0)],
     measurements=[qml.expval(qml.Hermitian(np.eye(2), wires=0))],
 )
 
@@ -396,10 +668,9 @@ class TestShowMatrices:
         """Test matrices numbered but not included by default."""
 
         expected = (
-            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
-            "1: ─╰QubitStateVector(M0)────────┤         \n"
-            "M0 = \n[1. 0. 0. 0.]\n"
-            "M1 = \n[[1. 0.]\n [0. 1.]]"
+            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
+            "1: ─╰|Ψ⟩────────┤         \n"
+            "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
 
         assert tape_text(tape_matrices) == expected
@@ -407,10 +678,7 @@ class TestShowMatrices:
     def test_do_not_show_matrices(self):
         """Test matrices included when requested."""
 
-        expected = (
-            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
-            "1: ─╰QubitStateVector(M0)────────┤         "
-        )
+        expected = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         "
 
         assert tape_text(tape_matrices, show_matrices=False) == expected
 
@@ -421,15 +689,13 @@ class TestShowMatrices:
         cache = {"matrices": [np.eye(2), -np.eye(3)]}
 
         expected = (
-            "0: ─╭QubitStateVector(M2)──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰QubitStateVector(M2)────────┤         \n"
+            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
+            "1: ─╰|Ψ⟩────────┤         \n"
             "M0 = \n[[1. 0.]\n [0. 1.]]\n"
-            "M1 = \n[[-1. -0. -0.]\n [-0. -1. -0.]\n [-0. -0. -1.]]\n"
-            "M2 = \n[1. 0. 0. 0.]"
+            "M1 = \n[[-1. -0. -0.]\n [-0. -1. -0.]\n [-0. -0. -1.]]"
         )
 
         assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
-        assert qml.math.allequal(cache["matrices"][2], [1.0, 0.0, 0.0, 0.0])
 
 
 # @pytest.mark.skip("Nested tapes are being deprecated")

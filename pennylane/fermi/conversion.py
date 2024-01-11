@@ -15,18 +15,20 @@
 
 from functools import singledispatch
 from typing import Union
-import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator, Tensor
-from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.pauli.utils import _get_pauli_map, _pauli_mult
-from .fermionic import FermiWord, FermiSentence
+from pennylane.operation import Operator
+from pennylane.pauli import PauliSentence, PauliWord
+
+from .fermionic import FermiSentence, FermiWord
 
 
 # pylint: disable=unexpected-keyword-arg
 def jordan_wigner(
-    fermi_operator: (Union[FermiWord, FermiSentence]), **kwargs
+    fermi_operator: (Union[FermiWord, FermiSentence]),
+    ps: bool = False,
+    wire_map: dict = None,
+    tol: float = None,
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
@@ -53,6 +55,7 @@ def jordan_wigner(
         wire_map (dict): a dictionary defining how to map the oribitals of
             the Fermi operator to qubit wires. If None, the integers used to
             order the orbitals will be used as wire labels. Defaults to None.
+        tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
         Union[PauliSentence, Operator]: a linear combination of qubit operators
@@ -76,18 +79,17 @@ def jordan_wigner(
     + (0.25+0j) * X(2) @ X(3)
     + 0.25j * X(2) @ Y(3)
     """
-    return _jordan_wigner_dispatch(fermi_operator, **kwargs)
+    return _jordan_wigner_dispatch(fermi_operator, ps, wire_map, tol)
 
 
 @singledispatch
-def _jordan_wigner_dispatch(fermi_operator, **kwargs):
-    """Dispatches to appropriate function if fermi_operator is a FermiWord,
-    FermiSentence or list"""
+def _jordan_wigner_dispatch(fermi_operator, ps, wire_map, tol):
+    """Dispatches to appropriate function if fermi_operator is a FermiWord or FermiSentence."""
     raise ValueError(f"fermi_operator must be a FermiWord or FermiSentence, got: {fermi_operator}")
 
 
 @_jordan_wigner_dispatch.register
-def _(fermi_operator: FermiWord, ps=False, wire_map=None):
+def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
@@ -96,7 +98,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
 
     else:
         coeffs = {"+": -0.5j, "-": 0.5j}
-        qubit_operator = PauliSentence()
+        qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
 
         for item in fermi_operator.items():
             (_, wire), sign = item
@@ -109,6 +111,10 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
                 }
             )
 
+    for pw in qubit_operator:
+        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
     if not ps:
         # wire_order specifies wires to use for Identity (PauliWord({}))
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
@@ -120,21 +126,20 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
 
 
 @_jordan_wigner_dispatch.register
-def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
+def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
-    if len(fermi_operator) == 0:
-        qubit_operator = PauliSentence({PauliWord({}): 0})  # does anything break if I remove this?
+    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
 
-    else:
-        qubit_operator = PauliSentence()
+    for fw, coeff in fermi_operator.items():
+        fermi_word_as_ps = jordan_wigner(fw, ps=True)
 
-        for fw, coeff in fermi_operator.items():
-            fermi_word_as_ps = jordan_wigner(fw, ps=True)
+        for pw in fermi_word_as_ps:
+            qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
 
-            for pw in fermi_word_as_ps:
-                qubit_operator[pw] += fermi_word_as_ps[pw] * coeff
+            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
 
     if not ps:
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
@@ -143,90 +148,3 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
         return qubit_operator.map_wires(wire_map)
 
     return qubit_operator
-
-
-@_jordan_wigner_dispatch.register
-def _jordan_wigner_legacy(op: list, notation="physicist"):  # pylint:disable=too-many-branches
-    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
-
-    For instance, the one-body fermionic operator :math:`a_2^\dagger a_0` should be constructed as
-    [2, 0]. The two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should be constructed
-    as [4, 3, 2, 1] with ``notation='physicist'``. If ``notation`` is set to ``'chemist'``, the
-    two-body operator [4, 3, 2, 1] is constructed as :math:`a_4^\dagger a_3 a_2^\dagger a_1`.
-
-    Args:
-        op (list[int]): the fermionic operator
-        notation (str): notation specifying the order of the two-body fermionic operators
-
-    Returns:
-        tuple(list[complex], list[Operation]): list of coefficients and qubit operators
-
-    **Example**
-
-    >>> f  = [0, 0]
-    >>> q = jordan_wigner(f)
-    >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
-    ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
-    """
-    if len(op) == 1:
-        op = [(op[0], 1)]
-
-    if len(op) == 2:
-        op = [(op[0], 1), (op[1], 0)]
-
-    if len(op) == 4:
-        if notation == "physicist":
-            if op[0] == op[1] or op[2] == op[3]:
-                return [0], [qml.Identity(wires=[min(op)])]
-            op = [(op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0)]
-        elif notation == "chemist":
-            if (op[0] == op[2] or op[1] == op[3]) and op[1] != op[2]:
-                return [0], [qml.Identity(wires=[min(op)])]
-            op = [(op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0)]
-        else:
-            raise ValueError(
-                f"Currently, the only supported notations for the two-body terms are 'physicist'"
-                f" and 'chemist', got notation = '{notation}'."
-            )
-
-    q = [[(0, "I"), 1.0]]
-    for l in op:
-        z = [(index, "Z") for index in range(l[0])]
-        x = z + [(l[0], "X"), 0.5]
-        if l[1]:
-            y = z + [(l[0], "Y"), -0.5j]
-        else:
-            y = z + [(l[0], "Y"), 0.5j]
-
-        m = []
-        for t1 in q:
-            for t2 in [x, y]:
-                q1, c1 = _pauli_mult(t1[:-1], t2[:-1])
-                m.append(q1 + [c1 * t1[-1] * t2[-1]])
-        q = m
-
-    c = [p[-1] for p in q]
-    o = [p[:-1] for p in q]
-
-    for item in o:
-        k = [i for i, x in enumerate(o) if x == item]
-        if len(k) >= 2:
-            for j in k[::-1][:-1]:
-                del o[j]
-                c[k[0]] = c[k[0]] + c[j]
-                del c[j]
-
-    # Pauli gates objects pregenerated for speed
-    pauli_map = _get_pauli_map(np.max(op))
-    for i, term in enumerate(o):
-        if len(term) == 0:
-            # moved function from qchem.observable_hf without any changes to tests
-            # codecov complained this line is not covered
-            # function to be deprecated next release
-            # not going to write a test to cover this line
-            o[i] = qml.Identity(0)  # pragma: no cover
-        else:
-            k = [pauli_map[t[0]][t[1]] for t in term]
-            o[i] = Tensor(*k)
-
-    return c, o

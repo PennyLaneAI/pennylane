@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices.qubit import simulate
+from pennylane.devices.qubit import simulate, get_final_state, measure_final_state
 
 
 class TestCurrentlyUnsupportedCases:
@@ -49,13 +49,13 @@ def test_custom_operation():
 
 
 # pylint: disable=too-few-public-methods
-class TestStatePrep:
+class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
         """Test that the BasisState operator prepares the desired state."""
         qs = qml.tape.QuantumScript(
-            measurements=[qml.probs(wires=(0, 1, 2))], prep=[qml.BasisState([0, 1], wires=(0, 1))]
+            ops=[qml.BasisState([0, 1], wires=(0, 1))], measurements=[qml.probs(wires=(0, 1, 2))]
         )
         probs = simulate(qs)
         expected = np.zeros(8)
@@ -77,6 +77,17 @@ class TestBasicCircuit:
         assert isinstance(result, tuple)
         assert len(result) == 2
 
+        assert np.allclose(result[0], -np.sin(phi))
+        assert np.allclose(result[1], np.cos(phi))
+
+        state, is_state_batched = get_final_state(qs)
+        result = measure_final_state(qs, state, is_state_batched)
+
+        assert np.allclose(state, np.array([np.cos(phi / 2), -1j * np.sin(phi / 2)]))
+        assert not is_state_batched
+
+        assert isinstance(result, tuple)
+        assert len(result) == 2
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
 
@@ -169,6 +180,25 @@ class TestBasicCircuit:
         assert qml.math.allclose(grad0[0], -tf.cos(phi))
         assert qml.math.allclose(grad1[0], -tf.sin(phi))
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", [qml.RX(np.pi, 0), qml.BasisState([1], 0)])
+    def test_result_has_correct_interface(self, op):
+        """Test that even if no interface parameters are given, result is correct."""
+        qs = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+        res = simulate(qs, interface="jax")
+        assert qml.math.get_interface(res) == "jax"
+        assert qml.math.allclose(res, -1)
+
+    def test_expand_state_keeps_autograd_interface(self):
+        """Test that expand_state doesn't convert autograd to numpy."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.probs(wires=[0, 1])
+
+        assert qml.math.get_interface(circuit(1.5)) == "autograd"
+
 
 class TestBroadcasting:
     """Test that simulate works with broadcasted parameters"""
@@ -180,11 +210,29 @@ class TestBroadcasting:
 
         ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
-        qs = qml.tape.QuantumScript(ops, measurements, prep)
+        qs = qml.tape.QuantumScript(prep + ops, measurements)
         res = simulate(qs)
 
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]))
+        assert np.allclose(res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]))
+
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched)
+        expected_state = np.array(
+            [
+                [np.cos(x / 2), 0, 0, np.sin(x / 2)],
+                [0, np.cos(x / 2), np.sin(x / 2), 0],
+                [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
+                [0, -np.sin(x / 2), np.cos(x / 2), 0],
+            ]
+        ).reshape((4, 2, 2))
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]))
@@ -206,6 +254,20 @@ class TestBroadcasting:
         assert np.allclose(res[0], np.cos(x))
         assert np.allclose(res[1], -np.cos(x))
 
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched)
+
+        expected_state = np.zeros((4, 2, 2))
+        expected_state[:, 0, 1] = np.cos(x / 2)
+        expected_state[:, 1, 0] = np.sin(x / 2)
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.cos(x))
+        assert np.allclose(res[1], -np.cos(x))
+
     def test_broadcasted_prep_sample(self):
         """Test that simulate works for sample measurements
         when the state prep has broadcasted parameters"""
@@ -213,11 +275,33 @@ class TestBroadcasting:
 
         ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
-        qs = qml.tape.QuantumScript(ops, measurements, prep, shots=qml.measurements.Shots(10000))
+        qs = qml.tape.QuantumScript(prep + ops, measurements, shots=qml.measurements.Shots(10000))
         res = simulate(qs, rng=123)
 
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(
+            res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]), atol=0.05
+        )
+        assert np.allclose(
+            res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]), atol=0.05
+        )
+
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched, rng=123)
+        expected_state = np.array(
+            [
+                [np.cos(x / 2), 0, 0, np.sin(x / 2)],
+                [0, np.cos(x / 2), np.sin(x / 2), 0],
+                [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
+                [0, -np.sin(x / 2), np.cos(x / 2), 0],
+            ]
+        ).reshape((4, 2, 2))
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(
@@ -242,6 +326,76 @@ class TestBroadcasting:
         assert len(res) == 2
         assert np.allclose(res[0], np.cos(x), atol=0.05)
         assert np.allclose(res[1], -np.cos(x), atol=0.05)
+
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched, rng=123)
+
+        expected_state = np.zeros((4, 2, 2))
+        expected_state[:, 0, 1] = np.cos(x / 2)
+        expected_state[:, 1, 0] = np.sin(x / 2)
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.cos(x), atol=0.05)
+        assert np.allclose(res[1], -np.cos(x), atol=0.05)
+
+    def test_broadcasting_with_extra_measurement_wires(self, mocker):
+        """Test that broadcasting works when the operations don't act on all wires."""
+        # I can't mock anything in `simulate` because the module name is the function name
+        spy = mocker.spy(qml, "map_wires")
+        x = np.array([0.8, 1.0, 1.2, 1.4])
+
+        ops = [qml.PauliX(wires=2), qml.RY(x, wires=1), qml.CNOT(wires=[1, 2])]
+        measurements = [qml.expval(qml.PauliZ(i)) for i in range(3)]
+
+        qs = qml.tape.QuantumScript(ops, measurements)
+        res = simulate(qs)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 3
+        assert np.allclose(res[0], 1.0)
+        assert np.allclose(res[1], np.cos(x))
+        assert np.allclose(res[2], -np.cos(x))
+        assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
+
+
+class TestPostselection:
+    """Tests for applying projectors as operations."""
+
+    def test_projector_norm(self):
+        """Test that the norm of the state is maintained after applying a projector"""
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.RX(0.123, 1), qml.Projector([0], wires=1)], [qml.state()]
+        )
+        res = simulate(tape)
+        assert np.isclose(np.linalg.norm(res), 1.0)
+
+    @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
+    def test_broadcasting_with_projector(self, shots):
+        """Test that postselecting a broadcasted state raises an error"""
+        tape = qml.tape.QuantumScript(
+            [
+                qml.RX([0.1, 0.2], 0),
+                qml.Projector([0], wires=0),
+            ],
+            [qml.state()],
+            shots=shots,
+        )
+
+        with pytest.raises(ValueError, match="Cannot postselect on circuits with broadcasting"):
+            _ = simulate(tape)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "tensorflow", "autograd"])
+    def test_nan_state(self, interface):
+        """Test that a state with nan values is returned if the probability of a postselection state
+        is 0."""
+        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Projector([0], 0)])
+
+        res, _ = get_final_state(tape, interface=interface)
+        assert qml.math.all(qml.math.isnan(res))
 
 
 class TestDebugger:
@@ -434,6 +588,39 @@ class TestSampleMeasurements:
         )
 
         assert result[2].shape == (10000, 2)
+
+    def test_shots_reuse(self, mocker):
+        """Test that samples are reused when two measurements commute"""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
+        mps = [
+            qml.expval(qml.PauliX(0)),
+            qml.expval(qml.PauliX(1)),
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliX(1)),
+            qml.var(qml.PauliY(0)),
+            qml.probs(wires=[0]),
+            qml.probs(wires=[0, 1]),
+            qml.sample(wires=[0, 1]),
+            qml.expval(
+                qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1)])
+            ),
+            qml.expval(qml.sum(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1))),
+            qml.expval(qml.s_prod(2.0, qml.PauliX(0))),
+            qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1))),
+        ]
+
+        qs = qml.tape.QuantumScript(ops, mps, shots=100)
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "sample_state")
+        result = simulate(qs)
+
+        assert isinstance(result, tuple)
+        assert len(result) == len(mps)
+
+        # check that samples are reused when possible
+        # 3 groups for expval and var, 1 group for probs and sample, 2 groups each for
+        # Hamiltonian and Sum, and 1 group each for SProd and Prod
+        assert spy.call_count == 10
 
     shots_data = [
         [10000, 10000],

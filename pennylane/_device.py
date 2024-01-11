@@ -16,6 +16,7 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
 import abc
+import copy
 import types
 import warnings
 from collections import OrderedDict
@@ -26,6 +27,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
+    MeasurementProcess,
     CountsMP,
     Expectation,
     ExpectationMP,
@@ -38,10 +40,69 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-from pennylane.operation import Observable, Operation, Tensor
+
+from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
 from pennylane.ops import Hamiltonian, Sum
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
+from pennylane.queuing import QueuingManager
+
+
+def _local_tape_expand(tape, depth, stop_at):
+    """Expand all objects in a tape to a specific depth excluding measurements.
+    see `pennylane.tape.tape.expand_tape` for examples.
+
+    Args:
+        tape (QuantumTape): The tape to expand
+        depth (int): the depth the tape should be expanded
+        stop_at (Callable): A function which accepts a queue object,
+            and returns ``True`` if this object should *not* be expanded.
+            If not provided, all objects that support expansion will be expanded.
+
+    Returns:
+        QuantumTape: The expanded version of ``tape``.
+    """
+    # This function mimics `pennylane.tape.tape.expand_tape()`, but does not expand measurements and
+    # does not perform validation checks for non-commuting measurements on the same wires.
+    if depth == 0:
+        return tape
+
+    new_ops = []
+    new_measurements = []
+
+    for queue, new_queue in [
+        (tape.operations, new_ops),
+        (tape.measurements, new_measurements),
+    ]:
+        for obj in queue:
+            if stop_at(obj) or isinstance(obj, qml.measurements.MeasurementProcess):
+                new_queue.append(obj)
+                continue
+
+            if isinstance(obj, Operator):
+                if obj.has_decomposition:
+                    with QueuingManager.stop_recording():
+                        obj = QuantumScript(obj.decomposition(), _update=False)
+                else:
+                    new_queue.append(obj)
+                    continue
+
+            # recursively expand out the newly created tape
+            expanded_tape = _local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
+
+            new_ops.extend(expanded_tape.operations)
+            new_measurements.extend(expanded_tape.measurements)
+
+    # preserves inheritance structure
+    # if tape is a QuantumTape, returned object will be a quantum tape
+    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots, _update=False)
+
+    # Update circuit info
+    new_tape.wires = copy.copy(tape.wires)
+    new_tape.num_wires = tape.num_wires
+    new_tape._batch_size = tape._batch_size
+    new_tape._output_dim = tape._output_dim
+    return new_tape
 
 
 class DeviceError(Exception):
@@ -231,7 +292,7 @@ class Device(abc.ABC):
 
         **Example**
 
-        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev = qml.device("default.qubit.legacy", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
         >>> dev.shots
         57
         >>> dev.shot_vector
@@ -398,28 +459,29 @@ class Device(abc.ABC):
 
             self.pre_measure()
 
-            for obs in observables:
+            for mp in observables:
+                obs = mp.obs if isinstance(mp, MeasurementProcess) and mp.obs is not None else mp
                 if isinstance(obs, Tensor):
                     wires = [ob.wires for ob in obs.obs]
                 else:
                     wires = obs.wires
 
-                if obs.return_type is Expectation:
+                if mp.return_type is Expectation:
                     results.append(self.expval(obs.name, wires, obs.parameters))
 
-                elif obs.return_type is Variance:
+                elif mp.return_type is Variance:
                     results.append(self.var(obs.name, wires, obs.parameters))
 
-                elif obs.return_type is Sample:
+                elif mp.return_type is Sample:
                     results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
 
-                elif obs.return_type is Probability:
+                elif mp.return_type is Probability:
                     results.append(list(self.probability(wires=wires).values()))
 
-                elif obs.return_type is State:
+                elif mp.return_type is State:
                     raise qml.QuantumFunctionError("Returning the state is not supported")
 
-                elif obs.return_type is not None:
+                elif mp.return_type is not None:
                     raise qml.QuantumFunctionError(
                         f"Unsupported return type specified for observable {obs.name}"
                     )
@@ -439,9 +501,9 @@ class Device(abc.ABC):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(obs.return_type is Sample for obs in observables):
+            if all(mp.return_type is Sample for mp in observables):
                 return self._asarray(results)
-            if any(obs.return_type is Sample for obs in observables):
+            if any(mp.return_type is Sample for mp in observables):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
@@ -467,7 +529,7 @@ class Device(abc.ABC):
             # not start the next computation in the zero state
             self.reset()
 
-            res = self.execute(circuit.operations, circuit.observables)
+            res = self.execute(circuit.operations, circuit.measurements)
             results.append(res)
 
         if self.tracker.active:
@@ -498,6 +560,9 @@ class Device(abc.ABC):
             tuple[list[array[float]], list[array[float]]]: Tuple containing list of measured value(s)
             and list of Jacobians. Returned Jacobians should be of shape ``(output_shape, num_params)``.
         """
+        if self.tracker.active:
+            self.tracker.update(execute_and_derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
         gradient_method = getattr(self, method)
 
         res = []
@@ -531,6 +596,9 @@ class Device(abc.ABC):
             list[array[float]]: List of Jacobians. Returned Jacobians should be of
             shape ``(output_shape, num_params)``.
         """
+        if self.tracker.active:
+            self.tracker.update(derivatives=len(circuits))
+            self.tracker.record()
         gradient_method = getattr(self, method)
         return [gradient_method(circuit, **kwargs) for circuit in circuits]
 
@@ -550,7 +618,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qml.device("default.qubit.legacy", wires=2)
 
             @dev.custom_expand
             def my_expansion_function(self, tape, max_expansion=10):
@@ -578,6 +646,7 @@ class Device(abc.ABC):
 
         By default, this method expands the tape if:
 
+        - state preparation operations are called mid-circuit,
         - nested tapes are present,
         - any operations are not supported on the device, or
         - multiple observables are measured on the same wire.
@@ -595,6 +664,13 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
+        if max_expansion == 0:
+            return circuit
+
+        expand_state_prep = any(isinstance(op, StatePrepBase) for op in circuit.operations[1:])
+
+        if expand_state_prep:  # expand mid-circuit StatePrepBase operations
+            circuit = expand_tape_state_prep(circuit)
 
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
@@ -606,8 +682,14 @@ class Device(abc.ABC):
 
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
-        if ops_not_supported or obs_on_same_wire:
+        if obs_on_same_wire:
             circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
+
+        elif ops_not_supported:
+            circuit = _local_tape_expand(
+                circuit, depth=max_expansion, stop_at=self.stopping_condition
+            )
+            circuit._update()
 
         return circuit
 
@@ -894,6 +976,9 @@ class Device(abc.ABC):
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
                 )
+
+            if isinstance(o, qml.Projector):
+                raise ValueError(f"Postselection is not supported on the {self.name} device.")
 
             if not self.stopping_condition(o):
                 raise DeviceError(

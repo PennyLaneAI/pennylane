@@ -20,7 +20,8 @@ undergoing cosmetic changes.
 import pathlib
 import matplotlib.pyplot as plt
 
-from pennylane.drawer import MPLDrawer, use_style
+from pennylane.drawer import MPLDrawer
+from pennylane.drawer.style import _set_style
 
 folder = pathlib.Path(__file__).parent
 
@@ -136,7 +137,7 @@ def measure(savefile="measure.png"):
 
 
 def integration(style="default", savefile="example_basic.png"):
-    use_style(style)
+    _set_style(style)
     drawer = MPLDrawer(n_wires=5, n_layers=6)
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
@@ -160,7 +161,7 @@ def integration(style="default", savefile="example_basic.png"):
 
     drawer.fig.suptitle("My Circuit", fontsize="xx-large")
     plt.savefig(folder / savefile)
-    plt.style.use("default")
+    _set_style("default")
     plt.close()
 
 
@@ -201,7 +202,7 @@ def integration_rcParams(savefile="example_rcParams.png"):
     drawer.fig.suptitle("My Circuit", fontsize="xx-large")
 
     plt.savefig(folder / savefile)
-    plt.style.use("default")
+    _set_style("default")
     plt.close()
 
 

@@ -24,6 +24,22 @@ from pennylane import numpy as np
 np.random.seed(42)
 
 
+def test_grad_no_ints():
+    """Test that grad raises a `ValueError` if the trainable parameter is an int."""
+
+    x = qml.numpy.array(2)
+
+    def f(x):
+        return x**2
+
+    with pytest.raises(ValueError, match="Autograd does not support differentiation of ints."):
+        qml.grad(f)(x)
+
+    y = qml.numpy.array([2, 2])
+    with pytest.raises(ValueError, match="Autograd does not support differentiation of ints."):
+        qml.jacobian(f)(y)
+
+
 class TestGradientUnivar:
     """Tests gradients of univariate unidimensional functions."""
 
@@ -191,13 +207,14 @@ class TestGradientMultivarMultidim:
         x_vec = np.random.uniform(-5, 5, size=(2))
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
-        gradf = lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]], dtype=np.float64)
+        gradf = lambda x: ([[np.cos(x[0, 0])], [-np.sin(x[[1]])]])
         f = lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0])
 
         g = qml.grad(f, 0)
         auto_grad = g(x_vec_multidim)
         correct_grad = gradf(x_vec_multidim)
-        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
+        assert np.allclose(auto_grad[0], correct_grad[0], atol=tol, rtol=0)
+        assert np.allclose(auto_grad[1], correct_grad[1], atol=tol, rtol=0)
 
     def test_exp(self, tol):
         """Tests gradients with multivariate multidimensional exp and tanh."""

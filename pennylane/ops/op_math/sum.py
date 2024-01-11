@@ -30,16 +30,13 @@ from pennylane.queuing import QueuingManager
 from .composite import CompositeOp
 
 
-def sum(*summands, do_queue=None, id=None, lazy=True):
+def sum(*summands, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
         *summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued (currently not supported).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the Sum operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
             of the operators is already a sum operator, its operands (summands) will be used instead.
@@ -72,17 +69,15 @@ def sum(*summands, do_queue=None, id=None, lazy=True):
            [ 1, -1]])
     """
     if lazy:
-        return Sum(*summands, do_queue=do_queue, id=id)
+        return Sum(*summands, id=id)
 
     summands_simp = Sum(
         *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands]),
-        do_queue=do_queue,
         id=id,
     )
 
-    if do_queue or do_queue is None:
-        for op in summands:
-            QueuingManager.remove(op)
+    for op in summands:
+        QueuingManager.remove(op)
 
     return summands_simp
 
@@ -94,9 +89,6 @@ class Sum(CompositeOp):
         *summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::
@@ -162,7 +154,7 @@ class Sum(CompositeOp):
 
         >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.grad(circuit)(weights)
-        tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
+        array([-0.09347337, -0.18884787, -0.28818254])
     """
 
     _op_symbol = "+"
@@ -176,8 +168,8 @@ class Sum(CompositeOp):
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        if self._pauli_rep is not None:
-            coeffs_list = list(self._pauli_rep.values())
+        if self.pauli_rep is not None:
+            coeffs_list = list(self.pauli_rep.values())
             if not math.is_abstract(coeffs_list[0]):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
@@ -229,6 +221,9 @@ class Sum(CompositeOp):
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
+        if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+
         gen = ((op.sparse_matrix(), op.wires) for op in self)
 
         reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
@@ -257,11 +252,7 @@ class Sum(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
-        if all(
-            operand_pauli_reps := [
-                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
-            ]
-        ):
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
             new_rep = qml.pauli.PauliSentence()
             for operand_rep in operand_pauli_reps:
                 for pw, coeff in operand_rep.items():
@@ -300,7 +291,7 @@ class Sum(CompositeOp):
 
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 

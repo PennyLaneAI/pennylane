@@ -15,6 +15,7 @@
 Unit tests for functions needed for estimating the number of logical qubits and non-Clifford gates
 for quantum algorithms in first quantization using a plane-wave basis.
 """
+# pylint: disable=too-many-arguments,protected-access
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
@@ -334,7 +335,7 @@ def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
 def test_init_error_1(n, eta, omega, error, br, charge, vectors):
     r"""Test that init raises an error when volume and vectors are None."""
     with pytest.raises(ValueError, match="The lattice vectors must be provided"):
-        qml.resource.FirstQuantization(n, eta, omega, error, br, charge, vectors)
+        qml.resource.FirstQuantization(n, eta, omega, error, charge, br, vectors)
 
 
 @pytest.mark.parametrize(
@@ -360,7 +361,7 @@ def test_init_error_1(n, eta, omega, error, br, charge, vectors):
 def test_init_error_2(n, eta, omega, error, br, charge, vectors):
     r"""Test that init raises an error when volume and vectors are None."""
     with pytest.raises(ValueError, match="lattice vectors and the unit cell volume should not be"):
-        qml.resource.FirstQuantization(n, eta, omega, error, br, charge, vectors)
+        qml.resource.FirstQuantization(n, eta, omega, error, charge, br, vectors)
 
 
 @pytest.mark.parametrize(

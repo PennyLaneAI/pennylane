@@ -208,9 +208,7 @@ def mock_device_fixture(monkeypatch):
         m.setattr(
             qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"}
         )
-        m.setattr(
-            qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "QubitStateVector"]
-        )
+        m.setattr(qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "StatePrep"])
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
         )
@@ -221,7 +219,7 @@ def mock_device_fixture(monkeypatch):
         m.setattr(qml.Device, "apply", lambda self, x, y, z: None)
 
         def get_device(wires=1):
-            return qml.Device(wires=wires)
+            return qml.Device(wires=wires)  # pylint:disable=abstract-class-instantiated
 
         yield get_device
 
@@ -316,12 +314,13 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.torch
     @pytest.mark.slow
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_torch(self, shots):
+    def test_optimize_torch(self, dev_name, shots):
         """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device(dev_name, wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -347,12 +346,15 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        exec_opt = tracker.totals["executions"]
+
+        with tracker:
+            c2 = cost2(w)
+
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
@@ -393,12 +395,13 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
@@ -439,12 +442,13 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
@@ -495,12 +499,13 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 1  # Number of groups in the Hamiltonian
         assert exec_no_opt == 8
@@ -551,13 +556,15 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
+        # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
         assert exec_no_opt == 8
 
@@ -607,13 +614,15 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
+        # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
         assert exec_no_opt == 8
 
@@ -648,12 +657,13 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = pnp.random.uniform(low=0, high=2 * np.pi, size=shape, requires_grad=True)
 
-        dc = qml.grad(cost)(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            dc = qml.grad(cost)(w)
+        exec_opt = tracker.totals["executions"]
 
-        dc2 = qml.grad(cost2)(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            dc2 = qml.grad(cost2)(w)
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_no_opt > exec_opt
         assert np.allclose(dc, big_hamiltonian_grad)
@@ -736,25 +746,6 @@ class TestVQE:
         dc = tape.gradient(res, w).numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad)
-
-    @pytest.mark.parametrize("approx", [None, "block-diag", "diag"])
-    def test_metric_tensor(self, approx):
-        """Test that the metric tensor can be calculated."""
-
-        dev = qml.device("default.qubit", wires=3)
-        p = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
-
-        def ansatz(params, **kwargs):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(params[2], wires=1)
-
-        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
-        qnodes = catch_warn_ExpvalCost(ansatz, h, dev)
-        mt = qml.metric_tensor(qnodes, approx=approx)(p)
-        assert mt.shape == (3, 3)
-        assert isinstance(mt, pnp.ndarray)
 
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
@@ -845,10 +836,14 @@ class TestNewVQE:
 
         assert np.allclose(res1, res2, atol=tol)
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     @pytest.mark.parametrize("shots, dim", [([(1000, 2)], 2), ([30, 30], 2), ([2, 3, 4], 3)])
     def test_shot_distribution(self, shots, dim):
         """Tests that distributed shots work with the new VQE design."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -859,12 +854,13 @@ class TestNewVQE:
 
         obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]
         coeffs = np.array([0.1, 0.2])
-        weights = pnp.random.random([2, 2, 3], requires_grad=True)
+        key = jax.random.PRNGKey(42)
+        weights = jax.random.uniform(key, [2, 2, 3])
 
         res = circuit(weights, coeffs)
-        grad = qml.jacobian(circuit, argnum=1)(weights, coeffs)
+        grad = jax.jacobian(circuit, argnums=[1])(weights, coeffs)
         assert len(res) == dim
-        assert grad.shape == (dim, 2)
+        assert qml.math.shape(grad) == (dim, 1, 2)
 
     def test_circuit_drawer(self):
         """Test that the circuit drawer displays Hamiltonians well."""
@@ -911,7 +907,7 @@ class TestNewVQE:
         assert res[0] == circuit1()
         assert res[1] == circuit2()
 
-    def test_error_multiple_expvals_same_wire(self):
+    def test_multiple_expvals_same_wires(self):
         """Tests that more than one Hamiltonian expval can be evaluated."""
 
         coeffs = [1.0, 1.0, 1.0]
@@ -924,8 +920,15 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H1), qml.expval(H1)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            circuit()
+        res = circuit()
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H1)
+
+        assert res[0] == circuit1()
+        assert res[1] == circuit1()
 
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
@@ -938,9 +941,7 @@ class TestNewVQE:
         def circuit():
             return qml.var(H)
 
-        with pytest.raises(
-            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
-        ):
+        with pytest.raises(NotImplementedError):
             circuit()
 
     def test_error_sample_measurement(self):
@@ -954,7 +955,7 @@ class TestNewVQE:
         def circuit():
             return qml.sample(H)
 
-        with pytest.raises(ValueError, match="Can only return the expectation of a single"):
+        with pytest.raises(qml.operation.DiagGatesUndefinedError):
             circuit()
 
     @pytest.mark.autograd
@@ -1005,7 +1006,7 @@ class TestNewVQE:
         w = torch.tensor(PARAMS, requires_grad=True)
 
         res = circuit(w)
-        res.backward()
+        res.backward()  # pylint:disable=no-member
         dc = w.grad.detach().numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
@@ -1067,7 +1068,6 @@ class TestNewVQE:
 
         assert res["num_observables"] == 1
         assert res["num_diagonalizing_gates"] == 0
-        assert res["num_used_wires"] == 2
 
 
 class TestInterfaces:

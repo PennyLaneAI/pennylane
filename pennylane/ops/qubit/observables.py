@@ -23,7 +23,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable
+from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.wires import Wires
 
 from .matrix_ops import QubitUnitary
@@ -52,15 +52,14 @@ class Hermitian(Observable):
     Args:
         A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "F"
 
@@ -68,7 +67,7 @@ class Hermitian(Observable):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A, wires, do_queue=None, id=None):
+    def __init__(self, A, wires, id=None):
         A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
@@ -83,7 +82,7 @@ class Hermitian(Observable):
 
             Hermitian._validate_input(A, expected_mx_shape)
 
-        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(A, wires=wires, id=id)
 
     @staticmethod
     def _validate_input(A, expected_mx_shape=None):
@@ -221,10 +220,6 @@ class SparseHamiltonian(Observable):
         H (csr_matrix): a sparse matrix in SciPy Compressed Sparse Row (CSR) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires.
         wires (Sequence[int]): the wire(s) the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -248,15 +243,25 @@ class SparseHamiltonian(Observable):
 
     grad_method = None
 
-    def __init__(self, H, wires=None, do_queue=None, id=None):
+    def __init__(self, H, wires=None, id=None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
-        super().__init__(H, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(H, wires=wires, id=id)
+        self.H = H
         mat_len = 2 ** len(self.wires)
         if H.shape != (mat_len, mat_len):
             raise ValueError(
                 f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
             )
+
+    def __mul__(self, value):
+        r"""The scalar multiplication operation between a scalar and a SparseHamiltonian."""
+        if not isinstance(value, (int, float)) and qml.math.ndim(value) != 0:
+            raise TypeError(f"Scalar value must be an int or float. Got {type(value)}")
+
+        return qml.SparseHamiltonian(csr_matrix.multiply(self.H, value), wires=self.wires)
+
+    __rmul__ = __mul__
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
@@ -330,7 +335,7 @@ class SparseHamiltonian(Observable):
 
 
 class Projector(Observable):
-    r"""Projector(state, wires, do_queue=None, id=None)
+    r"""Projector(state, wires, id=None)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
     The expectation of this observable returns the value
@@ -350,10 +355,6 @@ class Projector(Observable):
         state (tensor-like): Input state of shape ``(n,)`` for a basis-state projector, or ``(2**n,)``
             for a state-vector projector.
         wires (Iterable): wires that the projector acts on.
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional).
 
     **Example**
@@ -377,11 +378,13 @@ class Projector(Observable):
         0.25
 
     """
+    name = "Projector"
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
-    _basis_state_type = None  # type if Projector inherits from _BasisStateProjector
-    _state_vector_type = None  # type if Projector inherits from _StateVectorProjector
+
+    ndim_params = (1,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     def __new__(cls, state, wires, **_):
         """Changes parents based on the state representation.
@@ -408,16 +411,10 @@ class Projector(Observable):
             raise ValueError(f"Input state must be one-dimensional; got shape {shape}.")
 
         if len(state) == len(wires):
-            if cls._basis_state_type is None:
-                base_cls = (_BasisStateProjector, Projector)
-                cls._basis_state_type = type("Projector", base_cls, dict(cls.__dict__))
-            return object.__new__(cls._basis_state_type)
+            return object.__new__(BasisStateProjector)
 
         if len(state) == 2 ** len(wires):
-            if cls._state_vector_type is None:
-                base_cls = (_StateVectorProjector, Projector)
-                cls._state_vector_type = type("Projector", base_cls, dict(cls.__dict__))
-            return object.__new__(cls._state_vector_type)
+            return object.__new__(StateVectorProjector)
 
         raise ValueError(
             "Input state should have the same length as the wires in the case "
@@ -430,27 +427,24 @@ class Projector(Observable):
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
-    def __copy__(self):
-        copied_op = self.__new__(Projector, self.data[0], self.wires)
-        copied_op.data = copy(self.data)
-        for attr, value in vars(self).items():
-            if attr != "data":
-                setattr(copied_op, attr, value)
 
-        return copied_op
+class BasisStateProjector(Projector, Operation):
+    r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
+    :math:`\phi` denotes a basis state."""
 
-
-class _BasisStateProjector(Observable):
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state, wires, do_queue=None, id=None):
+    def __init__(self, state, wires, id=None):
         wires = Wires(wires)
-        state = list(qml.math.toarray(state))
+        state = list(qml.math.toarray(state).astype(int))
 
         if not set(state).issubset({0, 1}):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
 
-        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(state, wires=wires, id=id)
+
+    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
+        return object.__new__(cls)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -467,7 +461,7 @@ class _BasisStateProjector(Observable):
 
         **Example:**
 
-        >>> _BasisStateProjector([0, 1, 0], wires=(0, 1, 2)).label()
+        >>> BasisStateProjector([0, 1, 0], wires=(0, 1, 2)).label()
         '|010⟩⟨010|'
 
         """
@@ -484,7 +478,7 @@ class _BasisStateProjector(Observable):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~._BasisStateProjector.matrix`
+        .. seealso:: :meth:`~.BasisStateProjector.matrix`
 
         Args:
             basis_state (Iterable): basis state to project on
@@ -494,7 +488,7 @@ class _BasisStateProjector(Observable):
 
         **Example**
 
-        >>> _BasisStateProjector.compute_matrix([0, 1])
+        >>> BasisStateProjector.compute_matrix([0, 1])
         [[0. 0. 0. 0.]
          [0. 1. 0. 0.]
          [0. 0. 0. 0.]
@@ -518,7 +512,7 @@ class _BasisStateProjector(Observable):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~._BasisStateProjector.eigvals`
+        .. seealso:: :meth:`~.BasisStateProjector.eigvals`
 
         Args:
             basis_state (Iterable): basis state to project on
@@ -528,7 +522,7 @@ class _BasisStateProjector(Observable):
 
         **Example**
 
-        >>> _BasisStateProjector.compute_eigvals([0, 1])
+        >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
         w = np.zeros(2 ** len(basis_state))
@@ -549,7 +543,7 @@ class _BasisStateProjector(Observable):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~._BasisStateProjector.diagonalizing_gates`.
+        .. seealso:: :meth:`~.BasisStateProjector.diagonalizing_gates`.
 
         Args:
             basis_state (Iterable): basis state that the operator projects on
@@ -559,20 +553,26 @@ class _BasisStateProjector(Observable):
 
         **Example**
 
-        >>> _BasisStateProjector.compute_diagonalizing_gates([0, 1, 0, 0], wires=[0, 1])
+        >>> BasisStateProjector.compute_diagonalizing_gates([0, 1, 0, 0], wires=[0, 1])
         []
         """
         return []
 
 
-class _StateVectorProjector(Observable):
+class StateVectorProjector(Projector):
+    r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
+    :math:`\phi` denotes a state."""
+
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state, wires, do_queue=None, id=None):
+    def __init__(self, state, wires, id=None):
         wires = Wires(wires)
         state = list(qml.math.toarray(state))
 
-        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(state, wires=wires, id=id)
+
+    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
+        return object.__new__(cls)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -590,14 +590,14 @@ class _StateVectorProjector(Observable):
         **Example:**
 
         >>> state_vector = np.array([0, 1, 1, 0])/np.sqrt(2)
-        >>> _StateVectorProjector(state_vector, wires=(0, 1)).label()
+        >>> qml.Projector(state_vector, wires=(0, 1)).label()
         'P'
-        >>> _StateVectorProjector(state_vector, wires=(0, 1)).label(base_label="hi!")
+        >>> qml.Projector(state_vector, wires=(0, 1)).label(base_label="hi!")
         'hi!'
         >>> dev = qml.device("default.qubit", wires=1)
         >>> @qml.qnode(dev)
         >>> def circuit(state):
-        ...     return qml.expval(_StateVectorProjector(state, [0]))
+        ...     return qml.expval(qml.Projector(state, [0]))
         >>> print(qml.draw(circuit)([1, 0]))
         0: ───┤  <|0⟩⟨0|>
         >>> print(qml.draw(circuit)(np.array([1, 1]) / np.sqrt(2)))
@@ -643,7 +643,7 @@ class _StateVectorProjector(Observable):
 
         The projector of the state :math:`\frac{1}{\sqrt{2}}(\ket{01}+\ket{10})`
 
-        >>> _StateVectorProjector.compute_matrix([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
+        >>> StateVectorProjector.compute_matrix([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
         [[0. 0.  0.  0.]
          [0. 0.5 0.5 0.]
          [0. 0.5 0.5 0.]
@@ -664,7 +664,7 @@ class _StateVectorProjector(Observable):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~._StateVectorProjector.eigvals`
+        .. seealso:: :meth:`~.StateVectorProjector.eigvals`
 
         Args:
             state_vector (Iterable): state vector to project on
@@ -674,7 +674,7 @@ class _StateVectorProjector(Observable):
 
         **Example**
 
-        >>> _StateVectorProjector.compute_eigvals([0, 0, 1, 0])
+        >>> StateVectorProjector.compute_eigvals([0, 0, 1, 0])
         array([1, 0, 0, 0])
         """
         w = qml.math.zeros_like(state_vector)
@@ -694,7 +694,7 @@ class _StateVectorProjector(Observable):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~._StateVectorProjector.diagonalizing_gates`.
+        .. seealso:: :meth:`~.StateVectorProjector.diagonalizing_gates`.
 
         Args:
             state_vector (Iterable): state vector that the operator projects on.
@@ -705,7 +705,7 @@ class _StateVectorProjector(Observable):
         **Example**
 
         >>> state_vector = np.array([1., 1j])/np.sqrt(2)
-        >>> _StateVectorProjector.compute_diagonalizing_gates(state_vector, wires=[0])
+        >>> StateVectorProjector.compute_diagonalizing_gates(state_vector, wires=[0])
         [QubitUnitary(array([[ 0.70710678+0.j        ,  0.        -0.70710678j],
                              [ 0.        +0.70710678j, -0.70710678+0.j        ]]), wires=[0])]
         """

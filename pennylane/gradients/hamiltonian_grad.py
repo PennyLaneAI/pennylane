@@ -25,15 +25,14 @@ def hamiltonian_grad(tape, idx):
         idx (int): index of parameter that we differentiate with respect to
     """
 
-    op, _, p_idx = tape.get_operation(idx)
-    new_tape = tape.copy(copy_operations=True)
+    op, m_pos, p_idx = tape.get_operation(idx)
 
     # get position in queue
-    queue_position = tape.observables.index(op)
-    new_tape._measurements[queue_position] = qml.expval(op.ops[p_idx])
+    queue_position = m_pos - len(tape.operations)
+    new_measurements = list(tape.measurements)
+    new_measurements[queue_position] = qml.expval(op.ops[p_idx])
 
-    new_tape._par_info = {}
-    new_tape._update()
+    new_tape = qml.tape.QuantumScript(tape.operations, new_measurements, shots=tape.shots)
 
     if len(tape.measurements) > 1:
 

@@ -14,34 +14,32 @@
 """
 Tests for the QubitUnitary decomposition transforms.
 """
+from itertools import product
 
 import pytest
 
-from itertools import product
-
+from gate_data import I, Z, S, T, H, X
+from test_optimization.utils import check_matrix_equivalence
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.wires import Wires
 from pennylane.transforms import unitary_to_rot
 
-from gate_data import I, Z, S, T, H, X, CNOT
-
-from test_optimization.utils import check_matrix_equivalence
-
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ)
-single_qubit_decomps = [
+single_qubit_decompositions = [
     (I, typeof_gates_zyz, [0.0, 0.0, 0.0]),
     (Z, typeof_gates_zyz, [np.pi / 2, 0.0, np.pi / 2]),
     (S, typeof_gates_zyz, [np.pi / 4, 0.0, np.pi / 4]),
     (T, typeof_gates_zyz, [np.pi / 8, 0.0, np.pi / 8]),
+    (H, typeof_gates_zyz, [np.pi, np.pi / 2, 0.0]),
+    (X, typeof_gates_zyz, [np.pi / 2, np.pi, 7 * np.pi / 2]),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15]),
     (
         qml.RZ(-0.5, wires=0).matrix(),
         typeof_gates_zyz,
-        [12.316370614359172, 0.0, 12.316370614359172],
+        [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25],
     ),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, 12.266370614359172]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, 4 * np.pi - 0.3]),
     (
         np.array(
             [
@@ -50,14 +48,12 @@ single_qubit_decomps = [
             ]
         ),
         typeof_gates_zyz,
-        [12.382273469673908, np.pi, 0.18409714468526372],
+        [12.382273469673908, np.pi, 0.18409714468526417],
     ),
-    (H, typeof_gates_zyz, [np.pi, np.pi / 2, 0.0]),
-    (X, typeof_gates_zyz, [np.pi / 2, np.pi, 10.995574287564276]),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zyz,
-        [11.566370614359172, 2.0, 9.566370614359172],
+        [4 * np.pi - 1.0, 2.0, 4 * np.pi - 3.0],
     ),
 ]
 
@@ -72,7 +68,25 @@ def qfunc(U):
 class TestDecomposeSingleQubitUnitaryTransform:
     """Tests to ensure the transform itself works in all interfaces."""
 
-    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    def test_unitary_to_rot_device_transform_programqnode(self):
+        """Test for applying the transform on a QNode."""
+        dev = qml.device("default.qubit", wires=2)
+
+        U = np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix()
+
+        @qml.qnode(device=dev)
+        def circuit(U):
+            qml.Hadamard(wires=1)
+            qml.QubitUnitary(U, wires=0)
+            qml.CNOT(wires=[1, 0])
+            return qml.expval(qml.PauliZ(0))
+
+        transformed_qnode = unitary_to_rot(circuit)
+        res_trans = transformed_qnode(U)
+        res = circuit(U)
+        assert np.allclose(res_trans, res)
+
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
     def test_unitary_to_rot(self, U, expected_gates, expected_params):
         """Test that the transform works in the autograd interface."""
         transformed_qfunc = unitary_to_rot(qfunc)
@@ -100,11 +114,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         tof = qml.Toffoli(wires=[0, 1, 2]).matrix()
 
-        def qfunc():
+        def qfunc_with_large_qubit_unitary():
             qml.QubitUnitary(H, wires="a")
             qml.QubitUnitary(tof, wires=["a", "b", "c"])
 
-        transformed_qfunc = unitary_to_rot(qfunc)
+        transformed_qfunc = unitary_to_rot(qfunc_with_large_qubit_unitary)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -123,7 +137,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert ops[3].wires == Wires(["a", "b", "c"])
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
     def test_unitary_to_rot_torch(self, U, expected_gates, expected_params):
         """Test that the transform works in the torch interface."""
         import torch
@@ -150,7 +164,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert ops[4].wires == Wires(["b", "a"])
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
     def test_unitary_to_rot_tf(self, U, expected_gates, expected_params):
         """Test that the transform works in the Tensorflow interface."""
         import tensorflow as tf
@@ -177,16 +191,10 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert ops[4].wires == Wires(["b", "a"])
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
     def test_unitary_to_rot_jax(self, U, expected_gates, expected_params):
         """Test that the transform works in the JAX interface."""
         import jax
-
-        # Enable float64 support
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
@@ -210,16 +218,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert ops[4].wires == Wires(["b", "a"])
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
     def test_unitary_to_rot_jax_jit(self, U, expected_gates, expected_params):
         """Test that the transform works in the JAX interface with JIT."""
+        # pylint: disable=unused-argument
         import jax
-
-        # Enable float64 support
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
@@ -399,12 +402,6 @@ class TestQubitUnitaryDifferentiability:
         import jax
         from jax import numpy as jnp
 
-        # Enable float64 support
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
-
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]
             x = angles[1]
@@ -512,7 +509,7 @@ def test_unitary_to_rot_multiple_two_qubit(num_reps):
     U = np.array(test_two_qubit_unitaries[1], dtype=np.complex128)
 
     def my_circuit():
-        for rep in range(num_reps):
+        for _ in range(num_reps):
             qml.QubitUnitary(U, wires=[0, 1])
         return qml.expval(qml.PauliZ(0))
 
@@ -675,11 +672,6 @@ class TestTwoQubitUnitaryDifferentiability:
         """Tests differentiability in jax interface."""
         import jax
         from jax import numpy as jnp
-
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
 
         U0 = jnp.array(test_two_qubit_unitaries[0], dtype=jnp.complex128)
         U1 = jnp.array(test_two_qubit_unitaries[1], dtype=jnp.complex128)

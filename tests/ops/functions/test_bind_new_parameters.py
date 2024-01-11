@@ -176,6 +176,14 @@ def test_symbolic_ops(op, new_params, expected_op):
     assert new_op.base is not op.base
 
 
+def test_controlled_sequence():
+    """Test integration of controlled sequence with bind_new_parameters."""
+    op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
+    new_op = bind_new_parameters(op, (0.5,))
+    assert qml.math.allclose(new_op.data[0], 0.5)
+    assert qml.equal(new_op.base, qml.RX(0.5, wires=3))
+
+
 @pytest.mark.parametrize(
     "H, new_coeffs, expected_H",
     [
@@ -205,6 +213,15 @@ def test_hamiltonian(H, new_coeffs, expected_H):
 
     assert qml.equal(new_H, expected_H)
     assert new_H is not H
+
+
+def test_hamiltonian_grouping_indices():
+    """Test that bind_new_parameters with a Hamiltonian preserves the grouping indices."""
+    H = qml.Hamiltonian([1.0, 2.0], [qml.PauliX(0), qml.PauliX(1)])
+    H.compute_grouping()
+    new_H = bind_new_parameters(H, [2.3, 3.4])
+    assert H.grouping_indices == new_H.grouping_indices
+    assert new_H.data == (2.3, 3.4)
 
 
 @pytest.mark.parametrize(

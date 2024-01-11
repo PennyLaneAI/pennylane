@@ -179,7 +179,7 @@ class TestCircuitGraph:
             assert queue[o_idx] in ancestors
 
         descendants = circuit.descendants([queue[6]])
-        assert descendants == set([queue[8]])
+        assert descendants == [queue[8]]
 
     def test_in_topological_order_example(self, ops, obs):
         """

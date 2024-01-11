@@ -16,9 +16,9 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
@@ -33,7 +33,7 @@ class TestCaching:
         """Test that, when using parameter-shift transform,
         caching reduces the number of evaluations to their optimum
         when computing Hessians."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         params = tf.Variable(tf.range(1, num_params + 1) / 10)
 
         N = num_params
@@ -109,14 +109,14 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit2(seed=42)),
-    ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit2()),
-    ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit2()),
-    ({"gradient_fn": "adjoint", "interface": "tensorflow"}, None, DefaultQubit2()),
-    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit2(seed=42)),
-    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit2()),
-    ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit2()),
-    ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit2()),
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit(seed=42)),  # 0
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit()),  # 1
+    ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit()),  # 2
+    ({"gradient_fn": "adjoint", "interface": "tensorflow"}, None, DefaultQubit()),  # 3
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit(seed=42)),  # 4
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit()),  # 5
+    ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit()),  # 6
+    ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit()),  # 7
 ]
 
 
@@ -147,7 +147,10 @@ class TestTensorflowExecuteIntegration:
         with device.tracker:
             res = cost(a, b)
 
-        assert device.tracker.totals["batches"] == 1
+        if execute_kwargs.get("gradient_fn", None) == "adjoint":
+            assert device.tracker.totals["execute_and_derivative_batches"] == 1
+        else:
+            assert device.tracker.totals["batches"] == 1
         assert device.tracker.totals["executions"] == 2  # different wires so different hashes
 
         assert len(res) == 2
@@ -209,9 +212,6 @@ class TestTensorflowExecuteIntegration:
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
 
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
-
         def cost(params):
             tape1 = qml.tape.QuantumScript(
                 [qml.Hadamard(0)], [qml.expval(qml.PauliX(0))], shots=shots
@@ -248,6 +248,14 @@ class TestTensorflowExecuteIntegration:
             res = cost(params)
         expected = 2 + tf.cos(0.5) + tf.cos(x) * tf.cos(y)
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(NotImplementedError):
+                tape.gradient(res, params)
+            return
 
         grad = tape.gradient(res, params)
         expected = [-tf.cos(y) * tf.sin(x), -tf.cos(x) * tf.sin(y)]
@@ -324,8 +332,10 @@ class TestTensorflowExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-            tape.set_parameters([a, b])
-            return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
+            new_tape = tape.bind_new_parameters([a, b], [0, 1])
+            return qml.math.hstack(
+                execute([new_tape], device, **execute_kwargs)[0], like="tensorflow"
+            )
 
         with tf.GradientTape() as t:
             res = cost(a, b)
@@ -439,21 +449,32 @@ class TestTensorflowExecuteIntegration:
         class U3(qml.U3):
             """Dummy operator."""
 
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return qml.tape.QuantumScript(
-                    [
-                        qml.Rot(lam, theta, -lam, wires=wires),
-                        qml.PhaseShift(phi + lam, wires=wires),
-                    ]
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         def cost_fn(a, p):
             tape = qml.tape.QuantumScript(
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
-            return execute([tape], device, **execute_kwargs)[0]
+            gradient_fn = execute_kwargs["gradient_fn"]
+            if gradient_fn is None:
+                _gradient_method = None
+            elif isinstance(gradient_fn, str):
+                _gradient_method = gradient_fn
+            else:
+                _gradient_method = "gradient-transform"
+            config = qml.devices.ExecutionConfig(
+                interface="autograd",
+                gradient_method=_gradient_method,
+                grad_on_execution=execute_kwargs.get("grad_on_execution", None),
+            )
+            program, _ = device.preprocess(execution_config=config)
+            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
         a = tf.constant(0.1)
         p = tf.Variable([0.1, 0.2, 0.3])
@@ -483,9 +504,6 @@ class TestTensorflowExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("adjoint differentiation does not support probabilities")
-
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -510,6 +528,13 @@ class TestTensorflowExecuteIntegration:
         )
         assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(tf.errors.UnimplementedError):
+                tape.jacobian(cost_res, [x, y])
+            return
         res = tape.jacobian(cost_res, [x, y])
         assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (4,)
@@ -539,8 +564,6 @@ class TestTensorflowExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -559,6 +582,13 @@ class TestTensorflowExecuteIntegration:
         )
         assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(tf.errors.UnimplementedError):
+                tape.jacobian(cost_res, [x, y])
+            return
         res = tape.jacobian(cost_res, [x, y])
         assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (3,)
@@ -588,7 +618,7 @@ class TestHigherOrderDerivatives:
     def test_parameter_shift_hessian(self, params, tol):
         """Tests that the output of the parameter-shift transform
         can be differentiated using tensorflow, yielding second derivatives."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         def cost_fn(x):
             ops1 = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
@@ -625,7 +655,7 @@ class TestHigherOrderDerivatives:
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         params = tf.Variable([0.543, -0.654])
 
         def cost_fn(x):

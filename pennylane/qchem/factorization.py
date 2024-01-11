@@ -14,8 +14,8 @@
 """
 This module contains the functions needed for two-electron tensor factorization.
 """
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 
 
 def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
@@ -394,6 +394,7 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
 
     if two_body_tensor is not None:
         chemist_two_body_coeffs = np.swapaxes(two_body_tensor, 1, 3)
+        # pylint:disable=invalid-unary-operand-type
         one_body_coeffs = -np.einsum("prrs", chemist_two_body_coeffs)
 
         if chemist_one_body_coeffs is None:

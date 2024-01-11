@@ -60,6 +60,7 @@ Operator to Operator functions
     ~pennylane.map_wires
     ~pennylane.dot
     ~pennylane.evolve
+    ~pennylane.iterative_qpe
 
 These operator functions act on operators to produce new operators.
 
@@ -213,6 +214,7 @@ Parametrized gates
     ~pennylane.IsingYY
     ~pennylane.IsingZZ
     ~pennylane.PSWAP
+    ~pennylane.GlobalPhase
 
 :html:`</div>`
 
@@ -291,7 +293,7 @@ State preparation
     :nosignatures:
 
     ~pennylane.BasisState
-    ~pennylane.QubitStateVector
+    ~pennylane.StatePrep
     ~pennylane.QubitDensityMatrix
 
 :html:`</div>`
@@ -415,10 +417,10 @@ CV observables
     ~pennylane.Identity
     ~pennylane.NumberOperator
     ~pennylane.TensorN
-    ~pennylane.P
+    ~pennylane.QuadP
     ~pennylane.PolyXP
     ~pennylane.QuadOperator
-    ~pennylane.X
+    ~pennylane.QuadX
 
 :html:`</div>`
 

@@ -84,8 +84,8 @@ def test_map_wires():
     assert op.base.wires == Wires("a")
     assert mapped_op.wires == Wires(5)
     assert mapped_op.base.wires == Wires(5)
-    assert mapped_op._pauli_rep is not op._pauli_rep
-    assert mapped_op._pauli_rep == qml.pauli.PauliSentence({qml.pauli.PauliWord({5: "X"}): 1})
+    assert mapped_op.pauli_rep is not op.pauli_rep
+    assert mapped_op.pauli_rep == qml.pauli.PauliSentence({qml.pauli.PauliWord({5: "X"}): 1})
 
 
 class TestProperties:
@@ -139,6 +139,13 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.has_matrix == has_mat
 
+    def test_has_matrix_hamiltonian(self):
+        """Test that it has a matrix if the base is a hamiltonian."""
+
+        H = qml.Hamiltonian([1.0], [qml.PauliX(0)])
+        op = TempScalar(H, 2)
+        assert op.has_matrix
+
     @pytest.mark.parametrize("is_herm", (True, False))
     def test_is_hermitian(self, is_herm):
         """Test that symbolic op is hermitian if the base is hermitian."""
@@ -150,7 +157,7 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.is_hermitian == is_herm
 
-    @pytest.mark.parametrize("queue_cat", ("_ops", "_prep", None))
+    @pytest.mark.parametrize("queue_cat", ("_ops", None))
     def test_queuecateory(self, queue_cat):
         """Test that a symbolic operator inherits the queue_category from its base."""
 
@@ -182,7 +189,7 @@ class TestProperties:
         """Test that pauli_rep is None by default"""
         base = Operator("a")
         op = SymbolicOp(base)
-        assert op._pauli_rep is None  # pylint:disable=protected-access
+        assert op.pauli_rep is None
 
 
 class TestQueuing:
@@ -207,20 +214,6 @@ class TestQueuing:
 
         assert len(q) == 1
         assert q.queue[0] is op
-
-    def test_do_queue_false(self):
-        """Test that queuing can be avoided if `do_queue=False`."""
-        base = Operator("c")
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-
-        with qml.queuing.AnnotatedQueue() as q:
-            with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-                SymbolicOp(base, do_queue=False)
-
-        assert len(q) == 0
 
 
 class TestScalarSymbolicOp:

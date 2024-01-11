@@ -24,6 +24,14 @@ class ApproxTimeEvolution(Operation):
     r"""Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
     of Pauli gates.
 
+    .. note::
+
+        We recommend using :class:`~.TrotterProduct` as the more general operation for approximate
+        matrix exponentiation. One can recover the behaviour of :class:`~.ApproxTimeEvolution` by
+        taking the adjoint:
+
+        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
     .. math:: U(t) \ = \ e^{-i H t},
@@ -70,6 +78,8 @@ class ApproxTimeEvolution(Operation):
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
+    .. seealso:: :class:`~.TrotterProduct`.
+
     .. details::
         :title: Usage Details
 
@@ -78,7 +88,7 @@ class ApproxTimeEvolution(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import ApproxTimeEvolution
+            from pennylane import ApproxTimeEvolution
 
             n_wires = 2
             wires = range(n_wires)
@@ -101,7 +111,16 @@ class ApproxTimeEvolution(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, hamiltonian, time, n, do_queue=None, id=None):
+    def _flatten(self):
+        h = self.hyperparameters["hamiltonian"]
+        data = (h, self.data[-1])
+        return data, (self.hyperparameters["n"],)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0], data[1], n=metadata[0])
+
+    def __init__(self, hamiltonian, time, n, id=None):
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise ValueError(
                 f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
@@ -114,7 +133,7 @@ class ApproxTimeEvolution(Operation):
         self._hyperparameters = {"hamiltonian": hamiltonian, "n": n}
 
         # trainable parameters are passed to the base init method
-        super().__init__(*hamiltonian.data, time, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*hamiltonian.data, time, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(
@@ -129,8 +148,7 @@ class ApproxTimeEvolution(Operation):
         .. seealso:: :meth:`~.ApproxTimeEvolution.decomposition`.
 
         Args:
-            coeffs_and_time (list[tensor_like or float]): list of coefficients of the Hamiltonian, appended by the time
-                variable
+            *coeffs_and_time (TensorLike): coefficients of the Hamiltonian, appended by the time.
             wires (Any or Iterable[Any]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The Hamiltonian defining the
                time-evolution operator. The Hamiltonian must be explicitly written
@@ -140,6 +158,29 @@ class ApproxTimeEvolution(Operation):
 
         Returns:
             list[.Operator]: decomposition of the operator
+
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane import ApproxTimeEvolution
+
+            num_qubits = 2
+
+            hamiltonian = qml.Hamiltonian(
+                [0.1, 0.2, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0), qml.PauliX(1)]
+            )
+
+            evolution_time = 0.5
+            trotter_steps = 1
+
+            coeffs_and_time = [*hamiltonian.coeffs, evolution_time]
+
+
+        >>> ApproxTimeEvolution.compute_decomposition(
+        ...     *coeffs_and_time, wires=range(num_qubits), n=trotter_steps, hamiltonian=hamiltonian
+        ... )
+        [PauliRot(0.1, ZZ, wires=[0, 1]), PauliRot(0.2, X, wires=[0]), PauliRot(0.3, X, wires=[1])]
         """
         pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 

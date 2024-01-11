@@ -14,6 +14,7 @@
 """
 Unit tests for the available non-parametric qubit operations
 """
+# pylint: disable=too-few-public-methods
 import copy
 import itertools
 
@@ -71,8 +72,8 @@ SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
 
 
 class TestOperations:
-    @pytest.mark.parametrize("op_cls, mat", NON_PARAMETRIZED_OPERATIONS)
-    def test_nonparametrized_op_copy(self, op_cls, mat, tol):
+    @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
+    def test_nonparametrized_op_copy(self, op_cls, _, tol):
         """Tests that copied nonparametrized ops function as expected"""
         op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
         copied_op = copy.copy(op)
@@ -187,7 +188,7 @@ class TestDecompositions:
 
         assert len(res) == 4
 
-        assert all([res[i].wires == Wires([0]) for i in range(4)])
+        assert all(res[i].wires == Wires([0]) for i in range(4))
 
         assert res[0].name == "RZ"
         assert res[1].name == "RY"
@@ -537,197 +538,6 @@ class TestEigenval:
         assert np.allclose(evals, expected)
 
 
-class TestBarrier:
-    """Tests that the Barrier gate is correct."""
-
-    def test_use_barrier(self):
-        r"""Test that the barrier influences compilation."""
-
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][1]
-
-        assert gates == 3
-
-        optimized_qfunc = qml.compile()(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
-
-        assert optimized_gates == 2
-
-    def test_barrier_only_visual(self):
-        r"""Test that the barrier doesn't influence compilation when the only_visual parameter is True."""
-
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(only_visual=True, wires=0)
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        optimized_qfunc = qml.compile()(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
-
-        assert optimized_gates == 0
-
-    def test_barrier_edge_cases(self):
-        r"""Test that the barrier works in edge cases."""
-
-        def qfunc():
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][1]
-
-        assert gates == 4
-
-        optimized_qfunc = qml.compile()(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
-
-        assert optimized_gates == 0
-
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][1]
-
-        assert gates == 4
-
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(only_visual=True, wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        optimized_qfunc = qml.compile()(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
-
-        assert optimized_gates == 2
-
-    def test_barrier_adjoint(self):
-        """Test if adjoint of a Barrier is decomposed correctly."""
-
-        base = qml.Barrier(wires=(0, 1))
-        adj = qml.ops.op_math.Adjoint(base)
-
-        assert adj.decomposition()[0].name == "Barrier"
-
-    def test_barrier_control(self):
-        """Test if Barrier is correctly included in queue when controlling"""
-        dev = qml.device("default.qubit", wires=3)
-
-        def barrier():
-            qml.PauliX(wires=0)
-            qml.Barrier(wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
-
-        @qml.qnode(dev)
-        def circuit():
-            barrier()
-            qml.ctrl(barrier, 2)()
-            return qml.state()
-
-        circuit()
-        tape = circuit.tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
-
-        assert tape.operations[1].name == "Barrier"
-        assert tape.operations[4].name == "Barrier"
-
-    def test_barrier_empty_wire_list_no_error(self):
-        """Test that barrier does not raise an error when instantiated with wires=[]."""
-        barrier = qml.Barrier(wires=[])
-        assert isinstance(barrier, qml.Barrier)
-
-    def test_simplify_only_visual_one_wire(self):
-        """Test that if `only_visual=True`, the operation simplifies to the identity."""
-        op = qml.Barrier(wires="a", only_visual=True)
-        simplified = op.simplify()
-        assert qml.equal(simplified, qml.Identity("a"))
-
-    def test_simplify_only_visual_multiple_wires(self):
-        """Test that if `only_visual=True`, the operation simplifies to a product of identities."""
-        op = qml.Barrier(wires=(0, 1, 2), only_visual=True)
-        simplified = op.simplify()
-        assert isinstance(simplified, qml.ops.op_math.Prod)
-        for i, op in enumerate(simplified.operands):
-            assert qml.equal(op, qml.Identity(i))
-
-    def test_simplify_only_visual_False(self):
-        """Test that no simplification occurs if only_visual is False."""
-        op = qml.Barrier(wires=(0, 1, 2, 3), only_visual=False)
-        assert op.simplify() is op
-
-    def test_qml_matrix_fails(self):
-        """Test that qml.matrix(op) and op.matrix() both fail."""
-        op = qml.Barrier(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            qml.matrix(op)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            op.matrix()
-
-
-class TestWireCut:
-    """Tests for the WireCut operator"""
-
-    def test_behaves_as_identity(self):
-        """Tests that the WireCut operator behaves as the Identity in the
-        absence of cutting"""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def with_wirecut():
-            qml.PauliX(wires=0)
-            qml.WireCut(wires=0)
-            return qml.state()
-
-        @qml.qnode(dev)
-        def without_wirecut():
-            qml.PauliX(wires=0)
-            return qml.state()
-
-        assert np.allclose(with_wirecut(), without_wirecut())
-
-    def test_wires_empty_list_raises_error(self):
-        """Test that the WireCut operator raises an error when instantiated with an empty list."""
-        with pytest.raises(
-            ValueError, match="WireCut: wrong number of wires. At least one wire has to be given."
-        ):
-            qml.WireCut(wires=[])
-
-    def test_qml_matrix_fails(self):
-        """Test that qml.matrix(op) and op.matrix() both fail."""
-        op = qml.WireCut(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            qml.matrix(op)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            op.matrix()
-
-
 class TestMultiControlledX:
     """Tests for the MultiControlledX"""
 
@@ -929,6 +739,7 @@ class TestMultiControlledX:
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on the case where there are many work wires."""
+        # pylint: disable=protected-access
         control_wires = range(n_ctrl_wires)
         target_wire = n_ctrl_wires
         work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
@@ -960,6 +771,7 @@ class TestMultiControlledX:
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on the case where there is one work wire."""
+        # pylint: disable=protected-access
         control_wires = Wires(range(n_ctrl_wires))
         target_wire = n_ctrl_wires
         work_wires = n_ctrl_wires + 1
@@ -972,9 +784,7 @@ class TestMultiControlledX:
             )
         tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=1)
-        assert all(
-            isinstance(op, qml.Toffoli) or isinstance(op, qml.CNOT) for op in tape.operations
-        )
+        assert all(isinstance(op, (qml.Toffoli, qml.CNOT)) for op in tape.operations)
 
         @qml.qnode(dev)
         def f(bitstring):
@@ -995,7 +805,7 @@ class TestMultiControlledX:
         control_target_wires = range(4)
         op = qml.MultiControlledX(wires=control_target_wires)
 
-        match = f"At least one work wire is required to decompose operation: MultiControlledX"
+        match = "At least one work wire is required to decompose operation: MultiControlledX"
         with pytest.raises(ValueError, match=match):
             op.decomposition()
 
@@ -1098,7 +908,7 @@ class TestMultiControlledX:
 
         @qml.qnode(dev)
         def f():
-            qml.QubitStateVector(rnd_state, wires=range(n_all_wires))
+            qml.StatePrep(rnd_state, wires=range(n_all_wires))
             qml.MultiControlledX(wires=control_target_wires)
             for op in tape.operations:
                 op.queue()
@@ -1282,6 +1092,8 @@ class TestPowMethod:
 class TestControlledMethod:
     """Tests for the _controlled method of non-parametric operations."""
 
+    # pylint: disable=protected-access
+
     def test_PauliX(self):
         """Test the PauliX _controlled method."""
         out = qml.PauliX(0)._controlled("a")
@@ -1325,7 +1137,7 @@ class TestSparseMatrix:
         expected_sparse_mat = csr_matrix(mat)
         sparse_mat = op.sparse_matrix()
 
-        assert type(sparse_mat) == type(expected_sparse_mat)
+        assert isinstance(sparse_mat, type(expected_sparse_mat))
         assert all(sparse_mat.data == expected_sparse_mat.data)
         assert all(sparse_mat.indices == expected_sparse_mat.indices)
 
@@ -1409,7 +1221,7 @@ involution_ops = [  # ops who are their own inverses
 
 
 @pytest.mark.parametrize("op", involution_ops)
-def test_adjoint_method(op, tol):
+def test_adjoint_method(op):
     adj_op = copy.copy(op)
     for _ in range(4):
         adj_op = adj_op.adjoint()
@@ -1427,4 +1239,5 @@ op_pauli_rep = (
 
 @pytest.mark.parametrize("op, rep", op_pauli_rep)
 def test_pauli_rep(op, rep):
-    assert op._pauli_rep == rep
+    # pylint: disable=protected-access
+    assert op.pauli_rep == rep

@@ -14,11 +14,23 @@
 """
 Unit tests for the ArbitraryStatePreparation template.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.mottonen import gray_code, _get_alpha_y
+
+
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+
+    state = np.array([1, 2j, 3, 4j, 5, 6j, 7, 8j])
+    state = state / np.linalg.norm(state)
+
+    op = qml.MottonenStatePreparation(state_vector=state, wires=range(3))
+
+    qml.ops.functions.assert_valid(op)
 
 
 class TestHelpers:
@@ -121,19 +133,22 @@ class TestDecomposition:
         ([1 / 2, 0, 1j / 2, 1j / np.sqrt(2)], [0, 1], [1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]),
     ])
     # fmt: on
-    def test_state_preparation_fidelity(
-        self, tol, qubit_device_3_wires, state_vector, wires, target_state
-    ):
+    def test_state_preparation_fidelity(self, tol, state_vector, wires, target_state):
         """Tests that the template produces correct states with high fidelity."""
 
-        @qml.qnode(qubit_device_3_wires)
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def circuit():
             qml.MottonenStatePreparation(state_vector, wires)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+            return (
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(qml.PauliZ(2)),
+                qml.state(),
+            )
 
-        circuit()
+        results = circuit()
 
-        state = circuit.device.state.ravel()
+        state = results[-1].ravel()
         fidelity = abs(np.vdot(state, target_state)) ** 2
 
         # We test for fidelity here, because the vector themselves will hardly match
@@ -206,18 +221,23 @@ class TestDecomposition:
     ])
     # fmt: on
     def test_state_preparation_probability_distribution(
-        self, tol, qubit_device_3_wires, state_vector, wires, target_state
+        self, tol, state_vector, wires, target_state
     ):
         """Tests that the template produces states with correct probability distribution."""
 
-        @qml.qnode(qubit_device_3_wires)
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def circuit():
             qml.MottonenStatePreparation(state_vector, wires)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+            return (
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(qml.PauliZ(2)),
+                qml.state(),
+            )
 
-        circuit()
+        results = circuit()
 
-        state = circuit.device.state.ravel()
+        state = results[-1].ravel()
 
         probabilities = np.abs(state) ** 2
         target_probabilities = np.abs(target_state) ** 2
@@ -253,7 +273,7 @@ class TestDecomposition:
         # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
         spy = mocker.spy(circuit.device, "execute")
         circuit(state_vector)
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         assert tape.specs["resources"].gate_types["CNOT"] == n_CNOT
 
@@ -267,17 +287,30 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.MottonenStatePreparation(state, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.MottonenStatePreparation(state, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+    def test_batched_decomposition_fails(self):
+        """Test that attempting to decompose a MottonenStatePreparation operation with
+        broadcasting raises an error."""
+        state = np.array([[1 / 2, 1 / 2, 1 / 2, 1 / 2], [0.0, 0.0, 0.0, 1.0]])
+
+        op = qml.MottonenStatePreparation(state, wires=[0, 1])
+        with pytest.raises(ValueError, match="Broadcasting with MottonenStatePreparation"):
+            _ = op.decomposition()
+
+        with pytest.raises(ValueError, match="Broadcasting with MottonenStatePreparation"):
+            _ = qml.MottonenStatePreparation.compute_decomposition(state, qml.wires.Wires([0, 1]))
 
 
 class TestInputs:
@@ -374,7 +407,6 @@ class TestCasting:
     @pytest.mark.jax
     def test_jax(self, inputs, expected):
         """Test that MottonenStatePreparation can be correctly used with the JAX interface."""
-        import jax
         from jax import numpy as jnp
 
         inputs = jnp.array(inputs)

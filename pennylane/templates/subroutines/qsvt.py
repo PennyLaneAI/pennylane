@@ -16,12 +16,12 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
+import numpy as np
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.operation import AnyWires, Operation
-from pennylane import numpy as np
 
 
 def qsvt(A, angles, wires, convention=None):
@@ -263,7 +263,15 @@ class QSVT(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, UA, projectors, do_queue=None, id=None):
+    def _flatten(self):
+        data = (self.hyperparameters["UA"], self.hyperparameters["projectors"])
+        return data, tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _) -> "QSVT":
+        return cls(*data)
+
+    def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, qml.operation.Operator):
             raise ValueError("Input block encoding must be an Operator")
 
@@ -276,7 +284,7 @@ class QSVT(Operation):
         proj_wires = set.union(*(proj.wires.toset() for proj in projectors))
 
         total_wires = ua_wires.union(proj_wires)
-        super().__init__(wires=total_wires, do_queue=do_queue, id=id)
+        super().__init__(wires=total_wires, id=id)
 
     @staticmethod
     def compute_decomposition(
@@ -321,17 +329,20 @@ class QSVT(Operation):
         UA_adj = copy.copy(UA)
 
         for idx, op in enumerate(projectors[:-1]):
-            qml.apply(op)
+            if qml.QueuingManager.recording():
+                qml.apply(op)
             op_list.append(op)
 
             if idx % 2 == 0:
-                qml.apply(UA)
+                if qml.QueuingManager.recording():
+                    qml.apply(UA)
                 op_list.append(UA)
 
             else:
                 op_list.append(adjoint(UA_adj))
 
-        qml.apply(projectors[-1])
+        if qml.QueuingManager.recording():
+            qml.apply(projectors[-1])
         op_list.append(projectors[-1])
 
         return op_list

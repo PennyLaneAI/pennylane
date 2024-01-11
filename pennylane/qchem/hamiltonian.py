@@ -15,7 +15,6 @@
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
-
 import pennylane as qml
 
 from .hartree_fock import nuclear_energy, scf
@@ -148,6 +147,8 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     Args:
         mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
+        core (list[int]): indices of the core orbitals
+        active (list[int]): indices of the active orbitals
 
     Returns:
         function: function that computes the fermionic hamiltonian
@@ -170,8 +171,9 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
             *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
+            FermiSentence: fermionic Hamiltonian
         """
+
         core_constant, one, two = electron_integrals(mol, core, active)(*args)
 
         return fermionic_observable(core_constant, one, two, cutoff)
@@ -185,6 +187,8 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     Args:
         mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
+        core (list[int]): indices of the core orbitals
+        active (list[int]): indices of the active orbitals
 
     Returns:
         function: function that computes the qubit hamiltonian
@@ -199,11 +203,11 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> args = [alpha]
     >>> h = diff_hamiltonian(mol)(*args)
     >>> h.coeffs
-    tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
+    array([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
              0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
             -0.04256036+0.j,  0.04256036+0.j, -0.34724873+0.j,
              0.13290293+0.j, -0.34724873+0.j,  0.17546329+0.j,
-             0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j], requires_grad=True)
+             0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j])
     """
 
     def _molecular_hamiltonian(*args):
@@ -215,6 +219,7 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         Returns:
             Hamiltonian: the qubit Hamiltonian
         """
+
         h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
         return qubit_observable(h_ferm)

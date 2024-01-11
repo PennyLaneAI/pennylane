@@ -14,6 +14,7 @@
 """
 Unit tests for Hartree-Fock functions.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -34,7 +35,7 @@ def test_scf_leaves_random_seed_unchanged():
     args = [alpha]
 
     initial_numpy_state = np.random.get_state()
-    v_fock, coeffs, fock_matrix, h_core, rep_tensor = qchem.scf(mol)(*args)
+    qchem.scf(mol)(*args)
     final_numpy_state = np.random.get_state()
 
     assert initial_numpy_state[0] == final_numpy_state[0]
