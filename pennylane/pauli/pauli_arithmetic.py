@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
+import warnings
 from copy import copy
 from functools import reduce, lru_cache
 from typing import Iterable
@@ -225,6 +226,10 @@ class PauliWord(dict):
         """
         if isinstance(other, PauliWord):
             # this is legacy support and will be removed after a deprecation cycle
+            warnings.warn(
+                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+                qml.PennyLaneDeprecationWarning,
+            )
             return self @ other
 
         if isinstance(other, TensorLike):
@@ -549,7 +554,7 @@ class PauliSentence(dict):
         return final_ps
 
     def __mul__(self, other):
-        """Multiply a PauliWord by a scalar#
+        """Multiply a PauliWord by a scalar
 
         Args:
             other (Scalar): The scalar to multiply the PauliWord with
@@ -559,6 +564,10 @@ class PauliSentence(dict):
         """
         if isinstance(other, PauliSentence):
             # this is legacy support and will be removed after a deprecation cycle
+            warnings.warn(
+                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+                qml.PennyLaneDeprecationWarning,
+            )
             return self @ other
 
         if isinstance(other, TensorLike):

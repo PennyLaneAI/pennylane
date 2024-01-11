@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for interfaces.set_shots
+Tests for workflow.set_shots
 """
 
 import pytest
 
 import pennylane as qml
-from pennylane.interfaces import set_shots
+from pennylane.workflow import set_shots
 from pennylane.measurements import Shots
 
 
