@@ -40,6 +40,7 @@
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
+Pablo Antonio Moreno Casares,
 Christina Lee,
 Isaac De Vlugt,
 Matthew Silverman.
