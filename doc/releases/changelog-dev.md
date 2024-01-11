@@ -48,7 +48,7 @@
 
 * `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
   values that are no longer needed.
-  [()]()
+  [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
 
 <h3>Documentation 📝</h3>
 
