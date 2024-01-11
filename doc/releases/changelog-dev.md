@@ -30,6 +30,9 @@
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
+* A typo in the code example for `qml.qchem.dipole_of` has been fixed.
+  [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036) 
+
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
