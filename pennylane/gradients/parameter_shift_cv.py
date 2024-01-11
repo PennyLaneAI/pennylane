@@ -140,7 +140,7 @@ def _gradient_analysis_cv(tape):
         info["grad_method"] = _grad_method(tape, idx)
 
 
-def _grad_method_validation_cv(method, tape):
+def _grad_method_validation_cv(method, tape):  # pragma: no cover
     """Validates if the gradient method requested is supported by the trainable
     parameters of a tape, and returns the allowed parameter gradient methods."""
     diff_methods = {
@@ -173,7 +173,7 @@ def _gradient_analysis_and_validation_cv(tape, method):
     return _grad_method_validation_cv(method, tape)
 
 
-def choose_grad_methods_cv(diff_methods, argnum):
+def _choose_grad_methods_cv(diff_methods, argnum):  # pragma: no cover
     """Chooses the trainable parameters to use for computing the Jacobian
     by returning a map of their indices and differentiation methods.
 
@@ -777,7 +777,7 @@ def param_shift_cv(
     if all(g == "0" for g in diff_methods):
         return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    method_map = choose_grad_methods_cv(diff_methods, argnum)
+    method_map = _choose_grad_methods_cv(diff_methods, argnum)
     var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
 
     unsupported_params = []
