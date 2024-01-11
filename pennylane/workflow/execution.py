@@ -658,7 +658,11 @@ def execute(
 
     _grad_on_execution = False
 
-    if device_vjp and "lightning" in getattr(device, "short_name", ""):
+    if (
+        device_vjp
+        and "lightning" in getattr(device, "short_name", "")
+        and interface in jpc_interfaces
+    ):
         if interface == "jax-jit" and "use_device_state" in gradient_kwargs:
             gradient_kwargs["use_device_state"] = False
         tapes = [expand_fn(t) for t in tapes]

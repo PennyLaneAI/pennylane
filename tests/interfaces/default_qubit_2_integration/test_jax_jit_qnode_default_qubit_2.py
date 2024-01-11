@@ -2932,6 +2932,7 @@ class TestSinglePrecision:
             assert qml.math.allclose(grad, -np.sin(0.1))
         finally:
             jax.config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
 
     @pytest.mark.parametrize("diff_method", ("adjoint", "finite-diff"))
     def test_complex64_return(self, diff_method):
@@ -2952,6 +2953,7 @@ class TestSinglePrecision:
 
         finally:
             jax.config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
 
     def test_int32_return(self):
         """Test that jax jit forward execution works with samples and int32"""
@@ -2969,3 +2971,4 @@ class TestSinglePrecision:
             _ = circuit(jax.numpy.array(0.1))
         finally:
             jax.config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
