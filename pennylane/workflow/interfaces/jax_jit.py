@@ -42,7 +42,7 @@ import jax.numpy as jnp
 import pennylane as qml
 from pennylane.typing import ResultBatch
 
-from .jacobian_products import _compute_jvps
+from ..jacobian_products import _compute_jvps
 
 from .jax import _NonPytreeWrapper
 
@@ -70,6 +70,7 @@ def _set_parameters_on_copy(tapes, params):
     return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
 
 
+# pylint: disable=no-member
 def _jax_dtype(m_type):
     if m_type == int:
         return jnp.int64 if jax.config.jax_enable_x64 else jnp.int32

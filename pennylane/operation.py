@@ -191,6 +191,7 @@ return newer arithmetic operators, the ``operation`` module provides the followi
     ~enable_new_opmath
     ~disable_new_opmath
     ~active_new_opmath
+    ~convert_to_opmath
 
 Other
 ~~~~~
@@ -2227,6 +2228,9 @@ class Tensor(Observable):
         elif isinstance(other, Observable):
             self.obs.append(other)
 
+        elif isinstance(other, Operator):
+            return qml.prod(*self.obs, other)
+
         else:
             return NotImplemented
 
@@ -3009,6 +3013,27 @@ def active_new_opmath():
     True
     """
     return __use_new_opmath
+
+
+def convert_to_opmath(op):
+    """
+    Converts :class:`~pennylane.Hamiltonian` and :class:`.Tensor` instances
+    into arithmetic operators. Objects of any other type are returned directly.
+
+    Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
+    :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
+
+    Args:
+        op (Operator): The operator instance to convert
+
+    Returns:
+        Operator: An operator using the new arithmetic operations, if relevant
+    """
+    if isinstance(op, qml.Hamiltonian):
+        return qml.dot(*op.terms())
+    if isinstance(op, Tensor):
+        return qml.prod(*op.obs)
+    return op
 
 
 def __getattr__(name):
