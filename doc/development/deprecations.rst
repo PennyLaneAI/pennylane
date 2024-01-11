@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+  dummy values that are no longer needed.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
 
   - Contents moved in v0.35
