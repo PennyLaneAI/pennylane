@@ -135,6 +135,8 @@ class TransformProgram:
     def __getitem__(self, idx):
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         transform program"""
+        if isinstance(idx, slice):
+            return TransformProgram(self._transform_program[idx])
         return self._transform_program[idx]
 
     def __bool__(self):

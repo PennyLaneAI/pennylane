@@ -41,6 +41,7 @@ def draw(
     decimals=2,
     max_length=100,
     show_matrices=True,
+    transform_stage=-1,
     expansion_strategy=None,
 ):
     """Create a function that draws the given qnode or quantum function.
