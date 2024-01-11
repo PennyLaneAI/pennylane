@@ -331,7 +331,7 @@ class Sum(CompositeOp):
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return np.min(wires.toset()), len(wires), str(op)
+            return np.min(wires.tolist()), len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 
