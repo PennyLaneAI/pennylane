@@ -23,6 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
+from pennylane.wires import Wires
 from pennylane.operation import Operator
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
