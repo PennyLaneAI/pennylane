@@ -260,7 +260,7 @@
   gateset. To account for this, a desired total circuit decomposition error, `epsilon`, must be 
   specified when using `qml.clifford_t_decomposition`:
 
-  ```python
+  ``` python
   dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
@@ -269,9 +269,9 @@
       return qml.state()
 
   circuit = qml.clifford_t_decomposition(circuit, epsilon=0.1)
-
   ```
-  ```pycon
+  
+  ``` pycon
   >>> print(qml.draw(circuit)())
   0: ──T†──H──T†──H──T──H──T──H──T──H──T──H──T†──H──T†──T†──H──T†──H──T──H──T──H──T──H──T──H──T†──H
 
@@ -381,9 +381,7 @@
 * The function `qml.draw_mpl` now accept a keyword argument `fig` to specify the output figure window.
   [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
 
-* `qml.equal` now supports the comparison of `QuantumScript` and `BasisRotation` objects.
-  [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
-  [(#4919)](https://github.com/PennyLaneAI/pennylane/pull/4919)
+<h4>Better support for batching</h4>
 
 * `qml.AmplitudeEmbedding` now supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
@@ -458,6 +456,9 @@
   [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
 
 <h4>Other improvements</h4>
+
+* Add PyTree-serialization interface for the `Wires` class.
+  [(#4998)](https://github.com/PennyLaneAI/pennylane/pull/4998)
 
 * PennyLane now supports Python 3.12.
   [(#4985)](https://github.com/PennyLaneAI/pennylane/pull/4985)
@@ -769,4 +770,5 @@ Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
-Justin Woodring.
+Justin Woodring,
+Sergei Mironov.
