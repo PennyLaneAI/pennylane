@@ -41,6 +41,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `ClassicalShadow.entropy()` no longer needs an `atol` keyword as a better
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+  [()]()
+
 <h3>Deprecations 👋</h3>
 
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.

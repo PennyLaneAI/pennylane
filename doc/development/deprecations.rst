@@ -98,13 +98,6 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better 
-  method to estimate entropies from approximate density matrix reconstructions
-  (with potentially negative eigenvalues) has been implemented.
-
-  - Deprecated in v0.34
-  - Will be removed in v0.35
-
 * ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
   but instead use ``@`` to conform with the PennyLane convention.
 
@@ -113,6 +106,13 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+
+  - Deprecated in v0.34
+  - Removed in v0.35
 
 * Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
 
