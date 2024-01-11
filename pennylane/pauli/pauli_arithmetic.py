@@ -241,7 +241,8 @@ class PauliWord(dict):
     __rmul__ = __mul__
 
     def __add__(self, other):
-        """Add PauliWords/Sentences"""
+        """Add PauliWord instances and scalars to PauliWord.
+        Returns a PauliSentence."""
         # Note that the case of PauliWord + PauliSentence is covered in PauliSentence
         if isinstance(other, PauliWord):
             if other == self:
