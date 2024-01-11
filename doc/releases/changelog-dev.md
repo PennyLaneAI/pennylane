@@ -10,22 +10,18 @@
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
 * Upgrade Pauli arithmetic with multiplying by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
-  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
-
-* Upgrade Pauli arithmetic addition. You can now intuitively add together 
+  Upgrade Pauli arithmetic addition. You can now intuitively add together 
   `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
   For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
   sentence `ps1 = PauliSentence({pw1: 3.})`.
+  Upgrade Pauli arithmetic with subtraction. You can now subtract `PauliWord` and `PauliSentence`
+  instances, as well as scalars, from each other. For example `ps1 - pw1 - 1`.
+  Overall, you can now construct operators like `0.5 * pw1 - 1.5 * ps1 + 2`.
+  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
-
-* Upgrade Pauli arithmetic with subtraction. You can now subtract `PauliWord` and `PauliSentence`
-  instances, as well as scalars, from each other.
-  For example `ps1 - pw1 - 1` for `pw1 = PauliWord({0: "X", 1: "Y"})` and `ps1 = PauliSentence({pw1: 3.})`.
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
-
-* Upgrade Pauli arithmetic with multiplying by scalars, addition and subtraction. You can now construct operators like `0.5 * w1 - 1.5 * w2 + 2`.
   [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
-  
+
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
 
 * Composite operations (eg. those made with `qml.prod` and `qml.sum`) convert `Hamiltonian` and
