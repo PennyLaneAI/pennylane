@@ -78,20 +78,24 @@ and :class:`~pennylane.pauli.PauliSentence` objects like the spin-1/2 XXZ model 
 
 .. math:: H_\text{XXZ} = \sum_j [J^\bot (X_j X_{j+1} + Y_j Y_{j+1}) + J^\text{ZZ} Z_j Z_{j+1} + h Z_j].
 
-Here we look at the simple topology of a one-dimensional chain with periodic boundary conditions (i.e. qubit number :math:`n+1 \equiv 1`).
+Here we look at the simple topology of a one-dimensional chain with periodic boundary conditions
+(i.e. qubit number :math:`n \equiv 0` for pythonic numbering of wires, e.g. `[0, 1, 2, 3]` for `n=4`).
 In code we can do this via the following example with 4 qubits.
 
 .. code-block:: python3
 
-    n_wires = 4
+    n = 4
     J_orthogonal = 1.5
-    ops = [J_orthogonal * (PauliWord({i:"X", (i+1)%n_wires:"X"}) + PauliWord({i:"Y", (i+1)%n_wires:"Y"})) for i in range(n_wires)]
+    ops = [
+        J_orthogonal * (PauliWord({i:"X", (i+1)%n:"X"}) + PauliWord({i:"Y", (i+1)%n:"Y"}))
+        for i in range(n)
+    ]
 
     J_zz = 0.5
-    ops += [J_zz * PauliWord({i:"Z", (i+1)%n_wires:"Z"}) for i in range(n_wires)]
+    ops += [J_zz * PauliWord({i:"Z", (i+1)%n:"Z"}) for i in range(n)]
 
     h = 2.
-    ops += [h * PauliWord({i:"Z"}) for i in range(n_wires)]
+    ops += [h * PauliWord({i:"Z"}) for i in range(n)]
 
     H = sum(ops)
 
