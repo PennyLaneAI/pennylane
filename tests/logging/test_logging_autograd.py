@@ -82,11 +82,11 @@ class TestLogging:
 
         log_records_expected = [
             (
-                "pennylane.qnode",
+                "pennylane.workflow.qnode",
                 ["Creating QNode(func=<function TestLogging.test_dq_qnode_execution"],
             ),
             (
-                "pennylane.interfaces.execution",
+                "pennylane.workflow.execution",
                 [
                     "device=<default.qubit device (wires=2)",
                     "gradient_fn=None, interface=None",
@@ -125,7 +125,7 @@ class TestLogging:
 
         log_records_expected = [
             (
-                "pennylane.qnode",
+                "pennylane.workflow.qnode",
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
                     "device=<default.qubit device (wires=2)",
@@ -133,7 +133,7 @@ class TestLogging:
                 ],
             ),
             (
-                "pennylane.interfaces.execution",
+                "pennylane.workflow.execution",
                 [
                     "Entry with args=(tapes=(<QuantumScript: wires=[0], params=1>,)",
                     _grad_log_map[diff_method],
