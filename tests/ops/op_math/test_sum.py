@@ -25,7 +25,6 @@ import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
-from pennylane.wires import Wires
 
 no_mat_ops = (
     qml.Barrier,
