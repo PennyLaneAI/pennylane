@@ -43,7 +43,7 @@
 
 * Passing additional arguments to a transform that decorates a QNode must be done through the use
   of `functools.partial`.
-  [()]()
+  [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
 
 <h3>Deprecations 👋</h3>
 
