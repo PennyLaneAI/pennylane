@@ -52,6 +52,32 @@ ps5 = PauliSentence({})
 sentences = [ps1, ps2, ps3, ps4, ps5, ps1_hamiltonian, ps2_hamiltonian]
 
 
+class TestDeprecations:
+    def test_deprecation_warning_PauliWord(
+        self,
+    ):
+        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliWords"""
+        pauli1 = PauliWord({0: "X"})
+        pauli2 = PauliWord({0: "Y"})
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
+        ):
+            _ = pauli1 * pauli2
+
+    def test_deprecation_warning_PauliSentence(
+        self,
+    ):
+        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliSentences"""
+        pauli1 = PauliSentence({PauliWord({0: "X"}): 1})
+        pauli2 = PauliSentence({PauliWord({0: "Y"}): 1})
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
+        ):
+            _ = pauli1 * pauli2
+
+
 @pytest.mark.parametrize("pauli1", words)
 @pytest.mark.parametrize("pauli2", words)
 def test_legacy_multiplication_pwords(pauli1, pauli2):
