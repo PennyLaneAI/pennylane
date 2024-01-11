@@ -254,7 +254,6 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -785,10 +784,17 @@ class Operator(abc.ABC):
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
-        if wire_order is None or self.wires == Wires(wire_order):
+        if (
+            wire_order is None
+            or self.wires == Wires(wire_order)
+            or (
+                self in qml.ops.qubit.attributes.symmetric_over_all_wires
+                and set(self.wires) == set(wire_order)
+            )
+        ):
             return canonical_matrix
 
-        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+        return qml.math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
@@ -831,7 +837,9 @@ class Operator(abc.ABC):
             *self.parameters, **self.hyperparameters
         )
 
-        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
+        return qml.math.expand_matrix(
+            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
+        )
 
     @staticmethod
     def compute_eigvals(*params, **hyperparams):

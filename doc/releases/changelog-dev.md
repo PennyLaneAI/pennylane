@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improve efficiency of matrix calculation when operator is symmetric over wires
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
@@ -37,6 +40,7 @@
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
-Christina Lee,
 Isaac De Vlugt,
+Christina Lee,
+Mudit Pandey,
 Matthew Silverman.

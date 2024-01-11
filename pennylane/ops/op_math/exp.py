@@ -30,7 +30,6 @@ from pennylane.operation import (
     Operator,
     OperatorPropertyUndefined,
     Tensor,
-    expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.wires import Wires
@@ -391,10 +390,10 @@ class Exp(ScalarSymbolicOp, Operation):
                     else math.diag(eigvals)
                 )
                 if len(self.diagonalizing_gates()) == 0:
-                    return expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
+                    return math.expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
                 diagonalizing_mat = qml.matrix(self.diagonalizing_gates, wire_order=self.wires)()
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
-                return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+                return math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
             except OperatorPropertyUndefined:
                 warn(
                     f"The autograd matrix for {self} is not differentiable. "
