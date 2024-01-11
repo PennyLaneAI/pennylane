@@ -4,9 +4,14 @@
 
 <h3>New features since last release</h3>
 
-* `default.clifford` device enables efficient simulation of larger-scale Clifford circuits
-  defined in PennyLane using [stim](https://github.com/quantumlib/Stim).
+* A new `default.clifford` device enables efficient simulation of large-scale Clifford circuits
+  defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
   [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
+
+  Given a circuit with only Clifford gates, one can use this device to obtain the usual range
+  of PennyLane [measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html)
+  as well as the state represented in the Tableau form of
+  [Aaronson & Gottesman (2004)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328):
 
   ```python
   import pennylane as qml
@@ -20,15 +25,10 @@
       qml.ISWAP(wires=[0, 1])
       qml.Hadamard(wires=[0])
       return qml.state()
-
-  tableau = circuit()
   ```
 
-  Given a circuit with the Clifford gates, one can use this device obtaining the Tableau representation
-  as given in [Aaronson & Gottesman (2004)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328)
-
   ```pycon
-  >>> tableau
+  >>> circuit()
   array([[0, 1, 1, 0, 0],
          [1, 0, 1, 1, 1],
          [0, 0, 0, 1, 0],

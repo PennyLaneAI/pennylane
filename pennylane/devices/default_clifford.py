@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the clifford simulator using stim
+This module contains the clifford simulator using ``stim``
 """
 
 from dataclasses import replace
@@ -23,6 +23,7 @@ import concurrent.futures
 import numpy as np
 
 import pennylane as qml
+from pennylane import DeviceError
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
@@ -112,17 +113,18 @@ def _import_stim():
 
 
 class DefaultClifford(Device):
-    r"""A PennyLane device written in Python and capable of executing Clifford circuits using
-    `stim (2021) <https://github.com/quantumlib/stim/tree/main>`_.
+    r"""A PennyLane device for fast simulation of Clifford circuits using
+    `stim (2021) <https://github.com/quantumlib/stim/>`_.
 
     Args:
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
-        max_error (float): The maximum permissible operator norm error for decomposing circuits with non-Clifford gate operations
-            into Clifford+T basis. The default is ``None`` as this device currently supports only Clifford simulations.
         tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
-            Default is ``True``, which makes it return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
+            which makes the device return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
@@ -159,7 +161,7 @@ class DefaultClifford(Device):
         :href: clifford-tableau-theory
 
         The device represents a state by the inverse of a Tableau
-        (`Aaronson & Gottesman (2004) <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328>`_)
+        (`Sec. III, Aaronson & Gottesman (2004) <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328>`_)
         consisiting of binary variable :math:`x_{ij},\ z_{ij}` for all :math:`i\in\left\{1,\ldots,2n\right\}`,
         :math:`j\in\left\{1,\ldots,n\right\}`, and :math:`r_{i}` for all
         :math:`i\in\left\{1,\ldots,2n\right\}`.
@@ -209,52 +211,9 @@ class DefaultClifford(Device):
         :title: Accelerate calculations with multiprocessing
         :href: clifford-multiprocessing
 
-        Suppose one has a processor with 5 cores or more, these scripts can be executed in
-        parallel as follows
-
-        >>> dev = DefaultClifford(max_workers=5)
-        >>> program, execution_config = dev.preprocess()
-        >>> new_batch, post_processing_fn = program(qscripts)
-        >>> results = dev.execute(new_batch, execution_config=execution_config)
-        >>> post_processing_fn(results)
-
-        If you monitor your CPU usage, you should see 5 new Python processes pop up to
-        crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
-        This may happen if a single device already uses many cores, if NumPy uses a multi-
-        threaded BLAS library like MKL or OpenBLAS for example. The number of threads per
-        process times the number of processes should not exceed the number of cores on your
-        machine. You can control the number of threads per process with the environment
-        variables:
-
-        * ``OMP_NUM_THREADS``
-        * ``MKL_NUM_THREADS``
-        * ``OPENBLAS_NUM_THREADS``
-
-        where the last two are specific to the MKL and OpenBLAS libraries specifically.
-
-        .. warning::
-
-            Multiprocessing may fail depending on your platform and environment (Python shell,
-            script with a protected entry point, Jupyter notebook, etc.) This may be solved
-            changing the so-called start method. The supported start methods are the following:
-
-            * Windows (win32): spawn (default).
-            * macOS (darwin): spawn (default), fork, forkserver.
-            * Linux (unix): spawn, fork (default), forkserver.
-
-            which can be changed with ``multiprocessing.set_start_method()``. For example,
-            if multiprocessing fails on macOS in your Jupyter notebook environment, try
-            restarting the session and adding the following at the beginning of the file:
-
-            .. code-block:: python
-
-                import multiprocessing
-                multiprocessing.set_start_method("fork")
-
-            Additional information can be found in the
+        See the details in :class:`DefaultQubit`'s "Accelerate calculations with multiprocessing" section. 
+        Additional information regarding multiprocessing can be found in the
             `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
-
-
     """
 
     @property
@@ -268,7 +227,6 @@ class DefaultClifford(Device):
         wires=None,
         shots=None,
         check_clifford=True,
-        max_error=None,
         tableau=True,
         seed="global",
         max_workers=None,
@@ -277,13 +235,6 @@ class DefaultClifford(Device):
 
         self._max_workers = max_workers
         self._check_clifford = check_clifford
-
-        if max_error is None:
-            self._max_error = 0.0
-        else:
-            raise ValueError(
-                f"Currently this device doesn't support executing non-Clifford operations, got max_error={max_error}."
-            )
 
         self._tableau = tableau
 
@@ -317,8 +268,6 @@ class DefaultClifford(Device):
             updated_values["device_options"]["rng"] = self._rng
         if "tableau" not in updated_values["device_options"]:
             updated_values["device_options"]["tableau"] = self._tableau
-        if "max_error" not in updated_values["device_options"]:
-            updated_values["device_options"]["max_error"] = self._max_error
         return replace(execution_config, **updated_values)
 
     def preprocess(
@@ -485,7 +434,6 @@ class DefaultClifford(Device):
         stim = _import_stim()
 
         # Account for custom labelled wires
-        # TODO: Fix custom integer ordering :)
         circuit = circuit.map_to_standard_wires()
 
         if circuit.shots:
@@ -542,7 +490,12 @@ class DefaultClifford(Device):
     @staticmethod
     def pl_to_stim(op):
         """Convert PennyLane operation to a Stim operation"""
-        return _GATE_OPERATIONS[op.name], op.wires
+        stim_op = _GATE_OPERATIONS.get(op.name, "DoesNotExist")
+        if stim_op == "DoesNotExist":
+            raise DeviceError(
+                f"Operator {op} not supported on default.clifford and does not provide a decomposition."
+            )
+        return stim_op, op.wires
 
     def measure(self, circuit, tableau_simulator, global_phase, stim):
         """Given a circuit, compute and return the measurement results."""

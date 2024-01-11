@@ -390,10 +390,11 @@ def test_purity_error_not_all_wires():
         circuit()
 
 
-def test_clifford_error():
+@pytest.mark.parametrize("check", [True, False])
+def test_clifford_error(check):
     """Test if an QuantumFunctionError is raised when one of the operations is not Clifford."""
 
-    dev = qml.device("default.clifford", tableau="tableau")
+    dev = qml.device("default.clifford", tableau="tableau", check_clifford=check)
 
     @qml.qnode(dev)
     def circuit():
@@ -407,15 +408,6 @@ def test_clifford_error():
         match=r"Operator RX\(1.0, wires=\[0\]\) not supported on default.clifford and does not provide a decomposition",
     ):
         circuit()
-
-
-def test_max_error():
-    """Test if an ValueError is raised when max_error is not None."""
-
-    with pytest.raises(
-        ValueError, match="Currently this device doesn't support executing non-Clifford operations"
-    ):
-        qml.device("default.clifford", max_error=1e-4)
 
 
 def test_fail_import_stim(monkeypatch):
