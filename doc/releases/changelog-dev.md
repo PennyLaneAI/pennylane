@@ -41,6 +41,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Passing additional arguments to a transform that decorates a QNode must be done through the use
+  of `functools.partial`.
+  [()]()
+
 <h3>Deprecations 👋</h3>
 
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
