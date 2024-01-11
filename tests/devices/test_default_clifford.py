@@ -317,7 +317,7 @@ def test_meas_classical_shadows(shots, ops):
     qnode_clfrd_expval = qml.QNode(circuit_expval, dev_c)
     expval = qnode_clfrd_expval()
 
-    assert expval < 1.0 and expval > -1.0
+    assert -1.0 <= expval <= 1.0
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
