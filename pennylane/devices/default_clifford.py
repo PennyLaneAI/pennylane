@@ -123,6 +123,7 @@ def _import_stim():
     return stim
 
 
+# pylint:disable=too-many-instance-attributes
 class DefaultClifford(Device):
     r"""A PennyLane device written in Python and capable of executing Clifford circuits using
     `stim (2021) <https://github.com/quantumlib/stim/tree/main>`_.
@@ -572,6 +573,7 @@ class DefaultClifford(Device):
             return qml.prod(*op.obs)
         return op
 
+    # pylint:disable=too-many-return-statements
     def _convert_op_to_linear_comb(self, meas_obs, coeffs, paulis):
         """Convert a PennyLane observable to a linear combination of stim Pauli terms"""
 
