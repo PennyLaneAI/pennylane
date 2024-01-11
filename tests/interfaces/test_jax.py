@@ -18,7 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.jax
 
@@ -194,7 +194,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -221,7 +221,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -247,7 +247,7 @@ class TestCaching:
     def test_custom_cache_multiple(self, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -497,7 +497,7 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         results = jax.grad(cost)(params, cache=None)
@@ -692,7 +692,7 @@ class TestVectorValued:
                 qml.expval(qml.PauliZ(1))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jacobian(cost)(params, cache=None)
@@ -719,7 +719,7 @@ class TestVectorValued:
                 qml.expval(qml.PauliZ(1))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jacobian(cost)(params, cache=None)

@@ -25,9 +25,11 @@ import logging
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumTape, QuantumScript
+
+from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
+from .set_shots import set_shots
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -75,7 +77,7 @@ class QNode:
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
-            ``qml.interfaces.SUPPORTED_INTERFACES`` for a list of all accepted strings.
+            ``qml.workflow.SUPPORTED_INTERFACES`` for a list of all accepted strings.
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
