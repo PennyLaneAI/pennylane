@@ -17,6 +17,11 @@
   For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
   sentence `ps1 = PauliSentence({pw1: 3.})`.
   [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
+
+* Upgrade Pauli arithmetic with subtraction. You can now subtract `PauliWord` and `PauliSentence`
+  instances, as well as scalars, from each other.
+  For example `ps1 - pw1 - 1` for `pw1 = PauliWord({0: "X", 1: "Y"})` and `ps1 = PauliSentence({pw1: 3.})`.
+  [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
   
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
