@@ -743,14 +743,14 @@ class TestWireOrderDeprecation:
 
     def test_warning_tape(self):
         """Test that a warning is raised when calling qml.matrix without wire_order on a tape."""
-        qs = qml.tape.QuantumScript([qml.PauliX(0)])
+        qs = qml.tape.QuantumScript([qml.PauliX(1), qml.PauliX(0)])
         with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
             _ = qml.matrix(qs)
 
     def test_warning_qnode(self):
         """Test that a warning is raised when calling qml.matrix without wire_order on a QNode."""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qml.qnode(qml.device("default.qubit"))  # devices does not provide wire_order
         def circuit():
             qml.PauliX(0)
             return qml.state()
@@ -767,11 +767,19 @@ class TestWireOrderDeprecation:
         with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
             _ = qml.matrix(circuit)
 
-    def test_no_warning_op(self):
-        """Test that a warning is not raised when calling qml.matrix on an operator."""
+    def test_no_warning_cases(self):
+        """Test that a warning is not raised when calling qml.matrix on an operator, a
+        single-wire tape, or a QNode with a device that provides wires."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))  # device provides wire_order
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
 
         with catch_warnings(record=True) as record:
             qml.matrix(qml.PauliX(0))
+            qml.matrix(qml.tape.QuantumScript([qml.PauliX(1)]))
+            qml.matrix(circuit)
 
         assert len(record) == 0
 
