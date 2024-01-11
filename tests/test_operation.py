@@ -2673,7 +2673,6 @@ class TestNewOpMath:
         qml.IsingYY(1.23, wires=[1, 0]),
         qml.IsingZZ(1.23, wires=[1, 0]),
         qml.PSWAP(1.23, wires=[1, 0]),
-        qml.CRX(0.123, [1, 0]),
     ],
 )
 def test_symmetric_matrix_early_return(op, mocker):
