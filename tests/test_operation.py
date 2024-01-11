@@ -2657,6 +2657,46 @@ class TestNewOpMath:
             assert qml.equal(op[1], op2)
 
 
+@pytest.mark.parametrize(
+    "op",
+    [
+        qml.CZ(wires=[1, 0]),
+        qml.CCZ(wires=[2, 0, 1]),
+        qml.SWAP(wires=[1, 0]),
+        qml.IsingXX(1.23, wires=[1, 0]),
+        qml.Identity(wires=[3, 1, 2, 0]),
+        qml.ISWAP(wires=[1, 0]),
+        qml.SISWAP(wires=[1, 0]),
+        qml.SQISW(wires=[1, 0]),
+        qml.MultiRZ(1.23, wires=[2, 0, 1, 3]),
+        qml.IsingXY(1.23, wires=[1, 0]),
+        qml.IsingYY(1.23, wires=[1, 0]),
+        qml.IsingZZ(1.23, wires=[1, 0]),
+        qml.PSWAP(1.23, wires=[1, 0]),
+    ],
+)
+def test_symmetric_matrix_early_return(op, mocker):
+    """Test that operators that are symmetric over all wires are not reordered
+    when the wire order only contains the same wires as the operator."""
+    if isinstance(op, qml.CZ):
+        pytest.xfail(
+            "CZ is a symmetric op. But, as it is a ControlledOp, "
+            "which overrides Operator.matrix(), this test will fail."
+        )
+
+    spy = mocker.spy(qml.math, "expand_matrix")
+    actual = op.matrix(wire_order=list(range(len(op.wires))))
+
+    spy.assert_not_called()
+    expected = op.matrix()
+    manually_expanded = qml.math.expand_matrix(
+        expected, wires=op.wires, wire_order=list(range(len(op.wires)))
+    )
+
+    assert np.allclose(actual, expected)
+    assert np.allclose(actual, manually_expanded)
+
+
 def test_op_arithmetic_toggle():
     """Tests toggling op arithmetic on and off, and that it is off by default."""
     assert not qml.operation.active_new_opmath()

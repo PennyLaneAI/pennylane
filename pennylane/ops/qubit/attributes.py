@@ -163,7 +163,6 @@ symmetric_over_all_wires = Attribute(
         "SISWAP",
         "SQISW",
         "MultiRZ",
-        "PauliRot",
         "IsingXY",
         "IsingYY",
         "IsingZZ",
