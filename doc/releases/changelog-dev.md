@@ -12,8 +12,10 @@
 * Upgrade Pauli arithmetic with multiplying by scalars `0.5 * PauliWord({0:"X"})`
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
 
-* Upgrade Pauli arithmetic addition `pw1 + pw2 + 1`. You can now intuitively add together 
-  ``PauliWord`` and ``PauliSentence`` as well as scalars, which are treated implicitly as identities.
+* Upgrade Pauli arithmetic addition. You can now intuitively add together 
+  `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
+  For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
+  sentence `ps1 = PauliSentence({pw1: 3.})`.
   [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
   
 <h4>Community contributions 🥳</h4>
