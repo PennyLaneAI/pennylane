@@ -553,7 +553,7 @@ def dipole_of(
     <Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=1, wires=[0]>]
 
-    >>> print(dip_obs[0]) # x-component of D
+    >>> print(dipole_obs[0]) # x-component of D
     (0.24190977644628117) [Z4]
     + (0.24190977644628117) [Z5]
     + (0.4781123173263878) [Z0]
