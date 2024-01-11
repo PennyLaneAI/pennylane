@@ -32,6 +32,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `StatePrep` operations expanded onto more wires are now compatible with backprop.
+  [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
