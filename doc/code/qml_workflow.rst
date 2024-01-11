@@ -1,7 +1,7 @@
-qml.interfaces
+qml.workflow
 ==============
 
-.. currentmodule:: pennylane.interfaces
+.. currentmodule:: pennylane.workflow
 
 .. warning::
 
@@ -13,4 +13,4 @@ qml.interfaces
 
 .. rubric:: Modules
 
-.. automodule:: pennylane.interfaces
+.. automodule:: pennylane.workflow
