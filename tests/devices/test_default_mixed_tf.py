@@ -605,7 +605,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
@@ -617,7 +617,7 @@ class TestPassthruIntegration:
         phi = -0.234
         lam = 0.654
 
-        params = tf.Variable([theta, phi, lam], trainable=True)
+        params = tf.Variable([theta, phi, lam], trainable=True, dtype=tf.float64)
 
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
@@ -651,14 +651,16 @@ class TestPassthruIntegration:
 
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     @pytest.mark.parametrize(
-        "dev_name,diff_method,mode",
+        "dev_name,diff_method,grad_on_execution",
         [
-            ["default.mixed", "finite-diff", "backward"],
-            ["default.mixed", "parameter-shift", "backward"],
-            ["default.mixed", "backprop", "forward"],
+            ["default.mixed", "finite-diff", False],
+            ["default.mixed", "parameter-shift", False],
+            ["default.mixed", "backprop", True],
         ],
     )
-    def test_ragged_differentiation(self, decorator, interface, dev_name, diff_method, mode, tol):
+    def test_ragged_differentiation(
+        self, decorator, interface, dev_name, diff_method, grad_on_execution, tol
+    ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         # pylint: disable=too-many-arguments
@@ -668,7 +670,9 @@ class TestPassthruIntegration:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
-        @qml.qnode(dev, diff_method=diff_method, mode=mode, interface=interface)
+        @qml.qnode(
+            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])

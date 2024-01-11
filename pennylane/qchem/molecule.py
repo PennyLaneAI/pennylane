@@ -20,7 +20,7 @@ the necessary information to perform a Hartree-Fock calculation for a given mole
 import itertools
 import collections
 
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
@@ -40,8 +40,8 @@ class Molecule:
             where ``N`` is the number of atoms.
         charge (int): net charge of the molecule
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
-            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Possible
-            values of ``mult`` are :math:`1, 2, 3, \ldots`.
+            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Currently,
+            openshell systems are not supported; ``mult`` must be equal to :math:`1`.
         basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
             only supported basis sets are 'STO-3G', '6-31G', '6-311G' and 'CC-PVDZ'.
         load_data (bool): flag to load data from the basis-set-exchange library
@@ -115,13 +115,13 @@ class Molecule:
             l = [i[0] for i in self.basis_data]
 
         if alpha is None:
-            alpha = [np.array(i[1], requires_grad=False) for i in self.basis_data]
+            alpha = [pnp.array(i[1], requires_grad=False) for i in self.basis_data]
 
         if coeff is None:
-            coeff = [np.array(i[2], requires_grad=False) for i in self.basis_data]
+            coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
             if normalize:
                 coeff = [
-                    np.array(c * primitive_norm(l[i], alpha[i]), requires_grad=False)
+                    pnp.array(c * primitive_norm(l[i], alpha[i]), requires_grad=False)
                     for i, c in enumerate(coeff)
                 ]
 
@@ -193,8 +193,8 @@ class Molecule:
                 array[float]: value of a basis function
             """
             c = ((x - r[0]) ** lx) * ((y - r[1]) ** ly) * ((z - r[2]) ** lz)
-            e = [np.exp(-a * ((x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2)) for a in alpha]
-            return c * np.dot(coeff, e)
+            e = [pnp.exp(-a * ((x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2)) for a in alpha]
+            return c * pnp.dot(coeff, e)
 
         return orbital
 

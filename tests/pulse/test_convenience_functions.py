@@ -190,7 +190,7 @@ class TestIntegration:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         H = qml.dot(coeffs, ops)
 
-        t = (1, 2)
+        t = (1, 1.1)
 
         def generator(params):
             time_step = 1e-3

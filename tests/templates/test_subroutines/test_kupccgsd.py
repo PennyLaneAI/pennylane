@@ -14,7 +14,7 @@
 """
 Tests for the k-UpCCGSD template.
 """
-from os import killpg
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
@@ -137,7 +137,7 @@ class TestDecomposition:
                 delta_sz=0,
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
@@ -148,12 +148,13 @@ class TestDecomposition:
                 delta_sz=0,
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         ("num_qubits", "k", "exp_state"),
@@ -256,9 +257,9 @@ class TestDecomposition:
             qml.kUpCCGSD(weight, wires=wires, k=k, delta_sz=0, init_state=init_state)
             return qml.state()
 
-        circuit(weight)
+        res = circuit(weight)
 
-        assert qml.math.allclose(circuit.device.state, exp_state, atol=tol)
+        assert qml.math.allclose(res, exp_state, atol=tol)
 
     @pytest.mark.parametrize(
         ("wires", "delta_sz", "generalized_singles_wires", "generalized_pair_doubles_wires"),
@@ -344,6 +345,40 @@ class TestDecomposition:
         assert gen_doubles_wires == generalized_pair_doubles_wires
 
 
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Tests the flatten and unflatten methods."""
+    weights = qml.math.array([[0.55, 0.72, 0.6, 0.54, 0.42, 0.65]])
+    wires = qml.wires.Wires((0, 1, 2, 3))
+    init_state = qml.math.array([1, 1, 0, 0])
+    op = qml.kUpCCGSD(
+        weights,
+        wires=wires,
+        k=1,
+        delta_sz=0,
+        init_state=init_state,
+    )
+    data, metadata = op._flatten()
+    assert data == (weights,)
+    assert len(metadata) == 2
+    assert metadata[0] == wires
+    assert metadata[1] == (("k", 1), ("delta_sz", 0), ("init_state", tuple(init_state)))
+
+    # make sure metadata hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert op.data == new_op.data
+    assert type(new_op) is type(op)
+    assert op.hyperparameters["s_wires"] == new_op.hyperparameters["s_wires"]
+    assert op.hyperparameters["d_wires"] == new_op.hyperparameters["d_wires"]
+    assert op.hyperparameters["k"] == new_op.hyperparameters["k"]
+    assert op.hyperparameters["delta_sz"] == new_op.hyperparameters["delta_sz"]
+    assert qml.math.allclose(op.hyperparameters["init_state"], new_op.hyperparameters["init_state"])
+
+    assert op is not new_op
+
+
 class TestInputs:
     """Test inputs and pre-processing."""
 
@@ -424,8 +459,6 @@ class TestInputs:
                 init_state=init_state,
             )
             return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()

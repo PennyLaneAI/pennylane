@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for resource estimation with the double factorization method.
 """
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -123,25 +124,15 @@ def test_df_factorization(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m
     assert np.allclose(est.rank_max, rank_max)
 
 
-@pytest.mark.parametrize(
-    ("one", "two", "lamb"),
-    [
-        (one_h2, two_h2, 1.6570514682587973),
-    ],
-)
-def test_df_norm(one, two, lamb):
+@pytest.mark.parametrize(("one", "two", "lamb"), [(one_h2, two_h2_ph, 1.6570518796336895)])
+def test_df_lamb(one, two, lamb):
     r"""Test that DoubleFactorization class returns a correct norm."""
     est = qml.resource.DoubleFactorization(one, two)
 
     assert np.allclose(est.lamb, lamb)
 
 
-@pytest.mark.parametrize(
-    ("one", "two", "g_cost", "q_cost"),
-    [
-        (one_h2, two_h2, 876953, 113),
-    ],
-)
+@pytest.mark.parametrize(("one", "two", "g_cost", "q_cost"), [(one_h2, two_h2, 876953, 113)])
 def test_df_costs(one, two, g_cost, q_cost):
     r"""Test that DoubleFactorization class returns correct costs."""
     est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
@@ -150,12 +141,8 @@ def test_df_costs(one, two, g_cost, q_cost):
     assert np.allclose(est.qubits, q_cost)
 
 
-@pytest.mark.parametrize(
-    ("norm", "error", "cost_ref"),
-    [  # cost_ref is computed manually
-        (72.49779513025341, 0.001, 113880),
-    ],
-)
+# cost_ref is computed manually
+@pytest.mark.parametrize(("norm", "error", "cost_ref"), [(72.49779513025341, 0.001, 113880)])
 def test_estimation_cost(norm, error, cost_ref):
     r"""Test that estimation_cost returns the correct values."""
     cost = qml.resource.DoubleFactorization.estimation_cost(norm, error)
@@ -163,15 +150,7 @@ def test_estimation_cost(norm, error, cost_ref):
     assert cost == cost_ref
 
 
-@pytest.mark.parametrize(
-    ("norm", "error"),
-    [
-        (5.28, 0.0),
-        (5.28, -1.0),
-        (-5.28, 0.01),
-        (0.0, 0.01),
-    ],
-)
+@pytest.mark.parametrize(("norm", "error"), [(5.28, 0.0), (5.28, -1.0), (-5.28, 0.01), (0.0, 0.01)])
 def test_estimation_cost_error(norm, error):
     r"""Test that estimation_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be greater than zero"):
@@ -211,6 +190,7 @@ def test_estimation_cost_error(norm, error):
 )
 def test_qrom_cost(constants, cost_ref, k_ref):
     r"""Test that _qrom_cost returns the correct values."""
+    # pylint: disable=protected-access
     cost, k = qml.resource.DoubleFactorization._qrom_cost(constants)
 
     assert cost == cost_ref
@@ -353,20 +333,9 @@ def test_qubit_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, b
     ("one", "two", "eigvals", "lamb_ref"),
     [
         (
-            np.array([[-1.25330961e00, 4.01900735e-14], [4.01900735e-14, -4.75069041e-01]]),
+            one_h2,
             # two-electron integral is arranged in chemist notation
-            np.array(
-                [
-                    [
-                        [[6.74755872e-01, -4.60742555e-14], [-4.60742555e-14, 6.63711349e-01]],
-                        [[-4.61020111e-14, 1.81210478e-01], [1.81210478e-01, -4.26325641e-14]],
-                    ],
-                    [
-                        [[-4.60464999e-14, 1.81210478e-01], [1.81210478e-01, -4.25215418e-14]],
-                        [[6.63711349e-01, -4.28546088e-14], [-4.24105195e-14, 6.97651447e-01]],
-                    ],
-                ]
-            ),
+            two_h2,
             np.tensor(
                 [[-0.10489852, 0.10672343], [-0.42568824, 0.42568824], [-0.82864211, -0.81447282]]
             ),

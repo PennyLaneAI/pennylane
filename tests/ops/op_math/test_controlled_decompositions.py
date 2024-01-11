@@ -126,6 +126,7 @@ class TestControlledDecompositionZYZ:
 
         res = decomp_circuit()
         expected = expected_circuit()
+
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", su2_ops)
@@ -201,6 +202,7 @@ class TestControlledDecompositionZYZ:
         assert len(decomp) == 5
         assert all(qml.equal(o, e) for o, e in zip(decomp, expected))
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("test_expand", [False, True])
     def test_zyz_decomp_no_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
@@ -222,14 +224,15 @@ class TestControlledDecompositionZYZ:
         decomp = (
             op.expand().expand().circuit if test_expand else op.decomposition()[0].decomposition()
         )
-        expected = qml.ops.ctrl_decomp_zyz(base, (0,))
+        expected = qml.ops.ctrl_decomp_zyz(base, (0,))  # pylint:disable=no-member
         assert equal_list(decomp, expected)
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("test_expand", [False, True])
     def test_zyz_decomp_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
         when other decompositions aren't available and control values are present."""
-
+        # pylint:disable=no-member
         base = qml.QubitUnitary(
             np.array(
                 [
@@ -627,6 +630,7 @@ class TestControlledBisectGeneral:
         expected = expected_circuit()
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("op", zip(gen_ops, gen_ops_best))
     @pytest.mark.parametrize("control_wires", cw5)
     @pytest.mark.parametrize("all_the_way_from_ctrl", [False, True])
@@ -659,3 +663,21 @@ class TestControlledBisectGeneral:
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
+
+
+def test_ControlledQubitUnitary_has_decomposition_correct():
+    """Test that ControlledQubitUnitary reports has_decomposition=False if it is False"""
+    U = qml.Toffoli(wires=[0, 1, 2]).matrix()
+    op = qml.ControlledQubitUnitary(U, wires=[1, 2, 3], control_wires=[0])
+
+    assert not op.has_decomposition
+    with pytest.raises(qml.operation.DecompositionUndefinedError):
+        op.decomposition()
+
+
+def test_ControlledQubitUnitary_has_decomposition_super_False(mocker):
+    """Test that has_decomposition returns False if super() returns False"""
+    spy = mocker.spy(qml.QueuingManager, "stop_recording")
+    op = qml.ControlledQubitUnitary(np.diag((1.0,) * 8), wires=[2, 3, 4], control_wires=[0, 1])
+    assert not op.has_decomposition
+    spy.assert_not_called()

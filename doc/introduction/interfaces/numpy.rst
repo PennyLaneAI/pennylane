@@ -56,7 +56,8 @@ It can now be used like any other Python/NumPy function:
 >>> phi = np.array([0.5, 0.1])
 >>> theta = 0.2
 >>> circuit1(phi, theta)
-array([ 0.87758256,  0.68803733])
+(tensor(0.87758256, requires_grad=True),
+ tensor(0.68803733, requires_grad=True))
 
 The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
 if you provide parameters.
@@ -195,10 +196,10 @@ use the provided optimizers:
     ~pennylane.AdagradOptimizer
     ~pennylane.AdamOptimizer
     ~pennylane.GradientDescentOptimizer
-    ~pennylane.LieAlgebraOptimizer
     ~pennylane.MomentumOptimizer
     ~pennylane.NesterovMomentumOptimizer
     ~pennylane.QNGOptimizer
+    ~pennylane.RiemannianGradientOptimizer
     ~pennylane.RMSPropOptimizer
     ~pennylane.RotosolveOptimizer
     ~pennylane.RotoselectOptimizer
@@ -274,9 +275,12 @@ we would get an error message. This is because the `gradient <https://en.wikiped
 only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode
 returns multiple expectation values, the correct differential operator to use is
 the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_.
-This can be accessed in PennyLane as :func:`~.jacobian`:
+This can be accessed in PennyLane as :func:`~.jacobian`.
 
->>> j1 = qml.jacobian(circuit5)
+As the ``circuit5`` returns a tuple of numpy arrays instead of a single numpy array, the results need
+to be stacked into a single array before use with :func:`~.jacobian`.
+
+>>> j1 = qml.jacobian(lambda x: np.stack(circuit5(x)))
 >>> j1(params)
 array([[ 0.        , -0.98006658],
        [-0.98006658,  0.        ]])

@@ -88,7 +88,7 @@ def _generator_backcompatibility(op):
         "The Operator.generator property is deprecated. Please update the operator so that "
         "\n\t1. Operator.generator() is a method, and"
         "\n\t2. Operator.generator() returns an Operator instance representing the operator.",
-        UserWarning,
+        qml.PennyLaneDeprecationWarning,
     )
     gen = op.generator
 
@@ -101,8 +101,7 @@ def _generator_backcompatibility(op):
     raise qml.operation.GeneratorUndefinedError
 
 
-@qml.op_transform
-def generator(op, format="prefactor"):
+def generator(op: qml.operation.Operator, format="prefactor"):
     r"""Returns the generator of an operation.
 
     Args:
@@ -112,7 +111,7 @@ def generator(op, format="prefactor"):
             ``'observable'``, or ``'hamiltonian'``. See below for more details.
 
     Returns:
-        .Observable or tuple[.Observable, float]: The returned generator, with format/type
+        .Operator or tuple[.Observable, float]: The returned generator, with format/type
         dependent on the ``format`` argument.
 
         * ``"prefactor"``: Return the generator as ``(obs, prefactor)`` (representing
@@ -131,6 +130,11 @@ def generator(op, format="prefactor"):
         * ``"hamiltonian"``: Similar to ``"observable"``, however the returned observable
           will always be converted into :class:`~.Hamiltonian` regardless of how ``op``
           encodes the generator.
+
+        * ``"arithmetic"``: Similar to ``"hamiltonian"``, however the returned observable
+          will always be converted into an arithmetic operator. The returned generator may be
+          any type, including:
+          :class:`~.ops.op_math.SProd`, :class:`~.ops.op_math.Prod`, :class:`~.ops.op_math.Sum`, or the operator itself.
 
     **Example**
 
@@ -159,30 +163,51 @@ def generator(op, format="prefactor"):
     <Hamiltonian: terms=1, wires=[0]>
     >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])
-
+    >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`
+    -0.5*(PauliX(wires=[0]))
     """
-    if op.num_params != 1:
-        raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
 
-    try:
-        gen = op.generator()
-    except TypeError:
-        # For backwards compatibility with PennyLane
-        # versions <=0.22, assume op.generator is a property
-        gen = _generator_backcompatibility(op)
+    def processing_fn(*args, **kwargs):
+        if callable(op):
+            with qml.queuing.QueuingManager.stop_recording():
+                gen_op = op(*args, **kwargs)
+        else:
+            gen_op = op
 
-    if not gen.is_hermitian:
-        raise qml.QuantumFunctionError(
-            f"Generator {gen.name} of operation {op.name} is not hermitian"
+        if gen_op.num_params != 1:
+            raise ValueError(
+                f"Operation {gen_op.name} is not written in terms of a single parameter"
+            )
+
+        try:
+            gen = gen_op.generator()
+        except TypeError:
+            # For backwards compatibility with PennyLane
+            # versions <=0.22, assume gen_op.generator is a property
+            gen = _generator_backcompatibility(gen_op)
+
+        if not gen.is_hermitian:
+            raise qml.QuantumFunctionError(
+                f"Generator {gen.name} of operation {gen_op.name} is not hermitian"
+            )
+
+        if format == "prefactor":
+            return _generator_prefactor(gen)
+
+        if format == "hamiltonian":
+            return _generator_hamiltonian(gen, gen_op)
+
+        if format == "arithmetic":
+            h = _generator_hamiltonian(gen, gen_op)
+            return qml.dot(h.coeffs, h.ops)
+
+        if format == "observable":
+            return gen
+
+        raise ValueError(
+            "format must be one of ('prefactor', 'hamiltonian', 'observable', 'arithmetic')"
         )
 
-    if format == "prefactor":
-        return _generator_prefactor(gen)
-
-    if format == "hamiltonian":
-        return _generator_hamiltonian(gen, op)
-
-    if format == "observable":
-        return gen
-
-    raise ValueError("format must be one of ('prefactor', 'hamiltonian', 'observable')")
+    if callable(op):
+        return processing_fn
+    return processing_fn()

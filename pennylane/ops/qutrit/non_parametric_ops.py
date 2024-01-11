@@ -18,8 +18,7 @@ that do not depend on any parameters.
 # pylint:disable=arguments-differ
 import numpy as np
 
-import pennylane as qml  # pylint: disable=unused-import
-from pennylane.operation import Operation
+from pennylane.operation import Operation, AdjointUndefinedError
 from pennylane.wires import Wires
 
 OMEGA = np.exp(2 * np.pi * 1j / 3)
@@ -425,32 +424,31 @@ class THadamard(Operation):
     where :math:`\omega = \exp(2 \pi i / 3)`.
 
     **Details:**
+
     * Number of wires: 1
     * Number of parameters: 0
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        subspace (Sequence[int]): the 2D subspace on which to apply the operation. This should be
-            `None` for the generalized Hadamard.
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+        subspace (Optional[Sequence[int]]): the 2D subspace on which to apply the operation.
+            This should be `None` for the generalized Hadamard.
 
     **Example**
 
     The specified subspace will determine which basis states the operation actually
     applies to:
 
-    >>> qml.THadamard(wires=0, subspace=[0, 1]).matrix()
+    >>> qml.THadamard(wires=0, subspace=(0, 1)).matrix()
     array([[ 0.70710678+0.j,  0.70710678+0.j,  0.        +0.j],
            [ 0.70710678+0.j, -0.70710678+0.j,  0.        +0.j],
            [ 0.        +0.j,  0.        +0.j,  1.        +0.j]])
 
-    >>> qml.THadamard(wires=0, subspace=[0, 2]).matrix()
+    >>> qml.THadamard(wires=0, subspace=(0, 2)).matrix()
     array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
            [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
            [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
 
-    >>> qml.THadamard(wires=0, subspace=[1, 2]).matrix()
+    >>> qml.THadamard(wires=0, subspace=(1, 2)).matrix()
     array([[ 1.        +0.j,  0.        +0.j,  0.        +0.j],
            [ 0.        +0.j,  0.70710678+0.j,  0.70710678+0.j],
            [ 0.        +0.j,  0.70710678+0.j, -0.70710678+0.j]])
@@ -467,13 +465,13 @@ class THadamard(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "TH"
 
-    def __init__(self, wires, subspace=None, do_queue=True):
-        self._subspace = self.validate_subspace(subspace) if subspace is not None else None
+    def __init__(self, wires, subspace=None):
+        self._subspace = Operation.validate_subspace(subspace) if subspace is not None else None
         self._hyperparameters = {
             "subspace": self.subspace,
         }
 
-        super().__init__(wires=wires, do_queue=do_queue)
+        super().__init__(wires=wires)
 
     @property
     def subspace(self):
@@ -507,7 +505,7 @@ class THadamard(Operation):
 
         **Example**
 
-        >>> print(qml.THadamard.compute_matrix(subspace=[0, 2]))
+        >>> print(qml.THadamard.compute_matrix(subspace=(0, 2)))
         array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
                [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
                [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
@@ -517,8 +515,6 @@ class THadamard(Operation):
             return (-1j / np.sqrt(3)) * np.array(
                 [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
             )
-
-        subspace = THadamard.validate_subspace(subspace)
 
         mat = np.eye(3, dtype=np.complex128)
 
@@ -537,7 +533,7 @@ class THadamard(Operation):
 
     def adjoint(self):
         if self.subspace is None:
-            raise qml.operation.AdjointUndefinedError
+            raise AdjointUndefinedError
         return THadamard(wires=self.wires, subspace=self.subspace)
 
     def pow(self, z):

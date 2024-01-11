@@ -668,7 +668,7 @@
 * `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
   [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
 
-* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
+* New `null.qubit` device. The `null.qubit` performs no operations or memory allocations.
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
 
 * `default.qubit` favours decomposition and avoids matrix construction for `QFT` and `GroverOperator` at larger qubit numbers.
@@ -739,8 +739,8 @@
 <h3>Deprecations</h3>
 
 * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
-   if the object isn't in the queue.
-   [(#3085)](https://github.com/PennyLaneAI/pennylane/pull/3085)
+  if the object isn't in the queue.
+  [(#3085)](https://github.com/PennyLaneAI/pennylane/pull/3085)
 
 * `qml.tape.stop_recording` and `QuantumTape.stop_recording` have been moved to `qml.QueuingManager.stop_recording`. The old functions will still be available until v0.29.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
@@ -809,9 +809,6 @@
 
 * Fixed a bug where `qml.BasisStatePreparation` and `qml.BasisEmbedding` were not jit-compilable with JAX.
   [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
-
-* Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
-  [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
 
 * Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
   [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)

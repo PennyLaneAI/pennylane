@@ -14,9 +14,9 @@
 """
 Tests for the accessibility of the Lightning-Qubit device
 """
+import pytest
 import pennylane as qml
 from pennylane import numpy as np
-import pytest
 
 
 def test_integration():
@@ -91,7 +91,7 @@ class TestDtypePreserved:
             qml.probs(wires=[0, 2]),
         ],
     )
-    def test_real_dtype(self, qubit_device_3_wires, r_dtype, measurement, tol):
+    def test_real_dtype(self, r_dtype, measurement):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
@@ -111,7 +111,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, qubit_device_3_wires, c_dtype, measurement, tol):
+    def test_complex_dtype(self, c_dtype, measurement):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
