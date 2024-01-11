@@ -260,7 +260,7 @@ class PauliWord(dict):
     __radd__ = __add__
 
     def __iadd__(self, other):
-        """Inplace addition of PauliWords"""
+        """Inplace addition"""
         return self + other
 
     def __truediv__(self, other):
@@ -441,8 +441,11 @@ class PauliSentence(dict):
         return 0.0
 
     def __add__(self, other):
-        """Add two Pauli sentence together by iterating over the smaller
-        one and adding its terms to the larger one."""
+        """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.
+
+        Empty Pauli sentences are treated as the additive identity
+        (i.e 0 * Identity on all wires). The non-empty Pauli sentence is returned.
+        """
         if isinstance(other, PauliSentence):
             smaller_ps, larger_ps = (
                 (self, copy(other)) if len(self) < len(other) else (other, copy(self))
