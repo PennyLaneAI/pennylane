@@ -589,36 +589,6 @@ class TestPauliSentence:
         with pytest.raises(ValueError, match="Attempting to multiply"):
             _ = [0.5] * ps
 
-    @pytest.mark.parametrize("ps", sentences)
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
-    def test_mul(self, ps, scalar):
-        """Test scalar multiplication"""
-        res1 = scalar * ps
-        res2 = ps * scalar
-        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
-        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
-
-    def test_mul_raise_not_implemented_non_numerical_data_recursive(self):
-        """Test that TypeError is raised when trying to multiply by non-numerical data"""
-        with pytest.raises(TypeError, match="PauliSentence can only"):
-            _ = "0.5" * ps1
-
-    def test_mul_raise_not_implemented_non_numerical_data(self):
-        """Test that TypeError is raised when trying to multiply by non-numerical data"""
-        with pytest.raises(TypeError, match="PauliSentence can only"):
-            _ = ps1 * "0.5"
-
-    def test_truediv_raise_not_implemented_non_numerical_data(self):
-        """Test that TypeError is raised when trying to divide by non-numerical data"""
-        with pytest.raises(TypeError, match="PauliSentence can only"):
-            _ = ps1 / "0.5"
-
-    @pytest.mark.parametrize("ps", sentences)
-    def test_raise_error_for_non_scalar(self, ps):
-        """Test that the correct error is raised when attempting to multiply a PauliSentence by a sclar"""
-        with pytest.raises(ValueError, match="Attempting to multiply"):
-            _ = [0.5] * ps
-
     def test_add_raises_other_types(self):
         """Test that adding types other than PauliWord, PauliSentence or a scalar raises an error"""
         with pytest.raises(TypeError, match="Cannot add"):
