@@ -20,7 +20,7 @@
 
 * Upgrade Pauli arithmetic with subtraction. You can now subtract `PauliWord` and `PauliSentence`
   instances, as well as scalars, from each other.
-  For example `ps1 - pw1 - 1` for `pw1 = PauliWord({0: "X"})` and `ps1 = PauliSentence({pw1: 3.})`.
+  For example `ps1 - pw1 - 1` for `pw1 = PauliWord({0: "X", 1: "Y"})` and `ps1 = PauliSentence({pw1: 3.})`.
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
   
 <h4>Community contributions 🥳</h4>
