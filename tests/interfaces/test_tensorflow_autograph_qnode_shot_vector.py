@@ -55,8 +55,6 @@ class TestReturnWithShotVectors:
         """For one measurement and one param, the gradient is a float."""
         dev = qml.device(dev_name, wires=1, shots=shots)
 
-        print(dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface)
-
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
         def circuit(a):

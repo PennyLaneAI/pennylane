@@ -176,7 +176,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
 
     Keyword Args:
         device=None: not used for tensorflow
-        differentiable = False: whether or not the custom gradient vjp needs to be
+        differentiable=False: whether or not the custom gradient vjp needs to be
             differentiable. Note that this keyword argument is unique to tensorflow.
 
     Returns:
