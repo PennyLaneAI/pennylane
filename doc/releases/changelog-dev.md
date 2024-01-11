@@ -23,6 +23,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
+  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+
 <h3>Documentation 📝</h3>
 
 * A typo in a code example in the `qml.transforms` API has been fixed.
