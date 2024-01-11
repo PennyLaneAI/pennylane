@@ -44,7 +44,7 @@
 * `ClassicalShadow.entropy()` no longer needs an `atol` keyword as a better
   method to estimate entropies from approximate density matrix reconstructions
   (with potentially negative eigenvalues) has been implemented.
-  [()]()
+  [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
 <h3>Deprecations 👋</h3>
 
