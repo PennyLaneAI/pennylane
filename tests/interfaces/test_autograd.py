@@ -38,7 +38,7 @@ class TestAutogradExecuteUnitTests:
         mock.side_effect = ImportError()
 
         try:
-            del sys.modules["pennylane.interfaces.autograd"]
+            del sys.modules["pennylane.workflow.interfaces.autograd"]
         except KeyError:
             pass
 
@@ -228,7 +228,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -250,7 +250,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
