@@ -39,6 +39,8 @@ pw2 = PauliWord({"a": X, "b": X, "c": Z})
 pw3 = PauliWord({0: Z, "b": Z, "c": Z})
 pw4 = PauliWord({})
 
+words = [pw1, pw2, pw3, pw4]
+
 ps1 = PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5})
 ps2 = PauliSentence({pw1: -1.23, pw2: -4j, pw3: 0.5})
 ps1_hamiltonian = PauliSentence({pw1: 1.23, pw2: 4, pw3: -0.5})
@@ -46,6 +48,75 @@ ps2_hamiltonian = PauliSentence({pw1: -1.23, pw2: -4, pw3: 0.5})
 ps3 = PauliSentence({pw3: -0.5, pw4: 1})
 ps4 = PauliSentence({pw4: 1})
 ps5 = PauliSentence({})
+
+sentences = [ps1, ps2, ps3, ps4, ps5, ps1_hamiltonian, ps2_hamiltonian]
+
+
+class TestDeprecations:
+    def test_deprecation_warning_PauliWord(
+        self,
+    ):
+        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliWords"""
+        pauli1 = PauliWord({0: "X"})
+        pauli2 = PauliWord({0: "Y"})
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
+        ):
+            _ = pauli1 * pauli2
+
+    def test_deprecation_warning_PauliSentence(
+        self,
+    ):
+        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliSentences"""
+        pauli1 = PauliSentence({PauliWord({0: "X"}): 1})
+        pauli2 = PauliSentence({PauliWord({0: "Y"}): 1})
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
+        ):
+            _ = pauli1 * pauli2
+
+
+@pytest.mark.parametrize("pauli1", words)
+@pytest.mark.parametrize("pauli2", words)
+def test_legacy_multiplication_pwords(pauli1, pauli2):
+    """Test the legacy behavior for using the star operator for matrix multiplication of pauli words"""
+    res1, coeff1 = pauli1 * pauli2
+    res2, coeff2 = pauli1 @ pauli2
+    assert res1 == res2
+    assert coeff1 == coeff2
+
+
+@pytest.mark.parametrize("pauli1", sentences)
+@pytest.mark.parametrize("pauli2", sentences)
+def test_legacy_multiplication_psentences(pauli1, pauli2):
+    """Test the legacy behavior for using the star operator for matrix multiplication of pauli sentences"""
+    assert pauli1 * pauli2 == pauli1 @ pauli2
+
+
+def test_legacy_pw_pw_multiplication_non_commutativity():
+    """Test that legacy pauli word matrix multiplication is non-commutative and returns correct result"""
+    pauliX = PauliWord({0: "X"})
+    pauliY = PauliWord({0: "Y"})
+    pauliZ = PauliWord({0: "Z"})
+
+    res1 = pauliX * pauliY
+    res2 = pauliY * pauliX
+    assert res1 == (pauliZ, 1j)
+    assert res2 == (pauliZ, -1j)
+
+
+def test_legacy_ps_ps_multiplication_non_commutativity():
+    """Test that legacy pauli sentence matrix multiplication is non-commutative and returns correct result"""
+    pauliX = PauliSentence({PauliWord({0: "X"}): 1.0})
+    pauliY = PauliSentence({PauliWord({0: "Y"}): 1.0})
+    pauliZ = PauliSentence({PauliWord({0: "Z"}): 1j})
+
+    res1 = pauliX * pauliY
+    res2 = pauliY * pauliX
+    assert res1 == pauliZ
+    assert res2 == -1 * pauliZ
 
 
 class TestPauliWord:
@@ -114,21 +185,61 @@ class TestPauliWord:
         assert str(pw) == str_rep
         assert repr(pw) == str_rep
 
-    tup_pws_mult = (
+    tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
         (pw1, pw3, PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}), 1.0),
         (pw2, pw3, PauliWord({"a": X, "b": Y, 0: Z}), -1.0j),
         (pw3, pw4, pw3, 1.0),
     )
 
-    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_mult)
-    def test_mul(self, word1, word2, result_pw, coeff):
+    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_matmult)
+    def test_matmul(self, word1, word2, result_pw, coeff):
         copy_pw1 = copy(word1)
         copy_pw2 = copy(word2)
 
-        assert word1 * word2 == (result_pw, coeff)
+        assert word1 @ word2 == (result_pw, coeff)
         assert copy_pw1 == word1  # check for mutation of the pw themselves
         assert copy_pw2 == word2
+
+    @pytest.mark.parametrize("pw", words)
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_mul(self, pw, scalar):
+        """Test scalar multiplication"""
+        res1 = scalar * pw
+        res2 = pw * scalar
+        assert isinstance(res1, PauliSentence)
+        assert list(res1.values()) == [scalar]
+        assert isinstance(res2, PauliSentence)
+        assert list(res2.values()) == [scalar]
+
+    @pytest.mark.parametrize("pw", words)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_truediv(self, pw, scalar):
+        """Test scalar multiplication"""
+        res1 = pw / scalar
+        assert isinstance(res1, PauliSentence)
+        assert list(res1.values()) == [1 / scalar]
+
+    @pytest.mark.parametrize("pw", words)
+    def test_raise_error_for_non_scalar(self, pw):
+        """Test that the correct error is raised when attempting to multiply a PauliWord by a sclar"""
+        with pytest.raises(ValueError, match="Attempting to multiply"):
+            _ = [0.5] * pw
+
+    def test_mul_raise_not_implemented_non_numerical_data_recursive(self):
+        """Test that TypeError is raised when trying to multiply by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliWord can only"):
+            _ = "0.5" * pw1
+
+    def test_mul_raise_not_implemented_non_numerical_data(self):
+        """Test that TypeError is raised when trying to multiply by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliWord can only"):
+            _ = pw1 * "0.5"
+
+    def test_truediv_raise_not_implemented_non_numerical_data(self):
+        """Test that TypeError is raised when trying to divide by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliWord can only be"):
+            _ = pw1 / "0.5"
 
     tup_pws_mat_wire = (
         (pw1, [2, 0, 1], np.kron(np.kron(matY, matI), matX)),
@@ -372,18 +483,48 @@ class TestPauliSentence:
         ),
     )
 
-    @pytest.mark.parametrize("string1, string2, res", tup_ps_mult)
-    def test_mul(self, string1, string2, res):
-        """Test that the correct result of multiplication is produced."""
-        copy_ps1 = copy(string1)
-        copy_ps2 = copy(string2)
+    @pytest.mark.parametrize("pauli1, pauli2, res", tup_ps_mult)
+    def test_matmul(self, pauli1, pauli2, res):
+        """Test that the correct result of matrix multiplication is produced."""
+        copy_ps1 = copy(pauli1)
+        copy_ps2 = copy(pauli2)
 
-        simplified_product = string1 * string2
+        simplified_product = pauli1 @ pauli2
         simplified_product.simplify()
 
         assert simplified_product == res
-        assert string1 == copy_ps1
-        assert string2 == copy_ps2
+        assert pauli1 == copy_ps1
+        assert pauli2 == copy_ps2
+
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_mul(self, ps, scalar):
+        """Test scalar multiplication"""
+        res1 = scalar * ps
+        res2 = ps * scalar
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+
+    def test_mul_raise_not_implemented_non_numerical_data_recursive(self):
+        """Test that TypeError is raised when trying to multiply by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliSentence can only"):
+            _ = "0.5" * ps1
+
+    def test_mul_raise_not_implemented_non_numerical_data(self):
+        """Test that TypeError is raised when trying to multiply by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliSentence can only"):
+            _ = ps1 * "0.5"
+
+    def test_truediv_raise_not_implemented_non_numerical_data(self):
+        """Test that TypeError is raised when trying to divide by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliSentence can only"):
+            _ = ps1 / "0.5"
+
+    @pytest.mark.parametrize("ps", sentences)
+    def test_raise_error_for_non_scalar(self, ps):
+        """Test that the correct error is raised when attempting to multiply a PauliSentence by a sclar"""
+        with pytest.raises(ValueError, match="Attempting to multiply"):
+            _ = [0.5] * ps
 
     tup_ps_add = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
@@ -687,3 +828,126 @@ class TestPauliSentence:
                 PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
             }
         )
+
+
+@pytest.mark.all_interfaces
+class TestPauliArithmeticWithADInterfaces:
+    """Test pauli arithmetic with different automatic differentiation interfaces"""
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_torch_initialization(self, scalar):
+        """Test initializing PauliSentence from torch tensor"""
+        import torch
+
+        tensor = scalar * torch.ones(4)
+        res = PauliSentence(dict(zip(words, tensor)))
+        assert all(isinstance(val, torch.Tensor) for val in res.values())
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_autograd_initialization(self, scalar):
+        """Test initializing PauliSentence from autograd array"""
+
+        tensor = scalar * np.ones(4)
+        res = PauliSentence(dict(zip(words, tensor)))
+        assert all(isinstance(val, np.ndarray) for val in res.values())
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_jax_initialization(self, scalar):
+        """Test initializing PauliSentence from jax array"""
+        import jax.numpy as jnp
+
+        tensor = scalar * jnp.ones(4)
+        res = PauliSentence(dict(zip(words, tensor)))
+        assert all(isinstance(val, jnp.ndarray) for val in res.values())
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_tf_initialization(self, scalar):
+        """Test initializing PauliSentence from tf tensor"""
+        import tensorflow as tf
+
+        tensor = scalar * tf.ones(4, dtype=tf.complex64)
+        res = PauliSentence(dict(zip(words, tensor)))
+        assert all(isinstance(val, tf.Tensor) for val in res.values())
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_torch_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with a torch tensor works and results in the correct types"""
+        import torch
+
+        res1 = torch.tensor(scalar) * ps
+        res2 = ps * torch.tensor(scalar)
+        res3 = ps / torch.tensor(scalar)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
+        assert all(isinstance(val, torch.Tensor) for val in res1.values())
+        assert all(isinstance(val, torch.Tensor) for val in res2.values())
+        assert all(isinstance(val, torch.Tensor) for val in res3.values())
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_autograd_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with an autograd array works and results in the correct types"""
+
+        res1 = np.array(scalar) * ps
+        res2 = ps * np.array(scalar)
+        res3 = ps / np.array(scalar)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
+        assert all(isinstance(val, np.ndarray) for val in res1.values())
+        assert all(isinstance(val, np.ndarray) for val in res2.values())
+        assert all(isinstance(val, np.ndarray) for val in res3.values())
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_jax_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with a jax array works and results in the correct types"""
+        import jax.numpy as jnp
+
+        res1 = jnp.array(scalar) * ps
+        res2 = ps * jnp.array(scalar)
+        res3 = ps / jnp.array(scalar)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
+        assert all(isinstance(val, jnp.ndarray) for val in res1.values())
+        assert all(isinstance(val, jnp.ndarray) for val in res2.values())
+        assert all(isinstance(val, jnp.ndarray) for val in res3.values())
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_tf_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with a tf tensor works and results in the correct types"""
+        import tensorflow as tf
+
+        res1 = tf.constant(scalar, dtype=tf.complex64) * ps
+        res2 = ps * tf.constant(scalar, dtype=tf.complex64)
+        res3 = ps / tf.constant(scalar, dtype=tf.complex64)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
+        assert all(isinstance(val, tf.Tensor) for val in res1.values())
+        assert all(isinstance(val, tf.Tensor) for val in res2.values())
+        assert all(isinstance(val, tf.Tensor) for val in res3.values())

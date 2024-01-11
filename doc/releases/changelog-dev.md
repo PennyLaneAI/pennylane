@@ -9,6 +9,9 @@
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
+* Upgrade Pauli arithmetic with multiplying by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
+  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+  
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
 
@@ -29,6 +32,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
+  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+
 <h3>Documentation 📝</h3>
 
 * A typo in a code example in the `qml.transforms` API has been fixed.
@@ -46,4 +52,5 @@ This release contains contributions from (in alphabetical order):
 Abhishek Abhishek,
 Christina Lee,
 Isaac De Vlugt,
+Korbinian Kottmann,
 Matthew Silverman.
