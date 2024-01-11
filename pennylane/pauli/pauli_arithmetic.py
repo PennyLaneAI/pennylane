@@ -245,6 +245,30 @@ class PauliWord(dict):
 
     __rmul__ = __mul__
 
+    def __add__(self, other):
+        """Add PauliWord instances and scalars to PauliWord.
+        Returns a PauliSentence."""
+        # Note that the case of PauliWord + PauliSentence is covered in PauliSentence
+        if isinstance(other, PauliWord):
+            if other == self:
+                return PauliSentence({self: 2.0})
+            return PauliSentence({self: 1.0, other: 1.0})
+
+        if isinstance(other, TensorLike):
+            # Scalars are interepreted as scalar * Identity
+            IdWord = PauliWord({})
+            if IdWord == self:
+                return PauliSentence({self: 1.0 + other})
+            return PauliSentence({self: 1.0, IdWord: other})
+
+        return NotImplemented
+
+    __radd__ = __add__
+
+    def __iadd__(self, other):
+        """Inplace addition"""
+        return self + other
+
     def __truediv__(self, other):
         """Divide a PauliWord by a scalar"""
         if isinstance(other, TensorLike):
@@ -423,28 +447,68 @@ class PauliSentence(dict):
         return 0.0
 
     def __add__(self, other):
-        """Add two Pauli sentence together by iterating over the smaller
-        one and adding its terms to the larger one.
+        """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.
 
         Empty Pauli sentences are treated as the additive identity
         (i.e 0 * Identity on all wires). The non-empty Pauli sentence is returned.
         """
-        smaller_ps, larger_ps = (
-            (self, copy(other)) if len(self) < len(other) else (other, copy(self))
-        )
-        for key in smaller_ps:
-            larger_ps[key] += smaller_ps[key]
+        if isinstance(other, PauliSentence):
+            smaller_ps, larger_ps = (
+                (self, copy(other)) if len(self) < len(other) else (other, copy(self))
+            )
+            for key in smaller_ps:
+                larger_ps[key] += smaller_ps[key]
 
-        return larger_ps
+            return larger_ps
+
+        if isinstance(other, PauliWord):
+            res = copy(self)
+            if other in res:
+                res[other] += 1.0
+            else:
+                res[other] = 1.0
+            return res
+
+        if isinstance(other, TensorLike):
+            # Scalars are interepreted as scalar * Identity
+            res = copy(self)
+            IdWord = PauliWord({})
+            if IdWord in res:
+                res[IdWord] += other
+            else:
+                res[IdWord] = other
+            return res
+
+        raise TypeError(f"Cannot add {other} of type {type(other)} to PauliSentence")
+
+    __radd__ = __add__
 
     def __iadd__(self, other):
         """Inplace addition of two Pauli sentence together by adding terms of other to self"""
-        for key in other:
-            if key in self:
-                self[key] += other[key]
+        if isinstance(other, PauliSentence):
+            for key in other:
+                if key in self:
+                    self[key] += other[key]
+                else:
+                    self[key] = other[key]
+            return self
+
+        if isinstance(other, PauliWord):
+            if other in self:
+                self[other] += 1.0
             else:
-                self[key] = other[key]
-        return self
+                self[other] = 1.0
+            return self
+
+        if isinstance(other, TensorLike):
+            IdWord = PauliWord({})
+            if IdWord in self:
+                self[IdWord] += other
+            else:
+                self[IdWord] = other
+            return self
+
+        raise TypeError(f"Cannot add {other} of type {type(other)} to PauliSentence")
 
     def __copy__(self):
         """Copy the PauliSentence instance."""

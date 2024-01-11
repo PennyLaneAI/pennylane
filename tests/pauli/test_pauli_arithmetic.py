@@ -38,6 +38,9 @@ pw1 = PauliWord({0: I, 1: X, 2: Y})
 pw2 = PauliWord({"a": X, "b": X, "c": Z})
 pw3 = PauliWord({0: Z, "b": Z, "c": Z})
 pw4 = PauliWord({})
+pw_id = pw4  # Identity PauliWord
+
+words = [pw1, pw2, pw3, pw4]
 
 words = [pw1, pw2, pw3, pw4]
 
@@ -184,6 +187,66 @@ class TestPauliWord:
     def test_str(self, pw, str_rep):
         assert str(pw) == str_rep
         assert repr(pw) == str_rep
+
+    def test_add_pw_pw_different(self):
+        """Test adding two pauli words that are distinct"""
+        res1 = pw1 + pw2
+        true_res1 = PauliSentence({pw1: 1.0, pw2: 1.0})
+        assert res1 == true_res1
+
+    def test_add_pw_pw_same(self):
+        """Test adding two pauli words that are the same"""
+        res1 = pw1 + pw1
+        true_res1 = PauliSentence({pw1: 2.0})
+        assert res1 == true_res1
+
+    def test_add_pw_sclar_different(self):
+        """Test adding pauli word and scalar that are distinct (i.e. non-identity)"""
+        res1 = pw1 + 1.5
+        true_res1 = PauliSentence({pw1: 1.0, pw_id: 1.5})
+        assert res1 == true_res1
+
+    def test_add_pw_scalar_same(self):
+        """Test adding pauli word and scalar that are the same (i.e. both identity)"""
+        res1 = pw_id + 1.5
+        true_res1 = PauliSentence({pw_id: 2.5})
+        assert res1 == true_res1
+
+    def test_iadd_pw_pw_different(self):
+        """Test inplace-adding two pauli words that are distinct"""
+        res1 = copy(pw1)
+        res2 = copy(pw1)
+        res1 += pw2
+        true_res1 = PauliSentence({pw1: 1.0, pw2: 1.0})
+        assert res1 == true_res1
+        assert res2 == pw1  # original pw is unaltered after copy
+
+    def test_iadd_pw_pw_same(self):
+        """Test inplace-adding two pauli words that are the same"""
+        res1 = copy(pw1)
+        res2 = copy(pw1)
+        res1 += pw1
+        true_res1 = PauliSentence({pw1: 2.0})
+        assert res1 == true_res1
+        assert res2 == pw1  # original pw is unaltered after copy
+
+    def test_iadd_pw_scalar_different(self):
+        """Test inplace-adding pauli word and scalar that are distinct (i.e. non-identity)"""
+        res1 = copy(pw1)
+        res2 = copy(pw1)
+        res1 += 1.5
+        true_res1 = PauliSentence({pw1: 1.0, pw_id: 1.5})
+        assert res1 == true_res1
+        assert res2 == pw1  # original pw is unaltered after copy
+
+    def test_iadd_pw_scalar_same(self):
+        """Test inplace-adding two pauli words that are the same (i.e. both identity)"""
+        res1 = copy(pw_id)
+        res2 = copy(pw_id)
+        res1 += 1.5
+        true_res1 = PauliSentence({pw_id: 2.5})
+        assert res1 == true_res1
+        assert res2 == pw_id  # original pw is unaltered after copy
 
     tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
@@ -526,16 +589,35 @@ class TestPauliSentence:
         with pytest.raises(ValueError, match="Attempting to multiply"):
             _ = [0.5] * ps
 
-    tup_ps_add = (  # computed by hand
+    def test_add_raises_other_types(self):
+        """Test that adding types other than PauliWord, PauliSentence or a scalar raises an error"""
+        with pytest.raises(TypeError, match="Cannot add"):
+            _ = ps1 + qml.PauliX(0)
+
+        with pytest.raises(TypeError, match="Cannot add"):
+            _ = qml.PauliX(0) + ps1
+
+        with pytest.raises(TypeError, match="Cannot add"):
+            _ = ps1 + "asd"
+
+        copy_ps = copy(ps1)
+        with pytest.raises(TypeError, match="Cannot add"):
+            copy_ps += qml.PauliX(0)
+
+        copy_ps = copy(ps1)
+        with pytest.raises(TypeError, match="Cannot add"):
+            copy_ps += "asd"
+
+    add_ps_ps = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
         (ps1, ps2, PauliSentence({})),
         (ps1, ps3, PauliSentence({pw1: 1.23, pw2: 4j, pw3: -1, pw4: 1})),
         (ps2, ps5, ps2),
     )
 
-    @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
-    def test_add(self, string1, string2, result):
-        """Test that the correct result of addition is produced."""
+    @pytest.mark.parametrize("string1, string2, result", add_ps_ps)
+    def test_add_PS_and_PS(self, string1, string2, result):
+        """Test adding two PauliSentences"""
         copy_ps1 = copy(string1)
         copy_ps2 = copy(string2)
 
@@ -546,14 +628,63 @@ class TestPauliSentence:
         assert string1 == copy_ps1
         assert string2 == copy_ps2
 
+    add_ps_pw = (
+        (ps1, pw1, PauliSentence({pw1: 2.23, pw2: 4j, pw3: -0.5})),
+        (ps1, pw2, PauliSentence({pw1: 1.23, pw2: 1 + 4j, pw3: -0.5})),
+        (ps1, pw4, PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5, pw4: 1.0})),
+        (ps3, pw1, PauliSentence({pw1: 1.0, pw3: -0.5, pw4: 1})),
+    )
+
+    @pytest.mark.parametrize("ps, pw, true_res", add_ps_pw)
+    def test_add_PS_and_PW(self, ps, pw, true_res):
+        """Test adding PauliSentence and PauliWord"""
+        res1 = ps + pw
+        res2 = pw + ps
+        assert res1 == true_res
+        assert res2 == true_res
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_add_PS_and_scalar(self, scalar):
+        """Test adding PauliSentence and scalar"""
+        res1 = ps1 + scalar
+        res2 = scalar + ps1
+        assert res1[pw_id] == scalar
+        assert res2[pw_id] == scalar
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_iadd_PS_and_scalar(self, scalar):
+        """Test inplace adding PauliSentence and scalar"""
+        copy_ps1 = copy(ps1)
+        copy_ps2 = copy(ps1)
+        copy_ps1 += scalar
+        assert copy_ps1[pw_id] == scalar
+        assert copy_ps2 == ps1
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_add_PS_and_scalar_with_1_present(self, scalar):
+        """Test adding scalar to a PauliSentence that already contains identity"""
+        res1 = ps4 + scalar
+        res2 = scalar + ps4
+        assert res1[pw_id] == 1 + scalar
+        assert res2[pw_id] == 1 + scalar
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_iadd_PS_and_scalar_1_present(self, scalar):
+        """Test inplace adding scalar to PauliSentence that already contains identity"""
+        copy_ps1 = copy(ps4)
+        copy_ps2 = copy(ps4)
+        copy_ps1 += scalar
+        assert copy_ps1[pw_id] == 1 + scalar
+        assert copy_ps2 == ps4
+
     ps_match = (
         (ps4, "Can't get the matrix of an empty PauliWord."),
         (ps5, "Can't get the matrix of an empty PauliSentence."),
     )
 
-    @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
-    def test_iadd(self, string1, string2, result):
-        """Test that the correct result of inplace addition is produced and other object is not changed."""
+    @pytest.mark.parametrize("string1, string2, result", add_ps_ps)
+    def test_iadd_ps_ps(self, string1, string2, result):
+        """Test that the correct result of inplace addition with PauliSentence is produced and other object is not changed."""
         copied_string1 = copy(string1)
         copied_string2 = copy(string2)
         copied_string1 += copied_string2
@@ -561,6 +692,15 @@ class TestPauliSentence:
 
         assert copied_string1 == result  # Check if the modified object matches the expected result
         assert copied_string2 == string2  # Ensure the original object is not modified
+
+    @pytest.mark.parametrize("ps, pw, res", add_ps_pw)
+    def test_iadd_ps_pw(self, ps, pw, res):
+        """Test that the correct result of inplace addition with PauliWord is produced and other object is not changed."""
+        copy_ps1 = copy(ps)
+        copy_ps2 = copy(ps)
+        copy_ps1 += pw
+        assert copy_ps1 == res  # Check if the modified object matches the expected result
+        assert copy_ps2 == ps  # Ensure the original object is not modified
 
     @pytest.mark.parametrize("ps, match", ps_match)
     def test_to_mat_error_empty(self, ps, match):
