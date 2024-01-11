@@ -130,32 +130,32 @@ def _get_ml_boundary_execute(
     mapped_interface = INTERFACE_MAP[interface]
     try:
         if mapped_interface == "autograd":
-            from .autograd import autograd_execute as ml_boundary
+            from .interfaces.autograd import autograd_execute as ml_boundary
 
         elif mapped_interface == "tf":
             if "autograph" in interface:
-                from .tensorflow_autograph import execute as ml_boundary
+                from .interfaces.tensorflow_autograph import execute as ml_boundary
 
                 ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
 
             else:
-                from .tensorflow import tf_execute as full_ml_boundary
+                from .interfaces.tensorflow import tf_execute as full_ml_boundary
 
                 ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
 
         elif mapped_interface == "torch":
-            from .torch import execute as ml_boundary
+            from .interfaces.torch import execute as ml_boundary
 
         elif interface == "jax-jit":
             if device_vjp:
-                from .jax_jit import jax_jit_vjp_execute as ml_boundary
+                from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
-                from .jax_jit import jax_jit_jvp_execute as ml_boundary
+                from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
         else:  # interface in {"jax", "jax-python", "JAX"}:
             if device_vjp:
-                from .jax import jax_vjp_execute as ml_boundary
+                from .interfaces.jax import jax_vjp_execute as ml_boundary
             else:
-                from .jax import jax_jvp_execute as ml_boundary
+                from .interfaces.jax import jax_jvp_execute as ml_boundary
 
     except ImportError as e:  # pragma: no-cover
         raise qml.QuantumFunctionError(
@@ -256,8 +256,7 @@ def _make_inner_execute(
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    # use qml.interfaces so that mocker can spy on it during testing
-    cached_device_execution = qml.interfaces.cache_execute(
+    cached_device_execution = qml.workflow.cache_execute(
         device_execution, cache, return_tuple=False
     )
 
@@ -578,7 +577,7 @@ def execute(
         interface = "tf-autograph"
     if interface == "jax":
         try:  # pragma: no-cover
-            from .jax import get_jax_interface_name
+            from .interfaces.jax import get_jax_interface_name
         except ImportError as e:  # pragma: no-cover
             raise qml.QuantumFunctionError(  # pragma: no-cover
                 "jax not found. Please install the latest "  # pragma: no-cover
@@ -767,9 +766,8 @@ def execute(
             execute_fn = inner_execute_with_empty_jac
 
             # replace the backward gradient computation
-            # use qml.interfaces so that mocker can spy on it during testing
             gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
-            cached_gradient_fn = qml.interfaces.cache_execute(
+            cached_gradient_fn = qml.workflow.cache_execute(
                 gradient_fn_with_shots,
                 cache,
                 pass_kwargs=True,

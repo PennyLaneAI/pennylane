@@ -105,6 +105,11 @@ class ControlledSequence(SymbolicOp, Operation):
         return self.hyperparameters["control_wires"]
 
     @property
+    def control_wires(self):
+        """The control wires for the sequence"""
+        return self.hyperparameters["control_wires"]
+
+    @property
     def wires(self):
         return self.control + self.base.wires
 
@@ -126,7 +131,7 @@ class ControlledSequence(SymbolicOp, Operation):
 
     # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(*_, base=None, control_wires=None, **__):
+    def compute_decomposition(*_, base=None, control_wires=None, lazy=False, **__):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -152,6 +157,24 @@ class ControlledSequence(SymbolicOp, Operation):
                 op.decomposition()
                 return qml.state()
 
+        >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
+        0: ─╭●─────────────────────────────────────┤  State
+        1: ─│────────────╭●────────────────────────┤  State
+        2: ─│────────────│────────────╭●───────────┤  State
+        3: ─╰(RX(1.00))──╰(RX(0.50))──╰(RX(0.25))──┤  State
+
+        To display the operators as powers of the base operator without further simplifcation,
+        the `compute_decompostion` method can be used with `lazy=True`.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+            op = qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+
+            @qml.qnode(dev)
+            def circuit():
+                op.compute_decomposition(base=op.base, control_wires=op.control, lazy=True)
+                return qml.state()
 
         >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
         0: ─╭●─────────────────────────────────────┤  State
@@ -165,6 +188,6 @@ class ControlledSequence(SymbolicOp, Operation):
         ops = []
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
-            ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z))
+            ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops

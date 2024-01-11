@@ -9,13 +9,18 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* `qml.transforms.one_qubit_decomposition` and `qml.transforms.two_qubit_decomposition` are deprecated. Instead,
-  you should use `qml.ops.one_qubit_decomposition` and `qml.ops.two_qubit_decomposition` .
+* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
+
+  - Contents moved in v0.35
+  - Old import path removed in v0.36.
+
+* ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are deprecated. Instead,
+  you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition`` .
 
   - Deprecated in v0.34
   - Will be removed in v0.35
 
-* `Observable.return_type` is deprecated. Instead, you should inspect the type
+* ``Observable.return_type`` is deprecated. Instead, you should inspect the type
   of the surrounding measurement process.
 
   - Deprecated in v0.34
@@ -99,6 +104,12 @@ Pending deprecations
 
   - Deprecated in v0.34
   - Will be removed in v0.35
+
+* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
+  but instead use ``@`` to conform with the PennyLane convention.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
 
 Completed deprecation cycles
 ----------------------------

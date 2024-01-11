@@ -18,7 +18,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
