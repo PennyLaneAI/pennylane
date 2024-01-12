@@ -15,7 +15,6 @@
 Code relevant for performing measurements on a qutrit mixed state.
 """
 from typing import Callable
-import functools
 from pennylane import math
 from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
@@ -29,7 +28,7 @@ from string import ascii_letters as alphabet
 from pennylane.wires import Wires
 
 from .apply_operation import apply_operation
-from .utils import get_einsum_indices, resquare_state, get_probs, qudit_dim, get_num_wires
+from .utils import get_einsum_indices_two, resquare_state, get_probs, qudit_dim, get_num_wires
 
 alphabet_array = math.asarray(list(alphabet))
 
@@ -45,8 +44,9 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
     Returns:
         TensorLike: the result of obs@state
     """
-    indices = get_einsum_indices(obs, state, is_state_batched)
-    einsum_indices = f"{indices['op1']},...{indices['state']},->...{indices['new_state']}"
+    indices = get_einsum_indices_two(obs, state, is_state_batched)
+    einsum_indices = f"{indices['op1']},...{indices['state']}->...{indices['new_state']}"
+    print(einsum_indices)
 
     obs_mat = math.cast(obs.matrix(), complex)
     return math.einsum(einsum_indices, obs_mat, state)
@@ -109,12 +109,15 @@ def get_measurement_function(
     if isinstance(measurementprocess, StateMeasurement):
         if isinstance(measurementprocess, ExpectationMP):
             # TODO add faster methods
+            # TODO add suport for sparce Hamiltonians
             if isinstance(measurementprocess.obs, Hamiltonian):
                 return sum_of_terms_method
             if isinstance(measurementprocess.obs, Sum):
-                return sum_of_terms_method
-            return trace_method
-
+                backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
+                if backprop_mode:
+                    return sum_of_terms_method
+            if measurementprocess.obs.name == "THermitian":
+                return trace_method
         if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
             return state_diagonalizing_gates
 
