@@ -800,11 +800,13 @@ class TestSortWires:
         op_list = [
             qml.PauliX(3),
             qml.PauliZ(2),
+            qml.PauliY("a"),
             qml.RX(1, 5),
             qml.PauliY(0),
             qml.PauliY(1),
-            qml.PauliZ(3),
+            qml.PauliZ("c"),
             qml.PauliX(5),
+            qml.PauliZ("ba"),
         ]
         sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
         final_list = [
@@ -812,11 +814,14 @@ class TestSortWires:
             qml.PauliY(1),
             qml.PauliZ(2),
             qml.PauliX(3),
-            qml.PauliZ(3),
             qml.PauliX(5),
             qml.RX(1, 5),
+            qml.PauliY("a"),
+            qml.PauliZ("ba"),
+            qml.PauliZ("c"),
         ]
 
+        print(sorted_list)
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
 
@@ -827,23 +832,29 @@ class TestSortWires:
             qml.PauliX(5),
             qml.Toffoli([2, 3, 4]),
             qml.CNOT([2, 5]),
+            qml.PauliZ("ba"),
             qml.RX(1, 5),
             qml.PauliY(0),
             qml.CRX(1, [0, 2]),
             qml.PauliZ(3),
+            qml.Toffoli([1, "c", "ab"]),
             qml.CRY(1, [1, 2]),
+            qml.PauliX("d"),
         )
         sorted_list = Sum._sort(op_tuple)  # pylint: disable=protected-access
         final_list = [
             qml.PauliY(0),
             qml.CRX(1, [0, 2]),
             qml.CRY(1, [1, 2]),
+            qml.Toffoli([1, "c", "ab"]),
             qml.CNOT([2, 5]),
             qml.Toffoli([2, 3, 4]),
             qml.PauliX(3),
             qml.PauliZ(3),
             qml.PauliX(5),
             qml.RX(1, 5),
+            qml.PauliZ("ba"),
+            qml.PauliX("d"),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
