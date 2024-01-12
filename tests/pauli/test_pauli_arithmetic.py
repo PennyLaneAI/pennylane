@@ -58,6 +58,7 @@ X0 = PauliWord({0: "X"})
 Y0 = PauliWord({0: "Y"})
 Z0 = PauliWord({0: "Z"})
 
+
 def _pauli_to_op(p):
     """convert PauliWord or PauliSentence to Operator"""
     return p.operation()
@@ -1110,6 +1111,7 @@ class TestPauliSentence:
             }
         )
 
+
 class TestPauliCommutators:
     """Test 'native' commutators in PauliWord and PauliSentence"""
 
@@ -1137,7 +1139,7 @@ class TestPauliCommutators:
         assert res1m == -1 * true_res
         assert res2 == true_res
         assert res2m == -1 * true_res
-    
+
     data_pauli_relations_private_func = (
         # test when using the private _commutator function that returns a tuple instead of a PauliSentence
         (X0, X0, pw_id, 0),
@@ -1160,7 +1162,7 @@ class TestPauliCommutators:
         assert res1[1] == true_coeff
         assert res1m[0] == true_word
         assert res1m[1] == -1 * true_coeff
-    
+
     @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations)
     def test_pauli_word_commutator_different_types(self, op1, op2, true_res, convert1):
@@ -1172,7 +1174,6 @@ class TestPauliCommutators:
         assert res2 == true_res
         assert res2m == -1 * true_res
         assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
-
 
 
 @pytest.mark.all_interfaces
