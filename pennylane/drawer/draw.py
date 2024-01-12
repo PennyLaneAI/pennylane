@@ -21,6 +21,8 @@ from importlib.metadata import distribution
 import warnings
 
 import pennylane as qml
+from pennylane.workflow.qnode_utils import construct_batch
+
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
@@ -41,7 +43,7 @@ def draw(
     decimals=2,
     max_length=100,
     show_matrices=True,
-    transform_stage=-1,
+    transform_stage=None,
     expansion_strategy=None,
 ):
     """Create a function that draws the given qnode or quantum function.
@@ -218,6 +220,7 @@ def draw(
             max_length=max_length,
             show_matrices=show_matrices,
             expansion_strategy=expansion_strategy,
+            transform_stage=transform_stage,
         )
 
     if expansion_strategy is not None:
@@ -251,9 +254,11 @@ def _draw_qnode(
     max_length=100,
     show_matrices=True,
     expansion_strategy=None,
+    transform_stage=None,
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
+
         if isinstance(qnode.device, qml.devices.Device) and (
             expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
         ):

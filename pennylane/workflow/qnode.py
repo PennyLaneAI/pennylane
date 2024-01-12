@@ -20,7 +20,7 @@ import functools
 import inspect
 import warnings
 from collections.abc import Sequence
-from typing import Union
+from typing import Union, Callable, Tuple
 import logging
 
 import pennylane as qml
@@ -60,6 +60,69 @@ def _get_device_shots(device) -> Shots:
             return Shots(device._raw_shot_sequence)
         return Shots(device.shots)
     return device.shots
+
+
+def make_execution_config(qnode: "QNode") -> qml.devices.ExecutionConfig:
+    if qnode.gradient_fn is None:
+        _gradient_method = None
+    elif isinstance(qnode.gradient_fn, str):
+        _gradient_method = qnode.gradient_fn
+    else:
+        _gradient_method = "gradient-transform"
+    grad_on_execution = qnode.execute_kwargs.get("grad_on_execution")
+    if qnode.interface == "jax":
+        grad_on_execution = False
+    elif grad_on_execution == "best":
+        grad_on_execution = None
+    return qml.devices.ExecutionConfig(
+        interface=qnode.interface,
+        gradient_method=_gradient_method,
+        grad_on_execution=grad_on_execution,
+        use_device_jacobian_product=qnode.execute_kwargs["device_vjp"],
+    )
+
+
+def null_postprocessing(results):
+    """A postprocessing function with null behavior."""
+    return results[0]
+
+
+def expand_fn_transform(
+    expand_fn: Callable[["QuantumTape"], "QuantumTape"]
+) -> "qml.transforms.core.TransformDispatcher":
+    def wrapped_expand_fn(tape):
+        """A tape to tape transform that has been converted"""
+        return (expand_fn(tape),), null_postprocessing
+
+    return qml.transform(wrapped_expand_fn)
+
+
+def _get_full_transform_program(qnode: qml.QNode) -> qml.transforms.core.TransformProgram:
+    if isinstance(qnode.device, qml.devices.Device):
+        config = make_execution_config(qnode)
+        return qnode.transform_program + qnode.device.preprocess(config)[0]
+    program = qml.transforms.core.TransformProgram(qnode.transform_program)
+    program.add_transform(qml.transform(qnode.device.batch_transform))
+    program.add_transform(expand_fn_transform(qnode.device.expand_fn))
+    return program
+
+
+def transform_program_subset(
+    qnode: qml.QNode, stage=Union[None, str, int, slice]
+) -> "qml.transforms.core.TransformProgram":
+    """
+
+    Args:
+
+    Return:
+
+    """
+    full_transform_program = _get_full_transform_program(qnode)
+    if stage == "device":
+        stage = slice(0, None)
+    if stage is None or isinstance(stage, int):
+        stage = slice(0, stage)
+    return full_transform_program[stage]
 
 
 class QNode:
@@ -988,24 +1051,7 @@ class QNode:
         config = None
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
-            if self.gradient_fn is None:
-                _gradient_method = None
-            elif isinstance(self.gradient_fn, str):
-                _gradient_method = self.gradient_fn
-            else:
-                _gradient_method = "gradient-transform"
-            grad_on_execution = self.execute_kwargs.get("grad_on_execution")
-            if self.interface == "jax":
-                grad_on_execution = False
-            elif grad_on_execution == "best":
-                grad_on_execution = None
-
-            config = qml.devices.ExecutionConfig(
-                interface=self.interface,
-                gradient_method=_gradient_method,
-                grad_on_execution=grad_on_execution,
-                use_device_jacobian_product=self.execute_kwargs["device_vjp"],
-            )
+            config = make_execution_config(self)
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:
