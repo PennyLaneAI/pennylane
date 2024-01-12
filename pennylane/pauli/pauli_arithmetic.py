@@ -58,6 +58,13 @@ mat_map = {
     Z: matZ,
 }
 
+anticom_map = {
+    I: {I: 0, X: 0, Y: 0, Z: 0},
+    X: {I: 0, X: 0, Y: 1, Z: 1},
+    Y: {I: 0, X: 1, Y: 0, Z: 1},
+    Z: {I: 0, X: 1, Y: 1, Z: 0},
+}
+
 
 @lru_cache
 def _cached_sparse_data(op):
@@ -284,6 +291,37 @@ class PauliWord(dict):
         raise TypeError(
             f"PauliWord can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
         )
+    
+    def commutes_with(self, other):
+        """Fast check if two PauliWords commute with each other"""
+        wires = set(self) & set(other)
+        if not wires:
+            return True
+        anticom_count = sum([anticom_map[self[wire]][other[wire]] for wire in wires])
+        return (anticom_count % 2) == 0
+    
+    def _commutator(self, other):
+        """Commutator between two PauliWords, returns tuple (new_word, coeff) for faster arithmetic"""
+        # This may be helpful to developers that need a more lightweight commutator between pauli words
+        # without creating PauliSentence classes
+        
+        if self.commutes_with(other):
+            return PauliWord({}), 0.0
+        new_word, coeff = self @ other
+        return new_word, 2 * coeff
+    
+    def commutator(self, other):
+        """Commutator between two PauliWords"""
+        if isinstance(other, PauliWord):
+            new_word, coeff = self._commutator(other)
+            return PauliSentence({new_word: coeff})
+        
+        # cases for other being Operator or PauliSentence are handled in PauliSentence class
+        return NotImplemented
+    
+    def __or__(self, other):
+        """Compute commutator between self and other with | operator """
+        return self.commutator(other)
 
     def __str__(self):
         """String representation of a PauliWord."""
@@ -591,6 +629,34 @@ class PauliSentence(dict):
         raise TypeError(
             f"PauliSentence can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
         )
+    
+    def commutator(self, other):
+        """Compute commutator between two Pauli sentences by iterating over each sentence and commuting
+        the Pauli words pair-wise"""
+        final_ps = PauliSentence()
+
+        if not isinstance(other, PauliSentence):
+            other = qml.pauli.pauli_sentence(other)
+
+        if len(self) == 0:
+            return copy(other)
+
+        if len(other) == 0:
+            return copy(self)
+
+        for pw1 in self:
+            for pw2 in other:
+                comm_pw, coeff = pw1._commutator(pw2)
+                if comm_pw is not None:
+                    final_ps[comm_pw] += coeff * self[pw1] * other[pw2]
+
+        return final_ps
+    
+    def __or__(self, other):
+        return self.commutator(other)
+    
+    def __ror__(self, other):
+        return -1*qml.commutator(self, other, pauli=True)
 
     def __str__(self):
         """String representation of the PauliSentence."""

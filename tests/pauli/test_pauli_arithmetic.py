@@ -54,6 +54,25 @@ ps5 = PauliSentence({})
 
 sentences = [ps1, ps2, ps3, ps4, ps5, ps1_hamiltonian, ps2_hamiltonian]
 
+X0 = PauliWord({0: "X"})
+Y0 = PauliWord({0: "Y"})
+Z0 = PauliWord({0: "Z"})
+
+def _pauli_to_op(p):
+    """convert PauliWord or PauliSentence to Operator"""
+    return p.operation()
+
+
+def _pw_to_ps(p):
+    """convert PauliWord to PauliSentence"""
+    return PauliSentence({p: 1.0})
+
+
+def _id(p):
+    """Leave operator as is"""
+    # this is used for parametrization of tests
+    return p
+
 
 class TestDeprecations:
     def test_deprecation_warning_PauliWord(
@@ -1090,6 +1109,70 @@ class TestPauliSentence:
                 PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
             }
         )
+
+class TestPauliCommutators:
+    """Test 'native' commutators in PauliWord and PauliSentence"""
+
+    data_pauli_relations = (
+        # word and word
+        (X0, X0, PauliSentence({pw_id: 0})),
+        (Y0, Y0, PauliSentence({pw_id: 0})),
+        (Z0, Z0, PauliSentence({pw_id: 0})),
+        (X0, Y0, PauliSentence({Z0: 2j})),
+        (Y0, Z0, PauliSentence({X0: 2j})),
+        (Z0, X0, PauliSentence({Y0: 2j})),
+        (Y0, X0, PauliSentence({Z0: -2j})),
+        (Z0, Y0, PauliSentence({X0: -2j})),
+        (X0, Z0, PauliSentence({Y0: -2j})),
+    )
+
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations)
+    def test_pauli_word_commutator(self, op1, op2, true_res):
+        """Test native commutator in PauliWord class"""
+        res1 = op1.commutator(op2)
+        res1m = op2.commutator(op1)
+        res2 = op1 | op2
+        res2m = op2 | op1
+        assert res1 == true_res
+        assert res1m == -1 * true_res
+        assert res2 == true_res
+        assert res2m == -1 * true_res
+    
+    data_pauli_relations_private_func = (
+        # test when using the private _commutator function that returns a tuple instead of a PauliSentence
+        (X0, X0, pw_id, 0),
+        (Y0, Y0, pw_id, 0),
+        (Z0, Z0, pw_id, 0),
+        (X0, Y0, Z0, 2j),
+        (Y0, Z0, X0, 2j),
+        (Z0, X0, Y0, 2j),
+        (Y0, X0, Z0, -2j),
+        (Z0, Y0, X0, -2j),
+        (X0, Z0, Y0, -2j),
+    )
+
+    @pytest.mark.parametrize("op1, op2, true_word, true_coeff", data_pauli_relations_private_func)
+    def test_pauli_word_private_commutator(self, op1, op2, true_word, true_coeff):
+        """Test native _commutator in PauliWord class that returns tuples"""
+        res1 = op1._commutator(op2)
+        res1m = op2._commutator(op1)
+        assert res1[0] == true_word
+        assert res1[1] == true_coeff
+        assert res1m[0] == true_word
+        assert res1m[1] == -1 * true_coeff
+    
+    @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations)
+    def test_pauli_word_commutator_different_types(self, op1, op2, true_res, convert1):
+        """Test native commutator in between a PauliSentence and either of PauliWord, PauliSentence, Operator"""
+        op1 = convert1(op1)
+        op2 = qml.pauli.pauli_sentence(op2)
+        res2 = op1 | op2
+        res2m = op2 | op1
+        assert res2 == true_res
+        assert res2m == -1 * true_res
+        assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
+
 
 
 @pytest.mark.all_interfaces

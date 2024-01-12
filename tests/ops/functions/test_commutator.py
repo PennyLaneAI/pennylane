@@ -30,14 +30,18 @@ pw_id = PauliWord({})
 
 
 def _pauli_to_op(p):
+    """convert PauliWord or PauliSentence to Operator"""
     return p.operation()
 
 
 def _pw_to_ps(p):
+    """convert PauliWord to PauliSentence"""
     return PauliSentence({p: 1.0})
 
 
 def _id(p):
+    """Leave operator as is"""
+    # this is used for parametrization of tests
     return p
 
 
