@@ -203,7 +203,7 @@ class PauliWord(dict):
                 result[wire] = term
 
         return PauliWord(result), coeff
-    
+
     def __matmul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
         and the tensor product otherwise.

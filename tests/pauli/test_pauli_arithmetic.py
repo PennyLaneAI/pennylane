@@ -311,7 +311,7 @@ class TestPauliWord:
         assert word1 @ word2 == PauliSentence({result_pw: coeff})
         assert copy_pw1 == word1  # check for mutation of the pw themselves
         assert copy_pw2 == word2
-    
+
     @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_matmult)
     def test_private_private_matmul(self, word1, word2, result_pw, coeff):
         """Test the private matrix multiplication that returns a tuple (new_word, coeff)"""
