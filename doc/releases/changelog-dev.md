@@ -24,8 +24,8 @@
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
 
 * Improve efficiency of matrix calculation when operator is symmetric over wires
-   [(#3601 )](https://github.com/PennyLaneAI/pennylane/pull/3601)
-  
+   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
+
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
 
