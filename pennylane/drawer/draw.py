@@ -180,8 +180,10 @@ def draw(
 
     .. code-block:: python
 
-        @qml.gradients.param_shift(shifts=[(0.1,)])
-        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        from functools import partial
+
+        @partial(qml.gradients.param_shift, shifts=[(0.1,)])
+        @qml.qnode(qml.device('default.qubit', wires=1))
         def transformed_circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))

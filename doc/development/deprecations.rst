@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+  dummy values that are no longer needed.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
 
   - Contents moved in v0.35
@@ -16,12 +22,6 @@ Pending deprecations
 
 * ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are deprecated. Instead,
   you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition`` .
-
-  - Deprecated in v0.34
-  - Will be removed in v0.35
-
-* ``Observable.return_type`` is deprecated. Instead, you should inspect the type
-  of the surrounding measurement process.
 
   - Deprecated in v0.34
   - Will be removed in v0.35
@@ -48,6 +48,37 @@ Pending deprecations
   - Deprecated in v0.34
   - Will be removed in v0.35
 
+* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
+
+  - Deprecated in v0.24
+  - Will be removed in v0.35
+
+  Instead, it is recommended to simply
+  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
+
+  .. code-block:: python
+
+    @qml.qnode(dev)
+    def ansatz(params):
+        some_qfunc(params)
+        return qml.expval(Hamiltonian)
+
+* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
+* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
+  but instead use ``@`` to conform with the PennyLane convention.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
+Completed deprecation cycles
+----------------------------
+
 * Passing additional arguments to a transform that decorates a QNode should now be done through use
   of ``functools.partial``. For example, the :func:`~pennylane.metric_tensor` transform has an
   optional ``approx`` argument which should now be set using:
@@ -61,7 +92,7 @@ Pending deprecations
     def circuit(weights):
         ...
 
-  The previously-recommended approach is now deprecated:
+  The previously-recommended approach is now removed:
 
   .. code-block:: python
 
@@ -81,38 +112,20 @@ Pending deprecations
     transformed_circuit = qml.metric_tensor(circuit, approx="block-diag")
 
   - Deprecated in v0.33
-  - Will be removed in v0.35
+  - Removed in v0.35
 
-* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
+* ``Observable.return_type`` has been removed. Instead, you should inspect the type
+  of the surrounding measurement process.
 
-  - Deprecated in v0.24
-  - Will be removed in v0.35
+  - Deprecated in v0.34
+  - Removed in v0.35
 
-  Instead, it is recommended to simply
-  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
-
-  .. code-block:: python
-
-    @qml.qnode(dev)
-    def ansatz(params):
-        some_qfunc(params)
-        return qml.expval(Hamiltonian)
-
-* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better 
+* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better
   method to estimate entropies from approximate density matrix reconstructions
   (with potentially negative eigenvalues) has been implemented.
 
   - Deprecated in v0.34
-  - Will be removed in v0.35
-
-* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
-  but instead use ``@`` to conform with the PennyLane convention.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.35
 
 * Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
 
