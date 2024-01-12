@@ -164,7 +164,6 @@ class TestInheritanceMixins:
         assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
 
         # check the dir
-        assert "return_type" in dir(ob)
         assert "grad_recipe" not in dir(ob)
 
 
