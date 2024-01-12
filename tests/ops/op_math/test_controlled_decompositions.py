@@ -202,7 +202,6 @@ class TestControlledDecompositionZYZ:
         assert len(decomp) == 5
         assert all(qml.equal(o, e) for o, e in zip(decomp, expected))
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("test_expand", [False, True])
     def test_zyz_decomp_no_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
@@ -227,7 +226,6 @@ class TestControlledDecompositionZYZ:
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))  # pylint:disable=no-member
         assert equal_list(decomp, expected)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("test_expand", [False, True])
     def test_zyz_decomp_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
@@ -630,7 +628,6 @@ class TestControlledBisectGeneral:
         expected = expected_circuit()
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("op", zip(gen_ops, gen_ops_best))
     @pytest.mark.parametrize("control_wires", cw5)
     @pytest.mark.parametrize("all_the_way_from_ctrl", [False, True])
@@ -640,6 +637,8 @@ class TestControlledBisectGeneral:
         """
         op, best = op
         if all_the_way_from_ctrl:
+            if not isinstance(op, qml.Rot):
+                pytest.xfail(reason="decompositions do not match")
             if isinstance(op, qml.PauliX):
                 # X has its own special case
                 pytest.skip()

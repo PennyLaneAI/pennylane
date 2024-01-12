@@ -1639,7 +1639,7 @@ class Operation(Operator):
     :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
     Args:
-        params (tuple[tensor_like]): trainable parameters
+        *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         id (str): custom label given to an operator instance,
@@ -1866,8 +1866,6 @@ class Observable(Operator):
             can be useful for some applications where the instance has to be identified
     """
 
-    _return_type = None
-
     @property
     def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
@@ -1889,26 +1887,6 @@ class Observable(Operator):
     def is_hermitian(self):
         """All observables must be hermitian"""
         return True
-
-    @property
-    def return_type(self):
-        """None or ObservableReturnTypes: Measurement type that this observable is called with."""
-        warnings.warn(
-            "`Observable.return_type` is deprecated. Instead, you should "
-            "inspect the type of the surrounding measurement process.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._return_type
-
-    @return_type.setter
-    def return_type(self, value):
-        """Change the return type of an Observable. Note that this property is deprecated."""
-        warnings.warn(
-            "`Observable.return_type` is deprecated. Instead, you should "
-            "create a measurement process containing this Observable.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        self._return_type = value
 
     def __matmul__(self, other):
         if active_new_opmath():
@@ -2496,8 +2474,6 @@ class Tensor(Observable):
         """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
         the observables building up the :class:`~.Tensor`.
 
-        The ``return_type`` attribute is preserved while pruning.
-
         If the tensor product only contains one observable, then this observable instance is
         returned.
 
@@ -2535,7 +2511,6 @@ class Tensor(Observable):
         else:
             obs = Tensor(*self.non_identity_obs)
 
-        obs._return_type = self._return_type
         return obs
 
     def map_wires(self, wire_map: dict):
