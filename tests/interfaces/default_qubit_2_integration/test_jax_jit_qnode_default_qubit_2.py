@@ -1834,6 +1834,8 @@ class TestJIT:
     ):
         """Test derivative calculation of a scalar valued QNode with respect
         to a subset of arguments"""
+        if device_vjp and jacobian == jax.jacfwd:
+            pytest.xfail("device_vjp=True canot be used with forward mode differentiation.")
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
