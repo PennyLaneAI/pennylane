@@ -14,7 +14,6 @@
 """Functions to apply operations to a qutrit mixed state."""
 # pylint: disable=unused-argument
 
-import functools
 from functools import singledispatch
 from string import ascii_letters as alphabet
 import pennylane as qml
