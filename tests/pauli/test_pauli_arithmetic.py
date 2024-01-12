@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, protected-access
 import pickle
 from copy import copy, deepcopy
 import pytest
