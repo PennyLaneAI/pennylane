@@ -179,8 +179,10 @@ def draw(
 
     .. code-block:: python
 
-        @qml.gradients.param_shift(shifts=[(0.1,)])
-        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        from functools import partial
+
+        @partial(qml.gradients.param_shift, shifts=[(0.1,)])
+        @qml.qnode(qml.device('default.qubit', wires=1))
         def transformed_circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -477,7 +479,7 @@ def draw_mpl(
         You can also control the appearance with matplotlib's provided tools, see the
         `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
         For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
-        ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style=None``:
+        ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style="rcParams"``:
 
         .. code-block:: python
 
@@ -491,7 +493,7 @@ def draw_mpl(
             plt.rcParams['lines.linewidth'] = 5
             plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-            fig, ax = qml.draw_mpl(circuit, style=None)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit, style="rcParams")(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/rcparams.png

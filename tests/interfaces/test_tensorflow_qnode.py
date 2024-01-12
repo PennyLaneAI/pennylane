@@ -527,17 +527,15 @@ class TestShotsIntegration:
 
         # execute with shots=100
         circuit(weights, shots=100)  # pylint: disable=unexpected-keyword-arg
-        spy.assert_called()
+        spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
         assert dev.shots is None
-        spy = mocker.spy(dev, "sample")
         res = circuit(weights)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
+        spy.assert_called_once()
 
-    @pytest.mark.xfail(reason="TODO: shot-vector support for param shift")
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""

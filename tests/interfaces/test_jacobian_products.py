@@ -22,7 +22,7 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import numpy as np
 
 import pennylane as qml
-from pennylane.interfaces.jacobian_products import (
+from pennylane.workflow.jacobian_products import (
     JacobianProductCalculator,
     TransformJacobianProducts,
     DeviceDerivatives,
