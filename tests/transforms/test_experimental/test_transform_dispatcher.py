@@ -100,6 +100,7 @@ def first_valid_transform(
     """A valid transform."""
     tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
+    _ = (qml.PauliX(0), qml.S(0))
     return [tape], lambda x: x
 
 
@@ -256,31 +257,24 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
-        """Test that a warning is raised with the transform function and that the transform dispatcher returns
-        the right object."""
+    def test_integration_dispatcher_with_valid_transform_decorator_fails(self, valid_transform):
+        """Test that an error is raised with the transform function."""
 
         dispatched_transform = transform(valid_transform)
         targs = [0]
 
-        msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been deprecated"
-        with pytest.warns(UserWarning, match=msg):
+        msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been removed"
+        with pytest.raises(TransformError, match=msg):
 
             @dispatched_transform(targs)
             @qml.qnode(device=dev)
-            def qnode_circuit(a):
+            def qnode_circuit(a):  # pylint:disable=unused-variable
                 """QNode circuit."""
                 qml.Hadamard(wires=0)
                 qml.CNOT(wires=[0, 1])
                 qml.PauliX(wires=0)
                 qml.RZ(a, wires=1)
                 return qml.expval(qml.PauliZ(wires=0))
-
-        assert isinstance(qnode_circuit, qml.QNode)
-        assert isinstance(qnode_circuit.transform_program, qml.transforms.core.TransformProgram)
-        assert isinstance(
-            qnode_circuit.transform_program.pop_front(), qml.transforms.core.TransformContainer
-        )
 
     def test_equality(self):
         """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""

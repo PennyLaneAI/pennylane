@@ -37,7 +37,7 @@ from .preprocess import (
     validate_measurements,
     validate_multiprocessing_workers,
     validate_device_wires,
-    warn_about_trainable_observables,
+    validate_adjoint_trainable_params,
     no_sampling,
 )
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -138,9 +138,8 @@ def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callab
     params = tape.get_parameters()
     complex_data = [qml.math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
-    state_tape = qml.tape.QuantumScript(
-        tape.operations, [qml.measurements.StateMP(wires=tape.wires)]
-    )
+    new_mp = qml.measurements.StateMP(wires=tape.wires)
+    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
     return (state_tape,), partial(
         all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
     )
@@ -180,7 +179,7 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
     )
     program.add_transform(adjoint_state_measurements)
     program.add_transform(qml.transforms.broadcast_expand)
-    program.add_transform(warn_about_trainable_observables)
+    program.add_transform(validate_adjoint_trainable_params)
 
 
 class DefaultQubit(Device):

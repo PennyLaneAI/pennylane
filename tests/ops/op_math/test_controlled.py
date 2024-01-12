@@ -1578,14 +1578,13 @@ def test_qubit_unitary(M):
     assert not equal_list(list(tape), expected)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(
     "M",
     [
-        qml.PauliX.compute_matrix(),
-        qml.PauliY.compute_matrix(),
-        qml.PauliZ.compute_matrix(),
-        qml.Hadamard.compute_matrix(),
+        pytest.param(qml.PauliX.compute_matrix(), marks=pytest.mark.xfail),
+        pytest.param(qml.PauliY.compute_matrix(), marks=pytest.mark.xfail),
+        pytest.param(qml.PauliZ.compute_matrix(), marks=pytest.mark.xfail),
+        pytest.param(qml.Hadamard.compute_matrix(), marks=pytest.mark.xfail),
         np.array(
             [
                 [1 + 2j, -3 + 4j],

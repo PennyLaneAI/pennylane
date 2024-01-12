@@ -83,6 +83,8 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
 
         * Cannot differentiate with respect to observables.
 
+        * Cannot differentiate with respect to state-prep operations.
+
         * Observable being measured must have a matrix.
 
     Args:
