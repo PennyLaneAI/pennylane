@@ -23,6 +23,7 @@ representation of Pauli words and applications, see:
 from functools import lru_cache, reduce, singledispatch
 from itertools import product
 from typing import List, Union
+from warnings import warn
 
 import numpy as np
 
@@ -932,6 +933,13 @@ def pauli_group(n_qubits, wire_map=None):
 def pauli_mult(pauli_1, pauli_2, wire_map=None):
     """Multiply two Pauli words together and return the product as a Pauli word.
 
+    .. warning::
+
+        ``pauli_mult`` is deprecated. Instead, you can multiply two Pauli words
+        together with ``qml.prod(pauli_1, pauli_2).simplify()``. Note that if
+        there is a phase, this will be in ``result.scalar``, and the base will be
+        available in ``result.base``.
+
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations.
 
@@ -960,6 +968,14 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     PauliZ(wires=[0])
     """
 
+    warn(
+        "`pauli_mult` is deprecated. Instead, you can multiply two Pauli words "
+        "together with `qml.prod(pauli_1, pauli_2).simplify()`. Note that if "
+        "there is a phase, this will be in `result.scalar`, and the base will be "
+        "available in `result.base`.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if wire_map is None:
         wire_map = _wire_map_from_pauli_pair(pauli_1, pauli_2)
 
@@ -984,6 +1000,13 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
 def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     r"""Multiply two Pauli words together, and return both their product as a Pauli word
     and the global phase.
+
+    .. warning::
+
+        ``pauli_mult_with_phase`` is deprecated. Instead, you can multiply two Pauli
+        words together with ``qml.prod(pauli_1, pauli_2).simplify()``. Note that if
+        there is a phase, this will be in ``result.scalar``, and the base will be
+        available in ``result.base``.
 
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations. The phase is computed by
@@ -1017,6 +1040,14 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     >>> phase
     1j
     """
+
+    warn(
+        "`pauli_mult_with_phase` is deprecated. Instead, you can multiply two Pauli words "
+        "together with `qml.prod(pauli_1, pauli_2).simplify()`. Note that if "
+        "there is a phase, this will be in `result.scalar`, and the base will be "
+        "available in `result.base`.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if wire_map is None:
         wire_map = _wire_map_from_pauli_pair(pauli_1, pauli_2)

@@ -66,6 +66,11 @@
   values that are no longer needed.
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
 
+* `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now deprecated. Instead, you
+  should use `qml.prod(pauli_1, pauli_2).simplify()` to get the reduced operator. Note that if there
+  is a phase, you can access it via `op.scalar`.
+  [()]()
+
 <h3>Documentation 📝</h3>
 
 * A typo in a code example in the `qml.transforms` API has been fixed.
