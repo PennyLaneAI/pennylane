@@ -52,10 +52,19 @@
   of the surrounding measurement process.
   [(#5044)](https://github.com/PennyLaneAI/pennylane/pull/5044)
 
+* `ClassicalShadow.entropy()` no longer needs an `atol` keyword as a better
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+  [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
+
 <h3>Deprecations 👋</h3>
 
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+
+* `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
+  values that are no longer needed.
+  [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
 
 <h3>Documentation 📝</h3>
 
