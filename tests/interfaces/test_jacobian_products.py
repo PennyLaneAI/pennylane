@@ -178,7 +178,7 @@ class TestBasics:
         """Test the repr method for lightning vjps."""
 
         device = qml.device("lightning.qubit", wires=5)
-        gradient_kwargs = {"use_device_state", True}
+        gradient_kwargs = {"use_device_state": True}
 
         jpc = LightningVJPs(device, gradient_kwargs)
 
