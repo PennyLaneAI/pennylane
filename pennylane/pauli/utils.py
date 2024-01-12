@@ -1438,6 +1438,12 @@ def _pauli_mult(p1, p2):
     >>> _pauli_mult(p1, p2)
     ([(2, "Y"), (1, "Y")], 1.0) # p1 @ p2 = X_0 @ Y_1 @ X_0 @ Y_2
     """
+
+    warn(
+        "_pauli_mult is deprecated. Instead, please use the "
+        "PauliWord class, or regular PennyLane operators.",
+        qml.PennyLaneDeprecationWarning,
+    )
     c = 1.0
 
     t1 = [t[0] for t in p1]
@@ -1525,6 +1531,11 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
            [1, 0, 1, 0, 0, 0, 1, 0],
            [0, 0, 0, 1, 1, 0, 0, 1]])
     """
+    warn(
+        "_binary_matrix is deprecated. Instead, please use PauliWords and _binary_matrix_from_pws",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if wire_map is None:
         all_wires = qml.wires.Wires.all_wires([term.wires for term in terms], sort=True)
         wire_map = {i: c for c, i in enumerate(all_wires)}
@@ -1590,6 +1601,7 @@ def _get_pauli_map(n):
 
     This function is used to accelerate ``qchem.observable_hf.jordan_wigner``.
     """
+    warn("_get_pauli_map is deprecated, as it is no longer used.", qml.PennyLaneDeprecationWarning)
     return [
         {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
         for i in range(n + 1)

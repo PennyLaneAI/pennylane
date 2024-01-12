@@ -71,6 +71,11 @@
   is a phase, you can access it via `op.scalar`.
   [()]()
 
+* The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the
+  `pauli` module have been deprecated, as they are no longer used anywhere and the same
+  functionality can be achieved using newer features in the `pauli` module.
+  [()]()
+
 <h3>Documentation 📝</h3>
 
 * A typo in a code example in the `qml.transforms` API has been fixed.

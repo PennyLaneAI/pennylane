@@ -925,10 +925,11 @@ class TestObservableHF:
             ),
         ],
     )
-    def test_pauli_mult(self, p1, p2, p_ref):
-        r"""Test that _pauli_mult returns the correct operator."""
+    def test_deprecated_pauli_mult(self, p1, p2, p_ref):
+        r"""Test that _pauli_mult raises a deprecation warning."""
         # pylint: disable=protected-access
-        result = qml.pauli.utils._pauli_mult(p1, p2)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="_pauli_mult is deprecated"):
+            result = qml.pauli.utils._pauli_mult(p1, p2)
 
         assert result == p_ref
 
@@ -1049,7 +1050,8 @@ class TestTapering:
     def test_binary_matrix(self, terms, num_qubits, result):
         r"""Test that _binary_matrix returns the correct result."""
         # pylint: disable=protected-access
-        binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="_binary_matrix is deprecated"):
+            binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
         assert (binary_matrix == result).all()
 
     @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
@@ -1059,3 +1061,9 @@ class TestTapering:
         pws_lst = [list(qml.pauli.pauli_sentence(t))[0] for t in terms]
         binary_matrix = qml.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
         assert (binary_matrix == result).all()
+
+
+def test_deprecated_get_pauli_map():
+    """Test that _get_pauli_map is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="_get_pauli_map is deprecated"):
+        _ = qml.pauli.utils._get_pauli_map(0)  # pylint:disable=protected-access
