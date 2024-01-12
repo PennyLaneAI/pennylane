@@ -62,23 +62,23 @@ def _get_device_shots(device) -> Shots:
     return device.shots
 
 
-def make_execution_config(qnode: "QNode") -> qml.devices.ExecutionConfig:
-    if qnode.gradient_fn is None:
+def _make_execution_config(circuit: "QNode") -> "qml.devices.ExecutionConfig":
+    if circuit.gradient_fn is None:
         _gradient_method = None
-    elif isinstance(qnode.gradient_fn, str):
-        _gradient_method = qnode.gradient_fn
+    elif isinstance(circuit.gradient_fn, str):
+        _gradient_method = circuit.gradient_fn
     else:
         _gradient_method = "gradient-transform"
-    grad_on_execution = qnode.execute_kwargs.get("grad_on_execution")
-    if qnode.interface == "jax":
+    grad_on_execution = circuit.execute_kwargs.get("grad_on_execution")
+    if circuit.interface == "jax":
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
     return qml.devices.ExecutionConfig(
-        interface=qnode.interface,
+        interface=circuit.interface,
         gradient_method=_gradient_method,
         grad_on_execution=grad_on_execution,
-        use_device_jacobian_product=qnode.execute_kwargs["device_vjp"],
+        use_device_jacobian_product=circuit.execute_kwargs["device_vjp"],
     )
 
 
@@ -90,39 +90,31 @@ def null_postprocessing(results):
 def expand_fn_transform(
     expand_fn: Callable[["QuantumTape"], "QuantumTape"]
 ) -> "qml.transforms.core.TransformDispatcher":
+    """Construct a transform from a tape-> tape function."""
+
+    @functools.wraps(expand_fn)
     def wrapped_expand_fn(tape):
-        """A tape to tape transform that has been converted"""
         return (expand_fn(tape),), null_postprocessing
 
     return qml.transform(wrapped_expand_fn)
 
 
-def _get_full_transform_program(qnode: qml.QNode) -> qml.transforms.core.TransformProgram:
-    if isinstance(qnode.device, qml.devices.Device):
-        config = make_execution_config(qnode)
-        return qnode.transform_program + qnode.device.preprocess(config)[0]
-    program = qml.transforms.core.TransformProgram(qnode.transform_program)
-    program.add_transform(qml.transform(qnode.device.batch_transform))
-    program.add_transform(expand_fn_transform(qnode.device.expand_fn))
+def _get_full_transform_program(circuit: "QNode") -> "qml.transforms.core.TransformProgram":
+    program = qml.transforms.core.TransformProgram(circuit.transform_program)
+    if (
+        isinstance(circuit.gradient_fn, qml.transforms.core.TransformDispatcher)
+        and circuit.gradient_fn.expand_transform
+    ):
+        program.add_transform(
+            qml.transform(circuit.gradient_fn.expand_transform),
+            **circuit.gradient_kwargs,
+        )
+    if isinstance(circuit.device, qml.devices.Device):
+        config = _make_execution_config(circuit)
+        return program + circuit.device.preprocess(config)[0]
+    program.add_transform(qml.transform(circuit.device.batch_transform))
+    program.add_transform(expand_fn_transform(circuit.device.expand_fn))
     return program
-
-
-def transform_program_subset(
-    qnode: qml.QNode, stage=Union[None, str, int, slice]
-) -> "qml.transforms.core.TransformProgram":
-    """
-
-    Args:
-
-    Return:
-
-    """
-    full_transform_program = _get_full_transform_program(qnode)
-    if stage == "device":
-        stage = slice(0, None)
-    if stage is None or isinstance(stage, int):
-        stage = slice(0, stage)
-    return full_transform_program[stage]
 
 
 class QNode:
@@ -910,6 +902,47 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
+    def construct_batch(self, expansion_strategy: Union[None, str, int, slice] = None) -> Callable:
+        """Construct the batch of tapes and post processing for a designated stage in the transform program.
+
+        Args:
+            expansion_strategy  (None, str, int, slice):
+
+                * ``None``: use the full transform program
+                * ``str``: Acceptable keys are ``"device"`` and ``"gradient"``
+                * ``int``: How many transforms to include, starting from the front of the program
+                * ``slice``: a slice to select out components of the transform program.
+        """
+        full_transform_program = _get_full_transform_program(self)
+        if expansion_strategy == "device":
+            expansion_strategy = slice(0, None)
+        elif expansion_strategy == "gradient":
+            if (
+                isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher)
+                and self.gradient_fn.expand_transform
+            ):
+                expansion_strategy = slice(0, len(self.transform_program) + 1)
+            else:
+                expansion_strategy = slice(0, len(self.transform_program))
+
+        if expansion_strategy is None or isinstance(expansion_strategy, int):
+            expansion_strategy = slice(0, expansion_strategy)
+        program = full_transform_program[expansion_strategy]
+
+        def batch_constructor(*args, **kwargs) -> Tuple[Tuple["qml.tape.QuantumTape", Callable]]:
+            if self._qfunc_uses_shots_arg:
+                shots = _get_device_shots(self._original_device)
+            else:
+                shots = kwargs.pop("shots", _get_device_shots(self._original_device))
+
+            with qml.queuing.AnnotatedQueue() as q:
+                self.func(*args, **kwargs)
+
+            initial_tape = QuantumScript.from_queue(q, shots)
+            return program((initial_tape,))
+
+        return batch_constructor
+
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
@@ -1051,7 +1084,7 @@ class QNode:
         config = None
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
-            config = make_execution_config(self)
+            config = _make_execution_config(self)
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:

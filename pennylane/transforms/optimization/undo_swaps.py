@@ -19,7 +19,6 @@ from typing import Sequence, Callable
 from pennylane.transforms import transform
 
 from pennylane.tape import QuantumTape
-from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 
 
@@ -93,39 +92,28 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     list_copy = tape.operations.copy()
     list_copy.reverse()
 
-    map_wires = {wire: wire for wire in tape.wires}
+    wire_map = {wire: wire for wire in tape.wires}
     gates = []
-
-    def _change_wires(wires):
-        change_wires = Wires([])
-        wires = wires.toarray()
-        for wire in wires:
-            change_wires += map_wires[wire]
-        return change_wires
 
     with QueuingManager.stop_recording():
         while len(list_copy) > 0:
             current_gate = list_copy[0]
-            params = current_gate.parameters
             if current_gate.name != "SWAP":
-                if len(params) == 0:
-                    gates.append(type(current_gate)(wires=_change_wires(current_gate.wires)))
-                else:
-                    gates.append(
-                        type(current_gate)(*params, wires=_change_wires(current_gate.wires))
-                    )
+                gates.append(current_gate.map_wires(wire_map))
 
             else:
                 swap_wires_0, swap_wires_1 = current_gate.wires
-                map_wires[swap_wires_0], map_wires[swap_wires_1] = (
-                    map_wires[swap_wires_1],
-                    map_wires[swap_wires_0],
+                wire_map[swap_wires_0], wire_map[swap_wires_1] = (
+                    wire_map[swap_wires_1],
+                    wire_map[swap_wires_0],
                 )
             list_copy.pop(0)
 
         gates.reverse()
 
-    new_tape = type(tape)(gates, tape.measurements, shots=tape.shots)
+    new_tape = type(tape)(
+        gates, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

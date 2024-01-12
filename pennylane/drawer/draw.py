@@ -21,7 +21,6 @@ from importlib.metadata import distribution
 import warnings
 
 import pennylane as qml
-from pennylane.workflow.qnode_utils import construct_batch
 
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
@@ -43,7 +42,6 @@ def draw(
     decimals=2,
     max_length=100,
     show_matrices=True,
-    transform_stage=None,
     expansion_strategy=None,
 ):
     """Create a function that draws the given qnode or quantum function.
@@ -220,7 +218,6 @@ def draw(
             max_length=max_length,
             show_matrices=show_matrices,
             expansion_strategy=expansion_strategy,
-            transform_stage=transform_stage,
         )
 
     if expansion_strategy is not None:
@@ -254,30 +251,13 @@ def _draw_qnode(
     max_length=100,
     show_matrices=True,
     expansion_strategy=None,
-    transform_stage=None,
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
 
-        if isinstance(qnode.device, qml.devices.Device) and (
-            expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
-        ):
-            qnode.construct(args, kwargs)
-            program, _ = qnode.device.preprocess()
-            tapes = program([qnode.tape])
-        else:
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                tapes = qnode.construct(args, kwargs)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    tapes = program([qnode.tape])
+        tapes, _ = qnode.construct_batch(expansion_strategy)(*args, **kwargs)
 
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
-
-        _wire_order = wire_order or qnode.device.wires or qnode.tape.wires
+        _wire_order = wire_order or qnode.device.wires or tapes[0].wires
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -291,7 +271,7 @@ def _draw_qnode(
                     max_length=max_length,
                     cache=cache,
                 )
-                for t in tapes[0]
+                for t in tapes
             ]
             if show_matrices and cache["matrices"]:
                 mat_str = ""
@@ -572,24 +552,10 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
-            qnode.construct(args, kwargs)
-            program, _ = qnode.device.preprocess()
-            tapes, _ = program([qnode.tape])
-            tape = tapes[0]
-        else:
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                qnode.construct(args, kwargs_qnode)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    [tape], _ = program([qnode.tape])
-                else:
-                    tape = qnode.tape
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
+        tapes, _ = qnode.construct_batch(expansion_strategy)(*args, **kwargs_qnode)
+        if len(tapes) > 1:
+            warnings.warn("More than one circuit created. Only drawing the first circuit.")
+        tape = tapes[0]
 
         _wire_order = wire_order or qnode.device.wires or tape.wires
 

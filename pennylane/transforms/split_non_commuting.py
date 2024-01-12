@@ -196,6 +196,8 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
             new_tape = tape.__class__(
                 tape.operations,
                 (tape.measurements[i] for i in indices),
+                shots=tape.shots,
+                trainable_params=tape.trainable_params,
             )
 
             tapes.append(new_tape)

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Code for resource estimation"""
 import inspect
+import warnings
 
 import pennylane as qml
 
@@ -79,6 +80,9 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
 
     """
 
+    if max_expansion is not None:
+        warnings.warn("max_expansion is no longer used by the specs transform", UserWarning)
+
     def specs_qnode(*args, **kwargs):
         """Returns information on the structure and makeup of provided QNode.
 
@@ -105,21 +109,15 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
         Returns:
             dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
-        initial_max_expansion = qnode.max_expansion
-        initial_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        tapes, _ = qnode.construct_batch(stage=expansion_strategy)(*args, **kwargs)
 
-        try:
-            qnode.max_expansion = initial_max_expansion if max_expansion is None else max_expansion
-            qnode.expansion_strategy = expansion_strategy or initial_expansion_strategy
-            qnode.construct(args, kwargs)
-        finally:
-            qnode.max_expansion = initial_max_expansion
-            qnode.expansion_strategy = initial_expansion_strategy
+        if len(tapes) > 1:
+            raise NotImplementedError("specs currently only works for a single tape.")
 
-        info = qnode.qtape.specs.copy()
+        info = tapes[0].specs.copy()
 
         info["num_device_wires"] = (
-            len(qnode.tape.wires)
+            len(tapes[0].wires)
             if isinstance(qnode.device, qml.devices.Device)
             else len(qnode.device.wires)
         )
@@ -137,7 +135,8 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
             info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
 
             try:
-                info["num_gradient_executions"] = len(qnode.gradient_fn(qnode.qtape)[0])
+                # TODO: update when transforms can act on a batch
+                info["num_gradient_executions"] = len(qnode.gradient_fn(tapes[0])[0])
             except Exception as e:  # pylint: disable=broad-except
                 # In the case of a broad exception, we don't want the `qml.specs` transform
                 # to fail. Instead, we simply indicate that the number of gradient executions
