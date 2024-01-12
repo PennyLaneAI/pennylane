@@ -17,6 +17,7 @@ This file contains the implementation of the commutator function in PennyLane
 import pennylane as qml
 from pennylane.pauli import PauliWord, PauliSentence
 
+
 def commutator(op1, op2, pauli=False):
     r"""Compute commutator between two operators in PennyLane
 
