@@ -14,6 +14,7 @@
 """
 Unit tests for the dot function
 """
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
