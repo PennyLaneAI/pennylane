@@ -14,9 +14,9 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
-import importlib
+from importlib import metadata, reload
 from collections import OrderedDict
-import pkg_resources
+from sys import version_info
 
 import pytest
 import numpy as np
@@ -206,6 +206,25 @@ def mock_device_arbitrary_wires(monkeypatch):
         yield get_device
 
 
+def test_gradients_record():
+    """Test that execute_and_gradients and gradient both track the number of gradients requested."""
+
+    dev = qml.device("default.qubit.legacy", wires=1)
+
+    tape = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+
+    with dev.tracker:
+        dev.execute_and_gradients((tape, tape), method="adjoint_jacobian", use_device_state=True)
+
+    assert dev.tracker.totals["execute_and_derivative_batches"] == 1
+    assert dev.tracker.totals["derivatives"] == 2
+
+    with dev.tracker:
+        dev.gradients((tape, tape), method="adjoint_jacobian", use_device_state=True)
+
+    assert dev.tracker.totals["derivatives"] == 2
+
+
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
@@ -375,6 +394,16 @@ class TestInternalFunctions:
         observables = [qml.expval(qml.Hadamard(0))]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
+            dev.check_validity(queue, observables)
+
+    def test_check_validity_on_projector_as_operation(self, mock_device_with_operations):
+        """Test that an error is raised if the operation queue contains qml.Projector"""
+        dev = mock_device_with_operations(wires=1)
+
+        queue = [qml.PauliX(0), qml.Projector([0], wires=0), qml.PauliZ(0)]
+        observables = []
+
+        with pytest.raises(ValueError, match="Postselection is not supported"):
             dev.check_validity(queue, observables)
 
     def test_args(self, mock_device):
@@ -562,7 +591,7 @@ class TestInternalFunctions:
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
 
         dev = qml.device("default.qubit.legacy", wires=3)
-        tape = qml.tape.QuantumTape(ops=ops, measurements=[], prep=prep, shots=100)
+        tape = qml.tape.QuantumTape(ops=prep + ops, measurements=[], shots=100)
         new_tape = dev.default_expand_fn(tape)
 
         true_decomposition = []
@@ -581,8 +610,6 @@ class TestInternalFunctions:
 
         assert new_tape.shots is tape.shots
         assert new_tape.wires == tape.wires
-        assert new_tape.is_sampled == tape.is_sampled
-        assert new_tape.all_sampled == tape.all_sampled
         assert new_tape.batch_size == tape.batch_size
         assert new_tape.output_dim == tape.output_dim
 
@@ -651,7 +678,6 @@ class TestOperations:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
 
         queue_at_pre_measure = []
 
@@ -680,8 +706,6 @@ class TestOperations:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-
-        observables = [o.obs for o in observables]
 
         call_history = []
         with monkeypatch.context() as m:
@@ -712,8 +736,6 @@ class TestOperations:
             qml.sample(qml.PauliZ(2)),
         ]
 
-        observables = [o.obs for o in observables]
-
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(queue, observables)
 
@@ -721,8 +743,7 @@ class TestOperations:
         """Tests that the execute function raises an error if probabilities are
         not supported by the device"""
         dev = mock_device_with_observables()
-        obs = qml.PauliZ(0)
-        obs.return_type = qml.measurements.ObservableReturnTypes.Probability
+        obs = qml.probs(op=qml.PauliZ(0))
         with pytest.raises(NotImplementedError):
             dev.execute([], [obs])
 
@@ -781,7 +802,6 @@ class TestObservables:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
 
         queue_at_pre_measure = []
 
@@ -799,10 +819,7 @@ class TestObservables:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        observables = []
-        for m in [qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1)), qml.sample(qml.PauliZ(2))]:
-            m.obs.return_type = m.return_type
-            observables.append(m.obs)
+        observables = [qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1)), qml.sample(qml.PauliZ(2))]
 
         # capture the arguments passed to dev methods
         expval_args = []
@@ -833,7 +850,6 @@ class TestObservables:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(queue, observables)
@@ -847,9 +863,7 @@ class TestObservables:
         queue = [qml.PauliX(wires=0)]
 
         # Make a observable without specifying a return operation upon measuring
-        obs = qml.PauliZ(0)
-        obs.return_type = "SomeUnsupportedReturnType"
-        observables = [obs]
+        observables = [qml.counts(op=qml.PauliZ(0))]
 
         with pytest.raises(
             qml.QuantumFunctionError, match="Unsupported return type specified for observable"
@@ -892,7 +906,6 @@ class TestParameters:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
 
         p_mapping = {}
 
@@ -920,17 +933,17 @@ class TestDeviceInit:
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
                 qml.device("default.qubit.legacy", wires=0)
 
-    @pytest.mark.skip(reason="Reloading PennyLane messes with tape mode")
     def test_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the refresh_devices function"""
         assert qml.plugin_devices
 
         with monkeypatch.context() as m:
             # remove all entry points
-            m.setattr(pkg_resources, "iter_entry_points", lambda name: [])
+            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
+            m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            importlib.reload(qml)
+            reload(qml)
 
             # since there are no entry points, there will be no plugin devices
             assert not qml.plugin_devices
@@ -942,36 +955,36 @@ class TestDeviceInit:
 
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
-        importlib.reload(qml)
+        reload(qml)
 
-    @pytest.mark.skip(reason="Reloading PennyLane messes with tape mode")
     def test_hot_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the device loader if not currently present"""
         assert qml.plugin_devices
 
         with monkeypatch.context() as m:
             # remove all entry points
-            m.setattr(pkg_resources, "iter_entry_points", lambda name: [])
+            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
+            m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            importlib.reload(qml)
+            reload(qml)
 
             m.setattr(qml, "refresh_devices", lambda: None)
             assert not qml.plugin_devices
 
             # since there are no entry points, there will be no plugin devices
-            with pytest.raises(DeviceError, match="Device does not exist"):
+            with pytest.raises(DeviceError, match="Device default.qubit does not exist"):
                 qml.device("default.qubit", wires=0)
 
         # outside of the context, entrypoints will now be found automatically
         assert not qml.plugin_devices
         dev = qml.device("default.qubit", wires=0)
         assert qml.plugin_devices
-        assert dev.short_name == "default.qubit"
+        assert dev.name == "default.qubit"
 
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
-        importlib.reload(qml)
+        reload(qml)
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
@@ -1038,10 +1051,10 @@ class TestBatchExecution:
 
         assert len(res) == 2
         assert np.allclose(
-            res[0], dev.execute(self.tape1.operations, self.tape1.observables), rtol=tol, atol=0
+            res[0], dev.execute(self.tape1.operations, self.tape1.measurements), rtol=tol, atol=0
         )
         assert np.allclose(
-            res[1], dev.execute(self.tape2.operations, self.tape2.observables), rtol=tol, atol=0
+            res[1], dev.execute(self.tape2.operations, self.tape2.measurements), rtol=tol, atol=0
         )
 
     def test_result_empty_tape(self, mock_device_with_paulis_and_methods, tol):
@@ -1055,7 +1068,7 @@ class TestBatchExecution:
 
         assert len(res) == 3
         assert np.allclose(
-            res[0], dev.execute(empty_tape.operations, empty_tape.observables), rtol=tol, atol=0
+            res[0], dev.execute(empty_tape.operations, empty_tape.measurements), rtol=tol, atol=0
         )
 
 

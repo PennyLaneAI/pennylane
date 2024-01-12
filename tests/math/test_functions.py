@@ -134,6 +134,12 @@ class TestGetMultiTensorbox:
         res = fn.get_interface(y, x)
         assert res == "numpy"
 
+    def test_get_deep_interface(self):
+        """Test get_deep_interface returns the interface of deep values."""
+        assert fn.get_deep_interface([()]) == "builtins"
+        assert fn.get_deep_interface(([1, 2], [3, 4])) == "builtins"
+        assert fn.get_deep_interface([[jnp.array(1.1)]]) == "jax"
+
 
 test_abs_data = [
     (1, -2, 3 + 4j),
@@ -1327,6 +1333,13 @@ def test_shape(shape, interface, create_array):
     assert fn.shape(t) == shape
 
 
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+def test_shape_and_ndim_deep(interface):
+    val = [[fn.asarray(1, like=interface)]]
+    assert fn.shape(val) == (1, 1)
+    assert fn.ndim(val) == 2
+
+
 @pytest.mark.parametrize(
     "x, expected",
     (
@@ -1537,7 +1550,7 @@ class TestTake:
     def test_array_indexing_autograd(self):
         """Test that indexing with a sequence properly extracts
         the elements from the flattened tensor"""
-        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=np.float64)
         indices = [0, 2, 3, 6, -2]
 
         def cost_fn(t):
@@ -1580,7 +1593,7 @@ class TestTake:
     def test_multidimensional_indexing_along_axis_autograd(self):
         """Test that indexing with a sequence properly extracts
         the elements from the specified tensor axis"""
-        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=np.float64)
         indices = np.array([[0, 0], [1, 0]])
 
         def cost_fn(t):
@@ -2569,11 +2582,17 @@ class TestSize:
         ([[0], [1], [2], [3], [4], [5]], 6),
     ]
 
-    @pytest.mark.torch
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            pytest.param("torch", marks=pytest.mark.torch),
+            pytest.param("tensorflow", marks=pytest.mark.tf),
+        ],
+    )
     @pytest.mark.parametrize(("array", "size"), array_and_size)
-    def test_size_torch(self, array, size):
-        """Test size function with the torch interface."""
-        r = fn.size(torch.tensor(array))
+    def test_size_torch_and_tf(self, array, size, interface):
+        """Test size function with the torch and tf interfaces."""
+        r = fn.size(fn.asarray(array, like=interface))
         assert r == size
 
 

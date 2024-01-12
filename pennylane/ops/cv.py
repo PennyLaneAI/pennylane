@@ -45,7 +45,7 @@ from pennylane import math as qml_math
 from pennylane.operation import AnyWires, CVObservable, CVOperation
 
 from .identity import Identity  # pylint: disable=unused-import
-from .snapshot import Snapshot  # pylint: disable=unused-import
+from .meta import Snapshot  # pylint: disable=unused-import
 
 _two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
@@ -1392,7 +1392,7 @@ class FockStateProjector(CVObservable):
         return f"|{basis_string}⟩⟨{basis_string}|"
 
 
-ops = {
+__ops__ = {
     "Identity",
     "Snapshot",
     "Beamsplitter",
@@ -1419,7 +1419,7 @@ ops = {
 }
 
 
-obs = {
+__obs__ = {
     "QuadOperator",
     "NumberOperator",
     "TensorN",
@@ -1430,4 +1430,4 @@ obs = {
 }
 
 
-__all__ = list(ops | obs)
+__all__ = list(__ops__ | __obs__)

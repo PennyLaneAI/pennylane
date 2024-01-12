@@ -16,7 +16,7 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
-from pennylane import numpy as np
+import numpy as np
 from pennylane import math
 from pennylane.operation import AnyWires, Operation, StatePrepBase
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
@@ -105,6 +105,7 @@ class BasisState(StatePrepBase):
         if (num_wires := len(self.wires)) != len(prep_vals):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
+        prep_vals = math.cast(prep_vals, int)
         if wire_order is None:
             indices = prep_vals
         else:
@@ -216,30 +217,17 @@ class StatePrep(StatePrepBase):
         if not wire_order.contains_wires(self.wires):
             raise WireError(f"Custom wire_order must contain all {self.name} wires")
 
-        num_total_wires = len(wire_order)
-        indices = tuple(
-            [Ellipsis] + [slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires)
-        )
-        ket_shape = [2] * num_total_wires
+        # add zeros for each wire that isn't being set
+        extra_wires = Wires(set(wire_order) - set(self.wires))
+        for _ in extra_wires:
+            op_vector = math.stack([op_vector, math.zeros_like(op_vector)], axis=-1)
+
+        # transpose from operator wire order to provided wire order
+        current_wires = self.wires + extra_wires
+        transpose_axes = [current_wires.index(w) for w in wire_order]
         if self.batch_size:
-            # Add broadcasted dimension to the shape of the state vector
-            ket_shape = [self.batch_size] + ket_shape
-
-        ket = np.zeros(ket_shape, dtype=np.complex128)
-        ket[indices] = op_vector
-
-        # unless wire_order is [*self.wires, *rest_of_wire_order], need to rearrange
-        if self.wires != wire_order[:num_op_wires]:
-            current_order = self.wires + list(Wires.unique_wires([wire_order, self.wires]))
-            desired_order = [current_order.index(w) for w in wire_order]
-            if self.batch_size:
-                # If the operation is broadcasted, the desired order must include the batch dimension
-                # as the first dimension.
-                desired_order = [0] + [d + 1 for d in desired_order]
-
-            ket = ket.transpose(desired_order)
-
-        return math.convert_like(ket, op_vector)
+            transpose_axes = [0] + [a + 1 for a in transpose_axes]
+        return math.transpose(op_vector, transpose_axes)
 
 
 # pylint: disable=missing-class-docstring

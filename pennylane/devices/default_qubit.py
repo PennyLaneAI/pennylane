@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the next generation successor to default qubit
+The default.qubit device is PennyLane's standard qubit-based device.
 """
 
+from dataclasses import replace
 from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
+import inspect
+import logging
 import numpy as np
 
 import pennylane as qml
@@ -28,15 +31,22 @@ from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 
 from . import Device
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
-from .qubit.simulate import simulate, get_final_state, measure_final_state
-from .qubit.preprocess import (
-    preprocess,
-    validate_and_expand_adjoint,
+from .preprocess import (
+    decompose,
+    validate_observables,
+    validate_measurements,
     validate_multiprocessing_workers,
     validate_device_wires,
+    validate_adjoint_trainable_params,
+    no_sampling,
 )
+from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .qubit.simulate import simulate, get_final_state, measure_final_state
+from .qubit.sampling import get_num_shots_and_executions
 from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -45,12 +55,142 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
+observables = {
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "Hadamard",
+    "Hermitian",
+    "Identity",
+    "Projector",
+    "SparseHamiltonian",
+    "Hamiltonian",
+    "Sum",
+    "SProd",
+    "Prod",
+    "Exp",
+    "Evolution",
+}
+
+
+def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+    """Specifies whether or not an observable is accepted by DefaultQubit."""
+    return obs.name in observables
+
+
+def stopping_condition(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator object is supported by the device."""
+    if op.name == "QFT" and len(op.wires) >= 6:
+        return False
+    if op.name == "GroverOperator" and len(op.wires) >= 13:
+        return False
+    if op.name == "Snapshot":
+        return True
+    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
+        return False
+
+    return op.has_matrix
+
+
+def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+    """Specifies whether or not a measurement is accepted when sampling."""
+    return isinstance(
+        m,
+        (
+            qml.measurements.SampleMeasurement,
+            qml.measurements.ClassicalShadowMP,
+            qml.measurements.ShadowExpvalMP,
+        ),
+    )
+
+
+def null_postprocessing(results):
+    """An empty post-processing function."""
+    return results[0]
+
+
+def all_state_postprocessing(results, measurements, wire_order):
+    """Process a state measurement back into the original measurements."""
+    result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
+    return result[0] if len(measurements) == 1 else result
+
+
+@qml.transform
+def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callable):
+    """Perform adjoint measurement preprocessing.
+
+    * Allows a tape with only expectation values through unmodified
+    * Raises an error if non-expectation value measurements exist and any have diagonalizing gates
+    * Turns the circuit into a state measurement + classical postprocesssing for arbitrary measurements
+
+    Args:
+        tape (QuantumTape): the input circuit
+
+    """
+    if all(isinstance(m, qml.measurements.ExpectationMP) for m in tape.measurements):
+        return (tape,), null_postprocessing
+
+    if any(len(m.diagonalizing_gates()) > 0 for m in tape.measurements):
+        raise qml.DeviceError(
+            "adjoint diff supports either all expectation values or only measurements without observables."
+        )
+
+    params = tape.get_parameters()
+    complex_data = [qml.math.cast(p, complex) for p in params]
+    tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
+    new_mp = qml.measurements.StateMP(wires=tape.wires)
+    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
+    return (state_tape,), partial(
+        all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
+    )
+
+
+def _add_adjoint_transforms(program: TransformProgram) -> None:
+    """Private helper function for ``preprocess`` that adds the transforms specific
+    for adjoint differentiation.
+
+    Args:
+        program (TransformProgram): where we will add the adjoint differentiation transforms
+
+    Side Effects:
+        Adds transforms to the input program.
+
+    """
+
+    def adjoint_ops(op: qml.operation.Operator) -> bool:
+        """Specify whether or not an Operator is supported by adjoint differentiation."""
+        return op.num_params == 0 or op.num_params == 1 and op.has_generator
+
+    def adjoint_observables(obs: qml.operation.Operator) -> bool:
+        """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
+        return obs.has_matrix
+
+    name = "adjoint + default.qubit"
+    program.add_transform(no_sampling, name=name)
+    program.add_transform(
+        decompose,
+        stopping_condition=adjoint_ops,
+        name=name,
+    )
+    program.add_transform(validate_observables, adjoint_observables, name=name)
+    program.add_transform(
+        validate_measurements,
+        name=name,
+    )
+    program.add_transform(adjoint_state_measurements)
+    program.add_transform(qml.transforms.broadcast_expand)
+    program.add_transform(validate_adjoint_trainable_params)
+
+
 class DefaultQubit(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 
     Args:
-        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
-            this device.
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
+            to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
@@ -93,29 +233,6 @@ class DefaultQubit(Device):
     0.1339705146860149,
     -0.03780669772690448]
 
-    Suppose one has a processor with 5 cores or more, these scripts can be executed in
-    parallel as follows
-
-    >>> dev = DefaultQubit(max_workers=5)
-    >>> program, execution_config = dev.preprocess()
-    >>> new_batch, post_processing_fn = program(qscripts)
-    >>> results = dev.execute(new_batch, execution_config=execution_config)
-    >>> post_processing_fn(results)
-
-    If you monitor your CPU usage, you should see 5 new Python processes pop up to
-    crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
-    This may happen if a single device already uses many cores, if NumPy uses a multi-
-    threaded BLAS library like MKL or OpenBLAS for example. The number of threads per
-    process times the number of processes should not exceed the number of cores on your
-    machine. You can control the number of threads per process with the environment
-    variables:
-
-    * OMP_NUM_THREADS
-    * MKL_NUM_THREADS
-    * OPENBLAS_NUM_THREADS
-
-    where the last two are specific to the MKL and OpenBLAS libraries specifically.
-
     This device currently supports backpropagation derivatives:
 
     >>> from pennylane.devices import ExecutionConfig
@@ -141,12 +258,89 @@ class DefaultQubit(Device):
     >>> jax.grad(f)(jax.numpy.array(1.2))
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
 
+    .. details::
+        :title: Tracking
+
+        ``DefaultQubit`` tracks:
+
+        * ``executions``: the number of unique circuits that would be required on quantum hardware
+        * ``shots``: the number of shots
+        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
+        * ``batches``: The number of times :meth:`~.execute` is called.
+        * ``results``: The results of each call of :meth:`~.execute`
+        * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
+        * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
+        * ``vjp_batches``: How many times :meth:`~.compute_vjp` is called
+        * ``execute_and_vjp_batches``: How many times :meth:`~.execute_and_compute_vjp` is called
+        * ``jvp_batches``: How many times :meth:`~.compute_jvp` is called
+        * ``execute_and_jvp_batches``: How many times :meth:`~.execute_and_compute_jvp` is called
+        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives`.
+        * ``vjps``: How many circuits are submitted to :meth:`~.compute_vjp` or :meth:`~.execute_and_compute_vjp`
+        * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
+
+
+    .. details::
+        :title: Accelerate calculations with multiprocessing
+
+        Suppose one has a processor with 5 cores or more, these scripts can be executed in
+        parallel as follows
+
+        >>> dev = DefaultQubit(max_workers=5)
+        >>> program, execution_config = dev.preprocess()
+        >>> new_batch, post_processing_fn = program(qscripts)
+        >>> results = dev.execute(new_batch, execution_config=execution_config)
+        >>> post_processing_fn(results)
+
+        If you monitor your CPU usage, you should see 5 new Python processes pop up to
+        crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
+        This may happen if a single device already uses many cores, if NumPy uses a multi-
+        threaded BLAS library like MKL or OpenBLAS for example. The number of threads per
+        process times the number of processes should not exceed the number of cores on your
+        machine. You can control the number of threads per process with the environment
+        variables:
+
+        * OMP_NUM_THREADS
+        * MKL_NUM_THREADS
+        * OPENBLAS_NUM_THREADS
+
+        where the last two are specific to the MKL and OpenBLAS libraries specifically.
+
+        .. warning::
+
+            Multiprocessing may fail depending on your platform and environment (Python shell,
+            script with a protected entry point, Jupyter notebook, etc.) This may be solved
+            changing the so-called start method. The supported start methods are the following:
+
+            * Windows (win32): spawn (default).
+            * macOS (darwin): spawn (default), fork, forkserver.
+            * Linux (unix): spawn, fork (default), forkserver.
+
+            which can be changed with ``multiprocessing.set_start_method()``. For example,
+            if multiprocessing fails on macOS in your Jupyter notebook environment, try
+            restarting the session and adding the following at the beginning of the file:
+
+            .. code-block:: python
+
+                import multiprocessing
+                multiprocessing.set_start_method("fork")
+
+            Additional information can be found in the
+            `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
+
+
     """
 
     @property
     def name(self):
         """The name of the device."""
-        return "default.qubit.2"
+        return "default.qubit"
+
+    _state_cache: Optional[dict] = None
+    """
+    A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and
+    subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
+    """
 
     # pylint:disable = too-many-arguments
     def __init__(
@@ -193,21 +387,32 @@ class DefaultQubit(Device):
         if (
             execution_config.gradient_method == "backprop"
             and execution_config.device_options.get("max_workers", self._max_workers) is None
+            and execution_config.interface is not None
         ):
             return True
 
-        if execution_config.gradient_method == "adjoint" and execution_config.use_device_gradient:
+        if (
+            execution_config.gradient_method == "adjoint"
+            and execution_config.use_device_gradient is not False
+        ):
             if circuit is None:
                 return True
 
-            return isinstance(validate_and_expand_adjoint(circuit)[0][0], QuantumScript)
+            prog = TransformProgram()
+            _add_adjoint_transforms(prog)
+
+            try:
+                prog((circuit,))
+            except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
+                return False
+            return True
 
         return False
 
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
+    ) -> Tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -226,36 +431,89 @@ class DefaultQubit(Device):
         * Currently does not intrinsically support parameter broadcasting
 
         """
+        config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
-        # Validate device wires
-        transform_program.add_transform(validate_device_wires, self)
+
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(qml.defer_measurements, device=self)
+        transform_program.add_transform(
+            decompose, stopping_condition=stopping_condition, name=self.name
+        )
+        transform_program.add_transform(
+            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
+        )
+        transform_program.add_transform(
+            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
+        )
 
         # Validate multi processing
-        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
-        transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
+        max_workers = config.device_options.get("max_workers", self._max_workers)
+        if max_workers:
+            transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
-        # General preprocessing (Validate measurement, expand, adjoint expand, broadcast expand)
-        transform_program_preprocess, config = preprocess(execution_config=execution_config)
-        transform_program = transform_program + transform_program_preprocess
+        if config.gradient_method == "backprop":
+            transform_program.add_transform(no_sampling, name="backprop + default.qubit")
+
+        if config.gradient_method == "adjoint":
+            _add_adjoint_transforms(transform_program)
+
         return transform_program, config
+
+    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
+        """This is a private helper for ``preprocess`` that sets up the execution config.
+
+        Args:
+            execution_config (ExecutionConfig)
+
+        Returns:
+            ExecutionConfig: a preprocessed execution config
+
+        """
+        updated_values = {}
+        if execution_config.gradient_method == "best":
+            updated_values["gradient_method"] = "backprop"
+        if execution_config.use_device_gradient is None:
+            updated_values["use_device_gradient"] = execution_config.gradient_method in {
+                "best",
+                "adjoint",
+                "backprop",
+            }
+        if execution_config.use_device_jacobian_product is None:
+            updated_values["use_device_jacobian_product"] = (
+                execution_config.gradient_method == "adjoint"
+            )
+        if execution_config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        if "max_workers" not in updated_values["device_options"]:
+            updated_values["device_options"]["max_workers"] = self._max_workers
+        if "rng" not in updated_values["device_options"]:
+            updated_values["device_options"]["rng"] = self._rng
+        if "prng_key" not in updated_values["device_options"]:
+            updated_values["device_options"]["prng_key"] = self._prng_key
+        return replace(execution_config, **updated_values)
 
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                """Entry with args=(circuits=%s) called by=%s""",
+                circuits,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
 
-        if self.tracker.active:
-            for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(batches=1, executions=len(circuits))
-            self.tracker.record()
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"backprop", None}
@@ -269,6 +527,7 @@ class DefaultQubit(Device):
                     prng_key=self._prng_key,
                     debugger=self._debugger,
                     interface=interface,
+                    state_cache=self._state_cache,
                 )
                 for c in circuits
             )
@@ -287,6 +546,29 @@ class DefaultQubit(Device):
 
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        if self.tracker.active:
+            self.tracker.update(batches=1)
+            self.tracker.record()
+            for i, c in enumerate(circuits):
+                qpu_executions, shots = get_num_shots_and_executions(c)
+                res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
+                if c.shots:
+                    self.tracker.update(
+                        simulations=1,
+                        executions=qpu_executions,
+                        results=res,
+                        shots=shots,
+                        resources=c.specs["resources"],
+                    )
+                else:
+                    self.tracker.update(
+                        simulations=1,
+                        executions=qpu_executions,
+                        results=res,
+                        resources=c.specs["resources"],
+                    )
+                self.tracker.record()
 
         return results[0] if is_single_circuit else results
 
@@ -500,7 +782,16 @@ class DefaultQubit(Device):
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            res = tuple(adjoint_vjp(circuit, cots) for circuit, cots in zip(circuits, cotangents))
+
+            def _state(circuit):
+                return (
+                    None if self._state_cache is None else self._state_cache.get(circuit.hash, None)
+                )
+
+            res = tuple(
+                adjoint_vjp(circuit, cots, state=_state(circuit))
+                for circuit, cots in zip(circuits, cotangents)
+            )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:

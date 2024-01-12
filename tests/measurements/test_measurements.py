@@ -24,8 +24,11 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
+    MeasurementValue,
     MidMeasure,
+    MidMeasureMP,
     MutualInfoMP,
+    PurityMP,
     Probability,
     ProbabilityMP,
     Sample,
@@ -45,6 +48,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
+from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, unused-argument
 
@@ -151,6 +155,57 @@ def test_hash_correctness():
     assert hash(mp1) == mp1.hash
     assert hash(mp2) == mp2.hash
     assert hash(mp1) == hash(mp2)
+
+
+mv = qml.measure(0)
+
+valid_meausurements = [
+    ClassicalShadowMP(wires=Wires(0), seed=42),
+    ShadowExpvalMP(qml.s_prod(3.0, qml.PauliX(0)), seed=97, k=2),
+    ShadowExpvalMP([qml.PauliZ(0), 4.0 * qml.PauliX(0)], seed=86, k=4),
+    CountsMP(obs=2.0 * qml.PauliX(0), all_outcomes=True),
+    CountsMP(eigvals=[0.5, 0.6], wires=Wires(0), all_outcomes=False),
+    CountsMP(obs=mv, all_outcomes=True),
+    ExpectationMP(obs=qml.s_prod(2.0, qml.PauliX(0))),
+    ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
+    ExpectationMP(obs=mv),
+    MidMeasureMP(wires=Wires("a"), reset=True, id="abcd"),
+    MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
+    ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
+    ProbabilityMP(obs=3.0 * qml.PauliX(0)),
+    ProbabilityMP(obs=mv),
+    PurityMP(wires=Wires("a")),
+    SampleMP(obs=3.0 * qml.PauliY(0)),
+    SampleMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
+    SampleMP(obs=mv),
+    StateMP(),
+    StateMP(wires=("a", "b")),
+    VarianceMP(obs=qml.s_prod(0.5, qml.PauliX(0))),
+    VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
+    VarianceMP(obs=mv),
+    VnEntropyMP(wires=Wires("a"), log_base=3),
+]
+
+
+# pylint: disable=protected-access
+@pytest.mark.parametrize("mp", valid_meausurements)
+def test_flatten_unflatten(mp):
+    """Test flatten and unflatten methods."""
+
+    data, metadata = mp._flatten()
+    assert hash(metadata)
+
+    new_mp = type(mp)._unflatten(data, metadata)
+    assert qml.equal(new_mp, mp)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("mp", valid_meausurements)
+def test_jax_pytree_integration(mp):
+    """Test that measurement processes are jax pytrees."""
+    import jax
+
+    jax.tree_util.tree_flatten(mp)
 
 
 @pytest.mark.parametrize(
@@ -278,6 +333,21 @@ class TestProperties:
         obs.data = [np.diag([5, 6, 7, 8])]
         assert np.all(m.eigvals() == np.array([5, 6, 7, 8]))
 
+    def test_measurement_value_eigvals(self):
+        """Test that eigenvalues of the measurement process
+        are correct if the internal observable is a
+        MeasurementValue."""
+        m0 = qml.measure(0)
+        m0.measurements[0].id = "abc"
+        m1 = qml.measure(1)
+        m1.measurements[0].id = "def"
+
+        mp1 = qml.sample(op=[m0, m1])
+        assert np.all(mp1.eigvals() == [0, 1, 2, 3])
+
+        mp2 = qml.sample(op=3 * m0 - m1 / 2)
+        assert np.all(mp2.eigvals() == [0, -0.5, 3, 2.5])
+
     def test_error_obs_and_eigvals(self):
         """Test that providing both eigenvalues and an observable
         results in an error"""
@@ -299,7 +369,8 @@ class TestProperties:
         the eigvals method to return a NotImplementedError"""
         obs = qml.NumberOperator(wires=0)
         m = qml.expval(op=obs)
-        assert m.eigvals() is None
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            _ = m.eigvals()
 
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
@@ -313,6 +384,35 @@ class TestProperties:
 
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
         assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
+
+        m0 = MeasurementValue([MidMeasureMP(Wires(0), id="0")], lambda v: v)
+        m1 = MeasurementValue([MidMeasureMP(Wires(1), id="1")], lambda v: v)
+        m = ProbabilityMP(obs=[m0, m1])
+        expected = "probs([MeasurementValue(wires=[0]), MeasurementValue(wires=[1])])"
+        assert repr(m) == expected
+
+        m = ProbabilityMP(obs=m0 * m1)
+        expected = "probs(MeasurementValue(wires=[0, 1]))"
+
+    def test_measurement_value_map_wires(self):
+        """Test that MeasurementProcess.map_wires works correctly when mp.mv
+        is not None."""
+        m0 = qml.measure("a")
+        m1 = qml.measure("b")
+        m2 = qml.measure(0)
+        m3 = qml.measure(1)
+        m2.measurements[0].id = m0.measurements[0].id
+        m3.measurements[0].id = m1.measurements[0].id
+
+        wire_map = {"a": 0, "b": 1}
+
+        mp1 = qml.sample(op=[m0, m1])
+        mapped_mp1 = mp1.map_wires(wire_map)
+        assert qml.equal(mapped_mp1, qml.sample(op=[m2, m3]))
+
+        mp2 = qml.sample(op=m0 * m1)
+        mapped_mp2 = mp2.map_wires(wire_map)
+        assert qml.equal(mapped_mp2, qml.sample(op=m2 * m3))
 
 
 class TestExpansion:
@@ -457,7 +557,7 @@ class TestDiagonalizingGates:
         """Test a measurement that has no expansion"""
         m = qml.sample()
 
-        assert m.diagonalizing_gates() == []
+        assert len(m.diagonalizing_gates()) == 0
 
     def test_obs_diagonalizing_gates(self):
         """Test diagonalizing_gates method with and observable."""
@@ -492,7 +592,6 @@ class TestSampleMeasurement:
 
         assert qml.math.allequal(circuit(), [1000, 0])
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_sample_measurement_without_shots(self):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
@@ -514,9 +613,25 @@ class TestSampleMeasurement:
 
         with pytest.raises(
             qml.DeviceError,
-            match="Analytic circuits must only contain StateMeasurements; got sample",
+            match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
+
+    def test_process_counts_not_implemented(self):
+        """Test that process_counts is not implemented by default."""
+
+        class MyMeasurement(SampleMeasurement):
+            # pylint: disable=signature-differs
+            def process_samples(self, samples, wire_order, shot_range, bin_size):
+                return qml.math.sum(samples[..., self.wires])
+
+            @property
+            def return_type(self):
+                return Sample
+
+        m = MyMeasurement(wires=[0])
+        with pytest.raises(NotImplementedError):
+            m.process_counts({"0": 10}, wire_order=qml.wires.Wires(0))
 
 
 class TestStateMeasurement:
@@ -537,7 +652,6 @@ class TestStateMeasurement:
 
         assert circuit() == 1
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_state_measurement_with_shots(self):
         """Test that executing a state measurement with shots raises an error."""
 
@@ -555,20 +669,22 @@ class TestStateMeasurement:
         def circuit():
             return MyMeasurement()
 
-        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
+        with pytest.raises(
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+        ):
             circuit()
 
 
 class TestMeasurementTransform:
     """Tests for the MeasurementTransform class."""
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_custom_measurement(self):
         """Test the execution of a custom measurement."""
 
         class CountTapesMP(MeasurementTransform, SampleMeasurement):
             def process(self, tape, device):
-                tapes, _, _ = device.preprocess(tape)
+                program, _ = device.preprocess()
+                tapes, _ = program([tape])
                 return len(tapes)
 
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):

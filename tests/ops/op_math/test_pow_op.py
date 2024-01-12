@@ -39,6 +39,18 @@ def pow_using_dunder_method(base, z, id=None):
     return base**z
 
 
+def test_basic_validity():
+    """Run basic operator validity checks."""
+    op = qml.pow(qml.RX(1.2, wires=0), 3)
+    qml.ops.functions.assert_valid(op)
+
+    op = qml.pow(qml.PauliX(0), 2.5)
+    qml.ops.functions.assert_valid(op)
+
+    op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
+    qml.ops.functions.assert_valid(op)
+
+
 class TestConstructor:
     def test_lazy_mode(self):
         """Test that by default, the operator is simply wrapped in `Pow`, even if a simplification exists."""
@@ -367,10 +379,11 @@ class TestProperties:
     def test_different_batch_sizes_raises_error(self, power_method):
         """Test that using different batch sizes for base and scalar raises an error."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = power_method(base, np.array([0.1, 1.2, 2.3, 3.4]))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = power_method(base, np.array([0.1, 1.2, 2.3, 3.4]))
+            _ = op.batch_size
 
     op_pauli_reps = (
         (qml.PauliZ(wires=0), 1, qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1})),
@@ -382,7 +395,7 @@ class TestProperties:
     def test_pauli_rep(self, base, exp, rep, power_method):
         """Test the pauli rep is produced as expected."""
         op = power_method(base, exp)
-        assert op._pauli_rep == rep  # pylint: disable=protected-access
+        assert op.pauli_rep == rep
 
     def test_pauli_rep_is_none_for_bad_exponents(self, power_method):
         """Test that the _pauli_rep is None if the exponent is not positive or non integer."""
@@ -391,13 +404,13 @@ class TestProperties:
 
         for exponent in exponents:
             op = power_method(base, z=exponent)
-            assert op._pauli_rep is None  # pylint: disable=protected-access
+            assert op.pauli_rep is None
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self, power_method):
         """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
         op = power_method(base, z=2)
-        assert op._pauli_rep is None  # pylint: disable=protected-access
+        assert op.pauli_rep is None
 
 
 class TestSimplify:
@@ -699,9 +712,9 @@ class TestMatrix:
         base = qml.IsingZZ(param, wires=(0, 1))
         op = Pow(base, z)
 
-        mat = qml.matrix(op)
-        shortcut = base.pow(z)[0]
-        shortcut_mat = qml.matrix(shortcut)
+        mat = op.matrix()
+        [shortcut] = base.pow(z)
+        shortcut_mat = shortcut.matrix()
 
         return qml.math.allclose(mat, shortcut_mat)
 
@@ -743,6 +756,15 @@ class TestMatrix:
 
         param = tf.Variable(2.34)
         assert self.check_matrix(param, z)
+
+    @pytest.mark.tf
+    def test_matrix_tf_int_z(self):
+        """Test that matrix works with integer power."""
+        import tensorflow as tf
+
+        theta = tf.Variable(1.0)
+        mat = qml.pow(qml.RX(theta, wires=0), z=3).matrix()
+        assert qml.math.allclose(mat, qml.RX.compute_matrix(3))
 
     def test_matrix_wire_order(self):
         """Test that the wire_order keyword rearranges ording."""
@@ -789,7 +811,7 @@ class TestSparseMatrix:
         sparse_mat_array = sparse_mat.toarray()
 
         assert qml.math.allclose(sparse_mat_array, H_cubed.toarray())
-        assert qml.math.allclose(sparse_mat_array, qml.matrix(op))
+        assert qml.math.allclose(sparse_mat_array, op.matrix())
 
     def test_sparse_matrix_float_exponent(self):
         """Test that even a sparse-matrix defining op raised to a float power

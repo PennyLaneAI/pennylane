@@ -264,7 +264,7 @@ class TestDecompositions:
         op = qml.PhaseShift(phi, wires=0)
         res = op.decomposition()
 
-        assert len(res) == 1
+        assert len(res) == 2
 
         assert res[0].name == "RZ"
 
@@ -273,25 +273,13 @@ class TestDecompositions:
 
         decomposed_matrix = res[0].matrix()
         global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
 
-    def test_phase_decomposition_broadcasted(self, tol):
-        """Tests that the decomposition of the broadcasted Phase gate is correct"""
-        phi = np.array([0.3, 2.1, 0.2])
-        op = qml.PhaseShift(phi, wires=0)
-        res = op.decomposition()
-
-        assert len(res) == 1
-
-        assert res[0].name == "RZ"
-
-        assert res[0].wires == Wires([0])
-        assert qml.math.allclose(res[0].data[0], np.array([0.3, 2.1, 0.2]))
-
-        decomposed_matrix = res[0].matrix()
-        global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
+        assert res[1].name == "GlobalPhase"
+        assert np.allclose(qml.matrix(res[1]), np.exp(1j * phi / 2))
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
+        if qml.math.shape(phi) == ():  # GlobalPhase matrix doesn't support batching
+            assert np.allclose(op.matrix(), qml.prod(*res[::-1]).matrix())
 
     def test_Rot_decomposition(self):
         """Test the decomposition of Rot."""
@@ -1247,6 +1235,22 @@ class TestMatrix:
         evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
         assert qml.math.allclose(evs, evs_expected)
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pcphase_eigvals_tf(self, phi):
+        """Test eigenvalues computation for PCPhase using Tensorflow interface"""
+        import tensorflow as tf
+
+        param_tf = tf.Variable(phi)
+
+        op = qml.PCPhase(param_tf, dim=2, wires=[0, 1])
+        evs = qml.PCPhase.compute_eigvals(*op.parameters, **op.hyperparameters)
+        evs_expected = np.array(
+            [np.exp(1j * phi), np.exp(1j * phi), np.exp(-1j * phi), np.exp(-1j * phi)]
+        )
+
+        assert qml.math.allclose(evs, evs_expected)
+
     def test_isingxy(self, tol):
         """Test that the IsingXY operation is correct"""
         assert np.allclose(qml.IsingXY.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
@@ -1519,6 +1523,25 @@ class TestMatrix:
         assert np.allclose(
             qml.IsingZZ.compute_eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
         )
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingzz_eigvals_tf(self, phi):
+        """Test eigenvalues computation for IsingXY using Tensorflow interface"""
+        import tensorflow as tf
+
+        param_tf = tf.Variable(phi)
+        evs = qml.IsingZZ.compute_eigvals(param_tf)
+
+        def get_expected(theta):
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
+            return expected
+
+        assert qml.math.allclose(evs, np.diagonal(get_expected(phi)))
 
     def test_isingzz_broadcasted(self, tol):
         """Test that the broadcasted IsingZZ operation is correct"""
@@ -2554,6 +2577,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
+            qml.Identity(0)
             qml.Hadamard(1)
             qml.ctrl(qml.GlobalPhase(x), 1)
             qml.Hadamard(1)
@@ -2899,6 +2923,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
+            qml.Identity(0)
             qml.Hadamard(1)
             qml.ctrl(qml.GlobalPhase(x), 1)
             qml.Hadamard(1)
@@ -3055,6 +3080,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
+            qml.Identity(0)
             qml.Hadamard(1)
             qml.ctrl(qml.GlobalPhase(x), 1)
             qml.Hadamard(1)
@@ -3078,6 +3104,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
+            qml.Identity(0)
             qml.Hadamard(1)
             qml.ctrl(qml.GlobalPhase(x), 1)
             qml.Hadamard(1)
@@ -4481,6 +4508,13 @@ def test_global_phase_compute_sparse_matrix(phi, n_wires):
     expected = np.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
 
     assert np.allclose(sparse_matrix.todense(), expected.todense())
+
+
+def test_decomposition():
+    """Test the decomposition of the GlobalPhase operation."""
+
+    assert qml.GlobalPhase.compute_decomposition(1.23) == []
+    assert qml.GlobalPhase(1.23).decomposition() == []
 
 
 control_data = [

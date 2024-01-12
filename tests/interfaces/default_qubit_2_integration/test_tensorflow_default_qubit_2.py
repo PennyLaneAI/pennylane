@@ -18,7 +18,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
@@ -109,14 +109,14 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit()),
-    ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint", "interface": "tensorflow"}, None, DefaultQubit()),
-    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit()),
-    ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit()),
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit(seed=42)),  # 0
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit()),  # 1
+    ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit()),  # 2
+    ({"gradient_fn": "adjoint", "interface": "tensorflow"}, None, DefaultQubit()),  # 3
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit(seed=42)),  # 4
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit()),  # 5
+    ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit()),  # 6
+    ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit()),  # 7
 ]
 
 
@@ -212,9 +212,6 @@ class TestTensorflowExecuteIntegration:
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
 
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
-
         def cost(params):
             tape1 = qml.tape.QuantumScript(
                 [qml.Hadamard(0)], [qml.expval(qml.PauliX(0))], shots=shots
@@ -251,6 +248,14 @@ class TestTensorflowExecuteIntegration:
             res = cost(params)
         expected = 2 + tf.cos(0.5) + tf.cos(x) * tf.cos(y)
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(NotImplementedError):
+                tape.gradient(res, params)
+            return
 
         grad = tape.gradient(res, params)
         expected = [-tf.cos(y) * tf.sin(x), -tf.cos(x) * tf.sin(y)]
@@ -456,7 +461,20 @@ class TestTensorflowExecuteIntegration:
             tape = qml.tape.QuantumScript(
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
-            return execute([tape], device, **execute_kwargs)[0]
+            gradient_fn = execute_kwargs["gradient_fn"]
+            if gradient_fn is None:
+                _gradient_method = None
+            elif isinstance(gradient_fn, str):
+                _gradient_method = gradient_fn
+            else:
+                _gradient_method = "gradient-transform"
+            config = qml.devices.ExecutionConfig(
+                interface="autograd",
+                gradient_method=_gradient_method,
+                grad_on_execution=execute_kwargs.get("grad_on_execution", None),
+            )
+            program, _ = device.preprocess(execution_config=config)
+            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
         a = tf.constant(0.1)
         p = tf.Variable([0.1, 0.2, 0.3])
@@ -486,9 +504,6 @@ class TestTensorflowExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("adjoint differentiation does not support probabilities")
-
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -513,6 +528,13 @@ class TestTensorflowExecuteIntegration:
         )
         assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(tf.errors.UnimplementedError):
+                tape.jacobian(cost_res, [x, y])
+            return
         res = tape.jacobian(cost_res, [x, y])
         assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (4,)
@@ -542,8 +564,6 @@ class TestTensorflowExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -562,6 +582,13 @@ class TestTensorflowExecuteIntegration:
         )
         assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(tf.errors.UnimplementedError):
+                tape.jacobian(cost_res, [x, y])
+            return
         res = tape.jacobian(cost_res, [x, y])
         assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (3,)

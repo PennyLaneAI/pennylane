@@ -53,6 +53,24 @@ class TestMeasure:
         assert m1.hash != m3.hash
         assert m1.hash == m4.hash
 
+    @pytest.mark.parametrize(
+        "postselect, reset, expected",
+        [
+            (None, False, "┤↗├"),
+            (None, True, "┤↗│  │0⟩"),
+            (0, False, "┤↗₀├"),
+            (0, True, "┤↗₀│  │0⟩"),
+            (1, False, "┤↗₁├"),
+            (1, True, "┤↗₁│  │0⟩"),
+        ],
+    )
+    def test_label(self, postselect, reset, expected):
+        """Test that the label for a MidMeasureMP is correct"""
+        mp = MidMeasureMP(0, postselect=postselect, reset=reset)
+
+        label = mp.label()
+        assert label == expected
+
 
 mp1 = MidMeasureMP(Wires(0), id="m0")
 mp2 = MidMeasureMP(Wires(1), id="m1")
@@ -362,13 +380,29 @@ class TestMeasurementValueManipulation:
         w.r.t a more complicated MeasurementValue"""
         a = MeasurementValue([mp1], lambda v: v)
         b = MeasurementValue([mp2], lambda v: v)
-        assert (
-            str(a + b)
-            == """if m0=0,m1=0 => 0
-if m0=0,m1=1 => 1
-if m0=1,m1=0 => 1
-if m0=1,m1=1 => 2"""
+        assert str(a + b) == (
+            "if m0=0,m1=0 => 0\nif m0=0,m1=1 => 1\nif m0=1,m1=0 => 1\nif m0=1,m1=1 => 2"
         )
+
+    def test_repr(self):
+        """Test that the output of the __repr__ dubder method is as expected."""
+        m = qml.measure(0)
+        assert repr(m) == "MeasurementValue(wires=[0])"
+
+    def test_complex_repr(self):
+        """Test that the output of the __repr__ dunder method is as expected
+        w.r.t a more complicated MeasurementValue"""
+        a = MeasurementValue([mp1], lambda v: v)
+        b = MeasurementValue([mp2], lambda v: v)
+        assert repr(a + b) == "MeasurementValue(wires=[0, 1])"
+
+    def test_map_wires(self):
+        """Test that map_wires works as expected."""
+        a = MeasurementValue([mp1], lambda v: v)
+        b = a.map_wires({0: "b"})
+        [new_meas] = b.measurements
+        assert new_meas.wires == Wires(["b"])
+        assert new_meas.id == mp1.id
 
 
 unary_dunders = ["__invert__"]

@@ -604,9 +604,6 @@ class TestInterfaces:
         """Test with JAX interface"""
 
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         @qml.matrix
         def circuit(theta):

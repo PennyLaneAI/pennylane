@@ -21,6 +21,16 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
+    time = 0.5
+    frequencies = (2, 4)
+    shifts = (1, 0.5)
+    op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
+    qml.ops.functions.assert_valid(op)
+
+
 # pylint: disable=protected-access
 def test_flatten_unflatten():
     """Unit tests for the flatten and unflatten methods."""
@@ -34,8 +44,8 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     assert len(data) == 2
-    assert data[0] is H
-    assert data[1] == time
+    assert data[1] is H
+    assert data[0] == time
     assert metadata == (frequencies, shifts)
 
     new_op = type(op)._unflatten(*op._flatten())
@@ -47,32 +57,32 @@ def test_adjoint():
     """Tests the CommutingEvolution.adjoint method provides the correct adjoint operation."""
 
     n_wires = 2
-    dev1 = qml.device("default.qubit", wires=n_wires)
-    dev2 = qml.device("default.qubit", wires=n_wires)
+    dev = qml.device("default.qubit", wires=n_wires)
 
     obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
     coeffs = [1, -1]
     hamiltonian = qml.Hamiltonian(coeffs, obs)
     frequencies = (2,)
 
-    @qml.qnode(dev1)
+    @qml.qnode(dev)
     def adjoint_evolution_circuit(time):
         for i in range(n_wires):
             qml.Hadamard(i)
         qml.adjoint(qml.CommutingEvolution)(hamiltonian, time, frequencies)
-        return qml.expval(qml.PauliZ(1))
+        return qml.expval(qml.PauliZ(1)), qml.state()
 
-    @qml.qnode(dev2)
+    @qml.qnode(dev)
     def evolution_circuit(time):
         for i in range(n_wires):
             qml.Hadamard(i)
         qml.CommutingEvolution(hamiltonian, time, frequencies)
-        return qml.expval(qml.PauliZ(1))
+        return qml.expval(qml.PauliZ(1)), qml.state()
 
-    evolution_circuit(0.13)
-    adjoint_evolution_circuit(-0.13)
+    res1, state1 = evolution_circuit(0.13)
+    res2, state2 = adjoint_evolution_circuit(-0.13)
 
-    assert all(np.isclose(dev1.state, dev2.state))
+    assert res1 == res2
+    assert all(np.isclose(state1, state2))
 
 
 def test_decomposition_expand():

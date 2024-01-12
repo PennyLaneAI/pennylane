@@ -25,6 +25,17 @@ from pennylane import numpy as np
 class TestBatchTransform:
     """Unit tests for the batch_transform class"""
 
+    def test_batch_transform_is_deprecated(self):
+        """Test that the batch_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning, match="Use of `batch_transform` to create a custom transform is deprecated"
+        ):
+            _ = qml.batch_transform(func)
+
     @staticmethod
     @qml.batch_transform
     def my_transform(tape, a, b):
@@ -203,9 +214,11 @@ class TestBatchTransform:
         spy_expand.assert_called()
 
         input_tape = spy_transform.call_args[0][1]
-        assert len(input_tape.operations) == 1
+        assert len(input_tape.operations) == 2
         assert input_tape.operations[0].name == "RZ"
+        assert input_tape.operations[1].name == "GlobalPhase"
         assert input_tape.operations[0].parameters == [0.5]
+        assert input_tape.operations[1].parameters == [-0.25]
 
     @pytest.mark.parametrize("perform_expansion", [True, False])
     def test_expand_fn_with_kwarg(self, mocker, perform_expansion):
@@ -238,9 +251,17 @@ class TestBatchTransform:
         spy_expand.assert_called()  # The expand_fn of transform_fn always is called
 
         input_tape = spy_transform.call_args[0][1]
-        assert len(input_tape.operations) == 1
-        assert input_tape.operations[0].name == ("RZ" if perform_expansion else "PhaseShift")
-        assert input_tape.operations[0].parameters == [0.5]
+
+        if perform_expansion:
+            assert len(input_tape.operations) == 2
+            assert input_tape.operations[0].name == "RZ"
+            assert input_tape.operations[0].parameters == [0.5]
+            assert input_tape.operations[1].name == "GlobalPhase"
+            assert input_tape.operations[1].parameters == [-0.25]
+        else:
+            assert len(input_tape.operations) == 1
+            assert input_tape.operations[0].name == "PhaseShift"
+            assert input_tape.operations[0].parameters == [0.5]
 
     @pytest.mark.parametrize("perform_expansion", [True, False])
     def test_expand_qnode_with_kwarg(self, mocker, perform_expansion):
@@ -276,9 +297,17 @@ class TestBatchTransform:
         spy_transform.assert_called()
         spy_expand.assert_called()  # The expand_fn of transform_fn always is called
         input_tape = spy_transform.call_args[0][1]
-        assert len(input_tape.operations) == 1
-        assert input_tape.operations[0].name == ("RZ" if perform_expansion else "PhaseShift")
-        assert input_tape.operations[0].parameters == [0.5]
+
+        if perform_expansion:
+            assert len(input_tape.operations) == 2
+            assert input_tape.operations[0].name == "RZ"
+            assert input_tape.operations[0].parameters == [0.5]
+            assert input_tape.operations[1].name == "GlobalPhase"
+            assert input_tape.operations[1].parameters == [-0.25]
+        else:
+            assert len(input_tape.operations) == 1
+            assert input_tape.operations[0].name == "PhaseShift"
+            assert input_tape.operations[0].parameters == [0.5]
 
     def test_parametrized_transform_tape(self):
         """Test that a parametrized transform can be applied
@@ -428,7 +457,7 @@ class TestBatchTransform:
         assert tapes[1].operations[1].name == "RZ"
         assert tapes[1].operations[1].parameters == [b * np.sin(x)]
 
-        expected = fn(dev.batch_execute(tapes))
+        expected = fn(dev.execute(tapes))
         assert res == expected
         assert circuit.interface == "auto"
 
@@ -464,7 +493,7 @@ class TestBatchTransform:
         assert tapes[1].operations[1].name == "RZ"
         assert tapes[1].operations[1].parameters == [b * np.sin(x)]
 
-        expected = fn(dev.batch_execute(tapes))
+        expected = fn(dev.execute(tapes))
         assert res == expected
 
     def test_custom_qnode_wrapper(self):
@@ -648,7 +677,7 @@ class TestBatchTransformGradients:
         for g, e in zip(grad, expected):
             assert qml.math.allclose(g, e)
 
-    def test_batch_transforms_qnode(self, diff_method, mocker):
+    def test_batch_transforms_qnode(self, diff_method):
         """Test that batch transforms can be applied to a QNode
         without affecting device batch transforms"""
         if diff_method == "backprop":
@@ -667,10 +696,8 @@ class TestBatchTransformGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(H)
 
-        spy = mocker.spy(dev, "batch_transform")
-
         res = circuit(weights)
-        spy.assert_called()
+
         assert np.allclose(res, [0, -np.sin(weights[1])], atol=0.1)
 
 

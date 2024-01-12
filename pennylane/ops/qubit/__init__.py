@@ -42,9 +42,9 @@ from .state_preparation import *
 from .special_unitary import SpecialUnitary
 from .hamiltonian import Hamiltonian
 from ..identity import Identity, GlobalPhase
-from ..snapshot import Snapshot
+from ..meta import Snapshot, Barrier, WireCut
 
-ops = {
+__ops__ = {
     "Identity",
     "Snapshot",
     "Hadamard",
@@ -115,7 +115,7 @@ ops = {
 }
 
 
-obs = {
+__obs__ = {
     "Hadamard",
     "PauliX",
     "PauliY",
@@ -127,4 +127,4 @@ obs = {
 }
 
 
-__all__ = list(ops | obs)
+__all__ = list(__ops__ | __obs__)
