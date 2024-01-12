@@ -922,22 +922,6 @@ class TestOperationConstruction:
 class TestObservableConstruction:
     """Test custom observables construction."""
 
-    def test_observable_return_type_none(self):
-        """Check that the return_type of an observable is initially None"""
-
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
-            num_wires = 1
-            grad_method = None
-
-        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
-            assert DummyObserv(0, wires=[1]).return_type is None
-
-        obs = DummyObserv(0, wires=[1])
-        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
-            # pylint:disable=attribute-defined-outside-init
-            obs.return_type = qml.measurements.Sample
-
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
@@ -1607,18 +1591,21 @@ class TestTensor:
 
     def test_operation_multiply_invalid(self):
         """Test that an exception is raised if an observable
-        is multiplied by an operation"""
+        is matrix-multiplied by a scalar"""
         X = qml.PauliX(0)
-        Y = qml.CNOT(wires=[0, 1])
         Z = qml.PauliZ(1)
 
         with pytest.raises(TypeError, match="unsupported operand type"):
             T = X @ Z
-            _ = T @ Y
-
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            T = X @ Z
             _ = 4 @ T
+
+    def test_tensor_matmul_op_is_prod(self):
+        """Test that Tensor @ non-observable returns a Prod."""
+        tensor = qml.PauliX(0) @ qml.PauliY(1)
+        assert isinstance(tensor, Tensor)
+        prod = tensor @ qml.S(0)
+        assert isinstance(prod, qml.ops.Prod)
+        assert prod.operands == (qml.PauliX(0), qml.PauliY(1), qml.S(0))
 
     def test_eigvals(self):
         """Test that the correct eigenvalues are returned for the Tensor"""
