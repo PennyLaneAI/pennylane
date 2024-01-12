@@ -716,7 +716,7 @@ class LightningVJPs(DeviceDerivatives):
     """
 
     def __repr__(self):
-        return f"<LightningVJPs: {self._device.name}, {self._gradient_kwargs}>"
+        return f"<LightningVJPs: {self._device.short_name}, {self._gradient_kwargs}>"
 
     def __init__(self, device, gradient_kwargs=None):
         super().__init__(device, gradient_kwargs=gradient_kwargs)

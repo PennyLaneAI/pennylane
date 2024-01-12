@@ -174,6 +174,16 @@ class TestBasics:
 
         assert repr(jpc) == expected
 
+    def test_lightning_vjps_repr(self):
+        """Test the repr method for lightning vjps."""
+
+        device = qml.device("lightning.qubit", wires=5)
+        gradient_kwargs = {"use_device_state", True}
+
+        jpc = LightningVJPs(device, gradient_kwargs)
+
+        assert repr(jpc) == "<LightningVJPs: lightning.qubit, {'use_device_state': True}>"
+
 
 @pytest.mark.parametrize("jpc", jpc_matrix)
 @pytest.mark.parametrize("shots", (None, 10000, (10000, 10000)))
