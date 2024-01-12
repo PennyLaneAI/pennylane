@@ -68,7 +68,7 @@ method for devices.
     validate_measurements
     validate_device_wires
     validate_multiprocessing_workers
-    warn_about_trainable_observables
+    validate_adjoint_trainable_params
     no_sampling
 
 Other transforms that may be relevant to device preprocessing include:
