@@ -20,12 +20,6 @@ Pending deprecations
   - Deprecated in v0.34
   - Will be removed in v0.35
 
-* ``Observable.return_type`` is deprecated. Instead, you should inspect the type
-  of the surrounding measurement process.
-
-  - Deprecated in v0.34
-  - Will be removed in v0.35
-
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
@@ -112,6 +106,12 @@ Completed deprecation cycles
     transformed_circuit = qml.metric_tensor(circuit, approx="block-diag")
 
   - Deprecated in v0.33
+  - Removed in v0.35
+
+* ``Observable.return_type`` has been removed. Instead, you should inspect the type
+  of the surrounding measurement process.
+
+  - Deprecated in v0.34
   - Removed in v0.35
 
 * Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
