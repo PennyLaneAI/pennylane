@@ -2678,11 +2678,6 @@ class TestNewOpMath:
 def test_symmetric_matrix_early_return(op, mocker):
     """Test that operators that are symmetric over all wires are not reordered
     when the wire order only contains the same wires as the operator."""
-    # if isinstance(op, qml.CZ):
-    #     pytest.xfail(
-    #         "CZ is a symmetric op. But, as it is a ControlledOp, "
-    #         "which overrides Operator.matrix(), this test will fail."
-    #     )
 
     spy = mocker.spy(qml.operation, "expand_matrix")
     actual = op.matrix(wire_order=list(range(len(op.wires))))
