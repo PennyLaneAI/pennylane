@@ -25,6 +25,7 @@ from .utils import qudit_dim, get_einsum_indices
 
 alphabet_array = np.array(list(alphabet))
 
+
 def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
     r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
     quantum state. For a unitary gate, there is a single Kraus operator.
@@ -137,7 +138,6 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
     return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
     # TODO add tensordot and benchmark for performance
-    return apply_operation_tensordot(op, state)
 
 
 # TODO add diagonal for speed up.

@@ -48,11 +48,11 @@ def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool
     col_indices = "".join(alphabet_array[col_wires_list].tolist())
 
     # indices in einsum must be replaced with new ones
-    new_row_indices = alphabet[rho_dim: rho_dim + num_ch_wires]
-    new_col_indices = alphabet[rho_dim + num_ch_wires: rho_dim + 2 * num_ch_wires]
+    new_row_indices = alphabet[rho_dim : rho_dim + num_ch_wires]
+    new_col_indices = alphabet[rho_dim + num_ch_wires : rho_dim + 2 * num_ch_wires]
 
     # index for summation over Kraus operators
-    kraus_index = alphabet[rho_dim + 2 * num_ch_wires: rho_dim + 2 * num_ch_wires + 1]
+    kraus_index = alphabet[rho_dim + 2 * num_ch_wires : rho_dim + 2 * num_ch_wires + 1]
 
     # new state indices replace row and column indices with new ones
     new_state_indices = functools.reduce(
@@ -63,5 +63,10 @@ def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool
 
     op_1_indices = f"{kraus_index}{new_row_indices}{row_indices}"
     op_2_indices = f"{kraus_index}{col_indices}{new_col_indices}"
-    indices = {"op1": op_1_indices, "state": state_indices, "op2": op_2_indices, "new_state": new_state_indices}
+    indices = {
+        "op1": op_1_indices,
+        "state": state_indices,
+        "op2": op_2_indices,
+        "new_state": new_state_indices,
+    }
     return indices

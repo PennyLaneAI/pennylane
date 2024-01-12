@@ -16,6 +16,7 @@
 from typing import Iterable, Union
 import pennylane as qml
 from pennylane.operation import StatePrepBase
+from .utils import qudit_dim
 
 
 def create_initial_state(
