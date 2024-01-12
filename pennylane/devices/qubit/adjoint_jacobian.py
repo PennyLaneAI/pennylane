@@ -232,8 +232,8 @@ def _get_vjp_bras(tape, cotangents, ket):
     """
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
-        batched_cotangents = qml.math.ndim(cotangents) == 2
-        batch_size = qml.math.shape(cotangents)[0] if batched_cotangents else None
+        batched_cotangents = np.ndim(cotangents) == 2
+        batch_size = np.shape(cotangents)[0] if batched_cotangents else None
         bras = np.conj(cotangents.reshape(-1, *ket.shape))
         bras = bras if batched_cotangents else np.squeeze(bras)
         return bras, batch_size, []
@@ -246,16 +246,14 @@ def _get_vjp_bras(tape, cotangents, ket):
         # Pad cotangents if shape is inhomogenous
         # inner_shape will only be None if cotangents is a vector. We assume that for
         # inhomogenous cotangents, all non-scalar values have the same shape.
-        inner_shape = next(
-            (qml.math.shape(cot) for cot in cotangents if qml.math.shape(cot) != ()), None
-        )
+        inner_shape = next((np.shape(cot) for cot in cotangents if np.shape(cot) != ()), None)
         if inner_shape is not None:
             # Batched cotangents. Find scalar zeros and pad to make the shape of cotangents
             # homogenous
             new_cotangents = []
 
             for i, c in enumerate(cotangents):
-                if qml.math.shape(c) == () and np.allclose(c, 0.0):
+                if np.shape(c) == () and np.allclose(c, 0.0):
                     new_cotangents.append(np.zeros(inner_shape))
                 else:
                     new_cotangents.append(c)
@@ -386,7 +384,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         else (len(tape.trainable_params), batch_size)
     )
     cotangents_in = np.empty(res_shape, dtype=tape.measurements[0].numeric_type)
-    summing_axis = None if batch_size is None else tuple(range(1, qml.math.ndim(bras)))
+    summing_axis = None if batch_size is None else tuple(range(1, np.ndim(bras)))
 
     for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)
