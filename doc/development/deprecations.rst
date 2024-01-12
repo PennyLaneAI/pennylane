@@ -120,6 +120,13 @@ Completed deprecation cycles
   - Deprecated in v0.34
   - Removed in v0.35
 
+* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+
+  - Deprecated in v0.34
+  - Removed in v0.35
+
 * Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
 
   - Deprecated in v0.25
