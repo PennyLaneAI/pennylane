@@ -21,11 +21,9 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel
+from .utils import qudit_dim, get_einsum_indices
 
 alphabet_array = np.array(list(alphabet))
-
-qudit_dim = 3  # specifies qudit dimension
-
 
 def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
     r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
@@ -39,41 +37,13 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     Returns:
         array[complex]: output_state
     """
-    num_ch_wires = len(op.wires)
-    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
-    rho_dim = 2 * num_wires
-
-    # Tensor indices of the state. For each qutrit, need an index for rows *and* columns
-    state_indices = alphabet[:rho_dim]
-
-    # row indices of the quantum state affected by this operation
-    row_wires_list = op.wires.tolist()
-    row_indices = "".join(alphabet_array[row_wires_list].tolist())
-
-    # column indices are shifted by the number of wires
-    col_wires_list = [w + num_wires for w in row_wires_list]
-    col_indices = "".join(alphabet_array[col_wires_list].tolist())
-
-    # indices in einsum must be replaced with new ones
-    new_row_indices = alphabet[rho_dim : rho_dim + num_ch_wires]
-    new_col_indices = alphabet[rho_dim + num_ch_wires : rho_dim + 2 * num_ch_wires]
-
-    # index for summation over Kraus operators
-    kraus_index = alphabet[rho_dim + 2 * num_ch_wires : rho_dim + 2 * num_ch_wires + 1]
-
-    # new state indices replace row and column indices with new ones
-    new_state_indices = functools.reduce(
-        lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-        zip(col_indices + row_indices, new_col_indices + new_row_indices),
-        state_indices,
-    )
-
+    indices = get_einsum_indices(op, state, is_state_batched)
     # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
     einsum_indices = (
-        f"...{kraus_index}{new_row_indices}{row_indices},...{state_indices},"
-        f"...{kraus_index}{col_indices}{new_col_indices}->...{new_state_indices}"
+        f"...{indices['op1']},...{indices['state']},...{indices['op2']}->...{indices['new_state']}"
     )
 
+    num_ch_wires = len(op.wires)
     kraus = _get_kraus(op)
 
     # Shape kraus operators
