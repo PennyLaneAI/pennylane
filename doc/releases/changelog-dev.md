@@ -62,7 +62,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* If `argnum` is provided, only the parameters specified in `argnum` will have their gradient methods validated.
+* If `argnum` is provided to a gradient transform, only the parameters specified in `argnum` will have their gradient methods validated.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.

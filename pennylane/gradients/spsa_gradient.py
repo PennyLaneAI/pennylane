@@ -298,9 +298,9 @@ def spsa_grad(
 
     trainable_params = choose_trainable_params(tape, argnum)
     diff_methods = (
-        {idx: "F" for idx in trainable_params}
-        if not validate_params
-        else find_and_validate_gradient_methods(tape, "numeric", trainable_params)
+        find_and_validate_gradient_methods(tape, "numeric", trainable_params)
+        if validate_params
+        else {idx: "F" for idx in trainable_params}
     )
 
     if all(g == "0" for g in diff_methods.values()):
