@@ -19,8 +19,6 @@ import itertools
 from copy import copy
 from typing import List
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
