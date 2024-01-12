@@ -41,6 +41,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Passing additional arguments to a transform that decorates a QNode must be done through the use
+  of `functools.partial`.
+  [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
+
 * `Observable.return_type` has been removed. Instead, you should inspect the type
   of the surrounding measurement process.
   [(#5044)](https://github.com/PennyLaneAI/pennylane/pull/5044)

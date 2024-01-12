@@ -1846,12 +1846,12 @@ class TestParameterShiftRule:
         (cost3, [2, 3]),
     ]
 
-    @pytest.mark.xfail(
-        reason="batch_transform uses qml.execute and is incompatible with shot vectors atm"
-    )
     @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_expval)
     def test_output_shape_matches_qnode_expval(self, cost, expected_shape):
         """Test that the transform output shape matches that of the QNode."""
+        if cost.__name__ != "cost1":
+            pytest.xfail(reason="new return shape specification")
+
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=4, shots=shot_vec)
 
@@ -1877,12 +1877,12 @@ class TestParameterShiftRule:
         (cost6, [2, 3, 4]),
     ]
 
-    @pytest.mark.xfail(
-        reason="batch_transform uses qml.execute and is incompatible with shot vectors atm"
-    )
     @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, expected_shape):
         """Test that the transform output shape matches that of the QNode."""
+        if cost.__name__ != "cost4":
+            pytest.xfail(reason="wrong return shape specification")
+
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=4, shots=shot_vec)
 

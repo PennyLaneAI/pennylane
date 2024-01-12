@@ -1632,7 +1632,7 @@ class Operation(Operator):
     :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
     Args:
-        params (tuple[tensor_like]): trainable parameters
+        *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         id (str): custom label given to an operator instance,

@@ -1628,7 +1628,6 @@ class TestTapeExpansion:
 class TestSample:
     """Tests for the sample integration"""
 
-    @pytest.mark.xfail
     def test_backprop_error(self):
         """Test that sampling in backpropagation grad_on_execution raises an error"""
         dev = DefaultQubit()
