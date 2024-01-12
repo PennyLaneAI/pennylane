@@ -76,6 +76,9 @@
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
 
+* `qml.equal` works well with `qml.Sum` operators when wire labels are a mix of integers and strings.
+  [(#5037)](https://github.com/PennyLaneAI/pennylane/pull/5037)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -86,3 +89,4 @@ Christina Lee,
 Isaac De Vlugt,
 Korbinian Kottmann,
 Matthew Silverman.
+Jay Soni,
