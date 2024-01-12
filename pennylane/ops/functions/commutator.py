@@ -14,24 +14,10 @@
 """
 This file contains the implementation of the commutator function in PennyLane
 """
-# import itertools
-# from copy import copy
-# from typing import List
-
-# import numpy as np
-
 import pennylane as qml
 from pennylane.pauli import PauliWord, PauliSentence
 
-# from pennylane import math
-# from pennylane.operation import Operator
-# from pennylane.ops.qubit import Hamiltonian
-# from pennylane.queuing import QueuingManager
-
-# from .composite import CompositeOp
-
-
-def commutator(op1, op2, simplify=True, pauli=False):
+def commutator(op1, op2, pauli=False):
     r"""Compute commutator between two operators in PennyLane
 
     .. math:: [O_1, O_2] = O_1 O_2 - O_2 O_1
