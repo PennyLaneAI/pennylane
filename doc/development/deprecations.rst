@@ -20,12 +20,6 @@ Pending deprecations
   - Deprecated in v0.34
   - Will be removed in v0.35
 
-* ``Observable.return_type`` is deprecated. Instead, you should inspect the type
-  of the surrounding measurement process.
-
-  - Deprecated in v0.34
-  - Will be removed in v0.35
-
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
@@ -48,6 +42,37 @@ Pending deprecations
   - Deprecated in v0.34
   - Will be removed in v0.35
 
+* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
+
+  - Deprecated in v0.24
+  - Will be removed in v0.35
+
+  Instead, it is recommended to simply
+  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
+
+  .. code-block:: python
+
+    @qml.qnode(dev)
+    def ansatz(params):
+        some_qfunc(params)
+        return qml.expval(Hamiltonian)
+
+* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
+* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
+  but instead use ``@`` to conform with the PennyLane convention.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
+Completed deprecation cycles
+----------------------------
+
 * Passing additional arguments to a transform that decorates a QNode should now be done through use
   of ``functools.partial``. For example, the :func:`~pennylane.metric_tensor` transform has an
   optional ``approx`` argument which should now be set using:
@@ -61,7 +86,7 @@ Pending deprecations
     def circuit(weights):
         ...
 
-  The previously-recommended approach is now deprecated:
+  The previously-recommended approach is now removed:
 
   .. code-block:: python
 
@@ -81,38 +106,13 @@ Pending deprecations
     transformed_circuit = qml.metric_tensor(circuit, approx="block-diag")
 
   - Deprecated in v0.33
-  - Will be removed in v0.35
+  - Removed in v0.35
 
-* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-
-  - Deprecated in v0.24
-  - Will be removed in v0.35
-
-  Instead, it is recommended to simply
-  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
-
-  .. code-block:: python
-
-    @qml.qnode(dev)
-    def ansatz(params):
-        some_qfunc(params)
-        return qml.expval(Hamiltonian)
-
-* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better 
-  method to estimate entropies from approximate density matrix reconstructions
-  (with potentially negative eigenvalues) has been implemented.
+* ``Observable.return_type`` has been removed. Instead, you should inspect the type
+  of the surrounding measurement process.
 
   - Deprecated in v0.34
-  - Will be removed in v0.35
-
-* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
-  but instead use ``@`` to conform with the PennyLane convention.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.35
 
 * Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
 
