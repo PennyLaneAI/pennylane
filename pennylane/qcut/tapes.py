@@ -31,14 +31,7 @@ from pennylane.queuing import AnnotatedQueue, WrappedObj
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
-from .utils import (
-    MeasureNode,
-    PrepareNode,
-    _prep_iplus_state,
-    _prep_one_state,
-    _prep_plus_state,
-    _prep_zero_state,
-)
+from .utils import MeasureNode, PrepareNode
 
 
 def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
