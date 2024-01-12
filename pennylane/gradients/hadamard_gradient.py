@@ -73,7 +73,8 @@ def hadamard_grad(
         tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests.
             If ``None`` (the default), a suitable wire is inferred from the wires used in
             the original circuit and ``device_wires``.

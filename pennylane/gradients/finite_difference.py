@@ -220,7 +220,8 @@ def finite_diff(
         tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         h (float): finite difference method step size
         approx_order (int): The approximation order of the finite-difference method to use.
         n (int): compute the :math:`n`-th derivative

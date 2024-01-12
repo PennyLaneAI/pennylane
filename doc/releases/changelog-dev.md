@@ -31,9 +31,6 @@
   incompatible operator types.
   [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
 
-* Instead of returning a list, `gradient_analysis_and_validation` (renamed to `find_and_validate_gradient_methods`) now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
-  [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
-
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
 
@@ -43,6 +40,9 @@
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 <h3>Breaking changes 💔</h3>
+
+* `gradient_analysis_and_validation` is now renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
+  [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
 <h3>Deprecations 👋</h3>
 

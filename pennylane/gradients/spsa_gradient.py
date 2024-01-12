@@ -112,7 +112,8 @@ def spsa_grad(
         tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         h (float or tensor_like[float]): Step size for the finite-difference method
             underlying the SPSA. Can be a tensor-like object
             with as many entries as differentiated *gate* parameters

@@ -340,7 +340,8 @@ def expval_param_shift(
             tape (.QuantumTape): quantum tape to differentiate
             argnum (int or list[int] or None): Trainable parameter indices to differentiate
                 with respect to. If not provided, the derivatives with respect to all
-                trainable indices are returned.
+                trainable indices are returned. Note that the indices are with respect to
+            the list of trainable parameters.
             shifts (list[tuple[int or float]]): List containing tuples of shift values.
                 If provided, one tuple of shifts should be given per trainable parameter
                 and the tuple should match the number of frequencies for that parameter.

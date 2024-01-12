@@ -573,9 +573,9 @@ def param_shift_hessian(
     # further below (as no fallback function in analogy to `param_shift` is used currently).
     method = "analytic" if argnum is None else "best"
     trainable_params = qml.math.where(qml.math.any(bool_argnum, axis=0))[0]
-    method_map = find_and_validate_gradient_methods(tape, method, list(trainable_params))
+    diff_methods = find_and_validate_gradient_methods(tape, method, list(trainable_params))
 
-    for i, g in method_map.items():
+    for i, g in diff_methods.items():
         if g == "0":
             bool_argnum[i] = bool_argnum[:, i] = False
     if qml.math.all(~bool_argnum):  # pylint: disable=invalid-unary-operand-type
@@ -583,7 +583,7 @@ def param_shift_hessian(
 
     # If any of these argument indices correspond to a finite difference
     # derivative (diff_methods[idx]="F"), raise an error.
-    unsupported_params = {i for i, m in method_map.items() if m == "F"}
+    unsupported_params = {i for i, m in diff_methods.items() if m == "F"}
     if unsupported_params:
         raise ValueError(
             "The parameter-shift Hessian currently does not support the operations "
@@ -591,5 +591,5 @@ def param_shift_hessian(
         )
 
     return expval_hessian_param_shift(
-        tape, bool_argnum, method_map, diagonal_shifts, off_diagonal_shifts, f0
+        tape, bool_argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0
     )

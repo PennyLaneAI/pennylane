@@ -289,7 +289,8 @@ def _expval_pulse_odegen(tape, argnum, atol):
             parameter-shift rule.
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         atol (float): absolute tolerance used to determine vanishing contributions.
 
     Returns:
