@@ -922,22 +922,6 @@ class TestOperationConstruction:
 class TestObservableConstruction:
     """Test custom observables construction."""
 
-    def test_observable_return_type_none(self):
-        """Check that the return_type of an observable is initially None"""
-
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
-            num_wires = 1
-            grad_method = None
-
-        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
-            assert DummyObserv(0, wires=[1]).return_type is None
-
-        obs = DummyObserv(0, wires=[1])
-        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
-            # pylint:disable=attribute-defined-outside-init
-            obs.return_type = qml.measurements.Sample
-
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
