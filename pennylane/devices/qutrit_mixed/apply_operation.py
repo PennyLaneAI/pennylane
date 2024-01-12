@@ -24,9 +24,6 @@ from pennylane.operation import Channel
 
 alphabet_array = np.array(list(alphabet))
 
-EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
-EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13  # TODO placeholder value, need to ask how to find these
-
 qudit_dim = 3  # specifies qudit dimension
 
 
@@ -109,61 +106,6 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     return math.einsum(einsum_indices, kraus, state, kraus_dagger)
 
 
-def apply_operation_tensordot(op: qml.operation.Operator, state):
-    r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
-    quantum state. For a unitary gate, there is a single Kraus operator.
-
-    Args:
-        op (Operator): Operator to apply to the quantum state
-        state (array[complex]): Input quantum state
-
-    Returns:
-        array[complex]: output_state
-    """
-    num_ch_wires = len(op.wires)
-    num_wires = int(len(qml.math.shape(state)) / 2)
-
-    # Shape kraus operators and cast them to complex data type
-    kraus_shape = [qudit_dim] * (num_ch_wires * 2)
-
-    # row indices of the quantum state affected by this operation
-    row_wires_list = list(op.wires.toarray())
-    # column indices are shifted by the number of wires
-    col_wires_list = [w + num_wires for w in row_wires_list]
-
-    channel_col_ids = list(range(num_ch_wires, 2 * num_ch_wires))
-    axes_left = [channel_col_ids, row_wires_list]
-    # Use column indices instead or rows to incorporate transposition of K^\dagger
-    axes_right = [col_wires_list, channel_col_ids]
-
-    # Apply the Kraus operators, and sum over all Kraus operators afterwards
-    def _conjugate_state_with(k):
-        """Perform the double tensor product k @ self._state @ k.conj().
-        The `axes_left` and `axes_right` arguments are taken from the ambient variable space
-        and `axes_right` is assumed to incorporate the tensor product and the transposition
-        of k.conj() simultaneously."""
-        k = math.cast(math.reshape(k, kraus_shape), complex)
-        return math.tensordot(math.tensordot(k, state, axes_left), math.conj(k), axes_right)
-
-    if isinstance(op, Channel):
-        kraus = op.kraus_matrices()
-        _state = math.sum(math.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
-    else:
-        _state = _conjugate_state_with(op.matrix())
-
-    # Permute the affected axes to their destination places.
-    # The row indices of the kraus operators are moved from the beginning to the original
-    # target row locations, the column indices from the end to the target column locations
-    source_left = list(range(num_ch_wires))
-    dest_left = row_wires_list
-    source_right = list(range(-num_ch_wires, 0))
-    dest_right = col_wires_list
-
-    print(source_left + source_right)
-    print(dest_left + dest_right)
-    return math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
-
-
 @singledispatch
 def apply_operation(
     op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None
@@ -222,12 +164,9 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches.
     """
-    if (
-        len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
-        and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
-    ) or (op.batch_size or is_state_batched):
-        return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
-    # TODO fix state batching on tensordot
+
+    return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+    # TODO add tensordot and benchmark for performance
     return apply_operation_tensordot(op, state)
 
 

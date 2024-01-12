@@ -22,7 +22,6 @@ from pennylane import math
 from pennylane.operation import Channel
 from pennylane.devices.qutrit_mixed.apply_operation import (
     apply_operation_einsum,
-    apply_operation_tensordot,
     apply_operation,
 )
 
@@ -34,7 +33,7 @@ ml_frameworks_list = [
     pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
-methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
+methods = [apply_operation_einsum, apply_operation]  # TODO add tensordot back when added
 broadcasting_methods = [apply_operation_einsum, apply_operation]
 subspaces = [(0, 1), (0, 2), (1, 2)]
 
