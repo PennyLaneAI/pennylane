@@ -44,6 +44,10 @@
 * `gradient_analysis_and_validation` is now renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
+* Passing additional arguments to a transform that decorates a QNode must be done through the use
+  of `functools.partial`.
+  [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
+
 <h3>Deprecations 👋</h3>
 
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
