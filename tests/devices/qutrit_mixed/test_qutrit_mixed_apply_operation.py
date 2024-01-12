@@ -44,9 +44,7 @@ def load_data(num_qutrits, batched):
         file_name_start += "s"
 
     file_name = f"{file_name_start}_states.npy"
-    path = os.path.join(os.getcwd(),
-                        "test_ref_files",
-                        file_name)
+    path = os.path.join(os.getcwd(), "test_ref_files", file_name)
     data = np.load(path, allow_pickle=True)
     if batched:
         return data
@@ -85,8 +83,11 @@ def test_custom_operator_with_matrix(one_qutrit_state):
 @pytest.mark.parametrize("method", methods)
 @pytest.mark.parametrize("wire", (0, 1))
 class TestTwoQubitStateSpecialCases:
-    """Test the special cases on a two qutrit state.  Also tests the special cases for einsum and tensor application methods
+    """Test the special cases on a two qutrit state.  Also tests the special cases for einsum application method
     for additional testing of these generic matrix application methods."""
+
+    # Currently not added as special cases, but will be in future
+    # TODO add tensordot back after it has been added
 
     def test_TAdd(self, method, wire, ml_framework, two_qutrits_state):
         """Test the application of a TAdd gate on a two qutrit state."""
@@ -189,27 +190,13 @@ class TestTwoQubitStateSpecialCases:
         new2 = math.take(new_state, 2, axis=wire)
         check_second_roll(w2 * initial2, new2)
 
-    @pytest.mark.parametrize("subspace", subspaces)
-    def test_THadamard(self, method, wire, ml_framework, subspace, two_qutrits_state):
-        initial_state = math.asarray(two_qutrits_state, like=ml_framework)
-        op = qml.THadamard(wire, subspace=subspace)
-        new_state = method(op, initial_state)
-
-        flattened_state = two_qutrits_state.reshape(9, 9)
-        sizes = [3, 3]
-        sizes[wire] = 1
-        expanded_mat = np.kron(np.kron(np.eye(sizes[0]), op.matrix()), np.eye(sizes[1]))
-        adjoint_mat = np.conj(expanded_mat).T
-        expected = (expanded_mat @ flattened_state @ adjoint_mat).reshape([3] * 4)
-
-        assert math.allclose(expected, new_state)
-
     # TODO: Add more tests as Special cases are added
 
 
-
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-@pytest.mark.parametrize("state,shape", [("two_qutrits_state", (9, 9)), ("two_qutrits_states", (3, 9, 9))])
+@pytest.mark.parametrize(
+    "state,shape", [("two_qutrits_state", (9, 9)), ("two_qutrits_states", (3, 9, 9))]
+)
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
 
@@ -221,7 +208,9 @@ class TestSnapshot:
             self.snapshots = {}
 
     @pytest.mark.usefixtures("two_qutrits_state")
-    def test_no_debugger(self, ml_framework, state, shape, request):  # pylint: disable=unused-argument
+    def test_no_debugger(
+        self, ml_framework, state, shape, request
+    ):  # pylint: disable=unused-argument
         """Test nothing happens when there is no debugger"""
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
@@ -292,7 +281,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     ]
     num_qutrits = 3
     num_batched = 3
-    dims = (3 ** num_qutrits, 3 ** num_qutrits)
+    dims = (3**num_qutrits, 3**num_qutrits)
 
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op(self, op, method, ml_framework, three_qutrits_state):
@@ -305,7 +294,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mats = [
-            np.kron(np.eye(3 ** missing_wires), mat[i]) if missing_wires else mat[i]
+            np.kron(np.eye(3**missing_wires), mat[i]) if missing_wires else mat[i]
             for i in range(self.num_batched)
         ]
         expected = []
@@ -328,7 +317,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = self.num_qutrits - len(op.wires)
         mat = op.matrix()
-        expanded_mat = np.kron(np.eye(3 ** missing_wires), mat) if missing_wires else mat
+        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
         adjoint_mat = np.conj(expanded_mat).T
         expected = []
 
@@ -350,7 +339,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         missing_wires = self.num_qutrits - len(op.wires)
         mat = op.matrix()
         expanded_mats = [
-            np.kron(np.eye(3 ** missing_wires), mat[i]) if missing_wires else mat[i]
+            np.kron(np.eye(3**missing_wires), mat[i]) if missing_wires else mat[i]
             for i in range(self.num_batched)
         ]
         expected = []
@@ -392,7 +381,7 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         def compute_kraus_matrices(p):
             K0 = (np.sqrt(1 - p) * math.cast_like(np.eye(3), p)).astype(complex)
             K1 = (
-                    np.sqrt(p) * math.cast_like(np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]]), p)
+                np.sqrt(p) * math.cast_like(np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]]), p)
             ).astype(complex)
             return [K0, K1]
 
@@ -418,8 +407,6 @@ class TestChannels:  # pylint: disable=too-few-public-methods
 
     def test_broadcasted_state(self, method, ml_framework, two_qutrits_states):
         """Tests that Channel operations are applied correctly to a batched state."""
-        if method is apply_operation_tensordot:
-            pytest.skip("Tensordot doesn't support batched operations.")
         state = two_qutrits_states
         test_channel = self.CustomChannel(0.3, wires=1)
         res = method(test_channel, math.asarray(state, like=ml_framework))

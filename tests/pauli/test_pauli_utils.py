@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
+Unit tests for the :mod:`pauli` utility functions in ``pauli/.utils.py``.
 """
 # pylint: disable=too-few-public-methods,too-many-public-methods
 import numpy as np
