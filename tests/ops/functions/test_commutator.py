@@ -17,29 +17,16 @@ Unit tests for the dot function
 import pytest
 
 import pennylane as qml
+from pennylane.ops import SProd
+from pennylane.operation import Operator
 from pennylane.pauli import PauliWord, PauliSentence
+
+X, Y, Z, Id = qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity
 
 X0 = PauliWord({0: "X"})
 Y0 = PauliWord({0: "Y"})
 Z0 = PauliWord({0: "Z"})
-
-pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
-pw2 = PauliWord({"a": "X", "b": "X", "c": "Z"})
-pw3 = PauliWord({0: "Z", "b": "Z", "c": "Z"})
-pw4 = PauliWord({})
-pw_id = pw4  # Identity PauliWord
-
-words = [pw1, pw2, pw3, pw4]
-
-words = [pw1, pw2, pw3, pw4]
-
-ps1 = PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5})
-ps2 = PauliSentence({pw1: -1.23, pw2: -4j, pw3: 0.5})
-ps1_hamiltonian = PauliSentence({pw1: 1.23, pw2: 4, pw3: -0.5})
-ps2_hamiltonian = PauliSentence({pw1: -1.23, pw2: -4, pw3: 0.5})
-ps3 = PauliSentence({pw3: -0.5, pw4: 1})
-ps4 = PauliSentence({pw4: 1})
-ps5 = PauliSentence({})
+pw_id = PauliWord({})
 
 
 def _pauli_to_op(p):
@@ -52,9 +39,6 @@ def _pw_to_ps(p):
 
 def _id(p):
     return p
-
-
-sentences = [ps1, ps2, ps3, ps4, ps5, ps1_hamiltonian, ps2_hamiltonian]
 
 
 class TestCommutatorPauli:
@@ -108,8 +92,52 @@ class TestCommutatorPauli:
 
 
 class TestCommutatorPauliFalseSimplify:
-    """Test qml.commutator for pauli=False and simplify=True (default behavior)"""
+    """Test qml.commutator for pauli=False (default behavior)"""
 
+    data_pauli_relations_ops = (
+        # word and word
+        (X0, X0, qml.s_prod(0.0, Id(0))),
+        (Y0, Y0, qml.s_prod(0.0, Id(0))),
+        (Z0, Z0, qml.s_prod(0.0, Id(0))),
+        (X0, Y0, qml.s_prod(2j, Z(0))),
+        (Y0, Z0, qml.s_prod(2j, X(0))),
+        (Z0, X0, qml.s_prod(2j, Y(0))),
+        (Y0, X0, qml.s_prod(-2j, Z(0))),
+        (Z0, Y0, qml.s_prod(-2j, X(0))),
+        (X0, Z0, qml.s_prod(-2j, Y(0))),
+    )
 
-class TestCommutatorPauliFalseSimplifyFalse:
-    """Test qml.commutator for pauli=False and simplify=False"""
+    @pytest.mark.parametrize("transform_type1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("transform_type2", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_ops)
+    def test_basic_commutator_relations(self, op1, op2, true_res, transform_type1, transform_type2):
+        """Test basic commutator relations between Paulis for PauliWord, PauliSentence and Operator instances"""
+        res = qml.commutator(transform_type1(op1), transform_type2(op2), pauli=False)
+        assert res == true_res
+        assert isinstance(res, Operator)
+        assert isinstance(res, SProd)
+
+    data_more_commutator_relations_op = (
+        (
+            PauliWord({0: "X", 1: "X"}),
+            PauliWord({0: "Y", 1: "Y"}),
+            qml.s_prod(0.0, Id([0, 1])),
+        ),
+        (
+            PauliWord({0: "X", 1: "X"}),
+            PauliWord({"a": "X", "b": "Y"}),
+            qml.s_prod(0.0, Id([0, 1, "a", "b"])),
+        ),
+    )
+
+    @pytest.mark.parametrize("transform_type1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("transform_type2", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_more_commutator_relations_op)
+    def test_commutator_relations_pauli_words(
+        self, op1, op2, true_res, transform_type1, transform_type2
+    ):
+        """Test more commutator relations between Paulis"""
+        res = qml.commutator(transform_type1(op1), transform_type2(op2), pauli=False)
+        assert res == true_res
+        assert isinstance(res, Operator)
+        assert isinstance(res, SProd)

@@ -39,8 +39,6 @@ def commutator(op1, op2, simplify=True, pauli=False):
     Args:
         op1 (Union[Operator, PauliWord, PauliSentence]): First operator
         op2 (Union[Operator, PauliWord, PauliSentence]): Second operator
-        simplify (bool): Determines if the result should be simplified when returning an ``Operator`` instance.
-            Default is ``True``. This has no effect when ``pauli=True``.
         pauli (bool): When ``True``, all results are passed as a ``PauliSentence`` instance. Else, results are always returned as ``Operator`` instances.
 
     Returns:
@@ -55,3 +53,11 @@ def commutator(op1, op2, simplify=True, pauli=False):
         if not isinstance(op2, (PauliSentence)):
             op2 = qml.pauli.pauli_sentence(op2)
         return op1 @ op2 - op2 @ op1
+
+    if isinstance(op1, (PauliWord, PauliSentence)):
+        op1 = op1.operation()
+    if isinstance(op2, (PauliWord, PauliSentence)):
+        op2 = op2.operation()
+
+    res = qml.prod(op1, op2) - qml.prod(op2, op1)
+    return res.simplify()
