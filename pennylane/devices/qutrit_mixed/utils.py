@@ -15,6 +15,7 @@
 import functools
 from string import ascii_letters as alphabet
 import pennylane as qml
+from pennylane import math
 from pennylane import numpy as np
 
 alphabet_array = np.array(list(alphabet))
@@ -25,12 +26,12 @@ def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool
     r"""Finds the indices for einsum to multiply three matrices
 
     Args:
-        op (Operator): Operator to apply to the quantum state
-        state (array[complex]): Input quantum state
-        is_state_batched (bool): Boolean representing whether the state is batched or not
+    op (Operator): Operator to apply to the quantum state
+    state (array[complex]): Input quantum state
+    is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
-        dict: indices used by einsum to multiply 3 matrices
+    dict: indices used by einsum to multiply 3 matrices
     """
     num_ch_wires = len(op.wires)
     num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
@@ -63,10 +64,49 @@ def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool
 
     op_1_indices = f"{kraus_index}{new_row_indices}{row_indices}"
     op_2_indices = f"{kraus_index}{col_indices}{new_col_indices}"
-    indices = {
+    return {
         "op1": op_1_indices,
         "state": state_indices,
         "op2": op_2_indices,
         "new_state": new_state_indices,
     }
-    return indices
+
+
+def get_probs(state, num_wires):
+    """
+    TODO: add docstring
+    """
+    # convert rho from tensor to matrix
+    rho = resquare_state(state, num_wires)
+
+    # probs are diagonal elements
+    probs = math.diagonal(rho)
+
+    # take the real part so probabilities are not shown as complex numbers
+    probs = math.real(probs)
+    return math.where(probs < 0, -probs, probs)
+
+
+def resquare_state(state, num_wires):
+    """
+    Given a non-flat, potentially batched state, flatten it to a square matrix.
+
+    Args:
+        state (TensorLike): A state that needs flattening
+        num_wires (int): The number of wires the state represents
+
+    Returns:
+        A squared state, with an extra batch dimension if necessary
+    """
+    dim = qudit_dim**num_wires
+    batch_size = math.get_batch_size(state, ((qudit_dim,) * (num_wires * 2)), dim**2)
+    shape = (batch_size, dim, dim) if batch_size is not None else (dim, dim)
+    return math.reshape(state, shape)
+
+
+def get_num_wires(state, is_state_batched: bool = False):
+    """
+    TODO: add docstring
+    """
+    len_row_plus_col = len(math.shape(state)) - is_state_batched
+    return int(len_row_plus_col / 2)

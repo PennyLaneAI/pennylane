@@ -29,28 +29,9 @@ from string import ascii_letters as alphabet
 from pennylane.wires import Wires
 
 from .apply_operation import apply_operation
-from .utils import get_einsum_indices
+from .utils import get_einsum_indices, resquare_state, get_probs, qudit_dim, get_num_wires
 
 alphabet_array = math.asarray(list(alphabet))
-
-qudit_dim = 3  # specifies qudit dimension
-
-
-def resquare_state(state, num_wires):
-    """
-    Given a non-flat, potentially batched state, flatten it to a square matrix.
-
-    Args:
-        state (TensorLike): A state that needs flattening
-        num_wires (int): The number of wires the state represents
-
-    Returns:
-        A squared state, with an extra batch dimension if necessary
-    """
-    dim = qudit_dim**num_wires
-    batch_size = math.get_batch_size(state, ((qudit_dim,) * (num_wires * 2)), dim**2)
-    shape = (batch_size, dim, dim) if batch_size is not None else (dim, dim)
-    return math.reshape(state, shape)
 
 
 def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = False):
@@ -85,7 +66,7 @@ def trace_method(
     """
     obs = measurementprocess.obs
     rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
-    #TODO, probably need to reshape?
+    resquare_state(rho_mult_obs, get_num_wires(state, is_state_batched))
     return math.real(math.trace(rho_mult_obs))
 
 
@@ -105,11 +86,11 @@ def state_diagonalizing_gates(
     for op in measurementprocess.diagonalizing_gates():
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
-    total_indices = len(state.shape) - is_state_batched
-    wires = Wires(range(total_indices))
-    #resquared state or probs?
-    resquared_state = resquare_state(state, total_indices)
-    return measurementprocess.process_state(resquared_state, wires)
+    num_wires = get_num_wires(state, is_state_batched)
+    wires = Wires(range(num_wires))
+    # resquared state or probs?
+    probs = get_probs(state, num_wires)
+    return measurementprocess.process_state(probs, wires)
 
 
 def get_measurement_function(
@@ -157,8 +138,12 @@ def measure(
         measurementprocess, state, is_state_batched
     )
 
+
 def sum_of_terms_method(  # TODO this is copied code, should this borrow from qubit?
-    measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False, measure_func=measure
+    measurementprocess: ExpectationMP,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    measure_func=measure,
 ) -> TensorLike:
     """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
