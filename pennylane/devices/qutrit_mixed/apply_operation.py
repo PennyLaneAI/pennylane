@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel
-from .utils import qudit_dim, get_einsum_indices
+from .utils import QUDIT_DIM, get_einsum_indices
 
 alphabet_array = np.array(list(alphabet))
 
@@ -47,13 +47,13 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     kraus = _get_kraus(op)
 
     # Shape kraus operators
-    kraus_shape = [len(kraus)] + [qudit_dim] * num_ch_wires * 2
+    kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_ch_wires * 2
     # Compute K^T, will be list of lists if broadcasting
     kraus_transpose = []
     if not isinstance(op, Channel):
         # TODO Channels broadcasting doesn't seem to be implemented for qubits, should they be for qutrit?
         mat = op.matrix()
-        dim = qudit_dim**num_ch_wires
+        dim = QUDIT_DIM**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
         if batch_size is not None:
             # Add broadcasting dimension to shape
@@ -101,7 +101,7 @@ def apply_operation(
         This function assumes that the wires of the operator correspond to indices
         of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
 
-        The shape of state should be ``[qudit_dim]*(num_wires * 2)``, where ``qudit_dim`` is
+        The shape of state should be ``[QUDIT_DIM]*(num_wires * 2)``, where ``QUDIT_DIM`` is
         the dimension of the system.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels

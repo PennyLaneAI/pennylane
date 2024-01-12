@@ -18,7 +18,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 alphabet_array = np.array(list(alphabet))
-qudit_dim = 3  # specifies qudit dimension
+QUDIT_DIM = 3  # specifies qudit dimension
 
 
 def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool = False):
@@ -70,3 +70,4 @@ def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool
         "new_state": new_state_indices,
     }
     return indices
+
