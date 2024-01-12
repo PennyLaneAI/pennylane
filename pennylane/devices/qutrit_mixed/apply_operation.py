@@ -148,7 +148,8 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
     if debugger and debugger.active:
         measurement = op.hyperparameters["measurement"]
         if measurement:
-            snapshot = qml.devices.qubit.measure(measurement, state)
+            # TODO replace with: measure once added
+            raise NotImplementedError  # TODO
         else:
             if is_state_batched:
                 dim = int(np.sqrt(math.size(state[0])))
@@ -176,8 +177,7 @@ def _get_kraus(operation):  # pylint: disable=no-self-use
 
     Returns:
         list[array[complex]]: Returns a list of 2D matrices representing the Kraus operators. If
-        the operation is unitary, returns a single Kraus operator. In the case of a diagonal
-        unitary, returns a 1D array representing the matrix diagonal.
+        the operation is unitary, returns a single Kraus operator.
     """
     if isinstance(operation, Channel):
         return operation.kraus_matrices()
