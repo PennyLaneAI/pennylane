@@ -25,7 +25,7 @@ def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool
     r"""Finds the indices for einsum to multiply three matrices
 
     Args:
-        obs (Operator): Operator to apply to the quantum state
+        op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
         is_state_batched (bool): Boolean representing whether the state is batched or not
 
