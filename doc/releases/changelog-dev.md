@@ -45,9 +45,11 @@
   of `functools.partial`.
   [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
 
+* Multiplying two `PauliWord` instances no longer returns a tuple `(new_word, coeff)` but instead `PauliSentence({new_word: coeff})`. The old behavior is still available with the private method `PauliWord._matmul(other)` for faster processing.
+
 <h3>Deprecations 👋</h3>
 
-* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
+* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication. Note also the breaking change that the product of two `PauliWord` instances now returns a `PauliSentence` instead of a tuple `(new_word, coeff)`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
 
 <h3>Documentation 📝</h3>

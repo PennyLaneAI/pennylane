@@ -183,19 +183,8 @@ class PauliWord(dict):
     def __hash__(self):
         return hash(frozenset(self.items()))
 
-    def __matmul__(self, other):
-        """Multiply two Pauli words together using the matrix product if wires overlap
-        and the tensor product otherwise.
-
-        Empty Pauli words are treated as the Identity operator on all wires.
-
-        Args:
-            other (PauliWord): The Pauli word to multiply with
-
-        Returns:
-            result(PauliWord): The resulting operator of the multiplication
-            coeff(complex): The complex phase factor
-        """
+    def _matmul(self, other):
+        """Private matrix multiplication that returns (pauli_word, coeff) tuple for more lightweight processing"""
         base, iterator, swapped = (
             (self, other, False) if len(self) > len(other) else (other, self, True)
         )
@@ -214,6 +203,21 @@ class PauliWord(dict):
                 result[wire] = term
 
         return PauliWord(result), coeff
+    
+    def __matmul__(self, other):
+        """Multiply two Pauli words together using the matrix product if wires overlap
+        and the tensor product otherwise.
+
+        Empty Pauli words are treated as the Identity operator on all wires.
+
+        Args:
+            other (PauliWord): The Pauli word to multiply with
+
+        Returns:
+            PauliSentence: coeff * new_word
+        """
+        new_word, coeff = self._matmul(other)
+        return PauliSentence({new_word: coeff})
 
     def __mul__(self, other):
         """Multiply a PauliWord by a scalar
@@ -230,7 +234,7 @@ class PauliWord(dict):
                 "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
                 qml.PennyLaneDeprecationWarning,
             )
-            return self @ other
+            return self._matmul(other)
 
         if isinstance(other, TensorLike):
             if not qml.math.ndim(other) == 0:
@@ -548,7 +552,7 @@ class PauliSentence(dict):
 
         for pw1 in self:
             for pw2 in other:
-                prod_pw, coeff = pw1 @ pw2
+                prod_pw, coeff = pw1._matmul(pw2)
                 final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps
