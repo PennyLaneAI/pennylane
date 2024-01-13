@@ -69,46 +69,6 @@ def get_einsum_mapping(
     )
 
 
-def get_einsum_indices_two(op: qml.operation.Operator, state, is_state_batched: bool = False):
-    r"""Finds the indices for einsum to multiply two matrices
-
-    Args:
-    op (Operator): Operator to apply to the quantum state
-    state (array[complex]): Input quantum state
-    is_state_batched (bool): Boolean representing whether the state is batched or not
-
-    Returns:
-    dict: indices used by einsum to multiply two matrices
-    """
-    num_ch_wires = len(op.wires)
-    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
-    rho_dim = 2 * num_wires
-
-    # Tensor indices of the state. For each qutrit, need an index for rows *and* columns
-    state_indices = alphabet[:rho_dim]
-
-    # row indices of the quantum state affected by this operation
-    row_wires_list = op.wires.tolist()
-    row_indices = "".join(alphabet_array[row_wires_list].tolist())
-
-    # indices in einsum must be replaced with new ones
-    new_row_indices = alphabet[rho_dim : rho_dim + num_ch_wires]
-
-    # new state indices replace row and column indices with new ones
-    new_state_indices = functools.reduce(
-        lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-        zip(row_indices, new_row_indices),
-        state_indices,
-    )
-
-    op_1_indices = f"{new_row_indices}{row_indices}"
-    return {
-        "op1": op_1_indices,
-        "state": state_indices,
-        "new_state": new_state_indices,
-    }
-
-
 def get_probs(state, num_wires):
     """
     TODO: add docstring
