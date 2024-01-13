@@ -15,16 +15,19 @@
 Code relevant for performing measurements on a qutrit mixed state.
 """
 from typing import Callable
+from string import ascii_letters as alphabet
 from pennylane import math
 from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
     StateMeasurement,
     MeasurementProcess,
     ExpectationMP,
+    StateMP,
+    ProbabilityMP,
 )
 from pennylane.operation import Observable
 from pennylane.typing import TensorLike
-from string import ascii_letters as alphabet
+
 from pennylane.wires import Wires
 
 from .apply_operation import apply_operation
@@ -34,7 +37,9 @@ from .utils import (
     get_probs,
     get_num_wires,
     get_new_state_einsum_indices,
+    QUDIT_DIM,
 )
+from .abstracted_math_funcs import reduce_dm
 
 alphabet_array = math.asarray(list(alphabet))
 
@@ -61,7 +66,6 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
 
         Returns:
             String of einsum indices to complete einsum calculations
-
         """
         op_1_indices = f"{new_row_indices}{row_indices}"
 
@@ -73,8 +77,12 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
 
         return f"{op_1_indices},...{state_indices}->...{new_state_indices}"
 
+    # TODO can measurements be batched?
+    num_ch_wires = len(obs.wires)
     einsum_indices = get_einsum_mapping(obs, state, map_indices, is_state_batched)
-    obs_mat = math.cast(obs.matrix(), complex)
+    obs_mat = obs.matrix()
+    obs_shape = [QUDIT_DIM] * num_ch_wires * 2
+    obs_mat = math.cast(math.reshape(obs_mat, obs_shape), complex)
     return math.einsum(einsum_indices, obs_mat, state)
 
 
@@ -92,11 +100,31 @@ def trace_method(
     """
     obs = measurementprocess.obs
     rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
-    resquare_state(rho_mult_obs, get_num_wires(state, is_state_batched))
-    return math.real(math.trace(rho_mult_obs))
+    squared_rho_mult_obs = resquare_state(rho_mult_obs, get_num_wires(state, is_state_batched))
+    return math.real(math.trace(squared_rho_mult_obs))
 
 
-def state_diagonalizing_gates(
+def reduce_density_matrix(
+    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
+) -> TensorLike:
+    """Get the state or reduced density matrix.
+
+    Args:
+        measurementprocess (StateMeasurement): measurement to apply to the state
+        state (TensorLike): state to apply the measurement to
+        is_state_batched (bool): whether the state is batched or not
+
+    Returns:
+        TensorLike: the resulting resquared density_matrix
+    """
+    squared_state = resquare_state(state, get_num_wires(state, is_state_batched))
+    if not measurementprocess.wires:
+        return squared_state
+
+    return reduce_dm(squared_state, indices=measurementprocess.wires, qudit_dim=3)
+
+
+def calculate_probability(
     measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
     """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
@@ -109,14 +137,8 @@ def state_diagonalizing_gates(
     Returns:
         TensorLike: the result of the measurement
     """
-    for op in measurementprocess.diagonalizing_gates():
-        state = apply_operation(op, state, is_state_batched=is_state_batched)
 
-    num_wires = get_num_wires(state, is_state_batched)
-    wires = Wires(range(num_wires))
-    # resquared state or probs?
-    probs = get_probs(state, num_wires)
-    return measurementprocess.process_state(probs, wires)
+    return get_probs(state, get_num_wires(state, is_state_batched))
 
 
 def get_measurement_function(
@@ -133,6 +155,10 @@ def get_measurement_function(
         Callable: function that returns the measurement result
     """
     if isinstance(measurementprocess, StateMeasurement):
+        if isinstance(measurementprocess, StateMP):
+            return reduce_density_matrix
+        if isinstance(measurementprocess, ProbabilityMP):
+            return calculate_probability
         if isinstance(measurementprocess, ExpectationMP):
             # TODO add faster methods
             # TODO add suport for sparce Hamiltonians
@@ -142,10 +168,8 @@ def get_measurement_function(
                 backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
                 if backprop_mode:
                     return sum_of_terms_method
-            if measurementprocess.obs.name == "THermitian":
-                return trace_method
-        if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
-            return state_diagonalizing_gates
+                return sum_of_terms_method  # TODO
+            return trace_method
 
     raise NotImplementedError
 

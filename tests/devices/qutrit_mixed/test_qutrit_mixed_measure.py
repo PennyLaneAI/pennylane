@@ -17,17 +17,21 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane import math
 
 # from pennylane.devices.qutrit_mixed. import measure
 from pennylane.devices.qutrit_mixed.measure import (
     measure,
     apply_observable_einsum,
     get_measurement_function,
-    state_diagonalizing_gates,
     trace_method,
     sum_of_terms_method,
+    reduce_density_matrix,
 )
 import os
+
+state_diagonalizing_gates = None  # TODO
+
 
 ml_frameworks_list = [
     "numpy",
@@ -54,39 +58,33 @@ class TestMeasurementDispatch:
         """Test that the correct internal function is used for a measurement process with no observables."""
         # Test a case where state_measurement_process is used
         mp1 = qml.state()
-        assert get_measurement_function(mp1, state=1) == state_diagonalizing_gates
+        assert get_measurement_function(mp1, state=1) is reduce_density_matrix
 
     @pytest.mark.parametrize(
         "m",
         (
-            qml.var(qml.GellMann(0, 3)),
-            qml.expval(qml.sum(qml.GellMann(0, 3), qml.GellMann(0, 1))),
-            qml.expval(qml.sum(*(qml.GellMann(i, 1) for i in range(15)))),
+            qml.var(qml.GellMann(0, 3)),  # TODO add variance
             qml.expval(qml.prod(qml.GellMann(0, 4), qml.GellMann(1, 5), qml.GellMann(10, 6))),
         ),
     )
     def test_diagonalizing_gates(self, m):
         """Test that the state_diagonalizing gates are used when there's an observable has diagonalizing
         gates and allows the measurement to be efficiently computed with them."""
-        assert get_measurement_function(m, state=1) is state_diagonalizing_gates
-
-    def test_sum_of_terms(self):
-        """Check that the sum of terms method is used when TODO"""
-        pass
+        assert get_measurement_function(m, state=1) is trace_method
 
     def test_hermitian_trace(self):
         """Test that the expectation value of a hermitian uses the trace method."""
         mp = qml.expval(qml.THermitian(np.eye(3), wires=0))
         assert get_measurement_function(mp, state=1) is trace_method
 
-    def test_hamiltonian_sum_of_terms_when_backprop(self):
-        """Check that the sum of terms method is used when the state is trainable."""
+    def test_hamiltonian_sum_of_terms(self):
+        """Check that the sum of terms method is used when Hamiltonian."""
         H = qml.Hamiltonian([2], [qml.GellMann(0, 1)])
         state = qml.numpy.zeros((3, 3))
         assert get_measurement_function(qml.expval(H), state) is sum_of_terms_method
 
-    def test_sum_sum_of_terms_when_backprop(self):
-        """Check that the sum of terms method is used when"""
+    def test_sum_sum_of_terms(self):
+        """Check that the sum of terms method is used when sum_of_terms"""
         S = qml.prod(*(qml.GellMann(i, 1) for i in range(8))) + qml.prod(
             *(qml.GellMann(i, 2) for i in range(8))
         )
@@ -139,42 +137,62 @@ class TestApplyObservableEinsum:
 
 class TestMeasurements:
     @pytest.mark.parametrize(
-        "measurement, expected",
+        "measurement, get_expected",
         [
-            # (qml.density_matrix(wires=0), 0.5 * np.ones((2, 2))),
-            # (qml.probs(wires=[0]), np.array([0.5, 0.5])),
+            (qml.state(), lambda x: math.reshape(x, newshape=(9, 9))),
+            (qml.density_matrix(wires=0), lambda x: math.trace(x, axis1=1, axis2=3)),
+            (
+                qml.probs(wires=[0]),
+                lambda x: math.real(math.diag(math.reshape(x, newshape=(9, 9)))),
+            ),
         ],
     )
-    def test_state_measurement_no_obs(self, measurement, expected):
+    def test_state_measurement_no_obs(self, measurement, get_expected, two_qutrit_state):
         """Test that state measurements with no observable work as expected."""
-        pass
+        res = measure(measurement, two_qutrit_state)
+        expected = get_expected(two_qutrit_state)
 
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (
-                qml.Hamiltonian(
-                    [-0.5, 2], [qml.GellMann(0, 7), qml.GellMann(0, 8)]
-                ),  # TODO fix error
-                0.5 * np.sin(0.123) + 2 * np.cos(0.123),  # TODO: find value
-            ),
-            (
-                qml.THermitian(
-                    -0.5 * qml.GellMann(0, 7).matrix() + 2 * qml.GellMann(0, 8).matrix(), wires=0
-                ),
-                0.5 * np.sin(0.123) + 2 * np.cos(0.123),  # TODO: find value
-            ),
-        ],
-    )
-    def test_hamiltonian_expval(self, obs, expected, two_qutrit_state):
-        """Test that measurements of hamiltonian/ Thermitians work correctly."""
-        res = measure(qml.expval(obs), two_qutrit_state)
         assert np.allclose(res, expected)
+
+    def test_hamiltonian_expval(self, two_qutrit_state):
+        """Test that measurements of hamiltonian work correctly."""
+        coeffs = [-0.5, 2]
+        observables = [qml.GellMann(0, 7), qml.GellMann(0, 8)]
+
+        obs = qml.Hamiltonian(coeffs, observables)
+        res = measure(qml.expval(obs), two_qutrit_state)
+
+        flattened_state = two_qutrit_state.reshape(9, 9)
+
+        missing_wires = 2 - len(obs.wires)
+        expected = 0
+        for i in range(len(coeffs)):
+            mat = observables[i].matrix()
+            expanded_mat = np.kron(mat, np.eye(3**missing_wires)) if missing_wires else mat
+            expected += coeffs[i] * math.trace(expanded_mat @ flattened_state)
+
+        assert np.isclose(res, expected)
+
+    def test_hermitian_expval(self, two_qutrit_state):
+        """Test that measurements of ternary hermitian work correctly."""
+        obs = qml.THermitian(
+            -0.5 * qml.GellMann(0, 7).matrix() + 2 * qml.GellMann(0, 8).matrix(), wires=0
+        )
+        res = measure(qml.expval(obs), two_qutrit_state)
+        flattened_state = two_qutrit_state.reshape(9, 9)
+
+        missing_wires = 2 - len(obs.wires)
+        mat = obs.matrix()
+        expanded_mat = np.kron(mat, np.eye(3**missing_wires)) if missing_wires else mat
+
+        expected = math.trace(expanded_mat @ flattened_state)
+
+        assert np.isclose(res, expected)
 
     def test_sum_expval_tensor_contraction(self):
         """Test that `Sum` expectation values are correct when tensor contraction
         is used for computation."""
-        summands = (qml.prod(qml.GellMann(i, 1), qml.GellMann(i + 1, 3)) for i in range(4))
+        summands = (qml.prod(qml.GellMann(i, 2), qml.GellMann(i + 1, 3)) for i in range(4))
         obs = qml.sum(*summands)
 
         @qml.qnode(qml.device("default.qutrit", wires=5))
@@ -193,7 +211,7 @@ class TestMeasurements:
 
         res = measure(qml.expval(obs), state)
         expect_from_rot = lambda x: 4 * (-np.sin(x) * np.cos(x))
-        expected = shmidts[0] * expect_from_rot(rots[0]) + schmidts[1] * expect_from_rot(rots[1])
+        expected = schmidts[0] * expect_from_rot(rots[0]) + schmidts[1] * expect_from_rot(rots[1])
         assert np.allclose(res, expected)
 
 
