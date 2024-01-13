@@ -14,6 +14,7 @@
 """Unit tests for the classical shadows transforms"""
 # pylint: disable=too-few-public-methods
 
+from functools import partial
 import pytest
 
 import pennylane as qml
@@ -142,7 +143,7 @@ class TestStateForward:
     def test_max_entangled_state(self, wires, diffable):
         """Test that the state reconstruction is correct for a maximally entangled state"""
         circuit = max_entangled_circuit(wires)
-        circuit = qml.shadows.shadow_state(wires=range(wires), diffable=diffable)(circuit)
+        circuit = qml.shadows.shadow_state(circuit, wires=range(wires), diffable=diffable)
 
         actual = circuit()
         expected = np.zeros((2**wires, 2**wires))
@@ -157,7 +158,7 @@ class TestStateForward:
         wires_list = [[0], [0, 1]]
 
         circuit = max_entangled_circuit(3)
-        circuit = qml.shadows.shadow_state(wires=wires_list, diffable=diffable)(circuit)
+        circuit = qml.shadows.shadow_state(circuit, wires=wires_list, diffable=diffable)
 
         actual = circuit()
 
@@ -212,7 +213,7 @@ class TestStateForwardInterfaces:
     def test_qft_state(self, interface, diffable):
         """Test that the state reconstruction is correct for a QFT state"""
         circuit = qft_circuit(3, interface=interface)
-        circuit = qml.shadows.shadow_state(wires=[0, 1, 2], diffable=diffable)(circuit)
+        circuit = qml.shadows.shadow_state(circuit, wires=[0, 1, 2], diffable=diffable)
 
         actual = circuit()
         expected = np.exp(np.arange(8) * 2j * np.pi / 8) / np.sqrt(8)
@@ -236,7 +237,7 @@ class TestStateBackward:
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
 
         sub_wires = [[0, 1], [1, 2]]
-        shadow_circuit = qml.shadows.shadow_state(wires=sub_wires, diffable=True)(shadow_circuit)
+        shadow_circuit = qml.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
 
         x = np.array(self.x, requires_grad=True)
 
@@ -260,7 +261,7 @@ class TestStateBackward:
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="jax")
 
         sub_wires = [[0, 1], [1, 2]]
-        shadow_circuit = qml.shadows.shadow_state(wires=sub_wires, diffable=True)(shadow_circuit)
+        shadow_circuit = qml.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
 
         x = jnp.array(self.x)
         actual = jax.jacobian(lambda x: qml.math.real(qml.math.stack(shadow_circuit(x))))(x)
@@ -279,7 +280,7 @@ class TestStateBackward:
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="tf")
 
         sub_wires = [[0, 1], [1, 2]]
-        shadow_circuit = qml.shadows.shadow_state(wires=sub_wires, diffable=True)(shadow_circuit)
+        shadow_circuit = qml.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
 
         x = tf.Variable(self.x)
 
@@ -307,7 +308,7 @@ class TestStateBackward:
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="torch")
 
         sub_wires = [[0, 1], [1, 2]]
-        shadow_circuit = qml.shadows.shadow_state(wires=sub_wires, diffable=True)(shadow_circuit)
+        shadow_circuit = qml.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
 
         x = torch.tensor(self.x, requires_grad=True)
 
@@ -382,7 +383,7 @@ class TestExpvalTransform:
         return shadows"""
         dev = qml.device("default.qubit", wires=1, shots=100)
 
-        @qml.shadows.shadow_expval(qml.PauliZ(0))
+        @partial(qml.shadows.shadow_expval, H=qml.PauliZ(0))
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
