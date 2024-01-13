@@ -28,7 +28,13 @@ from string import ascii_letters as alphabet
 from pennylane.wires import Wires
 
 from .apply_operation import apply_operation
-from .utils import get_einsum_mapping, resquare_state, get_probs, get_num_wires, get_new_state_einsum_indices
+from .utils import (
+    get_einsum_mapping,
+    resquare_state,
+    get_probs,
+    get_num_wires,
+    get_new_state_einsum_indices,
+)
 
 alphabet_array = math.asarray(list(alphabet))
 
@@ -44,6 +50,7 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
     Returns:
         TensorLike: the result of obs@state
     """
+
     def map_indices(state_indices, row_indices, new_row_indices, **kwargs):
         """map indices to wires
         Args:
@@ -56,15 +63,6 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
             String of einsum indices to complete einsum calculations
 
         """
-        # op_1_indices = f"{kwargs['new_row_indices']}{kwargs['row_indices']}"
-        #
-        # new_state_indices = get_new_state_einsum_indices(
-        #     old_indices=kwargs["row_indices"],
-        #     new_indices=kwargs["new_row_indices"],
-        #     state_indices=kwargs["state_indices"],
-        # )
-        #
-        # return f"{op_1_indices},...{kwargs['state_indices']}->...{new_state_indices}"
         op_1_indices = f"{new_row_indices}{row_indices}"
 
         new_state_indices = get_new_state_einsum_indices(
@@ -75,7 +73,7 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
 
         return f"{op_1_indices},...{state_indices}->...{new_state_indices}"
 
-    einsum_indices = get_einsum_mapping(obs, state, map_indices,is_state_batched)
+    einsum_indices = get_einsum_mapping(obs, state, map_indices, is_state_batched)
     obs_mat = math.cast(obs.matrix(), complex)
     return math.einsum(einsum_indices, obs_mat, state)
 
