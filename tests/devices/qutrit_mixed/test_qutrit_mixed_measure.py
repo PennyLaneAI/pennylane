@@ -17,8 +17,16 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-#from pennylane.devices.qutrit_mixed. import measure
-from pennylane.devices.qutrit_mixed.measure import measure, apply_observable_einsum, get_measurement_function, state_diagonalizing_gates, trace_method, sum_of_terms_method
+
+# from pennylane.devices.qutrit_mixed. import measure
+from pennylane.devices.qutrit_mixed.measure import (
+    measure,
+    apply_observable_einsum,
+    get_measurement_function,
+    state_diagonalizing_gates,
+    trace_method,
+    sum_of_terms_method,
+)
 import os
 
 ml_frameworks_list = [
@@ -28,7 +36,8 @@ ml_frameworks_list = [
     pytest.param("torch", marks=pytest.mark.torch),
     pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
-BATCH_SIZE=2
+BATCH_SIZE = 2
+
 
 class TestCurrentlyUnsupportedCases:
     # pylint: disable=too-few-public-methods
@@ -36,6 +45,7 @@ class TestCurrentlyUnsupportedCases:
         """Test sample-only measurements raise a notimplementedError."""
         with pytest.raises(NotImplementedError):
             _ = measure(qml.sample(wires=0), two_qutrit_state)
+
 
 class TestMeasurementDispatch:
     """Test that get_measurement_function dispatchs to the correct place."""
@@ -49,10 +59,10 @@ class TestMeasurementDispatch:
     @pytest.mark.parametrize(
         "m",
         (
-                qml.var(qml.GellMann(0, 3)),
-                qml.expval(qml.sum(qml.GellMann(0, 3), qml.GellMann(0, 1))),
-                qml.expval(qml.sum(*(qml.GellMann(i, 1) for i in range(15)))),
-                qml.expval(qml.prod(qml.GellMann(0,4), qml.GellMann(1,5), qml.GellMann(10, 6))),
+            qml.var(qml.GellMann(0, 3)),
+            qml.expval(qml.sum(qml.GellMann(0, 3), qml.GellMann(0, 1))),
+            qml.expval(qml.sum(*(qml.GellMann(i, 1) for i in range(15)))),
+            qml.expval(qml.prod(qml.GellMann(0, 4), qml.GellMann(1, 5), qml.GellMann(10, 6))),
         ),
     )
     def test_diagonalizing_gates(self, m):
@@ -71,31 +81,35 @@ class TestMeasurementDispatch:
 
     def test_hamiltonian_sum_of_terms_when_backprop(self):
         """Check that the sum of terms method is used when the state is trainable."""
-        H = qml.Hamiltonian([2], [qml.GellMann(0,1)])
-        state = qml.numpy.zeros((3,3))
+        H = qml.Hamiltonian([2], [qml.GellMann(0, 1)])
+        state = qml.numpy.zeros((3, 3))
         assert get_measurement_function(qml.expval(H), state) is sum_of_terms_method
 
     def test_sum_sum_of_terms_when_backprop(self):
         """Check that the sum of terms method is used when"""
-        S = qml.prod(*(qml.GellMann(i,1) for i in range(8))) + qml.prod(
-            *(qml.GellMann(i,2) for i in range(8))
+        S = qml.prod(*(qml.GellMann(i, 1) for i in range(8))) + qml.prod(
+            *(qml.GellMann(i, 2) for i in range(8))
         )
-        state = qml.numpy.zeros((3,3))
+        state = qml.numpy.zeros((3, 3))
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
-observable_list = [qml.GellMann(2, 3)] #TODO add more observables
+
+observable_list = [qml.GellMann(2, 3)]  # TODO add more observables
+
+
 @pytest.mark.parametrize("obs", observable_list)
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestApplyObservableEinsum:
     num_qutrits = 3
-    dims = (3 ** num_qutrits, 3 ** num_qutrits)
+    dims = (3**num_qutrits, 3**num_qutrits)
 
     def test_apply_observable_einsum(self, obs, three_qutrit_state, ml_framework):
-        res = apply_observable_einsum(obs, qml.math.asarray(three_qutrit_state, like=ml_framework),
-                                      is_state_batched=False)
+        res = apply_observable_einsum(
+            obs, qml.math.asarray(three_qutrit_state, like=ml_framework), is_state_batched=False
+        )
         missing_wires = self.num_qutrits - len(obs.wires)
         mat = obs.matrix()
-        expanded_mat = np.kron(np.eye(3 ** missing_wires), mat) if missing_wires else mat
+        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
 
         flattened_state = three_qutrit_state.reshape(self.dims)
         expected = (expanded_mat @ flattened_state).reshape([3] * (self.num_qutrits * 2))
@@ -105,7 +119,11 @@ class TestApplyObservableEinsum:
 
     def test_apply_observable_einsum_batched(self, obs, three_qutrit_batched_state, ml_framework):
         """Tests that unbatched operations are applied correctly to a batched state. TODO fix docstring"""
-        res = apply_observable_einsum(obs, qml.math.asarray(three_qutrit_batched_state, like=ml_framework), is_state_batched=True)
+        res = apply_observable_einsum(
+            obs,
+            qml.math.asarray(three_qutrit_batched_state, like=ml_framework),
+            is_state_batched=True,
+        )
         missing_wires = self.num_qutrits - len(obs.wires)
         mat = obs.matrix()
         expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
@@ -113,9 +131,7 @@ class TestApplyObservableEinsum:
 
         for i in range(BATCH_SIZE):
             flattened_state = three_qutrit_batched_state[i].reshape(self.dims)
-            expected.append(
-                (expanded_mat @ flattened_state).reshape([3] * (self.num_qutrits * 2))
-            )
+            expected.append((expanded_mat @ flattened_state).reshape([3] * (self.num_qutrits * 2)))
 
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
@@ -137,13 +153,16 @@ class TestMeasurements:
         "obs, expected",
         [
             (
-                    qml.Hamiltonian([-0.5, 2], [qml.GellMann(0, 7), qml.GellMann(0, 8)]), #TODO fix error
-
-                    0.5 * np.sin(0.123) + 2 * np.cos(0.123), #TODO: find value
+                qml.Hamiltonian(
+                    [-0.5, 2], [qml.GellMann(0, 7), qml.GellMann(0, 8)]
+                ),  # TODO fix error
+                0.5 * np.sin(0.123) + 2 * np.cos(0.123),  # TODO: find value
             ),
             (
-                    qml.THermitian(-0.5 * qml.GellMann(0, 7).matrix() + 2 * qml.GellMann(0, 8).matrix(), wires=0),
-                    0.5 * np.sin(0.123) + 2 * np.cos(0.123), #TODO: find value
+                qml.THermitian(
+                    -0.5 * qml.GellMann(0, 7).matrix() + 2 * qml.GellMann(0, 8).matrix(), wires=0
+                ),
+                0.5 * np.sin(0.123) + 2 * np.cos(0.123),  # TODO: find value
             ),
         ],
     )
@@ -155,8 +174,9 @@ class TestMeasurements:
     def test_sum_expval_tensor_contraction(self):
         """Test that `Sum` expectation values are correct when tensor contraction
         is used for computation."""
-        summands = (qml.prod(qml.GellMann(i,1), qml.GellMann(i + 1, 3)) for i in range(4))
+        summands = (qml.prod(qml.GellMann(i, 1), qml.GellMann(i + 1, 3)) for i in range(4))
         obs = qml.sum(*summands)
+
         @qml.qnode(qml.device("default.qutrit", wires=5))
         def find_state(x):
             for i in range(5):
@@ -165,19 +185,16 @@ class TestMeasurements:
 
         rots = [0.123, 0.321]
         schmidts = [0.7, 0.3]
-        state = np.zeros([3]*(2*5), dtype=complex)
+        state = np.zeros([3] * (2 * 5), dtype=complex)
 
         for i in range(2):
             vec = find_state(rots[i])
-            state += schmidts[i]*np.outer(vec, np.conj(vec)).reshape([3]*(2*5))
-
-
+            state += schmidts[i] * np.outer(vec, np.conj(vec)).reshape([3] * (2 * 5))
 
         res = measure(qml.expval(obs), state)
         expect_from_rot = lambda x: 4 * (-np.sin(x) * np.cos(x))
         expected = shmidts[0] * expect_from_rot(rots[0]) + schmidts[1] * expect_from_rot(rots[1])
         assert np.allclose(res, expected)
-
 
 
 class TestBroadcasting:
@@ -187,36 +204,34 @@ class TestBroadcasting:
         "measurement, expected",
         [
             (
-                    qml.state(),
-                    np.array(
-                        [
-                            #TODO Add states
-                        ]
-                    ),
+                qml.state(),
+                np.array(
+                    [
+                        # TODO Add states
+                    ]
+                ),
             ),
             (
-                    qml.density_matrix(wires=[0, 1]),
-                    np.array(
-                        [
-                            #TODO Add states
-                        ]
-                    ),
+                qml.density_matrix(wires=[0, 1]),
+                np.array(
+                    [
+                        # TODO Add states
+                    ]
+                ),
             ),
-            (
-                    qml.probs(wires=[0, 1]),
-                    []  # TODO Add expected
-            ),
-            (qml.expval(qml.GellMann(1)), None), #TODO Add expvals
-            (qml.var(qml.GellMann(1)), None), #TODO Add expvals
+            (qml.probs(wires=[0, 1]), []),  # TODO Add expected
+            (qml.expval(qml.GellMann(1)), None),  # TODO Add expvals
+            (qml.var(qml.GellMann(1)), None),  # TODO Add expvals
         ],
     )
     def test_state_measurement(self, measurement, expected):
         """Test that broadcasting works for regular state measurements"""
-        state = None #TODO add states
+        state = None  # TODO add states
         state = np.stack(state)
 
         res = measure(measurement, state, is_state_batched=True)
         assert np.allclose(res, expected)
+
 
 # TODO TestNaNMeasurements,
 # TODO TestSumOfTermsDifferentiability in future PR
