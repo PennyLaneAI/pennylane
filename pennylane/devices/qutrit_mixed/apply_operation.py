@@ -20,7 +20,8 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel
-from .utils import QUDIT_DIM, get_einsum_indices
+from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
+
 
 alphabet_array = np.array(list(alphabet))
 
@@ -37,11 +38,23 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     Returns:
         array[complex]: output_state
     """
-    indices = get_einsum_indices(op, state, is_state_batched)
-    # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
-    einsum_indices = (
-        f"...{indices['op1']},...{indices['state']},...{indices['op2']}->...{indices['new_state']}"
-    )
+
+    def map_indices(
+        state_indices, kraus_index, row_indices, new_row_indices, col_indices, new_col_indices
+    ):
+        """"""
+        op_1_indices = f"{kraus_index}{new_row_indices}{row_indices}"
+        op_2_indices = f"{kraus_index}{col_indices}{new_col_indices}"
+
+        new_state_indices = get_new_state_einsum_indices(
+            old_indices=col_indices + row_indices,
+            new_indices=new_col_indices + new_row_indices,
+            state_indices=state_indices,
+        )
+        # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
+        return f"...{op_1_indices},...{state_indices},...{op_2_indices}->...{new_state_indices}"
+
+    einsum_indices = get_einsum_mapping(op, state, map_indices, is_state_batched)
 
     num_ch_wires = len(op.wires)
     kraus = _get_kraus(op)

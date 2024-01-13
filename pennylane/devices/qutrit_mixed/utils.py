@@ -21,16 +21,19 @@ alphabet_array = np.array(list(alphabet))
 QUDIT_DIM = 3  # specifies qudit dimension
 
 
-def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool = False):
-    r"""Finds the indices for einsum to multiply three matrices
+def get_einsum_mapping(
+    op: qml.operation.Operator, state, map_indices, is_state_batched: bool = False
+):
+    r"""Finds the indices for einsum to apply kraus operators to a mixed state
 
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
         is_state_batched (bool): Boolean representing whether the state is batched or not
+        map_indices (function): Maps the calculated indices to an einsum indices string
 
     Returns:
-        dict: indices used by einsum to multiply 3 matrices
+        dict: indices used by einsum to apply kraus operators to a mixed state
     """
     num_ch_wires = len(op.wires)
     num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
@@ -54,20 +57,23 @@ def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool
     # index for summation over Kraus operators
     kraus_index = alphabet[rho_dim + 2 * num_ch_wires : rho_dim + 2 * num_ch_wires + 1]
 
-    # new state indices replace row and column indices with new ones
-    new_state_indices = functools.reduce(
-        lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-        zip(col_indices + row_indices, new_col_indices + new_row_indices),
-        state_indices,
+    # apply mapping function
+    return map_indices(
+        state_indices=state_indices,
+        kraus_index=kraus_index,
+        row_indices=row_indices,
+        new_row_indices=new_row_indices,
+        col_indices=col_indices,
+        new_col_indices=new_col_indices,
     )
 
-    op_1_indices = f"{kraus_index}{new_row_indices}{row_indices}"
-    op_2_indices = f"{kraus_index}{col_indices}{new_col_indices}"
-    indices = {
-        "op1": op_1_indices,
-        "state": state_indices,
-        "op2": op_2_indices,
-        "new_state": new_state_indices,
-    }
-    return indices
 
+def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
+    """
+    TODO
+    """
+    return functools.reduce(
+        lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
+        zip(old_indices, new_indices),
+        state_indices,
+    )
