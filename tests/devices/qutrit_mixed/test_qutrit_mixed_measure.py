@@ -28,32 +28,14 @@ ml_frameworks_list = [
     pytest.param("torch", marks=pytest.mark.torch),
     pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
-
-def load_data(num_qutrits, batched):
-    file_name_start = f"{num_qutrits}_qutrit"
-    if num_qutrits != "one":
-        file_name_start += "s"
-
-    file_name = f"{file_name_start}_states.npy"
-    path = os.path.join(os.getcwd(), "test_ref_files", file_name)
-    data = np.load(path, allow_pickle=True)
-    if batched:
-        return data
-    return data[0]
-
-one_qutrit_state = pytest.fixture(lambda: load_data("one", False), scope="module")
-one_qutrit_states = pytest.fixture(lambda: load_data("one", True), scope="module")
-two_qutrits_state = pytest.fixture(lambda: load_data("two", False), scope="module")
-two_qutrits_states = pytest.fixture(lambda: load_data("two", True), scope="module")
-three_qutrits_state = pytest.fixture(lambda: load_data("three", False), scope="module")
-three_qutrits_states = pytest.fixture(lambda: load_data("three", True), scope="module")
+BATCH_SIZE=2
 
 class TestCurrentlyUnsupportedCases:
     # pylint: disable=too-few-public-methods
-    def test_sample_based_observable(self, two_qutrits_state):
+    def test_sample_based_observable(self, two_qutrit_state):
         """Test sample-only measurements raise a notimplementedError."""
         with pytest.raises(NotImplementedError):
-            _ = measure(qml.sample(wires=0), two_qutrits_state)
+            _ = measure(qml.sample(wires=0), two_qutrit_state)
 
 class TestMeasurementDispatch:
     """Test that get_measurement_function dispatchs to the correct place."""
@@ -106,56 +88,37 @@ observable_list = [qml.GellMann(2, 3)] #TODO add more observables
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestApplyObservableEinsum:
     num_qutrits = 3
-    num_batched = 3
     dims = (3 ** num_qutrits, 3 ** num_qutrits)
 
-    def test_apply_observable_einsum(self, obs, three_qutrits_state, ml_framework):
-        res = apply_observable_einsum(obs, qml.math.asarray(three_qutrits_state, like=ml_framework),
+    def test_apply_observable_einsum(self, obs, three_qutrit_state, ml_framework):
+        res = apply_observable_einsum(obs, qml.math.asarray(three_qutrit_state, like=ml_framework),
                                       is_state_batched=False)
         missing_wires = self.num_qutrits - len(obs.wires)
         mat = obs.matrix()
         expanded_mat = np.kron(np.eye(3 ** missing_wires), mat) if missing_wires else mat
 
-        flattened_state = three_qutrits_state.reshape(self.dims)
+        flattened_state = three_qutrit_state.reshape(self.dims)
         expected = (expanded_mat @ flattened_state).reshape([3] * (self.num_qutrits * 2))
 
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
 
-    def test_apply_observable_einsum_batched(self, obs, three_qutrits_states, ml_framework):
+    def test_apply_observable_einsum_batched(self, obs, three_qutrit_batched_state, ml_framework):
         """Tests that unbatched operations are applied correctly to a batched state. TODO fix docstring"""
-        res = apply_observable_einsum(obs, qml.math.asarray(three_qutrits_states, like=ml_framework), is_state_batched=True)
+        res = apply_observable_einsum(obs, qml.math.asarray(three_qutrit_batched_state, like=ml_framework), is_state_batched=True)
         missing_wires = self.num_qutrits - len(obs.wires)
         mat = obs.matrix()
         expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
         expected = []
 
-        for i in range(self.num_batched):
-            flattened_state = three_qutrits_states[i].reshape(self.dims)
+        for i in range(BATCH_SIZE):
+            flattened_state = three_qutrit_batched_state[i].reshape(self.dims)
             expected.append(
                 (expanded_mat @ flattened_state).reshape([3] * (self.num_qutrits * 2))
             )
 
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
-
-    def test_apply_observable_einsum_batched_simple(self, obs, two_qutrits_states, ml_framework):
-        """Tests that unbatched operations are applied correctly to a batched state. TODO fix docstring"""
-        res = apply_observable_einsum(obs, qml.math.asarray(two_qutrits_states, like=ml_framework), is_state_batched=True)
-        missing_wires = 2 - len(obs.wires)
-        mat = obs.matrix()
-        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
-        expected = []
-        print(expanded_mat.shape)
-        for i in range(3):
-            flattened_state = two_qutrits_states[i].reshape((9,9))
-            expected.append(
-                (expanded_mat @ flattened_state).reshape([3] * (2 * 2))
-            )
-
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
-
 
 
 class TestMeasurements:
@@ -184,9 +147,9 @@ class TestMeasurements:
             ),
         ],
     )
-    def test_hamiltonian_expval(self, obs, expected, two_qutrits_state):
+    def test_hamiltonian_expval(self, obs, expected, two_qutrit_state):
         """Test that measurements of hamiltonian/ Thermitians work correctly."""
-        res = measure(qml.expval(obs), two_qutrits_state)
+        res = measure(qml.expval(obs), two_qutrit_state)
         assert np.allclose(res, expected)
 
     def test_sum_expval_tensor_contraction(self):
@@ -241,10 +204,10 @@ class TestBroadcasting:
             ),
             (
                     qml.probs(wires=[0, 1]),
-                    #TODO Add expected
+                    []  # TODO Add expected
             ),
-            (qml.expval(qml.GellMann(1)), ), #TODO Add expvals
-            (qml.var(qml.GellMann(1)), ), #TODO Add expvals
+            (qml.expval(qml.GellMann(1)), None), #TODO Add expvals
+            (qml.var(qml.GellMann(1)), None), #TODO Add expvals
         ],
     )
     def test_state_measurement(self, measurement, expected):
