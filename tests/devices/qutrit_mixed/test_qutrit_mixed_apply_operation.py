@@ -38,26 +38,6 @@ broadcasting_methods = [apply_operation_einsum, apply_operation]
 subspaces = [(0, 1), (0, 2), (1, 2)]
 
 
-def load_data(num_qutrits, batched):
-    file_name_start = f"{num_qutrits}_qutrit"
-    if num_qutrits != "one":
-        file_name_start += "s"
-
-    file_name = f"{file_name_start}_states.npy"
-    path = os.path.join(os.getcwd(), "test_ref_files", file_name)
-    data = np.load(path, allow_pickle=True)
-    if batched:
-        return data
-    return data[0]
-
-
-one_qutrit_state = pytest.fixture(lambda: load_data("one", False), scope="module")
-two_qutrits_state = pytest.fixture(lambda: load_data("two", False), scope="module")
-two_qutrits_states = pytest.fixture(lambda: load_data("two", True), scope="module")
-three_qutrits_state = pytest.fixture(lambda: load_data("three", False), scope="module")
-three_qutrits_states = pytest.fixture(lambda: load_data("three", True), scope="module")
-
-
 def test_custom_operator_with_matrix(one_qutrit_state):
     """Test that apply_operation works with any operation that defines a matrix."""
     mat = np.array(
@@ -89,9 +69,9 @@ class TestTwoQubitStateSpecialCases:
     # Currently not added as special cases, but will be in future
     # TODO add tensordot back after it has been added
 
-    def test_TAdd(self, method, wire, ml_framework, two_qutrits_state):
+    def test_TAdd(self, method, wire, ml_framework, two_qutrit_state):
         """Test the application of a TAdd gate on a two qutrit state."""
-        initial_state = math.asarray(two_qutrits_state, like=ml_framework)
+        initial_state = math.asarray(two_qutrit_state, like=ml_framework)
 
         control = wire
         target = int(not control)
@@ -112,23 +92,23 @@ class TestTwoQubitStateSpecialCases:
             new_input2 = math.take(new_input, 2, axis=control + 1)
             assert math.allclose(initial_input2_rolled, new_input2)
 
-        initial0 = math.take(two_qutrits_state, 0, axis=control)
+        initial0 = math.take(two_qutrit_state, 0, axis=control)
         new0 = math.take(new_state, 0, axis=control)
         check_TAdd_second_roll(initial0, new0)
 
-        initial1 = math.take(two_qutrits_state, 1, axis=control)
+        initial1 = math.take(two_qutrit_state, 1, axis=control)
         initial1_rolled = np.roll(initial1, 1, 0)
         new1 = math.take(new_state, 1, axis=control)
         check_TAdd_second_roll(initial1_rolled, new1)
 
-        initial2 = math.take(two_qutrits_state, 2, axis=control)
+        initial2 = math.take(two_qutrit_state, 2, axis=control)
         initial2_rolled = math.roll(initial2, -1, 0)
         new2 = math.take(new_state, 2, axis=control)
         check_TAdd_second_roll(initial2_rolled, new2)
 
-    def test_TShift(self, method, wire, ml_framework, two_qutrits_state):
+    def test_TShift(self, method, wire, ml_framework, two_qutrit_state):
         """Test the application of a TShift gate on a two qutrit state."""
-        initial_state = math.asarray(two_qutrits_state, like=ml_framework)
+        initial_state = math.asarray(two_qutrit_state, like=ml_framework)
         new_state = method(qml.TShift(wire), initial_state)
 
         def check_second_roll(initial_input, new_input):
@@ -144,21 +124,21 @@ class TestTwoQubitStateSpecialCases:
             new_input0 = math.take(new_input, 0, axis=wire + 1)
             assert math.allclose(initial_input2, new_input0)
 
-        initial0 = math.take(two_qutrits_state, 0, axis=wire)
+        initial0 = math.take(two_qutrit_state, 0, axis=wire)
         new1 = math.take(new_state, 1, axis=wire)
         check_second_roll(initial0, new1)
 
-        initial1 = math.take(two_qutrits_state, 1, axis=wire)
+        initial1 = math.take(two_qutrit_state, 1, axis=wire)
         new2 = math.take(new_state, 2, axis=wire)
         check_second_roll(initial1, new2)
 
-        initial2 = math.take(two_qutrits_state, 2, axis=wire)
+        initial2 = math.take(two_qutrit_state, 2, axis=wire)
         new0 = math.take(new_state, 0, axis=wire)
         check_second_roll(initial2, new0)
 
-    def test_TClock(self, method, wire, ml_framework, two_qutrits_state):
+    def test_TClock(self, method, wire, ml_framework, two_qutrit_state):
         """Test the application of a TClock gate on a two qutrit state."""
-        initial_state = math.asarray(two_qutrits_state, like=ml_framework)
+        initial_state = math.asarray(two_qutrit_state, like=ml_framework)
         new_state = method(qml.TClock(wire), initial_state)
         w = math.exp(2j * np.pi / 3)
         w2 = math.exp(4j * np.pi / 3)
@@ -178,15 +158,15 @@ class TestTwoQubitStateSpecialCases:
             new_input2 = math.take(new_input, 2, axis=wire + 1)
             assert math.allclose(initial_input2 / w2, new_input2)
 
-        initial0 = math.take(two_qutrits_state, 0, axis=wire)
+        initial0 = math.take(two_qutrit_state, 0, axis=wire)
         new0 = math.take(new_state, 0, axis=wire)
         check_second_roll(initial0, new0)
 
-        initial1 = math.take(two_qutrits_state, 1, axis=wire)
+        initial1 = math.take(two_qutrit_state, 1, axis=wire)
         new1 = math.take(new_state, 1, axis=wire)
         check_second_roll(w * initial1, new1)
 
-        initial2 = math.take(two_qutrits_state, 2, axis=wire)
+        initial2 = math.take(two_qutrit_state, 2, axis=wire)
         new2 = math.take(new_state, 2, axis=wire)
         check_second_roll(w2 * initial2, new2)
 
@@ -195,7 +175,7 @@ class TestTwoQubitStateSpecialCases:
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize(
-    "state,shape", [("two_qutrits_state", (9, 9)), ("two_qutrits_states", (3, 9, 9))]
+    "state,shape", [("two_qutrit_state", (9, 9)), ("two_qutrit_batched_state", (2, 9, 9))]
 )
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
@@ -207,7 +187,7 @@ class TestSnapshot:
             self.active = True
             self.snapshots = {}
 
-    @pytest.mark.usefixtures("two_qutrits_state")
+    @pytest.mark.usefixtures("two_qutrit_state")
     def test_no_debugger(
         self, ml_framework, state, shape, request
     ):  # pylint: disable=unused-argument
@@ -261,11 +241,11 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations (not channels) are applied correctly."""
 
     broadcasted_ops = [
-        qml.TRX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2, subspace=(0, 1)),
-        qml.TRY(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2, subspace=(0, 1)),
-        qml.TRZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2, subspace=(1, 2)),
+        qml.TRX(np.array([np.pi, np.pi / 2]), wires=2, subspace=(0, 1)),
+        qml.TRY(np.array([np.pi, np.pi / 2]), wires=2, subspace=(0, 1)),
+        qml.TRZ(np.array([np.pi, np.pi / 2]), wires=2, subspace=(1, 2)),
         qml.QutritUnitary(
-            np.array([unitary_group.rvs(27), unitary_group.rvs(27), unitary_group.rvs(27)]),
+            np.array([unitary_group.rvs(27), unitary_group.rvs(27)]),
             wires=[0, 1, 2],
         ),
     ]
@@ -280,14 +260,14 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         qml.QutritUnitary(unitary_group.rvs(27), wires=[0, 1, 2]),
     ]
     num_qutrits = 3
-    num_batched = 3
+    num_batched = 2
     dims = (3**num_qutrits, 3**num_qutrits)
 
     @pytest.mark.parametrize("op", broadcasted_ops)
-    def test_broadcasted_op(self, op, method, ml_framework, three_qutrits_state):
+    def test_broadcasted_op(self, op, method, ml_framework, three_qutrit_state):
         """Tests that batched operations are applied correctly to an unbatched state."""
 
-        state = three_qutrits_state
+        state = three_qutrit_state
         flattened_state = state.reshape(self.dims)
 
         res = method(op, qml.math.asarray(state, like=ml_framework))
@@ -310,9 +290,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert qml.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
-    def test_broadcasted_state(self, op, method, ml_framework, three_qutrits_states):
+    def test_broadcasted_state(self, op, method, ml_framework, three_qutrit_batched_state):
         """Tests that unbatched operations are applied correctly to a batched state."""
-        state = three_qutrits_states
+        state = three_qutrit_batched_state
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = self.num_qutrits - len(op.wires)
@@ -331,9 +311,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert qml.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", broadcasted_ops)
-    def test_broadcasted_op_broadcasted_state(self, op, method, ml_framework, three_qutrits_states):
+    def test_broadcasted_op_broadcasted_state(self, op, method, ml_framework, three_qutrit_batched_state):
         """Tests that batched operations are applied correctly to a batched state."""
-        state = three_qutrits_states
+        state = three_qutrit_batched_state
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = self.num_qutrits - len(op.wires)
@@ -356,12 +336,12 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
     def test_batch_size_set_if_missing(self, method, ml_framework, one_qutrit_state):
         """Tests that the batch_size is set on an operator if it was missing before."""
-        param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
+        param = qml.math.asarray([0.1, 0.2], like=ml_framework)
         state = one_qutrit_state
         op = qml.TRX(param, 0)
         op._batch_size = None  # pylint:disable=protected-access
         state = method(op, state)
-        assert state.shape == (3, 3, 3)
+        assert state.shape == (self.num_batched, 3, 3)
         assert op.batch_size == self.num_batched
 
 
@@ -385,9 +365,9 @@ class TestChannels:  # pylint: disable=too-few-public-methods
             ).astype(complex)
             return [K0, K1]
 
-    def test_non_broadcasted_state(self, method, ml_framework, two_qutrits_state):
+    def test_non_broadcasted_state(self, method, ml_framework, two_qutrit_state):
         """Tests that Channel operations are applied correctly to a state."""
-        state = two_qutrits_state
+        state = two_qutrit_state
         test_channel = self.CustomChannel(0.3, wires=1)
         res = method(test_channel, math.asarray(state, like=ml_framework))
         flattened_state = state.reshape(9, 9)
@@ -403,24 +383,29 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         expected = expected.reshape([3] * 4)
 
         assert qml.math.get_interface(res) == ml_framework
+        assert res.shape == expected.shape
         assert qml.math.allclose(res, expected)
 
-    def test_broadcasted_state(self, method, ml_framework, two_qutrits_states):
+    def test_broadcasted_state(self, method, ml_framework, two_qutrit_batched_state):
         """Tests that Channel operations are applied correctly to a batched state."""
-        state = two_qutrits_states
+        state = two_qutrit_batched_state
+        num_batched = two_qutrit_batched_state.shape[0]
+
         test_channel = self.CustomChannel(0.3, wires=1)
         res = method(test_channel, math.asarray(state, like=ml_framework))
 
         mat = test_channel.kraus_matrices()
         expanded_mats = [np.kron(np.eye(3), mat[i]) for i in range(len(mat))]
-        expected = [np.zeros((9, 9)).astype(complex) for _ in range(3)]
-        for i in range(3):
+        expected = [np.zeros((9, 9)).astype(complex) for _ in range(num_batched)]
+        for i in range(num_batched):
             flattened_state = state[i].reshape(9, 9)
             for j in range(len(mat)):
                 expanded_mat = expanded_mats[j]
                 adjoint_mat = np.conj(expanded_mat).T
                 expected[i] += expanded_mat @ flattened_state @ adjoint_mat
             expected[i] = expected[i].reshape([3] * 4)
+        expected = np.array(expected)
 
         assert qml.math.get_interface(res) == ml_framework
+        assert res.shape == expected.shape
         assert qml.math.allclose(res, expected)
