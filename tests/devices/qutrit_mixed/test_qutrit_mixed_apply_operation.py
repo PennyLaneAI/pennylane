@@ -62,7 +62,7 @@ def test_custom_operator_with_matrix(one_qutrit_state):
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
 @pytest.mark.parametrize("wire", (0, 1))
-class TestTwoQubitStateSpecialCases:
+class TestTwoQutritStateSpecialCases:
     """Test the special cases on a two qutrit state.  Also tests the special cases for einsum application method
     for additional testing of these generic matrix application methods."""
 
