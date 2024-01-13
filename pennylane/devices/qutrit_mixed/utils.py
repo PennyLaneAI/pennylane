@@ -19,19 +19,22 @@ from pennylane import math
 from pennylane import numpy as np
 
 alphabet_array = np.array(list(alphabet))
-qudit_dim = 3  # specifies qudit dimension
+QUDIT_DIM = 3  # specifies qudit dimension
 
 
-def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool = False):
-    r"""Finds the indices for einsum to multiply three matrices
+def get_einsum_mapping(
+    op: qml.operation.Operator, state, map_indices, is_state_batched: bool = False
+):
+    r"""Finds the indices for einsum to apply kraus operators to a mixed state
 
     Args:
-    op (Operator): Operator to apply to the quantum state
-    state (array[complex]): Input quantum state
-    is_state_batched (bool): Boolean representing whether the state is batched or not
+        op (Operator): Operator to apply to the quantum state
+        state (array[complex]): Input quantum state
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+        map_indices (function): Maps the calculated indices to an einsum indices string
 
     Returns:
-    dict: indices used by einsum to multiply three matrices
+        str: indices mapping that defines the einsum
     """
     num_ch_wires = len(op.wires)
     num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
@@ -55,21 +58,16 @@ def get_einsum_indices(op: qml.operation.Operator, state, is_state_batched: bool
     # index for summation over Kraus operators
     kraus_index = alphabet[rho_dim + 2 * num_ch_wires : rho_dim + 2 * num_ch_wires + 1]
 
-    # new state indices replace row and column indices with new ones
-    new_state_indices = functools.reduce(
-        lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-        zip(col_indices + row_indices, new_col_indices + new_row_indices),
-        state_indices,
+    # apply mapping function
+    return map_indices(
+        state_indices=state_indices,
+        kraus_index=kraus_index,
+        row_indices=row_indices,
+        new_row_indices=new_row_indices,
+        col_indices=col_indices,
+        new_col_indices=new_col_indices,
     )
 
-    op_1_indices = f"{kraus_index}{new_row_indices}{row_indices}"
-    op_2_indices = f"{kraus_index}{col_indices}{new_col_indices}"
-    return {
-        "op1": op_1_indices,
-        "state": state_indices,
-        "op2": op_2_indices,
-        "new_state": new_state_indices,
-    }
 
 def get_einsum_indices_two(op: qml.operation.Operator, state, is_state_batched: bool = False):
     r"""Finds the indices for einsum to multiply two matrices
@@ -137,8 +135,8 @@ def resquare_state(state, num_wires):
     Returns:
         A squared state, with an extra batch dimension if necessary
     """
-    dim = qudit_dim**num_wires
-    batch_size = math.get_batch_size(state, ((qudit_dim,) * (num_wires * 2)), dim**2)
+    dim = QUDIT_DIM**num_wires
+    batch_size = math.get_batch_size(state, ((QUDIT_DIM,) * (num_wires * 2)), dim**2)
     shape = (batch_size, dim, dim) if batch_size is not None else (dim, dim)
     return math.reshape(state, shape)
 
@@ -149,3 +147,21 @@ def get_num_wires(state, is_state_batched: bool = False):
     """
     len_row_plus_col = len(math.shape(state)) - is_state_batched
     return int(len_row_plus_col / 2)
+
+
+def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
+    """Retrieves the einsum indices string for the new state
+
+    Args:
+        old_indices (str): indices that are summed
+        new_indices (str): indices that must be replaced with sums
+        state_indices (str): indices of the original state
+
+    Returns:
+        str: the einsum indices of the new state
+    """
+    return functools.reduce(
+        lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
+        zip(old_indices, new_indices),
+        state_indices,
+    )

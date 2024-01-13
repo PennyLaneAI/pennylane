@@ -564,7 +564,6 @@ class TestRegularization:
         assert np.allclose(output, expected_output, atol=1e-5)
 
     @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
-    @pytest.mark.xfail(raises=RuntimeError, reason="solver did not converge")
     def test_closest_psd_matrix_small_perturb(self):
         """Test obtaining the closest positive semi-definite matrix using a
         semi-definite program with a small perturbation input.

@@ -20,7 +20,8 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel
-from .utils import qudit_dim, get_einsum_indices
+from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
+
 
 alphabet_array = np.array(list(alphabet))
 
@@ -37,23 +38,40 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     Returns:
         array[complex]: output_state
     """
-    indices = get_einsum_indices(op, state, is_state_batched)
-    # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
-    einsum_indices = (
-        f"...{indices['op1']},...{indices['state']},...{indices['op2']}->...{indices['new_state']}"
-    )
+
+    def map_indices(**kwargs):
+        """map indices to wires
+        Args:
+            **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
+
+        Returns:
+            String of einsum indices to complete einsum calculations
+
+        """
+        op_1_indices = f"{kwargs['kraus_index']}{kwargs['new_row_indices']}{kwargs['row_indices']}"
+        op_2_indices = f"{kwargs['kraus_index']}{kwargs['col_indices']}{kwargs['new_col_indices']}"
+
+        new_state_indices = get_new_state_einsum_indices(
+            old_indices=kwargs["col_indices"] + kwargs["row_indices"],
+            new_indices=kwargs["new_col_indices"] + kwargs["new_row_indices"],
+            state_indices=kwargs["state_indices"],
+        )
+        # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
+        return f"...{op_1_indices},...{kwargs['state_indices']},...{op_2_indices}->...{new_state_indices}"
+
+    einsum_indices = get_einsum_mapping(op, state, map_indices, is_state_batched)
 
     num_ch_wires = len(op.wires)
     kraus = _get_kraus(op)
 
     # Shape kraus operators
-    kraus_shape = [len(kraus)] + [qudit_dim] * num_ch_wires * 2
+    kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_ch_wires * 2
     # Compute K^T, will be list of lists if broadcasting
     kraus_transpose = []
     if not isinstance(op, Channel):
         # TODO Channels broadcasting doesn't seem to be implemented for qubits, should they be for qutrit?
         mat = op.matrix()
-        dim = qudit_dim**num_ch_wires
+        dim = QUDIT_DIM**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
         if batch_size is not None:
             # Add broadcasting dimension to shape
@@ -101,7 +119,7 @@ def apply_operation(
         This function assumes that the wires of the operator correspond to indices
         of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
 
-        The shape of state should be ``[qudit_dim]*(num_wires * 2)``, where ``qudit_dim`` is
+        The shape of state should be ``[QUDIT_DIM]*(num_wires * 2)``, where ``QUDIT_DIM`` is
         the dimension of the system.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels
@@ -148,14 +166,14 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
     if debugger and debugger.active:
         measurement = op.hyperparameters["measurement"]
         if measurement:
-            snapshot = qml.devices.qubit.measure(measurement, state)
+            # TODO replace with: measure once added
+            raise NotImplementedError  # TODO
+        if is_state_batched:
+            dim = int(np.sqrt(math.size(state[0])))
+            flat_shape = [math.shape(state)[0], dim, dim]
         else:
-            if is_state_batched:
-                dim = int(np.sqrt(math.size(state[0])))
-                flat_shape = [math.shape(state)[0], dim, dim]
-            else:
-                dim = int(np.sqrt(math.size(state)))
-                flat_shape = [dim, dim]
+            dim = int(np.sqrt(math.size(state)))
+            flat_shape = [dim, dim]
 
             snapshot = math.reshape(state, flat_shape)
         if op.tag:
@@ -176,8 +194,7 @@ def _get_kraus(operation):  # pylint: disable=no-self-use
 
     Returns:
         list[array[complex]]: Returns a list of 2D matrices representing the Kraus operators. If
-        the operation is unitary, returns a single Kraus operator. In the case of a diagonal
-        unitary, returns a 1D array representing the matrix diagonal.
+        the operation is unitary, returns a single Kraus operator.
     """
     if isinstance(operation, Channel):
         return operation.kraus_matrices()
