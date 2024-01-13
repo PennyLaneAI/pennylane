@@ -57,7 +57,7 @@ def test_custom_operator_with_matrix(one_qutrit_state):
     assert qml.math.allclose(new_state, mat @ one_qutrit_state @ np.conj(mat).T)
 
 
-class TestTwoQubitStateSpecialCases:
+class TestTwoQutritStateSpecialCases:
     """Test the special cases on a two qutrit state.  Also tests the special cases for einsum application method
     for additional testing of these generic matrix application methods."""
 
