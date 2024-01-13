@@ -39,20 +39,25 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
         array[complex]: output_state
     """
 
-    def map_indices(
-        state_indices, kraus_index, row_indices, new_row_indices, col_indices, new_col_indices
-    ):
-        """"""
-        op_1_indices = f"{kraus_index}{new_row_indices}{row_indices}"
-        op_2_indices = f"{kraus_index}{col_indices}{new_col_indices}"
+    def map_indices(**kwargs):
+        """ map indices to wires
+        Args:
+            **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
+
+        Returns:
+            String of einsum indices to complete einsum calculations
+
+        """
+        op_1_indices = f"{kwargs['kraus_index']}{kwargs['new_row_indices']}{kwargs['row_indices']}"
+        op_2_indices = f"{kwargs['kraus_index']}{kwargs['col_indices']}{kwargs['new_col_indices']}"
 
         new_state_indices = get_new_state_einsum_indices(
-            old_indices=col_indices + row_indices,
-            new_indices=new_col_indices + new_row_indices,
-            state_indices=state_indices,
+            old_indices=kwargs['col_indices'] + kwargs['row_indices'],
+            new_indices=kwargs['new_col_indices'] + kwargs['new_row_indices'],
+            state_indices=kwargs['state_indices'],
         )
         # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
-        return f"...{op_1_indices},...{state_indices},...{op_2_indices}->...{new_state_indices}"
+        return f"...{op_1_indices},...{kwargs['state_indices']},...{op_2_indices}->...{new_state_indices}"
 
     einsum_indices = get_einsum_mapping(op, state, map_indices, is_state_batched)
 
@@ -163,13 +168,12 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
         if measurement:
             # TODO replace with: measure once added
             raise NotImplementedError  # TODO
+        if is_state_batched:
+            dim = int(np.sqrt(math.size(state[0])))
+            flat_shape = [math.shape(state)[0], dim, dim]
         else:
-            if is_state_batched:
-                dim = int(np.sqrt(math.size(state[0])))
-                flat_shape = [math.shape(state)[0], dim, dim]
-            else:
-                dim = int(np.sqrt(math.size(state)))
-                flat_shape = [dim, dim]
+            dim = int(np.sqrt(math.size(state)))
+            flat_shape = [dim, dim]
 
             snapshot = math.reshape(state, flat_shape)
         if op.tag:
