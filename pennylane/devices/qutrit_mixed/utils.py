@@ -33,7 +33,7 @@ def get_einsum_mapping(
         map_indices (function): Maps the calculated indices to an einsum indices string
 
     Returns:
-        dict: indices used by einsum to apply kraus operators to a mixed state
+        str: indices mapping that defines the einsum
     """
     num_ch_wires = len(op.wires)
     num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
@@ -69,8 +69,15 @@ def get_einsum_mapping(
 
 
 def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
-    """
-    TODO
+    """Retrieves the einsum indices string for the new state
+
+    Args:
+        old_indices (str): indices that are summed
+        new_indices (str): indices that must be replaced with sums
+        state_indices (str): indices of the original state
+
+    Returns:
+        str: the einsum indices of the new state
     """
     return functools.reduce(
         lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
