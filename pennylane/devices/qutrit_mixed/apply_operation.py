@@ -40,7 +40,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     """
 
     def map_indices(**kwargs):
-        """ map indices to wires
+        """map indices to wires
         Args:
             **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
 
@@ -52,9 +52,9 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
         op_2_indices = f"{kwargs['kraus_index']}{kwargs['col_indices']}{kwargs['new_col_indices']}"
 
         new_state_indices = get_new_state_einsum_indices(
-            old_indices=kwargs['col_indices'] + kwargs['row_indices'],
-            new_indices=kwargs['new_col_indices'] + kwargs['new_row_indices'],
-            state_indices=kwargs['state_indices'],
+            old_indices=kwargs["col_indices"] + kwargs["row_indices"],
+            new_indices=kwargs["new_col_indices"] + kwargs["new_row_indices"],
+            state_indices=kwargs["state_indices"],
         )
         # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
         return f"...{op_1_indices},...{kwargs['state_indices']},...{op_2_indices}->...{new_state_indices}"
