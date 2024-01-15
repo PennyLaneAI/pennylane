@@ -415,18 +415,16 @@ class TestCustomWireOrdering:
         op = 1.5 * op1 + 0.5 * op2
         assert qml.math.allclose(qml.matrix(ps, wire_order), qml.matrix(op, wire_order))
 
-
 pw1 = PauliWord({0: "X", 1: "Z"})
 pw2 = PauliWord({0: "Y", 1: "Z"})
 pw3 = PauliWord({"a": "Y", "b": "Z"})
 op_pairs = (
     (pw1, qml.prod(qml.PauliX(0), qml.PauliZ(1))),
     (pw2, qml.prod(qml.PauliY(0), qml.PauliZ(1))),
-    #(pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))), # needs fix https://github.com/PennyLaneAI/pennylane/pull/5041
+    # (pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))), # uncomment after fix 5041
 )
-
-
 class TestPauliWordPauliSentence:
+
     @pytest.mark.parametrize("pw, op", op_pairs)
     def test_PauliWord_matrix(self, pw, op):
         """Test that a PauliWord is correctly transformed using qml.matrix"""
@@ -437,6 +435,17 @@ class TestPauliWordPauliSentence:
     @pytest.mark.parametrize("pw, op", op_pairs)
     def test_PauliSentence_matrix(self, pw, op):
         """Test that a PauliWord is correctly transformed using qml.matrix"""
+        res = qml.matrix(PauliSentence({pw: 0.5}))
+        true_res = qml.matrix(qml.s_prod(0.5, op))
+        assert qml.math.allclose(res, true_res)
+    
+    @pytest.mark.xfail
+    def test_PauliSentence_matrix_xfail(self, pw, op):
+        """Test that a PauliWord is correctly transformed using qml.matrix"""
+        # needs fix https://github.com/PennyLaneAI/pennylane/pull/5041
+        # once fixed, uncomment the last line in op_pairs above, i.e. add
+        # (pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))),
+        pw, op = pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))
         res = qml.matrix(PauliSentence({pw: 0.5}))
         true_res = qml.matrix(qml.s_prod(0.5, op))
         assert qml.math.allclose(res, true_res)
