@@ -1772,6 +1772,22 @@ class TestSumComparisons:
         op2 = qml.sum(*base_list2)
         assert qml.equal(op1, op2) == res
 
+    def test_sum_equal_order_invarient(self):
+        """Test that the order of operations doesn't affect equality"""
+        H1 = qml.prod(qml.PauliX(0), qml.PauliX(1))
+        H2 = qml.s_prod(1.0, qml.sum(qml.PauliY(0), qml.PauliY(1)))
+
+        true_res = qml.sum(
+            qml.s_prod(2j, qml.prod(qml.PauliZ(0), qml.PauliX(1))),
+            qml.s_prod(2j, qml.prod(qml.PauliX(0), qml.PauliZ(1))),
+        )
+        true_res = true_res.simplify()
+
+        res = qml.prod(H1, H2) - qml.prod(H2, H1)
+        res = res.simplify()
+
+        assert true_res == res
+
 
 def f1(p, t):
     return np.polyval(p, t)
