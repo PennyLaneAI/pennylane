@@ -33,6 +33,37 @@ def commutator(op1, op2, pauli=False):
 
     **Examples**
 
+    You can compute commutators between operators in PennyLane.
+
+    >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
+    2j*(PauliZ(wires=[0]))
+
+    >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
+    >>> op2 = qml.PauliY(0) @ qml.PauliY(1)
+    >>> qml.commutator(op1, op2)
+    0*(Identity(wires=[0, 1]))
+
+    We can return a :class:`~PauliSentence` instance by setting `pauli=True`.
+
+    >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
+    >>> op2 = qml.PauliY(0) + qml.PauliY(1)
+    >>> qml.commutator(op1, op2, pauli=True)
+    2j * X(1) @ Z(0)
+    + 2j * Z(1) @ X(0)
+
+    We can also input :class:`~PauliWord` and :class:`~PauliSentence` instances.
+    >>> op1 = PauliWord({0:"X", 1:"X"})
+    >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+    >>> qml.commutator(op1, op2, pauli=True)
+    2j * Z(0) @ X(1)
+    + 2j * X(0) @ Z(1)
+
+    Note that when by default `pauli=True` and even though Pauli operators are used
+    as inputs, `qml.commutator` returns Operators when not explicitly requesting Pauli operators.
+    
+    >>> qml.commutator(op1, op2, pauli=True)
+    (2j*(PauliX(wires=[1]) @ PauliZ(wires=[0]))) + (2j*(PauliZ(wires=[1]) @ PauliX(wires=[0])))
+
     """
     if pauli:
         if not isinstance(op1, PauliSentence):
