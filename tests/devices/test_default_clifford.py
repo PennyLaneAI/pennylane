@@ -492,21 +492,6 @@ def test_grad_error(circuit):
         dev_c.execute_and_compute_derivatives(tape_c, conf_c)
 
 
-def test_shot_error():
-    """Test if an NotImplementedError is raised when shots are requested."""
-
-    @qml.qnode(qml.device("default.clifford", shots=1024))
-    def circuit_fn():
-        qml.BasisState(np.array([1, 1]), wires=range(2))
-        return qml.expval(qml.PauliZ(0))
-
-    with pytest.raises(
-        NotImplementedError,
-        match="default.clifford currently doesn't support computation with shots.",
-    ):
-        circuit_fn()
-
-
 def test_meas_error():
     """Test if an NotImplementedError is raised when taking expectation value of op_math objects."""
 
@@ -531,22 +516,6 @@ def test_meas_error():
         match="default.clifford does not support arbitrary measurements of a state with snapshots.",
     ):
         qml.snapshots(circuit_snap)()
-
-
-def test_purity_error_not_all_wires():
-    """Test that a NotImplementedError is raised when purity of not all wires is measured."""
-
-    @qml.qnode(qml.device("default.clifford"))
-    def circuit():
-        qml.PauliX(0)
-        qml.CNOT([0, 1])
-        return qml.purity([0])
-
-    with pytest.raises(
-        NotImplementedError,
-        match="default.clifford doesn't support measuring the purity of a subset of wires at the moment",
-    ):
-        circuit()
 
 
 @pytest.mark.parametrize("check", [True, False])

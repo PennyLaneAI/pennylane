@@ -490,7 +490,13 @@ class DefaultClifford(Device):
     @staticmethod
     def pl_to_stim(op):
         """Convert PennyLane operation to a Stim operation"""
-        return _GATE_OPERATIONS[op.name], op.wires
+        try:
+            stim_op = _GATE_OPERATIONS[op.name]
+        except KeyError as e:
+            raise qml.DeviceError(
+                f"Operator {op} not supported on default.clifford and does not provide a decomposition."
+            ) from e
+        return stim_op, op.wires
 
     @staticmethod
     def _from_hamiltonian_or_tensor(op):
