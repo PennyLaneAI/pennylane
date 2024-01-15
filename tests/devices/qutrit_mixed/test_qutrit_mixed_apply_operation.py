@@ -13,17 +13,14 @@
 # limitations under the License.
 """Unit tests for create_initial_state in devices/qutrit_mixed/apply_operation."""
 
-import os
 import pytest
 import numpy as np
 from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Channel
-from pennylane.devices.qutrit_mixed.apply_operation import (
-    apply_operation_einsum,
-    apply_operation,
-)
+from pennylane.devices.qutrit_mixed import apply_operation
+
 
 ml_frameworks_list = [
     "numpy",
@@ -57,14 +54,7 @@ def test_custom_operator_with_matrix(one_qutrit_state):
     assert qml.math.allclose(new_state, mat @ one_qutrit_state @ np.conj(mat).T)
 
 
-class TestTwoQutritStateSpecialCases:
-    """Test the special cases on a two qutrit state.  Also tests the special cases for einsum application method
-    for additional testing of these generic matrix application methods."""
-
-    # pylint: disable=too-few-public-methods
-    # Currently not added as special cases, but will be in future
-    # TODO add special cases as they are added
-    pass
+# TODO add tests for special cases as they are added
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)

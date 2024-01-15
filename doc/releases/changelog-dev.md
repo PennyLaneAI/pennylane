@@ -87,7 +87,7 @@
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
-Gabriel Bottrill
+Gabriel Bottrill,
 Pablo Antonio Moreno Casares,
 Christina Lee,
 Isaac De Vlugt,

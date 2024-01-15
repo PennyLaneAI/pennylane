@@ -175,7 +175,7 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
             dim = int(np.sqrt(math.size(state)))
             flat_shape = [dim, dim]
 
-            snapshot = math.reshape(state, flat_shape)
+        snapshot = math.reshape(state, flat_shape)
         if op.tag:
             debugger.snapshots[op.tag] = snapshot
         else:
