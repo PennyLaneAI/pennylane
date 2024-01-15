@@ -42,7 +42,7 @@ from .preprocess import (
     validate_measurements,
     validate_multiprocessing_workers,
     validate_device_wires,
-    warn_about_trainable_observables,
+    validate_adjoint_trainable_params,
 )
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
@@ -310,7 +310,7 @@ class DefaultClifford(Device):
             transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         # Validate derivatives
-        transform_program.add_transform(warn_about_trainable_observables)
+        transform_program.add_transform(validate_adjoint_trainable_params)
         if config.gradient_method is not None:
             config.gradient_method = None
 
