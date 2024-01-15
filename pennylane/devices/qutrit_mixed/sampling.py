@@ -25,14 +25,14 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     ShadowExpvalMP,
     CountsMP,
-    SampleMP
+    SampleMP,
 )
 from .utils import QUDIT_DIM
 
 
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]], #todo FIX
+    mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],  # todo FIX
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -59,29 +59,16 @@ def measure_with_samples(
     Returns:
         List[TensorLike[Any]]: Sample measurement results
     """
-    groups, indices = _group_measurements(mps)
-
-    all_res = []
-    for group in groups:
-        if isinstance(group[0], SampleMP):
-            all_res.extend(
-                _measure_with_samples_diagonalizing_gates(
-                    group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=prng_key
-                )
-            )
-        else:
+    for mp in mps:
+        if not isinstance(mp, SampleMP):
             raise NotImplementedError
-
-    flat_indices = [_i for i in indices for _i in i]
-
-    # reorder results
-    sorted_res = tuple(
-        res for _, res in sorted(list(enumerate(all_res)), key=lambda r: flat_indices[r[0]])
+    res = _measure_with_samples(
+        mps, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=prng_key
     )
 
     # put the shot vector axis before the measurement axis
     if shots.has_partitioned_shots:
-        sorted_res = tuple(zip(*sorted_res))
+        sorted_res = tuple(zip(*res))
 
     return sorted_res
 
@@ -152,7 +139,7 @@ def _measure_with_samples(
                     raise e
                 samples = qml.math.full((s, len(wires)), 0)
 
-            processed_samples.append(samples) #_process_single_shot(samples))
+            processed_samples.append(samples)  # _process_single_shot(samples))
 
         return tuple(zip(*processed_samples))
 
@@ -170,7 +157,7 @@ def _measure_with_samples(
             raise e
         samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
-    return samples #_process_single_shot(samples)
+    return samples  # _process_single_shot(samples)
 
 
 def sample_state(
@@ -222,7 +209,9 @@ def sample_state(
     else:
         samples = rng.choice(basis_states, shots, p=probs)
 
-    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]  # TODO: make this work for powers of three
+    powers_of_two = (
+        1 << np.arange(num_wires, dtype=np.int64)[::-1]
+    )  # TODO: make this work for powers of three
     states_sampled_base_ten = samples[..., None] & powers_of_two
     return (states_sampled_base_ten > 0).astype(np.int64)
 
@@ -264,7 +253,7 @@ def _sample_state_jax(
 
     flat_state = flatten_state(state, total_indices)  # TODO:fix
     with qml.queuing.QueuingManager.stop_recording():
-        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)   # TODO:fix
+        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)  # TODO:fix
 
     if is_state_batched:
         # Produce separate keys for each of the probabilities along the broadcasted axis
@@ -281,6 +270,8 @@ def _sample_state_jax(
     else:
         samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
-    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]  # TODO: make this work for powers of three
+    powers_of_two = (
+        1 << np.arange(num_wires, dtype=np.int64)[::-1]
+    )  # TODO: make this work for powers of three
     states_sampled_base_ten = samples[..., None] & powers_of_two
     return (states_sampled_base_ten > 0).astype(np.int64)
