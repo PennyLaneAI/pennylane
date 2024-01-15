@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
+  is now strictly faster for jax.
+  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
+
 <h3>Improvements 🛠</h3>
 
 * Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
@@ -118,4 +122,5 @@ Christina Lee,
 Isaac De Vlugt,
 Korbinian Kottmann,
 Lee J. O'Riordan,
+Mudit Pandey,
 Matthew Silverman.
