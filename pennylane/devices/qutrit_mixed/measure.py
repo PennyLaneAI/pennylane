@@ -14,7 +14,7 @@
 """
 Code relevant for performing measurements on a qutrit mixed state.
 """
-import itertools
+
 from typing import Callable
 from string import ascii_letters as alphabet
 from pennylane import math
@@ -53,7 +53,9 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
         TensorLike: the result of obs@state
     """
 
-    def map_indices(state_indices, row_indices, new_row_indices, **kwargs):
+    def map_indices(
+        state_indices, row_indices, new_row_indices, **kwargs
+    ):  # pylint: disable=unused-argument
         """map indices to wires
         Args:
             state_indices (str): Indices that are summed
@@ -122,8 +124,8 @@ def reduce_density_matrix(
     num_state_wires = get_num_wires(state, is_state_batched)
     wires_to_trace = [x + is_state_batched for x in range(num_state_wires) if x not in wires]
 
-    for i in range(len(wires_to_trace)):
-        axis1 = wires_to_trace[i] - i
+    for i, wire_to_trace in enumerate(wires_to_trace):
+        axis1 = wire_to_trace - i
         axis2 = axis1 + num_state_wires - i
 
         print(axis1, axis2)
@@ -159,7 +161,7 @@ def calculate_probability(
             expanded_shape.insert(0, probs.shape[0])
             new_shape.insert(0, probs.shape[0])
         wires_to_trace = tuple(
-            [x + is_state_batched for x in range(num_state_wires) if x not in wires]
+            x + is_state_batched for x in range(num_state_wires) if x not in wires
         )
 
         expanded_probs = probs.reshape(expanded_shape)
@@ -169,8 +171,10 @@ def calculate_probability(
     return probs
 
 
+# pylint: disable=too-many-return-statements
 def get_measurement_function(
-    measurementprocess: MeasurementProcess, state: TensorLike
+    measurementprocess: MeasurementProcess,
+    state: TensorLike,  # pylint: disable=unused-argument #TODO decide what to do
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
