@@ -144,12 +144,12 @@ class PauliWord(dict):
     >>> w
     X(a) @ Y(2) @ Z(3)
 
-    When multiplying Pauli words together we obtain the resulting word and the scalar coefficient.
+    When multiplying Pauli words together, we obtain a :class:`~PauliSentence` with the resulting ``PauliWord`` as a key and the corresponding coefficient as its value.
 
     >>> w1 = PauliWord({0:"X", 1:"Y"})
     >>> w2 = PauliWord({1:"X", 2:"Z"})
     >>> w1 @ w2
-    (Z(1) @ Z(2) @ X(0), -1j)
+    -1j * Z(1) @ Z(2) @ X(0)
 
     We can multiply scalars to Pauli words or add/subtract them, resulting in a :class:`~PauliSentence` instance.
 
