@@ -84,7 +84,7 @@ def get_probs(state, num_wires, is_state_batched: bool = False):
     rho = resquare_state(state, num_wires)
 
     # probs are diagonal elements
-    probs = math.diagonal(rho, axis1=int(is_state_batched), axis2=(1 + is_state_batched))
+    probs = math.diagonal(rho, axis1=int(is_state_batched), axis2=int(1 + is_state_batched))
 
     # take the real part so probabilities are not shown as complex numbers
     probs = math.real(probs)
