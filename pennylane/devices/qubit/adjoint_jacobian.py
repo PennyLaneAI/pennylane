@@ -340,7 +340,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
             * For a state measurement, cotangents must have shape ``(batch_size, 2 ** n_wires)``.
             * For ``n`` expectation values, the cotangents must have shape ``(n, batch_size)``.
-                If ``n = 1``, then the shape must be ``(batch_size,)``.
+              If ``n = 1``, then the shape must be ``(batch_size,)``.
 
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape
