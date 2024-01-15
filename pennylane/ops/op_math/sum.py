@@ -26,6 +26,7 @@ from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
+from .sprod import SProd
 
 
 def sum(*summands, id=None, lazy=True):
@@ -159,6 +160,10 @@ class Sum(CompositeOp):
     _op_symbol = "+"
     _math_op = math.sum
 
+    def __init__(self, *operands: Operator, id=None):
+        self._grouping_indices = None
+        super().__init__(*operands, id=id)
+
     @property
     def hash(self):
         # Since addition is always commutative, we do not need to sort
@@ -205,6 +210,30 @@ class Sum(CompositeOp):
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+
+    @property
+    def coeffs(self):
+        """List of coefficients"""
+        coeffs = []
+        for op in self:
+            with qml.QueuingManager.stop_recording():
+                s_op = op.simplify()
+
+            coeffs.append(s_op.scalar if isinstance(s_op, SProd) else 1.0)
+
+        return coeffs
+
+    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+        """docs"""
+        with qml.QueuingManager.stop_recording():
+            obs_groups, coeff_groups = qml.pauli.group_observables(
+                self.operands, coefficients=self.coeffs, grouping_type=grouping_type, method=method
+            )
+
+        ### compute grouping indices
+        self._grouping_indices = None
+
+        return obs_groups, coeff_groups
 
     def sparse_matrix(self, wire_order=None):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
