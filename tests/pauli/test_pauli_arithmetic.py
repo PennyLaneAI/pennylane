@@ -1175,6 +1175,22 @@ class TestPauliCommutators:
         assert res2m == -1 * true_res
         assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
 
+    data_consistency_paulis = [
+        PauliWord({0: "X", 1: "X"}),
+        PauliWord({0: "Y"}) + PauliWord({1: "Y"}),
+        1.5 * PauliWord({0: "Y"}) + 0.5 * PauliWord({1: "Y"}),
+    ]
+
+    @pytest.mark.parametrize("op1", data_consistency_paulis)
+    @pytest.mark.parametrize("op2", data_consistency_paulis)
+    def test_consistency_pw_ps(self, op1, op2):
+        """Test consistent behavior when inputting PauliWord and PauliSentence"""
+        op1 = PauliWord({0: "X", 1: "X"})
+        op2 = PauliWord({0: "Y"}) + PauliWord({1: "Y"})
+        res1 = op1 | op2
+        res2 = qml.commutator(op1, op2, pauli=True)
+        assert res1 == res2
+
 
 @pytest.mark.all_interfaces
 class TestPauliArithmeticWithADInterfaces:
