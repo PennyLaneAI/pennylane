@@ -455,16 +455,17 @@ class TestMiscMethods:
         """Test that the generator is a tensor product of projectors and the base's generator."""
 
         base = qml.RZ(-0.123, wires="a")
-        op = Controlled(base, ("b", "c"))
+        control_values = [0, 1]
+        op = Controlled(base, ("b", "c"), control_values=control_values)
 
         base_gen, base_gen_coeff = qml.generator(base, format="prefactor")
         gen_tensor, gen_coeff = qml.generator(op, format="prefactor")
 
         assert base_gen_coeff == gen_coeff
 
-        for wire, ob in zip(op.control_wires, gen_tensor.operands):
+        for wire, ob, val in zip(op.control_wires, gen_tensor.operands, control_values):
             assert isinstance(ob, qml.Projector)
-            assert ob.data == ([1],)
+            assert ob.data == ([val],)
             assert ob.wires == qml.wires.Wires(wire)
 
         assert gen_tensor.operands[-1].__class__ is base_gen.__class__
