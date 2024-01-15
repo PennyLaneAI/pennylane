@@ -61,6 +61,8 @@
 
 <h3>Deprecations 👋</h3>
 
+* `Operator.validate_subspace()` has been moved to the `pennylane.ops.qutrit` module and will be removed from the Operator class in an upcoming release.
+
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
 
@@ -111,9 +113,10 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Astral Cai,
-Pablo Antonio Moreno Casares,
-Christina Lee,
 Isaac De Vlugt,
 Korbinian Kottmann,
+Christina Lee,
+Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
+Alex Preciado,
 Matthew Silverman.

@@ -1142,19 +1142,18 @@ class Operator(abc.ABC):
 
         Args:
             subspace (tuple[int]): Subspace to check for correctness
+
+        .. warning::
+
+            ``Operator.validate_subspace()`` has been moved to the ``pennylane.ops.qutrit`` module and will be removed from the Operator class in an upcoming release
         """
-        if not hasattr(subspace, "__iter__") or len(subspace) != 2:
-            raise ValueError(
-                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
-            )
 
-        if not all(s in {0, 1, 2} for s in subspace):
-            raise ValueError("Elements of the subspace must be 0, 1, or 2.")
+        warnings.warn(
+            "Operator.validate_subspace() has been moved to the pennylane.ops.qutrit module and will be removed from the Operator class in an upcoming release",
+            qml.PennyLaneDeprecationWarning,
+        )
 
-        if subspace[0] == subspace[1]:
-            raise ValueError("Elements of subspace list must be unique.")
-
-        return tuple(sorted(subspace))
+        return qml.ops.qutrit.validate_subspace(subspace)
 
     @property
     def num_params(self):
