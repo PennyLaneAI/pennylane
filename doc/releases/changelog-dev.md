@@ -11,7 +11,7 @@
   2j*(PauliZ(wires=[0]))
   ```
 
-  We can return a :class:`~PauliSentence` instance by setting `pauli=True`.
+  We can return a `PauliSentence` instance by setting `pauli=True`.
 
   ```pycon
   >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
@@ -21,7 +21,7 @@
   + 2j * Z(1) @ X(0)
   ```
 
-  We can also input :class:`~PauliWord` and :class:`~PauliSentence` instances.
+  We can also input `PauliWord` and `PauliSentence` instances.
 
   ```pycon
   >>> op1 = PauliWord({0:"X", 1:"X"})
