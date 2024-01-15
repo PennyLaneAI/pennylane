@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+  dummy values that are no longer needed.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
 
   - Contents moved in v0.35
@@ -16,12 +22,6 @@ Pending deprecations
 
 * ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are deprecated. Instead,
   you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition`` .
-
-  - Deprecated in v0.34
-  - Will be removed in v0.35
-
-* ``Observable.return_type`` is deprecated. Instead, you should inspect the type
-  of the surrounding measurement process.
 
   - Deprecated in v0.34
   - Will be removed in v0.35
@@ -112,6 +112,19 @@ Completed deprecation cycles
     transformed_circuit = qml.metric_tensor(circuit, approx="block-diag")
 
   - Deprecated in v0.33
+  - Removed in v0.35
+
+* ``Observable.return_type`` has been removed. Instead, you should inspect the type
+  of the surrounding measurement process.
+
+  - Deprecated in v0.34
+  - Removed in v0.35
+
+* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+
+  - Deprecated in v0.34
   - Removed in v0.35
 
 * Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
