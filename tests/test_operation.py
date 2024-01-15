@@ -2644,7 +2644,8 @@ class TestNewOpMath:
 @pytest.mark.parametrize(
     "op",
     [
-        pytest.param(qml.CZ(wires=[1, 0]), marks=pytest.mark.xfail),
+        # pytest.param(qml.CZ(wires=[1, 0]), marks=pytest.mark.xfail),
+        qml.CZ(wires=[1, 0]),
         qml.CCZ(wires=[2, 0, 1]),
         qml.SWAP(wires=[1, 0]),
         qml.IsingXX(1.23, wires=[1, 0]),
