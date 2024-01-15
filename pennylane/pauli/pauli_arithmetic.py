@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
+# pylint: disable=protected-access
 import warnings
 from copy import copy
 from functools import reduce, lru_cache
