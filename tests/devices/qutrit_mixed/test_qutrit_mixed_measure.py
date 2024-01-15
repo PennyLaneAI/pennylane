@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math
 
-# from pennylane.devices.qutrit_mixed. import measure
+# from pennylane.devices.qutrit_mixed. import measure # TODO add when added to __init__
 from pennylane.devices.qutrit_mixed.measure import (
     measure,
     apply_observable_einsum,
@@ -29,7 +29,6 @@ from pennylane.devices.qutrit_mixed.measure import (
     reduce_density_matrix,
 )
 
-state_diagonalizing_gates = None  # TODO
 
 ml_frameworks_list = [
     "numpy",
@@ -94,10 +93,13 @@ class TestMeasurementDispatch:
 @pytest.mark.parametrize("obs", [qml.GellMann(2, 3)])  # TODO add more observables
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestApplyObservableEinsum:
+    """Tests that observables are applied correctly for trace method."""
+
     num_qutrits = 3
     dims = (3**num_qutrits, 3**num_qutrits)
 
     def test_apply_observable_einsum(self, obs, three_qutrit_state, ml_framework):
+        """Tests that unbatched observables are applied correctly to a unbatched state."""
         res = apply_observable_einsum(
             obs, qml.math.asarray(three_qutrit_state, like=ml_framework), is_state_batched=False
         )
@@ -112,7 +114,7 @@ class TestApplyObservableEinsum:
         assert qml.math.allclose(res, expected)
 
     def test_apply_observable_einsum_batched(self, obs, three_qutrit_batched_state, ml_framework):
-        """Tests that unbatched operations are applied correctly to a batched state. TODO fix docstring"""
+        """Tests that unbatched observables are applied correctly to a batched state."""
         res = apply_observable_einsum(
             obs,
             qml.math.asarray(three_qutrit_batched_state, like=ml_framework),
@@ -132,6 +134,8 @@ class TestApplyObservableEinsum:
 
 
 class TestMeasurements:
+    """Test that measurements on unbatched states work as expected."""
+
     @pytest.mark.parametrize(
         "measurement, get_expected",
         [
@@ -228,14 +232,14 @@ class TestBroadcasting:
         ],
     )
     def test_state_measurement(self, measurement, get_expected, two_qutrit_batched_state):
-        """Test that broadcasting works for regular state measurements"""
+        """Test that state measurements work on broadcasted state"""
 
         res = measure(measurement, two_qutrit_batched_state, is_state_batched=True)
         expected = get_expected(two_qutrit_batched_state)
 
         assert np.allclose(res, expected)
 
-    @pytest.mark.parametrize(  # TODO fix probs Broadcasting result
+    @pytest.mark.parametrize(
         "measurement, matrix_transform",
         [
             (qml.probs(wires=[0, 1]), lambda x: math.reshape(x, (2, 9, 9))),
@@ -243,6 +247,7 @@ class TestBroadcasting:
         ],
     )
     def test_probs_measurement(self, measurement, matrix_transform, two_qutrit_batched_state):
+        """Test that probability measurements work on broadcasted state"""
         res = measure(measurement, two_qutrit_batched_state, is_state_batched=True)
 
         transformed_state = matrix_transform(two_qutrit_batched_state)
@@ -257,13 +262,27 @@ class TestBroadcasting:
         "observable",
         [
             qml.GellMann(1, 3),
+            qml.Hamiltonian([2, 0.4], [qml.GellMann(1, 1), qml.GellMann(0, 6)]),
+            qml.prod(qml.GellMann(0, 2), qml.GellMann(1, 3)),
+            qml.THermitian(
+                np.array(
+                    [
+                        [1.37770247 + 0.0j, 0.60335894 - 0.10889947j, 0.98223403 - 0.94429544j],
+                        [0.60335894 + 0.10889947j, 0.90178212 + 0.0j, 0.45529663 - 0.03054001j],
+                        [0.98223403 + 0.94429544j, 0.45529663 + 0.03054001j, 0.37721683 + 0.0j],
+                    ]
+                ),
+                wires=0,
+            ),
         ],
-    )  # TODO fix probs Broadcasting result
+    )
     def test_expval_measurement(self, observable, two_qutrit_batched_state):
+        """Test that expval measurements work on broadcasted state"""
         res = measure(qml.expval(observable), two_qutrit_batched_state, is_state_batched=True)
 
+        missing_wires = 2 - len(observable.wires)
         mat = observable.matrix()
-        expanded_mat = np.kron(np.eye(3), mat)
+        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
 
         expected = []
         for i in range(BATCH_SIZE):
@@ -283,20 +302,20 @@ obs_list = [
     qml.GellMann(1, 7),
 ]
 measurement_processes = [
-    qml.expval(qml.GellMann(0, 3)),  # TODO, change values
+    qml.expval(qml.GellMann(0, 3)),
     qml.expval(
         qml.Hamiltonian(
             [1.0, 2.0, 3.0, 4.0],
-            obs_list,  # TODO, change values
+            obs_list,
         )
     ),
     qml.expval(
         qml.dot(
             [1.0, 2.0, 3.0, 4.0],
-            obs_list,  # TODO, change values
+            obs_list,
         )
     ),
-    # qml.var(qml.GellMann(0, 3)),  # TODO, add once var is added
+    # qml.var(qml.GellMann(0, 3)),
     # qml.var(
     #     qml.dot(
     #         [1.0, 2.0, 3.0, 4.0],
@@ -304,7 +323,7 @@ measurement_processes = [
     #     )
     # ),
 ]
-probs_processes = "mp", [qml.probs(wires=0), qml.probs(wires=[0, 1])]  # TODO: add probs with op
+probs_processes = "mp", [qml.probs(wires=0), qml.probs(wires=[0, 1])]
 
 
 class TestNaNMeasurements:
