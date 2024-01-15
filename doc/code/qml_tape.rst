@@ -18,7 +18,8 @@ TensorFlow, and PyTorch.
     details on creating QNodes, as well as the :func:`~pennylane.qnode` decorator
     and :func:`~pennylane.QNode` constructor.
 
-**``QuantumTape`` versus ``QuantumScript``**
+QuantumTape versus QuantumScript
+--------------------------------
 
 A ``QuantumScript`` is purely a representation of a quantum circuit, and can only be constructed
 via initialization. Once it is initialized, the contents should then remain immutable throughout its lifetime.
@@ -30,7 +31,8 @@ via initialization. Once it is initialized, the contents should then remain immu
 
 A ``QuantumTape`` has additional queuing capabilities and also inherits from :class:`~.AnnotatedQueue`.  It's contents
 are set on exiting the context, rather than upon initialization. Since queuing requires interaction with the global singleton
-:class:`~.QueuingManager`, the ``QuantumTape`` requires a ``threading.RLock`` which complicates its use in distributed
+:class:`~pennylane.QueuingManager`, the ``QuantumTape`` requires a ``threading.RLock`` which complicates its use in distributed
+
 situations.
 
 >>> with QuantumTape(shots=10) as tape:
@@ -39,7 +41,7 @@ situations.
 >>> tape
 <QuantumTape: wires=[0], params=0>
 
-The ``QuantumTape`` also carries around the unprocessed queue in addtion to the processed ``operations`` and ``measurements``, leading
+The ``QuantumTape`` also carries around the unprocessed queue in addition to the processed ``operations`` and ``measurements``, 
 to a larger memory footprint.
 
 >>> tape.items()

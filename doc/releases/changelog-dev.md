@@ -76,6 +76,7 @@
 <h3>Documentation 📝</h3>
 
 * The module documentation for `pennylane.tape` now explains the difference between `QuantumTape` and `QuantumScript`.
+  [(#5065)](https://github.com/PennyLaneAI/pennylane/pull/5065)
 
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
