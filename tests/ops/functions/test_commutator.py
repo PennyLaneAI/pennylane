@@ -45,26 +45,28 @@ def _id(p):
     # this is used for parametrization of tests
     return p
 
+
 class TestLegacySupport:
     """Test support for legacy operator classes like Tensor and Hamiltonian"""
 
     def test_Hamiltonian_single(self):
         """Test that Hamiltonians get transformed to new operator classes and return the correct result"""
-        H1 = qml.Hamiltonian([1.], [qml.PauliX(0)])
-        H2 = qml.Hamiltonian([1.], [qml.PauliY(0)])
+        H1 = qml.Hamiltonian([1.0], [qml.PauliX(0)])
+        H2 = qml.Hamiltonian([1.0], [qml.PauliY(0)])
         res = qml.commutator(H1, H2)
         true_res = qml.s_prod(2j, qml.PauliZ(0))
         assert isinstance(res, SProd)
         assert true_res == res
-    
+
     def test_Hamiltonian_sum(self):
         """Test that Hamiltonians with Tensors and sums get transformed to new operator classes and return the correct result"""
-        H1 = qml.Hamiltonian([1.], [qml.PauliX(0) @ qml.PauliX(1)])
-        H2 = qml.Hamiltonian([1.], [qml.PauliY(0) + qml.PauliY(1)])
+        H1 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
+        H2 = qml.Hamiltonian([1.0], [qml.PauliY(0) + qml.PauliY(1)])
         # true_res = qml.sum(qml.s_prod(2j, qml.PauliZ(0) @ qml.PauliX(1)), qml.s_prod(2j, qml.PauliX(0) @ qml.PauliZ(1)))
         res = qml.commutator(H1, H2).simplify()
         assert isinstance(res, Sum)
         # assert true_res == res # issue https://github.com/PennyLaneAI/pennylane/issues/5060
+
 
 class TestCommutatorPauli:
     """Test qml.commutator for pauli=True"""

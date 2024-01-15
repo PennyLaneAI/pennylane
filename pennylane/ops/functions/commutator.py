@@ -60,7 +60,7 @@ def commutator(op1, op2, pauli=False):
 
     Note that when by default `pauli=True` and even though Pauli operators are used
     as inputs, `qml.commutator` returns Operators when not explicitly requesting Pauli operators.
-    
+
     >>> qml.commutator(op1, op2, pauli=True)
     (2j*(PauliX(wires=[1]) @ PauliZ(wires=[0]))) + (2j*(PauliZ(wires=[1]) @ PauliX(wires=[0])))
 
@@ -77,5 +77,5 @@ def commutator(op1, op2, pauli=False):
     if isinstance(op2, (PauliWord, PauliSentence)):
         op2 = op2.operation()
 
-    res = qml.sum(qml.prod(op1, op2), qml.s_prod(-1., qml.prod(op2, op1)))
+    res = qml.sum(qml.prod(op1, op2), qml.s_prod(-1.0, qml.prod(op2, op1)))
     return res.simplify()
