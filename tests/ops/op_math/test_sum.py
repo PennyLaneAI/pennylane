@@ -821,7 +821,6 @@ class TestSortWires:
             qml.PauliZ("c"),
         ]
 
-        print(sorted_list)
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
 
