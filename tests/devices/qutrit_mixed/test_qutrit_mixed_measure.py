@@ -29,7 +29,6 @@ from pennylane.devices.qutrit_mixed.measure import (
     reduce_density_matrix,
 )
 
-
 ml_frameworks_list = [
     "numpy",
     pytest.param("autograd", marks=pytest.mark.autograd),
@@ -262,7 +261,6 @@ class TestBroadcasting:
         "observable",
         [
             qml.GellMann(1, 3),
-            qml.Hamiltonian([2, 0.4], [qml.GellMann(1, 1), qml.GellMann(0, 6)]),
             qml.prod(qml.GellMann(0, 2), qml.GellMann(1, 3)),
             qml.THermitian(
                 np.array(
@@ -272,7 +270,7 @@ class TestBroadcasting:
                         [0.98223403 + 0.94429544j, 0.45529663 + 0.03054001j, 0.37721683 + 0.0j],
                     ]
                 ),
-                wires=0,
+                wires=1,
             ),
         ],
     )
@@ -283,6 +281,48 @@ class TestBroadcasting:
         missing_wires = 2 - len(observable.wires)
         mat = observable.matrix()
         expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
+
+        expected = []
+        for i in range(BATCH_SIZE):
+            resquared_matrix = two_qutrit_batched_state[i].reshape(9, 9)
+            obs_mult_state = expanded_mat @ resquared_matrix
+            expected.append(math.trace(obs_mult_state))
+
+        assert qml.math.allclose(res, expected)
+
+    def test_expval_sum_measurement(self, two_qutrit_batched_state):
+        """Test that expval Sum measurements work on broadcasted state"""
+        observable = qml.sum((2 * qml.GellMann(1, 1)), (0.4 * qml.GellMann(0, 6)))
+        res = measure(qml.expval(observable), two_qutrit_batched_state, is_state_batched=True)
+
+        expanded_mat = np.zeros((9, 9), dtype=complex)
+        for summand in observable:
+            mat = summand.matrix()
+            expanded_mat += (
+                np.kron(np.eye(3), mat) if summand.wires[0] == 1 else np.kron(mat, np.eye(3))
+            )
+
+        expected = []
+        for i in range(BATCH_SIZE):
+            resquared_matrix = two_qutrit_batched_state[i].reshape(9, 9)
+            obs_mult_state = expanded_mat @ resquared_matrix
+            expected.append(math.trace(obs_mult_state))
+
+        assert qml.math.allclose(res, expected)
+
+    def test_expval_hamiltonian_measurement(self, two_qutrit_batched_state):
+        """Test that expval Hamiltonian measurements work on broadcasted state"""
+        observables = [qml.GellMann(1, 1), qml.GellMann(0, 6)]
+        coeffs = [2, 0.4]
+        observable = qml.Hamiltonian(coeffs, observables)
+        res = measure(qml.expval(observable), two_qutrit_batched_state, is_state_batched=True)
+
+        expanded_mat = np.zeros((9, 9), dtype=complex)
+        for coeff, summand in zip(coeffs, observables):
+            mat = summand.matrix()
+            expanded_mat += coeff * (
+                np.kron(np.eye(3), mat) if summand.wires[0] == 1 else np.kron(mat, np.eye(3))
+            )
 
         expected = []
         for i in range(BATCH_SIZE):
@@ -393,4 +433,4 @@ class TestNaNMeasurements:
         assert qml.math.get_interface(res) == "jax"
 
 
-# TODO TestSumOfTermsDifferentiability in future PR (with other differentiabilty tests)aa
+# TODO TestSumOfTermsDifferentiability in future PR (with other differentiabilty tests)
