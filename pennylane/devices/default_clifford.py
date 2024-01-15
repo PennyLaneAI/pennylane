@@ -138,6 +138,10 @@ class DefaultClifford(Device):
 
     **Example:**
 
+    The :class:`~pennylane.devices.DefaultClifford` implements the `default.clifford` device,
+    which can be used for efficiently executing circuits built with
+    `Clifford gates <https://en.wikipedia.org/wiki/Clifford_gates>`_.
+
     .. code-block:: python
 
         dev = qml.device("default.clifford", tableau=True)
@@ -155,6 +159,9 @@ class DefaultClifford(Device):
             [1, 0, 1, 1, 1],
             [0, 0, 0, 1, 0],
             [1, 0, 0, 1, 1]])
+
+    A more fine-grained control over the execution pipeline can be obtained with
+    :class:`~pennylane.tape.QuantumScript`.
 
     .. code-block:: python
 
