@@ -1556,6 +1556,8 @@ class QubitDevice(Device):
 
             * Only expectation values are supported as measurements.
 
+            * Cannot differentiate with respect to state-prep operations.
+
             * Does not work for parametrized observables like
               :class:`~.Hamiltonian` or :class:`~.Hermitian`.
 
