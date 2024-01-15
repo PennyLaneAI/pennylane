@@ -18,7 +18,7 @@ This module contains the clifford simulator using ``stim``
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Union, Tuple, Optional, Sequence
+from typing import Union, Tuple, Sequence
 import concurrent.futures
 import numpy as np
 
@@ -270,8 +270,6 @@ class DefaultClifford(Device):
         updated_values = {}
         if execution_config.gradient_method == "best":  # pragma: no cover
             updated_values["gradient_method"] = None
-        if execution_config.gradient_method == "device":
-            updated_values["use_device_gradient"] = True
         updated_values["use_device_jacobian_product"] = False
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = False
