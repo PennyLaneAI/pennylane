@@ -73,6 +73,15 @@
   these cases.
   [(#5039)](https://github.com/PennyLaneAI/pennylane/pull/5039)
 
+* `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now deprecated. Instead, you
+  should use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
+  [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
+
+* The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the
+  `pauli` module have been deprecated, as they are no longer used anywhere and the same
+  functionality can be achieved using newer features in the `pauli` module.
+  [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
+
 <h3>Documentation 📝</h3>
 
 * A typo in a code example in the `qml.transforms` API has been fixed.
