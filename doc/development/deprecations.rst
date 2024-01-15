@@ -17,18 +17,14 @@ Pending deprecations
   - Will be removed in v0.36
 
 * ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now deprecated. Instead, you
-  should use ``qml.prod(pauli_1, pauli_2).simplify()`` to get the reduced operator. Note that if there
-  is a phase, you can access it via ``op.scalar``.
+  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
 
-  >>> op = qml.prod(qml.PauliX(0), qml.PauliZ(0)).simplify()
-  >>> op, op.scalar, op.base
-  (-1j*(PauliY(wires=[0])), -1j, PauliY(wires=[0]))
-
-  If there is no phase, the result will be a :class:`~pennylane.ops.op_math.Prod`, and will have no
-  ``base`` or ``scalar`` properties.
-
-  >>> qml.prod(qml.PauliZ(0), qml.PauliX(1)).simplify()
-  PauliX(wires=[1]) @ PauliZ(wires=[0])
+  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+  >>> op
+  -1j*(PauliY(wires=[0]))
+  >>> [phase], [base] = op.terms()
+  >>> phase, base
+  (-1j, PauliY(wires=[0]))
 
   - Deprecated in v0.35
   - Will be removed in v0.36

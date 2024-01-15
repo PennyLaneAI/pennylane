@@ -936,7 +936,7 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     .. warning::
 
         ``pauli_mult`` is deprecated. Instead, you can multiply two Pauli words
-        together with ``qml.prod(pauli_1, pauli_2).simplify()``. Note that if
+        together with ``qml.simplify(qml.prod(pauli_1, pauli_2))``. Note that if
         there is a phase, this will be in ``result.scalar``, and the base will be
         available in ``result.base``.
 
@@ -970,7 +970,7 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
 
     warn(
         "`pauli_mult` is deprecated. Instead, you can multiply two Pauli words "
-        "together with `qml.prod(pauli_1, pauli_2).simplify()`. Note that if "
+        "together with `qml.simplify(qml.prod(pauli_1, pauli_2))`. Note that if "
         "there is a phase, this will be in `result.scalar`, and the base will be "
         "available in `result.base`.",
         qml.PennyLaneDeprecationWarning,
@@ -1004,7 +1004,7 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     .. warning::
 
         ``pauli_mult_with_phase`` is deprecated. Instead, you can multiply two Pauli
-        words together with ``qml.prod(pauli_1, pauli_2).simplify()``. Note that if
+        words together with ``qml.simplify(qml.prod(pauli_1, pauli_2))``. Note that if
         there is a phase, this will be in ``result.scalar``, and the base will be
         available in ``result.base``.
 
@@ -1043,7 +1043,7 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
 
     warn(
         "`pauli_mult_with_phase` is deprecated. Instead, you can multiply two Pauli words "
-        "together with `qml.prod(pauli_1, pauli_2).simplify()`. Note that if "
+        "together with `qml.simplify(qml.prod(pauli_1, pauli_2))`. Note that if "
         "there is a phase, this will be in `result.scalar`, and the base will be "
         "available in `result.base`.",
         qml.PennyLaneDeprecationWarning,
