@@ -1813,14 +1813,23 @@ class TestJIT:
 
         assert jax.numpy.allclose(circuit(), jax.numpy.array([1.0, 0.0]))
 
-    @pytest.mark.xfail(
-        reason="Non-trainable parameters are not being correctly unwrapped by the interface"
-    )
+    # @pytest.mark.xfail(
+    #     reason="Non-trainable parameters are not being correctly unwrapped by the interface"
+    # )
     def test_gradient_subset(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface
     ):
         """Test derivative calculation of a scalar valued QNode with respect
         to a subset of arguments"""
+        if diff_method == "spsa" and not grad_on_execution and not device_vjp:
+            pytest.xfail(reason="incorrect jacobian results")
+
+        if diff_method == "device" and not grad_on_execution and device_vjp:
+            pytest.xfail(reason="various runtime-related errors")
+
+        if diff_method == "adjoint" and grad_on_execution and device_vjp and jacobian is jax.jacfwd:
+            pytest.xfail(reason="TypeError applying forward-mode autodiff.")
+
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
