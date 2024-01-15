@@ -35,9 +35,9 @@ def commutator(op1, op2, pauli=False):
 
     """
     if pauli:
-        if not isinstance(op1, (PauliSentence)):
+        if not isinstance(op1, PauliSentence):
             op1 = qml.pauli.pauli_sentence(op1)
-        if not isinstance(op2, (PauliSentence)):
+        if not isinstance(op2, PauliSentence):
             op2 = qml.pauli.pauli_sentence(op2)
         return op1 @ op2 - op2 @ op1
 
