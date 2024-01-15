@@ -43,7 +43,7 @@ SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
 
 DECOMPOSITIONS = (
     (qml.CY, [qml.CRY(np.pi, wires=[0, 1]), qml.S(0)]),
-    (qml.CZ, [qml.ctrl(qml.PhaseShift(np.pi, wires=1), 0)])
+    (qml.CZ, [qml.ctrl(qml.PhaseShift(np.pi, wires=1), 0)]),
 )
 
 X = np.array([[0, 1], [1, 0]])

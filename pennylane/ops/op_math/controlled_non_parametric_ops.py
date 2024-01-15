@@ -19,7 +19,8 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane import ControlledOp, PauliY, S, PauliZ, CCZ
+from pennylane.ops.qubit.non_parametric_ops import PauliY, S, PauliZ, CCZ
+from .controlled import ControlledOp
 
 
 class CY(ControlledOp):

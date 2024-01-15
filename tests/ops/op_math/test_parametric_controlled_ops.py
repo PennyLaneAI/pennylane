@@ -44,22 +44,22 @@ class TestControlledQubitUnitary:
     def test_no_control(self):
         """Test if ControlledQubitUnitary raises an error if control wires are not specified"""
         with pytest.raises(
-                TypeError, match="missing 1 required positional argument: 'control_wires'"
+            TypeError, match="missing 1 required positional argument: 'control_wires'"
         ):
             qml.ControlledQubitUnitary(X, wires=2)
 
     def test_shared_control(self):
         """Test if ControlledQubitUnitary raises an error if control wires are shared with wires"""
         with pytest.raises(
-                ValueError, match="The control wires must be different from the base operation wires"
+            ValueError, match="The control wires must be different from the base operation wires"
         ):
             qml.ControlledQubitUnitary(X, control_wires=[0, 2], wires=2)
 
     def test_wires_specified_twice_warning(self):
         base = qml.QubitUnitary(X, 0)
         with pytest.warns(
-                UserWarning,
-                match="base operator already has wires; values specified through wires kwarg will be ignored.",
+            UserWarning,
+            match="base operator already has wires; values specified through wires kwarg will be ignored.",
         ):
             qml.ControlledQubitUnitary(base, control_wires=[1, 2], wires=3)
 
@@ -199,7 +199,7 @@ class TestControlledQubitUnitary:
         target_wires = Wires(wires)
 
         with pytest.raises(
-                ValueError, match="control_values should be the same length as control_wires"
+            ValueError, match="control_values should be the same length as control_wires"
         ):
             qml.ControlledQubitUnitary(
                 X, control_wires=control_wires, wires=target_wires, control_values=control_values
