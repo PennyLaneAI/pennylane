@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the clifford simulator based on stim
+This module contains the clifford simulator using ``stim``
 """
 
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Union, Tuple, Optional, Sequence
+from typing import Union, Tuple, Sequence
 import concurrent.futures
 import numpy as np
 
 import pennylane as qml
+from pennylane import DeviceError
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
@@ -54,7 +55,7 @@ from .preprocess import (
     validate_measurements,
     validate_multiprocessing_workers,
     validate_device_wires,
-    warn_about_trainable_observables,
+    validate_adjoint_trainable_params,
 )
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
@@ -125,17 +126,18 @@ def _import_stim():
 
 # pylint:disable=too-many-instance-attributes
 class DefaultClifford(Device):
-    r"""A PennyLane device written in Python and capable of executing Clifford circuits using
-    `stim (2021) <https://github.com/quantumlib/stim/tree/main>`_.
+    r"""A PennyLane device for fast simulation of Clifford circuits using
+    `stim (2021) <https://github.com/quantumlib/stim/>`_.
 
     Args:
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
-        max_error (float): The maximum permissible operator norm error for decomposing circuits with non-Clifford gate operations
-            into Clifford+T basis. The default is ``None`` as this device currently supports only Clifford simulations.
-        tableau (bool): Determines what should be returned when the device's state is computed with ``qml.state``. Default is
-            ``True``, which makes it return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
+        tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
+            which makes the device return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
@@ -148,6 +150,31 @@ class DefaultClifford(Device):
             issue, try setting ``max_workers`` to ``None``.
 
     **Example:**
+
+    The :class:`~pennylane.devices.DefaultClifford` implements the `default.clifford` device,
+    which can be used for efficiently executing circuits built with
+    `Clifford gates <https://en.wikipedia.org/wiki/Clifford_gates>`_.
+
+    .. code-block:: python
+
+        dev = qml.device("default.clifford", tableau=True)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=[1])
+            qml.ISWAP(wires=[0, 1])
+            qml.Hadamard(wires=[0])
+            return qml.state()
+
+    >>> circuit()
+    array([[0, 1, 1, 0, 0],
+            [1, 0, 1, 1, 1],
+            [0, 0, 0, 1, 0],
+            [1, 0, 0, 1, 1]])
+
+    A more fine-grained control over the execution pipeline can be obtained with
+    :class:`~pennylane.tape.QuantumScript`.
 
     .. code-block:: python
 
@@ -172,7 +199,7 @@ class DefaultClifford(Device):
         :href: clifford-tableau-theory
 
         The device represents a state by the inverse of a Tableau
-        (`Aaronson & Gottesman (2004) <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328>`_)
+        (`Sec. III, Aaronson & Gottesman (2004) <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328>`_)
         consisiting of binary variable :math:`x_{ij},\ z_{ij}` for all :math:`i\in\left\{1,\ldots,2n\right\}`,
         :math:`j\in\left\{1,\ldots,n\right\}`, and :math:`r_{i}` for all
         :math:`i\in\left\{1,\ldots,2n\right\}`.
@@ -212,62 +239,15 @@ class DefaultClifford(Device):
         * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions,
           such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
-        * ``results``: The results of each call of :meth:`~.execute`
-        * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
-        * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
-        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or
-          :meth:`~.execute_and_compute_derivatives`.
+        * ``results``: The results of each call of :meth:`~.execute`.
 
     .. details::
         :title: Accelerate calculations with multiprocessing
         :href: clifford-multiprocessing
 
-        Suppose one has a processor with 5 cores or more, these scripts can be executed in
-        parallel as follows
-
-        >>> dev = DefaultClifford(max_workers=5)
-        >>> program, execution_config = dev.preprocess()
-        >>> new_batch, post_processing_fn = program(qscripts)
-        >>> results = dev.execute(new_batch, execution_config=execution_config)
-        >>> post_processing_fn(results)
-
-        If you monitor your CPU usage, you should see 5 new Python processes pop up to
-        crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
-        This may happen if a single device already uses many cores, if NumPy uses a multi-
-        threaded BLAS library like MKL or OpenBLAS for example. The number of threads per
-        process times the number of processes should not exceed the number of cores on your
-        machine. You can control the number of threads per process with the environment
-        variables:
-
-        * ``OMP_NUM_THREADS``
-        * ``MKL_NUM_THREADS``
-        * ``OPENBLAS_NUM_THREADS``
-
-        where the last two are specific to the MKL and OpenBLAS libraries specifically.
-
-        .. warning::
-
-            Multiprocessing may fail depending on your platform and environment (Python shell,
-            script with a protected entry point, Jupyter notebook, etc.) This may be solved
-            changing the so-called start method. The supported start methods are the following:
-
-            * Windows (win32): spawn (default).
-            * macOS (darwin): spawn (default), fork, forkserver.
-            * Linux (unix): spawn, fork (default), forkserver.
-
-            which can be changed with ``multiprocessing.set_start_method()``. For example,
-            if multiprocessing fails on macOS in your Jupyter notebook environment, try
-            restarting the session and adding the following at the beginning of the file:
-
-            .. code-block:: python
-
-                import multiprocessing
-                multiprocessing.set_start_method("fork")
-
-            Additional information can be found in the
-            `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
-
-
+        See the details in :class:`~pennylane.devices.DefaultQubit`'s "Accelerate calculations with multiprocessing"
+        section. Additional information regarding multiprocessing can be found in the
+        `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
     """
 
     @property
@@ -281,7 +261,6 @@ class DefaultClifford(Device):
         wires=None,
         shots=None,
         check_clifford=True,
-        max_error=None,
         tableau=True,
         seed="global",
         max_workers=None,
@@ -290,13 +269,6 @@ class DefaultClifford(Device):
 
         self._max_workers = max_workers
         self._check_clifford = check_clifford
-
-        if max_error is None:
-            self._max_error = 0.0
-        else:
-            raise ValueError(
-                f"Currently this device doesn't support executing non-Clifford operations, got max_error={max_error}."
-            )
 
         self._tableau = tableau
         self._prob_states = None
@@ -319,8 +291,6 @@ class DefaultClifford(Device):
         updated_values = {}
         if execution_config.gradient_method == "best":  # pragma: no cover
             updated_values["gradient_method"] = None
-        if execution_config.gradient_method == "device":
-            updated_values["use_device_gradient"] = True
         updated_values["use_device_jacobian_product"] = False
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = False
@@ -331,8 +301,6 @@ class DefaultClifford(Device):
             updated_values["device_options"]["rng"] = self._rng
         if "tableau" not in updated_values["device_options"]:
             updated_values["device_options"]["tableau"] = self._tableau
-        if "max_error" not in updated_values["device_options"]:
-            updated_values["device_options"]["max_error"] = self._max_error
         return replace(execution_config, **updated_values)
 
     def preprocess(
@@ -364,7 +332,7 @@ class DefaultClifford(Device):
 
         if self._check_clifford:
             transform_program.add_transform(
-                decompose, stopping_condition=operation_stopping_condition, name="default.clifford"
+                decompose, stopping_condition=operation_stopping_condition, name=self.name
             )
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
@@ -379,7 +347,7 @@ class DefaultClifford(Device):
             transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         # Validate derivatives
-        transform_program.add_transform(warn_about_trainable_observables)
+        transform_program.add_transform(validate_adjoint_trainable_params)
         if config.gradient_method is not None:
             config.gradient_method = None
 
@@ -409,7 +377,6 @@ class DefaultClifford(Device):
                 exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
                 results = tuple(exec_map)
 
-            # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         if self.tracker.active:
@@ -437,44 +404,6 @@ class DefaultClifford(Device):
 
         return results[0] if is_single_circuit else results
 
-    def supports_derivatives(
-        self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
-    ) -> bool:
-        """Check whether or not derivatives are available for a given configuration and circuit.
-
-        ``DefaultClifford`` returns trivial derivates everytime.
-
-        Args:
-            execution_config (ExecutionConfig): The configuration of the desired derivative calculation
-            circuit (QuantumTape): An optional circuit to check derivatives support for.
-
-        Returns:
-            Bool: Whether or not a derivative can be calculated provided the given information
-
-        """
-
-        return True
-
-    def compute_derivatives(
-        self,
-        circuits: QuantumTape_or_Batch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
-            self.tracker.record()
-
-        res = tuple(tuple(np.zeros(s) for s in circuit.shape(self)) for circuit in circuits)
-
-        return res[0] if is_single_circuit else res
-
     # pylint:disable=no-member
     def simulate(
         self,
@@ -493,8 +422,8 @@ class DefaultClifford(Device):
 
         This function assumes that all operations are Clifford.
 
-        >>> qs = qml.tape.QuantumScript([qml.Hadamard(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.state(wires=(0,1))])
-        >>> simulate(qs)
+        >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.PauliZ(0)), qml.state()])
+        >>> qml.devices.DefaultClifford().simulate(qs)
         (array(0),
          array([[0, 1, 0],
                 [1, 0, 0]]))
@@ -550,6 +479,7 @@ class DefaultClifford(Device):
         tableau_simulator.do_circuit(stim_ct)
 
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
+        return self.measure(circuit, tableau_simulator, global_phase, stim)
 
         if circuit.shots:
             stim_circuit = tableau_simulator.current_inverse_tableau().inverse().to_circuit()
