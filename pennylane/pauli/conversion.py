@@ -387,13 +387,13 @@ def _(op: Tensor):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
     factors = (_pauli_sentence(factor) for factor in op.obs)
-    return reduce(lambda a, b: a * b, factors)
+    return reduce(lambda a, b: a @ b, factors)
 
 
 @_pauli_sentence.register
 def _(op: Prod):
     factors = (_pauli_sentence(factor) for factor in op)
-    return reduce(lambda a, b: a * b, factors)
+    return reduce(lambda a, b: a @ b, factors)
 
 
 @_pauli_sentence.register
