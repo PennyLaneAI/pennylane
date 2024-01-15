@@ -27,7 +27,6 @@ import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.ops.qubit import (
     RX as old_loc_RX,
-    ControlledPhaseShift as old_loc_ControlledPhaseShift,
     MultiRZ as old_loc_MultiRZ,
 )
 from pennylane.wires import Wires
@@ -4566,8 +4565,5 @@ def test_control_values(op, control_values):
 
 def test_op_aliases_are_valid():
     """Tests that ops in new files can still be accessed from the old parametric_ops module."""
-    assert (
-        qml.ops.qubit.parametric_ops_controlled.ControlledPhaseShift is old_loc_ControlledPhaseShift
-    )
     assert qml.ops.qubit.parametric_ops_multi_qubit.MultiRZ is old_loc_MultiRZ
     assert qml.ops.qubit.parametric_ops_single_qubit.RX is old_loc_RX

@@ -75,7 +75,6 @@ __ops__ = {
     "CPhaseShift00",
     "CPhaseShift01",
     "CPhaseShift10",
-    "CPhase",
     "Rot",
     "U1",
     "U2",
