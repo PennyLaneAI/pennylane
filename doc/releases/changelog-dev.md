@@ -33,6 +33,7 @@
   `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
   incompatible operator types.
   [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
+  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
 
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
