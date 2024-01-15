@@ -23,7 +23,6 @@ import concurrent.futures
 import numpy as np
 
 import pennylane as qml
-from pennylane import DeviceError
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
@@ -479,7 +478,6 @@ class DefaultClifford(Device):
         tableau_simulator.do_circuit(stim_ct)
 
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
-        return self.measure(circuit, tableau_simulator, global_phase, stim)
 
         if circuit.shots:
             stim_circuit = tableau_simulator.current_inverse_tableau().inverse().to_circuit()
