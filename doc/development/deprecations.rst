@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
+  ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
+  does not provide wires, or quantum functions.
+
+  - Deprecated in v0.35
+  - Will raise an error in v0.36
+
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
   dummy values that are no longer needed.
 

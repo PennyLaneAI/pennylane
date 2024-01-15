@@ -75,6 +75,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `gradient_analysis_and_validation` is now renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
+  [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
+
 * Passing additional arguments to a transform that decorates a QNode must be done through the use
   of `functools.partial`.
   [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
@@ -97,18 +100,30 @@
   values that are no longer needed.
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
 
+* Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
+  ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
+  these cases.
+  [(#5039)](https://github.com/PennyLaneAI/pennylane/pull/5039)
+
 <h3>Documentation 📝</h3>
 
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
+
+* Clarification for the definition of `argnum` added to gradient methods
+  [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
 * A typo in the code example for `qml.qchem.dipole_of` has been fixed.
   [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036) 
 
 <h3>Bug fixes 🐛</h3>
 
+* If `argnum` is provided to a gradient transform, only the parameters specified in `argnum` will have their gradient methods validated.
+  [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
+
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -116,6 +131,7 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Astral Cai,
 Pablo Antonio Moreno Casares,
 Christina Lee,
 Isaac De Vlugt,
