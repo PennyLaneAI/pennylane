@@ -165,10 +165,10 @@ class TestMeasurements:
 
         missing_wires = 2 - len(obs.wires)
         expected = 0
-        for i in range(len(coeffs)):
+        for i, coeff in enumerate(coeffs):
             mat = observables[i].matrix()
             expanded_mat = np.kron(mat, np.eye(3**missing_wires)) if missing_wires else mat
-            expected += coeffs[i] * math.trace(expanded_mat @ flattened_state)
+            expected += coeff * math.trace(expanded_mat @ flattened_state)
 
         assert np.isclose(res, expected)
 
@@ -375,7 +375,7 @@ class TestNaNMeasurements:
     def test_nan_float_result(self, mp, interface):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((3, 3), np.NaN, like=interface)
+        state = qml.math.full([3] * 4, np.NaN, like=interface)
         res = measure(mp, state, is_state_batched=False)
 
         assert qml.math.ndim(res) == 0
@@ -388,7 +388,7 @@ class TestNaNMeasurements:
     def test_nan_float_result_jax(self, mp, use_jit):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like="jax")
+        state = qml.math.full([3] * 4, np.NaN, like="jax")
         if use_jit:
             import jax
 
@@ -407,7 +407,7 @@ class TestNaNMeasurements:
     def test_nan_probs(self, mp, interface):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full([3] * 4, np.NaN, like=interface)
         res = measure(mp, state, is_state_batched=False)
 
         assert qml.math.shape(res) == (3 ** len(mp.wires),)
@@ -420,7 +420,7 @@ class TestNaNMeasurements:
     def test_nan_probs_jax(self, mp, use_jit):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like="jax")
+        state = qml.math.full([3] * 4, np.NaN, like="jax")
         if use_jit:
             import jax
 
