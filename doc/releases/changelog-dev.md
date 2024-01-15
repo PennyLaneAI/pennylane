@@ -69,6 +69,11 @@
   values that are no longer needed.
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
 
+* Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
+  ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
+  these cases.
+  [(#5039)](https://github.com/PennyLaneAI/pennylane/pull/5039)
+
 <h3>Documentation 📝</h3>
 
 * A typo in a code example in the `qml.transforms` API has been fixed.
