@@ -29,10 +29,9 @@ via initialization. Once it is initialized, the contents should then remain immu
 >>> QuantumScript(ops, measurements, shots=10)
 <QuantumScript: wires=[0], params=0>
 
-A ``QuantumTape`` has additional queuing capabilities and also inherits from :class:`~.AnnotatedQueue`.  It's contents
+A ``QuantumTape`` has additional queuing capabilities and also inherits from :class:`~.AnnotatedQueue`.  Its contents
 are set on exiting the context, rather than upon initialization. Since queuing requires interaction with the global singleton
 :class:`~pennylane.QueuingManager`, the ``QuantumTape`` requires a ``threading.RLock`` which complicates its use in distributed
-
 situations.
 
 >>> with QuantumTape(shots=10) as tape:
