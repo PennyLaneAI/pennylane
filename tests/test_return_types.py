@@ -566,9 +566,11 @@ class TestShotVector:
         assert all(r.shape == (2 ** len(wires_to_use),) for r in res[0])
 
     @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
-    @pytest.mark.xfail
     def test_density_matrix(self, shot_vector, wires, device):
         """Test a density matrix measurement."""
+        if 1 in shot_vector:
+            pytest.xfail("cannot handle single-shot in shot vector")
+
         dev = qml.device(device, wires=3, shots=shot_vector)
 
         def circuit(x):
