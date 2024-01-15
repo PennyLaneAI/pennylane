@@ -140,6 +140,24 @@ class DefaultClifford(Device):
 
     .. code-block:: python
 
+        dev = qml.device("default.clifford", tableau=True)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=[1])
+            qml.ISWAP(wires=[0, 1])
+            qml.Hadamard(wires=[0])
+            return qml.state()
+
+    >>> circuit()
+    array([[0, 1, 1, 0, 0],
+            [1, 0, 1, 1, 1],
+            [0, 0, 0, 1, 0],
+            [1, 0, 0, 1, 1]])
+
+    .. code-block:: python
+
         num_qscripts = 5
 
         qscripts = [
