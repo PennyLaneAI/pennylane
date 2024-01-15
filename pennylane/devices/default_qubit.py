@@ -37,7 +37,7 @@ from .preprocess import (
     validate_measurements,
     validate_multiprocessing_workers,
     validate_device_wires,
-    warn_about_trainable_observables,
+    validate_adjoint_trainable_params,
     no_sampling,
 )
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -179,7 +179,7 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
     )
     program.add_transform(adjoint_state_measurements)
     program.add_transform(qml.transforms.broadcast_expand)
-    program.add_transform(warn_about_trainable_observables)
+    program.add_transform(validate_adjoint_trainable_params)
 
 
 class DefaultQubit(Device):

@@ -536,7 +536,6 @@ class TestShotsIntegration:
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
         spy.assert_called_once()
 
-    @pytest.mark.xfail(reason="TODO: shot-vector support for param shift")
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
