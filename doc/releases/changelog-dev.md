@@ -30,7 +30,17 @@
   2j * Z(0) @ X(1)
   + 2j * X(0) @ Z(1)
   ```
+
+  We can also compute commutators with Pauli operators natively with the `|` (or) operator.
+  ```pycon
+  >>> op1 = PauliWord({0:"X", 1:"X"})
+  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+  >>> op1 | op2
+  2j * Z(0) @ X(1)
+  + 2j * X(0) @ Z(1)
+  ```
   [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+  [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
 
 <h3>Improvements 🛠</h3>
 
