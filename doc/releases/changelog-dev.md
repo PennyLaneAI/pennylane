@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
+  [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
+
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
@@ -88,5 +91,6 @@ Pablo Antonio Moreno Casares,
 Christina Lee,
 Isaac De Vlugt,
 Korbinian Kottmann,
+Lee J. O'Riordan,
 Matthew Silverman.
 Jay Soni,
