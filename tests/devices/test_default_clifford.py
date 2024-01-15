@@ -61,35 +61,6 @@ def test_expectation_clifford(circuit, expec_op):
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
-def test_grad_clifford(circuit):
-    """Test that gradients of default.clifford agrees with default.qubit."""
-    dev_c = qml.device("default.clifford")
-    dev_q = qml.device("default.qubit")
-    assert dev_c.supports_derivatives()
-    assert not dev_c.supports_jvp()
-    assert not dev_c.supports_vjp()
-
-    def circuit_fn():
-        circuit()
-        return qml.expval(qml.PauliZ(0))
-
-    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
-    qnode_qubit = qml.QNode(circuit_fn, dev_q)
-    res_q, grad_q = qnode_qubit(), qml.grad(qnode_qubit)()
-    assert np.allclose(qml.grad(qnode_clfrd)(), grad_q)
-
-    conf_c = dev_c.preprocess()[1]
-    tape_c, tape_q = qnode_clfrd.tape, qnode_qubit.tape
-    assert tape_c.operations == tape_q.operations
-
-    grad_c = dev_c.compute_derivatives(tape_c, conf_c)
-    assert qml.math.allclose(grad_c, grad_q)
-
-    (res_c, grad_c) = dev_c.execute_and_compute_derivatives(tape_c, conf_c)
-    assert qml.math.allclose(res_q, res_c) and qml.math.allclose(grad_q, grad_c)
-
-
-@pytest.mark.parametrize("circuit", [circuit_1])
 @pytest.mark.parametrize("tableau", [True, False])
 def test_state_clifford(circuit, tableau):
     """Test that state computation with default.clifford is possible and agrees with default.qubit."""
@@ -205,20 +176,11 @@ def test_max_worker_clifford():
     )
     tapes = (qscript, qscript)
 
-    program, conf_d = dev_c.preprocess()
-    tapes_clrfd, _ = program(tapes)
+    _, conf_d = dev_c.preprocess()
     res_c = dev_c.execute(tapes, conf_d)
-    program, conf_q = dev_q.preprocess()
-    tapes_qubit, _ = program(tapes)
+    _, conf_q = dev_q.preprocess()
     res_q = dev_q.execute(tapes, conf_q)
     assert np.allclose(res_q, res_c)
-
-    grad_c = dev_c.compute_derivatives(tapes_clrfd, conf_q)
-    grad_q = dev_q.compute_derivatives(tapes_qubit, conf_d)
-    assert qml.math.allclose(grad_q, grad_c)
-
-    (res_c, grad_c) = dev_c.execute_and_compute_derivatives(tapes_clrfd, conf_q)
-    assert qml.math.allclose(res_q, res_c) and qml.math.allclose(grad_q, grad_c)
 
 
 def test_tracker():
@@ -234,30 +196,19 @@ def test_tracker():
     tapes = tuple([qscript])
 
     with qml.Tracker(dev_c) as tracker:
-        program, conf_d = dev_c.preprocess()
-        tapes_clrfd, _ = program(tapes)
+        _, conf_d = dev_c.preprocess()
         res_c = dev_c.execute(tapes, conf_d)
-        program, conf_q = dev_q.preprocess()
-        tapes_qubit, _ = program(tapes)
+        _, conf_q = dev_q.preprocess()
         res_q = dev_q.execute(tapes, conf_q)
         assert np.allclose(res_q, res_c)
 
         res_s = dev_c.execute(qscript, conf_d)
         assert np.allclose(res_c, res_s)
 
-        grad_c = dev_c.compute_derivatives(tapes_clrfd, conf_q)
-        grad_q = dev_q.compute_derivatives(tapes_qubit, conf_d)
-        assert qml.math.allclose(grad_q, grad_c)
-
-        (res_c, grad_c) = dev_c.execute_and_compute_derivatives(tapes_clrfd, conf_q)
-        assert qml.math.allclose(res_q, res_c) and qml.math.allclose(grad_q, grad_c)
-
     assert tracker.totals == {
-        "batches": 3,
-        "simulations": 3,
-        "executions": 3,
-        "derivative_batches": 2,
-        "derivatives": 2,
+        "batches": 2,
+        "simulations": 2,
+        "executions": 2,
     }
     assert np.allclose(tracker.history.pop("results")[0], 0.0)
     assert tracker.history.pop("resources")[0] == qml.resource.Resources(
@@ -268,11 +219,9 @@ def test_tracker():
         depth=2,
     )
     assert tracker.history == {
-        "batches": [1, 1, 1],
-        "simulations": [1, 1, 1],
-        "executions": [1, 1, 1],
-        "derivative_batches": [1, 1],
-        "derivatives": [1, 1],
+        "batches": [1, 1],
+        "simulations": [1, 1],
+        "executions": [1, 1],
     }
 
 
@@ -323,6 +272,36 @@ def test_debugger():
 
     assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
     assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
+
+@pytest.mark.parametrize("circuit", [circuit_1])
+def test_grad_error(circuit):
+    """Test that computing gradients with `default.clifford` raises error."""
+    dev_c = qml.device("default.clifford")
+    assert not dev_c.supports_derivatives()
+    assert not dev_c.supports_jvp()
+    assert not dev_c.supports_vjp()
+
+    def circuit_fn():
+        circuit()
+        return qml.expval(qml.PauliZ(0))
+
+    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
+    qnode_clfrd()
+
+    conf_c, tape_c = dev_c.preprocess()[1], qnode_clfrd.tape
+
+    with pytest.raises(
+        NotImplementedError,
+        match="default.clifford does not support differentiable workflows.",
+    ):
+        dev_c.compute_derivatives(tape_c, conf_c)
+
+    with pytest.raises(
+        NotImplementedError,
+        match="default.clifford does not support differentiable workflows.",
+    ):
+        dev_c.execute_and_compute_derivatives(tape_c, conf_c)
 
 
 def test_shot_error():

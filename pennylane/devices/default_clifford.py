@@ -201,9 +201,7 @@ class DefaultClifford(Device):
         * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions,
           such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
-        * ``results``: The results of each call of :meth:`~.execute`
-        * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
-        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives`.
+        * ``results``: The results of each call of :meth:`~.execute`.
 
     .. details::
         :title: Accelerate calculations with multiprocessing
@@ -373,7 +371,7 @@ class DefaultClifford(Device):
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
-        ``DefaultClifford`` returns trivial derivates everytime.
+        ``DefaultClifford`` does not support differentiable workflows.
 
         Args:
             execution_config (ExecutionConfig): The configuration of the desired derivative calculation
@@ -384,25 +382,14 @@ class DefaultClifford(Device):
 
         """
 
-        return True
+        return False
 
     def compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
-            self.tracker.record()
-
-        res = tuple(tuple(np.zeros(s) for s in circuit.shape(self)) for circuit in circuits)
-
-        return res[0] if is_single_circuit else res
+        raise NotImplementedError(f"{self.name} does not support differentiable workflows.")
 
     # pylint:disable=no-member
     def simulate(
