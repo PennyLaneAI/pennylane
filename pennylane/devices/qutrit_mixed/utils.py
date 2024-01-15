@@ -34,7 +34,7 @@ def get_einsum_mapping(
         map_indices (function): Maps the calculated indices to an einsum indices string
 
     Returns:
-        str: indices mapping that defines the einsum
+        str: Indices mapping that defines the einsum
     """
     num_ch_wires = len(op.wires)
     num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
@@ -70,8 +70,15 @@ def get_einsum_mapping(
 
 
 def get_probs(state, num_wires, is_state_batched: bool = False):
-    """
-    TODO: add docstring
+    """Finds the probabilities of measuring states in the computational basis
+
+    Args:
+        state (array[complex]): Input quantum state
+        num_wires (int): The number of wires the state represents
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+
+    Returns:
+        Tensorlike: Vector representing probability of each state
     """
     # convert rho from tensor to matrix
     rho = resquare_state(state, num_wires)
@@ -93,7 +100,7 @@ def resquare_state(state, num_wires):
         num_wires (int): The number of wires the state represents
 
     Returns:
-        A squared state, with an extra batch dimension if necessary
+        Tensorlike: A squared state, with an extra batch dimension if necessary
     """
     dim = QUDIT_DIM**num_wires
     batch_size = math.get_batch_size(state, ((QUDIT_DIM,) * (num_wires * 2)), dim**2)
@@ -102,8 +109,14 @@ def resquare_state(state, num_wires):
 
 
 def get_num_wires(state, is_state_batched: bool = False):
-    """
-    TODO: add docstring
+    """Finds the number of wires associated with a state
+
+    Args:
+        state (TensorLike): A state that needs flattening
+        is_state_batched (int): Boolean representing whether the state is batched or not
+
+    Returns:
+        int: Number of wires associated with state
     """
     len_row_plus_col = len(math.shape(state)) - is_state_batched
     return int(len_row_plus_col / 2)
@@ -118,7 +131,7 @@ def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
         state_indices (str): indices of the original state
 
     Returns:
-        str: the einsum indices of the new state
+        str: The einsum indices of the new state
     """
     return functools.reduce(
         lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),

@@ -189,14 +189,14 @@ def get_measurement_function(
             return calculate_probability
         if isinstance(measurementprocess, ExpectationMP):
             # TODO add faster methods
-            # TODO add suport for sparce Hamiltonians
+            # TODO add support for sparce Hamiltonians
             if isinstance(measurementprocess.obs, Hamiltonian):
                 return sum_of_terms_method
             if isinstance(measurementprocess.obs, Sum):
                 return sum_of_terms_method
             if measurementprocess.obs.has_matrix:
                 return trace_method
-        # TODO add suport for sparce var
+        # TODO add support for var
 
     raise NotImplementedError
 
