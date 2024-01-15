@@ -23,8 +23,12 @@ Pending deprecations
   >>> op = qml.prod(qml.PauliX(0), qml.PauliZ(0)).simplify()
   >>> op, op.scalar, op.base
   (-1j*(PauliY(wires=[0])), -1j, PauliY(wires=[0]))
-  >>> qml.prod(qml.PauliZ(0) @ qml.PauliX(0)).simplify()
-  PauliZ(wires=[0]) @ PauliX(wires=[0])
+
+  If there is no phase, the result will be a :class:`~pennylane.ops.op_math.Prod`, and will have no
+  ``base`` or ``scalar`` properties.
+
+  >>> qml.prod(qml.PauliZ(0), qml.PauliX(1)).simplify()
+  PauliX(wires=[1]) @ PauliZ(wires=[0])
 
   - Deprecated in v0.35
   - Will be removed in v0.36
