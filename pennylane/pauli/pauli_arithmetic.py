@@ -449,7 +449,7 @@ class PauliWord(dict):
 
 class PauliSentence(dict):
     r"""Dictionary representing a linear combination of Pauli words, with the keys
-    as PauliWord instances and the values correspond to coefficients.
+    as :class:`~pennylane.pauli.PauliWord` instances and the values correspond to coefficients.
 
     .. note::
 
