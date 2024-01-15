@@ -18,6 +18,8 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
+from warnings import warn
+
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional, Union
@@ -185,21 +187,30 @@ class MeasurementProcess(ABC):
 
             self._eigvals = qml.math.asarray(eigvals)
 
-        # TODO: remove the following lines once devices
-        # have been refactored to accept and understand receiving
-        # measurement processes rather than specific observables.
-
-        # The following lines are only applicable for measurement processes
-        # that do not have corresponding observables (e.g., Probability). We use
-        # them to 'trick' the device into thinking it has received an observable.
-
-        # Below, we imitate an identity observable, so that the
-        # device undertakes no action upon receiving this observable.
-        self.name = "Identity"
-        self.data = []
-
         # Queue the measurement process
         self.queue()
+
+    @property
+    def name(self):
+        """A deprecated property that always returns 'Identity'."""
+        warn(
+            "MeasurementProcess.name is deprecated, and will be removed "
+            "in an upcoming release. To get the name of an observable "
+            "from a measurement, use MeasurementProcess.obs.name instead",
+            qml.PennyLaneDeprecationWarning,
+        )
+        return "Identity"
+
+    @property
+    def data(self):
+        """A deprecated property that always returns an empty list."""
+        warn(
+            "MeasurementProcess.data is deprecated, and will be removed "
+            "in an upcoming release. To get the data of an observable "
+            "from a measurement, use MeasurementProcess.obs.data instead",
+            qml.PennyLaneDeprecationWarning,
+        )
+        return []
 
     @property
     def return_type(self) -> Optional[ObservableReturnTypes]:

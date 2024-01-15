@@ -54,14 +54,6 @@ def expected_entropy_ising_xx(param, alpha):
     return qml.math.log(qml.math.sum(eigs**alpha)) / (1 - alpha)
 
 
-def test_deprecation_warning_atol():
-    """Test that a depceration warning is raised when trying to use atol"""
-    bits, recipes = max_entangled_circuit(wires=2)()
-    shadow = ClassicalShadow(bits, recipes)
-    with pytest.warns(qml.PennyLaneDeprecationWarning):
-        shadow.entropy([0, 1], atol=1e-3)
-
-
 class TestShadowEntropies:
     """Tests for entropies in ClassicalShadow class"""
 

@@ -4,7 +4,37 @@
 
 <h3>New features since last release</h3>
 
+* New `qml.commutator` function that allows to compute commutators between
+  `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
+  ```pycon
+  >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
+  2j*(PauliZ(wires=[0]))
+  ```
+
+  We can return a :class:`~PauliSentence` instance by setting `pauli=True`.
+
+  ```pycon
+  >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
+  >>> op2 = qml.PauliY(0) + qml.PauliY(1)
+  >>> qml.commutator(op1, op2, pauli=True)
+  2j * X(1) @ Z(0)
+  + 2j * Z(1) @ X(0)
+  ```
+
+  We can also input :class:`~PauliWord` and :class:`~PauliSentence` instances.
+
+  ```pycon
+  >>> op1 = PauliWord({0:"X", 1:"X"})
+  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+  >>> qml.commutator(op1, op2, pauli=True)
+  2j * Z(0) @ X(1)
+  + 2j * X(0) @ Z(1)
+  ```
+
 <h3>Improvements 🛠</h3>
+
+* Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
+  [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
@@ -45,10 +75,23 @@
   of `functools.partial`.
   [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
 
+* `Observable.return_type` has been removed. Instead, you should inspect the type
+  of the surrounding measurement process.
+  [(#5044)](https://github.com/PennyLaneAI/pennylane/pull/5044)
+
+* `ClassicalShadow.entropy()` no longer needs an `atol` keyword as a better
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+  [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
+
 <h3>Deprecations 👋</h3>
 
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+
+* `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
+  values that are no longer needed.
+  [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
 
 <h3>Documentation 📝</h3>
 
@@ -72,4 +115,5 @@ Pablo Antonio Moreno Casares,
 Christina Lee,
 Isaac De Vlugt,
 Korbinian Kottmann,
+Lee J. O'Riordan,
 Matthew Silverman.
