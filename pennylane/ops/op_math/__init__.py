@@ -94,7 +94,16 @@ from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .condition import cond, Conditional
 from .controlled import Controlled, ControlledOp, ctrl
-from .controlled_ops import ControlledQubitUnitary, CY, CZ
+from .controlled_parametric_ops import (
+    ControlledQubitUnitary,
+    ControlledPhaseShift,
+    CPhase,
+    CRot,
+    CRX,
+    CRY,
+    CRZ,
+)
+from .controlled_non_parametric_ops import CY, CZ
 from .decompositions import one_qubit_decomposition, two_qubit_decomposition, sk_decomposition
 from .evolution import Evolution
 from .exp import Exp, exp
@@ -105,4 +114,14 @@ from .sum import Sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
 from .controlled_decompositions import ctrl_decomp_zyz, ctrl_decomp_bisect
 
-controlled_qubit_ops = {"ControlledQubitUnitary", "CY", "CZ"}
+controlled_qubit_ops = {
+    "ControlledQubitUnitary",
+    "CY",
+    "CZ",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "ControlledPhaseShift",
+    "CPhase",
+}

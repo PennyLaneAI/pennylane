@@ -24,6 +24,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
+import pennylane.ops.op_math.controlled_non_parametric_ops
 from pennylane import operation
 from pennylane import math as qmlmath
 from pennylane.operation import Operator
@@ -128,10 +129,15 @@ def ctrl(op, control, control_values=None, work_wires=None):
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
 
     custom_controlled_ops = {
-        (qml.PauliZ, 1): qml.CZ,
-        (qml.PauliY, 1): qml.CY,
+        (qml.PauliZ, 1): pennylane.ops.op_math.controlled_non_parametric_ops.CZ,
+        (qml.PauliY, 1): pennylane.ops.op_math.controlled_non_parametric_ops.CY,
         (qml.PauliX, 1): qml.CNOT,
         (qml.PauliX, 2): qml.Toffoli,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
     }
     control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
