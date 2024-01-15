@@ -64,7 +64,7 @@ class TestLegacySupport:
         # true_res = qml.sum(qml.s_prod(2j, qml.PauliZ(0) @ qml.PauliX(1)), qml.s_prod(2j, qml.PauliX(0) @ qml.PauliZ(1)))
         res = qml.commutator(H1, H2).simplify()
         assert isinstance(res, Sum)
-        # assert true_res == res # needs fix to be merged https://github.com/PennyLaneAI/pennylane/pull/5037
+        # assert true_res == res # issue https://github.com/PennyLaneAI/pennylane/issues/5060
 
 class TestCommutatorPauli:
     """Test qml.commutator for pauli=True"""

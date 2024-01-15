@@ -46,5 +46,5 @@ def commutator(op1, op2, pauli=False):
     if isinstance(op2, (PauliWord, PauliSentence)):
         op2 = op2.operation()
 
-    res = qml.prod(op1, op2) - qml.prod(op2, op1)
+    res = qml.sum(qml.prod(op1, op2), qml.s_prod(-1., qml.prod(op2, op1)))
     return res.simplify()
