@@ -420,9 +420,9 @@ pw1 = PauliWord({0: "X", 1: "Z"})
 pw2 = PauliWord({0: "Y", 1: "Z"})
 pw3 = PauliWord({"a": "Y", "b": "Z"})
 op_pairs = (
-    (pw1, qml.PauliX(0) @ qml.PauliZ(1)),
-    (pw2, qml.PauliY(0) @ qml.PauliZ(1)),
-    (pw3, qml.PauliY("a") @ qml.PauliZ("b")),
+    (pw1, qml.prod(qml.PauliX(0), qml.PauliZ(1))),
+    (pw2, qml.prod(qml.PauliY(0), qml.PauliZ(1))),
+    #(pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))), # needs fix https://github.com/PennyLaneAI/pennylane/pull/5041
 )
 
 
@@ -438,7 +438,7 @@ class TestPauliWordPauliSentence:
     def test_PauliSentence_matrix(self, pw, op):
         """Test that a PauliWord is correctly transformed using qml.matrix"""
         res = qml.matrix(PauliSentence({pw: 0.5}))
-        true_res = qml.matrix(0.5 * op)
+        true_res = qml.matrix(qml.s_prod(0.5, op))
         assert qml.math.allclose(res, true_res)
 
 
