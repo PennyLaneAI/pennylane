@@ -17,6 +17,7 @@ This module contains the qml.matrix function.
 # pylint: disable=protected-access
 from typing import Sequence, Callable, Union
 from functools import partial
+from warnings import warn
 
 import pennylane as qml
 from pennylane.transforms.op_transforms import OperationTransformError
@@ -24,6 +25,13 @@ from pennylane import transform
 from pennylane.typing import TensorLike
 from pennylane.operation import Operator
 from pennylane.pauli import PauliWord, PauliSentence
+
+_wire_order_none_warning = (
+    "Calling qml.matrix() on a QuantumTape, quantum functions, or certain QNodes without "
+    "specifying a value for wire_order is deprecated. Please provide a wire_order value to avoid "
+    "future issues. Note that a wire order is not required for QNodes with devices that have "
+    "wires specified, because the wire order is taken from the device."
+)
 
 
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
@@ -180,7 +188,16 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
         if isinstance(op, (qml.pauli.PauliWord, qml.pauli.PauliSentence)):
             return op.to_mat(wire_order=wire_order)
 
-        if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
+        if isinstance(op, qml.tape.QuantumScript):
+            if wire_order is None and len(op.wires) > 1:
+                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+        elif isinstance(op, qml.QNode):
+            if wire_order is None and op.device.wires is None:
+                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+        elif callable(op):
+            if wire_order is None:
+                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+        else:
             raise OperationTransformError(
                 "Input is not an Operator, tape, QNode, or quantum function"
             )
