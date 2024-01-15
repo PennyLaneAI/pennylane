@@ -14,6 +14,7 @@
 """
 Code relevant for performing measurements on a qutrit mixed state.
 """
+import itertools
 from typing import Callable
 from string import ascii_letters as alphabet
 from pennylane import math
@@ -28,9 +29,6 @@ from pennylane.measurements import (
 from pennylane.operation import Observable
 from pennylane.typing import TensorLike
 
-from pennylane.wires import Wires
-
-from .apply_operation import apply_operation
 from .utils import (
     get_einsum_mapping,
     resquare_state,
@@ -39,7 +37,6 @@ from .utils import (
     get_new_state_einsum_indices,
     QUDIT_DIM,
 )
-from .abstracted_math_funcs import reduce_dm
 
 alphabet_array = math.asarray(list(alphabet))
 
@@ -77,7 +74,6 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
 
         return f"{op_1_indices},...{state_indices}->...{new_state_indices}"
 
-    # TODO can measurements be batched?
     num_ch_wires = len(obs.wires)
     einsum_indices = get_einsum_mapping(obs, state, map_indices, is_state_batched)
     obs_mat = obs.matrix()
@@ -101,7 +97,9 @@ def trace_method(
     obs = measurementprocess.obs
     rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
     squared_rho_mult_obs = resquare_state(rho_mult_obs, get_num_wires(state, is_state_batched))
-    return math.real(math.trace(squared_rho_mult_obs))
+    return math.real(
+        math.trace(squared_rho_mult_obs, axis1=int(is_state_batched), axis2=(1 + is_state_batched))
+    )
 
 
 def reduce_density_matrix(
@@ -117,11 +115,22 @@ def reduce_density_matrix(
     Returns:
         TensorLike: the resulting resquared density_matrix
     """
-    squared_state = resquare_state(state, get_num_wires(state, is_state_batched))
-    if not measurementprocess.wires:
-        return squared_state
+    wires = measurementprocess.wires
+    if not wires:
+        return resquare_state(state, get_num_wires(state, is_state_batched))
 
-    return reduce_dm(squared_state, indices=measurementprocess.wires, qudit_dim=3)
+    num_state_wires = get_num_wires(state, is_state_batched)
+    wires_to_trace = [x + is_state_batched for x in range(num_state_wires) if x not in wires]
+
+    for i in range(len(wires_to_trace)):
+        axis1 = wires_to_trace[i] - i
+        axis2 = axis1 + num_state_wires - i
+
+        print(axis1, axis2)
+
+        state = math.trace(state, axis1=axis1, axis2=axis2)
+
+    return resquare_state(state, len(wires))
 
 
 def calculate_probability(
@@ -137,8 +146,27 @@ def calculate_probability(
     Returns:
         TensorLike: the result of the measurement
     """
+    if measurementprocess.obs is not None:
+        raise NotImplementedError
 
-    return get_probs(state, get_num_wires(state, is_state_batched))
+    num_state_wires = get_num_wires(state, is_state_batched)
+    probs = get_probs(state, num_state_wires, is_state_batched)
+
+    if wires := measurementprocess.wires:
+        expanded_shape = [QUDIT_DIM] * num_state_wires
+        new_shape = [QUDIT_DIM ** len(wires)]
+        if is_state_batched:
+            expanded_shape.insert(0, probs.shape[0])
+            new_shape.insert(0, probs.shape[0])
+        wires_to_trace = tuple(
+            [x + is_state_batched for x in range(num_state_wires) if x not in wires]
+        )
+
+        expanded_probs = probs.reshape(expanded_shape)
+        summed_probs = math.sum(expanded_probs, axis=wires_to_trace)
+        return summed_probs.reshape(new_shape)
+
+    return probs
 
 
 def get_measurement_function(
@@ -165,11 +193,10 @@ def get_measurement_function(
             if isinstance(measurementprocess.obs, Hamiltonian):
                 return sum_of_terms_method
             if isinstance(measurementprocess.obs, Sum):
-                backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
-                if backprop_mode:
-                    return sum_of_terms_method
-                return sum_of_terms_method  # TODO
-            return trace_method
+                return sum_of_terms_method
+            if measurementprocess.obs.has_matrix:
+                return trace_method
+        # TODO add suport for sparce var
 
     raise NotImplementedError
 

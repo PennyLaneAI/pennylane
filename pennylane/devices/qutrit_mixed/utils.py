@@ -69,7 +69,7 @@ def get_einsum_mapping(
     )
 
 
-def get_probs(state, num_wires):
+def get_probs(state, num_wires, is_state_batched: bool = False):
     """
     TODO: add docstring
     """
@@ -77,7 +77,7 @@ def get_probs(state, num_wires):
     rho = resquare_state(state, num_wires)
 
     # probs are diagonal elements
-    probs = math.diagonal(rho)
+    probs = math.diagonal(rho, axis1=int(is_state_batched), axis2=(1 + is_state_batched))
 
     # take the real part so probabilities are not shown as complex numbers
     probs = math.real(probs)
