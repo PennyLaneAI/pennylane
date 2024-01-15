@@ -25,6 +25,9 @@
   instances, as well as scalars, from each other.
   For example `ps1 - pw1 - 1` for `pw1 = PauliWord({0: "X", 1: "Y"})` and `ps1 = PauliSentence({pw1: 3.})`.
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
+
+* `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
+  [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
   
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)

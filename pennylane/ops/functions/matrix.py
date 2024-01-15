@@ -15,16 +15,18 @@
 This module contains the qml.matrix function.
 """
 # pylint: disable=protected-access
-from typing import Sequence, Callable
+from typing import Sequence, Callable, Union
 from functools import partial
 
 import pennylane as qml
 from pennylane.transforms.op_transforms import OperationTransformError
 from pennylane import transform
 from pennylane.typing import TensorLike
+from pennylane.operation import Operator
+from pennylane.pauli import PauliWord, PauliSentence
 
 
-def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
+def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
     Args:
@@ -76,6 +78,13 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 
     .. details::
         :title: Usage Details
+
+        ``qml.matrix`` can also be used with :class:`~PauliWord` and :class:`~PauliSentence` instances.
+        Internally, we are using their `to_mat()` methods.
+
+        >>> X0 = PauliWord({0:"X"})
+        >>> np.allclose(qml.matrix(X0), X0.to_mat())
+        True
 
         ``qml.matrix`` can also be used with QNodes, tapes, or quantum functions that
         contain multiple operations.
