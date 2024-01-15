@@ -30,6 +30,7 @@
   2j * Z(0) @ X(1)
   + 2j * X(0) @ Z(1)
   ```
+  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
 
 <h3>Improvements 🛠</h3>
 
