@@ -382,33 +382,6 @@ class DefaultClifford(Device):
 
         return results[0] if is_single_circuit else results
 
-    def supports_derivatives(
-        self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
-    ) -> bool:
-        """Check whether or not derivatives are available for a given configuration and circuit.
-
-        ``DefaultClifford`` does not support differentiable workflows.
-
-        Args:
-            execution_config (ExecutionConfig): The configuration of the desired derivative calculation
-            circuit (QuantumTape): An optional circuit to check derivatives support for.
-
-        Returns:
-            Bool: Whether or not a derivative can be calculated provided the given information
-
-        """
-
-        return False
-
-    def compute_derivatives(
-        self,
-        circuits: QuantumTape_or_Batch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ):
-        raise NotImplementedError(f"{self.name} does not support differentiable workflows.")
-
     # pylint:disable=no-member
     def simulate(
         self,
