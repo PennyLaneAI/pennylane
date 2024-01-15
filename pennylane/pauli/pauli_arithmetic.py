@@ -152,6 +152,7 @@ class PauliWord(dict):
     (Z(1) @ Z(2) @ X(0), -1j)
 
     We can multiply scalars to Pauli words or add/subtract them, resulting in a :class:`~PauliSentence` instance.
+
     >>> 0.5 * w1 - 1.5 * w2 + 2
     0.5 * X(0) @ Y(1)
     + -1.5 * X(1) @ Z(2)

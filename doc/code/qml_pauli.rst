@@ -82,7 +82,7 @@ and :class:`~pennylane.pauli.PauliSentence` objects like the spin-1/2 XXZ model 
 .. math:: H_\text{XXZ} = \sum_j [J^\bot (X_j X_{j+1} + Y_j Y_{j+1}) + J^\text{ZZ} Z_j Z_{j+1} + h Z_j].
 
 Here we look at the simple topology of a one-dimensional chain with periodic boundary conditions
-(i.e. qubit number :math:`n \equiv 0` for pythonic numbering of wires, e.g. `[0, 1, 2, 3]` for `n=4`).
+(i.e. qubit number :math:`n \equiv 0` for pythonic numbering of wires, e.g. ``[0, 1, 2, 3]`` for ``n=4``).
 In code we can do this via the following example with 4 qubits.
 
 .. code-block:: python3
