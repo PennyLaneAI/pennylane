@@ -18,11 +18,21 @@ from typing import List, Union, Tuple
 
 import numpy as np
 import pennylane as qml
+from pennylane.measurements import (
+    SampleMeasurement,
+    Shots,
+    ExpectationMP,
+    ClassicalShadowMP,
+    ShadowExpvalMP,
+    CountsMP,
+    SampleMP
+)
+from .utils import QUDIT_DIM
 
 
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
+    mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]], #todo FIX
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -49,7 +59,118 @@ def measure_with_samples(
     Returns:
         List[TensorLike[Any]]: Sample measurement results
     """
-    pass  # TODO: decide what needs to be implemented, probably just a call to sample state
+    groups, indices = _group_measurements(mps)
+
+    all_res = []
+    for group in groups:
+        if isinstance(group[0], SampleMP):
+            all_res.extend(
+                _measure_with_samples_diagonalizing_gates(
+                    group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=prng_key
+                )
+            )
+        else:
+            raise NotImplementedError
+
+    flat_indices = [_i for i in indices for _i in i]
+
+    # reorder results
+    sorted_res = tuple(
+        res for _, res in sorted(list(enumerate(all_res)), key=lambda r: flat_indices[r[0]])
+    )
+
+    # put the shot vector axis before the measurement axis
+    if shots.has_partitioned_shots:
+        sorted_res = tuple(zip(*sorted_res))
+
+    return sorted_res
+
+
+def _measure_with_samples(
+    mps: List[SampleMeasurement],
+    state: np.ndarray,
+    shots: Shots,
+    is_state_batched: bool = False,
+    rng=None,
+    prng_key=None,
+) -> TensorLike:
+    """
+    Returns the samples of the measurement process performed on the given state,
+    by rotating the state into the measurement basis using the diagonalizing gates
+    given by the measurement process.
+
+    Args:
+        mp (~.measurements.SampleMeasurement): The sample measurement to perform
+        state (np.ndarray[complex]): The state vector to sample from
+        shots (~.measurements.Shots): The number of samples to take
+        is_state_batched (bool): whether the state is batched or not
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+
+    Returns:
+        TensorLike[Any]: Sample measurement results
+    """
+    # apply diagonalizing gates
+    if mps.obs is not None:
+        raise NotImplementedError
+
+    total_indices = len(state.shape) - is_state_batched
+    wires = qml.wires.Wires(range(total_indices))
+
+    # def _process_single_shot(samples): # TODO
+    #     processed = []
+    #     for mp in mps:
+    #         res = mp.process_samples(samples, wires)
+    #         if not isinstance(mp, CountsMP):
+    #             res = qml.math.squeeze(res)
+    #
+    #         processed.append(res)
+    #
+    #     return tuple(processed)
+
+    # if there is a shot vector, build a list containing results for each shot entry
+    if shots.has_partitioned_shots:
+        processed_samples = []
+        for s in shots:
+            # currently we call sample_state for each shot entry, but it may be
+            # better to call sample_state just once with total_shots, then use
+            # the shot_range keyword argument
+            try:
+                samples = sample_state(
+                    state,
+                    shots=s,
+                    is_state_batched=is_state_batched,
+                    wires=wires,
+                    rng=rng,
+                    prng_key=prng_key,
+                )
+            except ValueError as e:
+                if str(e) != "probabilities contain NaN":
+                    raise e
+                samples = qml.math.full((s, len(wires)), 0)
+
+            processed_samples.append(samples) #_process_single_shot(samples))
+
+        return tuple(zip(*processed_samples))
+
+    try:
+        samples = sample_state(
+            state,
+            shots=shots.total_shots,
+            is_state_batched=is_state_batched,
+            wires=wires,
+            rng=rng,
+            prng_key=prng_key,
+        )
+    except ValueError as e:
+        if str(e) != "probabilities contain NaN":
+            raise e
+        samples = qml.math.full((shots.total_shots, len(wires)), 0)
+
+    return samples #_process_single_shot(samples)
 
 
 def sample_state(
@@ -77,34 +198,33 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    # if prng_key is not None:
-    #     return _sample_state_jax(
-    #         state, shots, prng_key, is_state_batched=is_state_batched, wires=wires
-    #     )
-    #
-    # rng = np.random.default_rng(rng)
-    #
-    # total_indices = len(state.shape) - is_state_batched
-    # state_wires = qml.wires.Wires(range(total_indices))
-    #
-    # wires_to_sample = wires or state_wires
-    # num_wires = len(wires_to_sample)
-    # basis_states = np.arange(2**num_wires)
-    #
-    # flat_state = flatten_state(state, total_indices)
-    # with qml.queuing.QueuingManager.stop_recording():
-    #     probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
-    #
-    # if is_state_batched:
-    #     # rng.choice doesn't support broadcasting
-    #     samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
-    # else:
-    #     samples = rng.choice(basis_states, shots, p=probs)
-    #
-    # powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
-    # states_sampled_base_ten = samples[..., None] & powers_of_two
-    # return (states_sampled_base_ten > 0).astype(np.int64)
-    pass
+    if prng_key is not None:
+        return _sample_state_jax(
+            state, shots, prng_key, is_state_batched=is_state_batched, wires=wires
+        )
+
+    rng = np.random.default_rng(rng)
+
+    total_indices = len(state.shape) - is_state_batched  # TODO:fix
+    state_wires = qml.wires.Wires(range(total_indices))
+
+    wires_to_sample = wires or state_wires
+    num_wires = len(wires_to_sample)
+    basis_states = np.arange(QUDIT_DIM**num_wires)
+
+    flat_state = flatten_state(state, total_indices)  # TODO:fix
+    with qml.queuing.QueuingManager.stop_recording():  # TODO: stops probs from being added to queue
+        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)  # TODO:fix
+
+    if is_state_batched:
+        # rng.choice doesn't support broadcasting
+        samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
+    else:
+        samples = rng.choice(basis_states, shots, p=probs)
+
+    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]  # TODO: make this work for powers of three
+    states_sampled_base_ten = samples[..., None] & powers_of_two
+    return (states_sampled_base_ten > 0).astype(np.int64)
 
 
 # pylint:disable = unused-argument
@@ -130,38 +250,37 @@ def _sample_state_jax(
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
     # pylint: disable=import-outside-toplevel
-    # import jax
-    # import jax.numpy as jnp
-    #
-    # key = prng_key
-    #
-    # total_indices = len(state.shape) - is_state_batched
-    # state_wires = qml.wires.Wires(range(total_indices))
-    #
-    # wires_to_sample = wires or state_wires
-    # num_wires = len(wires_to_sample)
-    # basis_states = np.arange(2**num_wires)
-    #
-    # flat_state = flatten_state(state, total_indices)
-    # with qml.queuing.QueuingManager.stop_recording():
-    #     probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
-    #
-    # if is_state_batched:
-    #     # Produce separate keys for each of the probabilities along the broadcasted axis
-    #     keys = []
-    #     for _ in state:
-    #         key, subkey = jax.random.split(key)
-    #         keys.append(subkey)
-    #     samples = jnp.array(
-    #         [
-    #             jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
-    #             for _key, prob in zip(keys, probs)
-    #         ]
-    #     )
-    # else:
-    #     samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
-    #
-    # powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
-    # states_sampled_base_ten = samples[..., None] & powers_of_two
-    # return (states_sampled_base_ten > 0).astype(np.int64)
-    pass
+    import jax
+    import jax.numpy as jnp
+
+    key = prng_key
+
+    total_indices = len(state.shape) - is_state_batched  # TODO:fix
+    state_wires = qml.wires.Wires(range(total_indices))
+
+    wires_to_sample = wires or state_wires
+    num_wires = len(wires_to_sample)
+    basis_states = np.arange(QUDIT_DIM**num_wires)
+
+    flat_state = flatten_state(state, total_indices)  # TODO:fix
+    with qml.queuing.QueuingManager.stop_recording():
+        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)   # TODO:fix
+
+    if is_state_batched:
+        # Produce separate keys for each of the probabilities along the broadcasted axis
+        keys = []
+        for _ in state:
+            key, subkey = jax.random.split(key)
+            keys.append(subkey)
+        samples = jnp.array(
+            [
+                jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
+                for _key, prob in zip(keys, probs)
+            ]
+        )
+    else:
+        samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
+
+    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]  # TODO: make this work for powers of three
+    states_sampled_base_ten = samples[..., None] & powers_of_two
+    return (states_sampled_base_ten > 0).astype(np.int64)
