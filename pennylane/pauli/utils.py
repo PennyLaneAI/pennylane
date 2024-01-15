@@ -463,10 +463,10 @@ def pauli_word_to_string(pauli_word, wire_map=None):
     if isinstance(pauli_word, Hamiltonian):
         # hamiltonian contains only one term
         pauli_word = pauli_word.ops[0]
-    elif isinstance(pauli_word, Prod):
-        pauli_word = Tensor(*pauli_word.operands)
     elif isinstance(pauli_word, SProd):
         pauli_word = pauli_word.base
+    if isinstance(pauli_word, Prod):
+        pauli_word = Tensor(*pauli_word.operands)
 
     character_map = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
