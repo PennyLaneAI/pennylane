@@ -46,9 +46,9 @@ class TestCurrentlyUnsupportedCases:
     @pytest.mark.parametrize(
         "m",
         (
-                qml.var(qml.GellMann(0, 3)),  # TODO add variance
-                qml.sample(wires=0),
-                qml.probs(op=qml.GellMann(0, 3))
+            qml.var(qml.GellMann(0, 3)),  # TODO add variance
+            qml.sample(wires=0),
+            qml.probs(op=qml.GellMann(0, 3)),
         ),
     )
     def test_sample_based_observable(self, m, two_qutrit_state):
@@ -91,11 +91,11 @@ class TestMeasurementDispatch:
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
 
-@pytest.mark.parametrize("obs", [qml.GellMann(2, 3)]) # TODO add more observables
+@pytest.mark.parametrize("obs", [qml.GellMann(2, 3)])  # TODO add more observables
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestApplyObservableEinsum:
     num_qutrits = 3
-    dims = (3 ** num_qutrits, 3 ** num_qutrits)
+    dims = (3**num_qutrits, 3**num_qutrits)
 
     def test_apply_observable_einsum(self, obs, three_qutrit_state, ml_framework):
         res = apply_observable_einsum(
@@ -103,7 +103,7 @@ class TestApplyObservableEinsum:
         )
         missing_wires = self.num_qutrits - len(obs.wires)
         mat = obs.matrix()
-        expanded_mat = np.kron(np.eye(3 ** missing_wires), mat) if missing_wires else mat
+        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
 
         flattened_state = three_qutrit_state.reshape(self.dims)
         expected = (expanded_mat @ flattened_state).reshape([3] * (self.num_qutrits * 2))
@@ -120,7 +120,7 @@ class TestApplyObservableEinsum:
         )
         missing_wires = self.num_qutrits - len(obs.wires)
         mat = obs.matrix()
-        expanded_mat = np.kron(np.eye(3 ** missing_wires), mat) if missing_wires else mat
+        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
         expected = []
 
         for i in range(BATCH_SIZE):
@@ -164,7 +164,7 @@ class TestMeasurements:
         expected = 0
         for i in range(len(coeffs)):
             mat = observables[i].matrix()
-            expanded_mat = np.kron(mat, np.eye(3 ** missing_wires)) if missing_wires else mat
+            expanded_mat = np.kron(mat, np.eye(3**missing_wires)) if missing_wires else mat
             expected += coeffs[i] * math.trace(expanded_mat @ flattened_state)
 
         assert np.isclose(res, expected)
@@ -179,7 +179,7 @@ class TestMeasurements:
 
         missing_wires = 2 - len(obs.wires)
         mat = obs.matrix()
-        expanded_mat = np.kron(mat, np.eye(3 ** missing_wires)) if missing_wires else mat
+        expanded_mat = np.kron(mat, np.eye(3**missing_wires)) if missing_wires else mat
 
         expected = math.trace(expanded_mat @ flattened_state)
 
@@ -213,13 +213,17 @@ class TestMeasurements:
 
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
+
     num_qutrits = 2
 
     @pytest.mark.parametrize(
         "measurement, get_expected",
         [
             (qml.state(), lambda x: math.reshape(x, newshape=(BATCH_SIZE, 9, 9))),
-            (qml.density_matrix(wires=[0, 1]), lambda x: math.reshape(x, newshape=(BATCH_SIZE, 9, 9))),
+            (
+                qml.density_matrix(wires=[0, 1]),
+                lambda x: math.reshape(x, newshape=(BATCH_SIZE, 9, 9)),
+            ),
             (qml.density_matrix(wires=[1]), lambda x: math.trace(x, axis1=1, axis2=3)),
         ],
     )
@@ -249,11 +253,12 @@ class TestBroadcasting:
 
         assert np.allclose(res, expected)
 
-    @pytest.mark.parametrize("observable",
-                             [
-                                 qml.GellMann(1, 3),
-
-                             ])  # TODO fix probs Broadcasting result
+    @pytest.mark.parametrize(
+        "observable",
+        [
+            qml.GellMann(1, 3),
+        ],
+    )  # TODO fix probs Broadcasting result
     def test_expval_measurement(self, observable, two_qutrit_batched_state):
         res = measure(qml.expval(observable), two_qutrit_batched_state, is_state_batched=True)
 
@@ -271,7 +276,12 @@ class TestBroadcasting:
     # TODO add test for var once implemented
 
 
-obs_list = [qml.GellMann(0, 3) @ qml.GellMann(1, 1), qml.GellMann(1,6), qml.GellMann(1, 8), qml.GellMann(1, 7)]
+obs_list = [
+    qml.GellMann(0, 3) @ qml.GellMann(1, 1),
+    qml.GellMann(1, 6),
+    qml.GellMann(1, 8),
+    qml.GellMann(1, 7),
+]
 measurement_processes = [
     qml.expval(qml.GellMann(0, 3)),  # TODO, change values
     qml.expval(
@@ -362,5 +372,6 @@ class TestNaNMeasurements:
         assert qml.math.shape(res) == (3 ** len(mp.wires),)
         assert qml.math.all(qml.math.isnan(res))
         assert qml.math.get_interface(res) == "jax"
+
 
 # TODO TestSumOfTermsDifferentiability in future PR (with other differentiabilty tests)aa
