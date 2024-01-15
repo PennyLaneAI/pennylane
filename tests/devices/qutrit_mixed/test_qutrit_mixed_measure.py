@@ -28,10 +28,8 @@ from pennylane.devices.qutrit_mixed.measure import (
     sum_of_terms_method,
     reduce_density_matrix,
 )
-import os
 
 state_diagonalizing_gates = None  # TODO
-
 
 ml_frameworks_list = [
     "numpy",
@@ -45,10 +43,18 @@ BATCH_SIZE = 2
 
 class TestCurrentlyUnsupportedCases:
     # pylint: disable=too-few-public-methods
-    def test_sample_based_observable(self, two_qutrit_state):
+    @pytest.mark.parametrize(
+        "m",
+        (
+                qml.var(qml.GellMann(0, 3)),  # TODO add variance
+                qml.sample(wires=0),
+                qml.probs(op=qml.GellMann(0, 3))
+        ),
+    )
+    def test_sample_based_observable(self, m, two_qutrit_state):
         """Test sample-only measurements raise a notimplementedError."""
         with pytest.raises(NotImplementedError):
-            _ = measure(qml.sample(wires=0), two_qutrit_state)
+            _ = measure(m, two_qutrit_state)
 
 
 class TestMeasurementDispatch:
@@ -60,17 +66,10 @@ class TestMeasurementDispatch:
         mp1 = qml.state()
         assert get_measurement_function(mp1, state=1) is reduce_density_matrix
 
-    @pytest.mark.parametrize(
-        "m",
-        (
-            qml.var(qml.GellMann(0, 3)),  # TODO add variance
-            qml.expval(qml.prod(qml.GellMann(0, 4), qml.GellMann(1, 5), qml.GellMann(10, 6))),
-        ),
-    )
-    def test_diagonalizing_gates(self, m):
-        """Test that the state_diagonalizing gates are used when there's an observable has diagonalizing
-        gates and allows the measurement to be efficiently computed with them."""
-        assert get_measurement_function(m, state=1) is trace_method
+    def test_prod_trace_method(self):
+        """Test that the expectation value of a product uses the trace method."""
+        prod = qml.prod(*(qml.GellMann(i, 1) for i in range(8)))
+        assert get_measurement_function(qml.expval(prod), state=1) is trace_method
 
     def test_hermitian_trace(self):
         """Test that the expectation value of a hermitian uses the trace method."""
@@ -84,7 +83,7 @@ class TestMeasurementDispatch:
         assert get_measurement_function(qml.expval(H), state) is sum_of_terms_method
 
     def test_sum_sum_of_terms(self):
-        """Check that the sum of terms method is used when sum_of_terms"""
+        """Check that the sum of terms method is used when sum of terms"""
         S = qml.prod(*(qml.GellMann(i, 1) for i in range(8))) + qml.prod(
             *(qml.GellMann(i, 2) for i in range(8))
         )
@@ -92,14 +91,11 @@ class TestMeasurementDispatch:
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
 
-observable_list = [qml.GellMann(2, 3)]  # TODO add more observables
-
-
-@pytest.mark.parametrize("obs", observable_list)
+@pytest.mark.parametrize("obs", [qml.GellMann(2, 3)]) # TODO add more observables
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestApplyObservableEinsum:
     num_qutrits = 3
-    dims = (3**num_qutrits, 3**num_qutrits)
+    dims = (3 ** num_qutrits, 3 ** num_qutrits)
 
     def test_apply_observable_einsum(self, obs, three_qutrit_state, ml_framework):
         res = apply_observable_einsum(
@@ -107,7 +103,7 @@ class TestApplyObservableEinsum:
         )
         missing_wires = self.num_qutrits - len(obs.wires)
         mat = obs.matrix()
-        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
+        expanded_mat = np.kron(np.eye(3 ** missing_wires), mat) if missing_wires else mat
 
         flattened_state = three_qutrit_state.reshape(self.dims)
         expected = (expanded_mat @ flattened_state).reshape([3] * (self.num_qutrits * 2))
@@ -124,7 +120,7 @@ class TestApplyObservableEinsum:
         )
         missing_wires = self.num_qutrits - len(obs.wires)
         mat = obs.matrix()
-        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
+        expanded_mat = np.kron(np.eye(3 ** missing_wires), mat) if missing_wires else mat
         expected = []
 
         for i in range(BATCH_SIZE):
@@ -143,7 +139,7 @@ class TestMeasurements:
             (qml.density_matrix(wires=0), lambda x: math.trace(x, axis1=1, axis2=3)),
             (
                 qml.probs(wires=[0]),
-                lambda x: math.real(math.diag(math.reshape(x, newshape=(9, 9)))),
+                lambda x: math.real(math.diag(math.trace(x, axis1=1, axis2=3))),
             ),
         ],
     )
@@ -168,7 +164,7 @@ class TestMeasurements:
         expected = 0
         for i in range(len(coeffs)):
             mat = observables[i].matrix()
-            expanded_mat = np.kron(mat, np.eye(3**missing_wires)) if missing_wires else mat
+            expanded_mat = np.kron(mat, np.eye(3 ** missing_wires)) if missing_wires else mat
             expected += coeffs[i] * math.trace(expanded_mat @ flattened_state)
 
         assert np.isclose(res, expected)
@@ -183,7 +179,7 @@ class TestMeasurements:
 
         missing_wires = 2 - len(obs.wires)
         mat = obs.matrix()
-        expanded_mat = np.kron(mat, np.eye(3**missing_wires)) if missing_wires else mat
+        expanded_mat = np.kron(mat, np.eye(3 ** missing_wires)) if missing_wires else mat
 
         expected = math.trace(expanded_mat @ flattened_state)
 
@@ -217,39 +213,154 @@ class TestMeasurements:
 
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
+    num_qutrits = 2
 
     @pytest.mark.parametrize(
-        "measurement, expected",
+        "measurement, get_expected",
         [
-            (
-                qml.state(),
-                np.array(
-                    [
-                        # TODO Add states
-                    ]
-                ),
-            ),
-            (
-                qml.density_matrix(wires=[0, 1]),
-                np.array(
-                    [
-                        # TODO Add states
-                    ]
-                ),
-            ),
-            (qml.probs(wires=[0, 1]), []),  # TODO Add expected
-            (qml.expval(qml.GellMann(1)), None),  # TODO Add expvals
-            (qml.var(qml.GellMann(1)), None),  # TODO Add expvals
+            (qml.state(), lambda x: math.reshape(x, newshape=(BATCH_SIZE, 9, 9))),
+            (qml.density_matrix(wires=[0, 1]), lambda x: math.reshape(x, newshape=(BATCH_SIZE, 9, 9))),
+            (qml.density_matrix(wires=[1]), lambda x: math.trace(x, axis1=1, axis2=3)),
         ],
     )
-    def test_state_measurement(self, measurement, expected):
+    def test_state_measurement(self, measurement, get_expected, two_qutrit_batched_state):
         """Test that broadcasting works for regular state measurements"""
-        state = None  # TODO add states
-        state = np.stack(state)
 
-        res = measure(measurement, state, is_state_batched=True)
+        res = measure(measurement, two_qutrit_batched_state, is_state_batched=True)
+        expected = get_expected(two_qutrit_batched_state)
+
         assert np.allclose(res, expected)
 
+    @pytest.mark.parametrize(  # TODO fix probs Broadcasting result
+        "measurement, matrix_transform",
+        [
+            (qml.probs(wires=[0, 1]), lambda x: math.reshape(x, (2, 9, 9))),
+            (qml.probs(wires=[0]), lambda x: math.trace(x, axis1=2, axis2=4)),
+        ],
+    )
+    def test_probs_measurement(self, measurement, matrix_transform, two_qutrit_batched_state):
+        res = measure(measurement, two_qutrit_batched_state, is_state_batched=True)
 
-# TODO TestNaNMeasurements,
-# TODO TestSumOfTermsDifferentiability in future PR
+        transformed_state = matrix_transform(two_qutrit_batched_state)
+
+        expected = []
+        for i in range(BATCH_SIZE):
+            expected.append(math.diag(transformed_state[i]))
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("observable",
+                             [
+                                 qml.GellMann(1, 3),
+
+                             ])  # TODO fix probs Broadcasting result
+    def test_expval_measurement(self, observable, two_qutrit_batched_state):
+        res = measure(qml.expval(observable), two_qutrit_batched_state, is_state_batched=True)
+
+        mat = observable.matrix()
+        expanded_mat = np.kron(np.eye(3), mat)
+
+        expected = []
+        for i in range(BATCH_SIZE):
+            resquared_matrix = two_qutrit_batched_state[i].reshape(9, 9)
+            obs_mult_state = expanded_mat @ resquared_matrix
+            expected.append(math.trace(obs_mult_state))
+
+        assert qml.math.allclose(res, expected)
+
+    # TODO add test for var once implemented
+
+
+obs_list = [qml.GellMann(0, 3) @ qml.GellMann(1, 1), qml.GellMann(1,6), qml.GellMann(1, 8), qml.GellMann(1, 7)]
+measurement_processes = [
+    qml.expval(qml.GellMann(0, 3)),  # TODO, change values
+    qml.expval(
+        qml.Hamiltonian(
+            [1.0, 2.0, 3.0, 4.0],
+            obs_list,  # TODO, change values
+        )
+    ),
+    qml.expval(
+        qml.dot(
+            [1.0, 2.0, 3.0, 4.0],
+            obs_list,  # TODO, change values
+        )
+    ),
+    # qml.var(qml.GellMann(0, 3)),  # TODO, add once var is added
+    # qml.var(
+    #     qml.dot(
+    #         [1.0, 2.0, 3.0, 4.0],
+    #         obs_list,
+    #     )
+    # ),
+]
+probs_processes = "mp", [qml.probs(wires=0), qml.probs(wires=[0, 1])]  # TODO: add probs with op
+
+
+class TestNaNMeasurements:
+    """Tests for mixed state matrices containing nan values."""
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("mp", measurement_processes)
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    def test_nan_float_result(self, mp, interface):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((3, 3), np.NaN, like=interface)
+        res = measure(mp, state, is_state_batched=False)
+
+        assert qml.math.ndim(res) == 0
+        assert qml.math.isnan(res)
+        assert qml.math.get_interface(res) == interface
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("mp", measurement_processes)
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_nan_float_result_jax(self, mp, use_jit):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((2, 2), np.NaN, like="jax")
+        if use_jit:
+            import jax
+
+            res = jax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
+        else:
+            res = measure(mp, state, is_state_batched=False)
+
+        assert qml.math.ndim(res) == 0
+
+        assert qml.math.isnan(res)
+        assert qml.math.get_interface(res) == "jax"
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("mp", probs_processes)
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    def test_nan_probs(self, mp, interface):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((2, 2), np.NaN, like=interface)
+        res = measure(mp, state, is_state_batched=False)
+
+        assert qml.math.shape(res) == (3 ** len(mp.wires),)
+        assert qml.math.all(qml.math.isnan(res))
+        assert qml.math.get_interface(res) == interface
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("mp", probs_processes)
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_nan_probs_jax(self, mp, use_jit):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((2, 2), np.NaN, like="jax")
+        if use_jit:
+            import jax
+
+            res = jax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
+        else:
+            res = measure(mp, state, is_state_batched=False)
+
+        assert qml.math.shape(res) == (3 ** len(mp.wires),)
+        assert qml.math.all(qml.math.isnan(res))
+        assert qml.math.get_interface(res) == "jax"
+
+# TODO TestSumOfTermsDifferentiability in future PR (with other differentiabilty tests)aa
