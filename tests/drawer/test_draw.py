@@ -181,7 +181,7 @@ class TestMatrixParameters:
     def test_matrix_parameters_batch_transform(self):
         """Test matrix parameters only printed once after a batch transform."""
 
-        @qml.gradients.param_shift(shifts=[(0.2,)])  # pylint:disable=no-value-for-parameter
+        @partial(qml.gradients.param_shift, shifts=[(0.2,)])
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit(x):
             qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
@@ -819,17 +819,10 @@ class TestMidCircuitMeasurements:
         assert drawing == expected_drawing
 
 
-@pytest.mark.parametrize(
-    "transform",
-    [
-        qml.gradients.param_shift(shifts=[(0.2,)]),  # pylint:disable=no-value-for-parameter
-        partial(qml.gradients.param_shift, shifts=[(0.2,)]),
-    ],
-)
-def test_draw_batch_transform(transform):
+def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly."""
 
-    @transform
+    @partial(qml.gradients.param_shift, shifts=[(0.2,)])
     @qml.qnode(qml.device("default.qubit", wires=1))
     def circ(x):
         qml.Hadamard(wires=0)

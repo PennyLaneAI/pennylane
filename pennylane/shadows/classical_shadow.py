@@ -324,7 +324,7 @@ class ClassicalShadow:
 
         return qml.math.squeeze(results)
 
-    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None, atol=None):
+    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None):
         r"""Compute entropies from classical shadow measurements.
 
         Compute general Renyi entropies of order :math:`\alpha` for a reduced density matrix :math:`\rho` in terms of
@@ -410,12 +410,6 @@ class ClassicalShadow:
         [1.5419292874423107, 1.1537924276625828, 0.9593638767763727]
 
         """
-
-        if atol is not None:
-            warnings.warn(
-                "Trying to use atol in ClassicalShadow.entropy. This feature is deprecated and has been replaced by a more accurate version that projects the density matrix estimator to the closest valid density matrix in L2 norm. You can simply remove the atol keyword in your code.",
-                qml.PennyLaneDeprecationWarning,
-            )
 
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
         rdm = median_of_means(global_snapshots, k, axis=0)
