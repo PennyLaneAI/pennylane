@@ -25,8 +25,10 @@ from pennylane import transform
 from pennylane.typing import TensorLike
 
 _wire_order_none_warning = (
-    "Calling qml.matrix() on a QuantumTape, QNode or quantum function without specifying a value "
-    "for wire_order is deprecated. Please provide a wire_order value to avoid future issues."
+    "Calling qml.matrix() on a QuantumTape, quantum functions, or certain QNodes without "
+    "specifying a value for wire_order is deprecated. Please provide a wire_order value to avoid "
+    "future issues. Note that a wire order is not required for QNodes with devices that have "
+    "wires specified, because the wire order is taken from the device."
 )
 
 
