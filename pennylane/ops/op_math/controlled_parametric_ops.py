@@ -206,6 +206,7 @@ class CRX(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    name = "CRX"
     basis = "X"
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
@@ -347,6 +348,7 @@ class CRY(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    name = "CRY"
     basis = "Y"
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
@@ -489,6 +491,7 @@ class CRZ(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    name = "CRZ"
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
@@ -660,6 +663,7 @@ class CRot(ControlledOp):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    name = "CRot"
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
@@ -812,6 +816,7 @@ class ControlledPhaseShift(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    name = "CPhaseShift"
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
