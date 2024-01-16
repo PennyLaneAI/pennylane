@@ -28,7 +28,7 @@ def validate_subspace(subspace):
     """Validate the subspace for qutrit operations.
 
     This method determines whether a given subspace for qutrit operations
-    is defined correctly or not. If not, a `ValueError` is thrown.
+    is defined correctly or not. If not, a ``ValueError`` is thrown.
 
     Args:
         subspace (tuple[int]): Subspace to check for correctness

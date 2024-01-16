@@ -68,7 +68,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops` module and will be removed from the Operator class in an upcoming release.
+* `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
+  module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
 
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
@@ -126,10 +127,6 @@ Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
 Pablo Antonio Moreno Casares,
-Isaac De Vlugt,
-Korbinian Kottmann,
-Christina Lee,
-Xiaoran Li,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
