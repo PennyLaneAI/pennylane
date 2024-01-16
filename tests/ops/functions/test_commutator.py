@@ -176,7 +176,7 @@ class TestcommPauliFalseSimplify:
         op1 = qml.PauliX(0) @ qml.PauliX(1)
         op2 = qml.PauliY(0) + qml.PauliY(1)
         res1 = qml.comm(op1, op2, pauli=True)
-        res2 = PauliWord({0: "X", 1: "X"}) | PauliWord({0: "Y"}) + PauliWord({1: "Y"})
+        res2 = PauliWord({0: "X", 1: "X"}).comm(PauliWord({0: "Y"}) + PauliWord({1: "Y"}))
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)
         assert res1 == res2
