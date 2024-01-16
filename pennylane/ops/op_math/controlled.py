@@ -563,7 +563,7 @@ class Controlled(SymbolicOp):
         if qml.operation.active_new_opmath():
             return qml.prod(*projectors, sub_gen)
 
-        return operation.Tensor(*projectors, sub_gen)
+        return 1.0 * operation.Tensor(*projectors, sub_gen)
 
     @property
     def has_adjoint(self):
