@@ -58,14 +58,15 @@ class TestLegacySupport:
         assert isinstance(res, SProd)
         assert true_res == res
 
+    @pytest.mark.xfail
     def test_Hamiltonian_sum(self):
         """Test that Hamiltonians with Tensors and sums get transformed to new operator classes and return the correct result"""
         H1 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
         H2 = qml.Hamiltonian([1.0], [qml.PauliY(0) + qml.PauliY(1)])
-        # true_res = qml.sum(qml.s_prod(2j, qml.PauliZ(0) @ qml.PauliX(1)), qml.s_prod(2j, qml.PauliX(0) @ qml.PauliZ(1)))
+        true_res = qml.sum(qml.s_prod(2j, qml.PauliZ(0) @ qml.PauliX(1)), qml.s_prod(2j, qml.PauliX(0) @ qml.PauliZ(1)))
         res = qml.commutator(H1, H2).simplify()
         assert isinstance(res, Sum)
-        # assert true_res == res # issue https://github.com/PennyLaneAI/pennylane/issues/5060
+        assert qml.equal(true_res, res) # issue https://github.com/PennyLaneAI/pennylane/issues/5060
 
 
 class TestCommutatorPauli:
