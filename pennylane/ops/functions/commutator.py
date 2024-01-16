@@ -58,8 +58,8 @@ def commutator(op1, op2, pauli=False):
     2j * Z(0) @ X(1)
     + 2j * X(0) @ Z(1)
 
-    Note that when by default `pauli=True` and even though Pauli operators are used
-    as inputs, `qml.commutator` returns Operators when not explicitly requesting Pauli operators.
+    Note that when `pauli=False`, even if Pauli operators are used
+    as inputs, `qml.commutator` returns Operators.
 
     >>> qml.commutator(op1, op2, pauli=True)
     (2j*(PauliX(wires=[1]) @ PauliZ(wires=[0]))) + (2j*(PauliZ(wires=[1]) @ PauliX(wires=[0])))
