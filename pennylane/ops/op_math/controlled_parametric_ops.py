@@ -214,6 +214,12 @@ class CRX(ControlledOp):
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[0], id=id)
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        base = data[0]
+        control_wires = metadata[0]
+        return cls(*base.data, wires=control_wires + base.wires)
+
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "RX", cache=cache)
 
@@ -369,6 +375,12 @@ class CRY(ControlledOp):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        base = data[0]
+        control_wires = metadata[0]
+        return cls(*base.data, wires=control_wires + base.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "RY", cache=cache)
@@ -526,6 +538,12 @@ class CRZ(ControlledOp):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        base = data[0]
+        control_wires = metadata[0]
+        return cls(*base.data, wires=control_wires + base.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ", cache=cache)
@@ -715,6 +733,12 @@ class CRot(ControlledOp):
     def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
         super().__init__(qml.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0], id=id)
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        base = data[0]
+        control_wires = metadata[0]
+        return cls(*base.data, wires=control_wires + base.wires)
+
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot", cache=cache)
 
@@ -882,6 +906,12 @@ class ControlledPhaseShift(ControlledOp):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        base = data[0]
+        control_wires = metadata[0]
+        return cls(*base.data, wires=control_wires + base.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)

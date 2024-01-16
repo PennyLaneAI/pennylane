@@ -593,7 +593,7 @@ class Controlled(SymbolicOp):
             for op in base_pow
         ]
 
-    def simplify(self) -> "Controlled":
+    def simplify(self) -> "Operator":
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
             return ctrl(
@@ -603,8 +603,12 @@ class Controlled(SymbolicOp):
                 work_wires=self.work_wires + self.base.work_wires,
             )
 
+        simplified_base = self.base.simplify()
+        if isinstance(simplified_base, qml.Identity):
+            return simplified_base
+
         return ctrl(
-            op=self.base.simplify(),
+            op=simplified_base,
             control=self.control_wires,
             control_values=self.control_values,
             work_wires=self.work_wires,

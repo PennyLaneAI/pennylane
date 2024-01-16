@@ -20,7 +20,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
+from gate_data import CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 from scipy import sparse
 
 import pennylane as qml
@@ -3514,7 +3514,7 @@ class TestSimplify:
         simplified_op = qml.simplify(unsimplified_op)
 
         if op != qml.PSWAP:
-            assert qml.equal(simplified_op, qml.Identity(0))
+            assert isinstance(simplified_op, qml.Identity)
         else:
             # PSWAP reduces to SWAP when the angle is 0
             assert qml.equal(simplified_op, qml.SWAP(wires=[0, 1]))
