@@ -58,6 +58,8 @@ def _generator_prefactor(gen):
 
     prefactor = 1.0
 
+    gen = qml.simplify(gen)
+
     if isinstance(gen, Hamiltonian):
         gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
 
