@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
-# pylint: disable=protected-access
+# pylint:disable=protected-access
 import warnings
 from copy import copy
 from functools import reduce, lru_cache
@@ -839,7 +839,6 @@ class PauliSentence(dict):
             mv += vector[:, entries] * data.reshape(1, -1)
         return mv.reshape(vector.shape)
 
-    # pylint: disable=protected-access
     def _get_same_structure_csr(self, pauli_words, wire_order):
         """Returns the CSR indices and data for Pauli words with the same sparse structure."""
         indices = pauli_words[0]._get_csr_indices(wire_order)
