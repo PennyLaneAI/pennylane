@@ -27,7 +27,6 @@
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
-
   [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
 
 * Improve efficiency of matrix calculation when operator is symmetric over wires
