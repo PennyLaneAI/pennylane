@@ -116,6 +116,8 @@
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
 
+* The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
+  [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
 
 <h3>Contributors ✍️</h3>
 
