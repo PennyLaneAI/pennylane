@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
+  is now strictly faster for jax.
+  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
+
 <h3>Improvements 🛠</h3>
 
 * Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
@@ -24,6 +28,9 @@
   [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
   [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
+
+* Improve efficiency of matrix calculation when operator is symmetric over wires
+   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
@@ -85,6 +92,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The module documentation for `pennylane.tape` now explains the difference between `QuantumTape` and `QuantumScript`.
+  [(#5065)](https://github.com/PennyLaneAI/pennylane/pull/5065)
+
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
@@ -110,8 +120,10 @@ This release contains contributions from (in alphabetical order):
 Abhishek Abhishek,
 Astral Cai,
 Pablo Antonio Moreno Casares,
-Christina Lee,
 Isaac De Vlugt,
 Korbinian Kottmann,
+Christina Lee,
+Xiaoran Li,
 Lee J. O'Riordan,
+Mudit Pandey,
 Matthew Silverman.
