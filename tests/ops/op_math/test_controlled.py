@@ -1410,10 +1410,10 @@ def test_ctrl_sanity_check():
     expanded_tape = tape.expand()
 
     expected = [
-        qml.CRX(0.123, wires=[1, 0]),
-        qml.CRY(0.456, wires=[1, 2]),
-        qml.CRX(0.789, wires=[1, 0]),
-        qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]),
+        *qml.CRX(0.123, wires=[1, 0]).decomposition(),
+        *qml.CRY(0.456, wires=[1, 2]).decomposition(),
+        *qml.CRX(0.789, wires=[1, 0]).decomposition(),
+        *qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]).decomposition(),
         qml.CNOT(wires=[1, 2]),
         *qml.CY(wires=[1, 4]).decomposition(),
         *qml.CZ(wires=[1, 0]).decomposition(),
@@ -1444,9 +1444,9 @@ def test_adjoint_of_ctrl():
 
     tape2 = QuantumScript.from_queue(q2)
     expected = [
-        qml.CRZ(4 * onp.pi - 0.456, wires=[5, 0]),
-        qml.CRY(4 * onp.pi - 0.123, wires=[5, 3]),
-        qml.CRX(4 * onp.pi - 0.789, wires=[5, 2]),
+        *qml.CRZ(4 * onp.pi - 0.456, wires=[5, 0]).decomposition(),
+        *qml.CRY(4 * onp.pi - 0.123, wires=[5, 3]).decomposition(),
+        *qml.CRX(4 * onp.pi - 0.789, wires=[5, 2]).decomposition(),
     ]
     for tape in [tape1.expand(depth=1), tape2.expand(depth=1)]:
         for op1, op2 in zip(tape, expected):
@@ -1529,9 +1529,9 @@ def test_ctrl_within_ctrl():
     tape = tape.expand(2, stop_at=lambda op: not isinstance(op, Controlled))
 
     expected = [
-        qml.CRX(0.123, wires=[2, 0]),
+        *qml.CRX(0.123, wires=[2, 0]).decomposition(),
         qml.Toffoli(wires=[2, 0, 1]),
-        qml.CRX(0.456, wires=[2, 0]),
+        *qml.CRX(0.456, wires=[2, 0]).decomposition(),
     ]
     for op1, op2 in zip(tape, expected):
         assert qml.equal(op1, op2)
@@ -1855,10 +1855,10 @@ def test_ctrl_values_sanity_check():
     tape = QuantumScript.from_queue(q_tape)
     expected = [
         qml.PauliX(wires=1),
-        qml.CRX(0.123, wires=[1, 0]),
-        qml.CRY(0.456, wires=[1, 2]),
-        qml.CRX(0.789, wires=[1, 0]),
-        qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]),
+        *qml.CRX(0.123, wires=[1, 0]).decomposition(),
+        *qml.CRY(0.456, wires=[1, 2]).decomposition(),
+        *qml.CRX(0.789, wires=[1, 0]).decomposition(),
+        *qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]).decomposition(),
         qml.CNOT(wires=[1, 2]),
         *qml.CY(wires=[1, 4]).decomposition(),
         *qml.CZ(wires=[1, 0]).decomposition(),
