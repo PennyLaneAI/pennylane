@@ -186,16 +186,17 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         # measurements using wires instead of observables
         else:
             # create the PauliZ tensor product observable when only wires are provided for the
-            # measurements
-            obs_wires = obs.wires if obs.wires else tape.wires
-            pauliz_obs = qml.prod(*(qml.PauliZ(wire) for wire in obs_wires))
-
+            # measurements. If no wires are provided (measurements such as qml.probs(), etc.),
+            # then tape wires are used.
+            wires = obs.wires or tape.wires
+            with qml.QueuingManager.stop_recording():
+                pauliz_obs = qml.prod(*(qml.PauliZ(i) for i in wires))
             obs_list.append(pauliz_obs)
 
     # If there is more than one group of commuting observables, split tapes
-    groups, group_coeffs = qml.pauli.group_observables(obs_list, range(len(obs_list)))
-    print(groups, group_coeffs)
-    if len(groups) > 1:
+    _, group_coeffs = qml.pauli.group_observables(obs_list, range(len(obs_list)))
+
+    if len(group_coeffs) > 1:
         # make one tape per commuting group
         tapes = []
         for indices in group_coeffs:
