@@ -171,11 +171,11 @@ class TestcommPauliFalseSimplify:
         assert isinstance(res, Operator)
         assert isinstance(res, SProd)
 
-    def test_consistency_with_native_pauli_commutators(self):
-        """Test consistent behavior between native commutators in PauliWord and PauliSentence and qml.commutor"""
+    def test_consistency_with_native_pauli_comms(self):
+        """Test consistent behavior between native comms in PauliWord and PauliSentence and qml.commutor"""
         op1 = qml.PauliX(0) @ qml.PauliX(1)
         op2 = qml.PauliY(0) + qml.PauliY(1)
-        res1 = qml.commutator(op1, op2, pauli=True)
+        res1 = qml.comm(op1, op2, pauli=True)
         res2 = PauliWord({0: "X", 1: "X"}) | PauliWord({0: "Y"}) + PauliWord({1: "Y"})
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)

@@ -321,9 +321,9 @@ class PauliWord(dict):
         anticom_count = sum([anticom_map[self[wire]][other[wire]] for wire in wires])
         return (anticom_count % 2) == 0
 
-    def _commutator(self, other):
-        """Commutator between two PauliWords, returns tuple (new_word, coeff) for faster arithmetic"""
-        # This may be helpful to developers that need a more lightweight commutator between pauli words
+    def _comm(self, other):
+        """comm between two PauliWords, returns tuple (new_word, coeff) for faster arithmetic"""
+        # This may be helpful to developers that need a more lightweight comm between pauli words
         # without creating PauliSentence classes
 
         if self.commutes_with(other):
@@ -331,28 +331,28 @@ class PauliWord(dict):
         new_word, coeff = self @ other
         return new_word, 2 * coeff
 
-    def commutator(self, other):
-        """Commutator between two PauliWords"""
+    def comm(self, other):
+        """comm between two PauliWords"""
         if isinstance(other, PauliWord):
-            new_word, coeff = self._commutator(other)
+            new_word, coeff = self._comm(other)
             if coeff == 0:
                 return PauliSentence({})
             return PauliSentence({new_word: coeff})
 
         if isinstance(other, qml.operation.Operator):
             op_self = qml.pauli.pauli_sentence(self)
-            return op_self.commutator(other)
+            return op_self.comm(other)
 
         # case for ``other`` being PauliSentence is handled in PauliSentence class
         return NotImplemented
 
     def __or__(self, other):
-        """Compute commutator between self and other with | operator"""
-        return self.commutator(other)
+        """Compute comm between self and other with | operator"""
+        return self.comm(other)
 
     def __ror__(self, other):
         """Handles the case Operator | pw"""
-        return -1 * self.commutator(other)
+        return -1 * self.comm(other)
 
     def __str__(self):
         """String representation of a PauliWord."""
@@ -675,8 +675,8 @@ class PauliSentence(dict):
             f"PauliSentence can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
         )
 
-    def commutator(self, other):
-        """Compute commutator between two Pauli sentences by iterating over each sentence and commuting
+    def comm(self, other):
+        """Compute comm between two Pauli sentences by iterating over each sentence and commuting
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
 
@@ -691,17 +691,17 @@ class PauliSentence(dict):
 
         for pw1 in self:
             for pw2 in other:
-                comm_pw, coeff = pw1._commutator(pw2)
+                comm_pw, coeff = pw1._comm(pw2)
                 if len(comm_pw) != 0:
                     final_ps[comm_pw] += coeff * self[pw1] * other[pw2]
 
         return final_ps
 
     def __or__(self, other):
-        return self.commutator(other)
+        return self.comm(other)
 
     def __ror__(self, other):
-        return -1 * self.commutator(other)
+        return -1 * self.comm(other)
 
     def __str__(self):
         """String representation of the PauliSentence."""
