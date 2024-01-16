@@ -46,6 +46,7 @@ def _generator_hamiltonian(gen, op):
     return H
 
 
+# pylint: disable=no-member
 def _generator_prefactor(gen):
     r"""Return the generator as ```(obs, prefactor)`` representing
     :math:`G=p \hat{O}`, where
