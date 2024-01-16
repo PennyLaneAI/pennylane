@@ -14,25 +14,22 @@
 """
 Code relevant for sampling a qutrit mixed state.
 """
-from typing import List, Union, Tuple
+from typing import List, Union
 
 import numpy as np
 import pennylane as qml
 from pennylane.measurements import (
     SampleMeasurement,
     Shots,
-    ExpectationMP,
-    ClassicalShadowMP,
-    ShadowExpvalMP,
-    CountsMP,
     SampleMP,
 )
-from .utils import QUDIT_DIM
+from .utils import QUDIT_DIM, get_num_wires
+from .measure import measure
 
 
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],  # todo FIX
+    mps: List[SampleMP],  # todo FIX
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -45,7 +42,7 @@ def measure_with_samples(
     have already been mapped to integer wires used in the device.
 
     Args:
-        mp (List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
+        mps (List[SampleMP]):
             The sample measurements to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (Shots): The number of samples to take
@@ -60,63 +57,11 @@ def measure_with_samples(
         List[TensorLike[Any]]: Sample measurement results
     """
     for mp in mps:
-        if not isinstance(mp, SampleMP):
+        if mp.obs is not None:
             raise NotImplementedError
-    res = _measure_with_samples(
-        mps, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=prng_key
-    )
-
-    # put the shot vector axis before the measurement axis
-    if shots.has_partitioned_shots:
-        sorted_res = tuple(zip(*res))
-
-    return sorted_res
-
-
-def _measure_with_samples(
-    mps: List[SampleMeasurement],
-    state: np.ndarray,
-    shots: Shots,
-    is_state_batched: bool = False,
-    rng=None,
-    prng_key=None,
-) -> TensorLike:
-    """
-    Returns the samples of the measurement process performed on the given state,
-    by rotating the state into the measurement basis using the diagonalizing gates
-    given by the measurement process.
-
-    Args:
-        mp (~.measurements.SampleMeasurement): The sample measurement to perform
-        state (np.ndarray[complex]): The state vector to sample from
-        shots (~.measurements.Shots): The number of samples to take
-        is_state_batched (bool): whether the state is batched or not
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
-
-    Returns:
-        TensorLike[Any]: Sample measurement results
-    """
-    # apply diagonalizing gates
-    if mps.obs is not None:
-        raise NotImplementedError
 
     total_indices = len(state.shape) - is_state_batched
     wires = qml.wires.Wires(range(total_indices))
-
-    # def _process_single_shot(samples): # TODO
-    #     processed = []
-    #     for mp in mps:
-    #         res = mp.process_samples(samples, wires)
-    #         if not isinstance(mp, CountsMP):
-    #             res = qml.math.squeeze(res)
-    #
-    #         processed.append(res)
-    #
-    #     return tuple(processed)
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
@@ -141,7 +86,7 @@ def _measure_with_samples(
 
             processed_samples.append(samples)  # _process_single_shot(samples))
 
-        return tuple(zip(*processed_samples))
+        return processed_samples  # TODO: figure out what is right
 
     try:
         samples = sample_state(
@@ -192,16 +137,15 @@ def sample_state(
 
     rng = np.random.default_rng(rng)
 
-    total_indices = len(state.shape) - is_state_batched  # TODO:fix
+    total_indices = get_num_wires(state, is_state_batched)  # TODO:fix
     state_wires = qml.wires.Wires(range(total_indices))
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
     basis_states = np.arange(QUDIT_DIM**num_wires)
 
-    flat_state = flatten_state(state, total_indices)  # TODO:fix
     with qml.queuing.QueuingManager.stop_recording():  # TODO: stops probs from being added to queue
-        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)  # TODO:fix
+        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched)
 
     if is_state_batched:
         # rng.choice doesn't support broadcasting
@@ -209,11 +153,7 @@ def sample_state(
     else:
         samples = rng.choice(basis_states, shots, p=probs)
 
-    powers_of_two = (
-        1 << np.arange(num_wires, dtype=np.int64)[::-1]
-    )  # TODO: make this work for powers of three
-    states_sampled_base_ten = samples[..., None] & powers_of_two
-    return (states_sampled_base_ten > 0).astype(np.int64)
+    return _transform_samples_to_trinary(samples, num_wires)
 
 
 # pylint:disable = unused-argument
@@ -251,9 +191,8 @@ def _sample_state_jax(
     num_wires = len(wires_to_sample)
     basis_states = np.arange(QUDIT_DIM**num_wires)
 
-    flat_state = flatten_state(state, total_indices)  # TODO:fix
-    with qml.queuing.QueuingManager.stop_recording():
-        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)  # TODO:fix
+    with qml.queuing.QueuingManager.stop_recording():  # TODO: stops probs from being added to queue
+        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched)
 
     if is_state_batched:
         # Produce separate keys for each of the probabilities along the broadcasted axis
@@ -270,6 +209,20 @@ def _sample_state_jax(
     else:
         samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
+    return _transform_samples_to_trinary(samples, num_wires)
+
+
+def _transform_samples_to_trinary(samples, num_wires):
+    """
+    Returns a series of samples of a state for the JAX interface based on the PRNG.
+
+    Args:
+        samples (array[int]): The sampled values of the circuit
+        num_wires (int): The number of wires being measured
+
+    Returns:
+        ndarray[int]: Sample values in ternary representation
+    """
     powers_of_two = (
         1 << np.arange(num_wires, dtype=np.int64)[::-1]
     )  # TODO: make this work for powers of three
