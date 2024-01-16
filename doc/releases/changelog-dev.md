@@ -75,7 +75,7 @@
 * `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
   values that are no longer needed.
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
-  [()]()
+  [(#5071)](https://github.com/PennyLaneAI/pennylane/pull/5071)
 
 * Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
   ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
