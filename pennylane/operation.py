@@ -1152,11 +1152,11 @@ class Operator(abc.ABC):
 
         .. warning::
 
-            ``Operator.validate_subspace()`` has been moved to the ``pennylane.ops.qutrit`` module and will be removed from the Operator class in an upcoming release
+            ``Operator.validate_subspace(subspace)`` has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed from the Operator class in an upcoming release.
         """
 
         warnings.warn(
-            "Operator.validate_subspace() has been moved to the pennylane.ops.qutrit module and will be removed from the Operator class in an upcoming release",
+            "Operator.validate_subspace(subspace) has been relocated to the qml.ops.qutrit.parametric_ops module and will be removed from the Operator class in an upcoming release.",
             qml.PennyLaneDeprecationWarning,
         )
 

@@ -9,7 +9,9 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* ``Operator.validate_subspace()`` has been moved to the ``pennylane.ops.qutrit`` module and will be removed from the Operator class.
+* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
+  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed
+  from the ``Operator`` class.
 
   - Deprecated in v0.35
   - Will be removed in v0.36
