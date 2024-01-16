@@ -1467,8 +1467,8 @@ class TestTensor:
         t = Tensor(X, Y)
         assert t.data == (p,)
 
-    def test_data_setter(self):
-        """Test the data setter"""
+    def test_data_setter_list(self):
+        """Test the data setter with a list"""
         p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
@@ -1476,6 +1476,17 @@ class TestTensor:
         assert t.data == (p,)
         new_data = np.eye(4) * 6
         t.data = [(), (new_data,)]
+        assert qml.math.allequal(t.data, (new_data,))
+
+    def test_data_setter_tuple(self):
+        """Test the data setter with a tuple"""
+        p = np.eye(4)
+        X = qml.PauliX(0)
+        Y = qml.Hermitian(p, wires=[1, 2])
+        t = Tensor(X, Y)
+        assert t.data == (p,)
+        new_data = np.eye(4) * 6
+        t.data = (new_data,)
         assert qml.math.allequal(t.data, (new_data,))
 
     def test_num_params(self):
