@@ -263,7 +263,7 @@ class CRX(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -405,7 +405,7 @@ class CRY(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -580,7 +580,7 @@ class CRZ(ControlledOp):
         return qml.math.exp(product)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -663,7 +663,7 @@ class CRot(ControlledOp):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
-    def __init__(self, phi, theta, omega, wires, id=None):
+    def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
         super().__init__(qml.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0], id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -737,7 +737,7 @@ class CRot(ControlledOp):
         return qml.math.stack([stack_last(row) for row in mat], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, theta, omega, wires):
+    def compute_decomposition(phi, theta, omega, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -903,7 +903,7 @@ class ControlledPhaseShift(ControlledOp):
         return qml.math.exp(product)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.

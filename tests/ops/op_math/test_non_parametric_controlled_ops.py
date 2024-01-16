@@ -49,6 +49,21 @@ DECOMPOSITIONS = (
 X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
 
+label_data = [
+    (qml.CY(wires=(0, 1)), "Y"),
+    (qml.CZ(wires=(0, 1)), "Z"),
+]
+
+control_data = [
+    (qml.CY(wires=(0, 1)), Wires(0)),
+    (qml.CZ(wires=(0, 1)), Wires(0)),
+]
+
+involution_ops = [  # ops who are their own inverses
+    qml.CY((0, 1)),
+    qml.CZ(wires=(0, 1)),
+]
+
 
 class TestControlledOperations:
     @pytest.mark.parametrize("op_cls, _", OPERATIONS)
@@ -88,6 +103,38 @@ class TestControlledOperations:
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("op, label", label_data)
+    def test_label_method(self, op, label):
+        """Tests that the label method gives the expected result."""
+        assert op.label() == label
+        assert op.label(decimals=2) == label
+
+    @pytest.mark.parametrize("op, control_wires", control_data)
+    def test_control_wires(self, op, control_wires):
+        """Test ``control_wires`` attribute for non-parametrized operations."""
+
+        assert op.control_wires == control_wires
+
+    @pytest.mark.parametrize("op", involution_ops)
+    def test_adjoint_method(self, op):
+        """Tests the adjoint method for operations that are their own adjoint."""
+        adj_op = copy.copy(op)
+        for _ in range(4):
+            adj_op = adj_op.adjoint()
+
+            assert qml.equal(adj_op, op)
+
+    @pytest.mark.parametrize("op_cls, _", OPERATIONS)
+    def test_map_wires(self, op_cls, _):
+        """Test that we can get and set private wires in all operations."""
+
+        op = op_cls(wires=[0, 1])
+        assert op.wires == Wires((0, 1))
+
+        op = op.map_wires(wire_map={0: "a", 1: "b"})
+        assert op.base.wires == Wires(("b"))
+        assert op.control_wires == Wires(("a"))
 
 
 period_two_ops = (
@@ -156,57 +203,3 @@ class TestSparseMatrix:  # pylint: disable=too-few-public-methods
         assert isinstance(expected_sparse_mat, csr_matrix)
         assert all(sparse_mat.data == expected_sparse_mat.data)
         assert all(sparse_mat.indices == expected_sparse_mat.indices)
-
-
-label_data = [
-    (qml.CY(wires=(0, 1)), "Y"),
-    (qml.CZ(wires=(0, 1)), "Z"),
-]
-
-
-@pytest.mark.parametrize("op, label", label_data)
-def test_label_method(op, label):
-    """Tests that the label method gives the expected result."""
-    assert op.label() == label
-    assert op.label(decimals=2) == label
-
-
-control_data = [
-    (qml.CY(wires=(0, 1)), Wires(0)),
-    (qml.CZ(wires=(0, 1)), Wires(0)),
-]
-
-
-@pytest.mark.parametrize("op, control_wires", control_data)
-def test_control_wires(op, control_wires):
-    """Test ``control_wires`` attribute for non-parametrized operations."""
-
-    assert op.control_wires == control_wires
-
-
-involution_ops = [  # ops who are their own inverses
-    qml.CY((0, 1)),
-    qml.CZ(wires=(0, 1)),
-]
-
-
-@pytest.mark.parametrize("op", involution_ops)
-def test_adjoint_method(op):
-    """Tests the adjoint method for operations that are their own adjoint."""
-    adj_op = copy.copy(op)
-    for _ in range(4):
-        adj_op = adj_op.adjoint()
-
-        assert qml.equal(adj_op, op)
-
-
-@pytest.mark.parametrize("op_cls, _", OPERATIONS)
-def test_map_wires(op_cls, _):
-    """Test that we can get and set private wires in all operations."""
-
-    op = op_cls(wires=[0, 1])
-    assert op.wires == Wires((0, 1))
-
-    op = op.map_wires(wire_map={0: "a", 1: "b"})
-    assert op.base.wires == Wires(("b"))
-    assert op.control_wires == Wires(("a"))
