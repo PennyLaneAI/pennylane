@@ -456,7 +456,7 @@ class TestMiscMethods:
         """Test that the generator is a tensor product of projectors and the base's generator."""
 
         if use_new_op_math:
-            qml.operation.active_new_opmath()
+            qml.operation.enable_new_opmath()
 
         base = qml.RZ(-0.123, wires="a")
         control_values = [0, 1]
