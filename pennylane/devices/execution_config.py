@@ -17,7 +17,7 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass
 from typing import Optional
 
-from pennylane.interfaces import SUPPORTED_INTERFACES
+from pennylane.workflow import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
 
 SUPPORTED_GRADIENT_METHODS = [

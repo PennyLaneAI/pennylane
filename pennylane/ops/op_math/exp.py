@@ -22,6 +22,7 @@ from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
+from pennylane.math import expand_matrix
 from pennylane.operation import (
     AnyWires,
     DecompositionUndefinedError,
@@ -30,7 +31,6 @@ from pennylane.operation import (
     Operator,
     OperatorPropertyUndefined,
     Tensor,
-    expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.wires import Wires

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
+import warnings
 from copy import copy
 from functools import reduce, lru_cache
 from typing import Iterable
@@ -21,6 +22,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, prod, s_prod
@@ -124,14 +126,43 @@ mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
 
 
 class PauliWord(dict):
-    """Immutable dictionary used to represent a Pauli Word,
+    r"""
+    Immutable dictionary used to represent a Pauli Word,
     associating wires with their respective operators.
     Can be constructed from a standard dictionary.
+
+    .. note::
+
+        An empty :class:`~.PauliWord` will be treated as the multiplicative
+        identity (i.e identity on all wires).
+
+    **Examples**
+
+    Initializing a Pauli word:
 
     >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
     >>> w
     X(a) @ Y(2) @ Z(3)
+
+    When multiplying Pauli words together we obtain the resulting word and the scalar coefficient.
+
+    >>> w1 = PauliWord({0:"X", 1:"Y"})
+    >>> w2 = PauliWord({1:"X", 2:"Z"})
+    >>> w1 @ w2
+    (Z(1) @ Z(2) @ X(0), -1j)
+
+    We can multiply scalars to Pauli words or add/subtract them, resulting in a :class:`~PauliSentence` instance.
+
+    >>> 0.5 * w1 - 1.5 * w2 + 2
+    0.5 * X(0) @ Y(1)
+    + -1.5 * X(1) @ Z(2)
+    + 2 * I
+
     """
+
+    # this allows scalar multiplication from left with numpy arrays np.array(0.5) * pw1
+    # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
+    __array_priority__ = 1000
 
     def __missing__(self, key):
         """If the wire is not in the Pauli word,
@@ -172,9 +203,11 @@ class PauliWord(dict):
     def __hash__(self):
         return hash(frozenset(self.items()))
 
-    def __mul__(self, other):
+    def __matmul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
         and the tensor product otherwise.
+
+        Empty Pauli words are treated as the Identity operator on all wires.
 
         Args:
             other (PauliWord): The Pauli word to multiply with
@@ -201,6 +234,76 @@ class PauliWord(dict):
                 result[wire] = term
 
         return PauliWord(result), coeff
+
+    def __mul__(self, other):
+        """Multiply a PauliWord by a scalar
+
+        Args:
+            other (Scalar): The scalar to multiply the PauliWord with
+
+        Returns:
+            PauliSentence
+        """
+        if isinstance(other, PauliWord):
+            # this is legacy support and will be removed after a deprecation cycle
+            warnings.warn(
+                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+                qml.PennyLaneDeprecationWarning,
+            )
+            return self @ other
+
+        if isinstance(other, TensorLike):
+            if not qml.math.ndim(other) == 0:
+                raise ValueError(
+                    f"Attempting to multiply a PauliWord with an array of dimension {qml.math.ndim(other)}"
+                )
+
+            return PauliSentence({self: other})
+        raise TypeError(
+            f"PauliWord can only be multiplied by numerical data. Attempting to multiply by {other} of type {type(other)}"
+        )
+
+    __rmul__ = __mul__
+
+    def __add__(self, other):
+        """Add PauliWord instances and scalars to PauliWord.
+        Returns a PauliSentence."""
+        # Note that the case of PauliWord + PauliSentence is covered in PauliSentence
+        if isinstance(other, PauliWord):
+            if other == self:
+                return PauliSentence({self: 2.0})
+            return PauliSentence({self: 1.0, other: 1.0})
+
+        if isinstance(other, TensorLike):
+            # Scalars are interepreted as scalar * Identity
+            IdWord = PauliWord({})
+            if IdWord == self:
+                return PauliSentence({self: 1.0 + other})
+            return PauliSentence({self: 1.0, IdWord: other})
+
+        return NotImplemented
+
+    __radd__ = __add__
+
+    def __iadd__(self, other):
+        """Inplace addition"""
+        return self + other
+
+    def __sub__(self, other):
+        """Subtract other PauliSentence, PauliWord, or scalar"""
+        return self + -1 * other
+
+    def __rsub__(self, other):
+        """Subtract other PauliSentence, PauliWord, or scalar"""
+        return -1 * self + other
+
+    def __truediv__(self, other):
+        """Divide a PauliWord by a scalar"""
+        if isinstance(other, TensorLike):
+            return self * (1 / other)
+        raise TypeError(
+            f"PauliWord can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
+        )
 
     def __str__(self):
         """String representation of a PauliWord."""
@@ -345,17 +448,40 @@ class PauliWord(dict):
 
 
 class PauliSentence(dict):
-    """Dictionary representing a linear combination of Pauli words, with the keys
-    as PauliWord instances and the values correspond to coefficients.
+    r"""Dictionary representing a linear combination of Pauli words, with the keys
+    as :class:`~pennylane.pauli.PauliWord` instances and the values correspond to coefficients.
 
-    >>> ps = qml.pauli.PauliSentence({
-            qml.pauli.PauliWord({0:'X', 1:'Y'}): 1.23,
-            qml.pauli.PauliWord({2:'Z', 0:'Y'}): -0.45j
+    .. note::
+
+        An empty :class:`~.PauliSentence` will be treated as the additive
+        identity (i.e 0 * Identity on all wires).
+
+    **Examples**
+
+    >>> ps = PauliSentence({
+            PauliWord({0:'X', 1:'Y'}): 1.23,
+            PauliWord({2:'Z', 0:'Y'}): -0.45j
         })
     >>> ps
     1.23 * X(0) @ Y(1)
     + (-0-0.45j) * Z(2) @ Y(0)
+
+    Combining Pauli words automatically results in Pauli sentences that can be used to construct more complicated operators.
+
+    >>> w1 = PauliWord({0:"X", 1:"Y"})
+    >>> w2 = PauliWord({1:"X", 2:"Z"})
+    >>> ps = 0.5 * w1 - 1.5 * w2 + 2
+    >>> ps + PauliWord({3:"Z"}) - 1
+    0.5 * X(0) @ Y(1)
+    + -1.5 * X(1) @ Z(2)
+    + 1 * I
+    + 1.0 * Z(3)
+
     """
+
+    # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
+    # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
+    __array_priority__ = 1000
 
     def __missing__(self, key):
         """If the PauliWord is not in the sentence then the coefficient
@@ -363,24 +489,76 @@ class PauliSentence(dict):
         return 0.0
 
     def __add__(self, other):
-        """Add two Pauli sentence together by iterating over the smaller
-        one and adding its terms to the larger one."""
-        smaller_ps, larger_ps = (
-            (self, copy(other)) if len(self) < len(other) else (other, copy(self))
-        )
-        for key in smaller_ps:
-            larger_ps[key] += smaller_ps[key]
+        """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.
 
-        return larger_ps
+        Empty Pauli sentences are treated as the additive identity
+        (i.e 0 * Identity on all wires). The non-empty Pauli sentence is returned.
+        """
+        if isinstance(other, PauliSentence):
+            smaller_ps, larger_ps = (
+                (self, copy(other)) if len(self) < len(other) else (other, copy(self))
+            )
+            for key in smaller_ps:
+                larger_ps[key] += smaller_ps[key]
+
+            return larger_ps
+
+        if isinstance(other, PauliWord):
+            res = copy(self)
+            if other in res:
+                res[other] += 1.0
+            else:
+                res[other] = 1.0
+            return res
+
+        if isinstance(other, TensorLike):
+            # Scalars are interepreted as scalar * Identity
+            res = copy(self)
+            IdWord = PauliWord({})
+            if IdWord in res:
+                res[IdWord] += other
+            else:
+                res[IdWord] = other
+            return res
+
+        raise TypeError(f"Cannot add {other} of type {type(other)} to PauliSentence")
+
+    __radd__ = __add__
 
     def __iadd__(self, other):
         """Inplace addition of two Pauli sentence together by adding terms of other to self"""
-        for key in other:
-            if key in self:
-                self[key] += other[key]
+        if isinstance(other, PauliSentence):
+            for key in other:
+                if key in self:
+                    self[key] += other[key]
+                else:
+                    self[key] = other[key]
+            return self
+
+        if isinstance(other, PauliWord):
+            if other in self:
+                self[other] += 1.0
             else:
-                self[key] = other[key]
-        return self
+                self[other] = 1.0
+            return self
+
+        if isinstance(other, TensorLike):
+            IdWord = PauliWord({})
+            if IdWord in self:
+                self[IdWord] += other
+            else:
+                self[IdWord] = other
+            return self
+
+        raise TypeError(f"Cannot add {other} of type {type(other)} to PauliSentence")
+
+    def __sub__(self, other):
+        """Subtract other PauliSentence, PauliWord, or scalar"""
+        return self + -1 * other
+
+    def __rsub__(self, other):
+        """Subtract other PauliSentence, PauliWord, or scalar"""
+        return -1 * self + other
 
     def __copy__(self):
         """Copy the PauliSentence instance."""
@@ -394,8 +572,8 @@ class PauliSentence(dict):
         memo[id(self)] = res
         return res
 
-    def __mul__(self, other):
-        """Multiply two Pauli sentences by iterating over each sentence and multiplying
+    def __matmul__(self, other):
+        """Matrix / tensor product between two PauliSentences by iterating over each sentence and multiplying
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
 
@@ -404,10 +582,49 @@ class PauliSentence(dict):
 
         for pw1 in self:
             for pw2 in other:
-                prod_pw, coeff = pw1 * pw2
+                prod_pw, coeff = pw1 @ pw2
                 final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps
+
+    def __mul__(self, other):
+        """Multiply a PauliWord by a scalar
+
+        Args:
+            other (Scalar): The scalar to multiply the PauliWord with
+
+        Returns:
+            PauliSentence
+        """
+        if isinstance(other, PauliSentence):
+            # this is legacy support and will be removed after a deprecation cycle
+            warnings.warn(
+                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+                qml.PennyLaneDeprecationWarning,
+            )
+            return self @ other
+
+        if isinstance(other, TensorLike):
+            if not qml.math.ndim(other) == 0:
+                raise ValueError(
+                    f"Attempting to multiply a PauliSentence with an array of dimension {qml.math.ndim(other)}"
+                )
+
+            return PauliSentence({key: other * value for key, value in self.items()})
+
+        raise TypeError(
+            f"PauliSentence can only be multiplied by numerical data. Attempting to multiply by {other} of type {type(other)}"
+        )
+
+    __rmul__ = __mul__
+
+    def __truediv__(self, other):
+        """Divide a PauliSentence by a scalar"""
+        if isinstance(other, TensorLike):
+            return self * (1 / other)
+        raise TypeError(
+            f"PauliSentence can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
+        )
 
     def __str__(self):
         """String representation of the PauliSentence."""

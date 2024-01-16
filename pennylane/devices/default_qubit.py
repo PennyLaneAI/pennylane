@@ -37,7 +37,7 @@ from .preprocess import (
     validate_measurements,
     validate_multiprocessing_workers,
     validate_device_wires,
-    warn_about_trainable_observables,
+    validate_adjoint_trainable_params,
     no_sampling,
 )
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -86,7 +86,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "Snapshot":
         return True
-    if op.__class__.__name__ == "Pow" and qml.operation.is_trainable(op):
+    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
 
     return op.has_matrix
@@ -138,9 +138,8 @@ def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callab
     params = tape.get_parameters()
     complex_data = [qml.math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
-    state_tape = qml.tape.QuantumScript(
-        tape.operations, [qml.measurements.StateMP(wires=tape.wires)]
-    )
+    new_mp = qml.measurements.StateMP(wires=tape.wires)
+    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
     return (state_tape,), partial(
         all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
     )
@@ -180,7 +179,7 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
     )
     program.add_transform(adjoint_state_measurements)
     program.add_transform(qml.transforms.broadcast_expand)
-    program.add_transform(warn_about_trainable_observables)
+    program.add_transform(validate_adjoint_trainable_params)
 
 
 class DefaultQubit(Device):
@@ -771,6 +770,45 @@ class DefaultQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        r"""The vector jacobian product used in reverse-mode differentiation. ``DefaultQubit`` uses the
+        adjoint differentiation method to compute the VJP.
+
+        Args:
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
+            cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
+                of numbers.
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            tensor-like: A numeric result of computing the vector jacobian product
+
+        **Definition of vjp:**
+
+        If we have a function with jacobian:
+
+        .. math::
+
+            \vec{y} = f(\vec{x}) \qquad J_{i,j} = \frac{\partial y_i}{\partial x_j}
+
+        The vector jacobian product is the inner product of the derivatives of the output ``y`` with the
+        Jacobian matrix. The derivatives of the output vector are sometimes called the **cotangents**.
+
+        .. math::
+
+            \text{d}x_i = \Sigma_{i} \text{d}y_i J_{i,j}
+
+        **Shape of cotangents:**
+
+        The value provided to ``cotangents`` should match the output of :meth:`~.execute`. For computing the full Jacobian,
+        the cotangents can be batched to vectorize the computation. In this case, the cotangents can have the following
+        shapes. ``batch_size`` below refers to the number of entries in the Jacobian:
+
+        * For a state measurement, the cotangents must have shape ``(batch_size, 2 ** n_wires)``
+        * For ``n`` expectation values, the cotangents must have shape ``(n, batch_size)``. If ``n = 1``,
+          then the shape must be ``(batch_size,)``.
+
+        """
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True

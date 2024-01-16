@@ -33,7 +33,7 @@ See JAX documentation on this process `here <https://jax.readthedocs.io/en/lates
 
     registered_f_jvp.defjvp(f_and_jvp)
 
->>> jax.grad(registered_f)(jax.numpy.array(2.0))
+>>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
 in custom jvp function:  2.0 Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>
 Array(4., dtype=float64, weak_type=True)
 
@@ -238,23 +238,8 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, primals, tangents):
     return _to_jax(res), _to_jax(jvps)
 
 
-def _vjp_fwd(params, tapes, execute_fn, jpc):
-    """Perform the forward pass execution, return results and empty residuals."""
-    new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, params, unwrap=False)
-    return _to_jax(execute_fn(new_tapes)), None
-
-
-def _vjp_bwd(tapes, execute_fn, jpc, _, dy):
-    """Perform the backward pass of a vjp calculation, returning the vjp."""
-    vjp = jpc.compute_vjp(tapes.vals, dy)
-    return (_to_jax(vjp),)
-
-
 _execute_jvp = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
 _execute_jvp.defjvp(_execute_and_compute_jvp)
-
-_execute_vjp = jax.custom_vjp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
-_execute_vjp.defvjp(_vjp_fwd, _vjp_bwd)
 
 
 def jax_jvp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc, device=None):
@@ -277,25 +262,3 @@ def jax_jvp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc, device=None):
     parameters = tuple(tuple(t.get_parameters()) for t in tapes)
 
     return _execute_jvp(parameters, _NonPytreeWrapper(tuple(tapes)), execute_fn, jpc)
-
-
-def jax_vjp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc, device=None):
-    """Execute a batch of tapes with JAX parameters using VJP derivatives.
-
-    Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
-        jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
-            for the input tapes.
-
-    Returns:
-        TensorLike: A nested tuple of tape results. Each element in
-        the returned tuple corresponds in order to the provided tapes.
-
-    """
-    if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-        logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
-
-    parameters = tuple(tuple(t.get_parameters()) for t in tapes)
-
-    return _execute_vjp(parameters, _NonPytreeWrapper(tuple(tapes)), execute_fn, jpc)

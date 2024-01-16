@@ -23,6 +23,7 @@ representation of Pauli words and applications, see:
 from functools import lru_cache, reduce, singledispatch
 from itertools import product
 from typing import List, Union
+from warnings import warn
 
 import numpy as np
 
@@ -497,10 +498,10 @@ def pauli_word_to_string(pauli_word, wire_map=None):
     if isinstance(pauli_word, Hamiltonian):
         # hamiltonian contains only one term
         pauli_word = pauli_word.ops[0]
-    elif isinstance(pauli_word, Prod):
-        pauli_word = Tensor(*pauli_word.operands)
     elif isinstance(pauli_word, SProd):
         pauli_word = pauli_word.base
+    if isinstance(pauli_word, Prod):
+        pauli_word = Tensor(*pauli_word.operands)
 
     character_map = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
@@ -986,6 +987,13 @@ def pauli_group(n_qubits, wire_map=None):
 def pauli_mult(pauli_1, pauli_2, wire_map=None):
     """Multiply two Pauli words together and return the product as a Pauli word.
 
+    .. warning::
+
+        ``pauli_mult`` is deprecated. Instead, you can multiply two Pauli words
+        together with ``qml.simplify(qml.prod(pauli_1, pauli_2))``. Note that if
+        there is a phase, this will be in ``result.scalar``, and the base will be
+        available in ``result.base``.
+
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations.
 
@@ -1014,6 +1022,14 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     PauliZ(wires=[0])
     """
 
+    warn(
+        "`pauli_mult` is deprecated. Instead, you can multiply two Pauli words "
+        "together with `qml.simplify(qml.prod(pauli_1, pauli_2))`. Note that if "
+        "there is a phase, this will be in `result.scalar`, and the base will be "
+        "available in `result.base`.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if wire_map is None:
         wire_map = _wire_map_from_pauli_pair(pauli_1, pauli_2)
 
@@ -1038,6 +1054,13 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
 def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     r"""Multiply two Pauli words together, and return both their product as a Pauli word
     and the global phase.
+
+    .. warning::
+
+        ``pauli_mult_with_phase`` is deprecated. Instead, you can multiply two Pauli
+        words together with ``qml.simplify(qml.prod(pauli_1, pauli_2))``. Note that if
+        there is a phase, this will be in ``result.scalar``, and the base will be
+        available in ``result.base``.
 
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations. The phase is computed by
@@ -1071,6 +1094,14 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     >>> phase
     1j
     """
+
+    warn(
+        "`pauli_mult_with_phase` is deprecated. Instead, you can multiply two Pauli words "
+        "together with `qml.simplify(qml.prod(pauli_1, pauli_2))`. Note that if "
+        "there is a phase, this will be in `result.scalar`, and the base will be "
+        "available in `result.base`.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if wire_map is None:
         wire_map = _wire_map_from_pauli_pair(pauli_1, pauli_2)
@@ -1461,6 +1492,12 @@ def _pauli_mult(p1, p2):
     >>> _pauli_mult(p1, p2)
     ([(2, "Y"), (1, "Y")], 1.0) # p1 @ p2 = X_0 @ Y_1 @ X_0 @ Y_2
     """
+
+    warn(
+        "_pauli_mult is deprecated. Instead, please use the "
+        "PauliWord class, or regular PennyLane operators.",
+        qml.PennyLaneDeprecationWarning,
+    )
     c = 1.0
 
     t1 = [t[0] for t in p1]
@@ -1548,6 +1585,11 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
            [1, 0, 1, 0, 0, 0, 1, 0],
            [0, 0, 0, 1, 1, 0, 0, 1]])
     """
+    warn(
+        "_binary_matrix is deprecated. Instead, please use PauliWords and _binary_matrix_from_pws",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if wire_map is None:
         all_wires = qml.wires.Wires.all_wires([term.wires for term in terms], sort=True)
         wire_map = {i: c for c, i in enumerate(all_wires)}
@@ -1613,6 +1655,7 @@ def _get_pauli_map(n):
 
     This function is used to accelerate ``qchem.observable_hf.jordan_wigner``.
     """
+    warn("_get_pauli_map is deprecated, as it is no longer used.", qml.PennyLaneDeprecationWarning)
     return [
         {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
         for i in range(n + 1)

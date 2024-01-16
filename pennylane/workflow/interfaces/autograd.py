@@ -101,7 +101,7 @@ logger.addHandler(logging.NullHandler())
 def autograd_execute(
     tapes: Batch,
     execute_fn: ExecuteFn,
-    jpc: qml.interfaces.jacobian_products.JacobianProductCalculator,
+    jpc: qml.workflow.jacobian_products.JacobianProductCalculator,
     device=None,
 ):
     """Execute a batch of tapes with Autograd parameters on a device.
@@ -118,8 +118,8 @@ def autograd_execute(
 
     **Example:**
 
-    >>> from pennylane.interfaces.jacobian_products import DeviceDerivatives
-    >>> from pennylane.interfaces.autograd import autograd_execute
+    >>> from pennylane.workflow.jacobian_products import DeviceDerivatives
+    >>> from pennylane.workflow.autograd import autograd_execute
     >>> execute_fn = qml.device('default.qubit').execute
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
     >>> jpc = DeviceDerivatives(qml.device('default.qubit'), config)

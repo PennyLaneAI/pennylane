@@ -75,7 +75,7 @@ def _local_tape_expand(tape, depth, stop_at):
         (tape.measurements, new_measurements),
     ]:
         for obj in queue:
-            if stop_at(obj) or isinstance(obj, qml.measurements.MeasurementProcess):
+            if isinstance(obj, MeasurementProcess) or stop_at(obj):
                 new_queue.append(obj)
                 continue
 
