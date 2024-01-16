@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
+import warnings
 from copy import copy
 from functools import reduce, lru_cache
 from typing import Iterable
@@ -244,6 +245,10 @@ class PauliWord(dict):
         """
         if isinstance(other, PauliWord):
             # this is legacy support and will be removed after a deprecation cycle
+            warnings.warn(
+                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+                qml.PennyLaneDeprecationWarning,
+            )
             return self @ other
 
         if isinstance(other, TensorLike):
@@ -260,7 +265,8 @@ class PauliWord(dict):
     __rmul__ = __mul__
 
     def __add__(self, other):
-        """Add PauliWords/Sentences"""
+        """Add PauliWord instances and scalars to PauliWord.
+        Returns a PauliSentence."""
         # Note that the case of PauliWord + PauliSentence is covered in PauliSentence
         if isinstance(other, PauliWord):
             if other == self:
@@ -279,7 +285,7 @@ class PauliWord(dict):
     __radd__ = __add__
 
     def __iadd__(self, other):
-        """Inplace addition of PauliWords"""
+        """Inplace addition"""
         return self + other
 
     def __sub__(self, other):
@@ -442,7 +448,7 @@ class PauliWord(dict):
 
 class PauliSentence(dict):
     r"""Dictionary representing a linear combination of Pauli words, with the keys
-    as PauliWord instances and the values correspond to coefficients.
+    as :class:`~pennylane.pauli.PauliWord` instances and the values correspond to coefficients.
 
     .. note::
 
@@ -482,8 +488,11 @@ class PauliSentence(dict):
         return 0.0
 
     def __add__(self, other):
-        """Add two Pauli sentence together by iterating over the smaller
-        one and adding its terms to the larger one."""
+        """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.
+
+        Empty Pauli sentences are treated as the additive identity
+        (i.e 0 * Identity on all wires). The non-empty Pauli sentence is returned.
+        """
         if isinstance(other, PauliSentence):
             smaller_ps, larger_ps = (
                 (self, copy(other)) if len(self) < len(other) else (other, copy(self))
@@ -578,7 +587,7 @@ class PauliSentence(dict):
         return final_ps
 
     def __mul__(self, other):
-        """Multiply a PauliWord by a scalar#
+        """Multiply a PauliWord by a scalar
 
         Args:
             other (Scalar): The scalar to multiply the PauliWord with
@@ -588,6 +597,10 @@ class PauliSentence(dict):
         """
         if isinstance(other, PauliSentence):
             # this is legacy support and will be removed after a deprecation cycle
+            warnings.warn(
+                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+                qml.PennyLaneDeprecationWarning,
+            )
             return self @ other
 
         if isinstance(other, TensorLike):

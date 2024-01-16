@@ -191,6 +191,7 @@ return newer arithmetic operators, the ``operation`` module provides the followi
     ~enable_new_opmath
     ~disable_new_opmath
     ~active_new_opmath
+    ~convert_to_opmath
 
 Other
 ~~~~~
@@ -784,7 +785,14 @@ class Operator(abc.ABC):
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
-        if wire_order is None or self.wires == Wires(wire_order):
+        if (
+            wire_order is None
+            or self.wires == Wires(wire_order)
+            or (
+                self.name in qml.ops.qubit.attributes.symmetric_over_all_wires
+                and set(self.wires) == set(wire_order)
+            )
+        ):
             return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
@@ -1631,7 +1639,7 @@ class Operation(Operator):
     :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
     Args:
-        params (tuple[tensor_like]): trainable parameters
+        *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         id (str): custom label given to an operator instance,
@@ -1858,8 +1866,6 @@ class Observable(Operator):
             can be useful for some applications where the instance has to be identified
     """
 
-    _return_type = None
-
     @property
     def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
@@ -1881,26 +1887,6 @@ class Observable(Operator):
     def is_hermitian(self):
         """All observables must be hermitian"""
         return True
-
-    @property
-    def return_type(self):
-        """None or ObservableReturnTypes: Measurement type that this observable is called with."""
-        warnings.warn(
-            "`Observable.return_type` is deprecated. Instead, you should "
-            "inspect the type of the surrounding measurement process.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._return_type
-
-    @return_type.setter
-    def return_type(self, value):
-        """Change the return type of an Observable. Note that this property is deprecated."""
-        warnings.warn(
-            "`Observable.return_type` is deprecated. Instead, you should "
-            "create a measurement process containing this Observable.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        self._return_type = value
 
     def __matmul__(self, other):
         if active_new_opmath():
@@ -2227,6 +2213,9 @@ class Tensor(Observable):
         elif isinstance(other, Observable):
             self.obs.append(other)
 
+        elif isinstance(other, Operator):
+            return qml.prod(*self.obs, other)
+
         else:
             return NotImplemented
 
@@ -2485,8 +2474,6 @@ class Tensor(Observable):
         """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
         the observables building up the :class:`~.Tensor`.
 
-        The ``return_type`` attribute is preserved while pruning.
-
         If the tensor product only contains one observable, then this observable instance is
         returned.
 
@@ -2524,7 +2511,6 @@ class Tensor(Observable):
         else:
             obs = Tensor(*self.non_identity_obs)
 
-        obs._return_type = self._return_type
         return obs
 
     def map_wires(self, wire_map: dict):
@@ -3009,6 +2995,27 @@ def active_new_opmath():
     True
     """
     return __use_new_opmath
+
+
+def convert_to_opmath(op):
+    """
+    Converts :class:`~pennylane.Hamiltonian` and :class:`.Tensor` instances
+    into arithmetic operators. Objects of any other type are returned directly.
+
+    Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
+    :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
+
+    Args:
+        op (Operator): The operator instance to convert
+
+    Returns:
+        Operator: An operator using the new arithmetic operations, if relevant
+    """
+    if isinstance(op, qml.Hamiltonian):
+        return qml.dot(*op.terms())
+    if isinstance(op, Tensor):
+        return qml.prod(*op.obs)
+    return op
 
 
 def __getattr__(name):

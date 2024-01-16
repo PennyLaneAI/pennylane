@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.interfaces import INTERFACE_MAP
+from pennylane.workflow import INTERFACE_MAP
 from pennylane.measurements import Shots
 
 

@@ -19,9 +19,9 @@ import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable, Dict, Union, Any, Text
+from typing import Callable, Dict, Union, Any
 
-from pennylane.qnode import QNode
+from pennylane import QNode
 
 try:
     import torch
@@ -530,7 +530,7 @@ class TorchLayer(Module):
         return self._input_arg
 
     @staticmethod
-    def set_input_argument(input_name: Text = "inputs") -> None:
+    def set_input_argument(input_name: str = "inputs") -> None:
         """
         Set the name of the input argument.
 

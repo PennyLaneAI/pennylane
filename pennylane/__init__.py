@@ -80,7 +80,7 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.qnode import QNode, qnode
+from pennylane.workflow import QNode, qnode, execute
 from pennylane.transforms import (
     transform,
     batch_params,
@@ -126,13 +126,14 @@ import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo
 
 # pylint:disable=wrong-import-order
-from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
 
 from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
+
+import pennylane.interfaces
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
