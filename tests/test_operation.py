@@ -48,7 +48,8 @@ def test_validate_subspace_is_deprecated():
     """Test that Operator.validate_subspace() is deprecated"""
 
     with pytest.warns(
-        expected_warning=qml.PennyLaneDeprecationWarning, match="Operator.validate_subspace()"
+        expected_warning=qml.PennyLaneDeprecationWarning,
+        match=r"Operator\.validate_subspace\(subspace\)",
     ):
         _ = Operator.validate_subspace([0, 1])
 
