@@ -118,6 +118,20 @@ class TestSnapshot:
         assert debugger.snapshots[tag].shape == shape
         assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, shape))
 
+    def test_snapshot_with_operator(self, ml_framework, state, shape, request):
+        """Test a snapshot with operator throws NotImplementedError"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        debugger = self.Debugger()
+        with pytest.raises(NotImplementedError):
+            _ = apply_operation(
+                qml.Snapshot(measurement=qml.expval(qml.GellMann(0, 1))),
+                initial_state,
+                debugger=debugger,
+                is_state_batched=len(shape) != 2,
+            )
+
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestBroadcasting:  # pylint: disable=too-few-public-methods
