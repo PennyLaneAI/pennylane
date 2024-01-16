@@ -24,7 +24,7 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.ops.op_math.sprod import SProd, s_prod
+from pennylane.ops.op_math import SProd, s_prod, Prod, Sum
 from pennylane.wires import Wires
 
 
@@ -180,6 +180,16 @@ class TestInitialization:
         )  # scaling doesn't change diagonalizing gates
 
         assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
+
+    def test_base_gets_cast_to_new_type(self):
+        """Test that Tensor and Hamiltonian instances get cast to new types."""
+        base_H = qml.Hamiltonian([1.1, 2.2], [qml.PauliZ(0), qml.PauliZ(1)])
+        op_H = qml.s_prod(2j, base_H)
+        assert isinstance(op_H.base, Sum)
+
+        base_T = qml.PauliZ(0) @ qml.PauliZ(1)
+        op_T = qml.s_prod(2j, base_T)
+        assert isinstance(op_T.base, Prod)
 
 
 class TestMscMethods:
