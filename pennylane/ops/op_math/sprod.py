@@ -20,7 +20,7 @@ from copy import copy
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
@@ -137,6 +137,7 @@ class SProd(ScalarSymbolicOp):
         return cls(data[0], data[1])
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, id=None):
+        base = convert_to_opmath(base)
         super().__init__(base=base, scalar=scalar, id=id)
 
         if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
