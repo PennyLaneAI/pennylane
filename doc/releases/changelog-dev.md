@@ -10,6 +10,10 @@
 
 * New `qml.commutator` function that allows to compute commutators between
   `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
+  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+
+  Basic usage with PennyLane operators.
+
   ```pycon
   >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
   2j*(PauliZ(wires=[0]))
@@ -34,7 +38,6 @@
   2j * Z(0) @ X(1)
   + 2j * X(0) @ Z(1)
   ```
-  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
 
 <h3>Improvements 🛠</h3>
 
