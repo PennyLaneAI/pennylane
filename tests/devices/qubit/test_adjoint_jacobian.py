@@ -470,7 +470,7 @@ class TestAdjointJVP:
 class TestAdjointVJP:
     """Test for adjoint_vjp"""
 
-    @pytest.mark.parametrize("cotangents", [(0,), (1.232,), 5.2])
+    @pytest.mark.parametrize("cotangents", [0, 1.232, 5.2])
     def test_single_param_single_obs(self, cotangents, tol):
         """Test VJP is correct for a single parameter and observable"""
         x = np.array(0.654)
@@ -478,8 +478,7 @@ class TestAdjointVJP:
 
         actual = adjoint_vjp(qs, cotangents)
 
-        iterable_cotangent = cotangents if isinstance(cotangents, tuple) else (cotangents,)
-        expected = -iterable_cotangent[0] * np.sin(x)
+        expected = -cotangents * np.sin(x)
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize("cotangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
@@ -497,7 +496,7 @@ class TestAdjointVJP:
         expected = np.dot(np.array([-np.sin(x), np.cos(x)]), np.array(cotangents))
         assert np.allclose(actual, expected, atol=tol)
 
-    @pytest.mark.parametrize("cotangents", [(0,), (1.232,)])
+    @pytest.mark.parametrize("cotangents", [0, 1.232])
     def test_multi_param_single_obs(self, cotangents, tol):
         """Test VJP is correct for multiple parameters and a single observable"""
         x = np.array(0.654)
@@ -511,7 +510,7 @@ class TestAdjointVJP:
         assert isinstance(actual, tuple)
         assert len(actual) == 2
 
-        expected = cotangents[0] * np.array([np.cos(x) * np.sin(y), np.sin(x) * np.cos(y)])
+        expected = cotangents * np.array([np.cos(x) * np.sin(y), np.sin(x) * np.cos(y)])
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize(
@@ -562,6 +561,243 @@ class TestAdjointVJP:
 
         jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
         expected = np.array(cotangents) @ jac
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "cotangents",
+        ((0, 1.23), (1.232, -2.098, 0.323, 1.112), (5.212, -0.354, -2.575), (0.0, 0.0, 0.0)),
+    )
+    def test_single_param_single_obs_batched(self, cotangents, tol):
+        """Test that batched cotangents with adjoint VJP give correct results when
+        the tape has a single trainable parameter and a single observable"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [qml.expval(qml.PauliZ(wires=[0]))]
+        qs = QuantumScript([qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0])
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 1
+
+        jac = np.array([[-np.sin(x)]])
+        expected = jac.T @ np.expand_dims(np.array(cotangents), 0)
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "cotangents",
+        [
+            (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])),
+            (np.array([0.653, 0, 0]), np.array([0, 0.573, 0]), np.array([0, 0, 1.232])),
+            (np.array([0.653, -1.456]), np.array([0.498, 0.573]), np.array([0, 1.232])),
+            (
+                np.array([0.653, 0, 0, -1.234]),
+                np.array([-0.323, 0.573, -1.449, -0.573]),
+                np.array([0, 1, 1.232, 1.232]),
+            ),
+            (
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+            ),
+        ],
+    )
+    def test_single_param_multi_obs_batched(self, cotangents, tol):
+        """Test that batched cotangents with adjoint VJP give correct results when
+        the tape has a single trainable parameter and multiple observables"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [
+            qml.expval(qml.PauliZ(wires=[0])),
+            qml.expval(qml.PauliY(wires=[1])),
+            qml.expval(qml.PauliX(wires=[0])),
+        ]
+        qs = QuantumScript([qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0])
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 1
+
+        jac = np.array([[-np.sin(x)], [0], [np.cos(x)]])
+        expected = jac.T @ np.array(cotangents)
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "cotangents",
+        ((0, 1.23), (1.232, -2.098, 0.323, 1.112), (5.212, -0.354, -2.575), (0.0, 0.0, 0.0)),
+    )
+    def test_multi_param_single_obs_batched(self, cotangents, tol):
+        """Test that batched cotangents with adjoint VJP give correct results when
+        the tape has multiple trainable parameters and a single observable"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [qml.expval(qml.PauliZ(wires=[0]))]
+        qs = QuantumScript(
+            [qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0, 1]
+        )
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 2
+
+        jac = np.array([[-np.sin(x), 0]])
+        expected = jac.T @ np.expand_dims(np.array(cotangents), 0)
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "cotangents",
+        [
+            (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])),
+            (np.array([0.653, 0, 0]), np.array([0, 0.573, 0]), np.array([0, 0, 1.232])),
+            (np.array([0.653, -1.456]), np.array([0.498, 0.573]), np.array([0, 1.232])),
+            (
+                np.array([0.653, 0, 0, -1.234]),
+                np.array([-0.323, 0.573, -1.449, -0.573]),
+                np.array([0, 1, 1.232, 1.232]),
+            ),
+            (
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+            ),
+        ],
+    )
+    def test_multi_param_multi_obs_batched(self, cotangents, tol):
+        """Test that batched cotangents with adjoint VJP give correct results when
+        the tape has multiple trainable parameters and multiple observables"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [
+            qml.expval(qml.PauliZ(wires=[0])),
+            qml.expval(qml.PauliY(wires=[1])),
+            qml.expval(qml.PauliX(wires=[0])),
+        ]
+        qs = QuantumScript(
+            [qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0, 1]
+        )
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 2
+
+        jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
+        expected = jac.T @ np.array(cotangents)
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "cotangents",
+        [
+            (np.array([0.498, 0.573]), np.array([0.653, -1.456]), 0.0),
+            (np.array([0.498, 0.573, -1.456]), 0.0, 0.0),
+        ],
+    )
+    def test_inhomogenous_cotangents(self, cotangents, tol):
+        """Test that inhomogenous cotangents give the correct VJP"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [
+            qml.expval(qml.PauliZ(wires=[0])),
+            qml.expval(qml.PauliY(wires=[1])),
+            qml.expval(qml.PauliX(wires=[0])),
+        ]
+        qs = QuantumScript(
+            [qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0, 1]
+        )
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 2
+
+        new_cotangents = []
+        inner_shape = len(cotangents[0])
+        for c in cotangents:
+            if isinstance(c, float):
+                new_cotangents.append(np.zeros(inner_shape))
+            else:
+                new_cotangents.append(c)
+
+        jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
+        expected = jac.T @ np.array(new_cotangents)
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "cotangents",
+        [
+            np.array(
+                [
+                    [0.123, 0.456, 0.789, -0.123],
+                    [-0.456, -0.789, 1.234, 5.678],
+                    [-0.345, -4.345, -2.589, 3.456],
+                ]
+            ),
+            np.array([[0.0, 0.123, 0.765, 4.123], [-7.698, -3.465, -1.289, 4.697]]),
+        ],
+    )
+    def test_single_param_state_batched(self, cotangents, tol):
+        """Test that computing the VJP with batched cotangents for state measurements
+        gives the correct results for a single trainable parameter."""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [qml.state()]
+        qs = QuantumScript([qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0])
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 1
+
+        jac = np.array(
+            [
+                [-0.5 * np.sin(x / 2) * np.cos(y / 2)],
+                [0.5j * np.sin(x / 2) * np.sin(y / 2)],
+                [0.5 * np.cos(x / 2) * np.cos(y / 2)],
+                [-0.5j * np.cos(x / 2) * np.sin(y / 2)],
+            ]
+        )
+        expected = jac.T @ cotangents.T
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "cotangents",
+        [
+            np.array(
+                [
+                    [0.123, 0.456, 0.789, -0.123],
+                    [-0.456, -0.789, 1.234, 5.678],
+                    [-0.345, -4.345, -2.589, 3.456],
+                ]
+            ),
+            np.array([[0.0, 0.123, 0.765, 4.123], [-7.698, -3.465, -1.289, 4.697]]),
+        ],
+    )
+    def test_multi_param_state_batched(self, cotangents, tol):
+        """Test that computing the VJP with batched cotangents for state measurements
+        gives the correct results for multiple trainable parameters."""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [qml.state()]
+        qs = QuantumScript(
+            [qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0, 1]
+        )
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 2
+
+        jac = np.array(
+            [
+                [-0.5 * np.sin(x / 2) * np.cos(y / 2), -0.5 * np.cos(x / 2) * np.sin(y / 2)],
+                [0.5j * np.sin(x / 2) * np.sin(y / 2), -0.5j * np.cos(x / 2) * np.cos(y / 2)],
+                [0.5 * np.cos(x / 2) * np.cos(y / 2), -0.5 * np.sin(x / 2) * np.sin(y / 2)],
+                [-0.5j * np.cos(x / 2) * np.sin(y / 2), -0.5j * np.sin(x / 2) * np.cos(y / 2)],
+            ]
+        )
+        expected = jac.T @ cotangents.T
         assert np.allclose(actual, expected, atol=tol)
 
     def test_with_nontrainable_parametrized(self):

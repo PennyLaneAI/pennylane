@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
+  is now strictly faster for jax.
+  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
+
 <h3>Improvements 🛠</h3>
 
 * Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
@@ -12,23 +16,25 @@
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
-* Upgrade Pauli arithmetic with multiplying by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
-  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
-
-* Upgrade Pauli arithmetic addition. You can now intuitively add together 
+* Upgrade Pauli arithmetic:
+  You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
+  You can now intuitively add together 
   `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
   For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
   sentence `ps1 = PauliSentence({pw1: 3.})`.
+  You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each other. For example `ps1 - pw1 - 1`.
+  Overall, you can now intuitively construct `PauliSentence` operators like `0.5 * pw1 - 1.5 * ps1 + 2`.
+  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
-
-* Upgrade Pauli arithmetic with subtraction. You can now subtract `PauliWord` and `PauliSentence`
-  instances, as well as scalars, from each other.
-  For example `ps1 - pw1 - 1` for `pw1 = PauliWord({0: "X", 1: "Y"})` and `ps1 = PauliSentence({pw1: 3.})`.
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
+  [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
 
 * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
   [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
-  
+
+* Improve efficiency of matrix calculation when operator is symmetric over wires
+   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
+
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
 
@@ -77,7 +83,19 @@
   these cases.
   [(#5039)](https://github.com/PennyLaneAI/pennylane/pull/5039)
 
+* `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now deprecated. Instead, you
+  should use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
+  [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
+
+* The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the
+  `pauli` module have been deprecated, as they are no longer used anywhere and the same
+  functionality can be achieved using newer features in the `pauli` module.
+  [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
+
 <h3>Documentation 📝</h3>
+
+* The module documentation for `pennylane.tape` now explains the difference between `QuantumTape` and `QuantumScript`.
+  [(#5065)](https://github.com/PennyLaneAI/pennylane/pull/5065)
 
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
@@ -104,8 +122,10 @@ This release contains contributions from (in alphabetical order):
 Abhishek Abhishek,
 Astral Cai,
 Pablo Antonio Moreno Casares,
-Christina Lee,
 Isaac De Vlugt,
 Korbinian Kottmann,
+Christina Lee,
+Xiaoran Li,
 Lee J. O'Riordan,
+Mudit Pandey,
 Matthew Silverman.
