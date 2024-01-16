@@ -1437,7 +1437,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
-        assert t.pauli_rep is None
+        assert t.pauli_rep == qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 2: "Y"}): 1.0})
 
     def test_has_matrix(self):
         """Test that the Tensor class has a ``has_matrix`` static attribute set to True."""

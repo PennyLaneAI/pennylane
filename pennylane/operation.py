@@ -2041,8 +2041,8 @@ class Tensor(Observable):
         self.obs: List[Observable] = []
         self._args = args
         self._batch_size = None
-        if all(o.pauli_rep for o in args):
-            self._pauli_rep = functools.reduce(lambda a, b: a.pauli_rep * b.pauli_rep, args)
+        if all(prs := [o.pauli_rep for o in args]):
+            self._pauli_rep = functools.reduce(lambda a, b: a * b, prs)
         else:
             self._pauli_rep = None
         self.queue(init=True)
@@ -2103,6 +2103,7 @@ class Tensor(Observable):
         copied_op.obs = self.obs.copy()
         copied_op._eigvals_cache = self._eigvals_cache
         copied_op._batch_size = self._batch_size
+        copied_op._pauli_rep = self._pauli_rep
         return copied_op
 
     def __repr__(self):
