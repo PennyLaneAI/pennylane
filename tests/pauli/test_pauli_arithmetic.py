@@ -1115,18 +1115,49 @@ class TestPauliSentence:
 class TestPauliCommutators:
     """Test 'native' commutators in PauliWord and PauliSentence"""
 
-    data_pauli_relations = (
+    data_pauli_relations_commutes = [
         # word and word
-        (X0, X0, PauliSentence({pw_id: 0})),
-        (Y0, Y0, PauliSentence({pw_id: 0})),
-        (Z0, Z0, PauliSentence({pw_id: 0})),
+        (X0, X0, PauliSentence({})),
+        (Y0, Y0, PauliSentence({})),
+        (Z0, Z0, PauliSentence({})),
+        (PauliWord({"a": X}), PauliWord({"a": X}), PauliSentence({})),
+        (PauliWord({"a": X}), PauliWord({"b": Y}), PauliSentence({})),
+    ]
+
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)
+    def test_zero_return_pauli_word(self, op1, op2, true_res):
+        """Test the return when both operators are zero"""
+        res1 = op1.commutator(op2)
+        res1m = op2.commutator(op1)
+        res2 = op1 | op2
+        res2m = op2 | op1
+        assert res1 == true_res
+        assert res1m == true_res
+        assert res2 == true_res
+        assert res2m == true_res
+
+    @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)
+    def test_zero_return_pauli_word_different_types(self, op1, op2, true_res, convert1):
+        """Test the return when both operators are zero and potentially of different type"""
+        op1 = convert1(op1)
+        res2 = op1 | op2
+        res2m = op2 | op1
+        assert res2 == true_res
+        assert res2m == true_res
+
+    data_pauli_relations = [
+        # word and word
+        (X0, X0, PauliSentence({})),
+        (Y0, Y0, PauliSentence({})),
+        (Z0, Z0, PauliSentence({})),
         (X0, Y0, PauliSentence({Z0: 2j})),
         (Y0, Z0, PauliSentence({X0: 2j})),
         (Z0, X0, PauliSentence({Y0: 2j})),
         (Y0, X0, PauliSentence({Z0: -2j})),
         (Z0, Y0, PauliSentence({X0: -2j})),
         (X0, Z0, PauliSentence({Y0: -2j})),
-    )
+    ]
 
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations)
     def test_pauli_word_commutator(self, op1, op2, true_res):
@@ -1163,10 +1194,38 @@ class TestPauliCommutators:
         assert res1m[0] == true_word
         assert res1m[1] == -1 * true_coeff
 
+    data_pauli_relations_different_types = [
+        (X0, Y0, PauliSentence({Z0: 2j})),
+        (Y0, Z0, PauliSentence({X0: 2j})),
+        (Z0, X0, PauliSentence({Y0: 2j})),
+        (Y0, X0, PauliSentence({Z0: -2j})),
+        (Z0, Y0, PauliSentence({X0: -2j})),
+        (X0, Z0, PauliSentence({Y0: -2j})),
+    ]
+
     @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
-    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations)
-    def test_pauli_word_commutator_different_types(self, op1, op2, true_res, convert1):
+    @pytest.mark.parametrize("convert2", [_id, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
+    def test_pauli_word_commutator_different_types(self, op1, op2, true_res, convert1, convert2):
         """Test native commutator in between a PauliSentence and either of PauliWord, PauliSentence, Operator"""
+        op1 = convert1(op1)
+        op2 = convert2(op2)
+        res2 = op1 | op2
+        res2m = op2 | op1
+        assert res2 == true_res
+        assert res2m == -1 * true_res
+        assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
+
+    data_pauli_relations_commutes = [
+        (X0, X0, PauliSentence({})),
+        (Y0, Y0, PauliSentence({})),
+        (Z0, Z0, PauliSentence({})),
+    ]
+
+    @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
+    def test_pauli_word_commutator_commutes(self, op1, op2, true_res, convert1):
+        """Test native commutator in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
         op1 = convert1(op1)
         op2 = qml.pauli.pauli_sentence(op2)
         res2 = op1 | op2
