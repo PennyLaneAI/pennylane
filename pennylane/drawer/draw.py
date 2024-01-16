@@ -54,7 +54,7 @@ def draw(
             ``None`` will omit parameters from operation labels.
         max_length (int): Maximum string width (columns) when printing the circuit
         show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+        expansion_strategy (str, int, slice): The strategy to use when circuit expansions or decompositions
             are required. Note that this is ignored if the input is not a QNode.
 
             - ``gradient``: The QNode will attempt to decompose
@@ -63,6 +63,10 @@ def draw(
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
+
+            - ``int``: Apply that number of transforms from full transform program
+
+            - ``slice``: Apply that selection for transforms from the full transform program
 
 
     Returns:
@@ -257,7 +261,7 @@ def _draw_qnode(
     @wraps(qnode)
     def wrapper(*args, **kwargs):
 
-        tapes, _ = qnode.construct_batch(expansion_strategy)(*args, **kwargs)
+        tapes, _ = qnode.apply_transforms(expansion_strategy)(*args, **kwargs)
 
         _wire_order = wire_order or qnode.device.wires or tapes[0].wires
 
@@ -329,8 +333,8 @@ def draw_mpl(
         label_options (dict): matplotlib formatting options for the wire labels
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
+        expansion_strategy (str, int, slice): The strategy to use when circuit expansions or decompositions
+            are required. Note that this is ignored if the input is not a QNode.
 
             - ``gradient``: The QNode will attempt to decompose
               the internal circuit such that all circuit operations are supported by the gradient
@@ -338,6 +342,11 @@ def draw_mpl(
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
+
+            - ``int``: Apply that number of transforms from full transform program
+
+            - ``slice``: Apply that selection for transforms from the full transform program
+
         fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
 
     Returns:
@@ -554,7 +563,7 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        tapes, _ = qnode.construct_batch(expansion_strategy)(*args, **kwargs_qnode)
+        tapes, _ = qnode.apply_transforms(expansion_strategy)(*args, **kwargs_qnode)
         if len(tapes) > 1:
             warnings.warn("More than one circuit created. Only drawing the first circuit.")
         tape = tapes[0]

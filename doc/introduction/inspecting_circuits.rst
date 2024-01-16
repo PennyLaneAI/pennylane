@@ -115,6 +115,52 @@ For example:
 More information, including various fine-tuning options, can be found in
 the :doc:`drawing module <../code/qml_drawer>`.
 
+The circuit can be drawn at different stages in a transform program using the ``expansion_strategy`` keyword argument.
+
+.. code-block::
+
+    x = np.array([0.1, 0.2])
+
+    dev = qml.device('default.qubit', wires=4)
+
+    @qml.transforms.merge_rotations
+    @qml.transforms.cancel_inverses
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(x):
+        qml.Permute((2,0,1), wires=(0,1,2))
+        qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
+        qml.RX(x, wires=0)
+        qml.RX(-x, wires=0)
+        qml.PauliX(0)
+        qml.PauliX(0)
+        return qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(0)))
+
+For example, the initially captured circuit can be draw with ``expansion_strategy=0``:
+
+>>> print(qml.draw(circuit, expansion_strategy=0)(1.2))
+0: ─╭Permute─╭RandomLayers(M0)──RX(1.20)──RX(-1.20)──X──X─┤  <X+Y>
+1: ─├Permute─╰RandomLayers(M0)────────────────────────────┤       
+2: ─╰Permute──────────────────────────────────────────────┤       
+M0 = 
+[[1. 2.]]
+
+After the ``cancel_inverses`` transform has been applied:
+
+>>> print(qml.draw(circuit, expansion_strategy=1)(1.2))
+0: ─╭Permute─╭RandomLayers(M0)──RX(1.20)──RX(-1.20)─┤  <X+Y>
+1: ─├Permute─╰RandomLayers(M0)──────────────────────┤       
+2: ─╰Permute────────────────────────────────────────┤       
+M0 = 
+[[1. 2.]]
+
+Or what the device will execute:
+
+>>> print(qml.draw(circuit, expansion_strategy="device")(1.2))
+0: ─╭SWAP──RY(1.00)───────────┤  <X+Y>
+1: ─│─────╭SWAP──────RX(2.00)─┤       
+2: ─╰SWAP─╰SWAP───────────────┤       
+
+
 Debugging with mid-circuit snapshots
 ------------------------------------
 

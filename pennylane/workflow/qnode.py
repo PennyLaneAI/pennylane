@@ -902,7 +902,7 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
-    def construct_batch(self, expansion_strategy: Union[None, str, int, slice] = None) -> Callable:
+    def apply_transforms(self, expansion_strategy: Union[None, str, int, slice] = None) -> Callable:
         """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
         Args:
@@ -912,6 +912,91 @@ class QNode:
                 * ``str``: Acceptable keys are ``"device"`` and ``"gradient"``
                 * ``int``: How many transforms to include, starting from the front of the program
                 * ``slice``: a slice to select out components of the transform program.
+
+        Returns:
+            Callable:  a function with the same call signature as the initial quantum function. This function returns
+                a batch (tuple) of tapes and postprocessing function.
+
+        Suppose we have a device with several user transforms.
+
+        .. code-block:: python
+
+            x = np.array([0.1, 0.2])
+
+            dev = qml.device('default.qubit', wires=4)
+
+            @qml.transforms.merge_rotations
+            @qml.transforms.cancel_inverses
+            @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+            def circuit(x, include_permute=True):
+                if include_permute:
+                    qml.Permute((2,0,1), wires=(0,1,2))
+                qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
+                qml.RX(x, wires=0)
+                qml.RX(-x, wires=0)
+                qml.PauliX(0)
+                qml.PauliX(0)
+                return qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(0)))
+
+        We can inspect what the device will execute with:
+
+        >>> batch, fn = circuit.apply_transforms(expansion_strategy="device")(1.23)
+        >>> batch[0].circuit
+        [SWAP(wires=[0, 2]),
+        SWAP(wires=[1, 2]),
+        RY(tensor(1., requires_grad=True), wires=[0]),
+        RX(tensor(2., requires_grad=True), wires=[1]),
+        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
+
+        These tapes can be natively executed by the device, though with non-backprop devices the parameters
+        will need to be converted to numpy with :func:`~.convert_to_numpy_parameters`.
+
+        >>> fn(dev.execute(batch))
+        (tensor(0.84147098, requires_grad=True),)
+
+        Or what the parameter shift gradient transform will be applied to:
+
+        >>> batch, fn = circuit.apply_transforms(expansion_strategy="gradient")(1.23)
+        >>> batch[0].circuit
+        [Permute(wires=[0, 1, 2]),
+        RY(tensor(1., requires_grad=True), wires=[0]),
+        RX(tensor(2., requires_grad=True), wires=[1]),
+        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
+
+        We can inpsect what was directly captured from the qfunc with ``expansion_strategy=0``.
+
+        >>> batch, fn = circuit.apply_transforms(expansion_strategy=0)(1.23)
+        >>> batch[0].circuit
+        [Permute(wires=[0, 1, 2]),
+        RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
+        RX(1.23, wires=[0]),
+        RX(-1.23, wires=[0]),
+        PauliX(wires=[0]),
+        PauliX(wires=[0]),
+        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
+
+        And iterate though stages in the transform program with different integers.
+        If we request ``expansion_strategy=1``, the ``cancel_inverses`` transform has been applied.
+
+        >>> batch, fn = circuit.apply_transforms(expansion_strategy=1)(1.23)
+        >>> batch[0].circuit
+        [Permute(wires=[0, 1, 2]),
+        RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
+        RX(1.23, wires=[0]),
+        RX(-1.23, wires=[0]),
+        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
+
+        We can also slice into a subset of the transform program.  ``slice(1, None)`` would skip the first user
+        transform ``cancel_inverses``:
+
+        >>> batch, fn = circuit.apply_transforms(expansion_strategy=slice(1,None))(1.23, include_permute=False)
+        >>> batch[0].circuit
+        [RY(tensor(1., requires_grad=True), wires=[0]),
+        RX(tensor(2., requires_grad=True), wires=[1]),
+        PauliX(wires=[0]),
+        PauliX(wires=[0]),
+        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
+
         """
         full_transform_program = _get_full_transform_program(self)
         if expansion_strategy == "device":
@@ -930,6 +1015,7 @@ class QNode:
         program = full_transform_program[expansion_strategy]
 
         def batch_constructor(*args, **kwargs) -> Tuple[Tuple["qml.tape.QuantumTape", Callable]]:
+            """Create a batch of tapes and a post processing function."""
             if self._qfunc_uses_shots_arg:
                 shots = _get_device_shots(self._original_device)
             else:

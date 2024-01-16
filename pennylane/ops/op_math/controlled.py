@@ -149,7 +149,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
             wires=control + op.wires, control_values=control_string, work_wires=work_wires
         )
     if isinstance(op, Operator):
-        return Controlled(
+        return ControlledOp(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
         )
     if not callable(op):

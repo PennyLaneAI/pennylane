@@ -34,8 +34,8 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
     Keyword Args:
         max_expansion (int): The number of times the internal circuit should be expanded when
             calculating the specification. Defaults to ``qnode.max_expansion``.
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
+        expansion_strategy (str, int, slice): The strategy to use when circuit expansions or decompositions
+            are required. Note that this is ignored if the input is not a QNode.
 
             - ``gradient``: The QNode will attempt to decompose
               the internal circuit such that all circuit operations are supported by the gradient
@@ -43,6 +43,11 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
+
+            - ``int``: Apply that number of transforms from full transform program
+
+            - ``slice``: Apply that selection for transforms from the full transform program
+
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
@@ -109,7 +114,7 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
         Returns:
             dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
-        tapes, _ = qnode.construct_batch(stage=expansion_strategy)(*args, **kwargs)
+        tapes, _ = qnode.apply_transforms(expansion_strategy=expansion_strategy)(*args, **kwargs)
 
         if len(tapes) > 1:
             raise NotImplementedError("specs currently only works for a single tape.")
