@@ -63,10 +63,15 @@ class TestLegacySupport:
         """Test that Hamiltonians with Tensors and sums get transformed to new operator classes and return the correct result"""
         H1 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
         H2 = qml.Hamiltonian([1.0], [qml.PauliY(0) + qml.PauliY(1)])
-        true_res = qml.sum(qml.s_prod(2j, qml.PauliZ(0) @ qml.PauliX(1)), qml.s_prod(2j, qml.PauliX(0) @ qml.PauliZ(1)))
+        true_res = qml.sum(
+            qml.s_prod(2j, qml.PauliZ(0) @ qml.PauliX(1)),
+            qml.s_prod(2j, qml.PauliX(0) @ qml.PauliZ(1)),
+        )
         res = qml.comm(H1, H2).simplify()
         assert isinstance(res, Sum)
-        assert qml.equal(true_res, res) # issue https://github.com/PennyLaneAI/pennylane/issues/5060 as well as potential fix https://github.com/PennyLaneAI/pennylane/pull/5037
+        assert qml.equal(
+            true_res, res
+        )  # issue https://github.com/PennyLaneAI/pennylane/issues/5060 as well as potential fix https://github.com/PennyLaneAI/pennylane/pull/5037
 
 
 class TestcommPauli:
@@ -110,9 +115,7 @@ class TestcommPauli:
     @pytest.mark.parametrize("transform_type1", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("transform_type2", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_more_comm_relations)
-    def test_comm_relations_pauli_words(
-        self, op1, op2, true_res, transform_type1, transform_type2
-    ):
+    def test_comm_relations_pauli_words(self, op1, op2, true_res, transform_type1, transform_type2):
         """Test more comm relations between Paulis"""
         res = qml.comm(transform_type1(op1), transform_type2(op2), pauli=True)
         assert res == true_res
@@ -161,9 +164,7 @@ class TestcommPauliFalseSimplify:
     @pytest.mark.parametrize("transform_type1", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("transform_type2", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_more_comm_relations_op)
-    def test_comm_relations_pauli_words(
-        self, op1, op2, true_res, transform_type1, transform_type2
-    ):
+    def test_comm_relations_pauli_words(self, op1, op2, true_res, transform_type1, transform_type2):
         """Test more comm relations between Paulis"""
         res = qml.comm(transform_type1(op1), transform_type2(op2), pauli=False)
         assert res == true_res
