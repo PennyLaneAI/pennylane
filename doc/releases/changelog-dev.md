@@ -66,6 +66,9 @@
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
+* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
+  validate these properties manually.
+
 <h3>Deprecations 👋</h3>
 
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
