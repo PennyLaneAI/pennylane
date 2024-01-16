@@ -269,7 +269,8 @@ def _equal_operators(
 # pylint: disable=unused-argument, protected-access
 def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     """Determine whether two Prod or Sum objects are equal"""
-
+    print("Op1: \n", op1)
+    print("Op2: \n", op2)
     if len(op1.operands) != len(op2.operands):
         return False
 
@@ -277,6 +278,9 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
 
+    print(sorted_ops1, "\n")
+    print(sorted_ops2)
+    print("\n --- END ---")
     return all(equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2))
 
 

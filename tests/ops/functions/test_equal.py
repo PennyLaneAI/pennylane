@@ -1781,7 +1781,7 @@ class TestSumComparisons:
             qml.s_prod(2j, qml.prod(qml.PauliZ(0), qml.PauliX(1))),
             qml.s_prod(2j, qml.prod(qml.PauliX(0), qml.PauliZ(1))),
         )
-        true_res = true_res.simplify()
+        # true_res = true_res.simplify()
 
         res = qml.prod(H1, H2) - qml.prod(H2, H1)
         res = res.simplify()
