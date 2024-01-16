@@ -610,6 +610,9 @@ class CRZ(ControlledOp):
             product = qml.math.outer(theta, prefactors)
         return qml.math.exp(product)
 
+    def eigvals(self):
+        return self.compute_eigvals(*self.parameters)
+
     @staticmethod
     def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
@@ -962,6 +965,9 @@ class ControlledPhaseShift(ControlledOp):
         else:
             product = qml.math.outer(phi, prefactors)
         return qml.math.exp(product)
+
+    def eigvals(self):
+        return self.compute_eigvals(*self.parameters)
 
     @staticmethod
     def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
