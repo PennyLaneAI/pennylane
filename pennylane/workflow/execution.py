@@ -142,7 +142,7 @@ def _get_ml_boundary_execute(
                 from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
         else:  # interface in {"jax", "jax-python", "JAX"}:
             if device_vjp:
-                from .interfaces.jax import jax_vjp_execute as ml_boundary
+                from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
                 from .interfaces.jax import jax_jvp_execute as ml_boundary
 

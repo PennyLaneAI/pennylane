@@ -297,10 +297,6 @@ class TestVectorValuedQNode:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(a, b)
-            return
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
         assert circuit.qtape.trainable_params == [0, 1]
@@ -348,10 +344,6 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(a, b)
-            return
         jac_fn = jax.jacobian(circuit, argnums=[0, 1])
         res = jac_fn(a, b)
 
@@ -405,10 +397,6 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(x, y)
-            return
         res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         expected = np.array(
@@ -474,10 +462,6 @@ class TestVectorValuedQNode:
         assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(x, y)
-            return
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected_0 = np.array(
             [
@@ -552,10 +536,6 @@ class TestVectorValuedQNode:
         assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(x, y)
-            return
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected = [
             [-np.sin(x), 0],
@@ -619,10 +599,6 @@ class TestVectorValuedQNode:
 
         if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
-        elif device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0])(x, y)
-            return
         jac = jax.jacobian(circuit, argnums=[0])(x, y)
 
         expected = [
@@ -688,10 +664,6 @@ class TestVectorValuedQNode:
         assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(x, y)
-            return
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected = [
             [2 * np.cos(x) * np.sin(x), 0],
@@ -1742,10 +1714,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
-            return
         jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -1788,10 +1756,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array([0.1, 0.2])
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit)(a, shots=shots)
-            return
         jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -1913,10 +1877,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array(0.1)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit)(a, shots=shots)
-            return
         jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -1954,10 +1914,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
-            return
         jac = jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -2002,10 +1958,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array([0.1, 0.2])
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit)(a, shots=shots)
-            return
         jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
