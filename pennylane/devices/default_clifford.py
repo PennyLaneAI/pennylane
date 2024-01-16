@@ -150,7 +150,7 @@ class DefaultClifford(Device):
 
     **Example:**
 
-    The :class:`~pennylane.devices.DefaultClifford` implements the `default.clifford` device,
+    The :class:`~pennylane.devices.DefaultClifford` implements the ``default.clifford`` device,
     which can be used for efficiently executing circuits built with
     `Clifford gates <https://en.wikipedia.org/wiki/Clifford_gates>`_.
 
