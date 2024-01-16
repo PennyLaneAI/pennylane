@@ -123,8 +123,10 @@ def bind_new_parameters_copy(
 @bind_new_parameters.register(qml.CRY)
 @bind_new_parameters.register(qml.CRZ)
 @bind_new_parameters.register(qml.CRot)
+@bind_new_parameters.register(qml.ControlledPhaseShift)
 def bind_new_parameters_parametric_controlled_ops(
-    op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot], params: Sequence[TensorLike]
+    op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot, qml.ControlledPhaseShift],
+    params: Sequence[TensorLike],
 ):
     return op.__class__(*params, wires=op.wires)
 

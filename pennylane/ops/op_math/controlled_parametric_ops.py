@@ -590,7 +590,7 @@ class CRZ(ControlledOp):
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(theta):  # pylint: disable=arguments-differ
+    def compute_eigvals(theta, **_):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -958,7 +958,7 @@ class ControlledPhaseShift(ControlledOp):
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(phi):  # pylint: disable=arguments-differ
+    def compute_eigvals(phi, **_):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
