@@ -140,7 +140,7 @@ Completed deprecation cycles
   - Deprecated in v0.34
   - Removed in v0.35
 
-* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` are deprecated. Users should now validate
+* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` have been removed. Users should now validate
   these properties manually.
 
   .. code-block:: python
