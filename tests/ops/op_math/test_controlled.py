@@ -451,8 +451,12 @@ class TestMiscMethods:
 
         assert op.has_generator is False
 
-    def test_generator(self):
+    @pytest.mark.parametrize("use_new_op_math", [True, False])
+    def test_generator(self, use_new_op_math):
         """Test that the generator is a tensor product of projectors and the base's generator."""
+
+        if use_new_op_math:
+            qml.operation.active_new_opmath()
 
         base = qml.RZ(-0.123, wires="a")
         control_values = [0, 1]
@@ -476,6 +480,9 @@ class TestMiscMethods:
         assert qml.math.allclose(
             expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
         )
+
+        if use_new_op_math:
+            qml.operation.disable_new_opmath()
 
     def test_diagonalizing_gates(self):
         """Test that the Controlled diagonalizing gates is the same as the base diagonalizing gates."""
