@@ -1940,7 +1940,7 @@ class QubitDevice(Device):
                 "Parameter broadcasting is not supported with adjoint differentiation"
             )
 
-        # broadcast inner product not summing over first dimension of b
+        # broadcast inner product, not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
         # pylint: disable=unnecessary-lambda-assignment
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))

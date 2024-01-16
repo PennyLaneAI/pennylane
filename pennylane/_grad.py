@@ -288,7 +288,7 @@ def jacobian(func, argnum=None):
     >>> qml.math.shape(jac)
     (3, 2, 4)
 
-    As expected, the tuple was unpacked, and we directly received the Jacobian of the
+    As expected, the tuple was unpacked and we directly received the Jacobian of the
     QNode with respect to ``y``.
     """
     # pylint: disable=no-value-for-parameter
