@@ -468,6 +468,9 @@ class TestMiscMethods:
             assert ob.data == ([val],)
             assert ob.wires == qml.wires.Wires(wire)
 
+        expected = qml.exp(op.generator(), 1j * op.data[0])
+        assert qml.math.allclose(expected.matrix(), op.matrix(), rtol=1e-1)
+
         assert gen_tensor.operands[-1].__class__ is base_gen.__class__
         assert gen_tensor.operands[-1].wires == base_gen.wires
 
