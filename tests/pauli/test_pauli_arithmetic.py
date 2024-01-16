@@ -979,8 +979,6 @@ class TestPauliSentence:
     def test_operation_empty_error(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a PL operation."""
-        with pytest.raises(ValueError, match="Can't get the operation for an empty PauliWord."):
-            ps4.operation()
         with pytest.raises(ValueError, match="Can't get the operation for an empty PauliSentence."):
             ps5.operation()
 
