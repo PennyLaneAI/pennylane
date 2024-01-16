@@ -92,7 +92,7 @@ def is_pauli_word(observable):
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
-    return observable.pauli_rep is not None or _is_pauli_word(observable)
+    return _is_pauli_word(observable) or len(getattr(observable, "pauli_rep", [])) != 1
 
 
 @singledispatch
@@ -139,24 +139,24 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     # pylint: disable=isinstance-second-argument-not-valid-type
     """Performs a check if two Pauli words have the same ``wires`` and ``name`` attributes.
 
-    This is a convenience function that checks if two given :class:`~.Tensor` instances specify the same
-    Pauli word. This function only checks if both :class:`~.Tensor` instances have the same wires and name
-    attributes, and hence won't perform any simplification to identify if the two Pauli words are
-    algebraically equivalent. For instance, this function will not identify
-    that ``PauliX(0) @ PauliX(0) = Identity(0)``, or ``PauliX(0) @ Identity(1)
-    = PauliX(0)``, or ``Identity(0) = Identity(1)``, etc.
+    This is a convenience function that checks if two given :class:`~.Tensor` or :class:`~.Prod`
+    instances specify the same Pauli word. This function only checks if both :class:`~.Tensor`
+    or :class:`~.Prod` instances have the same wires and name attributes, and hence won't perform
+    any simplification to identify if the two Pauli words are algebraically equivalent. For
+    instance, this function will not identify that ``PauliX(0) @ PauliX(0) = Identity(0)``, or
+    ``PauliX(0) @ Identity(1) = PauliX(0)``, or ``Identity(0) = Identity(1)``, etc.
 
     Args:
-        pauli_1 (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the first Pauli word
-        pauli_2 (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the second Pauli word
+        pauli_1 (Union[Identity, PauliX, PauliY, PauliZ, Tensor, Prod, SProd]): the first Pauli word
+        pauli_2 (Union[Identity, PauliX, PauliY, PauliZ, Tensor, Prod, SProd]): the second Pauli word
 
     Returns:
         bool: whether ``pauli_1`` and ``pauli_2`` have the same wires and name attributes
 
     Raises:
-        TypeError: if ``pauli_1`` or ``pauli_2`` are not :class:`~.Identity`,
-            :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`, or
-            :class:`~.Tensor` instances
+        TypeError: if ``pauli_1`` or ``pauli_2`` are not :class:`~.Identity`, :class:`~.PauliX`,
+        :class:`~.PauliY`, :class:`~.PauliZ`, :class:`~.Tensor`, :class:`~.SProd`, or
+        :class:`~.Prod` instances
 
     **Example**
 
@@ -230,7 +230,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     PauliX placements while the last half specify PauliZ placements.
 
     Args:
-        pauli_word (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the Pauli word to be
+        pauli_word (Union[Identity, PauliX, PauliY, PauliZ, Tensor, Prod, SProd]): the Pauli word to be
             converted to binary vector representation
         n_qubits (int): number of qubits to specify dimension of binary vector representation
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
@@ -359,9 +359,11 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
             unique integer labels as their values
 
     Returns:
-        Tensor: The Pauli word corresponding to the input binary vector. Note
-        that if a zero vector is input, then the resulting Pauli word will be
-        an :class:`~.Identity` instance.
+        Union[Tensor, Prod]: The Pauli word corresponding to the input binary vector.
+        Note that if a zero vector is input, then the resulting Pauli word will be
+        an :class:`~.Identity` instance. If new operator arithmetic is enabled via
+        :func:`~.pennylane.operation.enable_new_opmath`, a :class:`~.Prod` will be
+        returned, else a `:class:`~.Tensor` will be returned.
 
     Raises:
         TypeError: if length of binary vector is not even, or if vector does not have strictly
@@ -598,7 +600,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     product at the correct positions.
 
     Args:
-        pauli_word (Observable): an observable, either a :class:`~.Tensor` instance or
+        pauli_word (Observable): an observable, either a :class:`~.Tensor`, :class:`~.Prod` or
             single-qubit observable representing a Pauli group element.
         wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
@@ -729,7 +731,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     return True
 
 
-def _are_pauli_words_qwc_pw(lst_pauli_words):
+def _are_pauli_words_qwc_pauli_rep(lst_pauli_words):
     for op in lst_pauli_words:
         if len(op.pauli_rep) != 1:
             raise ValueError(f"are_pauli_words_qwc only works for pauli words. Got {op}")
@@ -760,7 +762,7 @@ def are_pauli_words_qwc(lst_pauli_words):
         (bool): True if they are all qubit-wise commuting, false otherwise.
     """
     if all(op.pauli_rep is not None for op in lst_pauli_words):
-        return _are_pauli_words_qwc_pw(lst_pauli_words)
+        return _are_pauli_words_qwc_pauli_rep(lst_pauli_words)
 
     latest_op_name_per_wire = {}
 
@@ -790,8 +792,8 @@ def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
     non-trivially by the Pauli words in observables.
 
     Args:
-        observables (list[Union[Identity, PauliX, PauliY, PauliZ, Tensor]]): the list of Pauli
-            words
+        observables (list[Union[Identity, PauliX, PauliY, PauliZ, Tensor, Prod, SProd]]): the list
+            of Pauli words
         n_qubits (int): number of qubits to specify dimension of binary vector representation
         wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
             unique integer labels as their values

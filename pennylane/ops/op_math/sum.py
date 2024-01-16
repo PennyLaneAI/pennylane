@@ -28,8 +28,6 @@ from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
-from .sprod import SProd
-from .prod import Prod
 
 
 def sum(*summands, id=None, lazy=True):
@@ -161,10 +159,7 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
-
-    def __init__(self, *operands: Operator, id=None):
-        self._grouping_indices = None
-        super().__init__(*operands, id=id)
+    _grouping_cache = {}
 
     @property
     def hash(self):
@@ -226,29 +221,17 @@ class Sum(CompositeOp):
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
-    @property
-    def _coeffs(self):
-        """List of coefficients"""
-        coeffs = []
-        for op in self:
-            with qml.QueuingManager.stop_recording():
-                s_op = op.simplify() if isinstance(op, (SProd, Prod)) else op
-
-            coeffs.append(s_op.scalar if isinstance(s_op, SProd) else 1.0)
-
-        return coeffs
-
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """docs"""
-        with qml.QueuingManager.stop_recording():
-            obs_groups, coeff_groups = qml.pauli.group_observables(
-                self.operands, coefficients=self._coeffs, grouping_type=grouping_type, method=method
-            )
+        if _hash := self.hash not in Sum._grouping_cache:
+            with qml.QueuingManager.stop_recording():
+                obs_groups = qml.pauli.group_observables(
+                    self.operands, grouping_type=grouping_type, method=method
+                )
 
-        ### compute grouping indices
-        self._grouping_indices = None
+            Sum._grouping_cache[_hash] = obs_groups
 
-        return obs_groups, coeff_groups
+        return Sum._grouping_cache[_hash]
 
     def sparse_matrix(self, wire_order=None):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
