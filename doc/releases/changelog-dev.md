@@ -29,13 +29,17 @@
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
   [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
 
+* Improve efficiency of matrix calculation when operator is symmetric over wires
+   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
+
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
 
-* Composite operations (eg. those made with `qml.prod` and `qml.sum`) convert `Hamiltonian` and
+* Composite operations (eg. those made with `qml.prod` and `qml.sum`) and `SProd` operations convert `Hamiltonian` and
   `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
   incompatible operator types.
   [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
+  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
 
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
@@ -118,9 +122,10 @@ This release contains contributions from (in alphabetical order):
 Abhishek Abhishek,
 Astral Cai,
 Pablo Antonio Moreno Casares,
-Christina Lee,
 Isaac De Vlugt,
 Korbinian Kottmann,
+Christina Lee,
+Xiaoran Li,
 Lee J. O'Riordan,
 Mudit Pandey,
 Matthew Silverman.
