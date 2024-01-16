@@ -69,7 +69,7 @@ class TestControlledOperations:
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
 
-    @pytest.mark.parameterize("ops, decomp_ops")
+    @pytest.mark.parametrize("ops, expected_ops", DECOMPOSITIONS)
     def test_decompositions(self, ops, expected_ops, tol):
         """Tests that decompositions of non-parametrized operations are correct"""
         op = ops(wires=[0, 1])
