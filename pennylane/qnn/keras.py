@@ -17,8 +17,6 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
 
-import pennylane as qml
-
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
@@ -381,22 +379,12 @@ class KerasLayer(Layer):
             batch_dims = tf.shape(inputs)[:-1]
             inputs = tf.reshape(inputs, (-1, inputs.shape[-1]))
 
-        if not qml.active_return() and has_batch_dim:
-            # If the input has a batch dimension and we want to execute each data point separately,
-            # unstack the input along its first dimension, execute the QNode on each of the yielded
-            # tensors, and then stack the outputs back into the correct shape
-            batch_results = []
-
-            for x in tf.unstack(inputs):
-                batch_results.append(self._evaluate_qnode(x))
-
-            results = tf.stack(batch_results)
-        else:
-            # calculate the forward pass as usual
-            results = self._evaluate_qnode(inputs)
+        # calculate the forward pass as usual
+        results = self._evaluate_qnode(inputs)
 
         # reshape to the correct number of batch dims
         if has_batch_dim:
+            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
             new_shape = tf.concat([batch_dims, tf.shape(results)[1:]], axis=0)
             results = tf.reshape(results, new_shape)
 
@@ -451,17 +439,14 @@ class KerasLayer(Layer):
         if self._initialized and hasattr(self.qnode, item):
             return getattr(self.qnode, item)
 
-        try:
-            return self.__dict__[item]
-        except KeyError as exc:
-            raise AttributeError(item) from exc
+        return super().__getattr__(item)
 
     def __setattr__(self, item, val):
         """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
         if self._initialized and hasattr(self.qnode, item):
             setattr(self.qnode, item, val)
         else:
-            self.__dict__[item] = val
+            super().__setattr__(item, val)
 
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the

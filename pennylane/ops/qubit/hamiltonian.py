@@ -22,11 +22,11 @@ from collections.abc import Iterable
 from copy import copy
 import functools
 from typing import List
+import numpy as np
 import scipy
 
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 
@@ -209,8 +209,6 @@ class Hamiltonian(Observable):
 
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
-        self.return_type = None
-
         # attribute to store indices used to form groups of
         # commuting observables, since recomputation is costly
         self._grouping_indices = None
@@ -230,7 +228,7 @@ class Hamiltonian(Observable):
         # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
 
-    def _check_batching(self, params):
+    def _check_batching(self):
         """Override for Hamiltonian, batching is not yet supported."""
 
     def label(self, decimals=None, base_label=None, cache=None):

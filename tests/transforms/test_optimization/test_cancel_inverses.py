@@ -199,6 +199,7 @@ dev = qml.device("default.qubit", wires=3)
 
 
 def qfunc_all_ops(theta):
+    """Qfunc with ops."""
     qml.Hadamard(wires=0)
     qml.PauliX(wires=1)
     qml.S(wires=1)
@@ -308,11 +309,6 @@ class TestCancelInversesInterfaces:
         import jax
         from jax import numpy as jnp
 
-        # Enable float64 support
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
@@ -329,3 +325,100 @@ class TestCancelInversesInterfaces:
         # Check operation list
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
+
+
+### Tape
+with qml.queuing.AnnotatedQueue() as q:
+    qml.Hadamard(wires=0)
+    qml.PauliX(wires=1)
+    qml.S(wires=1)
+    qml.adjoint(qml.S)(wires=1)
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(0.1, wires=2)
+    qml.PauliX(wires=1)
+    qml.CZ(wires=[1, 0])
+    qml.RY(0.2, wires=2)
+    qml.CZ(wires=[0, 1])
+    qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+
+tape_circuit = qml.tape.QuantumTape.from_queue(q)
+
+
+### QFunc
+def qfunc_circuit(theta):
+    """Qfunc circuit"""
+    qml.Hadamard(wires=0)
+    qml.PauliX(wires=1)
+    qml.S(wires=1)
+    qml.adjoint(qml.S)(wires=1)
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(theta[0], wires=2)
+    qml.PauliX(wires=1)
+    qml.CZ(wires=[1, 0])
+    qml.RY(theta[1], wires=2)
+    qml.CZ(wires=[0, 1])
+
+
+### QNode
+dev = qml.devices.DefaultQubit()
+
+
+@qml.qnode(device=dev)
+def qnode_circuit(theta):
+    qml.Hadamard(wires=0)
+    qml.PauliX(wires=1)
+    qml.S(wires=1)
+    qml.adjoint(qml.S)(wires=1)
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(theta[0], wires=2)
+    qml.PauliX(wires=1)
+    qml.CZ(wires=[1, 0])
+    qml.RY(theta[1], wires=2)
+    qml.CZ(wires=[0, 1])
+    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(2))
+
+
+class TestTransformDispatch:
+    """Test cancel inverses on tape, qfunc and QNode."""
+
+    def test_tape(self):
+        """Test the transform on tape."""
+        tapes, _ = cancel_inverses(tape_circuit)
+        assert len(tapes) == 1
+        tape = tapes[0]
+        assert len(tape.operations) == 5
+
+    def test_qfunc(self):
+        """Test the transform on a qfunc inside a qnode."""
+
+        @qml.qnode(device=dev)
+        def new_circuit(a):
+            cancel_inverses(qfunc_circuit)(a)
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+
+        new_circuit([0.1, 0.2])
+        assert len(new_circuit.tape.operations) == 5
+
+    def test_qnode(self):
+        """Test the transform on a qnode directly."""
+        transformed_qnode = cancel_inverses(qnode_circuit)
+        assert not transformed_qnode.transform_program.is_empty()
+        assert len(transformed_qnode.transform_program) == 1
+        params = [0.1, 0.2]
+        res = transformed_qnode(params)
+        expected = qnode_circuit(params)
+        assert np.allclose(res, expected)
+
+    @pytest.mark.jax
+    def test_qnode_diff_jax(self):
+        """Test the transform on a qnode directly."""
+        import jax
+
+        a = jax.numpy.array([0.1, 0.2])
+        transformed_qnode = cancel_inverses(qnode_circuit)
+        res = jax.jacobian(transformed_qnode)(a)
+        expected = jax.jacobian(qnode_circuit)(a)
+        assert jax.numpy.allclose(res, expected)

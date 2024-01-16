@@ -126,7 +126,7 @@ class QuantumPhaseEstimation(Operation):
 
             @qml.qnode(dev)
             def circuit():
-                qml.QubitStateVector(eigenvector, wires=target_wires)
+                qml.StatePrep(eigenvector, wires=target_wires)
                 QuantumPhaseEstimation(
                     unitary,
                     estimation_wires=estimation_wires,

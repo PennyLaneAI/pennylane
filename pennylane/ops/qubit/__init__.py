@@ -41,10 +41,10 @@ from .qchem_ops import *
 from .state_preparation import *
 from .special_unitary import SpecialUnitary
 from .hamiltonian import Hamiltonian
-from ..identity import Identity
-from ..snapshot import Snapshot
+from ..identity import Identity, GlobalPhase
+from ..meta import Snapshot, Barrier, WireCut
 
-ops = {
+__ops__ = {
     "Identity",
     "Snapshot",
     "Hadamard",
@@ -90,6 +90,7 @@ ops = {
     "IsingZZ",
     "IsingXY",
     "BasisState",
+    "StatePrep",
     "QubitStateVector",
     "QubitDensityMatrix",
     "QubitUnitary",
@@ -110,10 +111,11 @@ ops = {
     "FermionicSWAP",
     "Barrier",
     "WireCut",
+    "GlobalPhase",
 }
 
 
-obs = {
+__obs__ = {
     "Hadamard",
     "PauliX",
     "PauliY",
@@ -125,4 +127,4 @@ obs = {
 }
 
 
-__all__ = list(ops | obs)
+__all__ = list(__ops__ | __obs__)

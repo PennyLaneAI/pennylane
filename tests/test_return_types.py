@@ -14,8 +14,6 @@
 """
 Unit tests for the new return types.
 """
-import warnings
-
 import numpy as np
 import pytest
 
@@ -24,7 +22,7 @@ from pennylane.measurements import MeasurementProcess
 
 test_wires = [2, 3, 4]
 
-devices = ["default.qubit", "default.mixed"]
+devices = ["default.qubit.legacy", "default.mixed"]
 
 
 @pytest.mark.parametrize("interface, shots", [["autograd", None], ["auto", 100]])
@@ -34,7 +32,7 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("wires", test_wires)
     def test_state_default(self, wires, interface, shots):
         """Return state with default.qubit."""
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=wires, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -225,7 +223,7 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Sample requires finite shots.")
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -246,7 +244,7 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Counts requires finite shots.")
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -568,9 +566,11 @@ class TestShotVector:
         assert all(r.shape == (2 ** len(wires_to_use),) for r in res[0])
 
     @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
-    @pytest.mark.xfail
     def test_density_matrix(self, shot_vector, wires, device):
         """Test a density matrix measurement."""
+        if 1 in shot_vector:
+            pytest.xfail("cannot handle single-shot in shot vector")
+
         dev = qml.device(device, wires=3, shots=shot_vector)
 
         def circuit(x):
@@ -1223,7 +1223,7 @@ class TestQubitDeviceNewUnits:
             DummyMeasurement(obs=qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         with pytest.raises(
             qml.QuantumFunctionError, match="Unsupported return type specified for observable"
         ):
@@ -1233,7 +1233,7 @@ class TestQubitDeviceNewUnits:
         """Test that an exception is raised when a state is returned along with another return
         type"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
@@ -1250,7 +1250,7 @@ class TestQubitDeviceNewUnits:
     def test_entropy_no_custom_wires(self):
         """Test that entropy cannot be returned with custom wires."""
 
-        dev = qml.device("default.qubit", wires=["a", 1])
+        dev = qml.device("default.qubit.legacy", wires=["a", 1])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
@@ -1266,7 +1266,7 @@ class TestQubitDeviceNewUnits:
     def test_custom_wire_labels_error(self):
         """Tests that an error is raised when mutual information is measured
         with custom wire labels"""
-        dev = qml.device("default.qubit", wires=["a", "b"])
+        dev = qml.device("default.qubit.legacy", wires=["a", "b"])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
@@ -1276,25 +1276,3 @@ class TestQubitDeviceNewUnits:
         msg = "Returning the mutual information is not supported when using custom wire labels"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             qml.execute(tapes=[tape], device=dev, gradient_fn=None)
-
-
-class TestDeprecationWarnings:
-    """Tests that all return-system functions raise deprecation warnings."""
-
-    def test_enable_return_raises_warning(self):
-        """Test that enable_return() raises a warning."""
-        with pytest.warns(UserWarning, match="The old return system is deprecated"):
-            qml.enable_return()
-
-    def test_disable_return_raises_warning(self):
-        """Test that disable_return() raises a warning."""
-        with pytest.warns(UserWarning, match="The old return system is deprecated"):
-            qml.disable_return()
-        qml.enable_return()
-
-    def test_active_return_does_not_raise_warning(self):
-        """Test that active_return() does not raise a warning."""
-        with warnings.catch_warnings(record=True) as record:
-            qml.active_return()
-
-        assert len(record) == 0

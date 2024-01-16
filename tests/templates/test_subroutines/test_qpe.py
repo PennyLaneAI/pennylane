@@ -99,9 +99,10 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
+            tapes, _ = dev.preprocess()[0]([tape])
+            assert len(tapes) == 1
 
-            res = dev.execute(tape).flatten()
+            res = dev.execute(tapes)[0].flatten()
             initial_estimate = np.argmax(res) / 2 ** (wires - 1)
 
             # We need to rescale because RX is exp(- i theta X / 2) and we expect a unitary of the
@@ -142,7 +143,7 @@ class TestDecomposition:
 
             with qml.queuing.AnnotatedQueue() as q:
                 # We want to prepare an eigenstate of RX, in this case |+>
-                qml.QubitStateVector(state, wires=target_wires)
+                qml.StatePrep(state, wires=target_wires)
 
                 qml.QuantumPhaseEstimation(
                     unitary, target_wires=target_wires, estimation_wires=estimation_wires
@@ -150,8 +151,9 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
-            res = dev.execute(tape).flatten()
+            tapes, _ = dev.preprocess()[0]([tape])
+            assert len(tapes) == 1
+            res = dev.execute(tapes)[0].flatten()
 
             if phase < 0:
                 estimate = np.argmax(res) / 2 ** (wires - 2) - 1
@@ -190,13 +192,16 @@ class TestDecomposition:
             target_wires = [0]
 
             tape = qml.tape.QuantumScript(
-                [qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)],
+                [
+                    qml.StatePrep(eig_vec, wires=target_wires),
+                    qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires),
+                ],
                 [qml.probs(estimation_wires)],
-                prep=[qml.QubitStateVector(eig_vec, wires=target_wires)],
             )
 
-            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
-            res = dev.execute(tape).flatten()
+            tapes, _ = dev.preprocess()[0]([tape])
+            res = dev.execute(tapes)[0].flatten()
+            assert len(tapes) == 1
 
             estimate = np.argmax(res) / 2 ** (wires - 2)
             estimates.append(estimate)
@@ -232,13 +237,16 @@ class TestDecomposition:
             target_wires = [0, 1]
 
             tape = qml.tape.QuantumScript(
-                [qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)],
+                [
+                    qml.StatePrep(eig_vec, wires=target_wires),
+                    qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires),
+                ],
                 [qml.probs(estimation_wires)],
-                prep=[qml.QubitStateVector(eig_vec, wires=target_wires)],
             )
 
-            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
-            res = dev.execute(tape).flatten()
+            tapes, _ = dev.preprocess()[0]([tape])
+            assert len(tapes) == 1
+            res = dev.execute(tapes)[0].flatten()
 
             estimate = np.argmax(res) / 2 ** (wires - 2)
             estimates.append(estimate)

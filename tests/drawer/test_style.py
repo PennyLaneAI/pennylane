@@ -36,6 +36,8 @@ def test_available_styles():
         "black_white",
         "black_white_dark",
         "sketch",
+        "pennylane",
+        "pennylane_sketch",
         "sketch_dark",
         "solarized_light",
         "solarized_dark",
@@ -92,6 +94,26 @@ def test_sketch_style():
     assert plt.rcParams["text.color"] == "black"
     assert plt.rcParams["font.weight"] == "bold"
     assert plt.rcParams["path.sketch"] == (1, 100, 2)
+
+
+@pytest.mark.parametrize("style,sketch", [("pennylane", None), ("pennylane_sketch", (1, 250, 1))])
+def test_pennylane_style(style, sketch):
+    """Tests the pennylane style sets ``plt.rcParams`` with correct values"""
+
+    _set_style(style)
+
+    almost_black = "#151515"  # less harsh than full black
+    assert plt.rcParams["figure.facecolor"] == "white"
+    assert plt.rcParams["savefig.facecolor"] == "white"
+    assert plt.rcParams["axes.facecolor"] == "#FFB5F1"
+    assert plt.rcParams["patch.facecolor"] == "#D5F0FD"
+    assert plt.rcParams["patch.edgecolor"] == almost_black
+    assert plt.rcParams["patch.linewidth"] == 2.0
+    assert plt.rcParams["patch.force_edgecolor"]  # = True
+    assert plt.rcParams["lines.color"] == "black"
+    assert plt.rcParams["text.color"] == "black"
+    assert plt.rcParams["font.weight"] == "bold"
+    assert plt.rcParams["path.sketch"] == sketch
 
 
 def test_sketch_style_dark():

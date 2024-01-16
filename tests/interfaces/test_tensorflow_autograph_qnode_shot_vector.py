@@ -28,9 +28,9 @@ shots_and_num_copies_hess = [((10, (5, 1)), 2)]
 
 spsa_kwargs = {"h": 10e-2, "num_directions": 30, "sampler_rng": np.random.default_rng(42)}
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 10e-2}],
-    ["default.qubit", "parameter-shift", {}],
-    ["default.qubit", "spsa", spsa_kwargs],
+    ["default.qubit.legacy", "finite-diff", {"h": 10e-2}],
+    ["default.qubit.legacy", "parameter-shift", {}],
+    ["default.qubit.legacy", "spsa", spsa_kwargs],
 ]
 
 TOLS = {

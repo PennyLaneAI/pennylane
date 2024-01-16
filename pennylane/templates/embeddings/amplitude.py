@@ -15,18 +15,15 @@ r"""
 Contains the AmplitudeEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import numpy as np
-
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
-from pennylane.ops import QubitStateVector
+from pennylane.ops import StatePrep
 from pennylane.wires import Wires
 
 # tolerance for normalization
 TOLERANCE = 1e-10
 
 
-class AmplitudeEmbedding(Operation):
+class AmplitudeEmbedding(StatePrep):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     By setting ``pad_with`` to a real or complex number, ``features`` is automatically padded to dimension
@@ -68,14 +65,14 @@ class AmplitudeEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(f=None):
                 qml.AmplitudeEmbedding(features=f, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(0)), qml.state()
 
-            circuit(f=[1/2, 1/2, 1/2, 1/2])
+            res, state = circuit(f=[1/2, 1/2, 1/2, 1/2])
 
         The final state of the device is - up to a global phase - equivalent to the input passed to the circuit:
 
-        >>> dev.state
-        [0.5+0.j 0.5+0.j 0.5+0.j 0.5+0.j]
+        >>> state
+        tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
 
         **Differentiating with respect to the features**
 
@@ -92,12 +89,12 @@ class AmplitudeEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(f=None):
                 qml.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(0)), qml.state()
 
-            circuit(f=[15, 15, 15, 15])
+            res, state = circuit(f=[15, 15, 15, 15])
 
-        >>> dev.state
-        [0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j]
+        >>> state
+        tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
 
         **Padding**
 
@@ -111,35 +108,27 @@ class AmplitudeEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(f=None):
                 qml.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(0)), qml.state()
 
-            circuit(f=[1/sqrt(2), 1/sqrt(2)])
+            res, state = circuit(f=[1/sqrt(2), 1/sqrt(2)])
 
-        >>> dev.state
-        [0.70710678 + 0.j, 0.70710678 + 0.j, 0.0 + 0.j, 0.0 + 0.j]
+        >>> state
+        tensor([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j], requires_grad=True)
 
     """
 
-    num_wires = AnyWires
-    grad_method = None
-
     def __init__(self, features, wires, pad_with=None, normalize=False, id=None):
+        # pylint:disable=bad-super-call
         wires = Wires(wires)
         self.pad_with = pad_with
         self.normalize = normalize
         features = self._preprocess(features, wires, pad_with, normalize)
-        super().__init__(features, wires=wires, id=id)
-
-    @property
-    def num_params(self):
-        return 1
-
-    @property
-    def ndim_params(self):
-        return (1,)
+        super(StatePrep, self).__init__(features, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        features, wires
+    ):  # pylint: disable=arguments-differ,arguments-renamed
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -159,9 +148,9 @@ class AmplitudeEmbedding(Operation):
 
         >>> features = torch.tensor([1., 0., 0., 0.])
         >>> qml.AmplitudeEmbedding.compute_decomposition(features, wires=["a", "b"])
-        [QubitStateVector(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
+        [StatePrep(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
         """
-        return [QubitStateVector(features, wires=wires)]
+        return [StatePrep(features, wires=wires)]
 
     @staticmethod
     def _preprocess(features, wires, pad_with, normalize):
@@ -176,63 +165,51 @@ class AmplitudeEmbedding(Operation):
         * If normalize is false, check that last dimension of features is normalised to one. Else, normalise the
           features tensor.
         """
+        shape = qml.math.shape(features)
 
-        # check if features is batched
-        batched = qml.math.ndim(features) > 1
+        # check shape
+        if len(shape) not in (1, 2):
+            raise ValueError(
+                f"Features must be a one-dimensional tensor, or two-dimensional with batching; got shape {shape}."
+            )
 
-        if batched and qml.math.get_interface(features) == "tensorflow":
-            raise ValueError("AmplitudeEmbedding does not support batched Tensorflow features.")
+        n_features = shape[-1]
+        dim = 2 ** len(wires)
+        if pad_with is None and n_features != dim:
+            raise ValueError(
+                f"Features must be of length {dim}; got length {n_features}. "
+                f"Use the 'pad_with' argument for automated padding."
+            )
 
-        features_batch = features if batched else [features]
-
-        new_features_batch = []
-        # apply pre-processing to each features tensor in the batch
-        for feature_set in features_batch:
-            shape = qml.math.shape(feature_set)
-
-            # check shape
-            if len(shape) != 1:
-                raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-            n_features = shape[0]
-            dim = 2 ** len(wires)
-            if pad_with is None and n_features != dim:
+        if pad_with is not None:
+            if n_features > dim:
                 raise ValueError(
-                    f"Features must be of length {dim}; got length {n_features}. "
-                    f"Use the 'pad_with' argument for automated padding."
+                    f"Features must be of length {dim} or "
+                    f"smaller to be padded; got length {n_features}."
                 )
 
-            if pad_with is not None:
-                if n_features > dim:
-                    raise ValueError(
-                        f"Features must be of length {dim} or "
-                        f"smaller to be padded; got length {n_features}."
-                    )
+            # pad
+            if n_features < dim:
+                padding = [pad_with] * (dim - n_features)
+                if len(shape) > 1:
+                    padding = [padding] * shape[0]
+                padding = qml.math.convert_like(padding, features)
+                features = qml.math.hstack([features, padding])
 
-                # pad
-                if n_features < dim:
-                    padding = [pad_with] * (dim - n_features)
-                    padding = qml.math.convert_like(padding, feature_set)
-                    feature_set = qml.math.hstack([feature_set, padding])
+        # normalize
+        norm = qml.math.sum(qml.math.abs(features) ** 2, axis=-1)
 
-            # normalize
-            norm = qml.math.sum(qml.math.abs(feature_set) ** 2)
+        if qml.math.is_abstract(norm):
+            if normalize or pad_with:
+                features = features / qml.math.reshape(qml.math.sqrt(norm), (*shape[:-1], 1))
 
-            if qml.math.is_abstract(norm):
-                if normalize or pad_with:
-                    feature_set = feature_set / qml.math.sqrt(norm)
+        elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+            if normalize or pad_with:
+                features = features / qml.math.reshape(qml.math.sqrt(norm), (*shape[:-1], 1))
+            else:
+                raise ValueError(
+                    f"Features must be a vector of norm 1.0; got norm {norm}. "
+                    "Use 'normalize=True' to automatically normalize."
+                )
 
-            elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
-                if normalize or pad_with:
-                    feature_set = feature_set / qml.math.sqrt(norm)
-                else:
-                    raise ValueError(
-                        f"Features must be a vector of norm 1.0; got norm {norm}. "
-                        "Use 'normalize=True' to automatically normalize."
-                    )
-
-            new_features_batch.append(feature_set)
-
-        return qml.math.cast(
-            qml.math.stack(new_features_batch) if batched else new_features_batch[0], np.complex128
-        )
+        return features

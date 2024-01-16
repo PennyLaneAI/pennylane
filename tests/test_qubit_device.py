@@ -449,8 +449,7 @@ class TestSampleBasisStates:
         ):
             dev.sample_basis_states(number_of_states, state_probs)
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
-    def test_sampling_with_broadcasting(self, mock_qubit_device, monkeypatch):
+    def test_sampling_with_broadcasting(self, mock_qubit_device):
         """Tests that the sample_basis_states method samples with the correct arguments
         when using broadcasted probabilities"""
 
@@ -464,17 +463,6 @@ class TestSampleBasisStates:
         res = dev.sample_basis_states(number_of_states, state_probs)
         assert qml.math.shape(res) == (2, shots)
         assert set(res.flat).issubset({0, 1, 2, 3})
-
-        with monkeypatch.context() as m:
-            # Mock the numpy.random.choice method such that it returns the expected values
-            m.setattr("numpy.random.choice", lambda x, y, p: (x, y, p))
-            res = dev.sample_basis_states(number_of_states, state_probs)
-
-        assert len(res) == 2
-        for _res, prob in zip(res, state_probs):
-            assert np.array_equal(_res[0], np.array([0, 1, 2, 3]))
-            assert _res[1] == 1000
-            assert _res[2] == prob
 
 
 class TestStatesToBinary:
@@ -1148,7 +1136,7 @@ class TestExecution:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit", wires=2)
+        dev_1 = qml.device("default.qubit.legacy", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1164,7 +1152,7 @@ class TestExecution:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit", wires=2)
+        dev_2 = qml.device("default.qubit.legacy", wires=2)
 
         def circuit_2(x):
             qml.RX(x, wires=[0])
@@ -1209,7 +1197,7 @@ class TestExecutionBroadcasted:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit", wires=2)
+        dev_1 = qml.device("default.qubit.legacy", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1225,7 +1213,7 @@ class TestExecutionBroadcasted:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit", wires=2)
+        dev_2 = qml.device("default.qubit.legacy", wires=2)
 
         assert dev_2.num_executions == 0
 
@@ -1392,7 +1380,7 @@ class TestResourcesTracker:
     )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
 
     devices = (
-        "default.qubit",
+        "default.qubit.legacy",
         "default.qubit.autograd",
         "default.qubit.jax",
         "default.qubit.torch",
@@ -1438,10 +1426,10 @@ class TestResourcesTracker:
         ):
             assert tracked_r == expected_r
 
-    @pytest.mark.all_interfaces
+    @pytest.mark.autograd
     def test_tracker_grad(self):
         """Test that the tracker can track resources through a gradient computation"""
-        dev = qml.device("default.qubit", wires=1, shots=100)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=100)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -1468,3 +1456,29 @@ class TestResourcesTracker:
             expected_resources,
             expected_resources,
         ]
+
+
+def test_samples_to_counts_with_nan():
+    """Test that the counts function disregards failed measurements (samples including
+    NaN values) when totalling counts"""
+    # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
+    device = qml.device("default.qubit.legacy", wires=2, shots=1000)
+    device._state = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
+    device._samples = device.generate_samples()
+    samples = device.sample(qml.measurements.CountsMP())
+
+    # imitate hardware return with NaNs (requires dtype float)
+    samples = qml.math.cast_like(samples, np.array([1.2]))
+    samples[0][0] = np.NaN
+    samples[17][1] = np.NaN
+    samples[850][0] = np.NaN
+
+    result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
+
+    # no keys with NaNs
+    assert len(result) == 4
+    assert set(result.keys()) == {"00", "01", "10", "11"}
+
+    # # NaNs were not converted into "0", but were excluded from the counts
+    total_counts = sum(count for count in result.values())
+    assert total_counts == 997

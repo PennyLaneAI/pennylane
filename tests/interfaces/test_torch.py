@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.torch
 torch = pytest.importorskip("torch")
@@ -36,7 +36,7 @@ class TestTorchExecuteUnitTests:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a[0], wires=0)
@@ -63,7 +63,7 @@ class TestTorchExecuteUnitTests:
         is used with grad_on_execution=True"""
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a[0], wires=0)
@@ -82,7 +82,7 @@ class TestTorchExecuteUnitTests:
     def test_grad_on_execution_reuse_state(self, interface, mocker):
         """Test that grad_on_execution uses the `device.execute_and_gradients` pathway
         while reusing the quantum state."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -108,7 +108,7 @@ class TestTorchExecuteUnitTests:
 
     def test_grad_on_execution(self, interface, mocker):
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -134,9 +134,9 @@ class TestTorchExecuteUnitTests:
 
     def test_no_grad_on_execution(self, interface, mocker):
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
-        dev = qml.device("default.qubit", wires=1)
-        spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
-        spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
+        dev = qml.device("default.qubit.legacy", wires=1)
+        spy_execute = mocker.spy(qml.devices.DefaultQubitLegacy, "batch_execute")
+        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "gradients")
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -169,8 +169,8 @@ class TestCaching:
 
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
-        dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        dev = qml.device("default.qubit.legacy", wires=1)
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -195,8 +195,8 @@ class TestCaching:
 
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
-        dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        dev = qml.device("default.qubit.legacy", wires=1)
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -221,7 +221,7 @@ class TestCaching:
     def test_caching_param_shift(self):
         """Test that, with the parameter-shift transform,
         Torch always uses the optimum number of evals when computing the Jacobian."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -252,7 +252,7 @@ class TestCaching:
         """Test that, with the parameter-shift transform,
         caching reduces the number of evaluations to their optimum
         when computing Hessians."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = torch.tensor(np.arange(1, num_params + 1) / 10, requires_grad=True)
 
         N = len(params)
@@ -309,7 +309,7 @@ class TestCaching:
     def test_caching_adjoint_no_grad_on_execution(self):
         """Test that caching reduces the number of adjoint evaluations
         when grad_on_execution=False"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = torch.tensor([0.1, 0.2, 0.3])
 
         def cost(a, cache):
@@ -332,11 +332,10 @@ class TestCaching:
                 interface="torch",
             )[0]
 
-        # Without caching, 3 evaluations are required.
-        # 1 for the forward pass, and one per output dimension
-        # on the backward pass.
+        # Without caching, 2 evaluations are required.
+        # 1 for the forward pass, and one for the backward pass
         torch_functional.jacobian(lambda x: cost(x, cache=None), params)
-        assert dev.num_executions == 3
+        assert dev.num_executions == 2
 
         # With caching, only 2 evaluations are required. One
         # for the forward pass, and one for the backward pass.
@@ -402,7 +401,7 @@ class TestTorchExecuteIntegration:
 
     def test_execution(self, torch_device, execute_kwargs):
         """Test that the execute function produces results with the expected shapes"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         a = torch.tensor(0.1, requires_grad=True, device=torch_device)
         b = torch.tensor(0.2, requires_grad=False, device=torch_device)
 
@@ -430,7 +429,7 @@ class TestTorchExecuteIntegration:
     def test_scalar_jacobian(self, torch_device, execute_kwargs, tol):
         """Test scalar jacobian calculation by comparing two types of pipelines"""
         a = torch.tensor(0.1, requires_grad=True, dtype=torch.float64, device=torch_device)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
@@ -463,7 +462,7 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(a_val, requires_grad=True, device=torch_device)
         b = torch.tensor(b_val, requires_grad=True, device=torch_device)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RZ(torch.tensor(0.543, device=torch_device), wires=0)
@@ -506,7 +505,7 @@ class TestTorchExecuteIntegration:
     def test_tape_no_parameters(self, torch_device, execute_kwargs, tol):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         params = torch.tensor([0.1, 0.2], requires_grad=True, device=torch_device)
         x, y = params.detach()
 
@@ -549,7 +548,7 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(0.1, requires_grad=True, device=torch_device)
         b = torch.tensor(0.2, requires_grad=True, device=torch_device)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
@@ -602,7 +601,7 @@ class TestTorchExecuteIntegration:
         p_val = [0.1, 0.2]
         params = torch.tensor(p_val, requires_grad=True, device=torch_device)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RY(params[0] * params[1], wires=0)
@@ -637,7 +636,7 @@ class TestTorchExecuteIntegration:
 
     def test_no_trainable_parameters(self, torch_device, execute_kwargs):
         """Test evaluation and Jacobian if there are no trainable parameters"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RY(0.2, wires=0)
@@ -684,7 +683,7 @@ class TestTorchExecuteIntegration:
         if isinstance(U, torch.Tensor) and torch_device is not None:
             U = U.to(torch_device)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.QubitUnitary(U, wires=0)
@@ -716,7 +715,7 @@ class TestTorchExecuteIntegration:
                     qml.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         a = np.array(0.1)
         p_val = [0.1, 0.2, 0.3]
         p = torch.tensor(p_val, requires_grad=True, device=torch_device)
@@ -768,7 +767,7 @@ class TestTorchExecuteIntegration:
         if execute_kwargs["gradient_fn"] == "device":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         x_val = 0.543
         y_val = -0.654
         x = torch.tensor(x_val, requires_grad=True, device=torch_device)
@@ -835,7 +834,7 @@ class TestTorchExecuteIntegration:
         if execute_kwargs["gradient_fn"] == "device":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         x_val = 0.543
         y_val = -0.654
         x = torch.tensor(x_val, requires_grad=True, device=torch_device)
@@ -908,7 +907,7 @@ class TestTorchExecuteIntegration:
         if execute_kwargs["interface"] == "auto":
             pytest.skip("Can't detect interface without a parametrized gate in the tape")
 
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=[0])
@@ -940,7 +939,7 @@ class TestTorchExecuteIntegration:
         if execute_kwargs["interface"] == "auto":
             pytest.skip("Can't detect interface without a parametrized gate in the tape")
 
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=[0])
@@ -968,7 +967,7 @@ class TestTorchExecuteIntegration:
         ):
             pytest.skip("Adjoint differentiation does not support samples")
 
-        dev = qml.device("default.qubit", wires=1, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=10)
 
         x = torch.tensor(0.65, requires_grad=True)
 
@@ -991,7 +990,7 @@ class TestTorchExecuteIntegration:
         tape expansions"""
         # pylint: disable=unused-argument
         n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qml.device("default.qubit.legacy", wires=n_qubits)
 
         weights = torch.ones((3,))
 
@@ -1021,7 +1020,7 @@ class TestHigherOrderDerivatives:
         """Tests that the output of the parameter-shift transform
         can be differentiated using torch, yielding second derivatives."""
         # pylint: disable=unused-argument
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         def cost_fn(x):
@@ -1068,7 +1067,7 @@ class TestHigherOrderDerivatives:
 
     def test_hessian_vector_valued(self, torch_device, tol):
         """Test hessian calculation of a vector valued tape"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         def circuit(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1100,7 +1099,8 @@ class TestHigherOrderDerivatives:
         )
         assert torch.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
-        jac_fn = lambda x: torch_functional.jacobian(circuit, x, create_graph=True)
+        def jac_fn(x):
+            return torch_functional.jacobian(circuit, x, create_graph=True)
 
         g = jac_fn(x)
 
@@ -1135,7 +1135,7 @@ class TestHigherOrderDerivatives:
     def test_adjoint_hessian(self, torch_device, tol):
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = torch.tensor(
             [0.543, -0.654], requires_grad=True, dtype=torch.float64, device=torch_device
         )
@@ -1164,7 +1164,7 @@ class TestHigherOrderDerivatives:
     def test_max_diff(self, torch_device, tol):
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         def cost_fn(x):
@@ -1275,7 +1275,7 @@ class TestHamiltonianWorkflows:
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False, dtype=torch.float64)
         coeffs2 = torch.tensor([0.7], requires_grad=False, dtype=torch.float64)
         weights = torch.tensor([0.4, 0.5], requires_grad=True, dtype=torch.float64)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
@@ -1293,7 +1293,7 @@ class TestHamiltonianWorkflows:
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True, dtype=torch.float64)
         coeffs2 = torch.tensor([0.7], requires_grad=True, dtype=torch.float64)
         weights = torch.tensor([0.4, 0.5], requires_grad=True, dtype=torch.float64)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)

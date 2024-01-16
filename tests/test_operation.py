@@ -25,7 +25,14 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, StatePrep, Tensor, operation_derivative
+from pennylane.operation import (
+    Operation,
+    Operator,
+    StatePrepBase,
+    Tensor,
+    operation_derivative,
+    _UNSET_BATCH_SIZE,
+)
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
@@ -147,8 +154,9 @@ class TestOperatorConstruction:
             grad_method = "A"
             ndim_params = (0,)
 
+        op = DummyOp([[[0.5], [0.1]]], wires=0)
         with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
-            DummyOp([[[0.5], [0.1]]], wires=0)
+            _ = op.batch_size
 
         op = DummyOp(0.5, wires=0)
         assert op.ndim_params == (0,)
@@ -159,8 +167,9 @@ class TestOperatorConstruction:
             num_wires = 1
             grad_method = "A"
 
+        op = DummyOp2([0.5], 0.6, wires=0)
         with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
-            DummyOp2([0.5], 0.6, wires=0)
+            _ = op.batch_size
 
         op2 = DummyOp2([0.1], [[0.4, 0.1], [0.2, 1.2]], wires=0)
         assert op2.ndim_params == (1, 2)
@@ -183,8 +192,9 @@ class TestOperatorConstruction:
             num_wires = 1
 
         # Test with mismatching batch dimensions
+        op = DummyOp4([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
         with pytest.raises(ValueError, match="Broadcasting was attempted but the broadcasted"):
-            DummyOp4([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
+            _ = op.batch_size
 
     def test_default_pauli_rep(self):
         """Test that the default _pauli_rep attribute is None"""
@@ -194,7 +204,7 @@ class TestOperatorConstruction:
             num_wires = 1
 
         op = DummyOp(wires=0)
-        assert op._pauli_rep is None
+        assert op.pauli_rep is None
 
     def test_list_or_tuple_params_casted_into_numpy_array(self):
         """Test that list parameters are casted into numpy arrays."""
@@ -272,22 +282,9 @@ class TestOperatorConstruction:
         state = [0, 1, 0]
         assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
 
-    def test_eq_warning(self):
-        """Test that a warning is raised when two operators are compared for equality
-        using `==`."""
-
-        class DummyOp(qml.operation.Operator):
-            num_wires = 1
-
-        op1 = DummyOp(0)
-        op2 = DummyOp(0)
-
-        with pytest.warns(UserWarning, match="The behaviour of operator equality"):
-            _ = op1 == op2
-
     def test_eq_correctness(self):
-        """Test that using `==` on two equivalent operators is True when both operators
-        are the same object and False otherwise."""
+        """Test that using `==` on operators behaves the same as
+        `qml.equal`."""
 
         class DummyOp(qml.operation.Operator):
             num_wires = 1
@@ -295,24 +292,11 @@ class TestOperatorConstruction:
         op1 = DummyOp(0)
         op2 = DummyOp(0)
 
-        with pytest.warns(UserWarning, match="The behaviour of operator equality"):
-            assert op1 == op1  # pylint: disable=comparison-with-itself
-            assert op1 != op2
-
-    def test_hash_warning(self):
-        """Test that a warning is raised when an operator's hash is used."""
-
-        class DummyOp(qml.operation.Operator):
-            num_wires = 1
-
-        op = DummyOp(0)
-
-        with pytest.warns(UserWarning, match="The behaviour of operator hashing"):
-            _ = hash(op)
+        assert op1 == op1  # pylint: disable=comparison-with-itself
+        assert op1 == op2
 
     def test_hash_correctness(self):
-        """Test that the hash of two equivalent operators is the same when both operators
-        are the same object and different otherwise."""
+        """Test that the hash of two equivalent operators is the same."""
 
         class DummyOp(qml.operation.Operator):
             num_wires = 1
@@ -320,9 +304,26 @@ class TestOperatorConstruction:
         op1 = DummyOp(0)
         op2 = DummyOp(0)
 
-        with pytest.warns(UserWarning, match="The behaviour of operator hash"):
-            assert len({op1, op1}) == 1
-            assert len({op1, op2}) == 2
+        assert len({op1, op2}) == 1
+        assert hash(op1) == op1.hash
+        assert hash(op2) == op2.hash
+        assert hash(op1) == hash(op2)
+
+    @pytest.mark.parametrize("data,batch_size,ndim_params", [(1.1, None, 0), ([1.1, 2.2], 2, 1)])
+    def test_lazy_ndim_params_and_batch_size(self, data, batch_size, ndim_params):
+        """Test that ndim_params and batch_size are lazy properties."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            num_params = 1
+            ndim_params = (0,)
+
+        op = DummyOp(data, wires=[0])
+        assert op._batch_size is _UNSET_BATCH_SIZE
+        assert op._ndim_params is _UNSET_BATCH_SIZE
+        assert op.batch_size == batch_size
+        assert op._ndim_params == (ndim_params,)
+        assert op.ndim_params == (0,)
 
 
 class TestPytreeMethods:
@@ -382,7 +383,7 @@ class TestBroadcasting:
 
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
@@ -398,7 +399,7 @@ class TestBroadcasting:
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
@@ -415,7 +416,7 @@ class TestBroadcasting:
         params = tuple(jax.numpy.array(p) for p in params)
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.tf
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
@@ -432,7 +433,7 @@ class TestBroadcasting:
         params = tuple(tf.Variable(p) for p in params)
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.torch
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
@@ -449,16 +450,7 @@ class TestBroadcasting:
         params = tuple(torch.tensor(p, requires_grad=True) for p in params)
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
-
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_error_broadcasted_params_not_silenced(self):
-        """Handling tf.function properly requires us to catch a specific
-        error and to silence it. Here we test it does not silence others."""
-
-        x = [qml.math.ones((2, 2)), qml.math.ones((2, 3))]
-        with pytest.raises(ValueError, match="could not broadcast input array"):
-            qml.RX(x, 0)
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
@@ -470,6 +462,7 @@ class TestBroadcasting:
         class MyRX(qml.RX):
             @property
             def ndim_params(self):
+                self._check_batching()
                 return self._ndim_params
 
         def fun(x):
@@ -499,6 +492,16 @@ class TestHasReprProperties:
 
             @staticmethod
             def compute_matrix(*params, **hyperparams):
+                return np.eye(2)
+
+        assert MyOp.has_matrix is True
+        assert MyOp(wires=0).has_matrix is True
+
+    def test_has_matrix_true_overridden_matrix(self):
+        """Test has_matrix is true if `matrix` is overridden instead of `compute_matrix`."""
+
+        class MyOp(qml.operation.Operator):
+            def matrix(self, _=None):
                 return np.eye(2)
 
         assert MyOp.has_matrix is True
@@ -688,8 +691,8 @@ class TestModificationMethods:
         assert op is not mapped_op
         assert op.wires == Wires([0, 1, 2])
         assert mapped_op.wires == Wires([10, 11, 12])
-        assert mapped_op._pauli_rep is not op._pauli_rep
-        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+        assert mapped_op.pauli_rep is not op.pauli_rep
+        assert mapped_op.pauli_rep == qml.pauli.PauliSentence(
             {
                 qml.pauli.PauliWord({10: "X", 11: "Y", 12: "Z"}): 1.1,
                 qml.pauli.PauliWord({10: "Z", 11: "X", 12: "Y"}): 2.2,
@@ -860,6 +863,16 @@ class TestOperationConstruction:
         for i in range(num_param):
             assert f[i] == (0.2, x[i])
 
+    def test_frequencies_sparse_generator(self):
+        """Test that the parameter frequencies are correctly deduced from a generator
+        that is a ``SparseHamiltonian``."""
+        DummyOp = copy.copy(qml.DoubleExcitationPlus)
+        DummyOp.parameter_frequencies = qml.operation.Operation.parameter_frequencies
+
+        op = DummyOp(0.7, [0, 1, 2, 3])
+        assert isinstance(op.generator(), qml.SparseHamiltonian)
+        assert op.parameter_frequencies == [(1.0,)]
+
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
 
@@ -908,16 +921,6 @@ class TestOperationConstruction:
 
 class TestObservableConstruction:
     """Test custom observables construction."""
-
-    def test_observable_return_type_none(self):
-        """Check that the return_type of an observable is initially None"""
-
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
-            num_wires = 1
-            grad_method = None
-
-        assert DummyObserv(0, wires=[1]).return_type is None
 
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
@@ -1035,7 +1038,7 @@ class TestOperatorIntegration:
         """Test that an exception is raised if the class is defined with ALL wires,
         but then instantiated with only one"""
 
-        dev1 = qml.device("default.qubit", wires=2)
+        dev1 = qml.device("default.qubit.legacy", wires=2)
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
@@ -1278,6 +1281,16 @@ class TestOperatorIntegration:
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = qml.PauliX(0) @ "dummy"
 
+    def test_label_for_operations_with_id(self):
+        """Test that the label is correctly generated for an operation with an id"""
+        op = qml.RX(1.344, wires=0, id="test_with_id")
+        assert '"test_with_id"' in op.label()
+        assert '"test_with_id"' in op.label(decimals=2)
+
+        op = qml.RX(1.344, wires=0)
+        assert '"test_with_id"' not in op.label()
+        assert '"test_with_id"' not in op.label(decimals=2)
+
 
 class TestTensor:
     """Unit tests for the Tensor class"""
@@ -1424,7 +1437,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
-        assert t._pauli_rep is None
+        assert t.pauli_rep is None
 
     def test_has_matrix(self):
         """Test that the Tensor class has a ``has_matrix`` static attribute set to True."""
@@ -1578,18 +1591,21 @@ class TestTensor:
 
     def test_operation_multiply_invalid(self):
         """Test that an exception is raised if an observable
-        is multiplied by an operation"""
+        is matrix-multiplied by a scalar"""
         X = qml.PauliX(0)
-        Y = qml.CNOT(wires=[0, 1])
         Z = qml.PauliZ(1)
 
         with pytest.raises(TypeError, match="unsupported operand type"):
             T = X @ Z
-            _ = T @ Y
-
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            T = X @ Z
             _ = 4 @ T
+
+    def test_tensor_matmul_op_is_prod(self):
+        """Test that Tensor @ non-observable returns a Prod."""
+        tensor = qml.PauliX(0) @ qml.PauliY(1)
+        assert isinstance(tensor, Tensor)
+        prod = tensor @ qml.S(0)
+        assert isinstance(prod, qml.ops.Prod)
+        assert prod.operands == (qml.PauliX(0), qml.PauliY(1), qml.S(0))
 
     def test_eigvals(self):
         """Test that the correct eigenvalues are returned for the Tensor"""
@@ -2385,10 +2401,10 @@ class TestCVOperation:
             op.heisenberg_expand(U_high_order, op.wires)
 
 
-class TestStatePrep:
-    """Test the StatePrep interface."""
+class TestStatePrepBase:
+    """Test the StatePrepBase interface."""
 
-    class DefaultPrep(StatePrep):
+    class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
         # pylint:disable=unused-argument,too-few-public-methods
@@ -2396,15 +2412,15 @@ class TestStatePrep:
             return self.parameters[0]
 
     # pylint:disable=unused-argument,too-few-public-methods
-    def test_basic_stateprep(self):
-        """Tests a basic implementation of the StatePrep interface."""
+    def test_basic_initial_state(self):
+        """Tests a basic implementation of the StatePrepBase interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
         assert np.array_equal(prep_op.state_vector(), [1, 0])
 
     def test_child_must_implement_state_vector(self):
         """Tests that a child class that does not implement state_vector fails."""
 
-        class NoStatePrepOp(StatePrep):
+        class NoStatePrepOp(StatePrepBase):
             """A class that is missing the state_vector implementation."""
 
             # pylint:disable=abstract-class-instantiated
@@ -2412,8 +2428,8 @@ class TestStatePrep:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
 
-    def test_StatePrep_label(self):
-        """Tests that StatePrep classes by default have a psi ket label"""
+    def test_StatePrepBase_label(self):
+        """Tests that StatePrepBase classes by default have a psi ket label"""
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
@@ -2625,6 +2641,42 @@ class TestNewOpMath:
             assert qml.equal(op[1], op2)
 
 
+@pytest.mark.parametrize(
+    "op",
+    [
+        # pytest.param(qml.CZ(wires=[1, 0]), marks=pytest.mark.xfail),
+        qml.CZ(wires=[1, 0]),
+        qml.CCZ(wires=[2, 0, 1]),
+        qml.SWAP(wires=[1, 0]),
+        qml.IsingXX(1.23, wires=[1, 0]),
+        qml.Identity(wires=[3, 1, 2, 0]),
+        qml.ISWAP(wires=[1, 0]),
+        qml.SISWAP(wires=[1, 0]),
+        qml.SQISW(wires=[1, 0]),
+        qml.MultiRZ(1.23, wires=[2, 0, 1, 3]),
+        qml.IsingXY(1.23, wires=[1, 0]),
+        qml.IsingYY(1.23, wires=[1, 0]),
+        qml.IsingZZ(1.23, wires=[1, 0]),
+        qml.PSWAP(1.23, wires=[1, 0]),
+    ],
+)
+def test_symmetric_matrix_early_return(op, mocker):
+    """Test that operators that are symmetric over all wires are not reordered
+    when the wire order only contains the same wires as the operator."""
+
+    spy = mocker.spy(qml.operation, "expand_matrix")
+    actual = op.matrix(wire_order=list(range(len(op.wires))))
+
+    spy.assert_not_called()
+    expected = op.matrix()
+    manually_expanded = qml.math.expand_matrix(
+        expected, wires=op.wires, wire_order=list(range(len(op.wires)))
+    )
+
+    assert np.allclose(actual, expected)
+    assert np.allclose(actual, manually_expanded)
+
+
 def test_op_arithmetic_toggle():
     """Tests toggling op arithmetic on and off, and that it is off by default."""
     assert not qml.operation.active_new_opmath()
@@ -2709,3 +2761,25 @@ def test_custom_operator_is_jax_pytree():
 
     new_op = jax.tree_util.tree_unflatten(structure, [2.3])
     assert qml.equal(new_op, CustomOperator(2.3, wires=0))
+
+
+# pylint: disable=unused-import,no-name-in-module
+def test_get_attr():
+    """Test that importing attributes of operation work as expected"""
+
+    attr_name = "non_existent_attr"
+    with pytest.raises(
+        AttributeError, match=f"module 'pennylane.operation' has no attribute '{attr_name}'"
+    ):
+        _ = qml.operation.non_existent_attr  # error is raised if non-existent attribute accessed
+
+    with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
+        from pennylane.operation import (
+            non_existent_attr,
+        )  # error is raised if non-existent attribute imported
+
+    from pennylane.operation import StatePrep
+
+    assert (
+        StatePrep is qml.operation.StatePrepBase
+    )  # StatePrep imported from operation.py is an alias for StatePrepBase

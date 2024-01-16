@@ -395,6 +395,7 @@ class TestQFuncTransformIntegration:
         assert ops[1].name == "CRX"
         assert ops[2].name == "CNOT"
 
+    @pytest.mark.xfail(reason="op transform not done yet")
     def test_compilation_pipeline(self):
         """Test a qfunc and operator transform
         applied to qfunc"""
@@ -560,3 +561,15 @@ class TestWireOrder:
         expected = np.kron(np.eye(2), np.diag([1, -1]))
         assert np.allclose(res, expected)
         assert spy.spy_return[1].tolist() == ["a", 0]
+
+
+def test_op_transform_is_deprecated():
+    """Test that the op_transform class is deprecated."""
+
+    def func(op):
+        return op
+
+    with pytest.warns(
+        UserWarning, match="Use of `op_transform` to create a custom transform is deprecated"
+    ):
+        _ = qml.op_transform(func)

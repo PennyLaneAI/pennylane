@@ -407,8 +407,8 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=3)
+        dev1 = qml.device("default.qubit.legacy", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=3)
 
         def cost(x):
             return qml.math.stack(circuit(x))
@@ -487,7 +487,7 @@ class TestPassthruIntegration:
 
         def cost(a, b):
             prob_wire_1 = circuit(a, b)
-            return prob_wire_1[1] - prob_wire_1[0]
+            return prob_wire_1[1] - prob_wire_1[0]  # pylint:disable=unsubscriptable-object
 
         res = cost(a, b)
         expected = -np.cos(a) * np.cos(b)
@@ -513,7 +513,7 @@ class TestPassthruIntegration:
 
         def cost(a, b):
             prob_wire_1 = circuit(a, b)
-            return prob_wire_1[:, 1] - prob_wire_1[:, 0]
+            return prob_wire_1[:, 1] - prob_wire_1[:, 0]  # pylint:disable=unsubscriptable-object
 
         res = cost(a, b)
         expected = -np.cos(a) * np.cos(b)
@@ -600,7 +600,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 

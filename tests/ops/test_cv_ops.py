@@ -24,8 +24,6 @@ from pennylane.operation import AnyWires
 from pennylane.ops import cv
 from pennylane.wires import Wires
 
-import pennylane as qml
-
 s_vals = np.linspace(-3, 3, 13)
 phis = np.linspace(-2 * np.pi, 2 * np.pi, 11)
 mags = np.linspace(0.0, 1.0, 7)
@@ -248,7 +246,7 @@ label_data = [
     (cv.Kerr(1.234, wires=0), "Kerr", "Kerr\n(1.23)"),
     (cv.CrossKerr(1.234, wires=(0, 1)), "CrossKerr", "CrossKerr\n(1.23)"),
     (cv.CubicPhase(1.234, wires=0), "V", "V\n(1.23)"),
-    (cv.InterferometerUnitary(np.eye(2), wires=(0)), "U", "U"),
+    (cv.InterferometerUnitary(np.eye(2), wires=0), "U", "U"),
     (cv.ThermalState(1.234, wires=0), "Thermal", "Thermal\n(1.23)"),
     (
         cv.GaussianState(np.array([[2, 0], [0, 2]]), np.array([1, 2]), wires=[1]),
@@ -286,15 +284,3 @@ class TestLabel:
 
         assert op.label(base_label="name") == label1
         assert op.label(base_label="name", decimals=2) == label2
-
-
-def test_warning_when_initializing_x():
-    """Test that initializing the CV position observable as qml.X instead of qml.QuadX raises a warning"""
-    with pytest.warns(UserWarning, match="Use of qml.X is deprecated and will be removed"):
-        _ = qml.X(0)
-
-
-def test_warning_when_initializing_p():
-    """Test that initializing the CV momentum observable as qml.P instead of qml.QuadP raises a warning"""
-    with pytest.warns(UserWarning, match="Use of qml.P is deprecated and will be removed"):
-        _ = qml.P(0)

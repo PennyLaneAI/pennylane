@@ -141,7 +141,7 @@ class TestInitialization:
         assert op.id == "something"
 
         assert op.num_params == 0
-        assert op.parameters == []
+        assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert op.data == ()
 
         assert op.num_wires == 4
@@ -154,14 +154,6 @@ class TestInitialization:
     def test_zero_one_control_values(self):
         """Test assignment of provided control_values."""
         op = Controlled(self.temp_op, (0, 1), control_values=[0, 1])
-        assert op.control_values == [False, True]
-
-    def test_string_control_values(self):
-        """Test warning and conversion of string control_values."""
-
-        with pytest.warns(UserWarning, match="Specifying control values as a string"):
-            op = Controlled(self.temp_op, (0, 1), "01")
-
         assert op.control_values == [False, True]
 
     def test_non_boolean_control_values(self):
@@ -263,6 +255,12 @@ class TestProperties:
         op = Controlled(qml.PauliX(3), [0, 4])
         assert op.has_decomposition is True
 
+    def test_has_decomposition_multicontrolled_special_unitary(self):
+        """Test that a one qubit special unitary with any number of control
+        wires has a decomposition."""
+        op = Controlled(qml.RX(1.234, wires=0), (1, 2, 3, 4, 5))
+        assert op.has_decomposition
+
     def test_has_decomposition_true_via_base_has_decomp(self):
         """Test that Controlled claims `has_decomposition` to be true if
         the base has a decomposition and indicates this via `has_decomposition`."""
@@ -311,7 +309,7 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.has_diagonalizing_gates is value
 
-    @pytest.mark.parametrize("value", ("_ops", "_prep", None))
+    @pytest.mark.parametrize("value", ("_ops", None))
     def test_queue_cateogry(self, value):
         """Test that Controlled defers `_queue_category` to base operator."""
 
@@ -546,12 +544,13 @@ class TestOperationProperties:
             (qml.RX(1.23, wires=0), [(0.5, 1.0)]),
             (qml.PhaseShift(-2.4, wires=0), [(1,)]),
             (qml.IsingZZ(-9.87, (0, 1)), [(0.5, 1.0)]),
+            (qml.DoubleExcitationMinus(0.7, [0, 1, 2, 3]), [(0.5, 1.0)]),
         ],
     )
     def test_parameter_frequencies(self, base, expected):
         """Test parameter-frequencies against expected values."""
 
-        op = Controlled(base, (3, 4))
+        op = Controlled(base, (4, 5))
         assert op.parameter_frequencies == expected
 
     def test_parameter_frequencies_no_generator_error(self):
@@ -631,7 +630,7 @@ class TestQueuing:
             op = Controlled(base, (0, 1))
 
         assert base not in q
-        assert q.queue[0] == op
+        assert qml.equal(q.queue[0], op)
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
@@ -813,6 +812,46 @@ class TestHelperMethod:
         op = Controlled(TempOperator(0), (1, 2))
         assert _decompose_no_control_values(op) is None
 
+    def test_non_differentiable_one_qubit_special_unitary(self):
+        """Assert that a non differentiable on qubit special unitary uses the bisect decomposition."""
+        op = qml.ctrl(qml.RZ(1.2, wires=0), (1, 2, 3, 4))
+        decomp = op.decomposition()
+
+        assert qml.equal(decomp[0], qml.MultiControlledX(wires=(1, 2, 0), work_wires=(3, 4)))
+        assert isinstance(decomp[1], qml.QubitUnitary)
+        assert qml.equal(decomp[2], qml.MultiControlledX(wires=(3, 4, 0), work_wires=(1, 2)))
+        assert isinstance(decomp[3].base, qml.QubitUnitary)
+        assert qml.equal(decomp[4], qml.MultiControlledX(wires=(1, 2, 0), work_wires=(3, 4)))
+        assert isinstance(decomp[5], qml.QubitUnitary)
+        assert qml.equal(decomp[6], qml.MultiControlledX(wires=(3, 4, 0), work_wires=(1, 2)))
+        assert isinstance(decomp[7].base, qml.QubitUnitary)
+
+        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
+        assert qml.math.allclose(op.matrix(), decomp_mat)
+
+    def test_differentiable_one_qubit_special_unitary(self):
+        """Assert that a differentiable qubit speical unitary uses the zyz decomposition."""
+
+        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1, 2, 3, 4))
+        decomp = op.decomposition()
+
+        assert qml.equal(decomp[0], qml.RZ(qml.numpy.array(1.2), 0))
+        assert qml.equal(decomp[1], qml.MultiControlledX(wires=(1, 2, 3, 4, 0)))
+        assert qml.equal(decomp[2], qml.RZ(qml.numpy.array(-0.6), wires=0))
+        assert qml.equal(decomp[3], qml.MultiControlledX(wires=(1, 2, 3, 4, 0)))
+        assert qml.equal(decomp[4], qml.RZ(qml.numpy.array(-0.6), wires=0))
+
+        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
+        assert qml.math.allclose(op.matrix(), decomp_mat)
+
+    def test_global_phase_decomp_raises_warning(self):
+        """Test that ctrl(GlobalPhase).decomposition() raises a warning."""
+        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0])
+        with pytest.warns(
+            UserWarning, match="Controlled-GlobalPhase currently decomposes to nothing"
+        ):
+            assert op.decomposition() == []
+
 
 @pytest.mark.parametrize("test_expand", (False, True))
 class TestDecomposition:
@@ -942,7 +981,7 @@ class TestDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
@@ -964,7 +1003,7 @@ class TestDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
@@ -984,6 +1023,8 @@ class TestDifferentiation:
 
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         jnp = jax.numpy
 
         dev = qml.device("default.qubit", wires=2)
@@ -991,7 +1032,7 @@ class TestDifferentiation:
         @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
         def circuit(b):
             init_state = onp.array([1.0, -1.0]) / np.sqrt(2)
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
@@ -1011,7 +1052,7 @@ class TestDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
@@ -1078,7 +1119,7 @@ class TestControlledSupportsBroadcasting:
         "DiagonalQubitUnitary",
         "PauliRot",
         "MultiRZ",
-        "QubitStateVector",
+        "StatePrep",
         "AmplitudeEmbedding",
         "AngleEmbedding",
         "IQPEmbedding",
@@ -1236,22 +1277,22 @@ class TestControlledSupportsBroadcasting:
         [([1.0, 0.0], 1), ([0.5, -0.5j, 0.5, -0.5], 2), (np.ones(8) / np.sqrt(8), 3)],
     )
     def test_controlled_qubit_state_vector(self, state_, num_wires):
-        """Test that QubitStateVector, which is marked as supporting parameter broadcasting,
+        """Test that StatePrep, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
 
         state = np.array([state_])
-        base = qml.QubitStateVector(state, wires=list(range(num_wires)))
+        base = qml.StatePrep(state, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
 
         assert op.batch_size == 1
-        qml.QubitStateVector.compute_decomposition(state, list(range(num_wires)))
+        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
         state = np.array([state_] * 3)
-        base = qml.QubitStateVector(state, wires=list(range(num_wires)))
+        base = qml.StatePrep(state, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == 3
-        qml.QubitStateVector.compute_decomposition(state, list(range(num_wires)))
+        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
     @pytest.mark.parametrize(
@@ -1537,14 +1578,13 @@ def test_qubit_unitary(M):
     assert not equal_list(list(tape), expected)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(
     "M",
     [
-        qml.PauliX.compute_matrix(),
-        qml.PauliY.compute_matrix(),
-        qml.PauliZ.compute_matrix(),
-        qml.Hadamard.compute_matrix(),
+        pytest.param(qml.PauliX.compute_matrix(), marks=pytest.mark.xfail),
+        pytest.param(qml.PauliY.compute_matrix(), marks=pytest.mark.xfail),
+        pytest.param(qml.PauliZ.compute_matrix(), marks=pytest.mark.xfail),
+        pytest.param(qml.Hadamard.compute_matrix(), marks=pytest.mark.xfail),
         np.array(
             [
                 [1 + 2j, -3 + 4j],
@@ -1709,7 +1749,7 @@ class TestCtrlTransformDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 
@@ -1731,7 +1771,7 @@ class TestCtrlTransformDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 
@@ -1751,6 +1791,8 @@ class TestCtrlTransformDifferentiation:
 
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         jnp = jax.numpy
 
         dev = qml.device("default.qubit", wires=2)
@@ -1758,7 +1800,7 @@ class TestCtrlTransformDifferentiation:
         @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
         def circuit(b):
             init_state = onp.array([1.0, -1.0]) / onp.sqrt(2)
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 
@@ -1778,7 +1820,7 @@ class TestCtrlTransformDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 

@@ -18,7 +18,8 @@ Tests for the basic default behavior of the Device API.
 import pytest
 
 import pennylane as qml
-from pennylane.devices.experimental import Device, ExecutionConfig, DefaultExecutionConfig
+from pennylane.devices import Device, ExecutionConfig, DefaultExecutionConfig
+from pennylane.wires import Wires
 
 
 def test_execute_method_abstract():
@@ -49,6 +50,19 @@ class TestMinimalDevice:
         """Test the default name is the name of the class"""
         assert self.dev.name == "MinimalDevice"
 
+    @pytest.mark.parametrize(
+        "wires,shots,expected",
+        [
+            (None, None, "<MinimalDevice device at 0x"),
+            ([1, 3], None, "<MinimalDevice device (wires=2) at 0x"),
+            (None, [10, 20], "<MinimalDevice device (shots=30) at 0x"),
+            ([1, 3], [10, 20], "<MinimalDevice device (wires=2, shots=30) at 0x"),
+        ],
+    )
+    def test_repr(self, wires, shots, expected):
+        """Tests the repr of the device API"""
+        assert repr(self.MinimalDevice(wires=wires, shots=shots)).startswith(expected)
+
     def test_shots(self):
         """Test default behavior for shots."""
 
@@ -69,15 +83,16 @@ class TestMinimalDevice:
         """Test that preprocessing wraps a circuit into a batch."""
 
         circuit1 = qml.tape.QuantumScript()
-        batch, fn, config = self.dev.preprocess(circuit1)
+        program, config = self.dev.preprocess()
+        batch, fn = program((circuit1,))
         assert isinstance(batch, tuple)
         assert len(batch) == 1
         assert batch[0] is circuit1
         assert callable(fn)
 
-        a = (1, 2)
-        assert fn(a) is a
-        assert config is qml.devices.experimental.DefaultExecutionConfig
+        a = (1,)
+        assert fn(a) == (1,)
+        assert config is qml.devices.DefaultExecutionConfig
 
     def test_preprocess_batch_circuits(self):
         """Test that preprocessing a batch doesn't do anything."""
@@ -85,7 +100,8 @@ class TestMinimalDevice:
         circuit = qml.tape.QuantumScript()
         in_config = ExecutionConfig()
         in_batch = (circuit, circuit)
-        batch, fn, config = self.dev.preprocess(in_batch, in_config)
+        program, config = self.dev.preprocess(in_config)
+        batch, fn = program(in_batch)
         assert batch is in_batch
         assert config is in_config
         a = (1, 2)
@@ -129,6 +145,27 @@ class TestMinimalDevice:
 
         with pytest.raises(NotImplementedError):
             self.dev.execute_and_compute_vjp(qml.tape.QuantumScript(), (0.1,))
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            (None, None),
+            (0, Wires([])),
+            (Wires([0]), Wires([0])),
+            (1, Wires([0])),
+            ([1], Wires([1])),
+            (2, Wires([0, 1])),
+            ([1, 3], Wires([1, 3])),
+        ],
+    )
+    def test_wires_can_be_provided(self, wires, expected):
+        """Test that a device can be created with wires."""
+        assert self.MinimalDevice(wires=wires).wires == expected
+
+    def test_wires_are_read_only(self):
+        """Test that device wires cannot be set after device initialization."""
+        with pytest.raises(AttributeError):
+            self.dev.wires = [0, 1]  # pylint:disable=attribute-defined-outside-init
 
 
 class TestProvidingDerivatives:

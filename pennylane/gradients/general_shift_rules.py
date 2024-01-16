@@ -16,6 +16,7 @@ helper methods for processing shift rules as well as for creating tapes with
 shifted parameters."""
 import functools
 import itertools
+import numbers
 import warnings
 
 import numpy as np
@@ -76,7 +77,7 @@ def process_shifts(rule, tol=1e-10, batch_duplicates=True):
             rule = np.hstack([np.stack(coeffs)[:, np.newaxis], unique_mods])
 
     # sort columns according to abs(shift)
-    return rule[np.argsort(np.abs(rule[:, -1]))]
+    return rule[np.argsort(np.abs(rule[:, -1]), kind="stable")]
 
 
 @functools.lru_cache(maxsize=None)
@@ -396,10 +397,11 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
 
         # Shift copied parameter
         new_params = list(op.data)
-        multiplier = qml.math.convert_like(multiplier, new_params[p_idx])
-        multiplier = qml.math.cast_like(multiplier, new_params[p_idx])
-        shift = qml.math.convert_like(shift, new_params[p_idx])
-        shift = qml.math.cast_like(shift, new_params[p_idx])
+        if not isinstance(new_params[p_idx], numbers.Integral):
+            multiplier = qml.math.convert_like(multiplier, new_params[p_idx])
+            multiplier = qml.math.cast_like(multiplier, new_params[p_idx])
+            shift = qml.math.convert_like(shift, new_params[p_idx])
+            shift = qml.math.cast_like(shift, new_params[p_idx])
         new_params[p_idx] = new_params[p_idx] * multiplier
         new_params[p_idx] = new_params[p_idx] + shift
         if cast:
@@ -415,10 +417,9 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
             all_ops[op_idx] = mp(obs=shifted_op)
 
     # pylint: disable=protected-access
-    prep = all_ops[: len(tape._prep)]
-    ops = all_ops[len(tape._prep) : len(tape.operations)]
+    ops = all_ops[: len(tape.operations)]
     meas = all_ops[len(tape.operations) :]
-    return QuantumScript(ops=ops, measurements=meas, prep=prep, shots=tape.shots)
+    return QuantumScript(ops=ops, measurements=meas, shots=tape.shots)
 
 
 def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=False):

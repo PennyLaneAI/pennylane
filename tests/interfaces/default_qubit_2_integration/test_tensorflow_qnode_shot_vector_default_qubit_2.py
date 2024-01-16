@@ -18,7 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 
 pytestmark = pytest.mark.tf
 
@@ -28,9 +28,9 @@ shots_and_num_copies = [(((5, 2), 1, 10), 4), ((1, 10, (5, 2)), 4)]
 shots_and_num_copies_hess = [((10, (5, 1)), 2)]
 
 qubit_device_and_diff_method = [
-    [DefaultQubit2(), "finite-diff", {"h": 10e-2}],
-    [DefaultQubit2(), "parameter-shift", {}],
-    [DefaultQubit2(), "spsa", {"h": 10e-2, "num_directions": 20}],
+    [DefaultQubit(), "finite-diff", {"h": 10e-2}],
+    [DefaultQubit(), "parameter-shift", {}],
+    [DefaultQubit(), "spsa", {"h": 10e-2, "num_directions": 20}],
 ]
 
 TOLS = {

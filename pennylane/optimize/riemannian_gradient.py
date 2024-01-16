@@ -13,14 +13,21 @@
 # limitations under the License.
 """Riemannian gradient optimizer"""
 import warnings
+from typing import Sequence, Callable
 
 import numpy as np
 from scipy.sparse.linalg import expm
 import pennylane as qml
 
+from pennylane import transform
+from pennylane.tape import QuantumTape
+from pennylane.queuing import QueuingManager
 
-@qml.qfunc_transform
-def append_time_evolution(tape, riemannian_gradient, t, n, exact=False):
+
+@transform
+def append_time_evolution(
+    tape: QuantumTape, riemannian_gradient, t, n, exact=False
+) -> (Sequence[QuantumTape], Callable):
     r"""Append an approximate time evolution, corresponding to a Riemannian
     gradient on the Lie group, to an existing circuit.
 
@@ -49,27 +56,40 @@ def append_time_evolution(tape, riemannian_gradient, t, n, exact=False):
     and append this unitary.
 
     Args:
-        tape (QuantumTape or .QNode): circuit to transform.
+        tape (QuantumTape or QNode or Callable): circuit to transform.
         riemannian_gradient (.Hamiltonian): Hamiltonian object representing the Riemannian gradient.
         t (float): time evolution parameter.
         n (int): number of Trotter steps.
 
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+
     """
-    for obj in tape.operations:
-        qml.apply(obj)
+    new_operations = tape.operations
     if exact:
-        qml.QubitUnitary(
-            expm(-1j * t * riemannian_gradient.sparse_matrix().toarray()),
-            wires=range(len(riemannian_gradient.wires)),
-        )
+        with QueuingManager.stop_recording():
+            new_operations.append(
+                qml.QubitUnitary(
+                    expm(-1j * t * riemannian_gradient.sparse_matrix().toarray()),
+                    wires=range(len(riemannian_gradient.wires)),
+                )
+            )
     else:
-        qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n)
+        with QueuingManager.stop_recording():
+            new_operations.append(qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n))
 
-    for obj in tape.measurements:
-        qml.apply(obj)
+    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]  # pragma: no cover
+
+    return [new_tape], null_postprocessing
 
 
-@qml.batch_transform
 def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     """Calculate the Riemannian gradient in the Lie algebra with the parameter shift rule
     (see :meth:`RiemannianGradientOptimizer.get_omegas`).
@@ -133,7 +153,7 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
                     for q, p in zip(queues_min, lie_algebra_basis_names)
                 ]
             )
-    return tapes_plus_total + tapes_min_total, None
+    return tapes_plus_total + tapes_min_total
 
 
 class RiemannianGradientOptimizer:
@@ -302,8 +322,8 @@ class RiemannianGradientOptimizer:
             [qml.pauli.string_to_pauli_word(ps) for ps in non_zero_lie_algebra_elements],
         )
         new_circuit = append_time_evolution(
-            lie_gradient, self.stepsize, self.trottersteps, self.exact
-        )(self.circuit.func)
+            self.circuit.func, lie_gradient, self.stepsize, self.trottersteps, self.exact
+        )
 
         # we can set diff_method=None because the gradient of the QNode is computed
         # directly in this optimizer
@@ -366,8 +386,25 @@ class RiemannianGradientOptimizer:
             obs_groupings,
             self.lie_algebra_basis_names,
             self.nqubits,
-        )[0]
-        circuits = qml.execute(circuits, self.circuit.device, gradient_fn=None)
+        )
+
+        if isinstance(self.circuit.device, qml.devices.Device):
+            program, config = self.circuit.device.preprocess()
+
+            circuits = qml.execute(
+                circuits,
+                self.circuit.device,
+                transform_program=program,
+                config=config,
+                gradient_fn=None,
+            )
+        else:
+            circuits = qml.execute(
+                circuits, self.circuit.device, gradient_fn=None
+            )  # pragma: no cover
+
+        program, _ = self.circuit.device.preprocess()
+
         circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )

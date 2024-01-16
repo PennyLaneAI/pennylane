@@ -70,6 +70,23 @@ class TestVonNeumannEntropy:
     parameters = np.linspace(0, 2 * np.pi, 10)
     devices = ["default.qubit", "default.mixed", "lightning.qubit"]
 
+    def test_vn_entropy_cannot_specify_device(self):
+        """Test that an error is raised if a device or device wires are given
+        to the vn_entropy transform manually."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
+            _ = qml.qinfo.vn_entropy(circuit, wires=[0], device=dev)
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
+            _ = qml.qinfo.vn_entropy(circuit, wires=[0], device_wires=dev.wires)
+
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)

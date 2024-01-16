@@ -422,6 +422,9 @@ class SpecialUnitary(Operation):
 
         super().__init__(theta, wires=wires, id=id)
 
+    def _flatten(self):
+        return self.data, (self.wires, ())
+
     @staticmethod
     def compute_matrix(theta, num_wires):
         r"""Representation of the operator as a canonical matrix in the computational basis
@@ -718,7 +721,7 @@ class TmpPauliRot(PauliRot):
             This operation is used in a differentiation pipeline of :class:`~.SpecialUnitary`
             and most likely should not be created manually by users.
         """
-        if qml.math.isclose(theta, theta * 0):
+        if qml.math.isclose(theta, theta * 0) and not qml.math.requires_grad(theta):
             return []
         return [PauliRot(theta, pauli_word, wires)]
 

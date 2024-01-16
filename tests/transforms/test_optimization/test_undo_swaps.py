@@ -42,6 +42,20 @@ class TestUndoSwaps:
         assert len(tape.operations) == 2
         assert np.allclose(res[0], 0.5)
 
+    def test_one_qubit_gates_transform_qnode(self):
+        """Test that a single-qubit gate changes correctly with a SWAP."""
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=1)
+            qml.SWAP(wires=[0, 1])
+            return qml.probs(1)
+
+        transformed_qnode = undo_swaps(circuit)
+        res = transformed_qnode()
+        assert np.allclose(res[0], 0.5)
+
     def test_two_qubits_gates_transform(self):
         """Test that a two-qubit gate changes correctly with a SWAP."""
 
@@ -111,9 +125,13 @@ class TestUndoSwaps:
 
         assert np.allclose(res1, res2)
 
-    def test_decorator(self):
-        @qml.qnode(qml.device("default.qubit", wires=3))
+    def test_decorator(self, mocker):
+        """Test that the decorator works on a QNode."""
+
+        spy = mocker.spy(dev, "execute")
+
         @undo_swaps
+        @qml.qnode(dev)
         def qfunc():
             qml.Hadamard(wires=0)
             qml.PauliX(wires=1)
@@ -122,8 +140,9 @@ class TestUndoSwaps:
             qml.PauliY(wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qfunc()
-        assert len(qfunc.qtape.operations) == 3
+        assert np.allclose(qfunc(), -1)
+        [[tape]], _ = spy.call_args
+        assert tape.operations == [qml.Hadamard(1), qml.PauliX(2), qml.PauliY(0)]
 
 
 # Example QNode and device for interface testing
@@ -238,10 +257,6 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in JAX interface."""
         import jax
         from jax import numpy as jnp
-
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)

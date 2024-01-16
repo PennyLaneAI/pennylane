@@ -17,3 +17,4 @@ Transforms
     :no-inherited-members:
     :skip: metric_tensor
     :skip: adjoint_metric_tensor
+    :skip: transform

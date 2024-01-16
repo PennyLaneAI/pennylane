@@ -14,7 +14,7 @@
 """
 Tests for the Fourier reconstruction transform.
 """
-# pylint: disable=too-many-arguments,too-few-public-methods
+# pylint: disable=too-many-arguments,too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
 from inspect import signature
 from itertools import chain
 from functools import reduce
@@ -193,9 +193,7 @@ class TestReconstructEqu:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
         # Convert fun to have integer frequencies
         _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency, interface="jax")
@@ -423,9 +421,7 @@ class TestReconstructGen:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="jax")
         grad = jax.grad(rec)
@@ -901,7 +897,7 @@ class TestReconstruct:
                     # Dirichlet reconstruction
                     assert np.isclose(
                         grad(pnp.array(x0, requires_grad=True)),
-                        exp_qnode_grad(*pnp.array(params, requires_grad=True))[inner_key],
+                        exp_qnode_grad(*params)[inner_key],
                     )
                 assert np.isclose(
                     grad(pnp.array(x0 + 0.1, requires_grad=True)),
@@ -919,9 +915,7 @@ class TestReconstruct:
     ):
         """Tests the reconstruction and differentiability with JAX."""
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
         params = tuple(jax.numpy.array(par) for par in params)
         qnode = qml.QNode(qnode, dev_1, interface="jax")
         with qml.Tracker(qnode.device) as tracker:

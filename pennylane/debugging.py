@@ -16,7 +16,6 @@ This module contains functionality for debugging quantum programs on simulator d
 """
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.devices import experimental
 
 
 class _Debugger:
@@ -35,7 +34,7 @@ class _Debugger:
             raise DeviceError("Device does not support snapshots.")
 
         # new device API: check if it's the simulator device
-        if isinstance(dev, experimental.Device) and not isinstance(dev, experimental.DefaultQubit2):
+        if isinstance(dev, qml.devices.Device) and not isinstance(dev, qml.devices.DefaultQubit):
             raise DeviceError("Device does not support snapshots.")
 
         self.snapshots = {}
@@ -73,7 +72,7 @@ def snapshots(qnode):
 
         @qml.qnode(dev, interface=None)
         def circuit():
-            qml.Snapshot()
+            qml.Snapshot(measurement=qml.expval(qml.PauliZ(0))
             qml.Hadamard(wires=0)
             qml.Snapshot("very_important_state")
             qml.CNOT(wires=[0, 1])
@@ -81,10 +80,10 @@ def snapshots(qnode):
             return qml.expval(qml.PauliX(0))
 
     >>> qml.snapshots(circuit)()
-    {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
-    'very_important_state': array([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j]),
-    2: array([0.70710678+0.j, 0.+0.j, 0.+0.j, 0.70710678+0.j]),
-    'execution_results': array(0.)}
+    {0: 1.0,
+    'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
+    2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
+    'execution_results': 0.0}
     """
 
     def get_snapshots(*args, **kwargs):

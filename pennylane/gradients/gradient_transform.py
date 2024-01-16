@@ -16,7 +16,6 @@ including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
 from functools import partial
 import warnings
-import numpy as np
 
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
@@ -56,19 +55,6 @@ SUPPORTED_GRADIENT_KWARGS = [
     "use_broadcasting",
     "validate_params",
 ]
-
-
-def assert_active_return(transform_name):
-    """Check that the new return type system is active. Raise an error if this is not the case.
-
-    Args:
-        transform_name (str): Name of the gradient transform that queries the return system
-    """
-    if not qml.active_return():
-        raise NotImplementedError(
-            f"The {transform_name} gradient transform only supports the new "
-            "return type system. Use qml.enable_return() to activate it."
-        )
 
 
 def assert_multimeasure_not_broadcasted(measurements, broadcast):
@@ -114,67 +100,108 @@ def assert_no_variance(measurements, transform_name):
         )
 
 
-def _gradient_analysis(tape, use_graph=True, grad_fn=None):
-    """Update the parameter information dictionary of the tape with
-    gradient information of each parameter.
+def assert_no_tape_batching(tape, transform_name):
+    """Check whether a tape is broadcasted and raise an error if this is the case.
+
+    Args:
+        tape (`~.QuantumScript`): measurements to analyze
+        transform_name (str): Name of the gradient transform that queries the tape
     """
+    if tape.batch_size is not None:
+        raise NotImplementedError(
+            f"Computing the gradient of broadcasted tapes with the {transform_name} "
+            "gradient transform is currently not supported. See #4462 for details."
+        )
+
+
+def choose_trainable_params(tape, argnum=None):
+    """Returns a list of trainable parameter indices in the tape.
+
+    Chooses the subset of trainable parameters to compute the Jacobian for. The function
+    returns a list of indices with respect to the list of trainable parameters. If argnum
+    is not provided, all trainable parameters are considered.
+
+    Args:
+        tape (`~.QuantumScript`): the tape to analyze
+        argnum (int, list(int), None): Indices for trainable parameters(s)
+            to compute the Jacobian for.
+
+    Returns:
+        list: list of the trainable parameter indices
+
+    """
+
+    if argnum is None:
+        return [idx for idx, _ in enumerate(tape.trainable_params)]
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+
+    if len(argnum) == 0:
+        warnings.warn(
+            "No trainable parameters were specified for computing the Jacobian.",
+            UserWarning,
+        )
+
+    return argnum
+
+
+def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=True):
+    """Gets the gradient method of a parameter. If use_graph=True, analyze the
+    circuit graph to find if the parameter has zero gradient.
+
+    Args:
+        tape (`~.QuantumScript`): the tape to analyze
+        param_index (int): the index of the parameter to analyze
+        use_graph (bool): whether to use the circuit graph to find if
+            a parameter has zero gradient
+
+    """
+
     # pylint:disable=protected-access
-    if grad_fn is not None:
-        if getattr(tape, "_gradient_fn", None) is grad_fn:
-            # gradient analysis has already been performed on this tape
-            return
+    par_info = tape._par_info[param_index]
 
-        tape._gradient_fn = grad_fn
+    if use_graph:
+        op_or_mp = tape[par_info["op_idx"]]
+        if not any(tape.graph.has_path(op_or_mp, mp) for mp in tape.measurements):
+            # there is no influence of this operation on any of the observables
+            return "0"
 
-    for idx, info in enumerate(tape._par_info):
-        if idx not in tape.trainable_params:
-            # non-trainable parameters do not require a grad_method
-            info["grad_method"] = None
-        else:
-            op = tape._par_info[idx]["op"]
-
-            if not qml.operation.has_grad_method(op):
-                # no differentiation method is registered for this operation
-                info["grad_method"] = None
-
-            elif (tape._graph is not None) or use_graph:
-                if not any(tape.graph.has_path(op, ob) for ob in tape.observables):
-                    # there is no influence of this operation on any of the observables
-                    info["grad_method"] = "0"
-                    continue
-
-            info["grad_method"] = op.grad_method
+    return par_info["op"].grad_method
 
 
-def _grad_method_validation(method, tape):
-    """Validates if the gradient method requested is supported by the trainable
-    parameters of a tape, and returns the allowed parameter gradient methods."""
-    diff_methods = {
-        idx: info["grad_method"]
-        for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access
-        if idx in tape.trainable_params
+def _find_gradient_methods(tape, trainable_param_indices, use_graph=True):
+    """Returns a dictionary with gradient information of each trainable parameter."""
+
+    return {
+        idx: _try_zero_grad_from_graph_or_get_grad_method(
+            tape, tape.trainable_params[idx], use_graph
+        )
+        for idx in trainable_param_indices
     }
 
+
+def _validate_gradient_methods(tape, method, diff_methods):
+    """Validates if the gradient method requested is supported by the trainable
+    parameters of a tape, and returns the allowed parameter gradient methods."""
+
     # check and raise an error if any parameters are non-differentiable
-    if nondiff_params := {idx for idx, g in diff_methods.items() if g is None}:
+    nondiff_params = [tape.trainable_params[idx] for idx, m in diff_methods.items() if m is None]
+    if nondiff_params:
         raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
 
-    numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
-
-    # If explicitly using analytic mode, ensure that all parameters
-    # support analytic differentiation.
+    # If explicitly using analytic mode, ensure that all
+    # parameters support analytic differentiation.
+    numeric_params = [tape.trainable_params[idx] for idx, m in diff_methods.items() if m == "F"]
     if method == "analytic" and numeric_params:
         raise ValueError(
             f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
         )
 
-    return tuple(diff_methods.values())
 
-
-def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None, overwrite=True):
-    """Update the parameter information dictionary of the tape with gradient information of
-    each parameter. Then validates if the gradient method requested is supported by the trainable
-    parameters of a tape, and returns the allowed parameter gradient methods.
+def find_and_validate_gradient_methods(tape, method, trainable_param_indices, use_graph=True):
+    """Returns a dictionary of gradient methods for each trainable parameter after
+    validating if the gradient method requested is supported by the trainable parameters
 
     Parameter gradient methods include:
 
@@ -186,69 +213,26 @@ def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None,
     In addition, the operator might define its own grad method
     via :attr:`.Operator.grad_method`.
 
-    .. note::
-
-        Note that this function modifies the input tape in-place.
-
     Args:
-        tape (.QuantumTape): the quantum tape to analyze
-        method (str): the overall Jacobian differentiation method
-        use_graph (bool): whether to use a directed-acyclic graph to determine
-            if the parameter has a gradient of 0
-        grad_fn (None or callable): The gradient transform performing the analysis.
-            This is an optional argument; if provided, and the tape has already
-            been analyzed for the gradient information by the same gradient transform,
-            the cached gradient analysis will be used.
-        overwrite (bool): Whether to overwrite existing parameter gradient methods during the
-            first part of the function.
+        tape (`~.QuantumScript`): the tape to analyze
+        method (str): the gradient method to use
+        trainable_param_indices (list[int]): the indices of the trainable parameters
+            to compute the Jacobian for
+        use_graph (bool): whether to use the circuit graph to find if
+            a parameter has zero gradient
+
+    Returns:
+        dict: dictionary of the gradient methods for each trainable parameter
 
     Raises:
         ValueError: If there exist non-differentiable trainable parameters on the tape.
         ValueError: If the Jacobian method is ``"analytic"`` but there exist some trainable
             parameters on the tape that only support numeric differentiation.
 
-    Returns:
-        tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
     """
-    if overwrite or "grad_method" not in tape._par_info[0]:  # pylint: disable=protected-access
-        _gradient_analysis(tape, use_graph=use_graph, grad_fn=grad_fn)
-    return _grad_method_validation(method, tape)
-
-
-def choose_grad_methods(diff_methods, argnum):
-    """Chooses the trainable parameters to use for computing the Jacobian
-    by returning a map of their indices and differentiation methods.
-
-    When there are fewer parameters specified than the total number of
-    trainable parameters, the Jacobian is estimated by using the parameters
-    specified using the ``argnum`` keyword argument.
-
-    Args:
-        diff_methods (list): the ordered list of differentiation methods
-            for each parameter
-        argnum (int, list(int), None): Indices for argument(s) with respect
-            to which to compute the Jacobian.
-
-    Returns:
-        dict: map of the trainable parameter indices and
-        differentiation methods
-    """
-    if argnum is None:
-        return dict(enumerate(diff_methods))
-
-    if isinstance(argnum, int):
-        argnum = [argnum]
-
-    num_params = len(argnum)
-
-    if num_params == 0:
-        warnings.warn(
-            "No trainable parameters were specified for computing the Jacobian.",
-            UserWarning,
-        )
-        return {}
-
-    return {idx: diff_methods[idx] for idx in argnum}
+    diff_methods = _find_gradient_methods(tape, trainable_param_indices, use_graph=use_graph)
+    _validate_gradient_methods(tape, method, diff_methods)
+    return diff_methods
 
 
 def _all_zero_grad(tape):
@@ -299,13 +283,6 @@ def _no_trainable_grad(tape):
     if len(tape.measurements) == 1:
         return [], lambda _: qml.math.zeros([0])
     return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
-
-
-def _no_trainable_grad_legacy(tape):
-    """Auxiliary function that returns correctly formatted gradients when there
-    are no trainable parameters. This version is for the old return type system."""
-    warnings.warn(_no_trainable_grad_warning)
-    return [], lambda _: np.zeros((tape.output_dim, 0))
 
 
 def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
@@ -398,13 +375,19 @@ def reorder_grads(grads, tape_specs):
 
 
 # pylint: disable=too-many-return-statements,too-many-branches
-def _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots):
+def _contract_qjac_with_cjac(qjac, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
     Essentially, this function computes the generalized version of
     ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the new
     return type system. This function takes the measurement shapes and different
     QNode arguments into account.
     """
+    num_measurements = len(tape.measurements)
+    has_partitioned_shots = tape.shots.has_partitioned_shots
+
+    if isinstance(qjac, tuple) and len(qjac) == 1:
+        qjac = qjac[0]
+
     if isinstance(cjac, tuple) and len(cjac) == 1:
         cjac = cjac[0]
 
@@ -460,29 +443,7 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots
     return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
 
 
-def _contract_qjac_with_cjac_legacy(qjac, cjac):
-    """Contract a quantum Jacobian with a classical preprocessing Jacobian.
-    Essentially, this function computes the generalized version of
-    ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the old
-    return type system.
-    """
-    tdot = partial(qml.math.tensordot, axes=[[-1], [0]])
-    if isinstance(cjac, tuple):
-        # Classical processing of multiple arguments is present. Return qjac @ cjac.
-        jacs = tuple(tdot(qjac, c) for c in cjac if c is not None)
-        return jacs[0] if len(jacs) == 1 else jacs
-
-    is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
-
-    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-        # Classical Jacobian is the identity. No classical processing
-        # is present inside the QNode.
-        return qjac
-
-    return tdot(qjac, cjac)
-
-
-class gradient_transform(qml.batch_transform):
+class gradient_transform(qml.batch_transform):  # pragma: no cover
     """Decorator for defining quantum gradient transforms.
 
     Quantum gradient transforms are a specific case of :class:`~.batch_transform`.
@@ -566,6 +527,9 @@ class gradient_transform(qml.batch_transform):
         ...     params = tape.get_parameters()  # list of floats
     """
 
+    def __repr__(self):
+        return f"<gradient_transform: {self.__name__}>"  # pylint: disable=no-member
+
     def __init__(
         self, transform_fn, expand_fn=expand_invalid_trainable, differentiable=True, hybrid=True
     ):
@@ -623,15 +587,10 @@ class gradient_transform(qml.batch_transform):
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
             # defined on the outer transform and therefore on the args.
             argnum_cjac = trainable_params or argnums if interface == "jax" else None
-            cjac = qml.transforms.classical_jacobian(
+            cjac = qml.gradients.classical_jacobian(
                 qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
             )(*args, **kwargs)
 
-            if qml.active_return():
-                num_measurements = len(qnode.tape.measurements)
-                has_partitioned_shots = qnode.tape.shots.has_partitioned_shots
-                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
-
-            return _contract_qjac_with_cjac_legacy(qjac, cjac)
+            return _contract_qjac_with_cjac(qjac, cjac, qnode.tape)  # pragma: no cover
 
         return jacobian_wrapper

@@ -496,10 +496,10 @@ class PhaseShift(Operation):
         **Example:**
 
         >>> qml.PhaseShift.compute_decomposition(1.234, wires=0)
-        [RZ(1.234, wires=[0])]
+        [RZ(1.234, wires=[0]), GlobalPhase(-0.617, wires=[])]
 
         """
-        return [RZ(phi, wires=wires)]
+        return [RZ(phi, wires=wires), qml.GlobalPhase(-phi / 2)]
 
     def adjoint(self):
         return PhaseShift(-self.data[0], wires=self.wires)

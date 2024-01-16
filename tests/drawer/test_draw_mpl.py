@@ -70,13 +70,26 @@ def test_standard_use():
     plt.close()
 
 
+def test_fig_argument():
+    """Tests figure argument is used correcly"""
+
+    fig = plt.figure()
+    output_fig, ax = qml.draw_mpl(circuit1, fig=fig)(1.23, 2.34)
+    assert ax.get_figure() == fig
+    assert output_fig == fig
+
+
+@pytest.mark.parametrize(
+    "device",
+    [qml.device("default.qubit.legacy", wires=3), qml.devices.DefaultQubit(wires=3)],
+)
 @pytest.mark.parametrize(
     "strategy, initial_strategy, n_lines", [("gradient", "device", 3), ("device", "gradient", 13)]
 )
-def test_expansion_strategy(strategy, initial_strategy, n_lines):
+def test_expansion_strategy(device, strategy, initial_strategy, n_lines):
     """Test that the expansion strategy keyword controls what operations are drawn."""
 
-    @qml.qnode(qml.device("default.qubit", wires=3), expansion_strategy=initial_strategy)
+    @qml.qnode(device, expansion_strategy=initial_strategy)
     def circuit():
         qml.Permute([2, 0, 1], wires=(0, 1, 2))
         return qml.expval(qml.PauliZ(0))
@@ -335,3 +348,38 @@ def test_draw_mpl_with_qfunc_warns_with_expansion_strategy():
 
     with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
         _ = qml.draw_mpl(qfunc, expansion_strategy="gradient")
+
+
+def test_qnode_mid_circuit_measurement_not_deferred_device_api(mocker):
+    """Test that a circuit containing mid-circuit measurements is not transformed by the drawer
+    to use deferred measurements if the device uses the new device API."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circ():
+        qml.PauliX(0)
+        qml.measure(0)
+        return qml.probs(wires=0)
+
+    draw_qnode = qml.draw_mpl(circ)
+    spy = mocker.spy(qml.defer_measurements, "_transform")
+
+    _ = draw_qnode()
+    spy.assert_not_called()
+
+
+def test_qnode_transform_program(mocker):
+    """Test that qnode transforms are applied before drawing a circuit."""
+
+    @qml.compile
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.RX(1.1, 0)
+        qml.RX(2.2, 0)
+        return qml.state()
+
+    draw_qnode = qml.draw_mpl(circuit, decimals=2)
+    qnode_transform = circuit.transform_program[0]
+    spy = mocker.spy(qnode_transform, "_transform")
+
+    _ = draw_qnode()
+    spy.assert_called_once()

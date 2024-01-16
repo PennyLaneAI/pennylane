@@ -99,7 +99,7 @@ class TestApply:
                 [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
             ),
             (
-                qml.QubitStateVector,
+                qml.StatePrep,
                 [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
             ),
         ],
@@ -168,7 +168,7 @@ class TestExpval:
 
         dev = nullqubit_device(wires=1)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.expval(obs)
         assert res == [0.0]
 
@@ -187,7 +187,7 @@ class TestExpval:
 
         dev = nullqubit_device(wires=1)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.expval(obs)
 
         assert res == [0.0]
@@ -219,7 +219,7 @@ class TestExpval:
 
         dev = nullqubit_device(wires=2)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
         res = dev.expval(obs)
 
         assert res == [0.0]
@@ -245,7 +245,7 @@ class TestVar:
 
         dev = nullqubit_device(wires=1)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.var(obs)
         assert res == [0.0]
 
@@ -264,7 +264,7 @@ class TestVar:
 
         dev = nullqubit_device(wires=1)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.var(obs)
 
         assert res == [0.0]
@@ -296,7 +296,7 @@ class TestVar:
 
         dev = nullqubit_device(wires=2)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
         res = dev.var(obs)
 
         assert res == [0.0]
@@ -447,7 +447,7 @@ class TestNullQubitIntegration:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(wires=[0]))
 
         assert circuit() == np.array([0.0], dtype=object)
@@ -471,7 +471,7 @@ class TestNullQubitIntegration:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(*par, wires=[0]))
 
         assert circuit() == np.array([0.0], dtype=object)
@@ -508,7 +508,7 @@ class TestNullQubitIntegration:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0, 1])
+            qml.StatePrep(np.array(state), wires=[0, 1])
             return qml.expval(obs(*par, wires=[0, 1]))
 
         assert circuit() == np.array([0.0], dtype=object)
@@ -1065,9 +1065,9 @@ class TestOpCallIntegration:
         (qml.IsingYY, [math.pi / 2], {"IsingYY": 1}),
         (qml.IsingZZ, [math.pi / 2], {"IsingZZ": 1}),
         (
-            qml.QubitStateVector,
+            qml.StatePrep,
             [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-            {"QubitStateVector": 1},
+            {"StatePrep": 1},
         ),
         (
             qml.BasisState,

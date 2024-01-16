@@ -16,9 +16,9 @@ import warnings
 
 from dataclasses import dataclass
 from typing import Callable, List, Union
+import numpy as np
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.typing import TensorLike
@@ -79,10 +79,11 @@ def transmon_interaction(
         :func:`~.transmon_drive`
 
     Args:
-        qubit_freq (Union[float, list[float]]): List of dressed qubit frequencies. This should be in units
+        qubit_freq (Union[float, list[float], Callable]): List of dressed qubit frequencies. This should be in units
             of frequency (GHz), and will be converted to angular frequency :math:`\omega` internally where
             needed, i.e. multiplied by :math:`2 \pi`. When passing a single float all qubits are assumed to
-            have that same frequency.
+            have that same frequency. When passing a parametrized function, it must have two
+            arguments, the first one being the trainable parameters and the second one being time.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
             When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
         coupling (Union[float, list[float]]): List of coupling strengths. This should be in units
@@ -158,9 +159,9 @@ def transmon_interaction(
         anharmonicity = [0.0] * n_wires
 
     # TODO: make coefficients callable / trainable. Currently not supported
-    if qml.math.ndim(qubit_freq) == 0:
+    if callable(qubit_freq) or qml.math.ndim(qubit_freq) == 0:
         qubit_freq = [qubit_freq] * n_wires
-    if len(qubit_freq) != n_wires:
+    elif len(qubit_freq) != n_wires:
         raise ValueError(
             f"Number of qubit frequencies in {qubit_freq} does not match the provided wires = {wires}"
         )
@@ -281,7 +282,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. note:: Currently only supports ``d=2`` with qudit support planned in the future.
         For ``d>2``, we have :math:`Y \mapsto i (\sigma^- - \sigma^+)`
-        with lowering and raising operators  :math:`\sigma_^{\mp}`.
+        with lowering and raising operators  :math:`\sigma^{\mp}`.
 
     .. note:: Due to convention in the respective fields, we omit the factor :math:`\frac{1}{2}` present in the related constructor :func:`~.rydberg_drive`
 
@@ -313,8 +314,12 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. code-block:: python3
 
-        def amp(A, t): return A * jnp.exp(-t**2)
-        def phase(phi0, t): return phi0
+        def amp(A, t):
+            return A * jnp.exp(-t**2)
+
+        def phase(phi0, t):
+            return phi0
+
         freq = 0
 
         H = qml.pulse.transmon_drive(amp, phase, freq, 0)

@@ -22,6 +22,7 @@ from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
+from pennylane.math import expand_matrix
 from pennylane.operation import (
     AnyWires,
     DecompositionUndefinedError,
@@ -30,7 +31,6 @@ from pennylane.operation import (
     Operator,
     OperatorPropertyUndefined,
     Tensor,
-    expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.wires import Wires
@@ -176,6 +176,8 @@ class Exp(ScalarSymbolicOp, Operation):
 
     # pylint: disable=too-many-arguments
     def __init__(self, base, coeff=1, num_steps=None, id=None):
+        if not isinstance(base, Operator):
+            raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
         super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
         self.num_steps = num_steps
@@ -313,11 +315,20 @@ class Exp(ScalarSymbolicOp, Operation):
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
 
-        raise DecompositionUndefinedError(
-            f"The decomposition of the {self} operator is not defined. "
-            "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
-            "if a Suzuki-Trotter decomposition is required."
-        )
+        error_msg = f"The decomposition of the {self} operator is not defined. "
+
+        if not self.num_steps:  # if num_steps was not set
+            error_msg += (
+                "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+                "if a Suzuki-Trotter decomposition is required. "
+            )
+
+        if math.real(self.coeff) != 0 and self.base.is_hermitian:
+            error_msg += (
+                "Decomposition is not defined for real coefficients of hermitian operators."
+            )
+
+        raise DecompositionUndefinedError(error_msg)
 
     @staticmethod
     def _pauli_rot_decomposition(base: Operator, coeff: complex):
@@ -375,7 +386,7 @@ class Exp(ScalarSymbolicOp, Operation):
             try:
                 eigvals = self.eigvals()
                 eigvals_mat = (
-                    math.stack(math.diag(e) for e in eigvals)
+                    math.stack([math.diag(e) for e in eigvals])
                     if qml.math.ndim(self.scalar) > 0
                     else math.diag(eigvals)
                 )

@@ -15,11 +15,11 @@ r"""
 The null.qubit device is a no-op device for benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
 from collections import defaultdict
+import numpy as np
 
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from pennylane import QubitDevice
-from pennylane import numpy as np
 from pennylane.measurements import Shots
 from pennylane.resource import Resources
 from .._version import __version__
@@ -33,12 +33,12 @@ class NullQubit(QubitDevice):
     .. warning::
 
         The API of ``NullQubit`` will be updated soon to follow a new device interface described
-        in :class:`pennylane.devices.experimental.Device`.
+        in :class:`pennylane.devices.Device`.
 
         This change will not alter device behaviour for most workflows, but may have implications for
         plugin developers and users who directly interact with device methods. Please consult
-        :class:`pennylane.devices.experimental.Device` and the implementation in
-        :class:`pennylane.devices.experimental.DefaultQubit2` for more information on what the new
+        :class:`pennylane.devices.Device` and the implementation in
+        :class:`pennylane.devices.DefaultQubit` for more information on what the new
         interface will look like and be prepared to make updates in a coming release. If you have any
         feedback on these changes, please create an
         `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
@@ -60,6 +60,7 @@ class NullQubit(QubitDevice):
         "Identity",
         "Snapshot",
         "BasisState",
+        "StatePrep",
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
