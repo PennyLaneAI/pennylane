@@ -37,7 +37,7 @@ This module contains functions that act on operators and tapes.
 
 """
 from .bind_new_parameters import bind_new_parameters
-from .commutator import commutator
+from .commutator import comm
 from .dot import dot
 from .eigvals import eigvals
 from .equal import equal

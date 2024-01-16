@@ -10,6 +10,11 @@
 
 * New `qml.commutator` function that allows to compute commutators between
   `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
+  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+  [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
+
+  Basic usage with PennyLane operators.
+
   ```pycon
   >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
   2j*(PauliZ(wires=[0]))
@@ -43,8 +48,7 @@
   2j * Z(0) @ X(1)
   + 2j * X(0) @ Z(1)
   ```
-  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
-  [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
+
 
 <h3>Improvements 🛠</h3>
 
@@ -73,10 +77,11 @@
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
 
-* Composite operations (eg. those made with `qml.prod` and `qml.sum`) convert `Hamiltonian` and
+* Composite operations (eg. those made with `qml.prod` and `qml.sum`) and `SProd` operations convert `Hamiltonian` and
   `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
   incompatible operator types.
   [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
+  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
 
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
