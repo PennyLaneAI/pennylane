@@ -74,8 +74,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.S,
                 qml.SX,
                 qml.CNOT,
-                qml.CZ,
-                qml.CY,
                 qml.CH,
                 qml.SWAP,
                 qml.ECR,
@@ -87,15 +85,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 # pennylane/ops/qubit/observables.py
                 qml.Hermitian,
                 qml.Projector,
-                # pennylane/ops/qubit/parametric_ops_controlled.py
-                qml.ControlledPhaseShift,
-                qml.CPhaseShift00,
-                qml.CPhaseShift01,
-                qml.CPhaseShift10,
-                qml.CRX,
-                qml.CRY,
-                qml.CRZ,
-                qml.CRot,
                 # pennylane/ops/qubit/parametric_ops_multi_qubit.py
                 qml.MultiRZ,
                 qml.IsingXX,
@@ -103,6 +92,9 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.IsingZZ,
                 qml.IsingXY,
                 qml.PSWAP,
+                qml.CPhaseShift00,
+                qml.CPhaseShift01,
+                qml.CPhaseShift10,
                 # pennylane/ops/qubit/parametric_ops_single_qubit.py
                 qml.RX,
                 qml.RY,
@@ -177,6 +169,16 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.FockStateProjector,
                 # pennylane/ops/identity.py
                 qml.Identity,
+                # pennylane/ops/op_math/controlled_non_parametric_ops.py
+                qml.CZ,
+                qml.CY,
+                # pennylane/ops/op_math/controlled_parametric_ops.py
+                qml.ControlledQubitUnitary,
+                qml.ControlledPhaseShift,
+                qml.CRX,
+                qml.CRY,
+                qml.CRZ,
+                qml.CRot,
             )
         )
 
