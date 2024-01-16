@@ -21,7 +21,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import Hamiltonian, SProd, Sum
+from pennylane.ops import Hamiltonian, SProd, Prod, Sum
 
 
 def _generator_hamiltonian(gen, op):
@@ -58,7 +58,8 @@ def _generator_prefactor(gen):
 
     prefactor = 1.0
 
-    gen = qml.simplify(gen)
+    if isinstance(gen, Prod):
+        gen = qml.simplify(gen)
 
     if isinstance(gen, Hamiltonian):
         gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
@@ -75,6 +76,7 @@ def _generator_prefactor(gen):
             prefactor = abs_coeffs[0]
             coeffs = [c / prefactor for c in coeffs]
             return qml.dot(coeffs, ops), prefactor
+
     elif isinstance(gen, SProd):
         return gen.base, gen.scalar
 
