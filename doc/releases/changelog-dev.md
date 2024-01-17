@@ -76,6 +76,10 @@
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
+* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
+  validate these properties manually.
+  [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
+
 <h3>Deprecations 👋</h3>
 
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
