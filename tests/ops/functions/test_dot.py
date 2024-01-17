@@ -286,7 +286,7 @@ class TestDotSum:
         """Test that identities in form of PauliSentences with empty PauliWords are treated correctly"""
         res = qml.dot([2.0, 2.0], [ps_id, pw1], pauli=False)
         true_res = qml.s_prod(2, qml.sum(op_id, op1))
-        res == true_res
+        assert res == true_res
 
 
 coeffs0 = [0.12345, 1.2345, 12.345, 123.45, 1234.5, 12345]
@@ -466,4 +466,4 @@ class TestDotPauliSentence:
         """Test that identities in form of PauliSentences with empty PauliWords are treated correctly"""
         res = qml.dot([2.0, 2.0], [ps_id, pw1], pauli=True)
         true_res = PauliSentence({pw_id: 2.0, pw1: 2.0})
-        res == true_res
+        assert res == true_res
