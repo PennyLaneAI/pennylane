@@ -64,6 +64,11 @@ Controlled Operator Classes
     ~ControlledQubitUnitary
     ~CY
     ~CZ
+    ~CRX
+    ~CRY
+    ~CRZ
+    ~CRot
+    ~ControlledPhaseShift
 
 Decompositions
 ~~~~~~~~~~~~~~
