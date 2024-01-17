@@ -290,7 +290,7 @@ class TestDeviceSupportedLogic:
             dev.supports_observable(operation)
 
 
-class TestInternalFunctions:
+class TestInternalFunctions:  # pylint:disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
 
     # pylint: disable=unnecessary-dunder-call
@@ -612,6 +612,15 @@ class TestInternalFunctions:
         assert new_tape.wires == tape.wires
         assert new_tape.batch_size == tape.batch_size
         assert new_tape.output_dim == tape.output_dim
+
+    def test_default_expand_fn_with_invalid_op(self, mock_device_with_operations, recwarn):
+        """Test that default_expand_fn works with an invalid op and some measurement."""
+        invalid_tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))])
+        expected_tape = qml.tape.QuantumScript([qml.RZ(np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))])
+        dev = mock_device_with_operations(wires=1)
+        expanded_tape = dev.expand_fn(invalid_tape, max_expansion=3)
+        assert qml.equal(expanded_tape, expected_tape)
+        assert len(recwarn) == 0
 
 
 # pylint: disable=too-few-public-methods
