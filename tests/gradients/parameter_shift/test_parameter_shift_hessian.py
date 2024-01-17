@@ -1250,7 +1250,6 @@ class TestParameterShiftHessianQNode:
     # - <= 3^m                    see arXiv:2008.06517 p. 4
     # here d=2 is the derivative order, m is the number of variational parameters (w.r.t. gate args)
 
-    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_scalar_input(self):
         """Test that the hessian invokes less hardware executions than double differentiation
         (0d -> 0d)"""
@@ -1276,7 +1275,6 @@ class TestParameterShiftHessianQNode:
         assert hessian_qruns <= 2**2 * 1  # 1 = (1+2-1)C(2)
         assert hessian_qruns <= 3**1
 
-    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_vector_input(self):
         """Test that the hessian invokes less hardware executions than double differentiation
         (1d -> 0d)"""

@@ -44,22 +44,14 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-qutrit_subspace_error_data = [
-    ([1, 1], "Elements of subspace list must be unique."),
-    ([1, 2, 3], "The subspace must be a sequence with"),
-    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
-    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
-    ([1], "The subspace must be a sequence with"),
-    (0, "The subspace must be a sequence with two unique"),
-]
+def test_validate_subspace_is_deprecated():
+    """Test that Operator.validate_subspace() is deprecated"""
 
-
-@pytest.mark.parametrize("subspace, err_msg", qutrit_subspace_error_data)
-def test_qutrit_subspace_op_errors(subspace, err_msg):
-    """Test that the correct errors are raised when subspace is incorrectly defined"""
-
-    with pytest.raises(ValueError, match=err_msg):
-        _ = Operator.validate_subspace(subspace)
+    with pytest.warns(
+        expected_warning=qml.PennyLaneDeprecationWarning,
+        match=r"Operator\.validate_subspace\(subspace\)",
+    ):
+        _ = Operator.validate_subspace([0, 1])
 
 
 class TestOperatorConstruction:
@@ -922,22 +914,6 @@ class TestOperationConstruction:
 class TestObservableConstruction:
     """Test custom observables construction."""
 
-    def test_observable_return_type_none(self):
-        """Check that the return_type of an observable is initially None"""
-
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
-            num_wires = 1
-            grad_method = None
-
-        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
-            assert DummyObserv(0, wires=[1]).return_type is None
-
-        obs = DummyObserv(0, wires=[1])
-        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
-            # pylint:disable=attribute-defined-outside-init
-            obs.return_type = qml.measurements.Sample
-
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
@@ -1483,8 +1459,8 @@ class TestTensor:
         t = Tensor(X, Y)
         assert t.data == (p,)
 
-    def test_data_setter(self):
-        """Test the data setter"""
+    def test_data_setter_list(self):
+        """Test the data setter with a list"""
         p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
@@ -1492,6 +1468,17 @@ class TestTensor:
         assert t.data == (p,)
         new_data = np.eye(4) * 6
         t.data = [(), (new_data,)]
+        assert qml.math.allequal(t.data, (new_data,))
+
+    def test_data_setter_tuple(self):
+        """Test the data setter with a tuple"""
+        p = np.eye(4)
+        X = qml.PauliX(0)
+        Y = qml.Hermitian(p, wires=[1, 2])
+        t = Tensor(X, Y)
+        assert t.data == (p,)
+        new_data = np.eye(4) * 6
+        t.data = (new_data,)
         assert qml.math.allequal(t.data, (new_data,))
 
     def test_num_params(self):
@@ -2655,6 +2642,42 @@ class TestNewOpMath:
             assert isinstance(op[0], Prod)
             assert qml.equal(op[0], op0 @ op1)
             assert qml.equal(op[1], op2)
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        # pytest.param(qml.CZ(wires=[1, 0]), marks=pytest.mark.xfail),
+        qml.CZ(wires=[1, 0]),
+        qml.CCZ(wires=[2, 0, 1]),
+        qml.SWAP(wires=[1, 0]),
+        qml.IsingXX(1.23, wires=[1, 0]),
+        qml.Identity(wires=[3, 1, 2, 0]),
+        qml.ISWAP(wires=[1, 0]),
+        qml.SISWAP(wires=[1, 0]),
+        qml.SQISW(wires=[1, 0]),
+        qml.MultiRZ(1.23, wires=[2, 0, 1, 3]),
+        qml.IsingXY(1.23, wires=[1, 0]),
+        qml.IsingYY(1.23, wires=[1, 0]),
+        qml.IsingZZ(1.23, wires=[1, 0]),
+        qml.PSWAP(1.23, wires=[1, 0]),
+    ],
+)
+def test_symmetric_matrix_early_return(op, mocker):
+    """Test that operators that are symmetric over all wires are not reordered
+    when the wire order only contains the same wires as the operator."""
+
+    spy = mocker.spy(qml.operation, "expand_matrix")
+    actual = op.matrix(wire_order=list(range(len(op.wires))))
+
+    spy.assert_not_called()
+    expected = op.matrix()
+    manually_expanded = qml.math.expand_matrix(
+        expected, wires=op.wires, wire_order=list(range(len(op.wires)))
+    )
+
+    assert np.allclose(actual, expected)
+    assert np.allclose(actual, manually_expanded)
 
 
 def test_op_arithmetic_toggle():

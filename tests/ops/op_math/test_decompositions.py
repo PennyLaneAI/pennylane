@@ -19,7 +19,6 @@ Tests for the QubitUnitary decomposition transforms.
 from functools import reduce
 import pytest
 from gate_data import I, Z, S, T, H, X, Y, CNOT, SWAP
-from tests.transforms.test_optimization.utils import check_matrix_equivalence
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -32,6 +31,16 @@ from pennylane.ops.op_math.decompositions.two_qubit_unitary import (
     _su2su2_to_tensor_products,
     _compute_num_cnots,
 )
+
+
+def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
+    """Takes two matrices and checks if multiplying one by the conjugate
+    transpose of the other gives the identity."""
+
+    mat_product = qml.math.dot(qml.math.conj(qml.math.T(matrix_obtained)), matrix_expected)
+    mat_product = mat_product / mat_product[0, 0]
+
+    return qml.math.allclose(mat_product, qml.math.eye(matrix_expected.shape[0]), atol=atol)
 
 
 def _run_assertions(U, expected_gates, expected_params, obtained_gates):

@@ -34,6 +34,7 @@ device_and_diff_method = [
     [DefaultQubit(seed=device_seed), "adjoint", False, True],
     [DefaultQubit(seed=device_seed), "spsa", False, False],
     [DefaultQubit(seed=device_seed), "hadamard", False, False],
+    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
 ]
 
 interface_and_device_and_diff_method = [
@@ -275,6 +276,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -296,10 +299,6 @@ class TestVectorValuedQNode:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(a, b)
-            return
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
         assert circuit.qtape.trainable_params == [0, 1]
@@ -333,6 +332,9 @@ class TestVectorValuedQNode:
             "device_vjp": device_vjp,
         }
 
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
+
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
@@ -347,10 +349,6 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(a, b)
-            return
         jac_fn = jax.jacobian(circuit, argnums=[0, 1])
         res = jac_fn(a, b)
 
@@ -393,6 +391,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -404,10 +404,6 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(x, y)
-            return
         res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         expected = np.array(
@@ -444,6 +440,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -473,10 +471,6 @@ class TestVectorValuedQNode:
         assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(x, y)
-            return
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected_0 = np.array(
             [
@@ -527,6 +521,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -551,10 +547,6 @@ class TestVectorValuedQNode:
         assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(x, y)
-            return
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected = [
             [-np.sin(x), 0],
@@ -616,10 +608,8 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0])(x, y)
-            return
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         jac = jax.jacobian(circuit, argnums=[0])(x, y)
 
         expected = [
@@ -656,6 +646,8 @@ class TestVectorValuedQNode:
 
         if diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
@@ -685,10 +677,6 @@ class TestVectorValuedQNode:
         assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jax.jacobian(circuit, argnums=[0, 1])(x, y)
-            return
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected = [
             [2 * np.cos(x) * np.sin(x), 0],
@@ -1722,6 +1710,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if device_vjp and jacobian is jax.jacfwd:
             pytest.skip("forward pass can't be done with registered vjp.")
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
@@ -1739,10 +1729,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
-            return
         jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -1770,6 +1756,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if device_vjp and jacobian is jax.jacfwd:
             pytest.skip("forward pass can't be done with registered vjp.")
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         @qnode(
             dev,
@@ -1785,10 +1773,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array([0.1, 0.2])
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit)(a, shots=shots)
-            return
         jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -1892,7 +1876,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         """The jacobian of multiple measurements with a single params return an array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
 
@@ -1910,10 +1895,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array(0.1)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit)(a, shots=shots)
-            return
         jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -1932,7 +1913,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
 
@@ -1951,10 +1933,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
-            return
         jac = jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -1981,7 +1959,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
 
@@ -1999,10 +1978,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array([0.1, 0.2])
 
-        if device_vjp:
-            with pytest.raises(NotImplementedError):
-                jacobian(circuit)(a, shots=shots)
-            return
         jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
