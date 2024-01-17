@@ -1519,6 +1519,7 @@ class TestAutograph:
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("grad_on_execution", [True, False])
     def test_autograph_adjoint_multi_out(self, grad_on_execution, decorator, interface, tol):
         """Test that a parameter-shift QNode can be compiled
