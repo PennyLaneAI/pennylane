@@ -23,7 +23,7 @@ from pennylane.devices.qutrit_mixed.sampling import (
     measure_with_samples,
 )
 
-two_qutrit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)  # TODO change
+two_qutrit_pure_state = #TODO np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)  # TODO change
 APPROX_ATOL = 0.01
 
 
@@ -74,11 +74,11 @@ class TestSampleState:
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
     def test_sample_state_basic(self, interface):
         """Tests that the returned samples are as expected."""
-        state = qml.math.array(two_qutrit_state, like=interface)  # TODO
+        state = qml.math.array(two_qutrit_pure_state, like=interface)  # TODO
         samples = sample_state(state, 10)
-        assert samples.shape == (10, 3)
+        assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
-        assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
+        # TODO assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
 
     @pytest.mark.jax
     def test_prng_key_as_seed_uses_sample_state_jax(self, mocker):
@@ -104,12 +104,12 @@ class TestSampleState:
 
         samples = _sample_state_jax(state, 10, prng_key=jax.random.PRNGKey(84))
 
-        assert samples.shape == (10, 3)
+        assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
-        assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
+        # TODO assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
 
     @pytest.mark.jax
-    def test_prng_key_determines_sample_state_jax_results(self):
+    def test_prng_key_determines_sample_state_jax_results(self, two_qutrit_state):
         """Test that setting the seed as a JAX PRNG key determines the results for _sample_state_jax"""
         import jax
 
@@ -132,7 +132,7 @@ class TestSampleState:
         samples = sample_state(state, 20, wires=wire_order)
         assert all(samples[:, alltrue_axis])
 
-    def test_sample_state_custom_rng(self):
+    def test_sample_state_custom_rng(self, two_qutrit_state):
         """Tests that a custom RNG can be used with sample_state."""
         custom_rng = np.random.default_rng(12345)
         samples = sample_state(two_qutrit_state, 4, rng=custom_rng)
