@@ -28,6 +28,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable
 from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
 from .utils import (
     get_einsum_mapping,
@@ -37,6 +38,7 @@ from .utils import (
     get_new_state_einsum_indices,
     QUDIT_DIM,
 )
+from .apply_operation import apply_operation
 
 alphabet_array = math.asarray(list(alphabet))
 
@@ -82,6 +84,29 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
     obs_shape = [QUDIT_DIM] * num_ch_wires * 2
     obs_mat = math.cast(math.reshape(obs_mat, obs_shape), complex)
     return math.einsum(einsum_indices, obs_mat, state)
+
+
+def state_diagonalizing_gates(
+    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
+) -> TensorLike:
+    """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
+
+    Args:
+        measurementprocess (StateMeasurement): measurement to apply to the state
+        state (TensorLike): state to apply the measurement to
+        is_state_batched (bool): whether the state is batched or not
+
+    Returns:
+        TensorLike: the result of the measurement
+    """
+    for op in measurementprocess.diagonalizing_gates():
+        state = apply_operation(op, state, is_state_batched=is_state_batched)
+
+    num_wires = get_num_wires(state, is_state_batched)
+    wires = Wires(range(num_wires))
+    # resquared state or probs?
+    probs = get_probs(state, num_wires)
+    return measurementprocess.process_state(probs, wires)
 
 
 def trace_method(
@@ -203,6 +228,8 @@ def get_measurement_function(
             if measurementprocess.obs.has_matrix:
                 return trace_method
         # TODO add support for var
+        if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
+            return state_diagonalizing_gates
 
     raise NotImplementedError
 
