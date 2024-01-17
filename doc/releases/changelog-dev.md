@@ -94,6 +94,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
+  module and will be removed from the Operator class in an upcoming release.
+  [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
+
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
 
@@ -138,6 +142,8 @@
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
 
+* The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
+  [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
 
 <h3>Contributors ✍️</h3>
 
@@ -145,11 +151,12 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Astral Cai,
-Pablo Antonio Moreno Casares,
 Isaac De Vlugt,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
+Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
+Alex Preciado,
 Matthew Silverman.

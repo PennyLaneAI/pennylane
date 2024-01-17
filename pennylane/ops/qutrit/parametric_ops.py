@@ -24,6 +24,29 @@ from pennylane.operation import Operation
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
 
+def validate_subspace(subspace):
+    """Validate the subspace for qutrit operations.
+
+    This method determines whether a given subspace for qutrit operations
+    is defined correctly or not. If not, a ``ValueError`` is thrown.
+
+    Args:
+        subspace (tuple[int]): Subspace to check for correctness
+    """
+    if not hasattr(subspace, "__iter__") or len(subspace) != 2:
+        raise ValueError(
+            "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
+        )
+
+    if not all(s in {0, 1, 2} for s in subspace):
+        raise ValueError("Elements of the subspace must be 0, 1, or 2.")
+
+    if subspace[0] == subspace[1]:
+        raise ValueError("Elements of subspace list must be unique.")
+
+    return tuple(sorted(subspace))
+
+
 class TRX(Operation):
     r"""
     The single qutrit X rotation
@@ -91,7 +114,7 @@ class TRX(Operation):
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
-        self._subspace = self.validate_subspace(subspace)
+        self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
@@ -235,7 +258,7 @@ class TRY(Operation):
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
-        self._subspace = self.validate_subspace(subspace)
+        self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
@@ -382,7 +405,7 @@ class TRZ(Operation):
         return qml.dot(coeffs, obs)
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
-        self._subspace = self.validate_subspace(subspace)
+        self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }

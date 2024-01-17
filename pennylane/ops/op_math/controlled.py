@@ -566,8 +566,14 @@ class Controlled(SymbolicOp):
 
     def generator(self):
         sub_gen = self.base.generator()
-        proj_tensor = operation.Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
-        return 1.0 * proj_tensor @ sub_gen
+        projectors = (
+            qml.Projector([val], wires=w) for val, w in zip(self.control_values, self.control_wires)
+        )
+
+        if qml.operation.active_new_opmath():
+            return qml.prod(*projectors, sub_gen)
+
+        return 1.0 * operation.Tensor(*projectors) @ sub_gen
 
     @property
     def has_adjoint(self):
