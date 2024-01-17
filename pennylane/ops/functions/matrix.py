@@ -53,7 +53,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
     Returns:
         TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        If an operator is provided as input, the matrix is returned directly in the form of a tensor.
+        If an operator, :class:`~PauliWord` or :class:`~PauliSentence` is provided as input, the matrix is returned directly in the form of a tensor.
         Otherwise, the transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
         Executing this circuit will provide its matrix representation.
 
@@ -88,7 +88,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
         :title: Usage Details
 
         ``qml.matrix`` can also be used with :class:`~PauliWord` and :class:`~PauliSentence` instances.
-        Internally, we are using their `to_mat()` methods.
+        Internally, we are using their ``to_mat()`` methods.
 
         >>> X0 = PauliWord({0:"X"})
         >>> np.allclose(qml.matrix(X0), X0.to_mat())
@@ -184,8 +184,10 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
             wires specified, and this is the order in which wires appear in ``circuit()``.
 
     """
-    if not isinstance(op, qml.operation.Operator):
-        if isinstance(op, (qml.pauli.PauliWord, qml.pauli.PauliSentence)):
+    if not isinstance(op, Operator):
+        if isinstance(op, (PauliWord, PauliSentence)):
+            if wire_order is None and len(op.wires) > 1:
+                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
             return op.to_mat(wire_order=wire_order)
 
         if isinstance(op, qml.tape.QuantumScript):

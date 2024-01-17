@@ -798,6 +798,18 @@ class TestMeasurements:
 class TestWireOrderDeprecation:
     """Test that wire_order=None is deprecated for the qml.matrix transform."""
 
+    def test_warning_pauli_word(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a PauliWord"""
+        pw = PauliWord({0:"X", 1:"X"})
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(pw)
+    
+    def test_warning_pauli_sentence(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a PauliSentence"""
+        ps = PauliSentence({PauliWord({0:"X", 1:"X"}): 1.})
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(ps)
+
     def test_warning_tape(self):
         """Test that a warning is raised when calling qml.matrix without wire_order on a tape."""
         qs = qml.tape.QuantumScript([qml.PauliX(1), qml.PauliX(0)])
