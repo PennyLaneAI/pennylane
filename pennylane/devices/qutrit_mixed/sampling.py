@@ -23,8 +23,11 @@ from pennylane.measurements import (
     Shots,
     SampleMP,
 )
+from pennylane.typing import TensorLike
+
 from .utils import QUDIT_DIM, get_num_wires
 from .measure import measure
+
 
 
 # pylint:disable = too-many-arguments
@@ -137,7 +140,7 @@ def sample_state(
 
     rng = np.random.default_rng(rng)
 
-    total_indices = get_num_wires(state, is_state_batched)  # TODO:fix
+    total_indices = get_num_wires(state, is_state_batched)
     state_wires = qml.wires.Wires(range(total_indices))
 
     wires_to_sample = wires or state_wires
@@ -184,7 +187,7 @@ def _sample_state_jax(
 
     key = prng_key
 
-    total_indices = len(state.shape) - is_state_batched  # TODO:fix
+    total_indices = get_num_wires(state, is_state_batched)
     state_wires = qml.wires.Wires(range(total_indices))
 
     wires_to_sample = wires or state_wires
@@ -223,8 +226,7 @@ def _transform_samples_to_trinary(samples, num_wires):
     Returns:
         ndarray[int]: Sample values in ternary representation
     """
-    powers_of_two = (
-        1 << np.arange(num_wires, dtype=np.int64)[::-1]
-    )  # TODO: make this work for powers of three
-    states_sampled_base_ten = samples[..., None] & powers_of_two
-    return (states_sampled_base_ten > 0).astype(np.int64)
+    res = np.zeros(samples.shape + (num_wires,), dtype=np.int64)
+    for i in range(num_wires):
+        res[..., -i] = (samples // (QUDIT_DIM ** i)) % QUDIT_DIM
+    return res
