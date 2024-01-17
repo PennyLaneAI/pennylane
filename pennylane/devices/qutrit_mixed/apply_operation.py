@@ -44,8 +44,6 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
 
     # Shape kraus operators
     kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_ch_wires * 2
-    # Compute K^T, will be list of lists if broadcasting
-    kraus_transpose = []
     if not isinstance(op, Channel):
         # TODO Channels broadcasting doesn't seem to be implemented for qubits, should they be for qutrit?
         mat = op.matrix()
@@ -56,13 +54,9 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
             kraus_shape = [batch_size] + kraus_shape
             if op.batch_size is None:
                 op._batch_size = batch_size  # pylint:disable=protected-access
-            for op_mats in kraus:
-                kraus_transpose.append([math.transpose(k) for k in op_mats])
-    if not kraus_transpose:
-        kraus_transpose = [math.transpose(k) for k in kraus]
 
     kraus = math.stack(kraus)
-    kraus_transpose = math.stack(kraus_transpose)
+    kraus_transpose = math.stack(math.moveaxis(kraus, source=-1, destination=-2))
     # Torch throws error if math.conj is used before stack
     kraus_dagger = math.conj(kraus_transpose)
 
