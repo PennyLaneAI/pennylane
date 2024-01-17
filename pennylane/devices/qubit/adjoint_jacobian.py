@@ -379,7 +379,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         # Cotangents are zeros
         if batch_size is None:
             return tuple(np.array(0.0, dtype=dtype) for _ in tape.trainable_params)
-        return np.zeros((len(tape.trainable_params), batch_size), dtype=dtype)
+        return tuple(np.zeros(batch_size, dtype=dtype) for _ in tape.trainable_params)
 
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
