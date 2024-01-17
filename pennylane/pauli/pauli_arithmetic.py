@@ -343,16 +343,9 @@ class PauliWord(dict):
             op_self = qml.pauli.pauli_sentence(self)
             return op_self.comm(other)
 
-        # case for ``other`` being PauliSentence is handled in PauliSentence class
-        return NotImplemented
-
-    def __or__(self, other):
-        """Compute comm between self and other with | operator"""
-        return self.comm(other)
-
-    def __ror__(self, other):
-        """Handles the case Operator | pw"""
-        return -1 * self.comm(other)
+        if isinstance(other, PauliSentence):
+            # for infix method, this would be handled by __ror__
+            return -1. * other.comm(self)
 
     def __str__(self):
         """String representation of a PauliWord."""

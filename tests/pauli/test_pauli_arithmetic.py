@@ -1132,7 +1132,7 @@ class TestPaulicomms:
         assert res1 == true_res
         assert res1m == true_res
 
-    @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)
     def test_zero_return_pauli_word_different_types(self, op1, op2, true_res, convert1):
         """Test the return when both operators are zero and potentially of different type"""
@@ -1141,6 +1141,14 @@ class TestPaulicomms:
         res2m = op2.comm(op1)
         assert res2 == true_res
         assert res2m == true_res
+
+    @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)
+    def test_zero_return_pauli_word_different_types_with_operator(self, op1, op2, true_res, convert1):
+        """Test the return when both operators are zero and potentially of different type"""
+        op1 = convert1(op1)
+        res = op2.comm(op1)
+        assert res == true_res
 
     data_pauli_relations = [
         # word and word
@@ -1195,7 +1203,7 @@ class TestPaulicomms:
         (X0, Z0, PauliSentence({Y0: -2j})),
     ]
 
-    @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
     def test_pauli_word_comm_different_types(self, op1, op2, true_res, convert1, convert2):
@@ -1207,6 +1215,17 @@ class TestPaulicomms:
         assert res2 == true_res
         assert res2m == -1 * true_res
         assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
+    
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
+    @pytest.mark.parametrize("convert2", [_pauli_to_op])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
+    def test_pauli_word_comm_different_types(self, op1, op2, true_res, convert1, convert2):
+        """Test native comm in between a PauliWord, PauliSentence and Operator"""
+        op1 = convert1(op1)
+        op2 = convert2(op2)
+        res2 = op1.comm(op2)
+        assert res2 == true_res
+        assert isinstance(res2, PauliSentence)
 
     data_pauli_relations_commutes = [
         (X0, X0, PauliSentence({})),
@@ -1214,7 +1233,7 @@ class TestPaulicomms:
         (Z0, Z0, PauliSentence({})),
     ]
 
-    @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
     def test_pauli_word_comm_commutes(self, op1, op2, true_res, convert1):
         """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
@@ -1225,6 +1244,16 @@ class TestPaulicomms:
         assert res2 == true_res
         assert res2m == -1 * true_res
         assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
+
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
+    def test_pauli_commutator_with_operator(self, op1, op2, true_res, convert1):
+        """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
+        op1 = convert1(op1)
+        op2 = _pauli_to_op(op2)
+        res2 = op1.comm(op2)
+        assert res2 == true_res
+        assert isinstance(res2, PauliSentence)
 
     data_consistency_paulis = [
         PauliWord({0: "X", 1: "X"}),
