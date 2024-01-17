@@ -169,16 +169,15 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.FockStateProjector,
                 # pennylane/ops/identity.py
                 qml.Identity,
-                # pennylane/ops/op_math/controlled_non_parametric_ops.py
-                qml.CZ,
-                qml.CY,
-                # pennylane/ops/op_math/controlled_parametric_ops.py
+                # pennylane/ops/op_math/controlled_ops.py
                 qml.ControlledQubitUnitary,
                 qml.ControlledPhaseShift,
                 qml.CRX,
                 qml.CRY,
                 qml.CRZ,
                 qml.CRot,
+                qml.CZ,
+                qml.CY,
             )
         )
 
