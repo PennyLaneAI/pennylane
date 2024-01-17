@@ -180,12 +180,9 @@ class DefaultClifford(Device):
         :title: Clifford Tableau
         :href: clifford-tableau-theory
 
-        The device represents a state by the inverse of a Tableau
-        (`Sec. III, Aaronson & Gottesman (2004) <https://arxiv.org/abs/quant-ph/0406196>`_)
-        consisiting of binary variable :math:`x_{ij},\ z_{ij}` for all :math:`i\in\left\{1,\ldots,2n\right\}`,
-        :math:`j\in\left\{1,\ldots,n\right\}`, and :math:`r_{i}` for all
-        :math:`i\in\left\{1,\ldots,2n\right\}`.
-
+        The device's internal state is represented by the following ``Tableau`` described in
+        the `Sec. III, Aaronson & Gottesman (2004) <https://arxiv.org/abs/quant-ph/0406196>`_:
+        
         .. math::
 
             \begin{bmatrix}
@@ -200,14 +197,18 @@ class DefaultClifford(Device):
             z_{\left(  2n\right)  1}  & \cdots & z_{\left(  2n\right)  n} & & r_{2n}
             \end{bmatrix}
 
-        Rows :math:`1` to :math:`n` of the tableau represent the destabilizer generators
-        :math:`R_{1},\ldots,R_{n}`, and rows :math:`n+1` to :math:`2n` represent the stabilizer
-        generators :math:`R_{n+1},\ldots,R_{2n}`. If :math:`R_{i}=\pm P_{1}\ldots P_{n}`,
-        then bits :math:`x_{ij},z_{ij}` determine the j\ :math:`^{th}` Pauli matrix
-        :math:`P_{j}:\ 00` means ``I``, :math:`01` means ``X``, :math:`11` means ``Y``,
-        and :math:`10` means ``Z``. Finally, :math:`r_{i}` is one if :math:`R_{i}`
-        has negative phase and zero if :math:`r_{i}` has a positive phase.
+        The tableau's first `n` rows represent a destabilizer generator, while the
+        remaining `n` rows represent the stabilizer generators. The Pauli representation
+        for all of these generators are described using the :mod:`binary vector <pennylane.pauli.binary_to_pauli>`
+        made from the binary variables :math:`x_{ij},\ z_{ij}`,
+        :math:`\forall i\in\left\{1,\ldots,2n\right\}, j\in\left\{1,\ldots,n\right\}`
+        and they together form the complete Pauli group. 
 
+        Finally, the last column of the tableau, with binary variables
+        :math:`r_{i},\ \forall i\in\left\{1,\ldots,2n\right\}`,
+        denotes whether the phase is negative (:math:`r_i = 1`) or not, for each generator.
+        Maintaining and working with this tableau representation instead of the complete state vector
+        makes the calculations of increasingly large Clifford circuits more efficient on this device.
 
     .. details::
         :title: Tracking
