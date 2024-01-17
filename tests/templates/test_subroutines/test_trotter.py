@@ -33,7 +33,7 @@ test_hamiltonians = (
     qml.dot(
         [1, -0.5, 0.5], [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(0)]
     ),  # H = Identity
-    qml.dot([2, 2, 2], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]).simplify(),
+    qml.dot([2, 2, 2], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
 )
 
 p_4 = (4 - 4 ** (1 / 3)) ** -1
@@ -318,6 +318,9 @@ class TestInitialization:
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order, check_hermitian=False)
 
+        if isinstance(hamiltonian, qml.ops.op_math.SProd):
+            hamiltonian = hamiltonian.simplify()
+
         assert op.wires == hamiltonian.wires
         assert op.parameters == [time]
         assert op.data == (time,)
@@ -348,6 +351,9 @@ class TestInitialization:
         """Test that the flatten and unflatten methods work correctly."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
+
+        if isinstance(hamiltonian, qml.ops.op_math.SProd):
+            hamiltonian = hamiltonian.simplify()
 
         data, metadata = op._flatten()
         assert qml.equal(data[0], hamiltonian)
