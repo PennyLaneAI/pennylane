@@ -79,9 +79,9 @@ class TestcommPauli:
 
     data_pauli_relations = (
         # word and word
-        (X0, X0, PauliSentence({pw_id: 0})),
-        (Y0, Y0, PauliSentence({pw_id: 0})),
-        (Z0, Z0, PauliSentence({pw_id: 0})),
+        (X0, X0, PauliSentence({})),
+        (Y0, Y0, PauliSentence({})),
+        (Z0, Z0, PauliSentence({})),
         (X0, Y0, PauliSentence({Z0: 2j})),
         (Y0, Z0, PauliSentence({X0: 2j})),
         (Z0, X0, PauliSentence({Y0: 2j})),
@@ -99,23 +99,23 @@ class TestcommPauli:
         assert res == true_res
         assert isinstance(res, PauliSentence)
 
-    data_more_comm_relations = (
+    data_more_comm_relations_commutes = (
         (
             PauliWord({0: "X", 1: "X"}),
             PauliWord({0: "Y", 1: "Y"}),
-            PauliSentence({PauliWord({0: "Z", 1: "Z"}): 0.0}),
+            PauliSentence({}),
         ),
         (
             PauliWord({0: "X", 1: "X"}),
             PauliWord({"a": "X", "b": "Y"}),
-            PauliSentence({PauliWord({0: "X", 1: "X", "a": "X", "b": "Y"}): 0.0}),
+            PauliSentence({}),
         ),
     )
 
     @pytest.mark.parametrize("transform_type1", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("transform_type2", [_id, _pauli_to_op, _pw_to_ps])
-    @pytest.mark.parametrize("op1, op2, true_res", data_more_comm_relations)
-    def test_comm_relations_pauli_words(self, op1, op2, true_res, transform_type1, transform_type2):
+    @pytest.mark.parametrize("op1, op2, true_res", data_more_comm_relations_commutes)
+    def test_comm_relations_pauli_words_that_commute(self, op1, op2, true_res, transform_type1, transform_type2):
         """Test more comm relations between Paulis"""
         res = qml.comm(transform_type1(op1), transform_type2(op2), pauli=True)
         assert res == true_res
