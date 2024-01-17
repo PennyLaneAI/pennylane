@@ -73,7 +73,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
 
 
 def _map_indices(**kwargs):
-    """map indices to einsum string
+    """Map indices to einsum string
     Args:
         **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
 
