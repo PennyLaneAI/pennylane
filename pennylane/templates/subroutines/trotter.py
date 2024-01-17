@@ -17,6 +17,7 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops import Sum
+from pennylane.ops.op_math import SProd
 
 
 def _scalar(order):
@@ -175,9 +176,12 @@ class TrotterProduct(Operation):
             hamiltonian = qml.dot(coeffs, ops)
 
         if not isinstance(hamiltonian, Sum):
-            raise TypeError(
-                f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
-            )
+            if isinstance(hamiltonian, SProd):
+                hamiltonian = hamiltonian.simplify()
+            else:
+                raise TypeError(
+                    f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
+                )
 
         if check_hermitian:
             for op in hamiltonian.operands:
