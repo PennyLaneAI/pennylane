@@ -2054,15 +2054,23 @@ class Tensor(Observable):
         return cls(*data)
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
+        if len(Wires.shared_wires([op.wires for op in args])) != 0:
+            warnings.warn(
+                "Tensor object acts on overlapping wires; in some PennyLane functions this will lead to undefined behaviour",
+                UserWarning,
+            )
+
         self._eigvals_cache = None
         self.obs: List[Observable] = []
         self._args = args
         self._batch_size = None
-        if all(prs := [o.pauli_rep for o in args]):
+        self.queue(init=True)
+
+        # Queue before updating pauli_rep because self.queue updates self.obs
+        if all(prs := [o.pauli_rep for o in self.obs]):
             self._pauli_rep = functools.reduce(lambda a, b: a * b, prs)
         else:
             self._pauli_rep = None
-        self.queue(init=True)
 
         wires = [op.wires for op in self.obs]
         if len(wires) != len(set(wires)):
@@ -2241,19 +2249,13 @@ class Tensor(Observable):
         if isinstance(other, qml.Hamiltonian):
             return other.__rmatmul__(self)
 
-        # if isinstance(other, Tensor):
-        #     self.obs.extend(other.obs)
-
-        # elif isinstance(other, Observable):
-        #     self.obs.append(other)
-
         if isinstance(other, Tensor):
-            return Tensor(*self.obs, *other.obs)
+            return Tensor(self, other)
 
         if isinstance(other, Observable):
-            return Tensor(*self.obs, other)
+            return Tensor(self, other)
 
-        elif isinstance(other, Operator):
+        if isinstance(other, Operator):
             return qml.prod(*self.obs, other)
 
         return NotImplemented
