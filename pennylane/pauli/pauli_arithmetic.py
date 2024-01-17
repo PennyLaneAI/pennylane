@@ -251,7 +251,10 @@ class PauliWord(dict):
         if isinstance(other, PauliWord):
             # this is legacy support and will be removed after a deprecation cycle
             warnings.warn(
-                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences"
+                "is deprecated, use @ instead. Note also that moving forward the product between two"
+                "PauliWords will return a PauliSentence({new_word: ceoff}) instead of a tuple (coeff, new_word)."
+                "The latter can still be achieved via pw1._matmul(pw2) for lightweight processing",
                 qml.PennyLaneDeprecationWarning,
             )
             return self._matmul(other)
