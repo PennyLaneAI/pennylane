@@ -22,6 +22,7 @@ from pennylane.measurements import (
     SampleMeasurement,
     Shots,
     SampleMP,
+    CountsMP,
 )
 from pennylane.typing import TensorLike
 
@@ -29,10 +30,9 @@ from .utils import QUDIT_DIM, get_num_wires
 from .measure import measure
 
 
-
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    mps: List[SampleMP],  # todo FIX
+    mps: List[SampleMeasurement],  # todo FIX
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -66,6 +66,19 @@ def measure_with_samples(
     total_indices = len(state.shape) - is_state_batched
     wires = qml.wires.Wires(range(total_indices))
 
+    def _process_single_shot(samples):
+        processed = []
+        for mp in mps:
+            if isinstance(mp, SampleMP):
+                res = mp.process_samples(samples, wires)
+                res = qml.math.squeeze(res)
+            elif isinstance(mp, CountsMP):
+                res = mp.process_samples(samples, wires)
+            else:
+                raise NotImplementedError
+            processed.append(res)
+        return tuple(processed)
+
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
         processed_samples = []
@@ -87,7 +100,7 @@ def measure_with_samples(
                     raise e
                 samples = qml.math.full((s, len(wires)), 0)
 
-            processed_samples.append(samples)  # _process_single_shot(samples))
+            processed_samples.append(_process_single_shot(samples))
 
         return processed_samples  # TODO: figure out what is right
 
@@ -105,7 +118,7 @@ def measure_with_samples(
             raise e
         samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
-    return samples  # _process_single_shot(samples)
+    return _process_single_shot(samples)
 
 
 def sample_state(
@@ -228,5 +241,5 @@ def _transform_samples_to_trinary(samples, num_wires):
     """
     res = np.zeros(samples.shape + (num_wires,), dtype=np.int64)
     for i in range(num_wires):
-        res[..., -i] = (samples // (QUDIT_DIM ** i)) % QUDIT_DIM
+        res[..., -i] = (samples // (QUDIT_DIM**i)) % QUDIT_DIM
     return res
