@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the clifford simulator using ``stim``
+This module contains the Clifford simulator using ``stim``.
 """
 
 from dataclasses import replace
@@ -90,12 +90,12 @@ _GATE_OPERATIONS = {
 
 
 def operation_stopping_condition(op: qml.operation.Operator) -> bool:
-    """Specifies whether or not an operation is accepted by DefaultClifford."""
+    """Specifies whether an operation is accepted by ``DefaultClifford``."""
     return op.name in _GATE_OPERATIONS
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
-    """Specifies whether or not an observable is accepted by DefaultClifford."""
+    """Specifies whether an observable is accepted by ``DefaultClifford``."""
     return obs.name in _MEAS_OBSERVABLES
 
 
@@ -114,7 +114,7 @@ def _import_stim():
 
 class DefaultClifford(Device):
     r"""A PennyLane device for fast simulation of Clifford circuits using
-    `stim (2021) <https://github.com/quantumlib/stim/>`_.
+    `stim <https://github.com/quantumlib/stim/>`_.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -124,12 +124,12 @@ class DefaultClifford(Device):
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
         tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
-            which makes the device return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
+            When ``True``, the device returns the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
-            The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
+            The default, ``seed="global"`` pulls a seed from numpy's global generator. ``seed=None``
             will pull a seed from the OS entropy.
         max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
@@ -137,10 +137,6 @@ class DefaultClifford(Device):
             issue, try setting ``max_workers`` to ``None``.
 
     **Example:**
-
-    The :class:`~pennylane.devices.DefaultClifford` implements the ``default.clifford`` device,
-    which can be used for efficiently executing circuits built with
-    `Clifford gates <https://en.wikipedia.org/wiki/Clifford_gates>`_.
 
     .. code-block:: python
 
@@ -160,8 +156,7 @@ class DefaultClifford(Device):
             [0, 0, 0, 1, 0],
             [1, 0, 0, 1, 1]])
 
-    A more fine-grained control over the execution pipeline can be obtained with
-    :class:`~pennylane.tape.QuantumScript`.
+    The devices execution pipeline can be investigated more closely with the following:
 
     .. code-block:: python
 
@@ -186,7 +181,7 @@ class DefaultClifford(Device):
         :href: clifford-tableau-theory
 
         The device represents a state by the inverse of a Tableau
-        (`Sec. III, Aaronson & Gottesman (2004) <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328>`_)
+        (`Sec. III, Aaronson & Gottesman (2004) <https://arxiv.org/abs/quant-ph/0406196>`_)
         consisiting of binary variable :math:`x_{ij},\ z_{ij}` for all :math:`i\in\left\{1,\ldots,2n\right\}`,
         :math:`j\in\left\{1,\ldots,n\right\}`, and :math:`r_{i}` for all
         :math:`i\in\left\{1,\ldots,2n\right\}`.
@@ -234,7 +229,7 @@ class DefaultClifford(Device):
 
         See the details in :class:`~pennylane.devices.DefaultQubit`'s "Accelerate calculations with multiprocessing"
         section. Additional information regarding multiprocessing can be found in the
-        `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
+        `multiprocessing docs page <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
     """
 
     @property
