@@ -345,7 +345,7 @@ class PauliWord(dict):
 
         if isinstance(other, PauliSentence):
             # for infix method, this would be handled by __ror__
-            return -1. * other.comm(self)
+            return -1.0 * other.comm(self)
 
     def __str__(self):
         """String representation of a PauliWord."""
