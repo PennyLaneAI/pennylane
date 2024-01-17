@@ -374,7 +374,8 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
             return val
 
     else:
-        dtype = getattr(cotangents[0], "dtype", tape.measurements[0].numeric_type)
+        first_cotangent = cotangents[0] if len(tape.measurements) > 1 else cotangents
+        dtype = getattr(first_cotangent, "dtype", tape.measurements[0].numeric_type)
 
         def real_if_expval(val):
             return np.real(val)
