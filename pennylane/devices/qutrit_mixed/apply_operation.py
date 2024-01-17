@@ -172,7 +172,7 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
             dim = int(math.sqrt(math.size(state[0])))
             flat_shape = [math.shape(state)[0], dim, dim]
         else:
-            dim = int(np.sqrt(math.size(state)))
+            dim = int(math.sqrt(math.size(state)))
             flat_shape = [dim, dim]
 
         snapshot = math.reshape(state, flat_shape)
