@@ -608,7 +608,8 @@ class Device(abc.ABC):
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
-            lambda obj: not isinstance(obj, QuantumScript) and self.supports_operation(obj.name)
+            lambda obj: not isinstance(obj, QuantumScript)
+            and (isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name))
         )
 
     def custom_expand(self, fn):
@@ -986,8 +987,10 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
-            if isinstance(o, qml.measurements.MeasurementProcess) and o.obs is not None:
+            if isinstance(o, MeasurementProcess):
                 o = o.obs
+                if o is None:
+                    continue
 
             if isinstance(o, Tensor):
                 # TODO: update when all capabilities keys changed to "supports_tensor_observables"
