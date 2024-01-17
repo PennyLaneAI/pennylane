@@ -393,9 +393,6 @@ def _process_data(op):
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
         return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
 
-    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
-
     return str(op.data)
 
 
