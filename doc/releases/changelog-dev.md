@@ -72,6 +72,7 @@
 
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
   validate these properties manually.
+  [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
 
 <h3>Deprecations 👋</h3>
 
