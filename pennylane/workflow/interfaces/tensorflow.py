@@ -103,6 +103,7 @@ to have to perform this extra call.
 
 """
 # pylint: disable=unused-argument
+import inspect
 import logging
 import warnings
 
@@ -186,11 +187,12 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
 
     if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
         logger.debug(
-            "Entry with (tapes=%s, execute_fn=%s, jpc=%s, differentiable=%s",
+            "Entry with (tapes=%s, execute_fn=%s, jpc=%s, differentiable=%s) called by %s",
             tapes,
             execute_fn,
             jpc,
             differentiable,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
     parameters = []

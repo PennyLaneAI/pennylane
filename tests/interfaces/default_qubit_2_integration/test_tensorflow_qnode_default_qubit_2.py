@@ -1519,6 +1519,35 @@ class TestAutograph:
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("grad_on_execution", [True, False])
+    def test_autograph_adjoint_multi_out(self, grad_on_execution, decorator, interface, tol):
+        """Test that a parameter-shift QNode can be compiled
+        using @tf.function, and differentiated to second order"""
+
+        @decorator
+        @qnode(
+            DefaultQubit(),
+            diff_method="adjoint",
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+        )
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))
+
+        x = tf.Variable(0.5, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res = qml.math.hstack(circuit(x))
+        g = tape.jacobian(res, x)
+        a = x * 1.0
+
+        expected_res = [tf.cos(a), tf.sin(a)]
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-tf.sin(a), tf.cos(a)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
     def test_autograph_ragged_differentiation(self, decorator, interface, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""

@@ -238,7 +238,6 @@ def execute(
 
                     dy = args[: total_measurements * num_shot_copies]
                     jacs = args[total_measurements * num_shot_copies : -len(tapes)]
-                    multi_measurements = args[-len(tapes) :]
 
                     dy = _res_restructured(dy, tapes)
                     jacs = _jac_restructured(jacs, tapes)
