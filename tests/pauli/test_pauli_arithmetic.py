@@ -1228,7 +1228,7 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_pauli_to_op])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
-    def test_pauli_word_comm_different_types(self, op1, op2, true_res, convert1, convert2):
+    def test_pauli_word_comm_different_types_with_ops(self, op1, op2, true_res, convert1, convert2):
         """Test native comm in between a PauliWord, PauliSentence and Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)
