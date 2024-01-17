@@ -305,13 +305,13 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(5),  wire_map=wire_map)
     array([1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.])
     """
+    wire_map = wire_map or {w: i for i, w in enumerate(pauli_word.wires)}
+
     if pauli_word.pauli_rep:
         return _pauli_to_binary_pauli_rep(pauli_word, n_qubits, wire_map, check_is_pauli_word)
 
     if check_is_pauli_word and not is_pauli_word(pauli_word):
         raise TypeError(f"Expected a Pauli word Observable instance, instead got {pauli_word}.")
-
-    wire_map = wire_map or {w: i for i, w in enumerate(pauli_word.wires)}
 
     n_qubits_min = max(wire_map.values()) + 1
     if n_qubits is None:

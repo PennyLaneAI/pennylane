@@ -179,11 +179,12 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         # measurements using wires instead of observables
         else:
             # create the PauliZ tensor product observable when only wires are provided for the
-            # measurements. If no wires are provided (measurements such as qml.probs(), etc.),
-            # then tape wires are used.
-            wires = obs.wires or tape.wires
-            with qml.QueuingManager.stop_recording():
-                pauliz_obs = qml.prod(*(qml.PauliZ(i) for i in wires))
+            # measurements
+            # TODO: Revisit when qml.prod is compatible with qml.pauli.group_observables
+            pauliz_obs = qml.PauliZ(obs.wires[0])
+            for wire in obs.wires[1:]:
+                pauliz_obs = pauliz_obs @ qml.PauliZ(wire)
+
             obs_list.append(pauliz_obs)
 
     # If there is more than one group of commuting observables, split tapes
@@ -194,7 +195,8 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         tapes = []
         for indices in group_coeffs:
             new_tape = tape.__class__(
-                tape.operations, [tape.measurements[i] for i in indices], shots=tape.shots
+                tape.operations,
+                [tape.measurements[i] for i in indices],
             )
 
             tapes.append(new_tape)
@@ -206,8 +208,6 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
                 shot_vector_defined = isinstance(res[0], tuple)
             else:
                 shot_vector_defined = isinstance(res[0][0], tuple)
-            # shot_vector_defined = tape.shots.has_partitioned_shots
-            print(shot_vector_defined)
 
             res = list(zip(*res)) if shot_vector_defined else [res]
 
