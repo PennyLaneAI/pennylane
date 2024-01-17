@@ -401,7 +401,6 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
                 # Pad cotangent in with zeros for batch number with zero cotangents
                 cot_in = real_if_expval(np.sum(np.conj(bras) * ket_temp, axis=summing_axis))
-                cot_in = np.array(cot_in, dtype=dtype)
                 for i in null_batch_indices:
                     cot_in = np.insert(cot_in, i, 0.0)
                 cotangents_in[trainable_param_number] = np.array(cot_in, dtype=dtype)
