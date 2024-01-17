@@ -65,6 +65,7 @@ and extract the matrix of operators in this representation.
 >>> ps1 + ps2
 0.0 * X(0) @ Z(1)
 + 0.5j * Y(0) @ Z(1)
+
 >>> ps1 @ ps2
 -1.44 * I
 + (-0.6+0j) * Z(0)
