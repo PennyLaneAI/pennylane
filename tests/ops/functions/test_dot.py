@@ -24,7 +24,6 @@ pw1 = PauliWord({0: I, 1: X, 2: Y})
 pw2 = PauliWord({0: Z, 2: Z, 4: Z})
 pw3 = PauliWord({"a": X, "b": X, "c": Z})
 pw4 = PauliWord({"a": Y, "b": Z, "c": X})
-pw_id = PauliWord({})
 pw5 = PauliWord({4: X, 5: X})
 
 ps1 = PauliSentence({pw1: 1.0, pw2: 2.0})
@@ -34,8 +33,18 @@ op1 = qml.prod(qml.PauliX(1), qml.PauliY(2))
 op2 = qml.prod(qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(4))
 op3 = qml.prod(qml.PauliX("a"), qml.PauliX("b"), qml.PauliZ("c"))
 op4 = qml.prod(qml.PauliY("a"), qml.PauliZ("b"), qml.PauliX("c"))
-op_id = qml.Identity(0)
 op5 = qml.prod(qml.PauliX(4), qml.PauliX(5))
+
+pw_id = PauliWord({})
+ps_id = PauliSentence({pw_id: 1.0})
+op_id = qml.Identity(0)
+
+X0, Y0, Z0 = PauliWord({0: "X"}), PauliWord({0: "Y"}), PauliWord({0: "Z"})
+XX, YY, ZZ = PauliWord({0: "X", 1: "X"}), PauliWord({0: "Y", 1: "Y"}), PauliWord({0: "Z", 1: "Z"})
+
+H1 = X0 + Y0 + Z0
+H2 = XX + YY + ZZ
+H3 = 1.0 * X0 + 2.0 * Y0 + 3.0 * Z0
 
 
 class TestDotSum:
@@ -193,16 +202,39 @@ class TestDotSum:
         (
             [1.0, 2.0, 3.0],
             [pw1, pw2, ps1],
-            qml.sum(qml.s_prod((3.0 * 1 + 1), op1), qml.s_prod((3 * 2.0 + 2), op2)),
         ),
-        # ([1.0, 2.0, 3.0], [pw3, pw4, ps2], qml.sum(qml.s_prod((3.0 * 1 + 1), op3), qml.s_prod((3 * 2.0 + 2), op4))), # comparisons for Sum objects with string valued wires does not work atm see https://github.com/PennyLaneAI/pennylane/issues/5033
+        (
+            [1.0, 2.0, 3.0, 4.0],
+            [X0, Y0, XX, YY],
+        ),
+        (
+            [1.0, 2.0, 3.0],
+            [H1, H2, H3],
+        ),
     )
 
-    @pytest.mark.parametrize("coeff, ops, res", data_words_and_sentences_pauli_false)
-    def test_dot_with_words_and_sentences_pauli_false(self, coeff, ops, res):
+    @pytest.mark.parametrize("coeff, ops", data_words_and_sentences_pauli_false)
+    def test_dot_with_words_and_sentences_pauli_false(self, coeff, ops):
         """Test operators that are a mix of pauli words and pauli sentences"""
-        dot_res = qml.dot(coeff, ops, pauli=False).simplify()
-        assert dot_res == res
+        dot_res = qml.dot(coeff, ops, pauli=False)
+        true_res = qml.dot(coeff, [op.operation() for op in ops], pauli=False)
+        assert dot_res == true_res
+
+    data_words_and_sentences_pauli_false_xfail = (
+        (
+            [1.0, 2.0, 3.0],
+            [pw3, pw4, ps2],
+        ),  # comparisons for Sum objects with string valued wires does not work atm see https://github.com/PennyLaneAI/pennylane/issues/5033
+    )
+
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("coeff, ops", data_words_and_sentences_pauli_false_xfail)
+    def test_dot_with_words_and_sentences_pauli_false_integer_wires(self, coeff, ops):
+        """Same test as above but currently xails because comparisons between operators with strings has a bug here"""
+        # should not xfail after https://github.com/PennyLaneAI/pennylane/issues/5033
+        dot_res = qml.dot(coeff, ops, pauli=False)
+        true_res = qml.dot(coeff, [op.operation() for op in ops], pauli=False)
+        assert dot_res == true_res
 
     data_op_words_and_sentences_pauli_false = (
         (
@@ -210,7 +242,6 @@ class TestDotSum:
             [pw1, pw2, ps1, op1],
             qml.sum(qml.s_prod(3.0 * 1 + 1 + 1j, op1), qml.s_prod(3 * 2.0 + 2, op2)),
         ),
-        # ([1.0, 2.0, 3.0, 1j], [pw3, pw4, ps2, op3], qml.sum(qml.s_prod(3.0 * 1 + 1 + 1j, op3), qml.s_prod(3 * 2.0 + 2, op4))), # same issue 5033
         (
             [2.0, 3.0, 1j],
             [pw2, ps1, op1],
@@ -228,6 +259,34 @@ class TestDotSum:
         """Test operators that are a mix of PL operators, pauli words and pauli sentences with pauli=False (i.e. returning operators)"""
         dot_res = qml.dot(coeff, ops, pauli=False).simplify()
         assert dot_res == res
+
+    data_op_words_and_sentences_pauli_false = (
+        (
+            [1.0, 2.0, 3.0, 1j],
+            [pw3, pw4, ps2, op3],
+            qml.sum(qml.s_prod(3.0 * 1 + 1 + 1j, op3), qml.s_prod(3 * 2.0 + 2, op4)),
+        ),  # same issue 5033
+    )
+
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("coeff, ops, res", data_op_words_and_sentences_pauli_false)
+    def test_dot_with_ops_words_and_sentences_xfail_integer_wires(self, coeff, ops, res):
+        """Test operators that are a mix of PL operators, pauli words and pauli sentences with pauli=False (i.e. returning operators)"""
+        # xfail same problem as in test above test_dot_with_words_and_sentences_pauli_false_integer_wires()
+        dot_res = qml.dot(coeff, ops, pauli=False).simplify()
+        assert dot_res == res
+
+    def test_identities_with_pauli_words_pauli_false(self):
+        """Test that identities in form of empty PauliWords are treated correctly"""
+        res = qml.dot([2.0, 2.0], [pw_id, pw1], pauli=False)
+        true_res = qml.s_prod(2, qml.sum(op_id, op1))
+        assert res == true_res
+
+    def test_identities_with_pauli_sentences_pauli_false(self):
+        """Test that identities in form of PauliSentences with empty PauliWords are treated correctly"""
+        res = qml.dot([2.0, 2.0], [ps_id, pw1], pauli=False)
+        true_res = qml.s_prod(2, qml.sum(op_id, op1))
+        res == true_res
 
 
 coeffs0 = [0.12345, 1.2345, 12.345, 123.45, 1234.5, 12345]
@@ -397,25 +456,14 @@ class TestDotPauliSentence:
         dot_res = qml.dot(coeff, ops, pauli=True)
         assert dot_res == res
 
+    def test_identities_with_pauli_words_pauli_true(self):
+        """Test that identities in form of empty PauliWords are treated correctly"""
+        res = qml.dot([2.0, 2.0], [pw_id, pw1], pauli=True)
+        true_res = PauliSentence({pw_id: 2, pw1: 2})
+        assert res == true_res
 
-pw1 = PauliWord({0: I, 1: X, 2: Y})
-pw2 = PauliWord({0: Z, 2: Z, 4: Z})
-pw3 = PauliWord({"a": X, "b": X, "c": Z})
-pw4 = PauliWord({"a": Y, "b": Z, "c": X})
-pw_id = PauliWord({})
-
-ps1 = PauliSentence({pw1: 1.0, pw2: 2.0})
-ps2 = PauliSentence({pw3: 1.0, pw4: 2.0})
-
-
-class TestPauliWordSentenceDot:
-    """Tests for when the input to dot is a PauliWord/Sentence"""
-
-    def test_dot_with_words_and_sentences(self):
-        """Test operators that are PauliWords and PauliSentences"""
-
-    def test_dot_with_words_sentences_and_ops(self):
-        """Test operators that are PauliWords, PauliSentences and qml.Operators"""
-
-    def test_dot_with_words_sentences_and_ops_with_identity(self):
-        """Test operators that are PauliWords, PauliSentences and qml.Operators"""
+    def test_identities_with_pauli_sentences_pauli_true(self):
+        """Test that identities in form of PauliSentences with empty PauliWords are treated correctly"""
+        res = qml.dot([2.0, 2.0], [ps_id, pw1], pauli=True)
+        true_res = PauliSentence({pw_id: 2.0, pw1: 2.0})
+        res == true_res
