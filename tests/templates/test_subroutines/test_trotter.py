@@ -33,6 +33,7 @@ test_hamiltonians = (
     qml.dot(
         [1, -0.5, 0.5], [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(0)]
     ),  # H = Identity
+    qml.dot([2, 2, 2], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]).simplify(),
 )
 
 p_4 = (4 - 4 ** (1 / 3)) ** -1
@@ -160,6 +161,51 @@ test_decompositions = (
             qml.exp(qml.PauliZ(0), p_4 * 0.5 * 4.2j / 2),
             qml.exp(qml.PauliZ(0), p_4 * -0.5 * 4.2j / 2),
             qml.exp(qml.Identity(wires=[0, 1]), p_4 * 4.2j / 2),
+        ],
+        (3, 1): [
+            qml.exp(qml.PauliX(0), 8.4j),
+            qml.exp(qml.PauliY(0), 8.4j),
+            qml.exp(qml.PauliZ(1), 8.4j),
+        ],
+        (3, 2): [
+            qml.exp(qml.PauliX(0), 8.4j / 2),
+            qml.exp(qml.PauliY(0), 8.4j / 2),
+            qml.exp(qml.PauliZ(1), 8.4j / 2),
+            qml.exp(qml.PauliZ(1), 8.4j / 2),
+            qml.exp(qml.PauliY(0), 8.4j / 2),
+            qml.exp(qml.PauliX(0), 8.4j / 2),
+        ],
+        (3, 4): [
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),  # S_2(p * t) ^ 2
+            qml.exp(qml.PauliX(0), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliY(0), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliY(0), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliX(0), (1 - 4 * p_4) * 8.4j / 2),  # S_2((1 - 4p) * t)
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),  # S_2(p * t) ^ 2
         ],
     }
 )
