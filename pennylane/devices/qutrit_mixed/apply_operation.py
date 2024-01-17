@@ -169,7 +169,7 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
             # TODO replace with: measure once added
             raise NotImplementedError  # TODO
         if is_state_batched:
-            dim = int(np.sqrt(math.size(state[0])))
+            dim = int(math.sqrt(math.size(state[0])))
             flat_shape = [math.shape(state)[0], dim, dim]
         else:
             dim = int(np.sqrt(math.size(state)))
