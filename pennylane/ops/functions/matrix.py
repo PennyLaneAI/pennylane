@@ -14,7 +14,7 @@
 """
 This module contains the qml.matrix function.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-many-branches
 from typing import Sequence, Callable, Union
 from functools import partial
 from warnings import warn
