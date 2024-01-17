@@ -291,3 +291,47 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
                 prob[i, basis_states, b] = counts / bin_size
 
         return prob
+
+    def process_dm(self, state: Sequence[complex], wire_order: Wires, qudit_dim: int = 2):
+        num_device_wires = len(wire_order)
+        expected_dim = qudit_dim**num_device_wires
+        batch_size = qml.math.get_batch_size(state, (expected_dim, expected_dim), expected_dim**2)
+        is_state_batched = bool(batch_size)
+
+        # prob are diagonal elements
+        prob = qml.math.diagonal(
+            state, axis1=int(is_state_batched), axis2=int(1 + is_state_batched)
+        )
+
+        # take the real part so probabilities are not shown as complex numbers
+        prob = qml.math.real(prob)
+        prob = qml.math.where(prob < 0, -prob, prob)
+
+        if self.wires == Wires([]):
+            # no need to marginalize
+            return prob
+
+        # determine which subsystems are to be summed over
+        inactive_wires = Wires.unique_wires([wire_order, self.wires])
+
+        # translate to wire labels used by device
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        inactive_wires = [wire_map[w] for w in inactive_wires]
+
+        desired_axes = np.argsort(np.argsort(mapped_wires))
+        expanded_shape = [qudit_dim] * num_device_wires
+        flat_shape = (-1,)
+        if is_state_batched:
+            expanded_shape.insert(0, batch_size)
+            inactive_wires = [idx + 1 for idx in inactive_wires]
+            desired_axes = np.insert(desired_axes + 1, 0, 0)
+            flat_shape = (batch_size, -1)
+
+        prob = qml.math.reshape(prob, (expanded_shape))
+        # sum over all inactive wires
+        prob = qml.math.sum(prob, axis=tuple(inactive_wires))
+        # rearrange wires if necessary
+        prob = qml.math.transpose(prob, desired_axes)
+        # resquare and return probabilities
+        return qml.math.reshape(prob, flat_shape)
