@@ -182,7 +182,7 @@ class DefaultClifford(Device):
 
         The device's internal state is represented by the following ``Tableau`` described in
         the `Sec. III, Aaronson & Gottesman (2004) <https://arxiv.org/abs/quant-ph/0406196>`_:
-        
+
         .. math::
 
             \begin{bmatrix}
@@ -202,7 +202,7 @@ class DefaultClifford(Device):
         for all of these generators are described using the :mod:`binary vector <pennylane.pauli.binary_to_pauli>`
         made from the binary variables :math:`x_{ij},\ z_{ij}`,
         :math:`\forall i\in\left\{1,\ldots,2n\right\}, j\in\left\{1,\ldots,n\right\}`
-        and they together form the complete Pauli group. 
+        and they together form the complete Pauli group.
 
         Finally, the last column of the tableau, with binary variables
         :math:`r_{i},\ \forall i\in\left\{1,\ldots,2n\right\}`,
