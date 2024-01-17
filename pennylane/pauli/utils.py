@@ -93,7 +93,7 @@ def is_pauli_word(observable):
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
-    return _is_pauli_word(observable) or len(getattr(observable, "pauli_rep", [])) != 1
+    return _is_pauli_word(observable) or (len(observable.pauli_rep or []) == 1)
 
 
 @singledispatch
