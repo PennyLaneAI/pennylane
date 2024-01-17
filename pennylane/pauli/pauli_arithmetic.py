@@ -690,12 +690,6 @@ class PauliSentence(dict):
 
         return final_ps
 
-    def __or__(self, other):
-        return self.comm(other)
-
-    def __ror__(self, other):
-        return -1 * self.comm(other)
-
     def __str__(self):
         """String representation of the PauliSentence."""
         if len(self) == 0:
