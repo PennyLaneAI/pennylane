@@ -2211,11 +2211,17 @@ class Tensor(Observable):
         if isinstance(other, qml.Hamiltonian):
             return other.__rmatmul__(self)
 
-        if isinstance(other, Tensor):
-            self.obs.extend(other.obs)
+        # if isinstance(other, Tensor):
+        #     self.obs.extend(other.obs)
 
-        elif isinstance(other, Observable):
-            self.obs.append(other)
+        # elif isinstance(other, Observable):
+        #     self.obs.append(other)
+
+        if isinstance(other, Tensor):
+            return Tensor(*self.obs, *other.obs)
+
+        if isinstance(other, Observable):
+            return Tensor(*self.obs, other)
 
         elif isinstance(other, Operator):
             return qml.prod(*self.obs, other)
@@ -2532,7 +2538,7 @@ class Tensor(Observable):
         new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
         new_op._eigvals_cache = self._eigvals_cache
         new_op._batch_size = self._batch_size
-        new_op._pauli_rep = self._pauli_rep
+        new_op._pauli_rep = self._pauli_rep.map_wires(wire_map)
         return new_op
 
 

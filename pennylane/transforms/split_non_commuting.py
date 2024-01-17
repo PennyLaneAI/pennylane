@@ -194,8 +194,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         tapes = []
         for indices in group_coeffs:
             new_tape = tape.__class__(
-                tape.operations,
-                (tape.measurements[i] for i in indices),
+                tape.operations, [tape.measurements[i] for i in indices], shots=tape.shots
             )
 
             tapes.append(new_tape)
@@ -203,7 +202,12 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         def reorder_fn(res):
             """re-order the output to the original shape and order"""
             # determine if shot vector is used
-            shot_vector_defined = tape.shots.has_partitioned_shots
+            if len(tapes[0].measurements) == 1:
+                shot_vector_defined = isinstance(res[0], tuple)
+            else:
+                shot_vector_defined = isinstance(res[0][0], tuple)
+            # shot_vector_defined = tape.shots.has_partitioned_shots
+            print(shot_vector_defined)
 
             res = list(zip(*res)) if shot_vector_defined else [res]
 
