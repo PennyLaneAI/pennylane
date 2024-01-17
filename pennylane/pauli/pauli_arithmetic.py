@@ -347,6 +347,10 @@ class PauliWord(dict):
             # for infix method, this would be handled by __ror__
             return -1.0 * other.comm(self)
 
+        raise NotImplementedError(
+            f"Cannot compute natively a commutator between PauliWord and {other} of type {type(other)}"
+        )
+
     def __str__(self):
         """String representation of a PauliWord."""
         if len(self) == 0:
