@@ -115,7 +115,9 @@ class TestcommPauli:
     @pytest.mark.parametrize("transform_type1", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("transform_type2", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_more_comm_relations_commutes)
-    def test_comm_relations_pauli_words_that_commute(self, op1, op2, true_res, transform_type1, transform_type2):
+    def test_comm_relations_pauli_words_that_commute(
+        self, op1, op2, true_res, transform_type1, transform_type2
+    ):
         """Test more comm relations between Paulis"""
         res = qml.comm(transform_type1(op1), transform_type2(op2), pauli=True)
         assert res == true_res
