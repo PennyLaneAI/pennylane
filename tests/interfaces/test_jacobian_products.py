@@ -27,10 +27,12 @@ from pennylane.workflow.jacobian_products import (
     TransformJacobianProducts,
     DeviceDerivatives,
     DeviceJacobianProducts,
+    LightningVJPs,
 )
 
 dev = qml.device("default.qubit")
 dev_old = qml.device("default.qubit.legacy", wires=5)
+dev_lightning = qml.device("lightning.qubit", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 dev_ps = ParamShiftDerivativesDevice()
 ps_config = qml.devices.ExecutionConfig(gradient_method="parameter-shift")
@@ -52,6 +54,7 @@ legacy_device_jacs = DeviceDerivatives(dev_old, gradient_kwargs={"method": "adjo
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
 device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
+lightning_vjps = LightningVJPs(dev_lightning, {"method": "adjoint_jacobian"})
 
 transform_jpc_matrix = [param_shift_jpc, param_shift_cached_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs, device_ps_jacs]
@@ -64,6 +67,7 @@ jpc_matrix = [
     device_ps_jacs,
     device_native_jps,
     device_ps_native_jps,
+    lightning_vjps,
 ]
 
 
@@ -169,6 +173,16 @@ class TestBasics:
         )
 
         assert repr(jpc) == expected
+
+    def test_lightning_vjps_repr(self):
+        """Test the repr method for lightning vjps."""
+
+        device = qml.device("lightning.qubit", wires=5)
+        gradient_kwargs = {"use_device_state": True}
+
+        jpc = LightningVJPs(device, gradient_kwargs)
+
+        assert repr(jpc) == "<LightningVJPs: lightning.qubit, {'use_device_state': True}>"
 
 
 @pytest.mark.parametrize("jpc", jpc_matrix)
@@ -299,7 +313,7 @@ class TestJacobianProductResults:
             dy2 = (0.4, 0.5)
             dy = (dy1, dy2)
         else:
-            dy = ((0.5, 0.6), (0.9,))
+            dy = ((0.5, 0.6), 0.9)
 
         vjps = jpc.compute_vjp((tape1, tape2), dy)
 

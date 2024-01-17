@@ -303,7 +303,7 @@ def _openfermion_pennylane_equivalent(
 def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e010):
     r"""Convert an external operator to a PennyLane operator.
 
-    We currently support [openfermion](https://quantumai.google/openfermion) operators: the function accepts most types of
+    We currently support `OpenFermion <https://quantumai.google/openfermion>`__ operators: the function accepts most types of
     OpenFermion qubit operators, such as those corresponding to Pauli words and sums of Pauli words.
 
     Args:
