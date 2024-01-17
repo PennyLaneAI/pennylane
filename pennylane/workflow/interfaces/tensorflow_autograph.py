@@ -20,7 +20,6 @@ from functools import reduce
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.eager import context
 
 import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP
@@ -43,15 +42,15 @@ def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
 
         shot_vjps = []
         for d, j in zip(dy_, jac_):
+            # see xfail test: test_tensorflow_qnode_default_qubit_2.py:test_autograph_adjoint_multi_out
+            # And Issue #5078
+            # pragma: no cover
             if multi:
                 shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
             else:
                 shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
 
         vjp = qml.math.sum(qml.math.stack(shot_vjps), 0)
-
-        if not context.executing_eagerly():
-            vjp = qml.math.unstack(vjp)
 
         vjps.extend(vjp)
 

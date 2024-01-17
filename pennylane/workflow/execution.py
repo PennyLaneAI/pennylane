@@ -820,8 +820,9 @@ def execute(
             execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian
         )
         for i in range(1, max_diff):
+            differentiable = i > 1
             ml_boundary_execute = _get_ml_boundary_execute(
-                interface, _grad_on_execution, differentiable=i > 1
+                interface, _grad_on_execution, differentiable=differentiable
             )
             execute_fn = partial(
                 ml_boundary_execute,

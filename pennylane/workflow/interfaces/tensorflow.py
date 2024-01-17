@@ -222,11 +222,17 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
     def custom_gradient_execute(*parameters):  # pylint:disable=unused-argument
         """An execution of tapes with VJP's registered with tensorflow.
 
+        Args:
+            *parameters (TensorLike): the trainable parameters for the tapes.
+
         Closure:
-            tapes (tuple(QuantumTape))
+            tapes (tuple(QuantumTape)): the tapes to execute. Contains tensorflow parameters.
             numpy_tapes (tuple(QuantumTape)): tapes but with numpy parameters
             numpy_params (list(numpy.ndarray)): numpy versions of ``parameters``.
             jpc (JacobianProductCalculator): a class that can calculate the VJP.
+
+        Returns:
+            ResultBatch, Callable: the result of executing the tapes and a function capable of calculating the VJP.
 
         """
 

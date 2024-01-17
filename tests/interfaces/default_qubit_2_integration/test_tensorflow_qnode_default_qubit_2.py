@@ -2297,5 +2297,5 @@ def test_error_device_vjp_state_float32():
 
     x = tf.Variable(0.1, dtype=tf.float32)
     with pytest.raises(ValueError, match="tensorflow with adjoint differentiation of the state"):
-        with tf.GradientTape() as tape:
+        with tf.GradientTape():
             circuit(x)
