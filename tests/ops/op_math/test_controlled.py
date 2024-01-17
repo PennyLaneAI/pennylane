@@ -451,24 +451,38 @@ class TestMiscMethods:
 
         assert op.has_generator is False
 
-    def test_generator(self):
+    @pytest.mark.parametrize("use_new_op_math", [True, False])
+    def test_generator(self, use_new_op_math):
         """Test that the generator is a tensor product of projectors and the base's generator."""
 
+        if use_new_op_math:
+            qml.operation.enable_new_opmath()
+
         base = qml.RZ(-0.123, wires="a")
-        op = Controlled(base, ("b", "c"))
+        control_values = [0, 1]
+        op = Controlled(base, ("b", "c"), control_values=control_values)
 
         base_gen, base_gen_coeff = qml.generator(base, format="prefactor")
         gen_tensor, gen_coeff = qml.generator(op, format="prefactor")
 
         assert base_gen_coeff == gen_coeff
 
-        for wire, ob in zip(op.control_wires, gen_tensor.operands):
-            assert isinstance(ob, qml.Projector)
-            assert ob.data == ([1],)
-            assert ob.wires == qml.wires.Wires(wire)
+        for wire, val in zip(op.control_wires, control_values):
+            ob = list(op for op in gen_tensor.operands if op.wires == qml.wires.Wires(wire))
+            assert len(ob) == 1
+            assert ob[0].data == ([val],)
 
-        assert gen_tensor.operands[-1].__class__ is base_gen.__class__
-        assert gen_tensor.operands[-1].wires == base_gen.wires
+        ob = list(op for op in gen_tensor.operands if op.wires == base.wires)
+        assert len(ob) == 1
+        assert ob[0].__class__ is base_gen.__class__
+
+        expected = qml.exp(op.generator(), 1j * op.data[0])
+        assert qml.math.allclose(
+            expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
+        )
+
+        if use_new_op_math:
+            qml.operation.disable_new_opmath()
 
     def test_diagonalizing_gates(self):
         """Test that the Controlled diagonalizing gates is the same as the base diagonalizing gates."""
@@ -1578,14 +1592,13 @@ def test_qubit_unitary(M):
     assert not equal_list(list(tape), expected)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(
     "M",
     [
-        qml.PauliX.compute_matrix(),
-        qml.PauliY.compute_matrix(),
-        qml.PauliZ.compute_matrix(),
-        qml.Hadamard.compute_matrix(),
+        pytest.param(qml.PauliX.compute_matrix(), marks=pytest.mark.xfail),
+        pytest.param(qml.PauliY.compute_matrix(), marks=pytest.mark.xfail),
+        pytest.param(qml.PauliZ.compute_matrix(), marks=pytest.mark.xfail),
+        pytest.param(qml.Hadamard.compute_matrix(), marks=pytest.mark.xfail),
         np.array(
             [
                 [1 + 2j, -3 + 4j],

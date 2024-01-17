@@ -248,6 +248,53 @@ class TestPauliWord:
         assert res1 == true_res1
         assert res2 == pw_id  # original pw is unaltered after copy
 
+    sub_pw_pw = (
+        (
+            pw1,
+            pw1,
+            PauliSentence({pw1: 0.0}),
+            PauliSentence({pw1: 0.0}),
+        ),
+        (
+            pw1,
+            pw2,
+            PauliSentence({pw1: 1.0, pw2: -1.0}),
+            PauliSentence({pw1: -1.0, pw2: 1.0}),
+        ),
+    )
+
+    @pytest.mark.parametrize("pauli1, pauli2, true_res1, true_res2", sub_pw_pw)
+    def test_sub_PW_and_PW(self, pauli1, pauli2, true_res1, true_res2):
+        """Test subtracting PauliWord from PauliWord"""
+        res1 = pauli1 - pauli2
+        res2 = pauli2 - pauli1
+        assert res1 == true_res1
+        assert res2 == true_res2
+
+    # psx does not contain identity, so simply add it to the definition with pw_id
+    sub_pw_scalar = (
+        (
+            pw1,
+            1.0,
+            PauliSentence({pw1: 1.0, pw_id: -1}),
+            PauliSentence({pw1: -1, pw_id: 1}),
+        ),
+        (
+            pw_id,
+            0.5,
+            PauliSentence({pw_id: 0.5}),
+            PauliSentence({pw_id: -0.5}),
+        ),
+    )
+
+    @pytest.mark.parametrize("pw, scalar, true_res1, true_res2", sub_pw_scalar)
+    def test_sub_PW_and_scalar(self, pw, scalar, true_res1, true_res2):
+        """Test subtracting scalar from PauliWord"""
+        res1 = pw - scalar
+        res2 = scalar - pw
+        assert res1 == true_res1
+        assert res2 == true_res2
+
     tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
         (pw1, pw3, PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}), 1.0),
@@ -319,11 +366,6 @@ class TestPauliWord:
 
         with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
             pw4.to_mat(wire_order=Wires([]))
-
-    pw1 = PauliWord({0: I, 1: X, 2: Y})
-    pw2 = PauliWord({"a": X, "b": X, "c": Z})
-    pw3 = PauliWord({0: Z, "b": Z, "c": Z})
-    pw4 = PauliWord({})
 
     pw_wire_order = ((pw1, [0, 1]), (pw1, [0, 1, 3]), (pw2, [0]))
 
@@ -677,6 +719,86 @@ class TestPauliSentence:
         assert copy_ps1[pw_id] == 1 + scalar
         assert copy_ps2 == ps4
 
+    psx = PauliSentence(
+        {pw1: 1.5, pw2: 4j, pw3: -0.5}
+    )  # problems with numerical accuracy for subtracting 1.23 - 1 = 0.2299999998
+    sub_ps_pw = (
+        (
+            psx,
+            pw1,
+            PauliSentence({pw1: 0.5, pw2: 4j, pw3: -0.5}),
+            PauliSentence({pw1: -0.5, pw2: -4j, pw3: +0.5}),
+        ),
+        (
+            psx,
+            pw2,
+            PauliSentence({pw1: 1.5, pw2: -1.0 + 4j, pw3: -0.5}),
+            PauliSentence({pw1: -1.5, pw2: 1.0 - 4j, pw3: +0.5}),
+        ),
+        (
+            psx,
+            pw4,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw4: -1.0}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: +0.5, pw4: 1.0}),
+        ),
+        (
+            ps3,
+            pw1,
+            PauliSentence({pw1: -1.0, pw3: -0.5, pw4: 1}),
+            PauliSentence({pw1: 1.0, pw3: 0.5, pw4: -1}),
+        ),
+    )
+
+    @pytest.mark.parametrize("ps, pw, true_res1, true_res2", sub_ps_pw)
+    def test_sub_PS_and_PW(self, ps, pw, true_res1, true_res2):
+        """Test subtracting PauliWord from PauliSentence"""
+        res1 = ps - pw
+        res2 = pw - ps
+        assert res1 == true_res1
+        assert res2 == true_res2
+
+    # psx does not contain identity, so simply add it to the definition with pw_id
+    sub_ps_scalar = (
+        (
+            psx,
+            1.0,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -1}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 1}),
+        ),
+        (
+            psx,
+            0.5,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -0.5}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 0.5}),
+        ),
+        (
+            psx,
+            0.5j,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -0.5j}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 0.5j}),
+        ),
+        (
+            psx,
+            0.5 + 0.5j,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -0.5 - 0.5j}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 0.5 + 0.5j}),
+        ),
+        (
+            ps3,
+            0.5 + 0.5j,
+            PauliSentence({pw3: -0.5, pw4: 0.5 - 0.5j}),
+            PauliSentence({pw3: 0.5, pw4: -0.5 + 0.5j}),
+        ),
+    )
+
+    @pytest.mark.parametrize("ps, scalar, true_res1, true_res2", sub_ps_scalar)
+    def test_sub_PS_and_scalar(self, ps, scalar, true_res1, true_res2):
+        """Test subtracting scalar from PauliSentence"""
+        res1 = ps - scalar
+        res2 = scalar - ps
+        assert res1 == true_res1
+        assert res2 == true_res2
+
     ps_match = (
         (ps4, "Can't get the matrix of an empty PauliWord."),
         (ps5, "Can't get the matrix of an empty PauliSentence."),
@@ -968,6 +1090,48 @@ class TestPauliSentence:
                 PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
             }
         )
+
+
+class TestPauliArithmeticIntegration:
+    def test_pauli_arithmetic_integration(self):
+        """Test creating operators from PauliWord, PauliSentence and scalars"""
+        res = 1.0 + 3.0 * pw1 + 1j * ps3 - 1.0 * ps1
+        true_res = PauliSentence({pw1: -1.23 + 3, pw2: -4j, pw3: 0.5 - 0.5j, pw_id: 1 + 1j})
+        assert res == true_res
+
+    def test_construct_XXZ_model(self):
+        """Test that constructing the XXZ model results in the correct matrix"""
+        n_wires = 4
+        J_orthogonal = 1.5
+        J_zz = 0.5
+        h = 2.0
+        # Construct XXZ Hamiltonian using paulis
+        paulis = [
+            J_orthogonal
+            * (
+                PauliWord({i: "X", (i + 1) % n_wires: "X"})
+                + PauliWord({i: "Y", (i + 1) % n_wires: "Y"})
+            )
+            for i in range(n_wires)
+        ]
+        paulis += [J_zz * PauliWord({i: "Z", (i + 1) % n_wires: "Z"}) for i in range(n_wires)]
+        paulis += [h * PauliWord({i: "Z"}) for i in range(n_wires)]
+        H = sum(paulis) + 10.0
+
+        # Construct XXZ Hamiltonian using PL ops
+        ops = [
+            J_orthogonal
+            * (
+                qml.PauliX(i) @ qml.PauliX((i + 1) % n_wires)
+                + qml.PauliY(i) @ qml.PauliY((i + 1) % n_wires)
+            )
+            for i in range(n_wires)
+        ]
+        ops += [J_zz * qml.PauliZ(i) @ qml.PauliZ((i + 1) % n_wires) for i in range(n_wires)]
+        ops += [h * qml.PauliZ(i) for i in range(n_wires)]
+        H_true = qml.sum(*ops) + 10.0
+
+        assert qml.math.allclose(H.to_mat(), qml.matrix(H_true))
 
 
 @pytest.mark.all_interfaces

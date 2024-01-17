@@ -37,7 +37,12 @@ from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
-from .jacobian_products import TransformJacobianProducts, DeviceDerivatives, DeviceJacobianProducts
+from .jacobian_products import (
+    TransformJacobianProducts,
+    DeviceDerivatives,
+    DeviceJacobianProducts,
+    LightningVJPs,
+)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -153,7 +158,7 @@ def _get_ml_boundary_execute(
                 from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
         else:  # interface in {"jax", "jax-python", "JAX"}:
             if device_vjp:
-                from .interfaces.jax import jax_vjp_execute as ml_boundary
+                from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
                 from .interfaces.jax import jax_jvp_execute as ml_boundary
 
@@ -589,7 +594,11 @@ def execute(
         if interface in {"jax", "jax-jit"}:
             grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
-    if device_vjp and isinstance(device, qml.Device):
+    if (
+        device_vjp
+        and isinstance(device, qml.Device)
+        and "lightning" not in getattr(device, "short_name", "")
+    ):
         raise qml.QuantumFunctionError(
             "device provided jacobian products are not compatible with the old device interface."
         )
@@ -667,7 +676,18 @@ def execute(
 
     _grad_on_execution = False
 
-    if config.use_device_jacobian_product and interface in jpc_interfaces:
+    if (
+        device_vjp
+        and "lightning" in getattr(device, "short_name", "")
+        and interface in jpc_interfaces
+    ):
+        if INTERFACE_MAP[interface] == "jax" and "use_device_state" in gradient_kwargs:
+            gradient_kwargs["use_device_state"] = False
+        tapes = [expand_fn(t) for t in tapes]
+        tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
+        jpc = LightningVJPs(device, gradient_kwargs=gradient_kwargs)
+
+    elif config.use_device_jacobian_product and interface in jpc_interfaces:
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
