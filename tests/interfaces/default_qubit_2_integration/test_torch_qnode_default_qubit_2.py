@@ -36,6 +36,7 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "adjoint", False, True],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
+    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
 ]
 
 interface_and_qubit_device_and_diff_method = [
@@ -650,6 +651,8 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = {}
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -706,6 +709,8 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,

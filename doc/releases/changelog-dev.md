@@ -32,13 +32,17 @@
 * Improve efficiency of matrix calculation when operator is symmetric over wires
    [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
+* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
+  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
+
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
 
-* Composite operations (eg. those made with `qml.prod` and `qml.sum`) convert `Hamiltonian` and
+* Composite operations (eg. those made with `qml.prod` and `qml.sum`) and `SProd` operations convert `Hamiltonian` and
   `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
   incompatible operator types.
   [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
+  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
 
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
@@ -77,6 +81,7 @@
 * `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
   values that are no longer needed.
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
+  [(#5071)](https://github.com/PennyLaneAI/pennylane/pull/5071)
 
 * Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
   ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
@@ -114,6 +119,8 @@
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
 
+* The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
+  [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
 
 <h3>Contributors ✍️</h3>
 
