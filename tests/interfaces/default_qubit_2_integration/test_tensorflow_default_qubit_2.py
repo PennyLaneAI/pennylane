@@ -811,22 +811,3 @@ class TestHamiltonianWorkflows:
         jac = qml.math.hstack(tape.jacobian(res, [weights, coeffs1, coeffs2]), like="tensorflow")
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
-
-
-def test_error_device_vjp_jacobian():
-    """Test a ValueError is raised if a jacobian is attempted to be computed with device_vjp=True."""
-
-    dev = qml.device("default.qubit")
-
-    @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))
-
-    x = tf.Variable(0.1)
-
-    with tf.GradientTape() as tape:
-        y = circuit(x)
-
-    with pytest.raises(ValueError, match="device VJPs cannot be vectorized with tensorflow. "):
-        tape.jacobian(y, x)

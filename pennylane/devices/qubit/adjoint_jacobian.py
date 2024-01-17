@@ -361,11 +361,6 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     ket = state if state is not None else get_final_state(tape)[0]
 
     bras, batch_size, null_batch_indices = _get_vjp_bras(tape, cotangents, ket)
-    if bras is None:
-        # Cotangents are zeros
-        if batch_size is None:
-            return tuple(0.0 for _ in tape.trainable_params)
-        return tuple(np.zeros((len(tape.trainable_params), batch_size)))
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
         dtype = getattr(cotangents, "dtype", tape.measurements[0].numeric_type)
@@ -379,6 +374,12 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
         def real_if_expval(val):
             return np.real(val)
+
+    if bras is None:
+        # Cotangents are zeros
+        if batch_size is None:
+            return tuple(np.array(0.0, dtype=dtype) for _ in tape.trainable_params)
+        return np.zeros((len(tape.trainable_params), batch_size), dtype=dtype)
 
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1

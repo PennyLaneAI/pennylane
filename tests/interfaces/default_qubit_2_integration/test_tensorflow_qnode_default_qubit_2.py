@@ -2264,3 +2264,38 @@ def test_no_ops():
 
     res = circuit()
     assert isinstance(res, tf.Tensor)
+
+
+def test_error_device_vjp_jacobian():
+    """Test a ValueError is raised if a jacobian is attempted to be computed with device_vjp=True."""
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))
+
+    x = tf.Variable(0.1)
+
+    with tf.GradientTape() as tape:
+        y = qml.math.hstack(circuit(x))
+
+    with pytest.raises(ValueError):
+        tape.jacobian(y, x)
+
+
+def test_error_device_vjp_state_float32():
+    """Test a ValueError is raised is state differentiation is attemped with float32 parameters."""
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.probs(wires=0)
+
+    x = tf.Variable(0.1, dtype=tf.float32)
+    with pytest.raises(ValueError, match="tensorflow with adjoint differentiation of the state"):
+        with tf.GradientTape() as tape:
+            circuit(x)

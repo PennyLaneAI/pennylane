@@ -116,7 +116,9 @@ def all_state_postprocessing(results, measurements, wire_order):
 
 
 @qml.transform
-def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callable):
+def adjoint_state_measurements(
+    tape: QuantumTape, device_vjp=False
+) -> (Tuple[QuantumTape], Callable):
     """Perform adjoint measurement preprocessing.
 
     * Allows a tape with only expectation values through unmodified
@@ -136,6 +138,13 @@ def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callab
         )
 
     params = tape.get_parameters()
+    if device_vjp:
+        for p in params:
+            if qml.math.get_interface(p) == "tensorflow" and "32" in qml.math.get_dtype_name(p):
+                raise ValueError(
+                    "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
+                )
+
     complex_data = [qml.math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
     new_mp = qml.measurements.StateMP(wires=tape.wires)
@@ -145,7 +154,7 @@ def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callab
     )
 
 
-def _add_adjoint_transforms(program: TransformProgram) -> None:
+def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
 
@@ -177,7 +186,7 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
         validate_measurements,
         name=name,
     )
-    program.add_transform(adjoint_state_measurements)
+    program.add_transform(adjoint_state_measurements, device_vjp=device_vjp)
     program.add_transform(qml.transforms.broadcast_expand)
     program.add_transform(validate_adjoint_trainable_params)
 
@@ -455,7 +464,7 @@ class DefaultQubit(Device):
             transform_program.add_transform(no_sampling, name="backprop + default.qubit")
 
         if config.gradient_method == "adjoint":
-            _add_adjoint_transforms(transform_program)
+            _add_adjoint_transforms(transform_program, config.use_device_jacobian_product)
 
         return transform_program, config
 

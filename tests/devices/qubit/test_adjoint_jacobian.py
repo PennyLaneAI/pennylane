@@ -13,10 +13,12 @@
 # limitations under the License.
 """Unit and integration tests for the adjoint_jacobian function for DefaultQubit"""
 import pytest
+
+import numpy as np
+
 import pennylane as qml
 from pennylane.devices.qubit import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 from pennylane.tape import QuantumScript
-import pennylane.numpy as np
 
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
@@ -48,7 +50,7 @@ class TestAdjointJacobian:
     def test_pauli_rotation_gradient(self, G, theta, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
-        prep_op = qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+        prep_op = qml.StatePrep(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
         qs = QuantumScript(
             ops=[prep_op, G(theta, wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],
@@ -68,7 +70,7 @@ class TestAdjointJacobian:
         """Tests that the device gradient of an arbitrary Euler-angle-parameterized gate is
         correct."""
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
-        prep_op = qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+        prep_op = qml.StatePrep(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
 
         qs = QuantumScript(
             ops=[prep_op, qml.Rot(*params, wires=[0])],
@@ -587,7 +589,7 @@ class TestAdjointVJP:
     @pytest.mark.parametrize(
         "cotangents",
         [
-            (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])),
+            (np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0]), np.array([0.0, 0.0, 1.0])),
             (np.array([0.653, 0, 0]), np.array([0, 0.573, 0]), np.array([0, 0, 1.232])),
             (np.array([0.653, -1.456]), np.array([0.498, 0.573]), np.array([0, 1.232])),
             (
@@ -625,7 +627,7 @@ class TestAdjointVJP:
 
     @pytest.mark.parametrize(
         "cotangents",
-        ((0, 1.23), (1.232, -2.098, 0.323, 1.112), (5.212, -0.354, -2.575), (0.0, 0.0, 0.0)),
+        ((0.0, 1.23), (1.232, -2.098, 0.323, 1.112), (5.212, -0.354, -2.575), (0.0, 0.0, 0.0)),
     )
     def test_multi_param_single_obs_batched(self, cotangents, tol):
         """Test that batched cotangents with adjoint VJP give correct results when
@@ -649,7 +651,7 @@ class TestAdjointVJP:
     @pytest.mark.parametrize(
         "cotangents",
         [
-            (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])),
+            (np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0]), np.array([0.0, 0.0, 1.0])),
             (np.array([0.653, 0, 0]), np.array([0, 0.573, 0]), np.array([0, 0, 1.232])),
             (np.array([0.653, -1.456]), np.array([0.498, 0.573]), np.array([0, 1.232])),
             (
@@ -658,9 +660,9 @@ class TestAdjointVJP:
                 np.array([0, 1, 1.232, 1.232]),
             ),
             (
-                np.array([0, 0, 0]),
-                np.array([0, 0, 0]),
-                np.array([0, 0, 0]),
+                np.array([0.0, 0, 0]),
+                np.array([0.0, 0, 0]),
+                np.array([0.0, 0, 0]),
             ),
         ],
     )
@@ -729,12 +731,16 @@ class TestAdjointVJP:
         [
             np.array(
                 [
-                    [0.123, 0.456, 0.789, -0.123],
+                    [0.123 + 0j, 0.456, 0.789, -0.123],
                     [-0.456, -0.789, 1.234, 5.678],
                     [-0.345, -4.345, -2.589, 3.456],
-                ]
+                ],
+                dtype=np.complex128,
             ),
-            np.array([[0.0, 0.123, 0.765, 4.123], [-7.698, -3.465, -1.289, 4.697]]),
+            np.array(
+                [[0.0 + 0j, 0.123, 0.765, 4.123], [-7.698, -3.465, -1.289, 4.697]],
+                dtype=np.complex128,
+            ),
         ],
     )
     def test_single_param_state_batched(self, cotangents, tol):
@@ -769,16 +775,19 @@ class TestAdjointVJP:
                     [0.123, 0.456, 0.789, -0.123],
                     [-0.456, -0.789, 1.234, 5.678],
                     [-0.345, -4.345, -2.589, 3.456],
-                ]
+                ],
+                dtype=np.complex128,
             ),
-            np.array([[0.0, 0.123, 0.765, 4.123], [-7.698, -3.465, -1.289, 4.697]]),
+            np.array(
+                [[0.0, 0.123, 0.765, 4.123], [-7.698, -3.465, -1.289, 4.697]], dtype=np.complex128
+            ),
         ],
     )
     def test_multi_param_state_batched(self, cotangents, tol):
         """Test that computing the VJP with batched cotangents for state measurements
         gives the correct results for multiple trainable parameters."""
-        x = np.array(0.654)
-        y = np.array(1.221)
+        x = np.array(0.654 + 0j)
+        y = np.array(1.221 + 0j)
 
         obs = [qml.state()]
         qs = QuantumScript(
