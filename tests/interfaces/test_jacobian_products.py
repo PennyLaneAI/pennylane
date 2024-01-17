@@ -184,6 +184,37 @@ class TestBasics:
 
         assert repr(jpc) == "<LightningVJPs: lightning.qubit, {'use_device_state': True}>"
 
+    def test_lightning_vjps_exp_error(self):
+        """Test that having non-expval measurements when computing VJPs raises an error."""
+        device = qml.device("lightning.qubit", wires=5)
+        gradient_kwargs = {"use_device_state": True}
+        jpc = LightningVJPs(device, gradient_kwargs)
+
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.123, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])]
+        )
+
+        with pytest.raises(
+            NotImplementedError, match="Lightning device VJPs only support expectation values."
+        ):
+            _ = jpc.compute_vjp([tape], [])
+
+    def test_lightning_vjps_batched_dy(self):
+        """Test that computing VJPs with batched dys raise an error."""
+        device = qml.device("lightning.qubit", wires=5)
+        gradient_kwargs = {"use_device_state": True}
+        jpc = LightningVJPs(device, gradient_kwargs)
+
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.123, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))]
+        )
+        dys = ((np.array([0.0, 1.0]), np.array([1.0, 0.0])),)
+
+        with pytest.raises(
+            NotImplementedError, match="Lightning device VJPs are not supported with jax jacobians."
+        ):
+            _ = jpc.compute_vjp([tape], dys)
+
 
 @pytest.mark.parametrize("jpc", jpc_matrix)
 @pytest.mark.parametrize("shots", (None, 10000, (10000, 10000)))
