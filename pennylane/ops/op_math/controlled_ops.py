@@ -196,8 +196,7 @@ class CY(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = None
-    """Gradient computation method."""
+    name = "CY"
 
     def _flatten(self):
         return tuple(), (self.wires,)
@@ -208,10 +207,7 @@ class CY(ControlledOp):
 
     def __init__(self, wires, id=None):
         control_wire, wire = wires
-        base = PauliY(wire)
-
-        super().__init__(base, control_wire, id=id)
-        self._name = "CY"
+        super().__init__(qml.PauliY(wire), control_wire, id=id)
 
     @staticmethod
     @lru_cache()
@@ -302,6 +298,8 @@ class CZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    name = "CZ"
+
     def _flatten(self):
         return tuple(), (self.wires,)
 
@@ -311,9 +309,7 @@ class CZ(ControlledOp):
 
     def __init__(self, wires):
         control_wire, wire = wires
-        base = PauliZ(wires=wire)
-        super().__init__(base, control_wire)
-        self._name = "CZ"
+        super().__init__(qml.PauliZ(wires=wire), control_wire)
 
     @staticmethod
     @lru_cache()
