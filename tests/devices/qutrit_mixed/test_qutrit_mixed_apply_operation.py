@@ -13,8 +13,8 @@
 # limitations under the License.
 """Unit tests for create_initial_state in devices/qutrit_mixed/apply_operation."""
 
-import pytest
 from functools import reduce
+import pytest
 import numpy as np
 from scipy.stats import unitary_group
 import pennylane as qml
@@ -159,17 +159,18 @@ class TestOperation:  # pylint: disable=too-few-public-methods
     num_qutrits = 3
     num_batched = 2
 
-    def expand_matrices(op, batch_size=0):
+    @classmethod
+    def expand_matrices(cls, op, batch_size=0):
         """Find expanded operator matrices, since qml.matrix isn't working for qutrits #4367"""
         pre_wires_identity = np.eye(3 ** op.wires[0])
-        post_wires_identity = np.eye(3 ** (2 - op.wires[-1]))
+        post_wires_identity = np.eye(3 ** ((cls.num_qutrits - 1) - op.wires[-1]))
         mat = op.matrix()
 
         def expand_matrix(matrix):
             return reduce(np.kron, (pre_wires_identity, matrix, post_wires_identity))
 
         if batch_size:
-            [expand_matrix(mat[i]) for i in range(batch_size)]
+            return [expand_matrix(mat[i]) for i in range(batch_size)]
         return expand_matrix(mat)
 
     @classmethod
@@ -227,7 +228,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         """Tests that batched operations are applied correctly to a batched state."""
         state = three_qutrit_batched_state
         res = apply_operation(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
-        expanded_operators = self.expand_matrices(op, True)
+        expanded_operators = self.expand_matrices(op, self.num_batched)
 
         expected = [
             self.get_expected_state(expanded_operators[i], state[i])
