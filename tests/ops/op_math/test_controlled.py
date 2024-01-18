@@ -869,7 +869,7 @@ class TestHelperMethod:
 
 @pytest.mark.parametrize("test_expand", (False, True))
 class TestDecomposition:
-    """Test controlled's decomposition method."""
+    """Test decomposition of Controlled."""
 
     def test_control_values_no_special_decomp(self, test_expand):
         """Test decomposition applies PauliX gates to flip any control-on-zero wires."""
@@ -919,6 +919,8 @@ class TestDecomposition:
         base_decomp = base.decomposition()
         for cop, base_op in zip(decomp, base_decomp):
             assert isinstance(cop, Controlled)
+            if isinstance(base_op, qml.CNOT):
+                base_op = base_op.base
             assert qml.equal(cop.base, base_op)
 
     def test_no_control_values_no_special_decomp(self, test_expand):
@@ -929,8 +931,7 @@ class TestDecomposition:
         op = Controlled(base, (0, 1, 2))
 
         with pytest.raises(DecompositionUndefinedError):
-            # pylint: disable=unused-variable
-            decomp = op.expand().circuit if test_expand else op.decomposition()
+            _ = op.expand().circuit if test_expand else op.decomposition()
 
 
 class TestArithmetic:
@@ -1476,7 +1477,7 @@ def test_nested_ctrl():
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, Controlled)
-    new_tape = tape.expand(depth=2)
+    new_tape = tape.expand(depth=10, stop_at=lambda o: isinstance(o, qml.ControlledPhaseShift))
     assert qml.equal(new_tape[0], Controlled(qml.ControlledPhaseShift(np.pi / 2, [7, 0]), [3]))
 
 
@@ -1544,7 +1545,7 @@ def test_ctrl_within_ctrl():
 
     expected = [
         *qml.CRX(0.123, wires=[2, 0]).decomposition(),
-        qml.Toffoli(wires=[2, 0, 1]),
+        *qml.Toffoli(wires=[2, 0, 1]).decomposition(),
         *qml.CRX(0.456, wires=[2, 0]).decomposition(),
     ]
     for op1, op2 in zip(tape, expected):
@@ -1621,17 +1622,15 @@ def test_controlledqubitunitary(M):
     assert equal_list(list(tape), expected)
 
 
-def test_no_control_defined():
+@pytest.mark.parametrize("depth, length", [(1, 4), (2, 14), (3, 96)])
+def test_no_control_defined(depth, length):
     """Test a custom operation with no control transform defined."""
-    # QFT has no control rule defined.
     with qml.queuing.AnnotatedQueue() as q_tape:
+        # QFT has no control rule defined.
         ctrl(qml.templates.QFT, 2)(wires=[0, 1])
     tape = QuantumScript.from_queue(q_tape)
-    tape = tape.expand(depth=3, stop_at=lambda op: not isinstance(op, Controlled))
-    assert len(tape.operations) == 8
-    # Check that all operations are updated to their controlled version.
-    for op in tape.operations:
-        assert type(op) in {qml.ControlledPhaseShift, qml.Toffoli, qml.CRX, qml.CSWAP, qml.CH}
+    expanded_tape = tape.expand(depth=depth)
+    assert len(expanded_tape.operations) == length
 
 
 def test_decomposition_defined():

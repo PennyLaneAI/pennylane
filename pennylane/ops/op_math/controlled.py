@@ -129,9 +129,13 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     custom_ops = {
         (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliZ, 2): qml.CCZ,
         (qml.PauliY, 1): qml.CY,
         (qml.PauliX, 1): qml.CNOT,
         (qml.PauliX, 2): qml.Toffoli,
+        (qml.CNOT, 1): qml.Toffoli,
+        (qml.SWAP, 1): qml.CSWAP,
+        (qml.Hadamard, 1): qml.CH,
         (qml.RX, 1): qml.CRX,
         (qml.RY, 1): qml.CRY,
         (qml.RZ, 1): qml.CRZ,
@@ -661,7 +665,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
             UserWarning,
         )
 
-    return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
+    return [ctrl(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
 
 class ControlledOp(Controlled, operation.Operation):
