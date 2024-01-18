@@ -44,22 +44,14 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-qutrit_subspace_error_data = [
-    ([1, 1], "Elements of subspace list must be unique."),
-    ([1, 2, 3], "The subspace must be a sequence with"),
-    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
-    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
-    ([1], "The subspace must be a sequence with"),
-    (0, "The subspace must be a sequence with two unique"),
-]
+def test_validate_subspace_is_deprecated():
+    """Test that Operator.validate_subspace() is deprecated"""
 
-
-@pytest.mark.parametrize("subspace, err_msg", qutrit_subspace_error_data)
-def test_qutrit_subspace_op_errors(subspace, err_msg):
-    """Test that the correct errors are raised when subspace is incorrectly defined"""
-
-    with pytest.raises(ValueError, match=err_msg):
-        _ = Operator.validate_subspace(subspace)
+    with pytest.warns(
+        expected_warning=qml.PennyLaneDeprecationWarning,
+        match=r"Operator\.validate_subspace\(subspace\)",
+    ):
+        _ = Operator.validate_subspace([0, 1])
 
 
 class TestOperatorConstruction:
@@ -1467,8 +1459,8 @@ class TestTensor:
         t = Tensor(X, Y)
         assert t.data == (p,)
 
-    def test_data_setter(self):
-        """Test the data setter"""
+    def test_data_setter_list(self):
+        """Test the data setter with a list"""
         p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
@@ -1476,6 +1468,17 @@ class TestTensor:
         assert t.data == (p,)
         new_data = np.eye(4) * 6
         t.data = [(), (new_data,)]
+        assert qml.math.allequal(t.data, (new_data,))
+
+    def test_data_setter_tuple(self):
+        """Test the data setter with a tuple"""
+        p = np.eye(4)
+        X = qml.PauliX(0)
+        Y = qml.Hermitian(p, wires=[1, 2])
+        t = Tensor(X, Y)
+        assert t.data == (p,)
+        new_data = np.eye(4) * 6
+        t.data = (new_data,)
         assert qml.math.allequal(t.data, (new_data,))
 
     def test_num_params(self):
