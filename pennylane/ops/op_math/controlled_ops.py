@@ -23,7 +23,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires
-from pennylane.ops.qubit.non_parametric_ops import PauliY, S, PauliZ, CCZ
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from .controlled import ControlledOp
@@ -262,7 +261,7 @@ class CY(ControlledOp):
         [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
 
         """
-        return [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
+        return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
 
     def decomposition(self):
         return self.compute_decomposition(self.wires)
@@ -335,7 +334,7 @@ class CZ(ControlledOp):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     def _controlled(self, wire):
-        return CCZ(wires=wire + self.wires)
+        return qml.CCZ(wires=wire + self.wires)
 
 
 class CRX(ControlledOp):
