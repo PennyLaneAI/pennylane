@@ -20,6 +20,7 @@ import numpy as np
 
 from pennylane.operation import Operation, AdjointUndefinedError
 from pennylane.wires import Wires
+from .parametric_ops import validate_subspace
 
 OMEGA = np.exp(2 * np.pi * 1j / 3)
 ZETA = OMEGA ** (1 / 3)  # ZETA will be used as a phase for later non-parametric operations
@@ -466,7 +467,7 @@ class THadamard(Operation):
         return base_label or "TH"
 
     def __init__(self, wires, subspace=None):
-        self._subspace = Operation.validate_subspace(subspace) if subspace is not None else None
+        self._subspace = validate_subspace(subspace) if subspace is not None else None
         self._hyperparameters = {
             "subspace": self.subspace,
         }

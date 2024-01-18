@@ -19,6 +19,11 @@ from pennylane.pauli import PauliWord, PauliSentence
 
 
 def comm(op1, op2, pauli=False):
+    r"""Alias for :func:`~commutator`"""
+    return commutator(op1, op2, pauli)
+
+
+def commutator(op1, op2, pauli=False):
     r"""Compute commutator between two operators in PennyLane
 
     .. math:: [O_1, O_2] = O_1 O_2 - O_2 O_1
@@ -35,33 +40,33 @@ def comm(op1, op2, pauli=False):
 
     You can compute commutators between operators in PennyLane.
 
-    >>> qml.comm(qml.PauliX(0), qml.PauliY(0))
+    >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
     2j*(PauliZ(wires=[0]))
 
     >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
     >>> op2 = qml.PauliY(0) @ qml.PauliY(1)
-    >>> qml.comm(op1, op2)
+    >>> qml.commutator(op1, op2)
     0*(Identity(wires=[0, 1]))
 
     We can return a :class:`~PauliSentence` instance by setting `pauli=True`.
 
     >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
     >>> op2 = qml.PauliY(0) + qml.PauliY(1)
-    >>> qml.comm(op1, op2, pauli=True)
+    >>> qml.commutator(op1, op2, pauli=True)
     2j * X(1) @ Z(0)
     + 2j * Z(1) @ X(0)
 
     We can also input :class:`~PauliWord` and :class:`~PauliSentence` instances.
     >>> op1 = PauliWord({0:"X", 1:"X"})
     >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
-    >>> qml.comm(op1, op2, pauli=True)
+    >>> qml.commutator(op1, op2, pauli=True)
     2j * Z(0) @ X(1)
     + 2j * X(0) @ Z(1)
 
     Note that when `pauli=False`, even if Pauli operators are used
     as inputs, `qml.comm` returns Operators.
 
-    >>> qml.comm(op1, op2, pauli=True)
+    >>> qml.commutator(op1, op2, pauli=True)
     (2j*(PauliX(wires=[1]) @ PauliZ(wires=[0]))) + (2j*(PauliZ(wires=[1]) @ PauliX(wires=[0])))
 
     """
