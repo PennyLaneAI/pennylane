@@ -261,11 +261,11 @@ def _draw_qnode(
     @wraps(qnode)
     def wrapper(*args, **kwargs):
 
-        tapes, _ = qnode.apply_transforms(expansion_strategy)(*args, **kwargs)
+        tapes, _ = qml.workflow.construct_batch(qnode, expansion_strategy)(*args, **kwargs)
 
         _wire_order = wire_order or qnode.device.wires or tapes[0].wires
 
-        if tapes is not None:
+        if len(tapes) > 1:
             cache = {"tape_offset": 0, "matrices": []}
             res = [
                 tape_text(
@@ -289,7 +289,7 @@ def _draw_qnode(
             return "\n\n".join(res)
 
         return tape_text(
-            qnode.qtape,
+            tapes[0],
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
@@ -563,7 +563,7 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        tapes, _ = qnode.apply_transforms(expansion_strategy)(*args, **kwargs_qnode)
+        tapes, _ = qml.workflow.construct_batch(qnode, expansion_strategy)(*args, **kwargs_qnode)
         if len(tapes) > 1:
             warnings.warn("More than one circuit created. Only drawing the first circuit.")
         tape = tapes[0]

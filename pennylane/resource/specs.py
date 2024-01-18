@@ -114,7 +114,9 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
         Returns:
             dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
-        tapes, _ = qnode.apply_transforms(expansion_strategy=expansion_strategy)(*args, **kwargs)
+        tapes, _ = qml.workflow.construct_batch(qnode, expansion_strategy=expansion_strategy)(
+            *args, **kwargs
+        )
 
         if len(tapes) > 1:
             raise NotImplementedError("specs currently only works for a single tape.")

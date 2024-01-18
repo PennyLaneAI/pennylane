@@ -20,7 +20,7 @@ import functools
 import inspect
 import warnings
 from collections.abc import Sequence
-from typing import Union, Callable, Tuple
+from typing import Union, Callable
 import logging
 
 import pennylane as qml
@@ -570,6 +570,14 @@ class QNode:
         )
 
     @property
+    def qfunc_uses_shots_arg(self) -> bool:
+        """Whether or not the qfunc has a ``shots`` keyword argument.
+
+        If so, shots cannot be dynamically set on a call to a ``QNode``.
+        """
+        return self._qfunc_uses_shots_arg
+
+    @property
     def interface(self):
         """The interface used by the QNode"""
         return self._interface
@@ -901,133 +909,6 @@ class QNode:
         return self._tape
 
     qtape = tape  # for backwards compatibility
-
-    def apply_transforms(self, expansion_strategy: Union[None, str, int, slice] = None) -> Callable:
-        """Construct the batch of tapes and post processing for a designated stage in the transform program.
-
-        Args:
-            expansion_strategy  (None, str, int, slice):
-
-                * ``None``: use the full transform program
-                * ``str``: Acceptable keys are ``"device"`` and ``"gradient"``
-                * ``int``: How many transforms to include, starting from the front of the program
-                * ``slice``: a slice to select out components of the transform program.
-
-        Returns:
-            Callable:  a function with the same call signature as the initial quantum function. This function returns
-                a batch (tuple) of tapes and postprocessing function.
-
-        Suppose we have a device with several user transforms.
-
-        .. code-block:: python
-
-            x = np.array([0.1, 0.2])
-
-            dev = qml.device('default.qubit', wires=4)
-
-            @qml.transforms.merge_rotations
-            @qml.transforms.cancel_inverses
-            @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
-            def circuit(x, include_permute=True):
-                if include_permute:
-                    qml.Permute((2,0,1), wires=(0,1,2))
-                qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
-                qml.RX(x, wires=0)
-                qml.RX(-x, wires=0)
-                qml.PauliX(0)
-                qml.PauliX(0)
-                return qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(0)))
-
-        We can inspect what the device will execute with:
-
-        >>> batch, fn = circuit.apply_transforms(expansion_strategy="device")(1.23)
-        >>> batch[0].circuit
-        [SWAP(wires=[0, 2]),
-        SWAP(wires=[1, 2]),
-        RY(tensor(1., requires_grad=True), wires=[0]),
-        RX(tensor(2., requires_grad=True), wires=[1]),
-        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
-
-        These tapes can be natively executed by the device, though with non-backprop devices the parameters
-        will need to be converted to numpy with :func:`~.convert_to_numpy_parameters`.
-
-        >>> fn(dev.execute(batch))
-        (tensor(0.84147098, requires_grad=True),)
-
-        Or what the parameter shift gradient transform will be applied to:
-
-        >>> batch, fn = circuit.apply_transforms(expansion_strategy="gradient")(1.23)
-        >>> batch[0].circuit
-        [Permute(wires=[0, 1, 2]),
-        RY(tensor(1., requires_grad=True), wires=[0]),
-        RX(tensor(2., requires_grad=True), wires=[1]),
-        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
-
-        We can inpsect what was directly captured from the qfunc with ``expansion_strategy=0``.
-
-        >>> batch, fn = circuit.apply_transforms(expansion_strategy=0)(1.23)
-        >>> batch[0].circuit
-        [Permute(wires=[0, 1, 2]),
-        RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
-        RX(1.23, wires=[0]),
-        RX(-1.23, wires=[0]),
-        PauliX(wires=[0]),
-        PauliX(wires=[0]),
-        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
-
-        And iterate though stages in the transform program with different integers.
-        If we request ``expansion_strategy=1``, the ``cancel_inverses`` transform has been applied.
-
-        >>> batch, fn = circuit.apply_transforms(expansion_strategy=1)(1.23)
-        >>> batch[0].circuit
-        [Permute(wires=[0, 1, 2]),
-        RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
-        RX(1.23, wires=[0]),
-        RX(-1.23, wires=[0]),
-        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
-
-        We can also slice into a subset of the transform program.  ``slice(1, None)`` would skip the first user
-        transform ``cancel_inverses``:
-
-        >>> batch, fn = circuit.apply_transforms(expansion_strategy=slice(1,None))(1.23, include_permute=False)
-        >>> batch[0].circuit
-        [RY(tensor(1., requires_grad=True), wires=[0]),
-        RX(tensor(2., requires_grad=True), wires=[1]),
-        PauliX(wires=[0]),
-        PauliX(wires=[0]),
-        expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
-
-        """
-        full_transform_program = _get_full_transform_program(self)
-        if expansion_strategy == "device":
-            expansion_strategy = slice(0, None)
-        elif expansion_strategy == "gradient":
-            if (
-                isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher)
-                and self.gradient_fn.expand_transform
-            ):
-                expansion_strategy = slice(0, len(self.transform_program) + 1)
-            else:
-                expansion_strategy = slice(0, len(self.transform_program))
-
-        if expansion_strategy is None or isinstance(expansion_strategy, int):
-            expansion_strategy = slice(0, expansion_strategy)
-        program = full_transform_program[expansion_strategy]
-
-        def batch_constructor(*args, **kwargs) -> Tuple[Tuple["qml.tape.QuantumTape", Callable]]:
-            """Create a batch of tapes and a post processing function."""
-            if self._qfunc_uses_shots_arg:
-                shots = _get_device_shots(self._original_device)
-            else:
-                shots = kwargs.pop("shots", _get_device_shots(self._original_device))
-
-            with qml.queuing.AnnotatedQueue() as q:
-                self.func(*args, **kwargs)
-
-            initial_tape = QuantumScript.from_queue(q, shots)
-            return program((initial_tape,))
-
-        return batch_constructor
 
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""

@@ -25,6 +25,7 @@ Execution functions and utilities
     ~execute
     ~workflow.cache_execute
     ~workflow.set_shots
+    ~workflow.construct_batch
 
 Supported interfaces
 ~~~~~~~~~~~~~~~~~~~~
@@ -55,3 +56,4 @@ Jacobian Product Calculation
 from .set_shots import set_shots
 from .execution import execute, cache_execute, SUPPORTED_INTERFACES, INTERFACE_MAP
 from .qnode import QNode, qnode
+from .construct_batch import construct_batch
