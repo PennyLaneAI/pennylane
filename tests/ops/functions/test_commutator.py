@@ -75,11 +75,11 @@ class TestLegacySupport:
 
 
 def test_alias():
-    """Test that the alias comm() works as expected"""
-    res1 = qml.comm(X0, Y0)
+    """Test that the alias commutator() works as expected"""
+    res1 = qml.commutator(X0, Y0)
     res1_true = qml.commutator(X0, Y0)
     assert res1 == res1_true
-    res2 = qml.comm(X0, Y0, pauli=True)
+    res2 = qml.commutator(X0, Y0, pauli=True)
     res2_true = qml.commutator(X0, Y0, pauli=True)
     assert res2 == res2_true
 
@@ -187,8 +187,8 @@ class TestcommPauliFalseSimplify:
         """Test consistent behavior between native comms in PauliWord and PauliSentence and qml.commutor"""
         op1 = qml.PauliX(0) @ qml.PauliX(1)
         op2 = qml.PauliY(0) + qml.PauliY(1)
-        res1 = qml.comm(op1, op2, pauli=True)
-        res2 = PauliWord({0: "X", 1: "X"}).comm(PauliWord({0: "Y"}) + PauliWord({1: "Y"}))
+        res1 = qml.commutator(op1, op2, pauli=True)
+        res2 = PauliWord({0: "X", 1: "X"}).commutator(PauliWord({0: "Y"}) + PauliWord({1: "Y"}))
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)
         assert res1 == res2
