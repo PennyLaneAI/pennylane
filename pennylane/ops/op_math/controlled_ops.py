@@ -390,8 +390,6 @@ class CRX(ControlledOp):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     name = "CRX"
-    basis = "X"
-    grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
@@ -402,9 +400,6 @@ class CRX(ControlledOp):
         base = data[0]
         control_wires = metadata[0]
         return cls(*base.data, wires=control_wires + base.wires)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return super().label(decimals=decimals, base_label=base_label or "RX", cache=cache)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -552,8 +547,6 @@ class CRY(ControlledOp):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     name = "CRY"
-    basis = "Y"
-    grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
@@ -564,9 +557,6 @@ class CRY(ControlledOp):
         base = data[0]
         control_wires = metadata[0]
         return cls(*base.data, wires=control_wires + base.wires)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return super().label(decimals=decimals, base_label=base_label or "RY", cache=cache)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -715,8 +705,6 @@ class CRZ(ControlledOp):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     name = "CRZ"
-    basis = "Z"
-    grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
@@ -727,9 +715,6 @@ class CRZ(ControlledOp):
         base = data[0]
         control_wires = metadata[0]
         return cls(*base.data, wires=control_wires + base.wires)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return super().label(decimals=decimals, base_label=base_label or "RZ", cache=cache)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -910,7 +895,6 @@ class CRot(ControlledOp):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     name = "CRot"
-    grad_method = "A"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
@@ -921,9 +905,6 @@ class CRot(ControlledOp):
         base = data[0]
         control_wires = metadata[0]
         return cls(*base.data, wires=control_wires + base.wires)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return super().label(decimals=decimals, base_label=base_label or "Rot", cache=cache)
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
@@ -1083,8 +1064,6 @@ class ControlledPhaseShift(ControlledOp):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     name = "ControlledPhaseShift"
-    basis = "Z"
-    grad_method = "A"
     parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires, id=None):
@@ -1095,9 +1074,6 @@ class ControlledPhaseShift(ControlledOp):
         base = data[0]
         control_wires = metadata[0]
         return cls(*base.data, wires=control_wires + base.wires)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
