@@ -18,6 +18,11 @@ import pennylane as qml
 from pennylane.pauli import PauliWord, PauliSentence
 
 
+def comm(op1, op2, pauli=False):
+    r"""Alias for :func:`~commutator`"""
+    return commutator(op1, op2, pauli)
+
+
 def commutator(op1, op2, pauli=False):
     r"""Compute commutator between two operators in PennyLane
 
