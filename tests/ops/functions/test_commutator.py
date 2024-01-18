@@ -53,7 +53,7 @@ class TestLegacySupport:
         """Test that Hamiltonians get transformed to new operator classes and return the correct result"""
         H1 = qml.Hamiltonian([1.0], [qml.PauliX(0)])
         H2 = qml.Hamiltonian([1.0], [qml.PauliY(0)])
-        res = qml.comm(H1, H2)
+        res = qml.commutator(H1, H2)
         true_res = qml.s_prod(2j, qml.PauliZ(0))
         assert isinstance(res, SProd)
         assert true_res == res
@@ -67,7 +67,7 @@ class TestLegacySupport:
             qml.s_prod(2j, qml.PauliZ(0) @ qml.PauliX(1)),
             qml.s_prod(2j, qml.PauliX(0) @ qml.PauliZ(1)),
         )
-        res = qml.comm(H1, H2).simplify()
+        res = qml.commutator(H1, H2).simplify()
         assert isinstance(res, Sum)
         assert qml.equal(
             true_res, res
@@ -95,7 +95,7 @@ class TestcommPauli:
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations)
     def test_basic_comm_relations(self, op1, op2, true_res, transform_type1, transform_type2):
         """Test basic comm relations between Paulis for PauliWord, PauliSentence and Operator instances"""
-        res = qml.comm(transform_type1(op1), transform_type2(op2), pauli=True)
+        res = qml.commutator(transform_type1(op1), transform_type2(op2), pauli=True)
         assert res == true_res
         assert isinstance(res, PauliSentence)
 
@@ -117,7 +117,7 @@ class TestcommPauli:
     @pytest.mark.parametrize("op1, op2, true_res", data_more_comm_relations)
     def test_comm_relations_pauli_words(self, op1, op2, true_res, transform_type1, transform_type2):
         """Test more comm relations between Paulis"""
-        res = qml.comm(transform_type1(op1), transform_type2(op2), pauli=True)
+        res = qml.commutator(transform_type1(op1), transform_type2(op2), pauli=True)
         assert res == true_res
         assert isinstance(res, PauliSentence)
 
@@ -143,7 +143,7 @@ class TestcommPauliFalseSimplify:
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_ops)
     def test_basic_comm_relations(self, op1, op2, true_res, transform_type1, transform_type2):
         """Test basic comm relations between Paulis for PauliWord, PauliSentence and Operator instances"""
-        res = qml.comm(transform_type1(op1), transform_type2(op2), pauli=False)
+        res = qml.commutator(transform_type1(op1), transform_type2(op2), pauli=False)
         assert res == true_res
         assert isinstance(res, Operator)
         assert isinstance(res, SProd)
@@ -166,7 +166,7 @@ class TestcommPauliFalseSimplify:
     @pytest.mark.parametrize("op1, op2, true_res", data_more_comm_relations_op)
     def test_comm_relations_pauli_words(self, op1, op2, true_res, transform_type1, transform_type2):
         """Test more comm relations between Paulis"""
-        res = qml.comm(transform_type1(op1), transform_type2(op2), pauli=False)
+        res = qml.commutator(transform_type1(op1), transform_type2(op2), pauli=False)
         assert res == true_res
         assert isinstance(res, Operator)
         assert isinstance(res, SProd)

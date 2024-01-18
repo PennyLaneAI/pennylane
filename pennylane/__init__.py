@@ -112,7 +112,7 @@ from pennylane.ops.functions import (
     matrix,
     simplify,
     iterative_qpe,
-    comm,
+    commutator,
 )
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
