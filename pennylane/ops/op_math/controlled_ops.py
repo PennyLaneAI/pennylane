@@ -932,6 +932,599 @@ class CSWAP(ControlledOp):
         )
 
 
+class CNOT(ControlledOp):
+    r"""CNOT(wires)
+    The controlled-NOT operator
+
+    .. math:: CNOT = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & 0 & 1\\
+            0 & 0 & 1 & 0
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    has_decomposition = False  # do not try to decompose CNOT
+    name = "CNOT"
+
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
+
+    def __init__(self, wires):
+        control_wire, wire = wires
+        super().__init__(qml.PauliX(wires=wire), control_wire)
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CNOT.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CNOT.compute_matrix())
+        [[1 0 0 0]
+         [0 1 0 0]
+         [0 0 0 1]
+         [0 0 1 0]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+
+    def matrix(self, wire_order=None):
+        canonical_matrix = self.compute_matrix()
+        wire_order = wire_order or self.wires
+        return qml.math.expand_matrix(
+            canonical_matrix, wires=self.active_wires, wire_order=wire_order
+        )
+
+    def _controlled(self, wire):
+        return Toffoli(wires=wire + self.wires)
+
+
+class Toffoli(ControlledOp):
+    r"""Toffoli(wires)
+    Toffoli (controlled-controlled-X) gate.
+
+    .. math::
+
+        Toffoli =
+        \begin{pmatrix}
+        1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 1 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
+        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
+        \end{pmatrix}
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the subsystem the gate acts on
+    """
+    num_wires = 3
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    name = "Toffoli"
+
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
+
+    def __init__(self, wires):
+        control_wires = wires[:2]
+        target_wires = wires[2:]
+        super().__init__(qml.PauliX(wires=target_wires), control_wires)
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Toffoli.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.Toffoli.compute_matrix())
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 1]
+         [0 0 0 0 0 0 1 0]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+            ]
+        )
+
+    def matrix(self, wire_order=None):
+        canonical_matrix = self.compute_matrix()
+        wire_order = wire_order or self.wires
+        return qml.math.expand_matrix(
+            canonical_matrix, wires=self.active_wires, wire_order=wire_order
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.Toffoli.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.Toffoli.compute_decomposition((0,1,2))
+        [Hadamard(wires=[2]),
+        CNOT(wires=[1, 2]),
+        Adjoint(T)(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        CNOT(wires=[1, 2]),
+        Adjoint(T)(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        T(wires=[1]),
+        CNOT(wires=[0, 1]),
+        Hadamard(wires=[2]),
+        T(wires=[0]),
+        Adjoint(T)(wires=[1]),
+        CNOT(wires=[0, 1])]
+
+        """
+        return [
+            qml.Hadamard(wires=wires[2]),
+            CNOT(wires=[wires[1], wires[2]]),
+            qml.adjoint(qml.T(wires=wires[2])),
+            CNOT(wires=[wires[0], wires[2]]),
+            qml.T(wires=wires[2]),
+            CNOT(wires=[wires[1], wires[2]]),
+            qml.adjoint(qml.T(wires=wires[2])),
+            CNOT(wires=[wires[0], wires[2]]),
+            qml.T(wires=wires[2]),
+            qml.T(wires=wires[1]),
+            CNOT(wires=[wires[0], wires[1]]),
+            qml.Hadamard(wires=wires[2]),
+            qml.T(wires=wires[0]),
+            qml.adjoint(qml.T(wires=wires[1])),
+            CNOT(wires=[wires[0], wires[1]]),
+        ]
+
+    def decomposition(self):
+        return self.compute_decomposition(self.wires)
+
+
+class CCZ(ControlledOp):
+    r"""CCZ(wires)
+    CCZ (controlled-controlled-Z) gate.
+
+    .. math::
+
+        CCZ =
+        \begin{pmatrix}
+        1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 1 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & -1
+        \end{pmatrix}
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the subsystem the gate acts on
+    """
+
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
+
+    num_wires = 3
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    name = "CCZ"
+
+    def __init__(self, wires):
+        control_wires = wires[:2]
+        target_wires = wires[2:]
+        super().__init__(qml.PauliZ(wires=target_wires), control_wires)
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CCZ.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CCZ.compute_matrix())
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 0 0 -1]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, -1],
+            ]
+        )
+
+    def matrix(self, wire_order=None):
+        canonical_matrix = self.compute_matrix()
+        wire_order = wire_order or self.wires
+        return qml.math.expand_matrix(
+            canonical_matrix, wires=self.active_wires, wire_order=wire_order
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.Toffoli.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.CCZ.compute_decomposition((0,1,2))
+        [CNOT(wires=[1, 2]),
+        Adjoint(T)(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        CNOT(wires=[1, 2]),
+        Adjoint(T)(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        T(wires=[1]),
+        CNOT(wires=[0, 1]),
+        Hadamard(wires=[2]),
+        T(wires=[0]),
+        Adjoint(T)(wires=[1]),
+        CNOT(wires=[0, 1]),
+        Hadamard(wires=[2]),]
+
+        """
+        return [
+            CNOT(wires=[wires[1], wires[2]]),
+            qml.adjoint(qml.T(wires=wires[2])),
+            CNOT(wires=[wires[0], wires[2]]),
+            qml.T(wires=wires[2]),
+            CNOT(wires=[wires[1], wires[2]]),
+            qml.adjoint(qml.T(wires=wires[2])),
+            CNOT(wires=[wires[0], wires[2]]),
+            qml.T(wires=wires[2]),
+            qml.T(wires=wires[1]),
+            CNOT(wires=[wires[0], wires[1]]),
+            qml.Hadamard(wires=wires[2]),
+            qml.T(wires=wires[0]),
+            qml.adjoint(qml.T(wires=wires[1])),
+            CNOT(wires=[wires[0], wires[1]]),
+            qml.Hadamard(wires=[2]),
+        ]
+
+    def decomposition(self):
+        return self.compute_decomposition(self.wires)
+
+
+class CH(ControlledOp):
+    r"""CH(wires)
+    The controlled-Hadamard operator
+
+    .. math:: CH = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 \\
+            0 & 0 & \frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} \\
+            0 & 0 & \frac{1}{\sqrt{2}} & -\frac{1}{\sqrt{2}}
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
+    """
+    num_wires = 2
+    """int: Number of wires that the operation acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    name = "CH"
+
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
+
+    def __init__(self, wires):
+        control_wires = wires[:1]
+        target_wires = wires[1:]
+        super().__init__(qml.Hadamard(wires=target_wires), control_wires)
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CH.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CH.compute_matrix())
+        [[ 1.          0.          0.          0.        ]
+         [ 0.          1.          0.          0.        ]
+         [ 0.          0.          0.70710678  0.70710678]
+         [ 0.          0.          0.70710678 -0.70710678]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, INV_SQRT2, INV_SQRT2],
+                [0, 0, INV_SQRT2, -INV_SQRT2],
+            ]
+        )
+
+    def matrix(self, wire_order=None):
+        canonical_matrix = self.compute_matrix()
+        wire_order = wire_order or self.wires
+        return qml.math.expand_matrix(
+            canonical_matrix, wires=self.active_wires, wire_order=wire_order
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators (static method).
+
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.CH.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CH.compute_decomposition([0, 1]))
+        [qml.RY(-0.78539816339, wires=[1]), CZ(wires=[0, 1]), qml.RY(0.78539816339, wires=[1])]
+
+        """
+        return [
+            qml.RY(-np.pi / 4, wires=wires[1]),
+            qml.CZ(wires=wires),
+            qml.RY(+np.pi / 4, wires=wires[1]),
+        ]
+
+    def decomposition(self):
+        return self.compute_decomposition(self.wires)
+
+
+class CSWAP(ControlledOp):
+    r"""CSWAP(wires)
+    The controlled-swap operator
+
+    .. math:: CSWAP = \begin{bmatrix}
+            1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_wires = 3
+    """int : Number of wires that the operation acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    name = "CSWAP"
+
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
+
+    def __init__(self, wires):
+        control_wires = wires[:1]
+        target_wires = wires[1:]
+        super().__init__(qml.SWAP(wires=target_wires), control_wires)
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CSWAP.matrix`
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CSWAP.compute_matrix())
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 1]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+            ]
+        )
+
+    def matrix(self, wire_order=None):
+        canonical_matrix = self.compute_matrix()
+        wire_order = wire_order or self.wires
+        return qml.math.expand_matrix(
+            canonical_matrix, wires=self.active_wires, wire_order=wire_order
+        )
+
+
 class CRX(ControlledOp):
     r"""The controlled-RX operator
 
