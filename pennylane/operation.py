@@ -785,7 +785,14 @@ class Operator(abc.ABC):
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
-        if wire_order is None or self.wires == Wires(wire_order):
+        if (
+            wire_order is None
+            or self.wires == Wires(wire_order)
+            or (
+                self.name in qml.ops.qubit.attributes.symmetric_over_all_wires
+                and set(self.wires) == set(wire_order)
+            )
+        ):
             return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
@@ -1142,19 +1149,18 @@ class Operator(abc.ABC):
 
         Args:
             subspace (tuple[int]): Subspace to check for correctness
+
+        .. warning::
+
+            ``Operator.validate_subspace(subspace)`` has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed from the Operator class in an upcoming release.
         """
-        if not hasattr(subspace, "__iter__") or len(subspace) != 2:
-            raise ValueError(
-                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
-            )
 
-        if not all(s in {0, 1, 2} for s in subspace):
-            raise ValueError("Elements of the subspace must be 0, 1, or 2.")
+        warnings.warn(
+            "Operator.validate_subspace(subspace) has been relocated to the qml.ops.qutrit.parametric_ops module and will be removed from the Operator class in an upcoming release.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
-        if subspace[0] == subspace[1]:
-            raise ValueError("Elements of subspace list must be unique.")
-
-        return tuple(sorted(subspace))
+        return qml.ops.qutrit.validate_subspace(subspace)
 
     @property
     def num_params(self):

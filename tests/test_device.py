@@ -61,6 +61,21 @@ def mock_device_with_observables(monkeypatch):
 
 
 @pytest.fixture(scope="function")
+def mock_device_with_identity(monkeypatch):
+    """A function to create a mock device with non-empty observables"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, "__abstractmethods__", frozenset())
+        m.setattr(Device, "operations", mock_device_paulis + ["Identity"])
+        m.setattr(Device, "observables", mock_device_paulis + ["Identity"])
+        m.setattr(Device, "short_name", "MockDevice")
+
+        def get_device(wires=1):
+            return Device(wires=wires)
+
+        yield get_device
+
+
+@pytest.fixture(scope="function")
 def mock_device_supporting_paulis(monkeypatch):
     """A function to create a mock device with non-empty observables"""
     with monkeypatch.context() as m:
@@ -290,7 +305,7 @@ class TestDeviceSupportedLogic:
             dev.supports_observable(operation)
 
 
-class TestInternalFunctions:
+class TestInternalFunctions:  # pylint:disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
 
     # pylint: disable=unnecessary-dunder-call
@@ -405,6 +420,15 @@ class TestInternalFunctions:
 
         with pytest.raises(ValueError, match="Postselection is not supported"):
             dev.check_validity(queue, observables)
+
+    def test_check_validity_on_non_observable_measurement(self, mock_device_with_identity, recwarn):
+        """Test that using non-observable measurements like state() works."""
+        dev = mock_device_with_identity(wires=1)
+        queue = []
+        observables = [qml.state()]
+
+        dev.check_validity(queue, observables)
+        assert len(recwarn) == 0
 
     def test_args(self, mock_device):
         """Test that the device requires correct arguments"""
@@ -612,6 +636,21 @@ class TestInternalFunctions:
         assert new_tape.wires == tape.wires
         assert new_tape.batch_size == tape.batch_size
         assert new_tape.output_dim == tape.output_dim
+
+    def test_default_expand_fn_with_invalid_op(self, mock_device_with_operations, recwarn):
+        """Test that default_expand_fn works with an invalid op and some measurement."""
+        invalid_tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))])
+        expected_tape = qml.tape.QuantumScript([qml.RZ(np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))])
+        dev = mock_device_with_operations(wires=1)
+        expanded_tape = dev.expand_fn(invalid_tape, max_expansion=3)
+        assert qml.equal(expanded_tape, expected_tape)
+        assert len(recwarn) == 0
+
+    def test_stopping_condition_passes_with_non_obs_mp(self, mock_device_with_identity, recwarn):
+        """Test that Device.stopping_condition passes with non-observable measurements"""
+        dev = mock_device_with_identity(wires=1)
+        assert dev.stopping_condition(qml.state())
+        assert len(recwarn) == 0
 
 
 # pylint: disable=too-few-public-methods

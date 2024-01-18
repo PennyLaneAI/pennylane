@@ -50,7 +50,7 @@ Jacobian Product Calculation
     ~workflow.jacobian_products.TransformJacobianProducts
     ~workflow.jacobian_products.DeviceDerivatives
     ~workflow.jacobian_products.DeviceJacobianProducts
-
+    ~workflow.jacobian_products.LightningVJPs
 
 """
 from .set_shots import set_shots
