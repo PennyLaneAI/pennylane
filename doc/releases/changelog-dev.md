@@ -60,8 +60,14 @@
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
   [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
 
+* `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
+  [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
+
 * Improve efficiency of matrix calculation when operator is symmetric over wires
    [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
+
+* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
+  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
 
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
@@ -98,7 +104,15 @@
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
+* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
+  validate these properties manually.
+  [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
+
 <h3>Deprecations 👋</h3>
+
+* `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
+  module and will be removed from the Operator class in an upcoming release.
+  [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
 
 * Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
@@ -106,6 +120,8 @@
 * `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
   values that are no longer needed.
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
+  [(#5071)](https://github.com/PennyLaneAI/pennylane/pull/5071)
+  [(#5076)](https://github.com/PennyLaneAI/pennylane/pull/5076)
 
 * Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
   ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
@@ -143,6 +159,8 @@
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
 
+* The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
+  [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
 
 <h3>Contributors ✍️</h3>
 
@@ -150,11 +168,12 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Astral Cai,
-Pablo Antonio Moreno Casares,
 Isaac De Vlugt,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
+Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
+Alex Preciado,
 Matthew Silverman.

@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
+  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed
+  from the ``Operator`` class.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
   ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
   functionality can be achieved using newer features in the ``pauli`` module.
@@ -60,20 +67,6 @@ Pending deprecations
 
   - Deprecated in v0.34
   - Will be removed in v0.36
-
-* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` are deprecated. Users should now validate
-  these properties manually.
-
-  .. code-block:: python
-
-    from pennylane.measurements import *
-    sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
-    is_sample_type = [isinstance(m, sample_types) for m in tape.measurements]
-    is_sampled = any(is_sample_type)
-    all_sampled = all(is_sample_type)
-
-  - Deprecated in v0.34
-  - Will be removed in v0.35
 
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
 
@@ -150,6 +143,20 @@ Completed deprecation cycles
 * ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better
   method to estimate entropies from approximate density matrix reconstructions
   (with potentially negative eigenvalues) has been implemented.
+
+  - Deprecated in v0.34
+  - Removed in v0.35
+
+* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` have been removed. Users should now validate
+  these properties manually.
+
+  .. code-block:: python
+
+    from pennylane.measurements import *
+    sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+    is_sample_type = [isinstance(m, sample_types) for m in tape.measurements]
+    is_sampled = any(is_sample_type)
+    all_sampled = all(is_sample_type)
 
   - Deprecated in v0.34
   - Removed in v0.35
