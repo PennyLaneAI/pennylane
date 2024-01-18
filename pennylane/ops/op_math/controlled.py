@@ -127,13 +127,11 @@ def ctrl(op, control, control_values=None, work_wires=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
 
-    non_parametric_custom_ops = {
+    custom_ops = {
         (qml.PauliZ, 1): qml.CZ,
         (qml.PauliY, 1): qml.CY,
         (qml.PauliX, 1): qml.CNOT,
         (qml.PauliX, 2): qml.Toffoli,
-    }
-    parametric_custom_ops = {
         (qml.RX, 1): qml.CRX,
         (qml.RY, 1): qml.CRY,
         (qml.RZ, 1): qml.CRZ,
@@ -144,12 +142,9 @@ def ctrl(op, control, control_values=None, work_wires=None):
     control = qml.wires.Wires(control)
     custom_key = (type(op), len(control))
 
-    if custom_key in non_parametric_custom_ops and (control_values is None or all(control_values)):
+    if custom_key in custom_ops and (control_values is None or all(control_values)):
         qml.QueuingManager.remove(op)
-        return non_parametric_custom_ops[custom_key](control + op.wires)
-    if custom_key in parametric_custom_ops and (control_values is None or all(control_values)):
-        qml.QueuingManager.remove(op)
-        return parametric_custom_ops[custom_key](*op.data, control + op.wires)
+        return custom_ops[custom_key](*op.data, control + op.wires)
     if isinstance(op, qml.PauliX):
         qml.QueuingManager.remove(op)
         control_string = (
