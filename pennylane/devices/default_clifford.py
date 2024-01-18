@@ -440,7 +440,8 @@ class DefaultClifford(Device):
         for op in circuit.operations[use_prep_ops:]:
             gate, wires = self.pl_to_stim(op)
             if gate is not None:
-                stim_ct.append(gate, wires)
+                # Note: This is ~300x faster than doing stim_ct.append(gate, wires)
+                stim_ct.append_from_stim_program_text(f"{gate} {wires}")
             else:
                 if op.name == "GlobalPhase":
                     global_phase_ops.append(op)
@@ -473,7 +474,7 @@ class DefaultClifford(Device):
             raise DeviceError(
                 f"Operator {op} not supported on default.clifford and does not provide a decomposition."
             ) from e
-        return stim_op, op.wires
+        return stim_op, " ".join(map(str, op.wires))
 
     def measure(self, circuit, tableau_simulator, global_phase, stim):
         """Given a circuit, compute and return the measurement results."""
