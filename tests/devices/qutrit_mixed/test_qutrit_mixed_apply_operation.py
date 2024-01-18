@@ -271,8 +271,8 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         adjoint_krons = np.conj(np.transpose(expanded_krons, (0, 2, 1)))
         new_state = np.sum(
             [
-                expanded_krons[i] @ flattened_state @ adjoint_krons[i]
-                for i in range(expanded_krons.shape[0])
+                expanded_kron @ flattened_state @ adjoint_krons[i]
+                for i, expanded_kron in enumerate(expanded_krons)
             ],
             axis=0,
         )
