@@ -144,7 +144,7 @@ def adjoint_state_measurements(
             if (
                 qml.math.requires_grad(p)
                 and qml.math.get_interface(p) == "tensorflow"
-                and "32" in qml.math.get_dtype_name(p)
+                and qml.math.get_dtype_name(p) in {"float32", "complex64"}
             ):
                 raise ValueError(
                     "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
