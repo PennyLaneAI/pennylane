@@ -22,7 +22,7 @@ import pytest
 from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
-from gate_data import CY, CZ, CRX, CRY, CRZ, CRot, ControlledPhaseShift
+from gate_data import CY, CZ, CRotx, CRoty, CRotz, CRot3, ControlledPhaseShift
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -34,10 +34,10 @@ NON_PARAMETRIZED_OPERATIONS = [
 ]
 
 PARAMETRIZED_OPERATIONS = [
-    (qml.CRX, CRX),
-    (qml.CRY, CRY),
-    (qml.CRZ, CRZ),
-    (qml.CRot, CRot),
+    (qml.CRX, CRotx),
+    (qml.CRY, CRoty),
+    (qml.CRZ, CRotz),
+    (qml.CRot, CRot3),
     (qml.ControlledPhaseShift, ControlledPhaseShift),
 ]
 
