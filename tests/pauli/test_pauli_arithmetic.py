@@ -1113,7 +1113,7 @@ class TestPauliSentence:
 
 
 class TestPaulicomms:
-    """Test 'native' comms in PauliWord and PauliSentence"""
+    """Test 'native' commutator in PauliWord and PauliSentence"""
 
     def test_pauli_word_comm_raises_NotImplementedError(self):
         """Test that a NotImplementedError is raised when a PauliWord.commutator() for type that is not PauliWord, PauliSentence or Operator"""
@@ -1121,6 +1121,14 @@ class TestPaulicomms:
         matrix = np.eye(2)
         with pytest.raises(NotImplementedError, match="Cannot compute natively a commutator"):
             op1.commutator(matrix)
+
+    def test_commutators_with_zeros_ps(self):
+        """Test that commutators between PauliSentences where one represents the 0 word is treated correctly"""
+        ps_zero = PauliSentence({})
+        ps1 = PauliSentence({PauliWord({0: "X"}): 1.0})
+
+        assert ps_zero.commutator(ps1) == ps_zero
+        assert ps1.commutator(ps_zero) == ps_zero
 
     data_pauli_relations_commutes = [
         # word and word

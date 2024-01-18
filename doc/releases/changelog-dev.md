@@ -40,11 +40,12 @@
   + 2j * X(0) @ Z(1)
   ```
 
-  We can also compute commutators with Pauli operators natively with the `|` (or) operator.
+  We can also compute commutators with Pauli operators natively with the `PauliSentence.commutator` method.
+
   ```pycon
   >>> op1 = PauliWord({0:"X", 1:"X"})
   >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
-  >>> op1 | op2
+  >>> op1.commutator(op2)
   2j * Z(0) @ X(1)
   + 2j * X(0) @ Z(1)
   ```

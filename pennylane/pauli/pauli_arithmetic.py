@@ -523,6 +523,24 @@ class PauliSentence(dict):
     + 1 * I
     + 1.0 * Z(3)
 
+    Note that while the empty :class:`~PauliWord` ``PauliWord({})`` respresents the identity, the empty ``PauliSentence`` represents 0
+
+    >>> PauliSentence({})
+    0 * I
+
+    We can compute commutators using the `PauliSentence.commutator()` method
+
+    >>> op1 = PauliWord({0:"X", 1:"X"})
+    >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+    >>> op1.commutator(op2)
+    2j * Z(0) @ X(1)
+    + 2j * X(0) @ Z(1)
+
+    Or, alternatively, use :func:`~commutator`.
+    >>> qml.commutator(op1, op2, pauli=True)
+
+    Note that we need to specify `pauli=True` as the function returns PennyLane operators by default.
+
     """
 
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
@@ -677,14 +695,16 @@ class PauliSentence(dict):
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
 
+        if isinstance(other, PauliWord):
+            for pw1 in self:
+                comm_pw, coeff = pw1._commutator(other)
+                if len(comm_pw) != 0:
+                    final_ps[comm_pw] += coeff * self[pw1]
+
+            return final_ps
+
         if not isinstance(other, PauliSentence):
             other = qml.pauli.pauli_sentence(other)
-
-        if len(self) == 0:
-            return copy(other)
-
-        if len(other) == 0:
-            return copy(self)
 
         for pw1 in self:
             for pw2 in other:
