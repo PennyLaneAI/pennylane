@@ -280,7 +280,7 @@ def U3(theta, phi, delta):
     )
 
 
-def CRotx(theta):
+def CRX(theta):
     r"""Two-qubit controlled rotation about the x axis.
 
     Args:
@@ -298,7 +298,7 @@ def CRotx(theta):
     )
 
 
-def CRoty(theta):
+def CRY(theta):
     r"""Two-qubit controlled rotation about the y axis.
 
     Args:
@@ -316,7 +316,7 @@ def CRoty(theta):
     )
 
 
-def CRotz(theta):
+def CRZ(theta):
     r"""Two-qubit controlled rotation about the z axis.
 
     Args:
@@ -335,7 +335,7 @@ def CRotz(theta):
     )
 
 
-def CRot3(a, b, c):
+def CRot(a, b, c):
     r"""Arbitrary two-qubit controlled rotation using three Euler angles.
 
     Args:

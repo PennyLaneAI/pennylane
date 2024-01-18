@@ -15,64 +15,41 @@
 Unit tests for parametric Operators inheriting from ControlledOp.
 """
 
-import copy
 import functools
 
 import numpy as np
 import pytest
 from scipy.linalg import fractional_matrix_power
-from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
-from gate_data import CY, CZ, ControlledPhaseShift
+from gate_data import CY, CZ, CRX, CRY, CRZ, CRot, ControlledPhaseShift
 
 import pennylane as qml
 from pennylane.wires import Wires
-from pennylane.operation import AnyWires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 
-# Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.CY, CY),
     (qml.CZ, CZ),
 ]
 
-SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
-    (qml.CY(wires=[0, 1]), CY),
-    (qml.CZ(wires=[0, 1]), CZ),
-)
+PARAMETRIZED_OPERATIONS = [
+    (qml.CRX, CRX),
+    (qml.CRY, CRY),
+    (qml.CRZ, CRZ),
+    (qml.CRot, CRot),
+    (qml.ControlledPhaseShift, ControlledPhaseShift),
+]
 
-DECOMPOSITIONS = (
+ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
+
+NON_PARAMETRIC_OPS_DECOMPOSITIONS = (
     (qml.CY, [qml.CRY(np.pi, wires=[0, 1]), qml.S(0)]),
     (qml.CZ, [qml.ControlledPhaseShift(np.pi, wires=[0, 1])]),
 )
 
 X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
-
-
-LABEL_DATA = [
-    (qml.CY(wires=(0, 1)), "Y"),
-    (qml.CZ(wires=(0, 1)), "Z"),
-]
-
-CONTROL_DATA = [
-    (qml.CY(wires=(0, 1)), Wires(0)),
-    (qml.CZ(wires=(0, 1)), Wires(0)),
-]
-
-INVOLUTION_OPS = [  # ops who are their own inverses
-    qml.CY((0, 1)),
-    qml.CZ(wires=(0, 1)),
-]
-
-
-def dot_broadcasted(a, b):
-    return np.einsum("...ij,...jk->...ik", a, b)
-
-
-def multi_dot_broadcasted(matrices):
-    return functools.reduce(dot_broadcasted, matrices)
 
 
 class TestControlledQubitUnitary:
@@ -480,143 +457,264 @@ class TestControlledQubitUnitary:
             )
 
 
-class TestNonParametricOpsControlled:
-    @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
-    def test_non_parametrized_op_copy(self, op_cls, _, tol):
-        """Tests that copied non-parametrized ops function as expected"""
-        op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
-        copied_op = copy.copy(op)
-        assert qml.equal(copied_op, op, atol=tol, rtol=0)
-        assert copied_op is not op
-        assert qml.equal(copied_op, op, atol=tol, rtol=0)
+@pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
+def test_map_wires_non_parametric(op_cls, _):
+    """Test get and set private wires in non-parametric controlled operations."""
 
-    @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
-    def test_matrices(self, ops, mat, tol):
-        """Test matrices of non-parametrized operations are correct"""
-        op = ops(wires=0 if ops.num_wires is AnyWires else range(ops.num_wires))
-        res_static = op.compute_matrix()
-        res_dynamic = op.matrix()
-        assert np.allclose(res_static, mat, atol=tol, rtol=0)
-        assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
+    op = op_cls(wires=[0, 1])
+    assert op.wires == Wires((0, 1))
 
-    @pytest.mark.parametrize("ops, expected_ops", DECOMPOSITIONS)
-    def test_decompositions(self, ops, expected_ops, tol):
-        """Tests that decompositions of non-parametrized operations are correct"""
-        op = ops(wires=[0, 1])
-        decomps = op.decomposition()
-        decomposed_matrix = qml.matrix(op.decomposition)()
-
-        for gate, expected in zip(decomps, expected_ops):
-            assert qml.equal(gate, expected, atol=tol, rtol=0)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("op, _", NON_PARAMETRIZED_OPERATIONS)
-    def test_eigenval(self, op, _):
-        """Tests that the CZ eigenvalue matches the numpy eigenvalues of the CZ matrix"""
-        op = qml.CZ(wires=[0, 1])
-        exp = np.linalg.eigvals(op.matrix())
-        res = op.eigvals()
-        assert np.allclose(res, exp)
-
-    @pytest.mark.parametrize("op, label", LABEL_DATA)
-    def test_label_method(self, op, label):
-        """Tests that the label method gives the expected result."""
-        assert op.label() == label
-        assert op.label(decimals=2) == label
-
-    @pytest.mark.parametrize("op, control_wires", CONTROL_DATA)
-    def test_control_wires(self, op, control_wires):
-        """Test ``control_wires`` attribute for non-parametrized operations."""
-
-        assert op.control_wires == control_wires
-
-    @pytest.mark.parametrize("op", INVOLUTION_OPS)
-    def test_adjoint_method(self, op):
-        """Tests the adjoint method for operations that are their own adjoint."""
-        adj_op = copy.copy(op)
-        for _ in range(4):
-            adj_op = adj_op.adjoint()
-            assert qml.equal(adj_op, op)
-
-    @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
-    def test_map_wires(self, op_cls, _):
-        """Test that we can get and set private wires in all operations."""
-
-        op = op_cls(wires=[0, 1])
-        assert op.wires == Wires((0, 1))
-
-        op = op.map_wires(wire_map={0: "a", 1: "b"})
-        assert op.base.wires == Wires(("b"))
-        assert op.control_wires == Wires(("a"))
-
-    def test_CZ_controlled(self):  # TODO: remove after non-parametric ops are cleaned up
-        """Test the PauliZ _controlled method."""
-        out = qml.CZ(wires=[0, 1])._controlled("a")  # pylint: disable=protected-access
-        assert qml.equal(out, qml.CCZ(("a", 0, 1)))
-
-    @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
-    def test_sparse_matrix(self, op, mat):
-        """Tests the sparse matrix method for operations which support it."""
-        expected_sparse_mat = csr_matrix(mat)
-        sparse_mat = op.sparse_matrix()
-
-        assert isinstance(sparse_mat, csr_matrix)
-        assert isinstance(expected_sparse_mat, csr_matrix)
-        assert all(sparse_mat.data == expected_sparse_mat.data)
-        assert all(sparse_mat.indices == expected_sparse_mat.indices)
+    op = op.map_wires(wire_map={0: "a", 1: "b"})
+    assert op.base.wires == Wires("b")
+    assert op.control_wires == Wires("a")
 
 
-PERIOD_2_OPS = (
-    qml.CY(wires=(0, 1)),
-    qml.CZ(wires=(0, 1)),
-)
+def test_controlled_phase_shift_alias():
+    """Tests that the alias for ControlledPhaseShift works"""
+    assert qml.equal(qml.ControlledPhaseShift(0.123, wires=[0, 1]), qml.CPhase(0.123, wires=[0, 1]))
 
 
-class TestPowMethod:
-    @pytest.mark.parametrize("op", PERIOD_2_OPS)
-    @pytest.mark.parametrize("n", (1, 5, -1, -5))
-    def test_period_two_pow_odd(self, op, n):
-        """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
-        assert qml.equal(op.pow(n)[0], op)
-        assert np.allclose(op.pow(n)[0].matrix(), op.matrix())
-        assert op.pow(n)[0].name == op.name
+def _arbitrary_crot(x, y, z):
+    """controlled arbitrary single qubit rotation"""
+    c = np.cos(y / 2)
+    s = np.sin(y / 2)
+    return np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
+            [0, 0, np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c],
+        ]
+    )
 
-    @pytest.mark.parametrize("op", PERIOD_2_OPS)
-    @pytest.mark.parametrize("n", (2, 6, 0, -2))
-    def test_period_two_pow_even(self, op, n):
-        """Test that ops with a period of 2 raised to an even power are empty lists."""
-        assert len(op.pow(n)) == 0
 
-    @pytest.mark.parametrize("op", PERIOD_2_OPS)
-    def test_period_two_noninteger_power(self, op):
-        """Test that ops with a period of 2 raised to a non-integer power raise an error."""
-        if isinstance(op, (qml.PauliZ, qml.CZ)):
-            pytest.skip("PauliZ can be raised to any power.")
-        with pytest.raises(qml.operation.PowUndefinedError):
-            op.pow(1.234)
+def _arbitrary_crot_broadcasted(x, y, z):
+    """controlled arbitrary single qubit rotation broadcasted"""
 
-        if op.__class__ is qml.CZ:
-            pytest.skip("CZ can be raised to any power.")
-        with pytest.raises(qml.operation.PowUndefinedError):
-            op.pow(1.234)
+    c = np.cos(y / 2)
+    s = np.sin(y / 2)
+    return np.array(
+        [
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, np.exp(-0.5j * (_x + _z)) * _c, -np.exp(0.5j * (_x - _z)) * _s],
+                [0, 0, np.exp(-0.5j * (_x - _z)) * _s, np.exp(0.5j * (_x + _z)) * _c],
+            ]
+            for _x, _z, _c, _s in zip(x, z, c, s)
+        ]
+    )
 
-    @pytest.mark.parametrize("n", (0.12, -3.462, 3.693))
-    def test_cz_general_power(self, n):
-        """Check that CZ raised to an non-integer power that's not the square root
-        results in a controlled PhaseShift."""
-        op_pow = qml.CZ(wires=[0, 1]).pow(n)
 
-        assert len(op_pow) == 1
-        assert isinstance(op_pow[0], qml.ops.ControlledOp)
-        assert isinstance(op_pow[0].base, qml.PhaseShift)
-        assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
+def _phase_shift_matrix_broadcasted(phi):
+    """Phase shift matrix broadcasted"""
+
+    expected = np.array([np.eye(4, dtype=complex)] * 3)
+    expected[..., 3, 3] = np.exp(1j * phi)
+    return expected
+
+
+EXPECTED_MATRICES = [
+    (qml.CRX, [0], np.identity(4)),
+    (
+        qml.CRX,
+        [np.pi / 2],
+        np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1 / np.sqrt(2), -1j / np.sqrt(2)],
+                [0, 0, -1j / np.sqrt(2), 1 / np.sqrt(2)],
+            ]
+        ),
+    ),
+    (qml.CRX, [np.pi], np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, -1j, 0]])),
+    (
+        qml.CRX,
+        [np.array([np.pi / 2, np.pi])],
+        np.array(
+            [
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1 / np.sqrt(2), -1j / np.sqrt(2)],
+                    [0, 0, -1j / np.sqrt(2), 1 / np.sqrt(2)],
+                ],
+                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, -1j, 0]],
+            ]
+        ),
+    ),
+    (qml.CRY, [0], np.identity(4)),
+    (
+        qml.CRY,
+        [np.pi / 2],
+        np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1 / np.sqrt(2), -1 / np.sqrt(2)],
+                [0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2)],
+            ]
+        ),
+    ),
+    (qml.CRY, [np.pi], np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])),
+    (
+        qml.CRY,
+        [np.array([np.pi / 2, np.pi])],
+        np.array(
+            [
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1 / np.sqrt(2), -1 / np.sqrt(2)],
+                    [0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2)],
+                ],
+                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]],
+            ]
+        ),
+    ),
+    (qml.CRZ, [0], np.identity(4)),
+    (
+        qml.CRZ,
+        [np.pi / 2],
+        np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, np.exp(-1j * np.pi / 4), 0],
+                [0, 0, 0, np.exp(1j * np.pi / 4)],
+            ]
+        ),
+    ),
+    (qml.CRZ, [np.pi], np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]])),
+    (
+        qml.CRZ,
+        [np.array([np.pi / 2, np.pi])],
+        np.array(
+            [
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, np.exp(-1j * np.pi / 4), 0],
+                    [0, 0, 0, np.exp(1j * np.pi / 4)],
+                ],
+                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]],
+            ]
+        ),
+    ),
+    (qml.CRot, [0, 0, 0], np.identity(4)),
+    (
+        qml.CRot,
+        [np.pi, np.pi, np.pi],
+        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]]),
+    ),
+    (qml.CRot, [0.432, -0.152, 0.9234], _arbitrary_crot(0.432, -0.152, 0.9234)),
+    (qml.CRot, [np.zeros(5), np.zeros(5), np.zeros(5)], np.identity(4)),
+    (
+        qml.CRot,
+        [np.ones(3) * np.pi, np.ones(3) * np.pi, np.ones(3) * np.pi],
+        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]]),
+    ),
+    (
+        qml.CRot,
+        [np.array([0.432, -0.124]), np.array([-0.152, 2.912]), np.array([0.9234, -9.2])],
+        _arbitrary_crot_broadcasted(
+            np.array([0.432, -0.124]), np.array([-0.152, 2.912]), np.array([0.9234, -9.2])
+        ),
+    ),
+    (qml.ControlledPhaseShift, [0.123], ControlledPhaseShift(0.123)),
+    (
+        qml.ControlledPhaseShift,
+        [np.array([0.2, np.pi / 2, -0.1])],
+        _phase_shift_matrix_broadcasted(np.array([0.2, np.pi / 2, -0.1])),
+    ),
+]
+
+EXPECTED_EIGVALS = [
+    (qml.CRZ, [0], np.ones(4)),
+    (qml.CRZ, [np.pi / 2], np.array([1, 1, np.exp(-1j * np.pi / 4), np.exp(1j * np.pi / 4)])),
+    (qml.CRZ, [np.pi], np.array([1, 1, -1j, 1j])),
+    (
+        qml.CRZ,
+        [np.array([np.pi / 2, np.pi])],
+        [
+            np.array([1, 1, np.exp(-1j * np.pi / 4), np.exp(1j * np.pi / 4)]),
+            np.array([1, 1, -1j, 1j]),
+        ],
+    ),
+    (qml.ControlledPhaseShift, [0.123], np.linalg.eigvals(ControlledPhaseShift(0.123))),
+    (
+        qml.ControlledPhaseShift,
+        [np.array([0.2, np.pi / 2, -0.1])],
+        np.linalg.eigvals(_phase_shift_matrix_broadcasted(np.array([0.2, np.pi / 2, -0.1]))),
+    ),
+]
+
+
+class TestComputations:
+    """Tests computing the matrix and eigenvalues of a controlled operation"""
+
+    @pytest.mark.parametrize("op, params, expected_matrix", EXPECTED_MATRICES)
+    def test_matrix(self, tol, op, params, expected_matrix):
+        """Tests that the correct matrix is returned"""
+
+        assert np.allclose(op.compute_matrix(*params), expected_matrix, atol=tol, rtol=0)
+        assert np.allclose(op(*params, wires=[0, 1]).matrix(), expected_matrix, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("op, params, expected_matrix", EXPECTED_MATRICES)
+    def test_matrix_tf(self, tol, op, params, expected_matrix):
+        """Tests that the correct matrix is returned when using TensorFlow"""
+
+        import tensorflow as tf
+
+        variables = [tf.Variable(param) for param in params]
+
+        assert np.allclose(op.compute_matrix(*variables), expected_matrix, atol=tol, rtol=0)
+        assert np.allclose(op(*variables, wires=[0, 1]).matrix(), expected_matrix, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op, params, expected_eigvals", EXPECTED_EIGVALS)
+    def test_eigvals(self, tol, op, params, expected_eigvals):
+        """Tests that the correct eigenvalues are returned"""
+
+        assert np.allclose(op.compute_eigvals(*params), expected_eigvals, atol=tol, rtol=0)
+        assert np.allclose(op(*params, wires=[0, 1]).eigvals(), expected_eigvals, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("op, params, expected_eigvals", EXPECTED_EIGVALS)
+    def test_eigvals_tf(self, tol, op, params, expected_eigvals):
+        """Tests that the correct eigenvalues are returned when using TensorFlow"""
+
+        import tensorflow as tf
+
+        variables = [tf.Variable(param) for param in params]
+
+        assert np.allclose(op.compute_eigvals(*variables), expected_eigvals, atol=tol, rtol=0)
+        assert np.allclose(
+            op(*variables, wires=[0, 1]).eigvals(), expected_eigvals, atol=tol, rtol=0
+        )
+
+
+def _verify_decompositions(ops, classes, params, wires):
+    """Verifies that the correct decomposition classes are returned"""
+    for op, c, p, w in zip(ops, classes, params, wires):
+        assert isinstance(op, c)
+        assert qml.math.allclose(op.parameters, p)
+        assert op.wires == w
+
+
+def _dot_broadcasted(a, b):
+    return np.einsum("...ij,...jk->...ik", a, b)
+
+
+def _multi_dot_broadcasted(matrices):
+    return functools.reduce(_dot_broadcasted, matrices)
 
 
 class TestDecompositions:
-    def test_CRX_decomposition(self):
+    @pytest.mark.parametrize("phi", [0.432, np.array([0.1, 2.1])])
+    def test_CRX(self, phi):
         """Test the decomposition for CRX."""
-        phi = 0.432
 
         ops1 = qml.CRX.compute_decomposition(phi, wires=[0, 1])
         ops2 = qml.CRX(phi, wires=(0, 1)).decomposition()
@@ -625,32 +723,12 @@ class TestDecompositions:
         params = [[np.pi / 2], [phi / 2], [], [-phi / 2], [], [-np.pi / 2]]
         wires = [Wires(1), Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1)), Wires(1)]
 
-        for ops in [ops1, ops2]:
-            for op, c, p, w in zip(ops, classes, params, wires):
-                assert isinstance(op, c)
-                assert op.parameters == p
-                assert op.wires == w
+        _verify_decompositions(ops1, classes, params, wires)
+        _verify_decompositions(ops2, classes, params, wires)
 
-    def test_CRX_decomposition_broadcasted(self):
-        """Test the decomposition for broadcasted CRX."""
-        phi = np.array([0.1, 2.1])
-
-        ops1 = qml.CRX.compute_decomposition(phi, wires=[0, 1])
-        ops2 = qml.CRX(phi, wires=(0, 1)).decomposition()
-
-        classes = [qml.RZ, qml.RY, qml.CNOT, qml.RY, qml.CNOT, qml.RZ]
-        params = [[np.pi / 2], [phi / 2], [], [-phi / 2], [], [-np.pi / 2]]
-        wires = [Wires(1), Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1)), Wires(1)]
-
-        for ops in [ops1, ops2]:
-            for op, c, p, w in zip(ops, classes, params, wires):
-                assert isinstance(op, c)
-                assert qml.math.allclose(op.parameters, p)
-                assert op.wires == w
-
-    def test_CRY_decomposition(self):
+    @pytest.mark.parametrize("phi", [0.432, np.array([2.1, 0.2])])
+    def test_CRY(self, phi):
         """Test the decomposition for CRY."""
-        phi = 0.432
 
         ops1 = qml.CRY.compute_decomposition(phi, wires=[0, 1])
         ops2 = qml.CRY(phi, wires=(0, 1)).decomposition()
@@ -659,66 +737,27 @@ class TestDecompositions:
         params = [[phi / 2], [], [-phi / 2], []]
         wires = [Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1))]
 
-        for ops in [ops1, ops2]:
-            for op, c, p, w in zip(ops, classes, params, wires):
-                assert isinstance(op, c)
-                assert np.allclose(op.parameters, p)
-                assert op.wires == w
+        _verify_decompositions(ops1, classes, params, wires)
+        _verify_decompositions(ops2, classes, params, wires)
 
-    def test_CRY_decomposition_broadcasted(self):
-        """Test the decomposition for broadcastedCRY."""
-        phi = np.array([2.1, 0.2])
-
-        ops1 = qml.CRY.compute_decomposition(phi, wires=[0, 1])
-        ops2 = qml.CRY(phi, wires=(0, 1)).decomposition()
-
-        classes = [qml.RY, qml.CNOT, qml.RY, qml.CNOT]
-        params = [[phi / 2], [], [-phi / 2], []]
-        wires = [Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1))]
-
-        for ops in [ops1, ops2]:
-            for op, c, p, w in zip(ops, classes, params, wires):
-                assert isinstance(op, c)
-                assert np.allclose(op.parameters, p)
-                assert op.wires == w
-
-    def test_CRZ_decomposition(self):
+    @pytest.mark.parametrize("phi", [0.321, np.array([0.6, 2.1])])
+    def test_CRZ(self, phi):
         """Test the decomposition for CRZ."""
-        phi = 0.321
 
-        ops1 = qml.CRZ.compute_decomposition(phi, wires=[0, 1])
-        ops2 = qml.CRZ(phi, wires=(0, 1)).decomposition()
-
-        classes = [qml.PhaseShift, qml.CNOT, qml.PhaseShift, qml.CNOT]
-        params = [[phi / 2], [], [-phi / 2], []]
-        wires = [Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1))]
-
-        for ops in [ops1, ops2]:
-            for op, c, p, w in zip(ops, classes, params, wires):
-                assert isinstance(op, c)
-                assert np.allclose(op.parameters, p)
-                assert op.wires == w
-
-    def test_CRZ_decomposition_broadcasted(self):
-        """Test the decomposition for broadcasted CRZ."""
-        phi = np.array([0.6, 2.1])
-
-        ops1 = qml.CRZ.compute_decomposition(phi, wires=[0, 1])
-        ops2 = qml.CRZ(phi, wires=(0, 1)).decomposition()
+        ops1 = qml.CRZ.compute_decomposition(phi, wires=[1, 0])
+        ops2 = qml.CRZ(phi, wires=(1, 0)).decomposition()
 
         classes = [qml.PhaseShift, qml.CNOT, qml.PhaseShift, qml.CNOT]
         params = [[phi / 2], [], [-phi / 2], []]
-        wires = [Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1))]
+        wires = [Wires(0), Wires((1, 0)), Wires(0), Wires((1, 0))]
 
-        for ops in [ops1, ops2]:
-            for op, c, p, w in zip(ops, classes, params, wires):
-                assert isinstance(op, c)
-                assert np.allclose(op.parameters, p)
-                assert op.wires == w
+        _verify_decompositions(ops1, classes, params, wires)
+        _verify_decompositions(ops2, classes, params, wires)
 
     @pytest.mark.parametrize("phi, theta, omega", [[0.5, 0.6, 0.7], [0.1, -0.4, 0.7], [-10, 5, -1]])
-    def test_CRot_decomposition(self, tol, phi, theta, omega):
+    def test_CRot(self, tol, phi, theta, omega):
         """Tests that the decomposition of the CRot gate is correct"""
+
         op = qml.CRot(phi, theta, omega, wires=[0, 1])
         res = op.decomposition()
 
@@ -730,7 +769,6 @@ class TestDecompositions:
                 mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
-
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
@@ -740,8 +778,9 @@ class TestDecompositions:
             [np.array([0.1, 0.2, 0.9]), -0.4, np.array([0.7, 0.0, -0.7])],
         ],
     )
-    def test_CRot_decomposition_broadcasted(self, tol, phi, theta, omega):
+    def test_CRot_broadcasted(self, tol, phi, theta, omega):
         """Tests that the decomposition of the broadcasted CRot gate is correct"""
+
         op = qml.CRot(phi, theta, omega, wires=[0, 1])
         res = op.decomposition()
 
@@ -754,16 +793,14 @@ class TestDecompositions:
             else:
                 mats.append(mat)
 
-        decomposed_matrix = multi_dot_broadcasted(mats)
-
+        decomposed_matrix = _multi_dot_broadcasted(mats)
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
-    def test_controlled_phase_shift_decomp(self, phi, cphase_op):
-        """Tests that the ControlledPhaseShift and CPhase operation
-        calculates the correct decomposition"""
-        op = cphase_op(phi, wires=[0, 2])
+    def test_controlled_phase_shift(self, phi):
+        """Tests that the ControlledPhaseShift calculates the correct decomposition"""
+
+        op = qml.ControlledPhaseShift(phi, wires=[0, 2])
         decomp = op.decomposition()
 
         mats = []
@@ -809,12 +846,11 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, exp)
 
-    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
-    def test_controlled_phase_shift_decomp_broadcasted(self, cphase_op):
-        """Tests that the ControlledPhaseShift and CPhase operation
-        calculates the correct decomposition"""
+    def test_controlled_phase_shift_broadcasted(self):
+        """Tests that the ControlledPhaseShift calculates the correct decomposition"""
+
         phi = np.array([-0.2, 4.2, 1.8])
-        op = cphase_op(phi, wires=[0, 2])
+        op = qml.ControlledPhaseShift(phi, wires=[0, 2])
         decomp = op.decomposition()
 
         mats = []
@@ -845,355 +881,24 @@ class TestDecompositions:
                     )
                 )
 
-        decomposed_matrix = multi_dot_broadcasted(mats)
+        decomposed_matrix = _multi_dot_broadcasted(mats)
         lam = np.exp(1j * phi)
         exp = np.array([np.diag([1, 1, 1, 1, 1, el, 1, el]) for el in lam])
 
         assert np.allclose(decomposed_matrix, exp)
 
+    @pytest.mark.parametrize("ops, expected_ops", NON_PARAMETRIC_OPS_DECOMPOSITIONS)
+    def test_non_parametric_op_decompositions(self, ops, expected_ops, tol):
+        """Tests that decompositions of non-parametrized operations are correct"""
 
-class TestMatrix:
-    def test_CRX(self, tol):
-        """Test controlled x rotation is correct"""
+        op = ops(wires=[0, 1])
+        decomps = op.decomposition()
+        decomposed_matrix = qml.matrix(op.decomposition)()
 
-        # test identity for theta=0
-        assert np.allclose(qml.CRX.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
-        assert np.allclose(qml.CRX(0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
+        for gate, expected in zip(decomps, expected_ops):
+            assert qml.equal(gate, expected, atol=tol, rtol=0)
 
-        # test identity for theta=pi/2
-        expected_pi_half = np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1 / np.sqrt(2), -1j / np.sqrt(2)],
-                [0, 0, -1j / np.sqrt(2), 1 / np.sqrt(2)],
-            ]
-        )
-        assert np.allclose(qml.CRX.compute_matrix(np.pi / 2), expected_pi_half, atol=tol, rtol=0)
-        assert np.allclose(
-            qml.CRX(np.pi / 2, wires=[0, 1]).matrix(), expected_pi_half, atol=tol, rtol=0
-        )
-
-        # test identity for theta=pi
-        expected_pi = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, -1j, 0]])
-        assert np.allclose(qml.CRX.compute_matrix(np.pi), expected_pi, atol=tol, rtol=0)
-        assert np.allclose(qml.CRX(np.pi, wires=[0, 1]).matrix(), expected_pi, atol=tol, rtol=0)
-
-        # test broadcasting
-        param = np.array([np.pi / 2, np.pi])
-        expected = [expected_pi_half, expected_pi]
-        assert np.allclose(qml.CRX.compute_matrix(param), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRX(param, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
-
-    def test_CRY(self, tol):
-        """Test controlled y rotation is correct"""
-
-        # test identity for theta=0
-        assert np.allclose(qml.CRY.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
-        assert np.allclose(qml.CRY(0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
-
-        # test identity for theta=pi/2
-        expected_pi_half = np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1 / np.sqrt(2), -1 / np.sqrt(2)],
-                [0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2)],
-            ]
-        )
-        assert np.allclose(qml.CRY.compute_matrix(np.pi / 2), expected_pi_half, atol=tol, rtol=0)
-        assert np.allclose(
-            qml.CRY(np.pi / 2, wires=[0, 1]).matrix(), expected_pi_half, atol=tol, rtol=0
-        )
-
-        # test identity for theta=pi
-        expected_pi = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
-        assert np.allclose(qml.CRY.compute_matrix(np.pi), expected_pi, atol=tol, rtol=0)
-        assert np.allclose(qml.CRY(np.pi, wires=[0, 1]).matrix(), expected_pi, atol=tol, rtol=0)
-
-        # test broadcasting
-        param = np.array([np.pi / 2, np.pi])
-        expected = [expected_pi_half, expected_pi]
-        assert np.allclose(qml.CRY.compute_matrix(param), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRY(param, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
-
-    def test_CRZ(self, tol):
-        """Test controlled z rotation is correct"""
-
-        # test identity for theta=0
-        assert np.allclose(qml.CRZ.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
-
-        # test identity for theta=pi/2
-        expected_pi_half = np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, np.exp(-1j * np.pi / 4), 0],
-                [0, 0, 0, np.exp(1j * np.pi / 4)],
-            ]
-        )
-        assert np.allclose(qml.CRZ.compute_matrix(np.pi / 2), expected_pi_half, atol=tol, rtol=0)
-        assert np.allclose(
-            qml.CRZ(np.pi / 2, wires=[0, 1]).matrix(), expected_pi_half, atol=tol, rtol=0
-        )
-
-        # test identity for theta=pi
-        expected_pi = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]])
-        assert np.allclose(qml.CRZ.compute_matrix(np.pi), expected_pi, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(np.pi, wires=[0, 1]).matrix(), expected_pi, atol=tol, rtol=0)
-
-        # test broadcasting
-        param = np.array([np.pi / 2, np.pi])
-        expected = [expected_pi_half, expected_pi]
-        assert np.allclose(qml.CRZ.compute_matrix(param), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(param, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_CRZ_tf(self, tol):
-        """Test controlled z rotation is correct when used with Tensorflow,
-        because the code differs in that case."""
-        import tensorflow as tf
-
-        # test identity for theta=0
-        z = tf.Variable(0.0)
-        assert np.allclose(qml.CRZ.compute_matrix(z), np.identity(4), atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(z, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
-
-        # test identity for theta=pi/2
-        expected_pi_half = np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, np.exp(-1j * np.pi / 4), 0],
-                [0, 0, 0, np.exp(1j * np.pi / 4)],
-            ]
-        )
-        phi = tf.Variable(np.pi / 2)
-        assert np.allclose(qml.CRZ.compute_matrix(phi), expected_pi_half, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(phi, wires=[0, 1]).matrix(), expected_pi_half, atol=tol, rtol=0)
-
-        # test identity for theta=pi
-        expected_pi = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]])
-        phi = tf.Variable(np.pi)
-        assert np.allclose(qml.CRZ.compute_matrix(phi), expected_pi, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(phi, wires=[0, 1]).matrix(), expected_pi, atol=tol, rtol=0)
-
-        # test broadcasting
-        param = np.array([np.pi / 2, np.pi])
-        expected = [expected_pi_half, expected_pi]
-        param_tf = tf.Variable(param)
-        assert np.allclose(qml.CRZ.compute_matrix(param_tf), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(param_tf, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
-
-    def test_CRot(self, tol):
-        """Test controlled arbitrary rotation is correct"""
-
-        # test identity for phi,theta,omega=0
-        assert np.allclose(qml.CRot.compute_matrix(0, 0, 0), np.identity(4), atol=tol, rtol=0)
-        assert np.allclose(
-            qml.CRot(0, 0, 0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0
-        )
-
-        # test identity for phi,theta,omega=pi
-        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
-        assert np.allclose(qml.CRot.compute_matrix(np.pi, np.pi, np.pi), expected, atol=tol, rtol=0)
-        assert np.allclose(
-            qml.CRot(np.pi, np.pi, np.pi, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        def arbitrary_Crotation(x, y, z):
-            """controlled arbitrary single qubit rotation"""
-            c = np.cos(y / 2)
-            s = np.sin(y / 2)
-            return np.array(
-                [
-                    [1, 0, 0, 0],
-                    [0, 1, 0, 0],
-                    [0, 0, np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
-                    [0, 0, np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c],
-                ]
-            )
-
-        a, b, c = 0.432, -0.152, 0.9234
-        assert np.allclose(
-            qml.CRot.compute_matrix(a, b, c), arbitrary_Crotation(a, b, c), atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.CRot(a, b, c, wires=[0, 1]).matrix(),
-            arbitrary_Crotation(a, b, c),
-            atol=tol,
-            rtol=0,
-        )
-
-    def test_CRot_broadcasted(self, tol):
-        """Test broadcasted controlled arbitrary rotation is correct"""
-
-        # test identity for phi,theta,omega=0
-        z = np.zeros(5)
-        assert np.allclose(qml.CRot.compute_matrix(z, z, z), np.identity(4), atol=tol, rtol=0)
-        assert np.allclose(
-            qml.CRot(z, z, z, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0
-        )
-
-        # test -i*CY for phi,theta,omega=pi
-        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
-        pi = np.ones(3) * np.pi
-        assert np.allclose(qml.CRot.compute_matrix(pi, pi, pi), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRot(pi, pi, pi, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
-
-        def arbitrary_Crotation(x, y, z):
-            """controlled arbitrary single qubit rotation"""
-            c = np.cos(y / 2)
-            s = np.sin(y / 2)
-            return np.array(
-                [
-                    [
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, np.exp(-0.5j * (_x + _z)) * _c, -np.exp(0.5j * (_x - _z)) * _s],
-                        [0, 0, np.exp(-0.5j * (_x - _z)) * _s, np.exp(0.5j * (_x + _z)) * _c],
-                    ]
-                    for _x, _z, _c, _s in zip(x, z, c, s)
-                ]
-            )
-
-        a, b, c = np.array([0.432, -0.124]), np.array([-0.152, 2.912]), np.array([0.9234, -9.2])
-        assert np.allclose(
-            qml.CRot.compute_matrix(a, b, c), arbitrary_Crotation(a, b, c), atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.CRot(a, b, c, wires=[0, 1]).matrix(),
-            arbitrary_Crotation(a, b, c),
-            atol=tol,
-            rtol=0,
-        )
-
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
-    def test_controlled_phase_shift_matrix_and_eigvals(self, phi, cphase_op):
-        """Tests that the ControlledPhaseShift and CPhase operation calculate the correct
-        matrix and eigenvalues"""
-        op = cphase_op(phi, wires=[0, 1])
-        res = op.matrix()
-        exp = ControlledPhaseShift(phi)
-        assert np.allclose(res, exp)
-
-        res = op.eigvals()
-        assert np.allclose(np.diag(res), exp)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
-    def test_controlled_phase_shift_matrix_and_eigvals_tf(self, phi, cphase_op):
-        """Tests that the ControlledPhaseShift and CPhase operation calculate the correct
-        matrix and eigenvalues for the Tensorflow interface, because the code differs
-        in that case."""
-        import tensorflow as tf
-
-        op = cphase_op(tf.Variable(phi), wires=[0, 1])
-        res = op.matrix()
-        exp = ControlledPhaseShift(phi)
-        assert np.allclose(res, exp)
-
-        res = op.eigvals()
-        assert np.allclose(np.diag(res), exp)
-
-    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
-    def test_controlled_phase_shift_matrix_and_eigvals_broadcasted(self, cphase_op):
-        """Tests that the ControlledPhaseShift and CPhase operation calculate the
-        correct matrix and eigenvalues for broadcasted parameters"""
-        phi = np.array([0.2, np.pi / 2, -0.1])
-        op = cphase_op(phi, wires=[0, 1])
-        res = op.matrix()
-        expected = np.array([np.eye(4, dtype=complex)] * 3)
-        expected[..., 3, 3] = np.exp(1j * phi)
-        assert np.allclose(res, expected)
-
-        res = op.eigvals()
-        exp_eigvals = np.ones((3, 4), dtype=complex)
-        exp_eigvals[..., 3] = np.exp(1j * phi)
-        assert np.allclose(res, exp_eigvals)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
-    def test_controlled_phase_shift_matrix_and_eigvals_broadcasted_tf(self, cphase_op):
-        """Tests that the ControlledPhaseShift and CPhase operation calculate the
-        correct matrix and eigenvalues for broadcasted parameters and Tensorflow,
-        because the code differs for that interface."""
-        import tensorflow as tf
-
-        phi = np.array([0.2, np.pi / 2, -0.1])
-        phi_tf = tf.Variable(phi)
-        op = cphase_op(phi_tf, wires=[0, 1])
-        res = op.matrix()
-        expected = np.array([np.eye(4, dtype=complex)] * 3)
-        expected[..., 3, 3] = np.exp(1j * phi)
-        assert np.allclose(res, expected)
-
-        res = op.eigvals()
-        exp_eigvals = np.ones((3, 4), dtype=complex)
-        exp_eigvals[..., 3] = np.exp(1j * phi)
-        assert np.allclose(res, exp_eigvals)
-
-
-class TestEigvals:  # pylint: disable=too-few-public-methods
-    """Tests for the Eigvals operation"""
-
-    def test_crz_eigvals(self, tol):
-        """Test controlled z rotation eigvals are correct"""
-
-        # test identity for theta=0
-        assert np.allclose(qml.CRZ.compute_eigvals(0), np.ones(4), atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(0, wires=[0, 1]).eigvals(), np.ones(4), atol=tol, rtol=0)
-
-        # test identity for theta=pi/2
-        expected_pi_half = np.array([1, 1, np.exp(-1j * np.pi / 4), np.exp(1j * np.pi / 4)])
-        assert np.allclose(qml.CRZ.compute_eigvals(np.pi / 2), expected_pi_half, atol=tol, rtol=0)
-        assert np.allclose(
-            qml.CRZ(np.pi / 2, wires=[0, 1]).eigvals(), expected_pi_half, atol=tol, rtol=0
-        )
-
-        # test identity for theta=pi
-        expected_pi = np.array([1, 1, -1j, 1j])
-        assert np.allclose(qml.CRZ.compute_eigvals(np.pi), expected_pi, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(np.pi, wires=[0, 1]).eigvals(), expected_pi, atol=tol, rtol=0)
-
-        # test broadcasting
-        param = np.array([np.pi / 2, np.pi])
-        expected = [expected_pi_half, expected_pi]
-        assert np.allclose(qml.CRZ.compute_eigvals(param), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(param, wires=[0, 1]).eigvals(), expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_crz_eigvals_tf(self, tol):
-        """Test controlled z rotation eigvals are correct with Tensorflow, because the
-        code differs for that interface."""
-        import tensorflow as tf
-
-        # test identity for theta=0
-        z = tf.Variable(0)
-        assert np.allclose(qml.CRZ.compute_eigvals(z), np.ones(4), atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(z, wires=[0, 1]).eigvals(), np.ones(4), atol=tol, rtol=0)
-
-        # test identity for theta=pi/2
-        expected_pi_half = np.array([1, 1, np.exp(-1j * np.pi / 4), np.exp(1j * np.pi / 4)])
-        phi = tf.Variable(np.pi / 2)
-        assert np.allclose(qml.CRZ.compute_eigvals(phi), expected_pi_half, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(phi, wires=[0, 1]).eigvals(), expected_pi_half, atol=tol, rtol=0)
-
-        # test identity for theta=pi
-        expected_pi = np.array([1, 1, -1j, 1j])
-        phi = tf.Variable(np.pi)
-        assert np.allclose(qml.CRZ.compute_eigvals(phi), expected_pi, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(phi, wires=[0, 1]).eigvals(), expected_pi, atol=tol, rtol=0)
-
-        # test broadcasting
-        param = np.array([np.pi / 2, np.pi])
-        param_tf = tf.Variable(param)
-        expected = [expected_pi_half, expected_pi]
-        assert np.allclose(qml.CRZ.compute_eigvals(param_tf), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(param_tf, wires=[0, 1]).eigvals(), expected, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
 
 def test_simplify_crot():

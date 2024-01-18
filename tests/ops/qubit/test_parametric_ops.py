@@ -108,7 +108,6 @@ BROADCASTED_OPERATIONS = [
     qml.DiagonalQubitUnitary(np.array([[1.0, 1.0j], [1.0j, 1.0j]]), wires=1),
 ]
 
-
 NON_PARAMETRIZED_OPERATIONS = [
     qml.Identity(0),
     qml.S(wires=0),
@@ -3641,12 +3640,6 @@ label_data = [
         "∏_ϕ\n(1)",
     ),
     (
-        qml.ControlledPhaseShift(1.2345, wires=(0, 1)),
-        "Rϕ",
-        "Rϕ\n(1.23)",
-        "Rϕ\n(1)",
-    ),
-    (
         qml.CPhaseShift00(1.2345, wires=(0, 1)),
         "Rϕ(00)",
         "Rϕ(00)\n(1.23)",
@@ -3663,15 +3656,6 @@ label_data = [
         "Rϕ(10)",
         "Rϕ(10)\n(1.23)",
         "Rϕ(10)\n(1)",
-    ),
-    (qml.CRX(1.234, wires=(0, 1)), "RX", "RX\n(1.23)", "RX\n(1)"),
-    (qml.CRY(1.234, wires=(0, 1)), "RY", "RY\n(1.23)", "RY\n(1)"),
-    (qml.CRZ(1.234, wires=(0, 1)), "RZ", "RZ\n(1.23)", "RZ\n(1)"),
-    (
-        qml.CRot(1.234, 2.3456, 3.456, wires=(0, 1)),
-        "Rot",
-        "Rot\n(1.23,\n2.35,\n3.46)",
-        "Rot\n(1,\n2,\n3)",
     ),
     (qml.U1(1.2345, wires=0), "U1", "U1\n(1.23)", "U1\n(1)"),
     (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2\n(1.23,\n2.35)", "U2\n(1,\n2)"),
@@ -3698,6 +3682,22 @@ label_data = [
         "IsingZZ",
         "IsingZZ\n(1.23)",
         "IsingZZ\n(1)",
+    ),
+    # Controlled operations
+    (qml.CRX(1.234, wires=(0, 1)), "RX", "RX\n(1.23)", "RX\n(1)"),
+    (qml.CRY(1.234, wires=(0, 1)), "RY", "RY\n(1.23)", "RY\n(1)"),
+    (qml.CRZ(1.234, wires=(0, 1)), "RZ", "RZ\n(1.23)", "RZ\n(1)"),
+    (
+        qml.CRot(1.234, 2.3456, 3.456, wires=(0, 1)),
+        "Rot",
+        "Rot\n(1.23,\n2.35,\n3.46)",
+        "Rot\n(1,\n2,\n3)",
+    ),
+    (
+        qml.ControlledPhaseShift(1.2345, wires=(0, 1)),
+        "Rϕ",
+        "Rϕ\n(1.23)",
+        "Rϕ\n(1)",
     ),
 ]
 
@@ -3911,7 +3911,7 @@ control_data = [
     (qml.IsingYY(np.array([-5.1, 0.219]), wires=(0, 1)), Wires([])),
     (qml.IsingZZ(1.234, wires=(0, 1)), Wires([])),
     (qml.PSWAP(1.234, wires=(0, 1)), Wires([])),
-    ### Controlled Ops
+    # Controlled Ops
     (qml.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
     (qml.CPhaseShift00(1.234, wires=(0, 1)), Wires(0)),
     (qml.CPhaseShift01(1.234, wires=(0, 1)), Wires(0)),
