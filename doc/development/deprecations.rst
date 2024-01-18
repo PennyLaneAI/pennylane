@@ -9,6 +9,46 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
+  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed
+  from the ``Operator`` class.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
+* The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
+  ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
+  functionality can be achieved using newer features in the ``pauli`` module.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
+* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now deprecated. Instead, you
+  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
+
+  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+  >>> op
+  -1j*(PauliY(wires=[0]))
+  >>> [phase], [base] = op.terms()
+  >>> phase, base
+  (-1j, PauliY(wires=[0]))
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
+* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
+  ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
+  does not provide wires, or quantum functions.
+
+  - Deprecated in v0.35
+  - Will raise an error in v0.36
+
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+  dummy values that are no longer needed.
+
+  - Deprecated in v0.35
+  - Will be removed in v0.36
+
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
 
   - Contents moved in v0.35
@@ -20,12 +60,6 @@ Pending deprecations
   - Deprecated in v0.34
   - Will be removed in v0.35
 
-* ``Observable.return_type`` is deprecated. Instead, you should inspect the type
-  of the surrounding measurement process.
-
-  - Deprecated in v0.34
-  - Will be removed in v0.35
-
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
@@ -33,20 +67,6 @@ Pending deprecations
 
   - Deprecated in v0.34
   - Will be removed in v0.36
-
-* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` are deprecated. Users should now validate
-  these properties manually.
-
-  .. code-block:: python
-
-    from pennylane.measurements import *
-    sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
-    is_sample_type = [isinstance(m, sample_types) for m in tape.measurements]
-    is_sampled = any(is_sample_type)
-    all_sampled = all(is_sample_type)
-
-  - Deprecated in v0.34
-  - Will be removed in v0.35
 
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
 
@@ -112,6 +132,33 @@ Completed deprecation cycles
     transformed_circuit = qml.metric_tensor(circuit, approx="block-diag")
 
   - Deprecated in v0.33
+  - Removed in v0.35
+
+* ``Observable.return_type`` has been removed. Instead, you should inspect the type
+  of the surrounding measurement process.
+
+  - Deprecated in v0.34
+  - Removed in v0.35
+
+* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+
+  - Deprecated in v0.34
+  - Removed in v0.35
+
+* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` have been removed. Users should now validate
+  these properties manually.
+
+  .. code-block:: python
+
+    from pennylane.measurements import *
+    sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+    is_sample_type = [isinstance(m, sample_types) for m in tape.measurements]
+    is_sampled = any(is_sample_type)
+    all_sampled = all(is_sample_type)
+
+  - Deprecated in v0.34
   - Removed in v0.35
 
 * Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
