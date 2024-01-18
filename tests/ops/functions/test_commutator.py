@@ -73,6 +73,7 @@ class TestLegacySupport:
             true_res, res
         )  # issue https://github.com/PennyLaneAI/pennylane/issues/5060 as well as potential fix https://github.com/PennyLaneAI/pennylane/pull/5037
 
+
 def test_alias():
     """Test that the alias comm() works as expected"""
     res1 = qml.comm(X0, Y0)
@@ -81,6 +82,7 @@ def test_alias():
     res2 = qml.comm(X0, Y0, pauli=True)
     res2_true = qml.commutator(X0, Y0, pauli=True)
     assert res2 == res2_true
+
 
 class TestcommPauli:
     """Test qml.comm for pauli=True"""
