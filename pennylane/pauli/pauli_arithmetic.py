@@ -321,7 +321,7 @@ class PauliWord(dict):
         anticom_count = sum([anticom_map[self[wire]][other[wire]] for wire in wires])
         return (anticom_count % 2) == 0
 
-    def _comm(self, other):
+    def _commutator(self, other):
         """comm between two PauliWords, returns tuple (new_word, coeff) for faster arithmetic"""
         # This may be helpful to developers that need a more lightweight comm between pauli words
         # without creating PauliSentence classes
@@ -331,21 +331,21 @@ class PauliWord(dict):
         new_word, coeff = self @ other
         return new_word, 2 * coeff
 
-    def comm(self, other):
+    def commutator(self, other):
         """comm between two PauliWords"""
         if isinstance(other, PauliWord):
-            new_word, coeff = self._comm(other)
+            new_word, coeff = self._commutator(other)
             if coeff == 0:
                 return PauliSentence({})
             return PauliSentence({new_word: coeff})
 
         if isinstance(other, qml.operation.Operator):
             op_self = qml.pauli.pauli_sentence(self)
-            return op_self.comm(other)
+            return op_self.commutator(other)
 
         if isinstance(other, PauliSentence):
             # for infix method, this would be handled by __ror__
-            return -1.0 * other.comm(self)
+            return -1.0 * other.commutator(self)
 
         raise NotImplementedError(
             f"Cannot compute natively a commutator between PauliWord and {other} of type {type(other)}"
@@ -672,7 +672,7 @@ class PauliSentence(dict):
             f"PauliSentence can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
         )
 
-    def comm(self, other):
+    def commutator(self, other):
         """Compute comm between two Pauli sentences by iterating over each sentence and commuting
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
@@ -688,7 +688,7 @@ class PauliSentence(dict):
 
         for pw1 in self:
             for pw2 in other:
-                comm_pw, coeff = pw1._comm(pw2)
+                comm_pw, coeff = pw1._commutator(pw2)
                 if len(comm_pw) != 0:
                     final_ps[comm_pw] += coeff * self[pw1] * other[pw2]
 

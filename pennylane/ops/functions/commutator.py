@@ -75,7 +75,7 @@ def commutator(op1, op2, pauli=False):
             op1 = qml.pauli.pauli_sentence(op1)
         if not isinstance(op2, PauliSentence):
             op2 = qml.pauli.pauli_sentence(op2)
-        return op1.comm(op2)
+        return op1.commutator(op2)
 
     if isinstance(op1, (PauliWord, PauliSentence)):
         op1 = op1.operation()

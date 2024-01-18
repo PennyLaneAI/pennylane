@@ -1116,11 +1116,11 @@ class TestPaulicomms:
     """Test 'native' comms in PauliWord and PauliSentence"""
 
     def test_pauli_word_comm_raises_NotImplementedError(self):
-        """Test that a NotImplementedError is raised when a PauliWord.comm() for type that is not PauliWord, PauliSentence or Operator"""
+        """Test that a NotImplementedError is raised when a PauliWord.commutator() for type that is not PauliWord, PauliSentence or Operator"""
         op1 = PauliWord({0: "X"})
         matrix = np.eye(2)
         with pytest.raises(NotImplementedError, match="Cannot compute natively a commutator"):
-            op1.comm(matrix)
+            op1.commutator(matrix)
 
     data_pauli_relations_commutes = [
         # word and word
@@ -1134,8 +1134,8 @@ class TestPaulicomms:
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)
     def test_zero_return_pauli_word(self, op1, op2, true_res):
         """Test the return when both operators are zero"""
-        res1 = op1.comm(op2)
-        res1m = op2.comm(op1)
+        res1 = op1.commutator(op2)
+        res1m = op2.commutator(op1)
         assert res1 == true_res
         assert res1m == true_res
 
@@ -1144,8 +1144,8 @@ class TestPaulicomms:
     def test_zero_return_pauli_word_different_types(self, op1, op2, true_res, convert1):
         """Test the return when both operators are zero and potentially of different type"""
         op1 = convert1(op1)
-        res2 = op1.comm(op2)
-        res2m = op2.comm(op1)
+        res2 = op1.commutator(op2)
+        res2m = op2.commutator(op1)
         assert res2 == true_res
         assert res2m == true_res
 
@@ -1156,7 +1156,7 @@ class TestPaulicomms:
     ):
         """Test the return when both operators are zero and potentially of different type"""
         op1 = convert1(op1)
-        res = op2.comm(op1)
+        res = op2.commutator(op1)
         assert res == true_res
 
     data_pauli_relations = [
@@ -1173,10 +1173,10 @@ class TestPaulicomms:
     ]
 
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations)
-    def test_pauli_word_comm(self, op1, op2, true_res):
+    def test_pauli_word_commutator(self, op1, op2, true_res):
         """Test native comm in PauliWord class"""
-        res1 = op1.comm(op2)
-        res1m = op2.comm(op1)
+        res1 = op1.commutator(op2)
+        res1m = op2.commutator(op1)
         assert res1 == true_res
         assert res1m == -1 * true_res
 
@@ -1194,10 +1194,10 @@ class TestPaulicomms:
     )
 
     @pytest.mark.parametrize("op1, op2, true_word, true_coeff", data_pauli_relations_private_func)
-    def test_pauli_word_private_comm(self, op1, op2, true_word, true_coeff):
+    def test_pauli_word_private_commutator(self, op1, op2, true_word, true_coeff):
         """Test native _comm in PauliWord class that returns tuples"""
-        res1 = op1._comm(op2)
-        res1m = op2._comm(op1)
+        res1 = op1._commutator(op2)
+        res1m = op2._commutator(op1)
         assert res1[0] == true_word
         assert res1[1] == true_coeff
         assert res1m[0] == true_word
@@ -1219,8 +1219,8 @@ class TestPaulicomms:
         """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)
-        res2 = op1.comm(op2)
-        res2m = op2.comm(op1)
+        res2 = op1.commutator(op2)
+        res2m = op2.commutator(op1)
         assert res2 == true_res
         assert res2m == -1 * true_res
         assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
@@ -1232,7 +1232,7 @@ class TestPaulicomms:
         """Test native comm in between a PauliWord, PauliSentence and Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)
-        res2 = op1.comm(op2)
+        res2 = op1.commutator(op2)
         assert res2 == true_res
         assert isinstance(res2, PauliSentence)
 
@@ -1248,8 +1248,8 @@ class TestPaulicomms:
         """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
         op1 = convert1(op1)
         op2 = qml.pauli.pauli_sentence(op2)
-        res2 = op1.comm(op2)
-        res2m = op2.comm(op1)
+        res2 = op1.commutator(op2)
+        res2m = op2.commutator(op1)
         assert res2 == true_res
         assert res2m == -1 * true_res
         assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
@@ -1260,7 +1260,7 @@ class TestPaulicomms:
         """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
         op1 = convert1(op1)
         op2 = _pauli_to_op(op2)
-        res2 = op1.comm(op2)
+        res2 = op1.commutator(op2)
         assert res2 == true_res
         assert isinstance(res2, PauliSentence)
 
@@ -1276,8 +1276,8 @@ class TestPaulicomms:
         """Test consistent behavior when inputting PauliWord and PauliSentence"""
         op1 = PauliWord({0: "X", 1: "X"})
         op2 = PauliWord({0: "Y"}) + PauliWord({1: "Y"})
-        res1 = op1.comm(op2)
-        res2 = qml.comm(op1, op2, pauli=True)
+        res1 = op1.commutator(op2)
+        res2 = qml.commutator(op1, op2, pauli=True)
         assert res1 == res2
 
 
