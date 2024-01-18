@@ -272,7 +272,7 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         new_state = np.sum(
             [
                 expanded_krons[i] @ flattened_state @ adjoint_krons[i]
-                for i in range(cls.num_batched)
+                for i in range(expanded_krons.shape[0])
             ],
             axis=0,
         )
