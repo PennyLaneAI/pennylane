@@ -122,7 +122,7 @@ def set_parameters_on_copy(tapes, params):
     return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
 
 
-def _to_tensors(x):
+def _to_tensors(x, dtype=None):
     """
     Convert a nested tuple structure of arrays into a nested tuple
     structure of TF tensors
@@ -132,9 +132,9 @@ def _to_tensors(x):
         return x
 
     if isinstance(x, (tuple, list)):
-        return tuple(_to_tensors(x_) for x_ in x)
+        return tuple(_to_tensors(x_, dtype=dtype) for x_ in x)
 
-    return tf.convert_to_tensor(x)
+    return tf.convert_to_tensor(x, dtype=dtype)
 
 
 def _recursive_conj(dy):
@@ -252,6 +252,8 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
             else:
                 inner_tapes = tapes
 
+            dy_dtype = dy[0].dtype
+
             # reconstruct the nested structure of dy
             nested_dy = _res_restructured(dy, tapes)
 
@@ -265,7 +267,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
                 )
                 raise ValueError(message) from e
 
-            vjps = _to_tensors(vjps)
+            vjps = _to_tensors(vjps, dtype=dy_dtype)
             if isinstance(vjps, tuple):
                 extended_vjps = []
                 for vjp in vjps:

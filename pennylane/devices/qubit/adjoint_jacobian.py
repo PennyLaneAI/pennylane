@@ -361,25 +361,21 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     ket = state if state is not None else get_final_state(tape)[0]
 
     bras, batch_size, null_batch_indices = _get_vjp_bras(tape, cotangents, ket)
+    if bras is None:
+        # Cotangents are zeros
+        if batch_size is None:
+            return tuple(0.0 for _ in tape.trainable_params)
+        return tuple(np.zeros((len(tape.trainable_params), batch_size)))
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
-        dtype = getattr(cotangents, "dtype", tape.measurements[0].numeric_type)
 
         def real_if_expval(val):
             return val
 
     else:
-        first_cotangent = cotangents[0] if len(tape.measurements) > 1 else cotangents
-        dtype = getattr(first_cotangent, "dtype", tape.measurements[0].numeric_type)
 
         def real_if_expval(val):
             return np.real(val)
-
-    if bras is None:
-        # Cotangents are zeros
-        if batch_size is None:
-            return tuple(np.array(0.0, dtype=dtype) for _ in tape.trainable_params)
-        return tuple(np.zeros(batch_size, dtype=dtype) for _ in tape.trainable_params)
 
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
@@ -389,7 +385,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         if batch_size is None
         else (len(tape.trainable_params), batch_size)
     )
-    cotangents_in = np.empty(res_shape, dtype=dtype)
+    cotangents_in = np.empty(res_shape, dtype=tape.measurements[0].numeric_type)
     summing_axis = None if batch_size is None else tuple(range(1, np.ndim(bras)))
 
     for op in reversed(tape.operations[tape.num_preps :]):
@@ -405,7 +401,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
                 cot_in = real_if_expval(np.sum(np.conj(bras) * ket_temp, axis=summing_axis))
                 for i in null_batch_indices:
                     cot_in = np.insert(cot_in, i, 0.0)
-                cotangents_in[trainable_param_number] = np.array(cot_in, dtype=dtype)
+                cotangents_in[trainable_param_number] = cot_in
 
                 trainable_param_number -= 1
             param_number -= 1

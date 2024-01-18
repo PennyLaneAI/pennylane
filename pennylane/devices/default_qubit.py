@@ -138,6 +138,7 @@ def adjoint_state_measurements(
         )
 
     params = tape.get_parameters()
+
     if device_vjp:
         for p in params:
             if (
@@ -468,7 +469,9 @@ class DefaultQubit(Device):
             transform_program.add_transform(no_sampling, name="backprop + default.qubit")
 
         if config.gradient_method == "adjoint":
-            _add_adjoint_transforms(transform_program, config.use_device_jacobian_product)
+            _add_adjoint_transforms(
+                transform_program, device_vjp=config.use_device_jacobian_product
+            )
 
         return transform_program, config
 
