@@ -14,13 +14,13 @@
 """Unit tests for create_initial_state in devices/qutrit_mixed/apply_operation."""
 
 import pytest
+from functools import reduce
 import numpy as np
 from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Channel
 from pennylane.devices.qutrit_mixed import apply_operation
-
 
 ml_frameworks_list = [
     "numpy",
@@ -101,7 +101,7 @@ class TestSnapshot:
         assert math.allclose(debugger.snapshots[0], math.reshape(initial_state, shape))
 
     def test_provided_tag(self, ml_framework, state, shape, request):
-        """Test a snapshot is recorded property when provided a tag"""
+        """Test a snapshot is recorded properly when provided a tag"""
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
 
@@ -134,12 +134,12 @@ class TestSnapshot:
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestBroadcasting:  # pylint: disable=too-few-public-methods
+class TestOperation:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations (not channels) are applied correctly."""
 
     broadcasted_ops = [
-        qml.TRX(np.array([np.pi, np.pi / 2]), wires=2, subspace=(0, 1)),
-        qml.TRY(np.array([np.pi, np.pi / 2]), wires=2, subspace=(0, 1)),
+        qml.TRX(np.array([np.pi, np.pi / 2]), wires=0, subspace=(0, 1)),
+        qml.TRY(np.array([np.pi, np.pi / 2]), wires=1, subspace=(0, 1)),
         qml.TRZ(np.array([np.pi, np.pi / 2]), wires=2, subspace=(1, 2)),
         qml.QutritUnitary(
             np.array([unitary_group.rvs(27), unitary_group.rvs(27)]),
@@ -147,41 +147,62 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         ),
     ]
     unbroadcasted_ops = [
-        qml.THadamard(wires=2),
-        qml.TClock(wires=2),
+        qml.THadamard(wires=0),
+        qml.TClock(wires=1),
         qml.TShift(wires=2),
         qml.TAdd(wires=[1, 2]),
-        qml.TRX(np.pi / 3, wires=2, subspace=(0, 2)),
-        qml.TRY(2 * np.pi / 3, wires=2, subspace=(1, 2)),
+        qml.TRX(np.pi / 3, wires=0, subspace=(0, 2)),
+        qml.TRY(2 * np.pi / 3, wires=1, subspace=(1, 2)),
         qml.TRZ(np.pi / 6, wires=2, subspace=(0, 1)),
         qml.QutritUnitary(unitary_group.rvs(27), wires=[0, 1, 2]),
     ]
     num_qutrits = 3
     num_batched = 2
-    dims = (3**num_qutrits, 3**num_qutrits)
+
+    def expand_matrices(op, batch_size=0):
+        """Find expanded operator matrices, since qml.matrix isn't working for qutrits #4367"""
+        pre_wires_identity = np.eye(3 ** op.wires[0])
+        post_wires_identity = np.eye(3 ** (2 - op.wires[-1]))
+        mat = op.matrix()
+
+        def expand_matrix(matrix):
+            return reduce(np.kron, (pre_wires_identity, matrix, post_wires_identity))
+
+        if batch_size:
+            [expand_matrix(mat[i]) for i in range(batch_size)]
+        return expand_matrix(mat)
+
+    @classmethod
+    def get_expected_state(cls, expanded_operator, state):
+        """Finds expected state after applying operator"""
+        flattened_state = state.reshape((3**cls.num_qutrits,) * 2)
+        adjoint_matrix = np.conj(expanded_operator).T
+        new_state = expanded_operator @ flattened_state @ adjoint_matrix
+        return new_state.reshape([3] * (cls.num_qutrits * 2))
+
+    @pytest.mark.parametrize("op", unbroadcasted_ops)
+    def test_no_broadcasting(self, op, ml_framework, three_qutrit_state):
+        """Tests that unbatched operations are applied correctly to an unbatched state."""
+        state = three_qutrit_state
+        res = apply_operation(op, qml.math.asarray(state, like=ml_framework))
+
+        expanded_operator = self.expand_matrices(op)
+        expected = self.get_expected_state(expanded_operator, state)
+
+        assert qml.math.get_interface(res) == ml_framework
+        assert qml.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op(self, op, ml_framework, three_qutrit_state):
         """Tests that batched operations are applied correctly to an unbatched state."""
-
         state = three_qutrit_state
-        flattened_state = state.reshape(self.dims)
-
         res = apply_operation(op, qml.math.asarray(state, like=ml_framework))
-        missing_wires = 3 - len(op.wires)
-        mat = op.matrix()
-        expanded_mats = [
-            np.kron(np.eye(3**missing_wires), mat[i]) if missing_wires else mat[i]
-            for i in range(self.num_batched)
-        ]
-        expected = []
+        expanded_operators = self.expand_matrices(op, self.num_batched)
 
-        for i in range(self.num_batched):
-            expanded_mat = expanded_mats[i]
-            adjoint_mat = np.conj(expanded_mat).T
-            expected.append(
-                (expanded_mat @ flattened_state @ adjoint_mat).reshape([3] * (self.num_qutrits * 2))
-            )
+        def get_expected(m):
+            return self.get_expected_state(m, state)
+
+        expected = [get_expected(expanded_operators[i]) for i in range(self.num_batched)]
 
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
@@ -190,19 +211,13 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     def test_broadcasted_state(self, op, ml_framework, three_qutrit_batched_state):
         """Tests that unbatched operations are applied correctly to a batched state."""
         state = three_qutrit_batched_state
-
         res = apply_operation(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
-        missing_wires = self.num_qutrits - len(op.wires)
-        mat = op.matrix()
-        expanded_mat = np.kron(np.eye(3**missing_wires), mat) if missing_wires else mat
-        adjoint_mat = np.conj(expanded_mat).T
-        expected = []
+        expanded_operator = self.expand_matrices(op)
 
-        for i in range(self.num_batched):
-            flattened_state = state[i].reshape(self.dims)
-            expected.append(
-                (expanded_mat @ flattened_state @ adjoint_mat).reshape([3] * (self.num_qutrits * 2))
-            )
+        def get_expected(s):
+            return self.get_expected_state(expanded_operator, s)
+
+        expected = [get_expected(state[i]) for i in range(self.num_batched)]
 
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
@@ -211,23 +226,14 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     def test_broadcasted_op_broadcasted_state(self, op, ml_framework, three_qutrit_batched_state):
         """Tests that batched operations are applied correctly to a batched state."""
         state = three_qutrit_batched_state
-
         res = apply_operation(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
-        missing_wires = self.num_qutrits - len(op.wires)
-        mat = op.matrix()
-        expanded_mats = [
-            np.kron(np.eye(3**missing_wires), mat[i]) if missing_wires else mat[i]
+        expanded_operators = self.expand_matrices(op, True)
+
+        expected = [
+            self.get_expected_state(expanded_operators[i], state[i])
             for i in range(self.num_batched)
         ]
-        expected = []
 
-        for i in range(self.num_batched):
-            expanded_mat = expanded_mats[i]
-            adjoint_mat = np.conj(expanded_mat).T
-            flattened_state = state[i].reshape(self.dims)
-            expected.append(
-                (expanded_mat @ flattened_state @ adjoint_mat).reshape([3] * (self.num_qutrits * 2))
-            )
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
 
@@ -242,9 +248,35 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert op.batch_size == self.num_batched
 
 
+@pytest.mark.parametrize("wire", [0, 1])
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestChannels:  # pylint: disable=too-few-public-methods
     """Tests that Channel operations are applied correctly."""
+
+    num_qutrits = 2
+    num_batched = 2
+
+    @classmethod
+    def expand_krons(cls, op):
+        """Find expanded operator kraus matrices"""
+        pre_wires_identity = np.eye(3 ** op.wires[0])
+        post_wires_identity = np.eye(3 ** ((cls.num_qutrits - 1) - op.wires[-1]))
+        krons = op.kraus_matrices()
+        return [reduce(np.kron, (pre_wires_identity, kron, post_wires_identity)) for kron in krons]
+
+    @classmethod
+    def get_expected_state(cls, expanded_krons, state):
+        """Finds expected state after applying channel"""
+        flattened_state = state.reshape((3**cls.num_qutrits,) * 2)
+        adjoint_krons = np.conj(np.transpose(expanded_krons, (0, 2, 1)))
+        new_state = np.sum(
+            [
+                expanded_krons[i] @ flattened_state @ adjoint_krons[i]
+                for i in range(cls.num_batched)
+            ],
+            axis=0,
+        )
+        return new_state.reshape([3] * (cls.num_qutrits * 2))
 
     class CustomChannel(Channel):
         num_params = 1
@@ -261,47 +293,29 @@ class TestChannels:  # pylint: disable=too-few-public-methods
             ).astype(complex)
             return [K0, K1]
 
-    def test_non_broadcasted_state(self, ml_framework, two_qutrit_state):
+    def test_non_broadcasted_state(self, ml_framework, wire, two_qutrit_state):
         """Tests that Channel operations are applied correctly to a state."""
         state = two_qutrit_state
-        test_channel = self.CustomChannel(0.3, wires=1)
+        test_channel = self.CustomChannel(0.3, wires=wire)
         res = apply_operation(test_channel, math.asarray(state, like=ml_framework))
-        flattened_state = state.reshape(9, 9)
 
-        mat = test_channel.kraus_matrices()
-
-        expanded_mats = [np.kron(np.eye(3), mat[i]) for i in range(len(mat))]
-        expected = np.zeros((9, 9)).astype(complex)
-        for i in range(len(mat)):
-            expanded_mat = expanded_mats[i]
-            adjoint_mat = np.conj(expanded_mat).T
-            expected += expanded_mat @ flattened_state @ adjoint_mat
-        expected = expected.reshape([3] * 4)
+        expanded_krons = self.expand_krons(test_channel)
+        expected = self.get_expected_state(expanded_krons, state)
 
         assert qml.math.get_interface(res) == ml_framework
-        assert res.shape == expected.shape
         assert qml.math.allclose(res, expected)
 
-    def test_broadcasted_state(self, ml_framework, two_qutrit_batched_state):
+    def test_broadcasted_state(self, ml_framework, wire, two_qutrit_batched_state):
         """Tests that Channel operations are applied correctly to a batched state."""
         state = two_qutrit_batched_state
-        num_batched = two_qutrit_batched_state.shape[0]
 
-        test_channel = self.CustomChannel(0.3, wires=1)
+        test_channel = self.CustomChannel(0.3, wires=wire)
         res = apply_operation(test_channel, math.asarray(state, like=ml_framework))
 
-        mat = test_channel.kraus_matrices()
-        expanded_mats = [np.kron(np.eye(3), mat[i]) for i in range(len(mat))]
-        expected = [np.zeros((9, 9)).astype(complex) for _ in range(num_batched)]
-        for i in range(num_batched):
-            flattened_state = state[i].reshape(9, 9)
-            for j in range(len(mat)):
-                expanded_mat = expanded_mats[j]
-                adjoint_mat = np.conj(expanded_mat).T
-                expected[i] += expanded_mat @ flattened_state @ adjoint_mat
-            expected[i] = expected[i].reshape([3] * 4)
-        expected = np.array(expected)
+        expanded_krons = self.expand_krons(test_channel)
+        expected = [
+            self.get_expected_state(expanded_krons, state[i]) for i in range(self.num_batched)
+        ]
 
         assert qml.math.get_interface(res) == ml_framework
-        assert res.shape == expected.shape
         assert qml.math.allclose(res, expected)
