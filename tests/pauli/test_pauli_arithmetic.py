@@ -1124,11 +1124,11 @@ class TestPaulicomms:
 
     def test_commutators_with_zeros_ps(self):
         """Test that commutators between PauliSentences where one represents the 0 word is treated correctly"""
-        ps_zero = PauliSentence({})
-        ps1 = PauliSentence({PauliWord({0: "X"}): 1.0})
+        op_zero = PauliSentence({})
+        op = PauliSentence({PauliWord({0: "X"}): 1.0})
 
-        assert ps_zero.commutator(ps1) == ps_zero
-        assert ps1.commutator(ps_zero) == ps_zero
+        assert op_zero.commutator(op) == op_zero
+        assert op.commutator(op_zero) == op_zero
 
     data_pauli_relations_commutes = [
         # word and word
