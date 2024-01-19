@@ -91,6 +91,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Corrected some spellings and typos scattered throughout the docstrings.
+  [(#4487)](https://github.com/PennyLaneAI/pennylane/pull/4487)
+
 * The module documentation for `pennylane.tape` now explains the difference between `QuantumTape` and `QuantumScript`.
   [(#5065)](https://github.com/PennyLaneAI/pennylane/pull/5065)
 
