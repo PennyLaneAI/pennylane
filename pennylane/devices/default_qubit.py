@@ -35,6 +35,7 @@ from pennylane.transforms.core import TransformProgram
 from . import Device
 from .preprocess import (
     decompose,
+    mid_circuit_measurements,
     validate_observables,
     validate_measurements,
     validate_multiprocessing_workers,
@@ -82,10 +83,6 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
-    if isinstance(op, MidMeasureMP):
-        return True
-    if isinstance(op, Conditional):
-        return True
     if op.name == "QFT" and len(op.wires) >= 6:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
@@ -96,6 +93,11 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
 
     return op.has_matrix
+
+
+def stopping_condition_shots(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator object is supported by the device with shots."""
+    return isinstance(op, (Conditional, MidMeasureMP)) or stopping_condition(op)
 
 
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
@@ -441,10 +443,11 @@ class DefaultQubit(Device):
         transform_program = TransformProgram()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        # transform_program.add_transform(qml.defer_measurements, device=self)
-        transform_program.add_transform(
-            decompose, stopping_condition=stopping_condition, name=self.name
+        transform_program.add_transform(mid_circuit_measurements, device=self)
+        stop_cond = (
+            stopping_condition if self.shots.total_shots is None else stopping_condition_shots
         )
+        transform_program.add_transform(decompose, stopping_condition=stop_cond, name=self.name)
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )

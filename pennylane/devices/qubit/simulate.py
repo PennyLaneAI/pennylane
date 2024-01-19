@@ -129,7 +129,7 @@ def get_final_state(circuit, debugger=None, interface=None):
     for op in circuit.operations[bool(prep) :]:
         if isinstance(op, Conditional):
             meas_id = op.meas_val.measurements[0].hash
-            if meas_id not in measurement_values.keys():
+            if meas_id not in measurement_values:
                 raise KeyError(f"Measurement key {meas_id} not found.")
             if not measurement_values[meas_id]:
                 continue
@@ -248,10 +248,10 @@ def simulate(
 
     """
     has_mid_circuit_measurements = any(isinstance(op, MidMeasureMP) for op in circuit._ops)
-    has_shots = circuit.shots is not None
+    has_shots = circuit.shots.total_shots is not None
     if has_mid_circuit_measurements and has_shots:
         tmpcirc = circuit.copy()
-        tmpcirc._shots = None
+        tmpcirc._shots = qml.measurements.Shots(None)
         measurements = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)
         for _ in range(circuit.shots.total_shots - 1):
             tmpmeas = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)

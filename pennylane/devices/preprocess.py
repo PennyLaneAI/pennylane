@@ -148,6 +148,20 @@ def validate_device_wires(
 
 
 @transform
+def mid_circuit_measurements(
+    tape: qml.tape.QuantumTape, device
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Provide the transform to handle mid-circuit measurements.
+
+    If the tape of device uses finite-shot, use the native implementation (i.e. no transform), and use defer measurements transforms otherwise.
+    """
+    has_shots = tape.shots.total_shots is not None or device.shots.total_shots
+    if has_shots:
+        return (tape,), null_postprocessing
+    return qml.defer_measurements(tape, device=device)
+
+
+@transform
 def validate_multiprocessing_workers(
     tape: qml.tape.QuantumTape, max_workers: int, device
 ) -> (Sequence[qml.tape.QuantumTape], Callable):

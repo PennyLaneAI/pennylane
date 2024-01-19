@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane import math
-from ..default_qubit import Conditional, MidMeasureMP
+from ..default_qubit import MidMeasureMP
 
 SQRT2INV = 1 / math.sqrt(2)
 
@@ -196,18 +196,15 @@ def apply_operation(
         [1., 0.]], requires_grad=True)
 
     """
-    # if isinstance(op, MidMeasureMP):
-    #     return _apply_operation_mid_measure(op, state)
-    # if isinstance(op, Conditional):
-    #     return _apply_operation_conditional(op, state, is_state_batched, debugger)
     return _apply_operation_default(op, state, is_state_batched, debugger)
 
 
 @apply_operation.register
 def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None):
+    """Applies a native mid-circuit measurement."""
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
-    from .measure import measure
+    from .measure import measure  # pylint: disable=import-outside-toplevel
 
     wire = op.wires
     probs = measure(qml.probs(wire), state)
@@ -217,12 +214,6 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
     slices[axis] = dark_branch
     state[tuple(slices)] = 0.0
     return state / np.linalg.norm(state.ravel()), 0 if dark_branch == 1 else 1
-
-
-# def _apply_operation_conditional(op, state, is_state_batched, debugger):
-#     if (1,) in op.meas_val.branches.keys():
-#         return _apply_operation_default(op.then_op, state, is_state_batched, debugger)
-#     return state
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):
