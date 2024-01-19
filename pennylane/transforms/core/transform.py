@@ -15,7 +15,8 @@
 This module contains the transform function/decorator to make your custom transforms compatible with tapes, quantum
 functions and QNodes.
 """
-from typing import get_type_hints
+from functools import wraps
+from typing import get_type_hints, Callable
 from .transform_dispatcher import TransformDispatcher, TransformError
 
 
@@ -23,7 +24,7 @@ def transform(
     quantum_transform,
     expand_transform=None,
     classical_cotransform=None,
-    is_informative=None,
+    is_informative=False,
     final_transform=False,
 ):
     """Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
@@ -50,7 +51,7 @@ def transform(
             ``quantum_transform``.
         classical_cotransform (Callable): A classical co-transform is a function to post-process the classical
             jacobian and the quantum jacobian and has the signature: ``my_cotransform(qjac, cjac, tape) -> tensor_like``
-        is_informative (bool): Whether or not a transform is informative. If true the transform is queued at the end
+        is_informative=False (bool): Whether or not a transform is informative. If true the transform is queued at the end
             of the transform program and the tapes or qnode aren't executed.
         final_transform (bool): Whether or not the transform is terminal. If true the transform is queued at the end
             of the transform program. ``is_informative`` supersedes ``final_transform``.
@@ -177,15 +178,45 @@ def transform(
             )
 
     # 3: CHeck the classical co-transform
-    if classical_cotransform is not None:
-        if not callable(classical_cotransform):
-            raise TransformError("The classical co-transform must be a valid Python function.")
+    if classical_cotransform is not None and not callable(classical_cotransform):
+        raise TransformError("The classical co-transform must be a valid Python function.")
 
-    dispatcher = TransformDispatcher(
+    return TransformDispatcher(
         quantum_transform,
         expand_transform=expand_transform,
         classical_cotransform=classical_cotransform,
         is_informative=is_informative,
         final_transform=final_transform,
     )
-    return dispatcher
+
+
+def null_postprocessing(results):
+    """A postprocessing function with null behavior."""
+    return results[0]
+
+
+def expand_fn_transform(
+    expand_fn: Callable[["pennylane.tape.QuantumTape"], "pennylane.tape.QuantumTape"]
+) -> "TransformDispatcher":
+    """Construct a transform from a tape-> tape function.
+
+    Args:
+        expand_fn (Callable): a function from a single tape to a single tape
+
+    Returns:
+
+        .TransformDispatcher: Returns a transform dispatcher object that that can transform any
+        circuit-like object in PennyLane.
+
+    >>> device = qml.device('default.qubit.legacy', wires=2)
+    >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
+    >>> my_transform
+    <transform: expand_fn>
+
+    """
+
+    @wraps(expand_fn)
+    def wrapped_expand_fn(tape):
+        return (expand_fn(tape),), null_postprocessing
+
+    return transform(wrapped_expand_fn)

@@ -133,6 +133,41 @@ class TestTransformProgramDunders:
             assert isinstance(elem, TransformContainer)
             assert elem.transform is first_valid_transform
 
+    def test_getitem(self):
+        """Tests for the getitem dunder."""
+
+        t0 = TransformContainer(transform=first_valid_transform)
+        t1 = TransformContainer(transform=second_valid_transform)
+        t2 = TransformContainer(transform=informative_transform)
+        program = TransformProgram([t0, t1, t2])
+
+        assert program[0] == t0
+        assert program[1] == t1
+        assert program[2] == t2
+
+        assert program[:2] == TransformProgram([t0, t1])
+        assert program[::-1] == TransformProgram([t2, t1, t0])
+
+    def test_contains(self):
+        """Test that we can check whether a transform or transform container exists in a transform."""
+
+        t0 = TransformContainer(transform=first_valid_transform)
+        t1 = TransformContainer(transform=second_valid_transform)
+        t2 = TransformContainer(transform=informative_transform)
+        program = TransformProgram([t0, t1, t2])
+
+        assert first_valid_transform in program
+        assert second_valid_transform in program
+        assert informative_transform in program
+        assert qml.compile not in program
+
+        assert t0 in program
+        assert t1 in program
+        assert t2 in program
+
+        t_not = TransformContainer(transform=qml.compile)
+        assert t_not not in program
+
     def test_add_single_programs(self):
         """Test adding two transform programs"""
         transform_program1 = TransformProgram()

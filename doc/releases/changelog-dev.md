@@ -54,6 +54,11 @@
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
 
+* Adds `qml.workflow.transform_program` and `qml.workflow.construct_batch` to inspect the transform program and batch of tapes
+  at different stages.
+
+* Adds a `qml.transforms.core.expand_fn_transform` that converts a tape-> tape function into a transform.
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
