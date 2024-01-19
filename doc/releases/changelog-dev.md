@@ -150,6 +150,9 @@
 * The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
   [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
 
+* `CosineWindow` no longer raises an unexpected error when used on a subset of wires at the beginning of a circuit.
+  [(#5080)](https://github.com/PennyLaneAI/pennylane/pull/5080)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
