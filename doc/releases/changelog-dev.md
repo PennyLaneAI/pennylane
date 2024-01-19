@@ -79,11 +79,6 @@
 * The decomposition of an operator created with calling `qml.ctrl` on a parametric operator (specifically `RX`, `RY`, `RZ`, `Rot`, `PhaseShift`) with a single control wire will now be the full decomposition instead of a single controlled gate. For example:
   ```
   >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
-  [CRX(0.123, wires=[0, 1])]
-  ```
-  Will become:
-  ```
-  >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
   [
     RZ(1.5707963267948966, wires=[1]), 
     RY(0.0615, wires=[1]), 
