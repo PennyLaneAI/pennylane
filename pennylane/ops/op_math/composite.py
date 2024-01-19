@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, _UNSET_BATCH_SIZE
+from pennylane.operation import Operator, convert_to_opmath, _UNSET_BATCH_SIZE
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -60,7 +60,7 @@ class CompositeOp(Operator):
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
 
-        self.operands = operands
+        self.operands = tuple(convert_to_opmath(op) for op in operands)
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
@@ -352,7 +352,7 @@ class CompositeOp(Operator):
         for attr, value in vars(self).items():
             if attr not in {"data", "operands", "_wires"}:
                 setattr(new_op, attr, value)
-        if (p_rep := new_op._pauli_rep) is not None:
+        if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
 
         return new_op

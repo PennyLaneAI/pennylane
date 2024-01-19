@@ -24,7 +24,7 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.ops.op_math.sprod import SProd, s_prod
+from pennylane.ops.op_math import SProd, s_prod, Prod, Sum
 from pennylane.wires import Wires
 
 
@@ -180,6 +180,16 @@ class TestInitialization:
         )  # scaling doesn't change diagonalizing gates
 
         assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
+
+    def test_base_gets_cast_to_new_type(self):
+        """Test that Tensor and Hamiltonian instances get cast to new types."""
+        base_H = qml.Hamiltonian([1.1, 2.2], [qml.PauliZ(0), qml.PauliZ(1)])
+        op_H = qml.s_prod(2j, base_H)
+        assert isinstance(op_H.base, Sum)
+
+        base_T = qml.PauliZ(0) @ qml.PauliZ(1)
+        op_T = qml.s_prod(2j, base_T)
+        assert isinstance(op_T.base, Prod)
 
 
 class TestMscMethods:
@@ -742,13 +752,13 @@ class TestProperties:
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
         """Test the pauli rep is produced as expected."""
-        assert op._pauli_rep == rep  # pylint: disable=protected-access
+        assert op.pauli_rep == rep
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self):
         """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
         op = qml.s_prod(2, base)
-        assert op._pauli_rep is None  # pylint: disable=protected-access
+        assert op.pauli_rep is None
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""

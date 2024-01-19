@@ -20,7 +20,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.metric_tensor import _get_aux_wire
+from pennylane.gradients.metric_tensor import _get_aux_wire
 
 
 class TestMetricTensor:
@@ -1146,10 +1146,6 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_correct_output_jax(self, ansatz, params, interface):
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         from jax import numpy as jnp
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -1178,10 +1174,6 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_jax_argnum_error(self, ansatz, params, interface):
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         from jax import numpy as jnp
 
         dev = qml.device("default.qubit.jax", wires=self.num_wires + 1)
@@ -1696,7 +1688,7 @@ def test_raises_circuit_that_uses_missing_wire():
 
     x = np.array([1.3, 0.2])
     with pytest.raises(qml.wires.WireError, match=r"contain wires not found on the device: \{1\}"):
-        qml.transforms.metric_tensor(circuit)(x)
+        qml.metric_tensor(circuit)(x)
 
 
 def aux_wire_ansatz_0(x, y):

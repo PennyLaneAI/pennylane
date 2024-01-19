@@ -16,9 +16,9 @@ This module contains the qml.measure measurement.
 """
 import uuid
 from typing import Generic, TypeVar, Optional
+import numpy as np
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, MidMeasure
@@ -151,10 +151,10 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
                 qml.RX(x, wires=0)
                 m0 = qml.measure(0, postselect=1)
                 qml.cond(m0, qml.PauliX)(wires=1)
-                return qml.sample()
+                return qml.sample(wires=[0, 1])
 
         >>> func(0.0, shots=[10, 10])
-        (array([], dtype=float64), array([], dtype=float64))
+        (array([], shape=(0, 2), dtype=int64), array([], shape=(0, 2), dtype=int64))
 
         .. note::
 
@@ -300,7 +300,7 @@ class MeasurementValue(Generic[T]):
     @property
     def wires(self):
         """Returns a list of wires corresponding to the mid-circuit measurements."""
-        return Wires([m.wires[0] for m in self.measurements])
+        return Wires.all_wires([m.wires for m in self.measurements])
 
     @property
     def branches(self):
@@ -423,3 +423,6 @@ class MeasurementValue(Generic[T]):
                 "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
             )
         return "\n".join(lines)
+
+    def __repr__(self):
+        return f"MeasurementValue(wires={self.wires.tolist()})"

@@ -75,7 +75,7 @@ def _local_tape_expand(tape, depth, stop_at):
         (tape.measurements, new_measurements),
     ]:
         for obj in queue:
-            if stop_at(obj) or isinstance(obj, qml.measurements.MeasurementProcess):
+            if isinstance(obj, MeasurementProcess) or stop_at(obj):
                 new_queue.append(obj)
                 continue
 
@@ -608,7 +608,8 @@ class Device(abc.ABC):
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
-            lambda obj: not isinstance(obj, QuantumScript) and self.supports_operation(obj.name)
+            lambda obj: not isinstance(obj, QuantumScript)
+            and (isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name))
         )
 
     def custom_expand(self, fn):
@@ -986,8 +987,10 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
-            if isinstance(o, qml.measurements.MeasurementProcess) and o.obs is not None:
+            if isinstance(o, MeasurementProcess):
                 o = o.obs
+                if o is None:
+                    continue
 
             if isinstance(o, Tensor):
                 # TODO: update when all capabilities keys changed to "supports_tensor_observables"

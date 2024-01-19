@@ -107,14 +107,13 @@ def ctrl(op, control, control_values=None, work_wires=None):
             qml.Hadamard(wires=[1])
 
             def func(arg):
-              qml.RX(theta, wires=arg)
+                qml.RX(theta, wires=arg)
 
-            @qml.cond(theta > 0.0)
             def cond_fn():
-              qml.RY(theta, wires=w)
+                qml.RY(theta, wires=w)
 
             qml.ctrl(func, control=[cw])(w)
-            qml.ctrl(cond_fn, control=[cw])()
+            qml.ctrl(qml.cond(theta > 0.0, cond_fn), control=[cw])()
             qml.ctrl(qml.RZ, control=[cw])(theta, wires=w)
             qml.ctrl(qml.RY(theta, wires=w), control=[cw])
             return qml.probs()
@@ -557,8 +556,14 @@ class Controlled(SymbolicOp):
 
     def generator(self):
         sub_gen = self.base.generator()
-        proj_tensor = operation.Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
-        return 1.0 * proj_tensor @ sub_gen
+        projectors = (
+            qml.Projector([val], wires=w) for val, w in zip(self.control_values, self.control_wires)
+        )
+
+        if qml.operation.active_new_opmath():
+            return qml.prod(*projectors, sub_gen)
+
+        return 1.0 * operation.Tensor(*projectors) @ sub_gen
 
     @property
     def has_adjoint(self):

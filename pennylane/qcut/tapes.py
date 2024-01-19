@@ -31,14 +31,7 @@ from pennylane.queuing import AnnotatedQueue, WrappedObj
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
-from .utils import (
-    MeasureNode,
-    PrepareNode,
-    _prep_iplus_state,
-    _prep_one_state,
-    _prep_plus_state,
-    _prep_zero_state,
-)
+from .utils import MeasureNode, PrepareNode
 
 
 def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
@@ -236,7 +229,28 @@ def _find_new_wire(wires: Wires) -> int:
     return ctr
 
 
-PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]
+def _create_prep_list():
+    """
+    Creates a predetermined list for converting PrepareNodes to an associated Operation for use
+    within the expand_fragment_tape function.
+    """
+
+    def _prep_zero(wire):
+        return [qml.Identity(wire)]
+
+    def _prep_one(wire):
+        return [qml.PauliX(wire)]
+
+    def _prep_plus(wire):
+        return [qml.Hadamard(wire)]
+
+    def _prep_iplus(wire):
+        return [qml.Hadamard(wire), qml.S(wires=wire)]
+
+    return [_prep_zero, _prep_one, _prep_plus, _prep_iplus]
+
+
+PREPARE_SETTINGS = _create_prep_list()
 
 
 def expand_fragment_tape(
@@ -318,20 +332,19 @@ def expand_fragment_tape(
                 id(n): PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
             }
 
-            with AnnotatedQueue() as q:
+            ops_list = []
+
+            with qml.QueuingManager.stop_recording():
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
-                        prepare_mapping[id(op)](w)
+                        ops_list.extend(prepare_mapping[id(op)](w))
                     elif not isinstance(op, MeasureNode):
-                        apply(op)
+                        ops_list.append(op)
+                measurements = _get_measurements(group, tape.measurements)
 
-                with qml.QueuingManager.stop_recording():
-                    measurements = _get_measurements(group, tape.measurements)
-                for meas in measurements:
-                    apply(meas)
-
-            tapes.append(QuantumScript.from_queue(q))
+            qs = qml.tape.QuantumScript(ops=ops_list, measurements=measurements)
+            tapes.append(qs)
 
     return tapes, prepare_nodes, measure_nodes
 
