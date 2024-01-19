@@ -314,9 +314,9 @@ class DefaultQubit(Device):
         machine. You can control the number of threads per process with the environment
         variables:
 
-        * OMP_NUM_THREADS
-        * MKL_NUM_THREADS
-        * OPENBLAS_NUM_THREADS
+        * ``OMP_NUM_THREADS``
+        * ``MKL_NUM_THREADS``
+        * ``OPENBLAS_NUM_THREADS``
 
         where the last two are specific to the MKL and OpenBLAS libraries specifically.
 

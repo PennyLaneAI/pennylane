@@ -203,6 +203,9 @@ def device(name, *args, **kwargs):
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
 
+    * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
+      simulator of Clifford circuits.
+
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
     details. To list all currently installed devices, run
