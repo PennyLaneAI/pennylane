@@ -45,7 +45,7 @@ The purpose of this class is to efficiently compute products of Pauli words and
 obtain the matrix representation.
 
 >>> pw1 @ pw2
-(Z(0), 1j)
+1j * Z(0)
 >>> pw1.to_mat(wire_order=[0, 1])
 array([[ 0,  0,  1,  0],
        [ 0,  0,  0, -1],
