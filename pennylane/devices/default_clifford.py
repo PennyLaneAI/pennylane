@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the clifford simulator using ``stim``
+This module contains the Clifford simulator using ``stim``.
 """
 
 from dataclasses import replace
@@ -101,12 +101,12 @@ _GATE_OPERATIONS = {
 
 
 def operation_stopping_condition(op: qml.operation.Operator) -> bool:
-    """Specifies whether or not an operation is accepted by DefaultClifford."""
+    """Specifies whether an operation is accepted by ``DefaultClifford``."""
     return op.name in _GATE_OPERATIONS
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
-    """Specifies whether or not an observable is accepted by DefaultClifford."""
+    """Specifies whether an observable is accepted by ``DefaultClifford``."""
     return obs.name in _MEAS_OBSERVABLES
 
 
@@ -123,10 +123,9 @@ def _import_stim():
     return stim
 
 
-# pylint:disable=too-many-instance-attributes
 class DefaultClifford(Device):
     r"""A PennyLane device for fast simulation of Clifford circuits using
-    `stim (2021) <https://github.com/quantumlib/stim/>`_.
+    `stim <https://github.com/quantumlib/stim/>`_.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -136,12 +135,12 @@ class DefaultClifford(Device):
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
         tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
-            which makes the device return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
+            When ``True``, the device returns the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
-            The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
+            The default, ``seed="global"`` pulls a seed from numpy's global generator. ``seed=None``
             will pull a seed from the OS entropy.
         max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
@@ -149,10 +148,6 @@ class DefaultClifford(Device):
             issue, try setting ``max_workers`` to ``None``.
 
     **Example:**
-
-    The :class:`~pennylane.devices.DefaultClifford` implements the ``default.clifford`` device,
-    which can be used for efficiently executing circuits built with
-    `Clifford gates <https://en.wikipedia.org/wiki/Clifford_gates>`_.
 
     .. code-block:: python
 
@@ -172,8 +167,7 @@ class DefaultClifford(Device):
             [0, 0, 0, 1, 0],
             [1, 0, 0, 1, 1]])
 
-    A more fine-grained control over the execution pipeline can be obtained with
-    :class:`~pennylane.tape.QuantumScript`.
+    The devices execution pipeline can be investigated more closely with the following:
 
     .. code-block:: python
 
@@ -197,11 +191,8 @@ class DefaultClifford(Device):
         :title: Clifford Tableau
         :href: clifford-tableau-theory
 
-        The device represents a state by the inverse of a Tableau
-        (`Sec. III, Aaronson & Gottesman (2004) <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328>`_)
-        consisiting of binary variable :math:`x_{ij},\ z_{ij}` for all :math:`i\in\left\{1,\ldots,2n\right\}`,
-        :math:`j\in\left\{1,\ldots,n\right\}`, and :math:`r_{i}` for all
-        :math:`i\in\left\{1,\ldots,2n\right\}`.
+        The device's internal state is represented by the following ``Tableau`` described in
+        the `Sec. III, Aaronson & Gottesman (2004) <https://arxiv.org/abs/quant-ph/0406196>`_:
 
         .. math::
 
@@ -217,14 +208,18 @@ class DefaultClifford(Device):
             z_{\left(  2n\right)  1}  & \cdots & z_{\left(  2n\right)  n} & & r_{2n}
             \end{bmatrix}
 
-        Rows :math:`1` to :math:`n` of the tableau represent the destabilizer generators
-        :math:`R_{1},\ldots,R_{n}`, and rows :math:`n+1` to :math:`2n` represent the stabilizer
-        generators :math:`R_{n+1},\ldots,R_{2n}`. If :math:`R_{i}=\pm P_{1}\ldots P_{n}`,
-        then bits :math:`x_{ij},z_{ij}` determine the j\ :math:`^{th}` Pauli matrix
-        :math:`P_{j}:\ 00` means ``I``, :math:`01` means ``X``, :math:`11` means ``Y``,
-        and :math:`10` means ``Z``. Finally, :math:`r_{i}` is one if :math:`R_{i}`
-        has negative phase and zero if :math:`r_{i}` has a positive phase.
+        The tableau's first `n` rows represent a destabilizer generator, while the
+        remaining `n` rows represent the stabilizer generators. The Pauli representation
+        for all of these generators are described using the :mod:`binary vector <pennylane.pauli.binary_to_pauli>`
+        made from the binary variables :math:`x_{ij},\ z_{ij}`,
+        :math:`\forall i\in\left\{1,\ldots,2n\right\}, j\in\left\{1,\ldots,n\right\}`
+        and they together form the complete Pauli group.
 
+        Finally, the last column of the tableau, with binary variables
+        :math:`r_{i},\ \forall i\in\left\{1,\ldots,2n\right\}`,
+        denotes whether the phase is negative (:math:`r_i = 1`) or not, for each generator.
+        Maintaining and working with this tableau representation instead of the complete state vector
+        makes the calculations of increasingly large Clifford circuits more efficient on this device.
 
     .. details::
         :title: Tracking
@@ -246,7 +241,7 @@ class DefaultClifford(Device):
 
         See the details in :class:`~pennylane.devices.DefaultQubit`'s "Accelerate calculations with multiprocessing"
         section. Additional information regarding multiprocessing can be found in the
-        `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
+        `multiprocessing docs page <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
     """
 
     @property
@@ -456,7 +451,8 @@ class DefaultClifford(Device):
         for op in circuit.operations[use_prep_ops:]:
             gate, wires = self.pl_to_stim(op)
             if gate is not None:
-                stim_ct.append(gate, wires)
+                # Note: This is ~300x faster than doing stim_ct.append(gate, wires)
+                stim_ct.append_from_stim_program_text(f"{gate} {wires}")
             else:
                 if op.name == "GlobalPhase":
                     global_phase_ops.append(op)

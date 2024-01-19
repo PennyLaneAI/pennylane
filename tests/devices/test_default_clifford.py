@@ -347,7 +347,7 @@ def test_pl_to_stim(pl_op, stim_op):
     dev_c = qml.device("default.clifford")
     op, wires = dev_c.pl_to_stim(pl_op)
     assert op == stim_op[0]
-    assert wires == qml.wires.Wires(stim_op[1])
+    assert wires == " ".join(map(str, stim_op[1]))
 
 
 def test_max_worker_clifford():

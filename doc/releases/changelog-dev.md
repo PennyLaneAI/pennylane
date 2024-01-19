@@ -42,6 +42,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
+  for `tf.Function` and Tensorflow Autograph.
+  [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
+
 * Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
@@ -61,16 +65,23 @@
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
   [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
 
+* `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
+  [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
+
 * Improve efficiency of matrix calculation when operator is symmetric over wires
    [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
+
+* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
+  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
 
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
 
-* Composite operations (eg. those made with `qml.prod` and `qml.sum`) convert `Hamiltonian` and
+* Composite operations (eg. those made with `qml.prod` and `qml.sum`) and `SProd` operations convert `Hamiltonian` and
   `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
   incompatible operator types.
   [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
+  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
 
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
@@ -89,6 +100,11 @@
   of `functools.partial`.
   [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
 
+* Multiplying two `PauliWord` instances no longer returns a tuple `(new_word, coeff)`
+  but instead `PauliSentence({new_word: coeff})`. The old behavior is still available
+  with the private method `PauliWord._matmul(other)` for faster processing.
+  [(#5045)](https://github.com/PennyLaneAI/pennylane/pull/5054)
+
 * `Observable.return_type` has been removed. Instead, you should inspect the type
   of the surrounding measurement process.
   [(#5044)](https://github.com/PennyLaneAI/pennylane/pull/5044)
@@ -98,14 +114,28 @@
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
+* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
+  validate these properties manually.
+  [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
+
 <h3>Deprecations 👋</h3>
 
-* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
+* `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
+  module and will be removed from the Operator class in an upcoming release.
+  [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
+
+* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using 
+  the `@` operator, `*` will be used only for scalar multiplication. Note also the breaking
+  change that the product of two `PauliWord` instances now returns a `PauliSentence` instead 
+  of a tuple `(new_word, coeff)`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+  [(#5054)](https://github.com/PennyLaneAI/pennylane/pull/5054)
 
 * `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
   values that are no longer needed.
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
+  [(#5071)](https://github.com/PennyLaneAI/pennylane/pull/5071)
+  [(#5076)](https://github.com/PennyLaneAI/pennylane/pull/5076)
 
 * Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
   ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
@@ -137,12 +167,23 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.transforms.undo_swaps` can now work with operators with hyperparameters or nesting.
+  [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
+
+* `qml.transforms.split_non_commuting` will now pass the original shots along.
+  [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
+
 * If `argnum` is provided to a gradient transform, only the parameters specified in `argnum` will have their gradient methods validated.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
 
+* The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
+  [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
+
+* `CosineWindow` no longer raises an unexpected error when used on a subset of wires at the beginning of a circuit.
+  [(#5080)](https://github.com/PennyLaneAI/pennylane/pull/5080)
 
 <h3>Contributors ✍️</h3>
 
@@ -151,11 +192,12 @@ This release contains contributions from (in alphabetical order):
 Abhishek Abhishek,
 Utkarsh Azad,
 Astral Cai,
-Pablo Antonio Moreno Casares,
 Isaac De Vlugt,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
+Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
+Alex Preciado,
 Matthew Silverman.
