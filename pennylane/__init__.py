@@ -204,7 +204,7 @@ def device(name, *args, **kwargs):
       of Gaussian states and operations on continuous-variable circuit architectures.
 
     * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
-      simulator for fast simulation of Clifford circuits.
+      simulator of Clifford circuits.
 
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
