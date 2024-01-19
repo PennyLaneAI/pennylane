@@ -55,6 +55,11 @@ of PennyLane, plugins, and devices.
     :description: Architectural overview of PennyLane, its plugins and devices.
     :link: guide/architecture.html
 
+.. title-card::
+    :name: Deprecations and Removals
+    :description: Ensuring safety when introducing breaking changes to PennyLane.
+    :link: guide/deprecations_removals.html
+
 .. raw:: html
 
         <div style='clear:both'></div>
