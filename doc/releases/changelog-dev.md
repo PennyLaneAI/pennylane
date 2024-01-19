@@ -166,6 +166,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.transforms.undo_swaps` can now work with operators with hyperparameters or nesting.
+  [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
+
+* `qml.transforms.split_non_commuting` will now pass the original shots along.
+  [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
+
 * If `argnum` is provided to a gradient transform, only the parameters specified in `argnum` will have their gradient methods validated.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
