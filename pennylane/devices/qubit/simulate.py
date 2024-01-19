@@ -25,6 +25,7 @@ from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
 from .measure import measure
 from .sampling import measure_with_samples
+from ..default_qubit import Conditional, MidMeasureMP
 
 
 INTERFACE_TO_LIKE = {
@@ -124,9 +125,18 @@ def get_final_state(circuit, debugger=None, interface=None):
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
+    measurement_values = {}
     for op in circuit.operations[bool(prep) :]:
+        if isinstance(op, Conditional):
+            meas_id = op.meas_val.measurements[0].hash
+            if meas_id not in measurement_values.keys():
+                raise KeyError(f"Measurement key {meas_id} not found.")
+            if not measurement_values[meas_id]:
+                continue
+            op = op.then_op
         state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
-
+        if isinstance(op, MidMeasureMP):
+            state, measurement_values[op.hash] = state
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             state, circuit._shots = _postselection_postprocess(
@@ -134,7 +144,7 @@ def get_final_state(circuit, debugger=None, interface=None):
             )
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
-        is_state_batched = is_state_batched or op.batch_size is not None
+        is_state_batched = is_state_batched or (op.batch_size is not None)
 
     for _ in range(len(circuit.wires) - len(circuit.op_wires)):
         # if any measured wires are not operated on, we pad the state with zeros.
@@ -237,6 +247,19 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
+    has_mid_circuit_measurements = any(isinstance(op, MidMeasureMP) for op in circuit._ops)
+    has_shots = circuit.shots is not None
+    if has_mid_circuit_measurements and has_shots:
+        tmpcirc = circuit.copy()
+        tmpcirc._shots = None
+        measurements = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)
+        for _ in range(circuit.shots.total_shots - 1):
+            tmpmeas = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)
+            for m, t in zip(measurements, tmpmeas):
+                m += t
+        for m in measurements:
+            m /= circuit.shots.total_shots
+        return measurements
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state

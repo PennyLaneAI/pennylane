@@ -25,6 +25,8 @@ import logging
 import numpy as np
 
 import pennylane as qml
+from pennylane.ops.op_math.condition import Conditional
+from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
@@ -80,6 +82,10 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
+    if isinstance(op, MidMeasureMP):
+        return True
+    if isinstance(op, Conditional):
+        return True
     if op.name == "QFT" and len(op.wires) >= 6:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
@@ -435,7 +441,7 @@ class DefaultQubit(Device):
         transform_program = TransformProgram()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(qml.defer_measurements, device=self)
+        # transform_program.add_transform(qml.defer_measurements, device=self)
         transform_program.add_transform(
             decompose, stopping_condition=stopping_condition, name=self.name
         )
