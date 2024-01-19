@@ -4,6 +4,37 @@
 
 <h3>New features since last release</h3>
 
+* A new `default.clifford` device enables efficient simulation of large-scale Clifford circuits
+  defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
+  [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
+
+  Given a circuit with only Clifford gates, one can use this device to obtain the usual range
+  of PennyLane [measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html)
+  as well as the state represented in the Tableau form of
+  [Aaronson & Gottesman (2004)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328):
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.clifford", tableau=True)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.CNOT(wires=[0, 1])
+      qml.PauliX(wires=[1])
+      qml.ISWAP(wires=[0, 1])
+      qml.Hadamard(wires=[0])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([[0, 1, 1, 0, 0],
+         [1, 0, 1, 1, 1],
+         [0, 0, 0, 1, 0],
+         [1, 0, 0, 1, 1]])
+  ```
+
 * Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
   is now strictly faster for jax.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
@@ -73,6 +104,11 @@
   of `functools.partial`.
   [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
 
+* Multiplying two `PauliWord` instances no longer returns a tuple `(new_word, coeff)`
+  but instead `PauliSentence({new_word: coeff})`. The old behavior is still available
+  with the private method `PauliWord._matmul(other)` for faster processing.
+  [(#5045)](https://github.com/PennyLaneAI/pennylane/pull/5054)
+
 * `Observable.return_type` has been removed. Instead, you should inspect the type
   of the surrounding measurement process.
   [(#5044)](https://github.com/PennyLaneAI/pennylane/pull/5044)
@@ -92,8 +128,12 @@
   module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
 
-* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
+* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using 
+  the `@` operator, `*` will be used only for scalar multiplication. Note also the breaking
+  change that the product of two `PauliWord` instances now returns a `PauliSentence` instead 
+  of a tuple `(new_word, coeff)`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+  [(#5054)](https://github.com/PennyLaneAI/pennylane/pull/5054)
 
 * `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
   values that are no longer needed.
@@ -131,6 +171,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.transforms.undo_swaps` can now work with operators with hyperparameters or nesting.
+  [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
+
+* `qml.transforms.split_non_commuting` will now pass the original shots along.
+  [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
+
 * If `argnum` is provided to a gradient transform, only the parameters specified in `argnum` will have their gradient methods validated.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
@@ -140,11 +186,15 @@
 * The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
   [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
 
+* `CosineWindow` no longer raises an unexpected error when used on a subset of wires at the beginning of a circuit.
+  [(#5080)](https://github.com/PennyLaneAI/pennylane/pull/5080)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
+Utkarsh Azad,
 Astral Cai,
 Isaac De Vlugt,
 Korbinian Kottmann,
