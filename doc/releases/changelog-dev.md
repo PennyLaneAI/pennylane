@@ -10,6 +10,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
+  for `tf.Function` and Tensorflow Autograph.
+  [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
+
 * Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
@@ -64,6 +68,11 @@
   of `functools.partial`.
   [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
 
+* Multiplying two `PauliWord` instances no longer returns a tuple `(new_word, coeff)`
+  but instead `PauliSentence({new_word: coeff})`. The old behavior is still available
+  with the private method `PauliWord._matmul(other)` for faster processing.
+  [(#5045)](https://github.com/PennyLaneAI/pennylane/pull/5054)
+
 * `Observable.return_type` has been removed. Instead, you should inspect the type
   of the surrounding measurement process.
   [(#5044)](https://github.com/PennyLaneAI/pennylane/pull/5044)
@@ -83,8 +92,12 @@
   module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
 
-* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using the `@` operator, `*` will be used only for scalar multiplication.
+* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using 
+  the `@` operator, `*` will be used only for scalar multiplication. Note also the breaking
+  change that the product of two `PauliWord` instances now returns a `PauliSentence` instead 
+  of a tuple `(new_word, coeff)`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+  [(#5054)](https://github.com/PennyLaneAI/pennylane/pull/5054)
 
 * `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
   values that are no longer needed.
