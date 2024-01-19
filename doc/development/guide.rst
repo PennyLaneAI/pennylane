@@ -76,4 +76,5 @@ of PennyLane, plugins, and devices.
     guide/adr
     guide/architecture
     guide/logging
+    guide/deprecations_removals
 ..    guide/bestpractices
