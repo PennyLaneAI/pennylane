@@ -695,14 +695,6 @@ class TestComputations:
         )
 
 
-def _verify_decompositions(ops, classes, params, wires):
-    """Verifies that the correct decomposition classes are returned"""
-    for op, c, p, w in zip(ops, classes, params, wires):
-        assert isinstance(op, c)
-        assert qml.math.allclose(op.parameters, p)
-        assert op.wires == w
-
-
 def _dot_broadcasted(a, b):
     return np.einsum("...ij,...jk->...ik", a, b)
 
@@ -719,12 +711,17 @@ class TestDecompositions:
         ops1 = qml.CRX.compute_decomposition(phi, wires=[0, 1])
         ops2 = qml.CRX(phi, wires=(0, 1)).decomposition()
 
-        classes = [qml.RZ, qml.RY, qml.CNOT, qml.RY, qml.CNOT, qml.RZ]
-        params = [[np.pi / 2], [phi / 2], [], [-phi / 2], [], [-np.pi / 2]]
-        wires = [Wires(1), Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1)), Wires(1)]
+        expected_ops = [
+            qml.RZ(np.pi / 2, 1),
+            qml.RY(phi / 2, 1),
+            qml.CNOT(wires=(0, 1)),
+            qml.RY(-phi / 2, 1),
+            qml.CNOT(wires=(0, 1)),
+            qml.RZ(-np.pi / 2, 1),
+        ]
 
-        _verify_decompositions(ops1, classes, params, wires)
-        _verify_decompositions(ops2, classes, params, wires)
+        assert ops1 == expected_ops
+        assert ops2 == expected_ops
 
     @pytest.mark.parametrize("phi", [0.432, np.array([2.1, 0.2])])
     def test_CRY(self, phi):
@@ -733,12 +730,15 @@ class TestDecompositions:
         ops1 = qml.CRY.compute_decomposition(phi, wires=[0, 1])
         ops2 = qml.CRY(phi, wires=(0, 1)).decomposition()
 
-        classes = [qml.RY, qml.CNOT, qml.RY, qml.CNOT]
-        params = [[phi / 2], [], [-phi / 2], []]
-        wires = [Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1))]
+        expected_ops = [
+            qml.RY(phi / 2, 1),
+            qml.CNOT(wires=(0, 1)),
+            qml.RY(-phi / 2, 1),
+            qml.CNOT(wires=(0, 1)),
+        ]
 
-        _verify_decompositions(ops1, classes, params, wires)
-        _verify_decompositions(ops2, classes, params, wires)
+        assert ops1 == expected_ops
+        assert ops2 == expected_ops
 
     @pytest.mark.parametrize("phi", [0.321, np.array([0.6, 2.1])])
     def test_CRZ(self, phi):
@@ -747,12 +747,15 @@ class TestDecompositions:
         ops1 = qml.CRZ.compute_decomposition(phi, wires=[1, 0])
         ops2 = qml.CRZ(phi, wires=(1, 0)).decomposition()
 
-        classes = [qml.PhaseShift, qml.CNOT, qml.PhaseShift, qml.CNOT]
-        params = [[phi / 2], [], [-phi / 2], []]
-        wires = [Wires(0), Wires((1, 0)), Wires(0), Wires((1, 0))]
+        expected_ops = [
+            qml.PhaseShift(phi / 2, wires=0),
+            qml.CNOT(wires=[1, 0]),
+            qml.PhaseShift(-phi / 2, wires=0),
+            qml.CNOT(wires=[1, 0]),
+        ]
 
-        _verify_decompositions(ops1, classes, params, wires)
-        _verify_decompositions(ops2, classes, params, wires)
+        assert ops1 == expected_ops
+        assert ops2 == expected_ops
 
     @pytest.mark.parametrize("phi, theta, omega", [[0.5, 0.6, 0.7], [0.1, -0.4, 0.7], [-10, 5, -1]])
     def test_CRot(self, tol, phi, theta, omega):
