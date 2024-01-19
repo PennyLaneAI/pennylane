@@ -45,7 +45,7 @@ def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
             # see xfail test: test_tensorflow_qnode_default_qubit_2.py:test_autograph_adjoint_multi_out
             # And Issue #5078
             # pragma: no cover
-            if multi: # pragma: no cover
+            if multi:  # pragma: no cover
                 shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
             else:
                 shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
