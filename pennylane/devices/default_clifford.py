@@ -492,7 +492,7 @@ class DefaultClifford(Device):
             raise qml.DeviceError(
                 f"Operator {op} not supported on default.clifford and does not provide a decomposition."
             ) from e
-        return stim_op, op.wires
+        return stim_op, " ".join(map(str, op.wires))
 
     @staticmethod
     def _from_hamiltonian_or_tensor(op):
@@ -909,7 +909,7 @@ class DefaultClifford(Device):
             # Add to the circuit to rotate the basis
             stim_op = self.pl_to_stim(ops)
             if stim_op[0] is not None:
-                diagonalizing_cit.append(stim_op[0], list(stim_op[1]))
+                diagonalizing_cit.append_from_stim_program_text(f"{stim_op[0]} {stim_op[1]}")
 
         if not self._tableau:
             circuit_simulator = stim.TableauSimulator()
