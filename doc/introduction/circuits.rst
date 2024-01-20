@@ -87,9 +87,9 @@ instantiated using the :func:`device <pennylane.device>` loader.
 
     dev = qml.device('default.qubit', wires=2, shots=1000)
 
-PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
-and ``'default.gaussian'`` simulators; additional devices can be installed as plugins (see
-`available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the
+PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``, 
+``'default.gaussian'``, and ``'default.clifford'`` simulators; additional devices can be installed as plugins
+(see `available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
 
@@ -147,6 +147,12 @@ Allowed wire labels can be of any type that is hashable, which allows two wires 
     The iterable of labels passed to the device's ``wires``
     argument must match this expected number of wires.
 
+.. warning::
+
+    In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
+    For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
+    will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
+
 Shots
 *****
 
@@ -177,17 +183,22 @@ For example:
 
     @qml.qnode(dev)
     def circuit(x):
-      qml.RX(x, wires=0)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+        qml.RX(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-Executing this, we will get an output of size ``(3, 2)``:
+Executing this, we will get an output of shape ``(3, 2)``:
 
->>> circuit(0.5)
-tensor([[ 1.   ,  1.   ],
-        [ 0.2  ,  1.   ],
-        [-0.022,  0.876]], requires_grad=True)
+>>> results = circuit(0.5)
+>>> results
+((array(0.6), array(1.)),
+ (array(-0.4), array(1.)),
+ (array(0.048), array(0.902)))
 
+We can index into this tuple and retrieve the results computed with only 5 shots:
+
+>>> results[0]
+(array(0.6), array(1.))
 
 .. _intro_vcirc_qnode:
 

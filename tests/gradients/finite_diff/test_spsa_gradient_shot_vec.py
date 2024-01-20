@@ -14,16 +14,15 @@
 """
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
-# pylint: disable="import-outside-toplevel"
 import numpy
 import pytest
 
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane._device import _process_shot_sequence, _get_num_copies
 from pennylane.gradients import spsa_grad
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
+from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
 h_val = 0.1
@@ -33,7 +32,7 @@ default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([100000] * 3)
 
 
-def coordinate_sampler(indices, num_params, idx, seed=None):
+def coordinate_sampler(indices, num_params, idx, rng=None):
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
@@ -54,25 +53,25 @@ class TestSpsaGradient:
         psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         # by default all parameters are assumed to be trainable
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
-            spsa_grad(tape, _expand=False)
+            spsa_grad(tape)
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = spsa_grad(tape, h=h_val, shots=default_shot_vector)
+        tapes, fn = spsa_grad(tape, h=h_val)
 
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -97,12 +96,10 @@ class TestSpsaGradient:
             qml.RY(-0.654, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = spsa_grad(
-            tape, h=h_val, shots=default_shot_vector, num_directions=num_directions
-        )
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = spsa_grad(tape, h=h_val, num_directions=num_directions)
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -133,11 +130,11 @@ class TestSpsaGradient:
             qml.RY(weights[1], wires=0)
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = spsa_grad(tape, h=h_val, shots=default_shot_vector)
+            g_tapes, post_processing = spsa_grad(tape, h=h_val)
         all_res = post_processing(qml.execute(g_tapes, dev, None))
         assert len(all_res) == len(default_shot_vector)
 
@@ -158,10 +155,10 @@ class TestSpsaGradient:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = spsa_grad(tape, h=h_val, shots=default_shot_vector)
+            g_tapes, post_processing = spsa_grad(tape, h=h_val)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -186,10 +183,8 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = spsa_grad(circuit, h=h_val, shots=default_shot_vector)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            spsa_grad(circuit, h=h_val)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -204,10 +199,8 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = spsa_grad(circuit, h=h_val, shots=default_shot_vector)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            spsa_grad(circuit, h=h_val)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -222,10 +215,8 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = spsa_grad(circuit, h=h_val, shots=default_shot_vector)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            spsa_grad(circuit, h=h_val)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -240,15 +231,13 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = spsa_grad(circuit, h=h_val, shots=default_shot_vector)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            spsa_grad(circuit, h=h_val)(weights)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
 
         @qml.qnode(dev)
@@ -258,7 +247,9 @@ class TestSpsaGradient:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        all_result = spsa_grad(circuit, h=h_val, shots=default_shot_vector)(params)
+        grad_fn = spsa_grad(circuit, h=h_val, sampler_rng=rng)
+        all_result = grad_fn(params)
+
         assert len(all_result) == len(default_shot_vector)
 
         for result in all_result:
@@ -278,13 +269,10 @@ class TestSpsaGradient:
             assert result[2].shape == (4,)
             assert np.allclose(result[2], 0)
 
-            tapes, _ = spsa_grad(circuit.tape, h=h_val, shots=default_shot_vector)
-            assert tapes == []
-
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
 
@@ -295,7 +283,9 @@ class TestSpsaGradient:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        all_result = spsa_grad(circuit, h=h_val, shots=default_shot_vector)(params)
+        grad_fn = spsa_grad(circuit, h=h_val, sampler_rng=rng)
+        all_result = grad_fn(params)
+
         assert len(all_result) == len(default_shot_vector)
 
         for result in all_result:
@@ -333,9 +323,6 @@ class TestSpsaGradient:
             assert result[1][2].shape == (4,)
             assert np.allclose(result[1][2], 0)
 
-            tapes, _ = spsa_grad(circuit.tape, h=h_val, shots=default_shot_vector)
-            assert tapes == []
-
     def test_y0(self):
         """Test that if first order finite differences is underlying the SPSA, then
         the tape is executed only once using the current parameter
@@ -345,14 +332,13 @@ class TestSpsaGradient:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         n = 5
         tapes, _ = spsa_grad(
             tape,
             strategy="forward",
             approx_order=1,
             h=h_val,
-            shots=default_shot_vector,
             num_directions=n,
         )
 
@@ -368,7 +354,7 @@ class TestSpsaGradient:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         f0 = dev.execute(tape)
         n = 3
         tapes, _ = spsa_grad(
@@ -377,7 +363,6 @@ class TestSpsaGradient:
             approx_order=1,
             f0=f0,
             h=h_val,
-            shots=default_shot_vector,
             num_directions=n,
         )
 
@@ -386,7 +371,7 @@ class TestSpsaGradient:
     def test_independent_parameters(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
 
         with qml.queuing.AnnotatedQueue() as q1:
@@ -394,25 +379,26 @@ class TestSpsaGradient:
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        tape1 = qml.tape.QuantumScript.from_queue(q1, shots=many_shots_shot_vector)
         with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(1.0, wires=[0])
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qml.tape.QuantumScript.from_queue(q2, shots=many_shots_shot_vector)
         n1 = 5
         tapes, fn = spsa_grad(
             tape1,
             approx_order=1,
             strategy="forward",
             num_directions=n1,
-            shots=many_shots_shot_vector,
             h=h_val,
+            sampler_rng=rng,
         )
-        j1 = fn(dev.batch_execute(tapes))
+        with qml.Tracker(dev) as tracker:
+            j1 = fn(dev.execute(tapes))
 
-        assert len(tapes) == dev.num_executions == n1 + 1
+        assert len(tapes) == tracker.totals["executions"] == n1 + 1
 
         n2 = 3
         tapes, fn = spsa_grad(
@@ -420,10 +406,10 @@ class TestSpsaGradient:
             approx_order=1,
             strategy="forward",
             h=h_val,
-            shots=default_shot_vector,
             num_directions=n2,
+            sampler_rng=rng,
         )
-        j2 = fn(dev.batch_execute(tapes))
+        j2 = fn(dev.execute(tapes))
 
         assert len(tapes) == n2 + 1
 
@@ -471,12 +457,9 @@ class TestSpsaGradient:
         x = np.random.rand(3)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
-        transform = [
-            qml.math.shape(spsa_grad(c, h=h_val, shots=default_shot_vector)(x)) for c in circuits
-        ]
+        transform = [qml.math.shape(spsa_grad(c, h=h_val)(x)) for c in circuits]
 
-        expected = [(3,), (3,), (2, 3), (3, 4), (3, 4), (2, 3, 4)]
-        expected = [(len(many_shots_shot_vector),) + e for e in expected]
+        expected = [(3, 3), (1, 3, 3), (3, 2, 3), (3, 3, 4), (1, 3, 3, 4), (3, 2, 3, 4)]
 
         assert all(t == q for t, q in zip(transform, expected))
 
@@ -516,13 +499,13 @@ class TestSpsaGradient:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupportingSpecialObservable(DefaultQubit):
+        class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
             # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
-            observables = DefaultQubit.observables.union({"SpecialObservable"})
+            observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
             @staticmethod
             def _asarray(arr, dtype=None):
@@ -568,7 +551,7 @@ class TestSpsaGradientIntegration:
         """Test that the Jacobian is correctly returned for a tape with ragged output"""
         dev = qml.device("default.qubit", wires=3, shots=many_shots_shot_vector)
         params = [1.0, 1.0, 1.0]
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(params[0], wires=[0])
@@ -578,16 +561,16 @@ class TestSpsaGradientIntegration:
             qml.probs(wires=0)
             qml.probs(wires=[1, 2])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            shots=many_shots_shot_vector,
             num_directions=3,
+            sampler_rng=rng,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(many_shots_shot_vector)
 
@@ -609,7 +592,7 @@ class TestSpsaGradientIntegration:
     def test_single_expectation_value(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -620,18 +603,18 @@ class TestSpsaGradientIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            num_directions=4,
+            num_directions=10,
             sampler=coordinate_sampler,
-            shots=default_shot_vector,
+            sampler_rng=rng,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -656,7 +639,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
-        np.random.seed(5214)
+        rng = np.random.default_rng(5214)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -667,7 +650,7 @@ class TestSpsaGradientIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         # we choose both trainable parameters
         tapes, fn = spsa_grad(
             tape,
@@ -675,12 +658,12 @@ class TestSpsaGradientIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            num_directions=4,
+            num_directions=10,
             sampler=coordinate_sampler,
             h=h_val,
-            shots=many_shots_shot_vector,
+            sampler_rng=rng,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -709,7 +692,7 @@ class TestSpsaGradientIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -720,7 +703,7 @@ class TestSpsaGradientIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         # we choose only 1 trainable parameter
         tapes, fn = spsa_grad(
             tape,
@@ -731,9 +714,9 @@ class TestSpsaGradientIntegration:
             num_directions=4,
             sampler=coordinate_sampler,
             h=h_val,
-            shots=many_shots_shot_vector,
+            sampler_rng=rng,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -762,7 +745,7 @@ class TestSpsaGradientIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -774,7 +757,7 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         # we choose only 1 trainable parameter
         tapes, fn = spsa_grad(
             tape,
@@ -785,9 +768,9 @@ class TestSpsaGradientIntegration:
             num_directions=4,
             sampler=coordinate_sampler,
             h=h_val,
-            shots=many_shots_shot_vector,
+            sampler_rng=rng,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -804,7 +787,7 @@ class TestSpsaGradientIntegration:
     def test_multiple_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -816,7 +799,7 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -824,10 +807,10 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             sampler=coordinate_sampler,
             h=h_val,
-            num_directions=4,
-            shots=many_shots_shot_vector,
+            num_directions=20,
+            sampler_rng=rng,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -859,7 +842,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
-        np.random.seed(52)
+        rng = np.random.default_rng(52)
         x = 0.543
         y = -0.654
 
@@ -870,7 +853,7 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -879,9 +862,9 @@ class TestSpsaGradientIntegration:
             h=h_val,
             num_directions=6,
             sampler=coordinate_sampler,
-            shots=many_shots_shot_vector,
+            sampler_rng=rng,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -913,7 +896,7 @@ class TestSpsaGradientIntegration:
     def test_prob_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -925,7 +908,7 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -934,9 +917,9 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             num_directions=4,
             h=h_val,
-            shots=many_shots_shot_vector,
+            sampler_rng=rng,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -994,12 +977,14 @@ class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    def test_autograd(self, approx_order, strategy):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
+    def test_autograd(self, dev_name, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = np.array([0.543, -0.654], requires_grad=True)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1008,7 +993,7 @@ class TestSpsaGradientDifferentiation:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape,
@@ -1016,9 +1001,9 @@ class TestSpsaGradientDifferentiation:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
+                sampler_rng=rng,
             )
-            jac = np.array(fn(dev.batch_execute(tapes)))
+            jac = np.array(fn(execute_fn(tapes)))
             return jac
 
         all_res = qml.jacobian(cost_fn)(params)
@@ -1038,12 +1023,14 @@ class TestSpsaGradientDifferentiation:
             assert np.allclose(res, expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.autograd
-    def test_autograd_ragged(self, approx_order, strategy):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
+    def test_autograd_ragged(self, dev_name, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = np.array([0.543, -0.654], requires_grad=True)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1053,7 +1040,7 @@ class TestSpsaGradientDifferentiation:
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape,
@@ -1061,9 +1048,9 @@ class TestSpsaGradientDifferentiation:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
+                sampler_rng=rng,
             )
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(execute_fn(tapes))
             return jac[1][0]
 
         x, y = params
@@ -1078,14 +1065,16 @@ class TestSpsaGradientDifferentiation:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_tf(self, approx_order, strategy):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    def test_tf(self, dev_name, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         with tf.GradientTape(persistent=True) as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -1094,7 +1083,7 @@ class TestSpsaGradientDifferentiation:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape,
@@ -1102,9 +1091,9 @@ class TestSpsaGradientDifferentiation:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
+                sampler_rng=rng,
             )
-            jac_0, jac_1 = fn(dev.batch_execute(tapes))
+            jac_0, jac_1 = fn(execute_fn(tapes))
 
         x, y = 1.0 * params
 
@@ -1120,14 +1109,16 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose([res_0, res_1], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.tf
-    def test_tf_ragged(self, approx_order, strategy):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    def test_tf_ragged(self, dev_name, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         with tf.GradientTape(persistent=True) as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -1137,7 +1128,7 @@ class TestSpsaGradientDifferentiation:
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape,
@@ -1145,10 +1136,10 @@ class TestSpsaGradientDifferentiation:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
+                sampler_rng=rng,
             )
 
-            jac_01 = fn(dev.batch_execute(tapes))[1][0]
+            jac_01 = fn(execute_fn(tapes))[1][0]
 
         x, y = 1.0 * params
 
@@ -1159,14 +1150,16 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(res_01[0], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, approx_order, strategy):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    def test_torch(self, dev_name, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
-        dev = qml.device("default.qubit.torch", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         def cost_fn(params):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1175,16 +1168,16 @@ class TestSpsaGradientDifferentiation:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tapes, fn = spsa_grad(
                 tape,
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
+                sampler_rng=rng,
             )
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(execute_fn(tapes))
             return jac
 
         hess = torch.autograd.functional.jacobian(cost_fn, params)
@@ -1202,18 +1195,17 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(hess[1].detach().numpy(), expected[1], atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, approx_order, strategy):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    def test_jax(self, dev_name, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
-
-        dev = qml.device("default.qubit.jax", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = jnp.array([0.543, -0.654])
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1222,7 +1214,7 @@ class TestSpsaGradientDifferentiation:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape,
@@ -1230,9 +1222,9 @@ class TestSpsaGradientDifferentiation:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
+                sampler_rng=rng,
             )
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(execute_fn(tapes))
             return jac
 
         all_res = jax.jacobian(cost_fn)(params)
@@ -1299,15 +1291,15 @@ class TestReturn:
             )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
             qml.apply(meas)  # Measurements act on wires 0 and 1
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        grad_transform_shots = Shots(shot_vec)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=grad_transform_shots)
         # One trainable param
         tape.trainable_params = {0}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
-        tapes, fn = spsa_grad(tape, shots=grad_transform_shots)
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = spsa_grad(tape)
+        all_res = fn(dev.execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         for res in all_res:
@@ -1333,15 +1325,15 @@ class TestReturn:
             qml.var(qml.Projector([1], wires=4))
             qml.var(qml.Hermitian(A, wires=5))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        grad_transform_shots = Shots(shot_vec)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=grad_transform_shots)
         # Multiple trainable params
         tape.trainable_params = {0}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
-        tapes, fn = spsa_grad(tape, shots=grad_transform_shots)
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = spsa_grad(tape)
+        all_res = fn(dev.execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
@@ -1367,15 +1359,15 @@ class TestReturn:
             )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
             qml.apply(meas)  # Measurements act on wires 0 and 1
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        grad_transform_shots = Shots(shot_vec)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=grad_transform_shots)
         # Multiple trainable params
         tape.trainable_params = {0, 1}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
-        tapes, fn = spsa_grad(tape, shots=grad_transform_shots)
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = spsa_grad(tape)
+        all_res = fn(dev.execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         for param_res in all_res:
@@ -1406,15 +1398,15 @@ class TestReturn:
             qml.var(qml.Projector([1], wires=3))
             qml.var(qml.Hermitian(A, wires=4))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        grad_transform_shots = Shots(shot_vec)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=grad_transform_shots)
         # Multiple trainable params
         tape.trainable_params = {0, 1, 2, 3, 4}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
-        tapes, fn = spsa_grad(tape, shots=grad_transform_shots)
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = spsa_grad(tape)
+        all_res = fn(dev.execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]

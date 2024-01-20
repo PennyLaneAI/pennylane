@@ -84,6 +84,7 @@ class TestDecomposition:
         """Test the correctness of the FermionicSingleExcitation template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
+        # pylint: disable=protected-access
 
         sqg = 10
         cnots = 4 * (len(single_wires) - 1)
@@ -117,17 +118,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.FermionicSingleExcitation(0.4, wires=[1, 0, 2])
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.FermionicSingleExcitation(0.4, wires=["a", "z", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -242,4 +244,4 @@ class TestInterfaces:
         res = circuit(weight)
         res.backward()
         # check that the gradient is computed without error
-        [weight.grad]
+        weight.grad  # pylint: disable=pointless-statement

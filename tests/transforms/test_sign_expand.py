@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains unit tests for the ``sign_expand`` transform."""
+import functools
 import pytest
+
 import numpy as np
 import pennylane as qml
 import pennylane.tape
@@ -96,9 +98,24 @@ class TestSignExpand:
         """Tests that the sign_expand transform returns the correct value"""
 
         tapes, fn = qml.transforms.sign_expand(tape)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
+        assert np.isclose(output, expval)
+
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_hamiltonians_qnode(self, tape, output):
+        """Tests that the sign_expand transform returns the correct value as a transform program"""
+
+        @qml.transforms.sign_expand
+        @qml.qnode(dev)
+        def qnode():
+            for op in tape.operations:
+                qml.apply(op)
+
+            return qml.apply(tape.measurements[0])
+
+        expval = qnode()
         assert np.isclose(output, expval)
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
@@ -108,11 +125,42 @@ class TestSignExpand:
         """
 
         tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval, 1e-2)
         # as these are approximations, these are only correct up to finite precision
+
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_hamiltonians_circuit_impl_qnode(self, tape, output):
+        """Tests that the sign_expand transform returns the correct value as a transform program
+        if we do not calculate analytical expectation values of groups but rely on their circuit approximations
+        """
+
+        @functools.partial(qml.transforms.sign_expand, circuit=True)
+        @qml.qnode(dev)
+        def qnode():
+            for op in tape.operations:
+                qml.apply(op)
+
+            return qml.apply(tape.measurements[0])
+
+        expval = qnode()
+        assert np.isclose(output, expval, 1e-2)
+        # as these are approximations, these are only correct up to finite precision
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize("circuit", [True, False])
+    def test_shots_attribute(self, shots, circuit):
+        """Tests that the shots attribute is copied to the new tapes"""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliX(0)
+            qml.expval(H1)
+
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+        new_tapes, _ = qml.transforms.sign_expand(tape, circuit=circuit)
+
+        assert all(new_tape.shots == tape.shots for new_tape in new_tapes)
 
     def test_hamiltonian_error(self):
         """Tests if wrong observables get caught in the test"""
@@ -138,7 +186,7 @@ class TestSignExpand:
         """Tests that the sign_expand transform returns the correct value"""
 
         tapes, fn = qml.transforms.sign_expand(tape)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
@@ -150,7 +198,7 @@ class TestSignExpand:
         """
 
         tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval, 1e-1)

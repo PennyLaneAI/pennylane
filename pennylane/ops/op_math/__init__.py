@@ -24,6 +24,7 @@ Constructor Functions
 
     ~adjoint
     ~ctrl
+    ~cond
     ~exp
     ~sum
     ~pow
@@ -40,6 +41,7 @@ Symbolic Classes
 
     ~Adjoint
     ~CompositeOp
+    ~Conditional
     ~Controlled
     ~ControlledOp
     ~Evolution
@@ -54,13 +56,29 @@ Symbolic Classes
 Controlled Operator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
 
     ~ControlledQubitUnitary
+    ~CY
+    ~CZ
 
 Decompositions
 ~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.ops
+
+.. autosummary::
+    :toctree: api
+
+    ~one_qubit_decomposition
+    ~two_qubit_decomposition
+    ~sk_decomposition
+
+Control Decompositions
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.ops.op_math
 
@@ -74,17 +92,17 @@ Decompositions
 
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
+from .condition import cond, Conditional
 from .controlled import Controlled, ControlledOp, ctrl
-from .controlled_ops import ControlledQubitUnitary
+from .controlled_ops import ControlledQubitUnitary, CY, CZ
+from .decompositions import one_qubit_decomposition, two_qubit_decomposition, sk_decomposition
 from .evolution import Evolution
 from .exp import Exp, exp
 from .pow import Pow, pow
 from .prod import Prod, prod
 from .sprod import SProd, s_prod
-from .sum import Sum, op_sum, sum
+from .sum import Sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
 from .controlled_decompositions import ctrl_decomp_zyz, ctrl_decomp_bisect
 
-controlled_qubit_ops = {
-    "ControlledQubitUnitary",
-}
+controlled_qubit_ops = {"ControlledQubitUnitary", "CY", "CZ"}

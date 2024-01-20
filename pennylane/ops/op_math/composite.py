@@ -17,12 +17,13 @@ This submodule defines a base class for composite operations.
 # pylint: disable=too-many-instance-attributes
 import abc
 from typing import Callable, List
+import copy
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath, _UNSET_BATCH_SIZE
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -35,7 +36,6 @@ class CompositeOp(Operator):
         operands: (tuple[~.operation.Operator]): a tuple of operators which will be combined.
 
     Keyword Args:
-        do_queue (bool): determines if the operator will be queued. Default is True.
         id (str or None): id for the operator. Default is None.
 
     The child composite operator should define the `_op_symbol` property
@@ -43,11 +43,16 @@ class CompositeOp(Operator):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
+    def _flatten(self):
+        return tuple(self.operands), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data)
+
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(
-        self, *operands: Operator, do_queue=True, id=None
-    ):  # pylint: disable=super-init-not-called
+    def __init__(self, *operands: Operator, id=None):  # pylint: disable=super-init-not-called
         self._id = id
         self.queue_idx = None
         self._name = self.__class__.__name__
@@ -55,19 +60,16 @@ class CompositeOp(Operator):
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
 
-        self.operands = operands
+        self.operands = tuple(convert_to_opmath(op) for op in operands)
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep()
+        self.queue()
+        self._batch_size = _UNSET_BATCH_SIZE
 
-        if do_queue:
-            self.queue()
-
-        self._check_batching(None)  # unused param
-
-    def _check_batching(self, _):
+    def _check_batching(self):
         batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
         if len(batch_sizes) > 1:
             raise ValueError(
@@ -112,7 +114,7 @@ class CompositeOp(Operator):
     @property
     def data(self):
         """Create data property"""
-        return [d for op in self for d in op.data]
+        return tuple(d for op in self for d in op.data)
 
     @data.setter
     def data(self, new_data):
@@ -326,6 +328,11 @@ class CompositeOp(Operator):
             )
         return self._hash
 
+    # pylint:disable = missing-function-docstring
+    @property
+    def basis(self):
+        return None
+
     @property
     def arithmetic_depth(self) -> int:
         return 1 + max(op.arithmetic_depth for op in self)
@@ -341,11 +348,11 @@ class CompositeOp(Operator):
         new_op = cls.__new__(cls)
         new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op.data = self.data.copy()
+        new_op.data = copy.copy(self.data)
         for attr, value in vars(self).items():
             if attr not in {"data", "operands", "_wires"}:
                 setattr(new_op, attr, value)
-        if (p_rep := new_op._pauli_rep) is not None:
+        if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
 
         return new_op

@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
+# pylint: disable=too-few-public-methods,too-many-public-methods
 import numpy as np
 import pytest
 
@@ -196,7 +197,6 @@ class TestGroupingUtils:
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
 
-        n_qubits = 3
         wire_map = {0: 0, "a": 1, "b": 2}
         p1_vec = pauli_to_binary(PauliX(0) @ PauliY("a"), wire_map=wire_map)
         p2_vec = pauli_to_binary(PauliX(0) @ Identity("a") @ PauliX("b"), wire_map=wire_map)
@@ -266,6 +266,7 @@ class TestGroupingUtils:
         (PauliZ(1) @ PauliX(2) @ PauliZ(4), True),
         (PauliX(1) @ Hadamard(4), False),
         (Hadamard(0), False),
+        (Hamiltonian([], []), False),
         (Hamiltonian([0.5], [PauliZ(1) @ PauliX(2)]), True),
         (Hamiltonian([0.5], [PauliZ(1) @ PauliX(1)]), True),
         (Hamiltonian([1.0], [Hadamard(0)]), False),
@@ -308,6 +309,11 @@ class TestGroupingUtils:
         assert are_identical_pauli_words(pauli_word_1, pauli_word_3)
         assert not are_identical_pauli_words(pauli_word_1, pauli_word_4)
         assert not are_identical_pauli_words(pauli_word_3, pauli_word_4)
+
+    def test_identities_always_pauli_words(self):
+        """Tests that identity terms are always identical."""
+        assert are_identical_pauli_words(qml.Identity(0), qml.Identity("a"))
+        assert are_identical_pauli_words(qml.Identity((-2, -3)), qml.Identity("wire"))
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_are_identical_pauli_words_non_pauli_word_catch(self, non_pauli_word):
@@ -534,7 +540,7 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1))
-        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1)])
+        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
 
     def test_one_qubit_pauli_group_valid_float_input(self):
         """Test that the single-qubit Pauli group is constructed correctly when a float
@@ -542,7 +548,7 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1.0))
-        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1)])
+        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
 
     def test_one_qubit_pauli_group_string_wire_map(self):
         """Test that the single-qubit Pauli group is constructed correctly with a wire
@@ -556,12 +562,7 @@ class TestPauliGroup:
             PauliY("qubit"),
         ]
         pg_1_wires = list(pauli_group(1, wire_map=wire_map))
-        assert all(
-            [
-                expected.compare(obtained)
-                for expected, obtained in zip(expected_pg_1_wires, pg_1_wires)
-            ]
-        )
+        assert all(exp.compare(ob) for exp, ob in zip(expected_pg_1_wires, pg_1_wires))
 
     def test_two_qubit_pauli_group(self):
         """Test that the two-qubit Pauli group is constructed correctly."""
@@ -588,104 +589,109 @@ class TestPauliGroup:
         ]
 
         pg_2 = list(pauli_group(2, wire_map=wire_map))
-        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_2, pg_2)])
+        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_2, pg_2))
 
     @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,wire_map,expected_product",
+        "pauli_word_1,pauli_word_2,expected_product",
         [
-            (PauliX(0), Identity(0), {0: 0}, PauliX(0)),
-            (PauliZ(0), PauliY(0), {0: 0}, PauliX(0)),
-            (PauliZ(0), PauliZ(0), {0: 0}, Identity(0)),
-            (Identity("a"), Identity("b"), None, Identity("a")),
-            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), None, Identity("b")),
+            (PauliX(0), Identity(0), PauliX(0)),
+            (PauliZ(0), PauliY(0), PauliX(0)),
+            (PauliZ(0), PauliZ(0), Identity(0)),
+            (Identity("a"), Identity("b"), Identity(["a", "b"])),
+            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), Identity(["b", "a"])),
             (
                 PauliZ("b") @ PauliY("a"),
                 PauliZ("b") @ PauliY("a"),
-                {"b": 0, "a": 1},
-                Identity("b"),
+                Identity(["b", "a"]),
             ),
             (
                 PauliZ(0) @ PauliY(1),
                 PauliX(0) @ PauliZ(1),
-                {0: 0, 1: 1},
                 PauliY(0) @ PauliX(1),
             ),
-            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {0: 0, 1: 1}, PauliX(0) @ PauliZ(1)),
+            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), PauliX(0) @ PauliZ(1)),
             (
                 PauliZ(0) @ PauliY(3) @ PauliZ(1),
                 PauliX(1) @ PauliX(2) @ PauliY(0),
-                None,
                 PauliX(0) @ PauliY(1) @ PauliX(2) @ PauliY(3),
             ),
             (
                 PauliX(0) @ PauliX(2),
                 PauliX(0) @ PauliZ(2),
-                None,
                 PauliY(2),
             ),
-            (PauliZ("a"), PauliX("b"), {"a": 0, "b": 1}, PauliZ("a") @ PauliX("b")),
+            (PauliZ("a"), PauliX("b"), PauliZ("a") @ PauliX("b")),
             (
                 PauliZ("a"),
                 PauliX("e"),
-                {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4},
                 PauliZ("a") @ PauliX("e"),
             ),
-            (PauliZ("a"), PauliY("e"), None, PauliZ("a") @ PauliY("e")),
+            (PauliZ("a"), PauliY("e"), PauliZ("a") @ PauliY("e")),
             (
                 PauliZ(0) @ PauliZ(2) @ PauliZ(4),
                 PauliZ(0) @ PauliY(1) @ PauliX(3),
-                None,
                 PauliZ(2) @ PauliY(1) @ PauliZ(4) @ PauliX(3),
             ),
             (
                 PauliZ(0) @ PauliZ(4) @ PauliZ(2),
                 PauliZ(0) @ PauliY(1) @ PauliX(3),
-                {0: 0, 2: 1, 4: 2, 1: 3, 3: 4},
                 PauliZ(2) @ PauliY(1) @ PauliZ(4) @ PauliX(3),
             ),
             (
                 PauliZ(0) @ PauliY(3) @ PauliZ(1),
                 PauliX(1) @ PauliX(2) @ PauliY(0),
-                None,
                 PauliX(0) @ PauliY(3) @ PauliY(1) @ PauliX(2),
             ),
         ],
     )
-    def test_pauli_mult(self, pauli_word_1, pauli_word_2, wire_map, expected_product):
+    def test_pauli_mult_using_prod(self, pauli_word_1, pauli_word_2, expected_product):
         """Test that Pauli words are multiplied together correctly."""
-        obtained_product = pauli_mult(pauli_word_1, pauli_word_2, wire_map=wire_map)
-        assert obtained_product.compare(expected_product)
+        obtained_product = qml.prod(pauli_word_1, pauli_word_2).simplify()
+        if isinstance(obtained_product, qml.ops.SProd):  # don't care about phase here
+            obtained_product = obtained_product.base
+        assert obtained_product == qml.operation.convert_to_opmath(expected_product)
 
     @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,wire_map,expected_phase",
+        "pauli_word_1,pauli_word_2,expected_phase",
         [
-            (PauliX(0), Identity(0), {0: 0}, 1),
-            (PauliZ(0), PauliY(0), {0: 0}, -1j),
-            (PauliZ(0), PauliZ(0), {0: 0}, 1),
-            (Identity("a"), Identity("b"), None, 1),
-            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), None, 1),
-            (PauliZ(0), PauliY("b"), None, 1),
-            (
-                PauliZ("a") @ PauliY("b"),
-                PauliX("a") @ PauliZ("b"),
-                {"a": 0, "b": 1},
-                -1,
-            ),
-            (PauliX(0) @ PauliX(2), PauliX(0) @ PauliZ(2), None, -1j),
-            (
-                PauliX(0) @ PauliY(1) @ PauliZ(2),
-                PauliY(0) @ PauliY(1),
-                {0: 0, 1: 1, 2: 2},
-                1j,
-            ),
-            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {0: 0, 1: 1}, -1),
-            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {1: 0, 0: 1}, -1),
-            (PauliZ(0) @ PauliY(3) @ PauliZ(1), PauliX(1) @ PauliX(2) @ PauliY(0), None, 1),
+            (PauliX(0), Identity(0), 1),
+            (PauliZ(0), PauliY(0), -1j),
+            (PauliZ(0), PauliZ(0), 1),
+            (Identity("a"), Identity("b"), 1),
+            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), 1),
+            (PauliZ(0), PauliY("b"), 1),
+            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), -1),
+            (PauliX(0) @ PauliX(2), PauliX(0) @ PauliZ(2), -1j),
+            (PauliX(0) @ PauliY(1) @ PauliZ(2), PauliY(0) @ PauliY(1), 1j),
+            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), -1),
+            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), -1),
+            (PauliZ(0) @ PauliY(3) @ PauliZ(1), PauliX(1) @ PauliX(2) @ PauliY(0), 1),
         ],
     )
-    def test_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, wire_map, expected_phase):
+    def test_pauli_mult_with_phase_using_prod(self, pauli_word_1, pauli_word_2, expected_phase):
         """Test that multiplication including phases works as expected."""
-        _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2, wire_map=wire_map)
+        prod = qml.prod(pauli_word_1, pauli_word_2).simplify()
+        obtained_phase = prod.scalar if isinstance(prod, qml.ops.SProd) else 1
+        assert obtained_phase == expected_phase
+
+    def test_deprecated_pauli_mult(self):
+        """Test that pauli_mult is deprecated."""
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`pauli_mult` is deprecated"):
+            pauli_mult(PauliX(0), PauliY(1))
+
+    @pytest.mark.parametrize(
+        "pauli_word_1,pauli_word_2,expected_phase",
+        [
+            (PauliZ(0), PauliY(0), -1j),
+            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), -1),
+        ],
+    )
+    def test_deprecated_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, expected_phase):
+        """Test that pauli_mult_with_phase is deprecated."""
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="`pauli_mult_with_phase` is deprecated"
+        ):
+            _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2)
         assert obtained_phase == expected_phase
 
 
@@ -804,10 +810,8 @@ class TestMeasurementTransformations:
         qwc_rot = qwc_rotation(pauli_ops)
 
         assert all(
-            [
-                self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
-                for i in range(len(qwc_rot))
-            ]
+            self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
+            for i in range(len(qwc_rot))
         )
 
     invalid_qwc_rotation_inputs = [
@@ -896,16 +900,12 @@ class TestMeasurementTransformations:
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple
 
         assert all(
-            [
-                self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
-                for i in range(len(qwc_rot))
-            ]
+            self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
+            for i in range(len(qwc_rot))
         )
         assert all(
-            [
-                are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
-                for i in range(len(diag_qwc_grouping))
-            ]
+            are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
+            for i in range(len(diag_qwc_grouping))
         )
 
     not_qwc_groupings = [
@@ -935,9 +935,11 @@ class TestObservableHF:
             ),
         ],
     )
-    def test_pauli_mult(self, p1, p2, p_ref):
-        r"""Test that _pauli_mult returns the correct operator."""
-        result = qml.pauli.utils._pauli_mult(p1, p2)
+    def test_deprecated_pauli_mult(self, p1, p2, p_ref):
+        r"""Test that _pauli_mult raises a deprecation warning."""
+        # pylint: disable=protected-access
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="_pauli_mult is deprecated"):
+            result = qml.pauli.utils._pauli_mult(p1, p2)
 
         assert result == p_ref
 
@@ -989,74 +991,89 @@ class TestObservableHF:
 
 
 class TestTapering:
-    @pytest.mark.parametrize(
-        ("terms", "num_qubits", "result"),
-        [
-            (
+    terms_bin_mat_data = [
+        (
+            [
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]),
+                qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+            ],
+            4,
+            np.array(
                 [
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-                ],
-                4,
-                np.array(
-                    [
-                        [0, 0, 0, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 1, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 1, 0, 0, 0, 0],
-                        [1, 1, 0, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 1, 1, 1, 1, 1],
-                        [1, 1, 0, 0, 1, 1, 1, 1],
-                        [0, 0, 1, 1, 1, 1, 1, 1],
-                        [0, 1, 1, 0, 1, 1, 1, 1],
-                        [1, 0, 1, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 1, 0, 0, 0, 0],
-                        [0, 1, 1, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 1, 0, 0, 0, 0],
-                        [0, 0, 1, 1, 0, 0, 0, 0],
-                    ]
-                ),
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
+                    [1, 1, 0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 1, 1, 1, 1, 1],
+                    [1, 1, 0, 0, 1, 1, 1, 1],
+                    [0, 0, 1, 1, 1, 1, 1, 1],
+                    [0, 1, 1, 0, 1, 1, 1, 1],
+                    [1, 0, 1, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 1, 0, 0, 0, 0],
+                    [0, 1, 1, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 1, 1, 0, 0, 0, 0],
+                ]
             ),
-            (
-                [
-                    qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
-                    qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
-                    qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
-                ],
-                4,
-                np.array(
-                    [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
-                ),
+        ),
+        (
+            [
+                qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
+                qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
+                qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
+            ],
+            4,
+            np.array(
+                [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
             ),
-        ],
-    )
+        ),
+    ]
+
+    @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix(self, terms, num_qubits, result):
         r"""Test that _binary_matrix returns the correct result."""
-        binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
+        # pylint: disable=protected-access
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="_binary_matrix is deprecated"):
+            binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
         assert (binary_matrix == result).all()
+
+    @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
+    def test_binary_matrix_from_pws(self, terms, num_qubits, result):
+        r"""Test that _binary_matrix_from_pws returns the correct result."""
+        # pylint: disable=protected-access
+        pws_lst = [list(qml.pauli.pauli_sentence(t))[0] for t in terms]
+        binary_matrix = qml.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
+        assert (binary_matrix == result).all()
+
+
+def test_deprecated_get_pauli_map():
+    """Test that _get_pauli_map is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="_get_pauli_map is deprecated"):
+        _ = qml.pauli.utils._get_pauli_map(0)  # pylint:disable=protected-access

@@ -1,19 +1,28 @@
 .. role:: html(raw)
    :format: html
 
-.. _intro_ref_compile:
+.. _intro_ref_compile_circuits:
 
 Compiling circuits
 ==================
 
 PennyLane offers multiple tools for compiling circuits. We use the term "compilation"
 here in a loose sense as the process of transforming one circuit 
-into one or more differing circuits. A circuit could be either a quantum function or a sequence of operators. For example, such a transformation could
+into one or more differing circuits. A circuit could be either a quantum function or a sequence of operators. For
+example, such a transformation could
 replace a gate type with another, fuse gates, exploit mathematical relations that simplify an observable,
 or replace a large circuit by a number of smaller circuits.
 
-Compilation functionality is mostly designed as **transforms**, which you can read up on in the
-section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
+Compilation functionality is mostly designed as **transforms**; see the
+the :doc:`transforms documentation <../code/qml_transforms>` for more details,
+as well as information on how to write your own custom transforms.
+
+In addition to quantum circuit transforms, PennyLane also
+supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
+`Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
+supports full hybrid compilation --- compiling both the classical and quantum components
+of your workflow into a binary that can be run close to the accelerators.
+that you are using. More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
 
 Simplifying Operators
 ----------------------
@@ -128,9 +137,9 @@ For example, take the following decorated quantum function:
 
     dev = qml.device('default.qubit', wires=[0, 1, 2])
 
+    @qml.compile
     @qml.qnode(dev)
-    @qml.compile()
-    def qfunc(x, y, z):
+    def circuit(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)
         qml.Hadamard(wires=2)
@@ -150,7 +159,7 @@ The default behaviour of :func:`~.pennylane.compile` applies a sequence of three
 transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylane.transforms.cancel_inverses`,
 and then :func:`~.pennylane.transforms.merge_rotations`.
 
->>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
+>>> print(qml.draw(circuit)(0.2, 0.3, 0.4))
 0: ──H──RX(0.60)─────────────────┤  <Z>
 1: ──H─╭X─────────────────────╭●─┤     
 2: ──H─╰●─────────RX(0.30)──Y─╰Z─┤     
@@ -166,8 +175,8 @@ controlled gates and cancel adjacent inverses, we could do:
     from pennylane.transforms import commute_controlled, cancel_inverses
     pipeline = [commute_controlled, cancel_inverses]
 
+    @partial(qml.compile, pipeline=pipeline)
     @qml.qnode(dev)
-    @qml.compile(pipeline=pipeline)
     def qfunc(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)
@@ -282,7 +291,7 @@ The example below shows how a three-wire circuit can be run on a two-wire device
 
         qml.CZ(wires=[1, 2])
 
-        return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+        return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
 Instead of being executed directly, the circuit will be partitioned into
 smaller fragments according to the :class:`~.pennylane.WireCut` locations,
@@ -319,16 +328,16 @@ It turns a QNode that measures non-commuting observables into a QNode that inter
 uses *multiple* circuit executions with qubit-wise commuting groups. The transform is used
 by devices to make such measurements possible.
 
-On a lower level, the :func:`~.pennylane.grouping.group_observables` function can be used to split lists of
+On a lower level, the :func:`~.pennylane.pauli.group_observables` function can be used to split lists of
 observables and coefficients:
 
 >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
 >>> coeffs = [1.43, 4.21, 0.97]
->>> obs_groupings, coeffs_groupings = qml.grouping.group_observables(obs, coeffs, 'anticommuting', 'lf')
+>>> obs_groupings, coeffs_groupings = qml.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
 >>> obs_groupings
 [[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
  [PauliY(wires=[0])]]
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
-This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.grouping` module.
+This and more logic to manipulate Pauli observables is found in the :doc:`pauli module <../code/qml_pauli>`.

@@ -15,41 +15,42 @@
 Contains the tape transform that splits non-commuting terms
 """
 # pylint: disable=protected-access
+from typing import Sequence, Callable
 from functools import reduce
 
-import numpy as np
-
 import pennylane as qml
-from pennylane.measurements import ProbabilityMP, SampleMP
 
-from .batch_transform import batch_transform
+from pennylane.transforms import transform
 
 
-@batch_transform
-def split_non_commuting(tape):
+def null_postprocessing(results):
+    """A postprocesing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
+@transform
+def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""
     Splits a qnode measuring non-commuting observables into groups of commuting observables.
 
     Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode that contains a list of
+        tape (QNode or QuantumTape or Callable): A circuit that contains a list of
             non-commuting observables to measure.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode capable of handling non-commuting groups.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions to restore the ordering of the inputs.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in
+        :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
-    This transform allows us to transform a QNode that measures
-    non-commuting observables to *multiple* circuit executions
-    with qubit-wise commuting groups:
+    This transform allows us to transform a QNode that measures non-commuting observables to
+    *multiple* circuit executions with qubit-wise commuting groups:
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.split_non_commuting
         @qml.qnode(dev)
@@ -57,7 +58,8 @@ def split_non_commuting(tape):
             qml.RX(x,wires=0)
             return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
 
-    Instead of decorating the QNode, we can also create a new function that yields the same result in the following way:
+    Instead of decorating the QNode, we can also create a new function that yields the same result
+    in the following way:
 
     .. code-block:: python3
 
@@ -75,8 +77,10 @@ def split_non_commuting(tape):
     \
     0: ──RX(0.50)─┤  <Z>
 
-    Note that while internally multiple QNodes are created, the end result has the same ordering as the user provides in the return statement.
-    Here is a more involved example where we can see the different ordering at the execution level but restoring the original ordering in the output:
+    Note that while internally multiple QNodes are created, the end result has the same ordering as
+    the user provides in the return statement.
+    Here is a more involved example where we can see the different ordering at the execution level
+    but restoring the original ordering in the output:
 
     .. code-block:: python3
 
@@ -100,23 +104,25 @@ def split_non_commuting(tape):
     0: ──RY(0.79)──RX(0.79)─┤  <Z> ╭<Z@Z>
     1: ─────────────────────┤      ╰<Z@Z>
 
-    Yet, executing it returns the original ordering of the expectation values. The outputs correspond to
-    :math:`(\langle \sigma_x^0 \rangle, \langle \sigma_z^0 \rangle, \langle \sigma_y^1 \rangle, \langle \sigma_z^0\sigma_z^1 \rangle)`.
+    Yet, executing it returns the original ordering of the expectation values. The outputs
+    correspond to
+    :math:`(\langle \sigma_x^0 \rangle, \langle \sigma_z^0 \rangle, \langle \sigma_y^1 \rangle,
+    \langle \sigma_z^0\sigma_z^1 \rangle)`.
 
     >>> circuit0([np.pi/4, np.pi/4])
-    tensor([0.70710678, 0.5       , 0.        , 0.5       ], requires_grad=True)
+    [0.7071067811865475, 0.49999999999999994, 0.0, 0.49999999999999994]
 
 
     .. details::
         :title: Usage Details
 
-        Internally, this function works with tapes. We can create a tape with non-commuting observables:
+        Internally, this function works with tapes. We can create a tape with non-commuting
+        observables:
 
         .. code-block:: python3
 
-            with qml.tape.QuantumTape() as tape:
-                qml.expval(qml.PauliZ(0))
-                qml.expval(qml.PauliY(0))
+            measurements = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))]
+            tape = qml.tape.QuantumTape(measurements=measurements)
 
             tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
@@ -125,92 +131,112 @@ def split_non_commuting(tape):
         >>> [t.observables for t in tapes]
         [[expval(PauliZ(wires=[0]))], [expval(PauliY(wires=[0]))]]
 
-        The processing function becomes important when creating the commuting groups as the order of the inputs has been modified:
+        The processing function becomes important when creating the commuting groups as the order
+        of the inputs has been modified:
 
         .. code-block:: python3
 
-            with qml.tape.QuantumTape() as tape:
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-                qml.expval(qml.PauliX(0) @ qml.PauliX(1))
-                qml.expval(qml.PauliZ(0))
+            measurements = [
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
+                qml.expval(qml.PauliZ(0)),
                 qml.expval(qml.PauliX(0))
+            ]
+            tape = qml.tape.QuantumTape(measurements=measurements)
 
             tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
-        In this example, the groupings are ``group_coeffs = [[0,2], [1,3]]`` and ``processing_fn`` makes sure that the final output is of the same shape and ordering:
+        In this example, the groupings are ``group_coeffs = [[0,2], [1,3]]`` and ``processing_fn``
+        makes sure that the final output is of the same shape and ordering:
 
-        >>> processing_fn(tapes)
-        tensor([tensor(expval(PauliZ(wires=[0]) @ PauliZ(wires=[1])), dtype=object, requires_grad=True),
-            tensor(expval(PauliX(wires=[0]) @ PauliX(wires=[1])), dtype=object, requires_grad=True),
-            tensor(expval(PauliZ(wires=[0])), dtype=object, requires_grad=True),
-            tensor(expval(PauliX(wires=[0])), dtype=object, requires_grad=True)],
-        dtype=object, requires_grad=True)
+        >>> processing_fn([t.measurements for t in tapes])
+        (expval(PauliZ(wires=[0]) @ PauliZ(wires=[1])),
+        expval(PauliX(wires=[0]) @ PauliX(wires=[1])),
+        expval(PauliZ(wires=[0])),
+        expval(PauliX(wires=[0])))
 
+        Measurements that accept both observables and ``wires`` so that e.g. ``qml.counts``,
+        ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
+        these measurements are interpreted as measuring with respect to the observable
+        ``qml.PauliZ(wires[0])@qml.PauliZ(wires[1])@...@qml.PauliZ(wires[len(wires)-1])``
+
+        .. code-block:: python3
+
+            measurements = [
+                qml.expval(qml.PauliX(0)),
+                qml.probs(wires=[1]),
+                qml.probs(wires=[0, 1])
+            ]
+            tape = qml.tape.QuantumTape(measurements=measurements)
+
+            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+
+        This results in two tapes, each with commuting measurements:
+
+        >>> [t.measurements for t in tapes]
+        [[expval(PauliX(wires=[0])), probs(wires=[1])], [probs(wires=[0, 1])]]
     """
 
-    # TODO: allow for samples and probs
-    if any(isinstance(m, (SampleMP, ProbabilityMP)) for m in tape.measurements):
-        raise NotImplementedError(
-            "When non-commuting observables are used, only `qml.expval` and `qml.var` are supported."
-        )
+    # Construct a list of observables to group based on the measurements in the tape
+    obs_list = []
+    for obs in tape.observables:
+        # observable provided for a measurement
+        if isinstance(obs, qml.operation.Observable):
+            obs_list.append(obs)
+        # measurements using wires instead of observables
+        else:
+            # create the PauliZ tensor product observable when only wires are provided for the
+            # measurements
+            # TODO: Revisit when qml.prod is compatible with qml.pauli.group_observables
+            pauliz_obs = qml.PauliZ(obs.wires[0])
+            for wire in obs.wires[1:]:
+                pauliz_obs = pauliz_obs @ qml.PauliZ(wire)
 
-    obs_list = tape.observables
+            obs_list.append(pauliz_obs)
 
     # If there is more than one group of commuting observables, split tapes
-    groups, group_coeffs = qml.pauli.group_observables(obs_list, range(len(obs_list)))
-    if len(groups) > 1:
+    _, group_coeffs = qml.pauli.group_observables(obs_list, range(len(obs_list)))
+    if len(group_coeffs) > 1:
         # make one tape per commuting group
         tapes = []
-        for group in groups:
+        for indices in group_coeffs:
             new_tape = tape.__class__(
-                tape._ops,
-                (m.__class__(obs=o) for m, o in zip(tape.measurements, group)),
-                tape._prep,
+                tape.operations, (tape.measurements[i] for i in indices), shots=tape.shots
             )
 
             tapes.append(new_tape)
 
         def reorder_fn(res):
             """re-order the output to the original shape and order"""
-            if qml.active_return():
-                # determine if shot vector is used
-                if len(tapes[0].measurements) == 1:
-                    shot_vector_defined = isinstance(res[0], tuple)
-                else:
-                    shot_vector_defined = isinstance(res[0][0], tuple)
+            # determine if shot vector is used
+            if len(tapes[0].measurements) == 1:
+                shot_vector_defined = isinstance(res[0], tuple)
+            else:
+                shot_vector_defined = isinstance(res[0][0], tuple)
 
-                res = list(zip(*res)) if shot_vector_defined else [res]
+            res = list(zip(*res)) if shot_vector_defined else [res]
 
-                reorder_indxs = qml.math.concatenate(group_coeffs)
-
-                res_ordered = []
-                for shot_res in res:
-                    # flatten the results
-                    shot_res = reduce(
-                        lambda x, y: x + list(y) if isinstance(y, (tuple, list)) else x + [y],
-                        shot_res,
-                        [],
-                    )
-
-                    # reorder the tape results to match the user-provided order
-                    shot_res = list(zip(range(len(shot_res)), shot_res))
-                    shot_res = sorted(shot_res, key=lambda r: reorder_indxs[r[0]])
-                    shot_res = [r[1] for r in shot_res]
-
-                    res_ordered.append(tuple(shot_res))
-
-                return tuple(res_ordered) if shot_vector_defined else res_ordered[0]
-
-            new_res = qml.math.concatenate(res)
             reorder_indxs = qml.math.concatenate(group_coeffs)
 
-            # in order not to mess with the outputs I am just permuting them with a simple matrix multiplication
-            permutation_matrix = np.zeros((len(new_res), len(new_res)))
-            for column, indx in enumerate(reorder_indxs):
-                permutation_matrix[indx, column] = 1
-            return qml.math.dot(permutation_matrix, new_res)
+            res_ordered = []
+            for shot_res in res:
+                # flatten the results
+                shot_res = reduce(
+                    lambda x, y: x + list(y) if isinstance(y, (tuple, list)) else x + [y],
+                    shot_res,
+                    [],
+                )
+
+                # reorder the tape results to match the user-provided order
+                shot_res = list(zip(range(len(shot_res)), shot_res))
+                shot_res = sorted(shot_res, key=lambda r: reorder_indxs[r[0]])
+                shot_res = [r[1] for r in shot_res]
+
+                res_ordered.append(tuple(shot_res))
+
+            return tuple(res_ordered) if shot_vector_defined else res_ordered[0]
 
         return tapes, reorder_fn
 
     # if the group is already commuting, no need to do anything
-    return [tape], lambda res: res[0]
+    return [tape], null_postprocessing

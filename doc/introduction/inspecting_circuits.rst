@@ -43,11 +43,11 @@ For example:
 
     @qml.qnode(dev, diff_method='parameter-shift')
     def circuit(x, y):
-      qml.RX(x[0], wires=0)
-      qml.Toffoli(wires=(0, 1, 2))
-      qml.CRY(x[1], wires=(0, 1))
-      qml.Rot(x[2], x[3], y, wires=0)
-      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+        qml.RX(x[0], wires=0)
+        qml.Toffoli(wires=(0, 1, 2))
+        qml.CRY(x[1], wires=(0, 1))
+        qml.Rot(x[2], x[3], y, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
 
 We can now use the :func:`~pennylane.specs` transform to generate a function that returns
@@ -57,21 +57,23 @@ details and resource information:
 >>> y = np.array(0.4, requires_grad=False)
 >>> specs_func = qml.specs(circuit)
 >>> specs_func(x, y)
-{'gate_sizes': defaultdict(<class 'int'>, {1: 2, 3: 1, 2: 1}),
-'gate_types': defaultdict(<class 'int'>, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
-'num_operations': 4,
-'num_observables': 2,
-'num_diagonalizing_gates': 1,
-'num_used_wires': 3, 'depth': 4,
-'num_trainable_params': 4,
-'num_device_wires': 4,
-'device_name': 'default.qubit',
-'expansion_strategy': 'gradient',
-'gradient_options': {},
-'interface': 'autograd',
-'diff_method': 'parameter-shift',
-'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
-'num_gradient_executions': 10}
+{'resources': Resources(num_wires=3, num_gates=4, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}), depth=4, shots=0),
+ 'gate_sizes': defaultdict(int, {1: 2, 3: 1, 2: 1}),
+ 'gate_types': defaultdict(int, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
+ 'num_operations': 4,
+ 'num_observables': 2,
+ 'num_diagonalizing_gates': 1,
+ 'num_used_wires': 3,
+ 'num_trainable_params': 4,
+ 'depth': 4,
+ 'num_device_wires': 4,
+ 'device_name': 'default.qubit',
+ 'expansion_strategy': 'gradient',
+ 'gradient_options': {},
+ 'interface': 'auto',
+ 'diff_method': 'parameter-shift',
+ 'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
+ 'num_gradient_executions': 10}
 
 Circuit drawing
 ---------------
@@ -134,7 +136,7 @@ During normal execution, the snapshots are ignored:
 
     @qml.qnode(dev, interface=None)
     def circuit():
-        qml.Snapshot()
+        qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
         qml.Hadamard(wires=0)
         qml.Snapshot("very_important_state")
         qml.CNOT(wires=[0, 1])
@@ -146,10 +148,10 @@ transform, intermediate device states will be stored and returned alongside the
 results.
 
 >>> qml.snapshots(circuit)()
-{0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
+{0: 1.0,
 'very_important_state': array([0.707+0.j, 0.+0.j, 0.707+0.j, 0.+0.j]),
 2: array([0.707+0.j, 0.+0.j, 0.+0.j, 0.707+0.j]),
-'execution_results': array(0.)}
+'execution_results': 0.0}
 
 Graph representation
 --------------------
@@ -216,12 +218,12 @@ False
 
 
 Another way to construct the "causal" DAG of a circuit is to use the
-:func:`~pennylane.transforms.qcut.tape_to_graph` function used by the ``qcut`` module. This
+:func:`~pennylane.qcut.tape_to_graph` function used by the ``qcut`` module. This
 function takes a quantum tape and creates a ``MultiDiGraph`` instance from the ``networkx`` python package.
 
 Using the above example, we get:
 
->>> g2 = qml.transforms.qcut.tape_to_graph(tape)
+>>> g2 = qml.qcut.tape_to_graph(tape)
 >>> type(g2)
 <class 'networkx.classes.multidigraph.MultiDiGraph'>
 >>> for k, v in g2.adjacency():

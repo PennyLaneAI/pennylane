@@ -25,6 +25,9 @@ exclude_lines =
     # Ignore things that would have trivial tests
     def version
 
+    # Ignore overload stubs
+    @overload
+
 
 ignore_errors = True
 
