@@ -248,6 +248,7 @@ import itertools
 import warnings
 from enum import IntEnum
 from typing import List
+from contextlib import contextmanager
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -3015,6 +3016,22 @@ def convert_to_opmath(op):
     if isinstance(op, Tensor):
         return qml.prod(*op.obs)
     return op
+
+
+@contextmanager
+def use_new_opmath():
+    r"""Allows to use the new arithmetic operator dunders within a
+    temporary context using the `with` statement."""
+
+    check_op_math = active_new_opmath()
+    try:
+        enable_new_opmath()
+        yield
+    except Exception as e:
+        raise e
+    finally:
+        if not check_op_math:
+            disable_new_opmath()
 
 
 def __getattr__(name):

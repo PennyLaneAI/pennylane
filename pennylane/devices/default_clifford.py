@@ -494,15 +494,6 @@ class DefaultClifford(Device):
             ) from e
         return stim_op, " ".join(map(str, op.wires))
 
-    @staticmethod
-    def _from_hamiltonian_or_tensor(op):
-        """Convert old PennyLane observable to an arithmetic operator"""
-        if isinstance(op, qml.Hamiltonian):  # pragma: no cover
-            return qml.dot(*op.terms())
-        if isinstance(op, qml.operation.Tensor):
-            return qml.prod(*op.obs)
-        return op
-
     # pylint:disable=too-many-return-statements
     def _convert_op_to_linear_comb(self, meas_obs, coeffs, paulis):
         """Convert a PennyLane observable to a linear combination of stim Pauli terms"""
@@ -542,11 +533,8 @@ class DefaultClifford(Device):
 
         # Case for higher arithmetic depth for prod-type observables
         if meas_obs.arithmetic_depth > 1 and isinstance(meas_obs, (Prod, SProd)):
-            check_op_math = qml.operation.active_new_opmath()
-            qml.operation.enable_new_opmath()
-            meas_obs_simp = meas_obs.simplify()
-            if not check_op_math:
-                qml.operation.disable_new_opmath()
+            with qml.operation.use_new_opmath():
+                meas_obs_simp = meas_obs.simplify()
 
             # Recurse only if the simplification happened
             if meas_obs_simp != meas_obs:
@@ -628,7 +616,7 @@ class DefaultClifford(Device):
                 )
 
             elif isinstance(meas, VarianceMP):
-                meas_obs = self._from_hamiltonian_or_tensor(meas.obs)
+                meas_obs = qml.operation.convert_to_opmath(meas.obs)
 
                 check_op_math = qml.operation.active_new_opmath()
                 qml.operation.enable_new_opmath()
@@ -784,14 +772,10 @@ class DefaultClifford(Device):
 
     def _measure_variance(self, tableau_simulator, meas_op, stim):
         """Measure the variance with respect to the state of simulator device."""
-        # TODO: find a better pythonic way to deal with this enable-disable
-        meas_obs = self._from_hamiltonian_or_tensor(meas_op.obs)
-        check_op_math = qml.operation.active_new_opmath()
-        qml.operation.enable_new_opmath()
-        meas_obs1 = meas_obs.simplify()
-        meas_obs2 = (meas_obs1**2).simplify()
-        if not check_op_math:
-            qml.operation.disable_new_opmath()
+        meas_obs = qml.operation.convert_to_opmath(meas_op.obs)
+        with qml.operation.use_new_opmath():
+            meas_obs1 = meas_obs.simplify()
+            meas_obs2 = (meas_obs1**2).simplify()
 
         # use the naive formula for variance, i.e., Var(Q) = ⟨𝑄^2⟩−⟨𝑄⟩^2
         return (
@@ -973,8 +957,8 @@ class DefaultClifford(Device):
         return np.asarray(bits, dtype=int), np.asarray(recipes, dtype=int)
 
     def _measure_expval_shadow(self, stim_circuit, circuit, meas_op, stim):
-        """Measures expectation value of a Pauli observable using classical shadows
-        from the state of simulator device"""
+        """Measures expectation value of a Pauli observable using
+        classical shadows from the state of simulator device."""
         bits, recipes = self._measure_classical_shadow(stim_circuit, circuit, meas_op, stim)
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=circuit.wires.tolist())
         return shadow.expval(meas_op.H, meas_op.k)

@@ -2693,6 +2693,22 @@ def test_op_arithmetic_toggle():
     assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
 
 
+def test_op_arithmetic_context():
+    """Tests using op arithmetic within a context."""
+    assert not qml.operation.active_new_opmath()
+
+    with qml.operation.use_new_opmath():
+        assert qml.operation.active_new_opmath()
+        assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Prod)
+
+    assert not qml.operation.active_new_opmath()
+    assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
+
+    with pytest.raises(ValueError, match="Must specify the wires"):
+        with qml.operation.use_new_opmath():
+            qml.PauliX()
+
+
 def test_docstring_example_of_operator_class(tol):
     """Tests an example of how to create an operator which is used in the
     Operator class docstring, as well as in the 'adding_operators'
