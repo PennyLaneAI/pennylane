@@ -2043,7 +2043,7 @@ class Tensor(Observable):
 
         # Queue before updating pauli_rep because self.queue updates self.obs
         if all(prs := [o.pauli_rep for o in self.obs]):
-            self._pauli_rep = functools.reduce(lambda a, b: a * b, prs)
+            self._pauli_rep = functools.reduce(lambda a, b: a @ b, prs)
         else:
             self._pauli_rep = None
 
@@ -2228,22 +2228,7 @@ class Tensor(Observable):
         if isinstance(other, Operator):
             return qml.prod(*self.obs, other)
 
-        else:
-            return NotImplemented
-
-        wires = [op.wires for op in self.obs]
-        if len(wires) != len(set(wires)):
-            warnings.warn(
-                "Tensor object acts on overlapping wires; in some PennyLane functions this will lead to undefined behaviour",
-                UserWarning,
-            )
-
-        if QueuingManager.recording() and self not in QueuingManager.active_context():
-            QueuingManager.append(self)
-
-        QueuingManager.remove(other)
-
-        return self
+        return NotImplemented
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
