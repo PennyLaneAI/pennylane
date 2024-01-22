@@ -159,7 +159,6 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
-    _grouping_cache = {}
 
     @property
     def hash(self):
@@ -220,18 +219,6 @@ class Sum(CompositeOp):
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
-
-    def compute_grouping(self, grouping_type="qwc", method="rlf"):
-        """docs"""
-        if _hash := self.hash not in Sum._grouping_cache:
-            with qml.QueuingManager.stop_recording():
-                obs_groups = qml.pauli.group_observables(
-                    self.operands, grouping_type=grouping_type, method=method
-                )
-
-            Sum._grouping_cache[_hash] = obs_groups
-
-        return Sum._grouping_cache[_hash]
 
     def sparse_matrix(self, wire_order=None):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
