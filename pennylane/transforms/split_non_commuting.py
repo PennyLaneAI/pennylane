@@ -23,6 +23,13 @@ import pennylane as qml
 from pennylane.transforms import transform
 
 
+def null_postprocessing(results):
+    """A postprocesing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
 @transform
 def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""
@@ -195,8 +202,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         tapes = []
         for indices in group_coeffs:
             new_tape = tape.__class__(
-                tape.operations,
-                [tape.measurements[i] for i in indices],
+                tape.operations, (tape.measurements[i] for i in indices), shots=tape.shots
             )
 
             tapes.append(new_tape)
@@ -234,4 +240,4 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         return tapes, reorder_fn
 
     # if the group is already commuting, no need to do anything
-    return [tape], lambda res: res[0]
+    return [tape], null_postprocessing

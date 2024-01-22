@@ -34,6 +34,7 @@ to verify and test quantum gradient computations.
     default_gaussian
     default_mixed
     default_qutrit
+    default_clifford
     tests
 
 Next generation devices
@@ -101,4 +102,5 @@ from .default_qubit import DefaultQubit
 from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
+from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
