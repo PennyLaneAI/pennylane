@@ -117,9 +117,9 @@
   validate these properties manually.
   [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
 
-* ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are removed. Instead,
-  you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition``.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+* `qml.transforms.one_qubit_decomposition` and `qml.transforms.two_qubit_decomposition` are removed. Instead,
+  you should use `qml.ops.one_qubit_decomposition` and `qml.ops.two_qubit_decomposition`.
+  [(#5091)](https://github.com/PennyLaneAI/pennylane/pull/5091)
 
 <h3>Deprecations 👋</h3>
 
