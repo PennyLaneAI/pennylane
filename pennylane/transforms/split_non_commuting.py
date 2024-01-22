@@ -187,10 +187,8 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         else:
             # create the PauliZ tensor product observable when only wires are provided for the
             # measurements
-            # TODO: Revisit when qml.prod is compatible with qml.pauli.group_observables
-            pauliz_obs = qml.PauliZ(obs.wires[0])
-            for wire in obs.wires[1:]:
-                pauliz_obs = pauliz_obs @ qml.PauliZ(wire)
+            obs_wires = obs.wires if obs.wires else tape.wires
+            pauliz_obs = qml.prod(*(qml.PauliZ(wire) for wire in obs_wires))
 
             obs_list.append(pauliz_obs)
 
