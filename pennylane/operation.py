@@ -2062,7 +2062,7 @@ class Tensor(Observable):
 
         # Queue before updating pauli_rep because self.queue updates self.obs
         if all(prs := [o.pauli_rep for o in self.obs]):
-            self._pauli_rep = functools.reduce(lambda a, b: a * b, prs)
+            self._pauli_rep = functools.reduce(lambda a, b: a @ b, prs)
         else:
             self._pauli_rep = None
 
