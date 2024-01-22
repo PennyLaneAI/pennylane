@@ -4,7 +4,7 @@ include = '\.pyi?$'
 
 [tool.poetry]
 name = "pennylane"
-version = "0.34.0-dev"
+version = "0.35.0-dev"
 description = "PennyLane is a Python quantum machine learning library by Xanadu Inc."
 authors = ["PennyLaneAI <info@pennylane.ai>"]
 license = "Apache-2.0"
