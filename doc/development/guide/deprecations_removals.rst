@@ -1,9 +1,9 @@
 Deprecations and Removals
 =========================
 
-PennyLane is a rapidly-evolving project, and the details of functions, Operators & more are
-subject to change. These changes ensure that PennyLane is the best that it can be, but they will
-sometimes break existing conventions. When these breaking changes are necessary, we should make
+PennyLane is under continuous development and we sometimes need to make breaking changes to
+improve the library.
+When these breaking changes are necessary, we should make
 sure to give our users time to update their workflows to adhere to any new implementation before
 completely removing the old one.
 
@@ -24,7 +24,7 @@ a feature:
    .. code-block:: python
 
        warnings.warn(
-           "<name-of-feature> is deprecated, and will be removed in an upcoming release. "
+           "<name-of-feature> is deprecated and will be removed in version <target-version>. "
            "Instead, please use <name-of-preferred-way-to-achieve-functionality>.",
            qml.PennyLaneDeprecationWarning,
        )
@@ -39,7 +39,7 @@ a feature:
    that the warning isn't unexpectedly raised for users that did not personally call the deprecated
    piece of code.
 
-5. Remove any tests that specifically test the deprecated code. For tests that depend it but are
+5. Remove any tests that specifically test the deprecated code. For tests that depend on it but are
    not written to test it specifically, update them to use the new/preferred code.
 
 6. Add a test to ensure that the deprecation warning is being raised. It should look similar to the
