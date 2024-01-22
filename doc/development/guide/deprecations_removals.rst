@@ -39,10 +39,7 @@ a feature:
    that the warning isn't unexpectedly raised for users that did not personally call the deprecated
    piece of code.
 
-5. Remove any tests that specifically test the deprecated code. For tests that depend on it but are
-   not written to test it specifically, update them to use the new/preferred code.
-
-6. Add a test to ensure that the deprecation warning is being raised. It should look similar to the
+5. Add a test to ensure that the deprecation warning is being raised. It should look similar to the
    following code:
 
    .. code-block:: python
@@ -51,6 +48,10 @@ a feature:
            """Test that my_feature is deprecated."""
            with pytest.warns(qml.PennyLaneDeprecationWarning, match="my_feature is deprecated"):
                _ = my_feature()
+
+6. Update any tests that specifically cover the deprecated feature to call it inside a
+   ``pytest.warns`` context as shown above. For tests that depend on it but are not written to
+   test it specifically, update them to use the new/preferred code.
 
 7. Add an entry to the top of the "Pending deprecations" section of ``doc/development/deprecations.rst``.
    There should be existing examples to follow for style. If the deprecated feature is fairly
@@ -76,7 +77,7 @@ Removing a deprecated feature
 Once a feature has been deprecated for a sufficiently long time, it is considered safe for removal.
 Here are the steps needed to properly remove a deprecated feature:
 
-1. Remove the deprecated source code, along with the test ensuring that it was deprecated.
+1. Remove the deprecated source code, along with all tests that cover it.
 
 2. In ``doc/development/deprecations.rst``, move the existing deprecation entry to the "Completed
    deprecation cycles" section below. Be sure to update the language to state that it has been
