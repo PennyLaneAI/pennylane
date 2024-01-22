@@ -25,12 +25,36 @@ import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP
 
 from .tensorflow import (
-    _compute_vjp,
-    _jac_restructured,
     _res_restructured,
     _to_tensors,
-    set_parameters_on_copy_and_unwrap,
+    set_parameters_on_copy,
 )
+
+
+def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
+    # compute the vector-Jacobian product dy @ jac
+    # for a list of dy's and Jacobian matrices.
+    vjps = []
+
+    for dy_, jac_, multi in zip(dy, jacs, multi_measurements):
+        dy_ = dy_ if has_partitioned_shots else (dy_,)
+        jac_ = jac_ if has_partitioned_shots else (jac_,)
+
+        shot_vjps = []
+        for d, j in zip(dy_, jac_):
+            # see xfail test: test_tensorflow_qnode_default_qubit_2.py:test_autograph_adjoint_multi_out
+            # And Issue #5078
+            # pragma: no cover
+            if multi:  # pragma: no cover
+                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
+            else:
+                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
+
+        vjp = qml.math.sum(qml.math.stack(shot_vjps), 0)
+
+        vjps.extend(vjp)
+
+    return vjps
 
 
 def _flatten_nested_list(x):
@@ -41,6 +65,30 @@ def _flatten_nested_list(x):
         return [x]
 
     return reduce(lambda a, y: a + _flatten_nested_list(y), x, [])
+
+
+def _jac_restructured(jacs, tapes):
+    """
+    Reconstruct the nested tuple structure of the jacobian of a list of tapes
+    """
+    start = 0
+    jacs_nested = []
+    for tape in tapes:
+        num_meas = len(tape.measurements)
+        num_params = len(tape.trainable_params)
+
+        tape_jacs = tuple(jacs[start : start + num_meas * num_params])
+        tape_jacs = tuple(
+            tuple(tape_jacs[i * num_params : (i + 1) * num_params]) for i in range(num_meas)
+        )
+
+        while isinstance(tape_jacs, tuple) and len(tape_jacs) == 1:
+            tape_jacs = tape_jacs[0]
+
+        jacs_nested.append(tape_jacs)
+        start += num_meas * num_params
+
+    return tuple(jacs_nested)
 
 
 def execute(
@@ -132,7 +180,7 @@ def execute(
         params_unwrapped = _nest_params(all_params)
         output_sizes = []
 
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped, unwrap=False)
+        new_tapes = set_parameters_on_copy(tapes, params_unwrapped)
         # Forward pass: execute the tapes
         res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
@@ -180,9 +228,15 @@ def execute(
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
 
                 def _backward(*args):
+                    for tape in tapes:
+                        for m in tape.measurements:
+                            if m.numeric_type == complex:
+                                raise NotImplementedError(
+                                    f"Tensorflow autograph only supports real valued measurements. Got {m}"
+                                )
+
                     dy = args[: total_measurements * num_shot_copies]
                     jacs = args[total_measurements * num_shot_copies : -len(tapes)]
-                    multi_measurements = args[-len(tapes) :]
 
                     dy = _res_restructured(dy, tapes)
                     jacs = _jac_restructured(jacs, tapes)
@@ -211,9 +265,7 @@ def execute(
 
                             dy = _res_restructured(dy, tapes)
 
-                            new_tapes = set_parameters_on_copy_and_unwrap(
-                                tapes, params_unwrapped, unwrap=False
-                            )
+                            new_tapes = set_parameters_on_copy(tapes, params_unwrapped)
                             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                 new_tapes,
                                 dy,
@@ -278,9 +330,7 @@ def execute(
                         all_params = all_params[:len_all_params]
                         params_unwrapped = _nest_params(all_params)
 
-                        new_tapes = set_parameters_on_copy_and_unwrap(
-                            tapes, params_unwrapped, unwrap=False
-                        )
+                        new_tapes = set_parameters_on_copy(tapes, params_unwrapped)
                         jac = gradient_fn(new_tapes, **gradient_kwargs)
 
                         vjps = _compute_vjp(dy, jac, multi_measurements, has_partitioned_shots)

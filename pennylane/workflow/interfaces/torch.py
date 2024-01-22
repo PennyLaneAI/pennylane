@@ -58,9 +58,8 @@ torch requires that it be flattened like ``(np.array(1), np.array(2), np.array(3
 modifies the output of ``forward`` and the input to ``backward`` to unpack and repack the nested structure of the PennyLane
 result object.
 
-
 """
-# pylint: disable=too-many-arguments,protected-access,abstract-method
+# pylint: disable=too-many-arguments,protected-access,abstract-method,unused-argument
 import inspect
 import logging
 
@@ -107,6 +106,12 @@ def pytreeify(cls):
     cls.forward = new_forward
     cls.backward = new_backward
     return cls
+
+
+def _recursive_conj(dy):
+    if isinstance(dy, torch.Tensor):
+        return torch.conj(dy)
+    return tuple(_recursive_conj(d) for d in dy)
 
 
 @pytreeify
@@ -175,9 +180,10 @@ class ExecuteTapes(torch.autograd.Function):
                     str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
                 ),
             )
-
+        # Torch obeys the dL/dz_conj convention instead of the
+        # dL/dz convention of PennyLane, autograd and jax. This converts between the formats
+        dy = _recursive_conj(dy)
         vjps = ctx.jpc.compute_vjp(ctx.tapes, dy)
-
         # split tensor into separate entries
         unpacked_vjps = []
         for vjp_slice in vjps:
@@ -189,7 +195,8 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + vjps
 
 
-def execute(tapes, execute_fn, jpc):
+# pylint: disable=unused-argument
+def execute(tapes, execute_fn, jpc, device=None):
     """Execute a batch of tapes with Torch parameters on a device.
 
     Args:
@@ -211,7 +218,6 @@ def execute(tapes, execute_fn, jpc):
             jpc,
         )
 
-    # pylint: disable=unused-argument
     parameters = []
     for tape in tapes:
         # set the trainable parameters

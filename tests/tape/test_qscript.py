@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import MutualInfo, State, VnEntropy, Shots
+from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods
@@ -40,7 +41,8 @@ class TestInitialization:
         assert qs._graph is None
         assert qs._specs is None
         assert qs._shots.total_shots is None
-        assert qs._batch_size is None
+        assert qs._batch_size is _UNSET_BATCH_SIZE
+        assert qs.batch_size is None
         assert qs.wires == qml.wires.Wires([])
         assert qs.num_wires == 0
         assert qs.samples_computational_basis is False
@@ -129,11 +131,6 @@ class TestUpdate:
     @pytest.mark.parametrize("sample_ms", sample_measurements)
     def test_update_circuit_info_sampling(self, sample_ms):
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), sample_ms])
-        with pytest.warns(UserWarning, match="QuantumScript.is_sampled is deprecated"):
-            assert qs.is_sampled is True
-        with pytest.warns(UserWarning, match="QuantumScript.all_sampled is deprecated"):
-            assert qs.all_sampled is False
-
         shadow_mp = sample_ms.return_type not in (
             qml.measurements.Shadow,
             qml.measurements.ShadowExpval,
@@ -141,20 +138,12 @@ class TestUpdate:
         assert qs.samples_computational_basis is shadow_mp
 
         qs = QuantumScript(measurements=[sample_ms, sample_ms, qml.sample()])
-        with pytest.warns(UserWarning, match="QuantumScript.is_sampled is deprecated"):
-            assert qs.is_sampled is True
-        with pytest.warns(UserWarning, match="QuantumScript.all_sampled is deprecated"):
-            assert qs.all_sampled is True
         assert qs.samples_computational_basis is True
 
     def test_update_circuit_info_no_sampling(self):
         """Test that all_sampled, is_sampled and samples_computational_basis properties are set to False if no sampling
         measurement process exists."""
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
-        with pytest.warns(UserWarning, match="QuantumScript.is_sampled is deprecated"):
-            assert qs.is_sampled is False
-        with pytest.warns(UserWarning, match="QuantumScript.all_sampled is deprecated"):
-            assert qs.all_sampled is False
         assert qs.samples_computational_basis is False
 
     def test_samples_computational_basis_correctly(self):
@@ -270,11 +259,11 @@ class TestUpdate:
     def test_error_inconsistent_batch_sizes(self, x, rot, y):
         """Tests that an error is raised if inconsistent batch sizes exist."""
         ops = [qml.RX(x, wires=0), qml.Rot(*rot, 1), qml.RX(y, wires=1)]
-
+        tape = QuantumScript(ops)
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
-            _ = QuantumScript(ops)
+            _ = tape.batch_size
 
     @pytest.mark.parametrize(
         "m, output_dim",
@@ -291,6 +280,37 @@ class TestUpdate:
         """Test setting the output_dim property."""
         qs = QuantumScript(ops, m)
         assert qs.output_dim == output_dim * factor
+
+    def test_lazy_batch_size_and_output_dim(self):
+        """Test that batch_size and output_dim are computed lazily."""
+        qs = QuantumScript([qml.RX([1.1, 2.2], 0)], [qml.expval(qml.PauliZ(0))])
+        copied = qs.copy()
+        assert qs._batch_size is _UNSET_BATCH_SIZE
+        assert qs._output_dim is None
+        # copying did not evaluate them either
+        assert copied._batch_size is _UNSET_BATCH_SIZE
+        assert copied._output_dim is None
+
+        # now evaluate it
+        assert qs.batch_size == 2
+        assert qs._output_dim is None  # setting batch_size didn't set output_dim
+        assert qs.output_dim == 2
+        copied = qs.copy()
+        assert qs._batch_size == 2
+        assert qs._output_dim == 2
+        # copied tape has it pre-evaluated
+        assert copied._batch_size == 2
+        assert copied._output_dim == 2
+
+    def test_lazy_setting_output_dim_sets_batch_size(self):
+        """Test that setting the output_dim also sets the batch_size."""
+        qs = QuantumScript([qml.RX([1.1, 2.2], 0)], [qml.expval(qml.PauliZ(0))])
+        assert qs._batch_size is _UNSET_BATCH_SIZE
+        assert qs._output_dim is None
+
+        assert qs.output_dim == 2  # getting this sets both _output_dim and _batch_size
+        assert qs._output_dim == 2
+        assert qs._batch_size == 2
 
 
 class TestIteration:

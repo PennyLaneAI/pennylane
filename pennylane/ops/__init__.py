@@ -26,18 +26,18 @@ from .op_math import *
 from .qutrit import *
 
 from .cv import __all__ as _cv__all__
-from .cv import ops as _cv__ops__
-from .cv import obs as _cv__obs__
+from .cv import __ops__ as _cv__ops__
+from .cv import __obs__ as _cv__obs__
 
 from .qutrit import __all__ as _qutrit__all__
-from .qutrit import ops as _qutrit__ops__
-from .qutrit import obs as _qutrit__obs__
+from .qutrit import __ops__ as _qutrit__ops__
+from .qutrit import __obs__ as _qutrit__obs__
 
 from .channel import __all__ as _channel__ops__
 
 from .qubit import __all__ as _qubit__all__
-from .qubit import ops as _qubit__ops__
-from .qubit import obs as _qubit__obs__
+from .qubit import __ops__ as _qubit__ops__
+from .qubit import __obs__ as _qubit__obs__
 
 
 # we would like these to just live in .qubit, but can't because of circular imports

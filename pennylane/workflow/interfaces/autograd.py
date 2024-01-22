@@ -81,7 +81,7 @@ by the ``cache_full_jacobian`` keyword argument to :class:`~.TransformJacobianPr
 Other interfaces are capable of calculating the full jacobian in one call, so this patch is only present for autograd.
 
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, unused-argument
 import logging
 from typing import Tuple, Callable
 
@@ -97,10 +97,12 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# pylint: disable=unused-argument
 def autograd_execute(
     tapes: Batch,
     execute_fn: ExecuteFn,
-    jpc: qml.interfaces.jacobian_products.JacobianProductCalculator,
+    jpc: qml.workflow.jacobian_products.JacobianProductCalculator,
+    device=None,
 ):
     """Execute a batch of tapes with Autograd parameters on a device.
 
@@ -116,8 +118,8 @@ def autograd_execute(
 
     **Example:**
 
-    >>> from pennylane.interfaces.jacobian_products import DeviceDerivatives
-    >>> from pennylane.interfaces.autograd import autograd_execute
+    >>> from pennylane.workflow.jacobian_products import DeviceDerivatives
+    >>> from pennylane.workflow.autograd import autograd_execute
     >>> execute_fn = qml.device('default.qubit').execute
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
     >>> jpc = DeviceDerivatives(qml.device('default.qubit'), config)
@@ -132,7 +134,6 @@ def autograd_execute(
     tapes = tuple(tapes)
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
-    # pylint: disable=unused-argument
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)

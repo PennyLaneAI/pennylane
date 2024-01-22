@@ -23,6 +23,7 @@ import numpy as _np
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
+import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
 import pennylane.kernels
@@ -32,6 +33,7 @@ import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
+from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import FermiC, FermiA, jordan_wigner
@@ -78,18 +80,15 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.qnode import QNode, qnode
+from pennylane.workflow import QNode, qnode, execute
 from pennylane.transforms import (
     transform,
-    adjoint_metric_tensor,
     batch_params,
     batch_input,
     batch_transform,
     batch_partial,
     compile,
     defer_measurements,
-    metric_tensor,
-    specs,
     qfunc_transform,
     op_transform,
     single_tape_transform,
@@ -98,6 +97,7 @@ from pennylane.transforms import (
     commutation_dag,
     pattern_matching,
     pattern_matching_optimization,
+    clifford_t_decomposition,
 )
 from pennylane.ops.functions import (
     dot,
@@ -121,17 +121,19 @@ from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
 
 import pennylane.fourier
+from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo
 
 # pylint:disable=wrong-import-order
-from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
 
 from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
+
+import pennylane.interfaces
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -200,6 +202,9 @@ def device(name, *args, **kwargs):
 
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
+
+    * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
+      simulator of Clifford circuits.
 
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
