@@ -14,7 +14,7 @@
 """
 Unit tests for the comm function
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, unused-variable
 import pytest
 
 import pennylane as qml
@@ -82,6 +82,49 @@ def test_alias():
     res2 = qml.commutator(X0, Y0, pauli=True)
     res2_true = qml.commutator(X0, Y0, pauli=True)
     assert res2 == res2_true
+
+
+def test_no_recording_in_context():
+    """Test that commutator is not recorded"""
+    with qml.tape.QuantumTape() as tape:
+        a = qml.PauliX(0)  # gets recorded
+        b = qml.PauliY(0)  # gets recorded
+        comm = qml.commutator(a, b)
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.PauliX(0)
+        qml.PauliY(0)
+
+    assert qml.equal(tape, tape2)
+
+
+def test_no_recording_in_context_with_pauli():
+    """Test that commutator is not recorded while one of the ops is a Pauli"""
+    with qml.tape.QuantumTape() as tape:
+        a = qml.PauliX(0)  # gets recorded
+        b = PauliWord({0: "Y"})  # does not get recorded
+        comm = qml.commutator(a, b)
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.PauliX(0)
+
+    assert qml.equal(tape, tape2)
+
+
+def test_recording_wanted():
+    """Test that commutator can be correctly recorded with qml.apply still"""
+    with qml.tape.QuantumTape() as tape:
+        a = qml.PauliX(0)
+        b = qml.PauliY(0)
+        comm = qml.commutator(a, b)
+        qml.apply(comm)
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.PauliX(0)
+        qml.PauliY(0)
+        qml.s_prod(2j, qml.PauliZ(0))
+
+    assert qml.equal(tape, tape2)
 
 
 class TestcommPauli:

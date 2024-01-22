@@ -69,12 +69,38 @@ def commutator(op1, op2, pauli=False):
     >>> qml.commutator(op1, op2, pauli=True)
     (2j*(PauliX(wires=[1]) @ PauliZ(wires=[0]))) + (2j*(PauliZ(wires=[1]) @ PauliX(wires=[0])))
 
+
     It is also worth highlighting that computing commutators with Paulis is typically faster.
     So whenever all input operators have a pauli representation, we recommend using `pauli=True`. 
     The result can then still be transformed into a PennyLane operator.
 
     >>> res = qml.commutator(qml.PauliX(0), qml.PauliY(0), pauli=True)
     >>> res.operation()
+
+
+    .. details::
+        :title: Usage Details
+
+        The input and result of ``qml.commutator`` is not recorded in a tape context (and inside a :func:`~QNode`).
+
+        .. code-block::python3
+            with qml.tape.QuantumTape() as tape:
+                a = qml.PauliX(0)      # gets recorded
+                b = PauliWord({0:"Y"}) # does not get recorded
+                comm = qml.commutator(a, b) # does not get recorded
+
+        In this example, we obtain ``tape.operations = [qml.PauliX(0)]. When desired, we can still record the result of
+        the commutator by using :func:`~apply`, i.e. ``qml.apply(comm)`` inside the recording context.
+
+        A peculiarity worth repeating is how in a recording context every created operator is recorded.
+
+        .. code-block::python3
+            with qml.tape.QuantumTape() as tape:
+                comm = qml.commutator(qml.PauliX(0), qml.PauliY(0))
+
+        In this example, both :class:`~PauliX` and :class:`PauliY` get recorded because they were created inside the
+        recording context. To avoid this, create the input to ``qml.commutator`` outside the recording context / qnode
+        or insert an extra ``stop_recording()`` context (see :class:`~QueuingManager`).
 
     """
     if pauli:
@@ -84,10 +110,12 @@ def commutator(op1, op2, pauli=False):
             op2 = qml.pauli.pauli_sentence(op2)
         return op1.commutator(op2)
 
-    if isinstance(op1, (PauliWord, PauliSentence)):
-        op1 = op1.operation()
-    if isinstance(op2, (PauliWord, PauliSentence)):
-        op2 = op2.operation()
+    with qml.QueuingManager.stop_recording():
+        if isinstance(op1, (PauliWord, PauliSentence)):
+            op1 = op1.operation()
+        if isinstance(op2, (PauliWord, PauliSentence)):
+            op2 = op2.operation()
 
-    res = qml.sum(qml.prod(op1, op2), qml.s_prod(-1.0, qml.prod(op2, op1)))
-    return res.simplify()
+        res = qml.sum(qml.prod(op1, op2), qml.s_prod(-1.0, qml.prod(op2, op1)))
+        res = res.simplify()
+    return res
