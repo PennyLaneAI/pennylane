@@ -84,6 +84,36 @@ def test_alias():
     assert res2 == res2_true
 
 
+def test_no_recording_in_context():
+    """Test that commutator is not recorded"""
+    with qml.tape.QuantumTape() as tape:
+        a = qml.PauliX(0)
+        b = qml.PauliY(0)
+        comm = qml.commutator(a, b)
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.PauliX(0)
+        qml.PauliY(0)
+
+    assert qml.equal(tape, tape2)
+
+
+def test_recording_wanted():
+    """Test that commutator can be correctly recorded with qml.apply still"""
+    with qml.tape.QuantumTape() as tape:
+        a = qml.PauliX(0)
+        b = qml.PauliY(0)
+        comm = qml.commutator(a, b)
+        qml.apply(comm)
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.PauliX(0)
+        qml.PauliY(0)
+        qml.s_prod(2j, qml.PauliZ(0))
+
+    assert qml.equal(tape, tape2)
+
+
 class TestcommPauli:
     """Test qml.comm for pauli=True"""
 
