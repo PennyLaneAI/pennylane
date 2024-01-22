@@ -2251,9 +2251,6 @@ class Tensor(Observable):
         if isinstance(other, qml.Hamiltonian):
             return other.__rmatmul__(self)
 
-        if isinstance(other, Tensor):
-            return Tensor(self, other)
-
         if isinstance(other, Observable):
             return Tensor(self, other)
 
