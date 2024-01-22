@@ -1109,7 +1109,14 @@ class Operator(abc.ABC):
         self._batch_size = None
         params = self.data
 
-        ndims = tuple(qml.math.ndim(p) for p in params)
+        try:
+            ndims = tuple(qml.math.ndim(p) for p in params)
+        except ValueError as e:
+            if any(qml.math.is_abstract(p) for p in params):
+                self._batch_size = None
+                self._ndim_params = (0,) * len(params)
+                return
+            raise e
 
         if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
