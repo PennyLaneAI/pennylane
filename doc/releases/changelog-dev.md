@@ -189,7 +189,7 @@
   [(#5080)](https://github.com/PennyLaneAI/pennylane/pull/5080)
 
 * Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
-  [()](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
 <h3>Contributors ✍️</h3>
 
