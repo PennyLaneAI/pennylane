@@ -696,8 +696,8 @@ def are_pauli_words_qwc(lst_pauli_words):
                     # Only non-identity paulis are in basis, so if pauli_type doesn't match
                     # it is guaranteed to not commute
                     return False
-                else:
-                    basis[wire] = pauli_type
+
+                basis[wire] = pauli_type
 
     return True  # if we get through all ops, then they are qwc!
 
