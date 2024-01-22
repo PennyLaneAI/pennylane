@@ -158,9 +158,7 @@ def get_final_state(circuit, debugger=None, interface=None):
         # We know they belong at the end because the circuit is in standard wire-order
         state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
 
-    if has_mid_circuit_measurements(circuit):
-        return state, is_state_batched, measurement_values
-    return state, is_state_batched
+    return state, is_state_batched, measurement_values
 
 
 def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
