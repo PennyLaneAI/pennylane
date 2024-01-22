@@ -13,12 +13,23 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
+from collections import Counter
 from typing import Optional
 
 from numpy.random import default_rng
 import numpy as np
 
 import pennylane as qml
+from pennylane.measurements import (
+    CountsMP,
+    ExpectationMP,
+    MeasurementValue,
+    ProbabilityMP,
+    SampleMeasurement,
+    SampleMP,
+    VarianceMP,
+    Shots,
+)
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
@@ -151,6 +162,8 @@ def get_final_state(circuit, debugger=None, interface=None):
         # We know they belong at the end because the circuit is in standard wire-order
         state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
 
+    if has_mid_circuit_measurements(circuit):
+        return state, is_state_batched, measurement_values
     return state, is_state_batched
 
 
@@ -247,20 +260,50 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
-    has_mid_circuit_measurements = any(isinstance(op, MidMeasureMP) for op in circuit._ops)
+    has_mcm = has_mid_circuit_measurements(circuit)
     has_shots = circuit.shots.total_shots is not None
-    if has_mid_circuit_measurements and has_shots:
+    if has_mcm and has_shots:
         tmpcirc = circuit.copy()
         tmpcirc._shots = qml.measurements.Shots(None)
-        measurements = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)
+        idx_sample = [i for i, m in enumerate(circuit.measurements) if isinstance(m, SampleMP)]
+        for i in idx_sample:
+            tmpcirc._measurements.pop(i)
+        analytic_meas, tmp_dict = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)
+        mcm_meas = [tmp_dict]
         for _ in range(circuit.shots.total_shots - 1):
-            tmpmeas = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)
-            for m, t in zip(measurements, tmpmeas):
-                m += t
-        for m in measurements:
-            m /= circuit.shots.total_shots
-        return measurements
+            tmpmeas, tmp_dict = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)
+            analytic_meas = [m + t for m, t in zip(analytic_meas, tmpmeas)]
+            mcm_meas.append(tmp_dict)
+        return measure_combine_native_mid_circuit_measurements(circuit, analytic_meas, mcm_meas)
+    if has_mcm:
+        state, is_state_batched, mcm_dict = get_final_state(
+            circuit, debugger=debugger, interface=interface
+        )
+        return (
+            measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
+            mcm_dict,
+        )
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+
+
+def has_mid_circuit_measurements(circuit):
+    return any(isinstance(op, MidMeasureMP) for op in circuit._ops)
+
+
+def measure_combine_native_mid_circuit_measurements(circuit, analytic_meas, mcm_meas):
+    idx_analytic = [i for i, m in enumerate(circuit.measurements) if not isinstance(m, SampleMP)]
+    idx_sample = [i for i, m in enumerate(circuit.measurements) if isinstance(m, SampleMP)]
+    normalized_meas = [None] * len(circuit.measurements)
+    for i, m in zip(idx_analytic, analytic_meas):
+        if isinstance(circuit.measurements[i], (ExpectationMP, ProbabilityMP)):
+            normalized_meas[i] = m / circuit.shots.total_shots
+        elif isinstance(circuit.measurements[i], VarianceMP):
+            normalized_meas[i] = m
+        else:
+            raise ValueError(
+                f"Native mid-circuit measurement mode does not support {circuit.measurements[i].__class__.__name__} measurements."
+            )
+    return normalized_meas
