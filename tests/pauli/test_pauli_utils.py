@@ -71,6 +71,9 @@ class TestGroupingUtils:
         (PauliZ(0) @ PauliY(2), np.array([0, 1, 1, 1])),
         (PauliY(1) @ PauliX(2), np.array([1, 1, 1, 0])),
         (Identity(0), np.zeros(2)),
+        (qml.prod(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)), np.array([1, 0, 1, 0, 1, 1])),
+        (qml.s_prod(1.5, qml.PauliZ(0)), np.array([0, 1])),
+        (qml.sum(qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)), np.array([1, 0])),
     ]
 
     @pytest.mark.parametrize("op,vec", ops_to_vecs_explicit_wires)
@@ -85,6 +88,15 @@ class TestGroupingUtils:
         (PauliY(6) @ PauliZ("a") @ PauliZ("b"), np.array([0, 0, 0, 1, 1, 1, 0, 1])),
         (PauliX("b") @ PauliY("c"), np.array([0, 1, 1, 0, 0, 0, 1, 0])),
         (Identity("a") @ Identity(6), np.zeros(8)),
+        (
+            qml.prod(qml.PauliX("a"), qml.PauliZ("b"), qml.PauliY(6)),
+            np.array([1, 0, 0, 1, 0, 1, 0, 1]),
+        ),
+        (qml.s_prod(1.5, qml.PauliZ(6)), np.array([0, 0, 0, 0, 0, 0, 0, 1])),
+        (
+            qml.sum(qml.PauliX("b"), qml.PauliX("b"), qml.PauliX("b")),
+            np.array([0, 1, 0, 0, 0, 0, 0, 0]),
+        ),
     ]
 
     @pytest.mark.parametrize("op,vec", ops_to_vecs_abstract_wires)
@@ -276,6 +288,10 @@ class TestGroupingUtils:
         (qml.prod(qml.PauliX(0), qml.Hadamard(1)), False),
         (qml.s_prod(5, qml.PauliX(0) @ qml.PauliZ(1)), True),
         (qml.s_prod(5, qml.Hadamard(0)), False),
+        (qml.sum(qml.PauliX(0), qml.PauliY(0)), False),
+        (qml.sum(qml.s_prod(0.5, qml.PauliX(1)), qml.PauliX(1)), True),
+        (qml.sum(qml.s_prod(0.5, qml.Hadamard(1)), qml.PauliX(1)), False),
+        (qml.sum(qml.Hadamard(0), qml.Hadamard(0)), False),
     )
 
     @pytest.mark.parametrize("ob, is_pw", obs_pw_status)
@@ -304,11 +320,18 @@ class TestGroupingUtils:
         pauli_word_2 = PauliY(1) @ PauliX(0)
         pauli_word_3 = Tensor(PauliX(0), PauliY(1))
         pauli_word_4 = PauliX(1) @ PauliZ(2)
+        pauli_word_5 = qml.s_prod(1.5, qml.PauliX(0))
+        pauli_word_6 = qml.sum(qml.s_prod(0.5, qml.PauliX(0)), qml.s_prod(1.0, qml.PauliX(0)))
+        pauli_word_7 = qml.s_prod(2.2, qml.prod(qml.PauliX(0), qml.PauliY(1)))
 
         assert are_identical_pauli_words(pauli_word_1, pauli_word_2)
         assert are_identical_pauli_words(pauli_word_1, pauli_word_3)
         assert not are_identical_pauli_words(pauli_word_1, pauli_word_4)
         assert not are_identical_pauli_words(pauli_word_3, pauli_word_4)
+        assert are_identical_pauli_words(pauli_word_5, pauli_word_6)
+        assert are_identical_pauli_words(pauli_word_7, pauli_word_1)
+        assert not are_identical_pauli_words(pauli_word_7, pauli_word_4)
+        assert not are_identical_pauli_words(pauli_word_6, pauli_word_4)
 
     def test_identities_always_pauli_words(self):
         """Tests that identity terms are always identical."""
@@ -913,7 +936,7 @@ class TestMeasurementTransformations:
         [PauliZ(0) @ Identity(1), PauliZ(0) @ PauliZ(1), PauliX(0) @ Identity(1)],
         [PauliX("a") @ PauliX(0), PauliZ(0) @ PauliZ("a")],
         [PauliZ("a") @ PauliY(1), PauliZ(1) @ PauliY("a")],
-        [Hamiltonian([1.0, 2.0], [PauliX("a"), PauliY("a")])],
+        [qml.prod(qml.PauliZ(0), qml.PauliX(1)), qml.prod(qml.PauliZ(1), qml.PauliX(0))],
     ]
 
     @pytest.mark.parametrize("not_qwc_grouping", not_qwc_groupings)

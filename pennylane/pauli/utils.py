@@ -166,63 +166,13 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     >>> are_identical_pauli_words(qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(3))
     False
     """
-    if pauli_1.pauli_rep is not None and pauli_2.pauli_rep is not None:
-        return next(iter(pauli_1.pauli_rep)) == next(iter(pauli_2.pauli_rep))
-
     if not (is_pauli_word(pauli_1) and is_pauli_word(pauli_2)):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_1} and {pauli_2}.")
 
-    paulis_with_identity = (PauliX, PauliY, PauliZ, Identity)
+    if pauli_1.pauli_rep is not None and pauli_2.pauli_rep is not None:
+        return next(iter(pauli_1.pauli_rep)) == next(iter(pauli_2.pauli_rep))
 
-    # convert tensors of length 1 to plain observables
-    pauli_1 = getattr(pauli_1, "prune", lambda: pauli_1)()
-    pauli_2 = getattr(pauli_2, "prune", lambda: pauli_2)()
-
-    if isinstance(pauli_1, qml.Identity) and isinstance(pauli_2, qml.Identity):
-        return True
-
-    if isinstance(pauli_1, paulis_with_identity) and isinstance(pauli_2, paulis_with_identity):
-        return (pauli_1.wires, pauli_1.name) == (pauli_2.wires, pauli_2.name)
-
-    if isinstance(pauli_1, paulis_with_identity) and isinstance(pauli_2, Tensor):
-        return {(pauli_1.wires, pauli_1.name)} == set(zip(pauli_2.wires, pauli_2.name))
-
-    if isinstance(pauli_1, Tensor) and isinstance(pauli_2, paulis_with_identity):
-        return set(zip(pauli_1.wires, pauli_1.name)) == {(pauli_2.wires, pauli_2.name)}
-
-    return set(zip(pauli_1.wires, pauli_1.name)) == set(zip(pauli_2.wires, pauli_2.name))
-
-
-def _pauli_to_binary_pauli_rep(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
-    """Converts a Pauli work to binary vector representation. This private method is used for oeprators
-    that have a valid pauli representation"""
-    if check_is_pauli_word and len(pauli_word.pauli_rep) != 1:
-        raise ValueError(f"pauli_to_binary requires a pauli word. Got {pauli_word}")
-
-    pw = next(iter(pauli_word.pauli_rep))
-
-    wire_map = wire_map or {w: i for i, w in enumerate(pw)}
-
-    n_qubits_min = max(wire_map.values()) + 1
-    if n_qubits is None:
-        n_qubits = n_qubits_min
-    elif n_qubits < n_qubits_min:
-        raise ValueError(
-            f"n_qubits must support the highest mapped wire index {n_qubits_min},"
-            f" instead got n_qubits={n_qubits}."
-        )
-
-    binary_pauli = np.zeros(2 * n_qubits)
-
-    for wire, pauli_type in pw.items():
-        if pauli_type == "X":
-            binary_pauli[wire_map[wire]] = 1
-        elif pauli_type == "Y":
-            binary_pauli[wire_map[wire]] = 1
-            binary_pauli[n_qubits + wire_map[wire]] = 1
-        elif pauli_type == "Z":
-            binary_pauli[n_qubits + wire_map[wire]] = 1
-    return binary_pauli
+    return False
 
 
 def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
@@ -309,11 +259,12 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     """
     wire_map = wire_map or {w: i for i, w in enumerate(pauli_word.wires)}
 
-    if pauli_word.pauli_rep:
-        return _pauli_to_binary_pauli_rep(pauli_word, n_qubits, wire_map, check_is_pauli_word)
-
     if check_is_pauli_word and not is_pauli_word(pauli_word):
         raise TypeError(f"Expected a Pauli word Observable instance, instead got {pauli_word}.")
+
+    pw = next(iter(pauli_word.pauli_rep))
+
+    wire_map = wire_map or {w: i for i, w in enumerate(pw)}
 
     n_qubits_min = max(wire_map.values()) + 1
     if n_qubits is None:
@@ -324,28 +275,16 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
             f" instead got n_qubits={n_qubits}."
         )
 
-    pauli_wires = pauli_word.wires.map(wire_map).tolist()
-
     binary_pauli = np.zeros(2 * n_qubits)
 
-    paulis_with_identity = (PauliX, PauliY, PauliZ, Identity)
-
-    if isinstance(pauli_word, paulis_with_identity):
-        operations_zip = zip(pauli_wires, [pauli_word.name])
-    else:
-        operations_zip = zip(pauli_wires, pauli_word.name)
-
-    for wire, name in operations_zip:
-        if name == "PauliX":
-            binary_pauli[wire] = 1
-
-        elif name == "PauliY":
-            binary_pauli[wire] = 1
-            binary_pauli[n_qubits + wire] = 1
-
-        elif name == "PauliZ":
-            binary_pauli[n_qubits + wire] = 1
-
+    for wire, pauli_type in pw.items():
+        if pauli_type == "X":
+            binary_pauli[wire_map[wire]] = 1
+        elif pauli_type == "Y":
+            binary_pauli[wire_map[wire]] = 1
+            binary_pauli[n_qubits + wire_map[wire]] = 1
+        elif pauli_type == "Z":
+            binary_pauli[n_qubits + wire_map[wire]] = 1
     return binary_pauli
 
 
@@ -734,26 +673,6 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     return True
 
 
-def _are_pauli_words_qwc_pauli_rep(lst_pauli_words):
-    """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
-    qubit-wise commuting. This private method is used for oeprators that have a valid pauli
-    representation"""
-    for op in lst_pauli_words:
-        if len(op.pauli_rep) != 1:
-            raise ValueError(f"are_pauli_words_qwc only works for pauli words. Got {op}")
-
-    basis = {}
-    for op in lst_pauli_words:
-        pw = next(iter(op.pauli_rep))
-        for wire, pauli_type in pw.items():
-            if wire in basis:
-                if pauli_type != basis[wire]:
-                    return False
-            else:
-                basis[wire] = pauli_type
-    return True
-
-
 def are_pauli_words_qwc(lst_pauli_words):
     """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
     qubit-wise commuting.
@@ -767,25 +686,18 @@ def are_pauli_words_qwc(lst_pauli_words):
     Returns:
         (bool): True if they are all qubit-wise commuting, false otherwise.
     """
-    if all(op.pauli_rep is not None for op in lst_pauli_words):
-        return _are_pauli_words_qwc_pauli_rep(lst_pauli_words)
-
-    latest_op_name_per_wire = {}
-
+    basis = {}
     for op in lst_pauli_words:  # iterate over the list of observables
-        op_names = [op.name] if not isinstance(op.name, list) else op.name
-        op_wires = op.wires.tolist()
+        pw = next(iter(op.pauli_rep))
 
-        for op_name, wire in zip(op_names, op_wires):  # iterate over wires of the observable,
-            try:
-                if latest_op_name_per_wire[wire] != op_name and (
-                    op_name != "Identity" and latest_op_name_per_wire[wire] != "Identity"
-                ):
+        for wire, pauli_type in pw.items():  # iterate over wires of the observable,
+            if pauli_type != "I":
+                if wire in basis and pauli_type != basis[wire]:
+                    # Only non-identity paulis are in basis, so if pauli_type doesn't match
+                    # it is guaranteed to not commute
                     return False
-                if latest_op_name_per_wire[wire] == "Identity":
-                    latest_op_name_per_wire[wire] = op_name  # update name
-            except KeyError:
-                latest_op_name_per_wire[wire] = op_name  # add wire and name for the first time
+                else:
+                    basis[wire] = pauli_type
 
     return True  # if we get through all ops, then they are qwc!
 
@@ -1347,7 +1259,10 @@ def diagonalize_qwc_pauli_words(
     if not are_pauli_words_qwc(qwc_grouping):
         raise ValueError("The list of Pauli words are not qubit-wise commuting.")
 
-    if not all(isinstance(op, (Tensor, PauliX, PauliY, PauliZ, Identity)) for op in qwc_grouping):
+    if not all(
+        isinstance(op, (Tensor, PauliX, PauliY, PauliZ, Identity, SProd, Prod))
+        for op in qwc_grouping
+    ):
         raise ValueError("This function only supports Tensor products of pauli ops.")
 
     pauli_operators = []
