@@ -34,7 +34,7 @@ def commutator(op1, op2, pauli=False):
         pauli (bool): When ``True``, all results are passed as a ``PauliSentence`` instance. Else, results are always returned as ``Operator`` instances.
 
     Returns:
-        ~Operator or ~PauliSentence: The comm
+        ~Operator or ~PauliSentence: The commutator
 
     **Examples**
 
@@ -64,7 +64,7 @@ def commutator(op1, op2, pauli=False):
     + 2j * X(0) @ Z(1)
 
     Note that when `pauli=False`, even if Pauli operators are used
-    as inputs, `qml.comm` returns Operators.
+    as inputs, `qml.commutator` returns Operators.
 
     >>> qml.commutator(op1, op2, pauli=True)
     (2j*(PauliX(wires=[1]) @ PauliZ(wires=[0]))) + (2j*(PauliZ(wires=[1]) @ PauliX(wires=[0])))
