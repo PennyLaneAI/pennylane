@@ -23,12 +23,8 @@ import pennylane as qml
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
-    MeasurementValue,
     ProbabilityMP,
-    SampleMeasurement,
     SampleMP,
-    VarianceMP,
-    Shots,
 )
 from pennylane.typing import Result
 
@@ -265,43 +261,103 @@ def simulate(
     if has_mcm and has_shots:
         tmpcirc = circuit.copy()
         tmpcirc._shots = qml.measurements.Shots(None)
-        idx_sample = [i for i, m in enumerate(circuit.measurements) if isinstance(m, SampleMP)]
-        for i in idx_sample:
+        idx_sample = idx_sampling_measurements(circuit)
+        for i in reversed(idx_sample):
             tmpcirc._measurements.pop(i)
-        analytic_meas, tmp_dict = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)
+        analytic_meas, tmp_dict = simulate_native_mcm(tmpcirc, rng, prng_key, debugger, interface)
         mcm_meas = [tmp_dict]
         for _ in range(circuit.shots.total_shots - 1):
-            tmpmeas, tmp_dict = simulate(tmpcirc, rng, prng_key, debugger, interface, state_cache)
+            tmpmeas, tmp_dict = simulate_native_mcm(tmpcirc, rng, prng_key, debugger, interface)
             analytic_meas = [m + t for m, t in zip(analytic_meas, tmpmeas)]
             mcm_meas.append(tmp_dict)
-        return measure_combine_native_mid_circuit_measurements(circuit, analytic_meas, mcm_meas)
-    if has_mcm:
-        state, is_state_batched, mcm_dict = get_final_state(
-            circuit, debugger=debugger, interface=interface
-        )
-        return (
-            measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
-            mcm_dict,
-        )
-    state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
+        return gather_native_mid_circuit_measurements(circuit, analytic_meas, mcm_meas)
+    state, is_state_batched, _ = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
 
 
+def simulate_native_mcm(
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+) -> Result:
+    """Simulate a single quantum script with native mid-circuit measurements.
+
+    Args:
+        circuit (QuantumTape): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
+        debugger (_Debugger): The debugger to use
+        interface (str): The machine learning interface to create the initial state with
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+        dict: The mid-circuit measurement results of the simulation
+
+    """
+    has_shots = circuit.shots.total_shots is not None
+    if has_shots:
+        raise ValueError(
+            f"Invalid circuit.shots.total_shots value {circuit.shots.total_shots}; only None is supported."
+        )
+    state, is_state_batched, mcm_dict = get_final_state(
+        circuit, debugger=debugger, interface=interface
+    )
+    return (
+        measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
+        mcm_dict,
+    )
+
+
 def has_mid_circuit_measurements(circuit):
+    """Returns True if the circuit contains a MidMeasureMP object and False otherwise."""
     return any(isinstance(op, MidMeasureMP) for op in circuit._ops)
 
 
-def measure_combine_native_mid_circuit_measurements(circuit, analytic_meas, mcm_meas):
-    idx_analytic = [i for i, m in enumerate(circuit.measurements) if not isinstance(m, SampleMP)]
-    idx_sample = [i for i, m in enumerate(circuit.measurements) if isinstance(m, SampleMP)]
+def idx_sampling_measurements(circuit):
+    """Returns the indices of sample-like measurements (i.e. CountsMP, SampleMP)."""
+    return [i for i, m in enumerate(circuit.measurements) if isinstance(m, (CountsMP, SampleMP))]
+
+
+def idx_analytic_measurements(circuit):
+    """Returns the indices of non sample-like measurements (i.e. not CountsMP, SampleMP)."""
+    return [
+        i for i, m in enumerate(circuit.measurements) if not isinstance(m, (CountsMP, SampleMP))
+    ]
+
+
+def gather_native_mid_circuit_measurements(circuit, analytic_meas, mcm_meas):
+    """Gathers and normalizes the results of native mid-circuit measurement runs."""
+    idx_analytic = idx_analytic_measurements(circuit)
     normalized_meas = [None] * len(circuit.measurements)
     for i, m in zip(idx_analytic, analytic_meas):
         if isinstance(circuit.measurements[i], (ExpectationMP, ProbabilityMP)):
             normalized_meas[i] = m / circuit.shots.total_shots
-        elif isinstance(circuit.measurements[i], VarianceMP):
-            normalized_meas[i] = m
+        # elif isinstance(circuit.measurements[i], VarianceMP):
+        #     normalized_meas[i] = m
+        else:
+            raise ValueError(
+                f"Native mid-circuit measurement mode does not support {circuit.measurements[i].__class__.__name__} measurements."
+            )
+    idx_sample = idx_sampling_measurements(circuit)
+    if any(isinstance(m, CountsMP) for m in circuit.measurements):
+        counter = Counter()
+        for d in mcm_meas:
+            counter.update(d)
+    for i in idx_sample:
+        if isinstance(circuit.measurements[i], SampleMP):
+            sha = circuit.measurements[i].mv.measurements[0].hash
+            normalized_meas[i] = np.array([dct[sha] for dct in mcm_meas])
+        elif isinstance(circuit.measurements[i], CountsMP):
+            sha = circuit.measurements[i].mv.measurements[0].hash
+            normalized_meas[i] = {0: len(mcm_meas) - counter[sha], 1: counter[sha]}
         else:
             raise ValueError(
                 f"Native mid-circuit measurement mode does not support {circuit.measurements[i].__class__.__name__} measurements."
