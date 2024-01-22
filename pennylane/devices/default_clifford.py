@@ -546,7 +546,7 @@ class DefaultClifford(Device):
             coeffs.append(1.0)
             paulis.append(
                 (
-                    "".join([_GATE_OPERATIONS[op.name] for op in meas_obs.terms()[1][0]]),
+                    "".join([_GATE_OPERATIONS[op.name] for op in meas_obs.operands]),
                     meas_obs.wires,
                 )
             )
@@ -557,7 +557,7 @@ class DefaultClifford(Device):
             cof, obs = meas_obs.terms()
             gate_ops = obs
             if len(gate_ops) == 1 and isinstance(gate_ops[0], Prod):
-                gate_ops = obs[0].terms()[1][0]
+                gate_ops = obs[0].operands
             coeffs.extend(cof)
             paulis.append(("".join([_GATE_OPERATIONS[op.name] for op in gate_ops]), meas_obs.wires))
             return coeffs, paulis
@@ -592,14 +592,21 @@ class DefaultClifford(Device):
 
         results = []
         for meas in circuit.measurements:
+            meas_op = meas.obs
+            if meas_op is None:
+                meas_op = qml.prod(
+                    *[
+                        qml.PauliZ(idx)
+                        for idx in (meas.wires if meas.wires else range(stim_circuit.num_qubits))
+                    ]
+                )
             # Computing samples via stim's compiled sampler
             if isinstance(meas, SampleMP):
                 results.append(
-                    self._measure_observable_sample(meas.obs, stim_circuit, num_shots, sample_seed)[
+                    self._measure_observable_sample(meas_op, stim_circuit, num_shots, sample_seed)[
                         0
                     ][0]
                 )
-
             # Computing classical shadows via manual single sampling
             elif isinstance(meas, ClassicalShadowMP):
                 results.append(self._measure_classical_shadow(stim_circuit, circuit, meas, stim))
@@ -610,13 +617,11 @@ class DefaultClifford(Device):
 
             elif isinstance(meas, ExpectationMP):
                 results.append(
-                    self._measure_expectation_samples(
-                        stim_circuit, meas.obs, num_shots, sample_seed
-                    )
+                    self._measure_expectation_samples(stim_circuit, meas_op, num_shots, sample_seed)
                 )
 
             elif isinstance(meas, VarianceMP):
-                meas_obs = qml.operation.convert_to_opmath(meas.obs)
+                meas_obs = qml.operation.convert_to_opmath(meas_op)
 
                 check_op_math = qml.operation.active_new_opmath()
                 qml.operation.enable_new_opmath()
@@ -639,15 +644,10 @@ class DefaultClifford(Device):
 
             # Computing rest of the measurement by processing samples
             else:
-                meas_obs = (
-                    meas.obs
-                    if meas.obs is not None
-                    else qml.prod(*[qml.PauliZ(idx) for idx in range(stim_circuit.num_qubits)])
-                )
                 samples = qml.math.array(
                     [
                         self._measure_observable_sample(
-                            meas_obs, stim_circuit, num_shots, sample_seed
+                            meas_op, stim_circuit, num_shots, sample_seed
                         )[0]
                     ]
                 )
@@ -840,7 +840,7 @@ class DefaultClifford(Device):
         return entropy / qml.math.log(log_base)
 
     def _measure_purity(self, stabilizer, wires):
-        r"""Measure the purity of the state of simulator device
+        r"""Measure the purity of the state of simulator device.
 
         Computes the state purity using the monotonically decreasing second-order Rényi entropy
         form given in `Sci Rep 13, 4601 (2023) <https://www.nature.com/articles/s41598-023-31273-9>`_.
@@ -874,24 +874,24 @@ class DefaultClifford(Device):
 
         if self._prob_states is None and self._tableau:
             raise ValueError(
-                "In order to maintain computational efficiency,\
-                with ``tableau=True``, the clifford device supports returning\
-                probability only for selected target computational basis states.\
-                Please use `probability_target()` method to set them."
+                "In order to maintain computational efficiency, \
+                with ``tableau=True``, the clifford device supports returning \
+                probability only for selected target computational basis states. \
+                Please use the `probability_target` property to set them."
             )
 
         # we might be able to skip the inverse done below
         # as the distribution for the inverted tableau should remain same
         diagonalizing_cit = tableau_simulator.current_inverse_tableau().inverse().to_circuit()
         diagonalizing_ops = [] if not meas_op.obs else meas_op.obs.diagonalizing_gates()
-        for ops in diagonalizing_ops:
+        for diag_op in diagonalizing_ops:
             # Check if it is Clifford
-            if ops.name not in _GATE_OPERATIONS:  # pragma: no cover
+            if diag_op.name not in _GATE_OPERATIONS:  # pragma: no cover
                 raise ValueError(
-                    f"Currently, we only support observables whose diagonalizing gates are Clifford, got {ops}"
+                    f"Currently, we only support observables whose diagonalizing gates are Clifford, got {diag_op}"
                 )
             # Add to the circuit to rotate the basis
-            stim_op = self.pl_to_stim(ops)
+            stim_op = self.pl_to_stim(diag_op)
             if stim_op[0] is not None:
                 diagonalizing_cit.append_from_stim_program_text(f"{stim_op[0]} {stim_op[1]}")
 
@@ -918,10 +918,10 @@ class DefaultClifford(Device):
             diagonalizing_sim.do_circuit(diagonalizing_cit)
             for idx, wire in enumerate(meas_wires):
                 outcome = tgt_states[ind][idx]
-                expectaction = diagonalizing_sim.peek_z(wire)
-                if not expectaction:
+                expectation = diagonalizing_sim.peek_z(wire)
+                if not expectation:
                     prob_res[ind] /= 2.0
-                elif expectaction != (-1 if outcome else 1):
+                elif expectation != (-1 if outcome else 1):
                     prob_res[ind] = 0.0
                     break
                 diagonalizing_sim.postselect_z(wire, desired_value=outcome)

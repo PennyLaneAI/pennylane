@@ -200,12 +200,17 @@ def test_meas_samples(shots):
     @qml.qnode(qml.device("default.clifford", shots=shots))
     def circuit_fn():
         qml.BasisState(np.array([1, 1]), wires=range(2))
-        return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(0) @ qml.PauliY(1))]
+        return [
+            qml.sample(wires=[1]),
+            qml.sample(qml.PauliZ(0)),
+            qml.sample(qml.PauliX(0) @ qml.PauliY(1)),
+        ]
 
     samples = circuit_fn()
-    assert len(samples) == 2
+    assert len(samples) == 3
     assert qml.math.shape(samples[0]) == (shots, 1)
-    assert qml.math.shape(samples[1]) == (shots, 2)
+    assert qml.math.shape(samples[1]) == (shots, 1)
+    assert qml.math.shape(samples[2]) == (shots, 2)
 
 
 @pytest.mark.parametrize("tableau", [True, False])
