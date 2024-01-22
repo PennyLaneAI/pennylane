@@ -123,3 +123,13 @@ class TestTransformProgramGetter:
         # a little hard to check the contents of a expand_fn_transform
         # this is the best proxy I can find
         assert program[2].transform.__wrapped__ == dev.expand_fn
+
+    def test_transform_program_final_transform(self):
+        """Test that gradient preprocessing and device transform occur before a final transform."""
+
+        @qml.metric_tensor
+        @qml.compile
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        def circuit():
+            qml.IsingXX(1.234, wires=(0, 1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))

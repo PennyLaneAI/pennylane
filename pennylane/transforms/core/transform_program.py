@@ -210,7 +210,10 @@ class TransformProgram:
 
         # Program can only contain one informative transform and at the end of the program
         if self.has_final_transform:
-            raise TransformError("The transform program already has a terminal transform.")
+            if transform_container.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
+            self._transform_program.insert(-1, transform_container)
+            return
         self._transform_program.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):

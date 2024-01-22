@@ -156,9 +156,9 @@ class TestTransformProgramDunders:
         t2 = TransformContainer(transform=informative_transform)
         program = TransformProgram([t0, t1, t2])
 
-        assert first_valid_transform in program
-        assert second_valid_transform in program
-        assert informative_transform in program
+        assert t0 in program
+        assert t1 in program
+        assert t2 in program
         assert qml.compile not in program
 
         assert t0 in program
@@ -306,6 +306,35 @@ class TestTransformProgramDunders:
             + str(second_valid_transform.__name__)
             + ")"
         )
+
+    def test_equality(self):
+        """Tests that we can compare TransformProgram objects with the '==' and '!=' operators."""
+        t1 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t2 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t3 = TransformContainer(
+            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
+        )
+
+        p1 = TransformProgram([t1, t3])
+        p2 = TransformProgram([t2, t3])
+        p3 = TransformProgram([t3, t2])
+
+        # test for equality of identical objects
+        assert p1 == p2
+        # test for inequality of different objects
+        assert p1 != p3
+        assert p1 != t1
+
+        # Test inequality with different transforms
+        t4 = TransformContainer(
+            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (2, 3)]}
+        )
+        p4 = TransformProgram([t1, t4])
+        assert p1 != p4
 
 
 class TestTransformProgram:
@@ -500,51 +529,35 @@ class TestTransformProgram:
         assert transform_program[1].transform is first_valid_transform
 
     def test_valid_transforms(self):
-        """Test that it is only possible to create valid transforms."""
+        """Test adding transforms to a program with a terminal transform."""
         transform_program = TransformProgram()
         transform1 = TransformContainer(transform=first_valid_transform, is_informative=True)
         transform_program.push_back(transform1)
+
+        t_normal = TransformContainer(transform=second_valid_transform)
+        transform_program.push_back(t_normal)
+        print(transform_program)
+        assert len(transform_program) == 2
+        assert transform_program[0] is t_normal
+        assert transform_program[1] is transform1
+
+        t_normal2 = TransformContainer(transform=first_valid_transform)
+        transform_program.push_back(t_normal2)
+        assert transform_program[0] is t_normal
+        assert transform_program[1] is t_normal2
+        assert transform_program[2] is transform1
 
         with pytest.raises(
             TransformError, match="The transform program already has a terminal transform."
         ):
             transform_program.push_back(transform1)
 
-        transform2 = TransformContainer(transform=second_valid_transform, is_informative=False)
+        transform2 = TransformContainer(transform=second_valid_transform, final_transform=True)
 
         with pytest.raises(
             TransformError, match="The transform program already has a terminal transform."
         ):
             transform_program.push_back(transform2)
-
-    def test_equality(self):
-        """Tests that we can compare TransformProgram objects with the '==' and '!=' operators."""
-        t1 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
-        t2 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
-        t3 = TransformContainer(
-            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
-        )
-
-        p1 = TransformProgram([t1, t3])
-        p2 = TransformProgram([t2, t3])
-        p3 = TransformProgram([t3, t2])
-
-        # test for equality of identical objects
-        assert p1 == p2
-        # test for inequality of different objects
-        assert p1 != p3
-        assert p1 != t1
-
-        # Test inequality with different transforms
-        t4 = TransformContainer(
-            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (2, 3)]}
-        )
-        p4 = TransformProgram([t1, t4])
-        assert p1 != p4
 
 
 class TestTransformProgramCall:

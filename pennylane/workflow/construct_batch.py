@@ -55,6 +55,7 @@ def transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Transf
 
         dev = qml.device('default.qubit', wires=4)
 
+        @qml.metric_tensor
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
         @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
@@ -64,9 +65,9 @@ def transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Transf
     By default, we get the full transform program:
 
     >>> qml.workflow.transform_program(circuit)
-    TransformProgram(cancel_inverses, merge_rotations, _expand_transform_param_shift,
+    TransformProgram(compile, _expand_metric_tensor, _expand_transform_param_shift,
     validate_device_wires, defer_measurements, decompose, validate_measurements,
-    validate_observables)
+    validate_observables, metric_tensor)
 
     The `"user"` transforms are the one's manually applied to the qnode, :class:`~.cancel_inverses` and
     :class:`~.merge_rotations`.
@@ -108,18 +109,22 @@ def transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Transf
     """
     full_transform_program = _get_full_transform_program(qnode)
 
+    num_user = len(qnode.transform_program)
+    if qnode.transform_program.has_final_transform:
+        # final transform is placed after device transforms
+        num_user -= 1
+
     if level == "device":
-        level = None
+        level = -1 if full_transform_program.has_final_transform else None
     elif level == "top":
         level = 0
     elif level == "user":
-        level = len(qnode.transform_program)
+        level = num_user - 1 if qnode.transform_program.has_final_transform else num_user
     elif level == "gradient":
         if getattr(qnode.gradient_fn, "expand_transform", False):
-            level = slice(0, len(qnode.transform_program) + 1)
+            level = slice(0, num_user + 1)
         else:
-            level = slice(0, len(qnode.transform_program))
-
+            level = slice(0, num_user)
     if level is None or isinstance(level, int):
         level = slice(0, level)
     return full_transform_program[level]
@@ -141,6 +146,8 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         Callable:  a function with the same call signature as the initial quantum function. This function returns
             a batch (tuple) of tapes and postprocessing function.
 
+    **See also:** :func:`pennylane.workflow.transform_program` to see the contents of the transform program for a specified level.
+
     Suppose we have a device with several user transforms.
 
     .. code-block:: python
@@ -157,7 +164,7 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
 
     We can inspect what the device will execute with:
 
-    >>> batch, fn = construct_batch(circuit, expansion_strategy="device")(1.23)
+    >>> batch, fn = construct_batch(circuit, level="device")(1.23)
     >>> batch[0].circuit
     [SWAP(wires=[0, 2]),
     SWAP(wires=[1, 2]),
@@ -173,16 +180,16 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
 
     Or what the parameter shift gradient transform will be applied to:
 
-    >>> batch, fn = construct_batch(circuit, xpansion_strategy="gradient")(1.23)
+    >>> batch, fn = construct_batch(circuit, level="gradient")(1.23)
     >>> batch[0].circuit
     [Permute(wires=[0, 1, 2]),
     RY(tensor(1., requires_grad=True), wires=[0]),
     RX(tensor(2., requires_grad=True), wires=[1]),
     expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
 
-    We can inpsect what was directly captured from the qfunc with ``expansion_strategy=0``.
+    We can inpsect what was directly captured from the qfunc with ``level=0``.
 
-    >>> batch, fn = construct_batch(circuit, expansion_strategy=0)(1.23)
+    >>> batch, fn = construct_batch(circuit, level=0)(1.23)
     >>> batch[0].circuit
     [Permute(wires=[0, 1, 2]),
     RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
@@ -193,9 +200,9 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
     expval(PauliX(wires=[0]) + PauliY(wires=[0]))]
 
     And iterate though stages in the transform program with different integers.
-    If we request ``expansion_strategy=1``, the ``cancel_inverses`` transform has been applied.
+    If we request ``level=1``, the ``cancel_inverses`` transform has been applied.
 
-    >>> batch, fn = construct_batch(circuit, expansion_strategy=1)(1.23)
+    >>> batch, fn = construct_batch(circuit, level=1)(1.23)
     >>> batch[0].circuit
     [Permute(wires=[0, 1, 2]),
     RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
@@ -206,7 +213,7 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
     We can also slice into a subset of the transform program.  ``slice(1, None)`` would skip the first user
     transform ``cancel_inverses``:
 
-    >>> batch, fn = construct_batch(circuit, expansion_strategy=slice(1,None))(1.23, include_permute=False)
+    >>> batch, fn = construct_batch(circuit, level=slice(1,None))(1.23, include_permute=False)
     >>> batch[0].circuit
     [RY(tensor(1., requires_grad=True), wires=[0]),
     RX(tensor(2., requires_grad=True), wires=[1]),
