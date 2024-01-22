@@ -29,7 +29,10 @@ a feature:
        )
 
    If the feature is being relocated, consider rephrashing the warning to discuss relocation as
-   opposed to deprecation.
+   opposed to deprecation. As well, if the deprecated feature is fairly minor, it is likely safe to
+   state that it will be removed in the next release. Otherwise, it is a good practice to wait 2 or
+   more releases before fully removing the feature. Consult the product manager if you are not sure
+   how long this should be.
 
 3. If the feature has public-facing docs, include a similar warning message in a visible part of
    its docstring using a ``.. warning::`` Sphinx directive.
@@ -53,10 +56,7 @@ a feature:
    test it specifically, update them to use the new/preferred code.
 
 7. Add an entry to the top of the "Pending deprecations" section of ``doc/development/deprecations.rst``.
-   There should be existing examples to follow for style. If the deprecated feature is fairly
-   minor, it is likely safe to state that it will be removed in the next release. Otherwise, it is
-   a good practice to wait 2 or more releases before fully removing the feature. Consult the
-   product manager if you are not sure how long this should be.
+   There should be existing examples to follow for style.
 
 8. Add a similar entry to the bottom of the "Deprecations" section in ``doc/releases/changelog-dev.md``.
 
