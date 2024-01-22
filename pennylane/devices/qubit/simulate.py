@@ -25,6 +25,7 @@ from pennylane.measurements import (
     ExpectationMP,
     ProbabilityMP,
     SampleMP,
+    VarianceMP,
 )
 from pennylane.typing import Result
 
@@ -321,13 +322,19 @@ def has_mid_circuit_measurements(circuit):
 
 def idx_sampling_measurements(circuit):
     """Returns the indices of sample-like measurements (i.e. CountsMP, SampleMP)."""
-    return [i for i, m in enumerate(circuit.measurements) if isinstance(m, (CountsMP, SampleMP))]
+    return [
+        i
+        for i, m in enumerate(circuit.measurements)
+        if isinstance(m, (CountsMP, SampleMP, VarianceMP))
+    ]
 
 
 def idx_analytic_measurements(circuit):
     """Returns the indices of non sample-like measurements (i.e. not CountsMP, SampleMP)."""
     return [
-        i for i, m in enumerate(circuit.measurements) if not isinstance(m, (CountsMP, SampleMP))
+        i
+        for i, m in enumerate(circuit.measurements)
+        if not isinstance(m, (CountsMP, SampleMP, VarianceMP))
     ]
 
 
@@ -338,8 +345,6 @@ def gather_native_mid_circuit_measurements(circuit, analytic_meas, mcm_meas):
     for i, m in zip(idx_analytic, analytic_meas):
         if isinstance(circuit.measurements[i], (ExpectationMP, ProbabilityMP)):
             normalized_meas[i] = m / circuit.shots.total_shots
-        # elif isinstance(circuit.measurements[i], VarianceMP):
-        #     normalized_meas[i] = m
         else:
             raise ValueError(
                 f"Native mid-circuit measurement mode does not support {circuit.measurements[i].__class__.__name__} measurements."
@@ -350,12 +355,15 @@ def gather_native_mid_circuit_measurements(circuit, analytic_meas, mcm_meas):
         for d in mcm_meas:
             counter.update(d)
     for i in idx_sample:
-        if isinstance(circuit.measurements[i], SampleMP):
-            sha = circuit.measurements[i].mv.measurements[0].hash
-            normalized_meas[i] = np.array([dct[sha] for dct in mcm_meas])
-        elif isinstance(circuit.measurements[i], CountsMP):
+        if isinstance(circuit.measurements[i], CountsMP):
             sha = circuit.measurements[i].mv.measurements[0].hash
             normalized_meas[i] = {0: len(mcm_meas) - counter[sha], 1: counter[sha]}
+        elif isinstance(circuit.measurements[i], SampleMP):
+            sha = circuit.measurements[i].mv.measurements[0].hash
+            normalized_meas[i] = np.array([dct[sha] for dct in mcm_meas])
+        elif isinstance(circuit.measurements[i], VarianceMP):
+            sha = circuit.measurements[i].mv.measurements[0].hash
+            normalized_meas[i] = qml.math.var(np.array([dct[sha] for dct in mcm_meas]))
         else:
             raise ValueError(
                 f"Native mid-circuit measurement mode does not support {circuit.measurements[i].__class__.__name__} measurements."
