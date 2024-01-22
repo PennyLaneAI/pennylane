@@ -14,7 +14,7 @@
 """
 Unit tests for the comm function
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, unused-variable
 import pytest
 
 import pennylane as qml
@@ -87,13 +87,26 @@ def test_alias():
 def test_no_recording_in_context():
     """Test that commutator is not recorded"""
     with qml.tape.QuantumTape() as tape:
-        a = qml.PauliX(0)
-        b = qml.PauliY(0)
+        a = qml.PauliX(0)  # gets recorded
+        b = qml.PauliY(0)  # gets recorded
         comm = qml.commutator(a, b)
 
     with qml.tape.QuantumTape() as tape2:
         qml.PauliX(0)
         qml.PauliY(0)
+
+    assert qml.equal(tape, tape2)
+
+
+def test_no_recording_in_context_with_pauli():
+    """Test that commutator is not recorded while one of the ops is a Pauli"""
+    with qml.tape.QuantumTape() as tape:
+        a = qml.PauliX(0)  # gets recorded
+        b = PauliWord({0: "Y"})  # does not get recorded
+        comm = qml.commutator(a, b)
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.PauliX(0)
 
     assert qml.equal(tape, tape2)
 
