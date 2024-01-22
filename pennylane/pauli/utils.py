@@ -194,6 +194,8 @@ def are_identical_pauli_words(pauli_1, pauli_2):
 
 
 def _pauli_to_binary_pauli_rep(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
+    """Converts a Pauli work to binary vector representation. This private method is used for oeprators
+    that have a valid pauli representation"""
     if check_is_pauli_word and len(pauli_word.pauli_rep) != 1:
         raise ValueError(f"pauli_to_binary requires a pauli word. Got {pauli_word}")
 
@@ -733,6 +735,9 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
 
 def _are_pauli_words_qwc_pauli_rep(lst_pauli_words):
+    """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
+    qubit-wise commuting. This private method is used for oeprators that have a valid pauli
+    representation"""
     for op in lst_pauli_words:
         if len(op.pauli_rep) != 1:
             raise ValueError(f"are_pauli_words_qwc only works for pauli words. Got {op}")
