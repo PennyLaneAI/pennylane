@@ -1,11 +1,10 @@
 Deprecations and Removals
 =========================
 
-PennyLane is under continuous development and we sometimes need to make breaking changes to
-improve the library.
-When these breaking changes are necessary, we should make
-sure to give our users time to update their workflows to adhere to any new implementation before
-completely removing the old one.
+PennyLane is under continuous development and we sometimes need to make breaking changes to improve
+the library. When these breaking changes are necessary, we should make sure to give our users time
+to update their workflows to adhere to any new implementation before completely removing the old
+one. All ongoing and completed deprecations can be found in :doc:`the deprecations page <../deprecations>`.
 
 Deprecating a feature
 ---------------------
