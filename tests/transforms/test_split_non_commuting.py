@@ -64,8 +64,10 @@ class TestUnittestSplitNonCommuting:
             meas_type(op=qml.PauliZ(0) @ qml.PauliZ(3))
 
         # test transform on tape
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=100)
         split, fn = split_non_commuting(tape)
+        for t in split:
+            assert t.shots == tape.shots
 
         spy = mocker.spy(qml.math, "concatenate")
 
@@ -74,8 +76,10 @@ class TestUnittestSplitNonCommuting:
         assert fn([0.5]) == 0.5
 
         # test transform on qscript
-        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        qs = qml.tape.QuantumScript(tape.operations, tape.measurements, shots=50)
         split, fn = split_non_commuting(qs)
+        for t in split:
+            assert t.shots == qs.shots
 
         assert len(split) == 1
         assert all(isinstance(i_qs, qml.tape.QuantumScript) for i_qs in split)
