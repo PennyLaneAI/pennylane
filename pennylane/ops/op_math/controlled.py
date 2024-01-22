@@ -343,7 +343,12 @@ class Controlled(SymbolicOp):
         # these gates do not consider global phases in their hash
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
-                [qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in self.base.data]
+                [
+                    id(d)
+                    if qml.math.is_abstract(d)
+                    else qml.math.round(qml.math.real(d) % (4 * np.pi), 10)
+                    for d in self.base.data
+                ]
             )
             base_hash = hash(
                 (
