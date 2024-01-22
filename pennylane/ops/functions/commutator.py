@@ -106,4 +106,5 @@ def commutator(op1, op2, pauli=False):
         res = res.simplify()
     return res
 
-comm = commutator # Slightly shorter alias
+
+comm = commutator  # Slightly shorter alias
