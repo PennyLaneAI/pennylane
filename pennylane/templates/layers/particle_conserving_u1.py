@@ -219,7 +219,10 @@ class ParticleConservingU1(Operation):
             ansatz = partial(qml.ParticleConservingU1, init_state=ref_state)
 
             # Define the cost function
-            cost_fn = qml.ExpvalCost(ansatz, h, dev)
+            @qml.qnode(dev)
++           def cost_fn(params):
++               ansatz(params)
++               return qml.expval(h)
 
             # Compute the expectation value of 'h'
             layers = 2
