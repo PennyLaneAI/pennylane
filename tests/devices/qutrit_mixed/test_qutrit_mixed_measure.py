@@ -194,7 +194,6 @@ class TestMeasurements:
 
         expected = 0
         for i, coeff in enumerate(coeffs):
-            observables[i]
             expected += coeff * get_expval(observables[i], two_qutrit_state)
 
         assert np.isclose(res, expected)
