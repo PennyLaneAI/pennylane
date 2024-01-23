@@ -116,6 +116,9 @@
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
 
+* `CRX`, `CRY`, `CRZ`, `CROT`, and `ControlledPhaseShift` (i.e. `CPhaseShift`) now inherit from `ControlledOp`, giving them additional properties such as `control_wire` and `control_values`. Calling `qml.ctrl` on `RX`, `RY`, `RZ`, `Rot`, and `PhaseShift` with a single control wire will return gates of types `CRX`, `CRY`, etc. as opposed to a general `Controlled` operator.
+  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
@@ -143,6 +146,20 @@
   method to estimate entropies from approximate density matrix reconstructions
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
+
+* The decomposition of an operator created with calling `qml.ctrl` on a parametric operator (specifically `RX`, `RY`, `RZ`, `Rot`, `PhaseShift`) with a single control wire will now be the full decomposition instead of a single controlled gate. For example:
+  ```
+  >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
+  [
+    RZ(1.5707963267948966, wires=[1]), 
+    RY(0.0615, wires=[1]), 
+    CNOT(wires=[0, 1]), 
+    RY(-0.0615, wires=[1]), 
+    CNOT(wires=[0, 1]), 
+    RZ(-1.5707963267948966, wires=[1])
+  ]
+  ```
+  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
 
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
   validate these properties manually.
