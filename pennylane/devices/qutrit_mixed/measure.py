@@ -25,6 +25,7 @@ from pennylane.measurements import (
     ExpectationMP,
     StateMP,
     ProbabilityMP,
+    VarianceMP,
 )
 from pennylane.operation import Observable
 from pennylane.typing import TensorLike
@@ -86,29 +87,6 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
     return math.einsum(einsum_indices, obs_mat, state)
 
 
-def state_diagonalizing_gates(
-    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
-) -> TensorLike:
-    """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
-
-    Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state
-        state (TensorLike): state to apply the measurement to
-        is_state_batched (bool): whether the state is batched or not
-
-    Returns:
-        TensorLike: the result of the measurement
-    """
-    for op in measurementprocess.diagonalizing_gates():
-        state = apply_operation(op, state, is_state_batched=is_state_batched)
-
-    num_wires = get_num_wires(state, is_state_batched)
-    wires = Wires(range(num_wires))
-    # resquared state or probs?
-    probs = get_probs(state, num_wires)
-    return measurementprocess.process_state(probs, wires)
-
-
 def trace_method(
     measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
@@ -131,7 +109,7 @@ def trace_method(
     )
 
 
-def reduce_density_matrix(
+def reduce_density_matrix(  # TODO: ask if I should have state diagonalization gates?
     measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
     """Get the state or reduced density matrix.
@@ -165,7 +143,7 @@ def reduce_density_matrix(
 def calculate_probability(
     measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
-    """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
+    """Find the probability of measuring states.
 
     Args:
         measurementprocess (StateMeasurement): measurement to apply to the state
@@ -175,20 +153,21 @@ def calculate_probability(
     Returns:
         TensorLike: the result of the measurement
     """
-    if measurementprocess.obs is not None:
-        raise NotImplementedError
+    for op in measurementprocess.diagonalizing_gates():
+        state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     num_state_wires = get_num_wires(state, is_state_batched)
     probs = get_probs(state, num_state_wires, is_state_batched)
 
-    if wires := measurementprocess.wires:
+    if mp_wires := measurementprocess.wires:
         expanded_shape = [QUDIT_DIM] * num_state_wires
-        new_shape = [QUDIT_DIM ** len(wires)]
+        new_shape = [QUDIT_DIM ** len(mp_wires)]
         if is_state_batched:
-            expanded_shape.insert(0, probs.shape[0])
-            new_shape.insert(0, probs.shape[0])
+            batch_size = probs.shape[0]
+            expanded_shape.insert(0, batch_size)
+            new_shape.insert(0, batch_size)
         wires_to_trace = tuple(
-            x + is_state_batched for x in range(num_state_wires) if x not in wires
+            x + is_state_batched for x in range(num_state_wires) if x not in mp_wires
         )
 
         expanded_probs = probs.reshape(expanded_shape)
@@ -198,10 +177,29 @@ def calculate_probability(
     return probs
 
 
+def calculate_variance(
+    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
+) -> TensorLike:
+    """Find variance of observable.
+
+    Args:
+        measurementprocess (StateMeasurement): measurement to apply to the state
+        state (TensorLike): state to apply the measurement to
+        is_state_batched (bool): whether the state is batched or not
+
+    Returns:
+        TensorLike: the result of the measurement
+    """
+    probs = calculate_probability(measurementprocess, state, is_state_batched)
+    eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
+    # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
+    return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
+
+
 # pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess,
-    state: TensorLike,  # pylint: disable=unused-argument #TODO decide what to do
+    state: TensorLike,  # pylint: disable=unused-argument
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
@@ -218,6 +216,8 @@ def get_measurement_function(
             return reduce_density_matrix
         if isinstance(measurementprocess, ProbabilityMP):
             return calculate_probability
+        if isinstance(measurementprocess, VarianceMP):
+            return calculate_variance
         if isinstance(measurementprocess, ExpectationMP):
             # TODO add faster methods
             # TODO add support for sparce Hamiltonians
@@ -227,9 +227,6 @@ def get_measurement_function(
                 return sum_of_terms_method
             if measurementprocess.obs.has_matrix:
                 return trace_method
-        # TODO add support for var
-        if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
-            return state_diagonalizing_gates
 
     raise NotImplementedError
 
