@@ -100,12 +100,11 @@ def trace_method(
     """
     obs = measurementprocess.obs
     rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
-    squared_rho_mult_obs = resquare_state(rho_mult_obs, get_num_wires(state, is_state_batched))
-    return math.real(
-        math.trace(
-            squared_rho_mult_obs, axis1=int(is_state_batched), axis2=int(1 + is_state_batched)
-        )
-    )
+
+    # using einsum since trace params are not consistent across interfaces
+    num_wires = get_num_wires(state, is_state_batched)
+    trace = math.einsum(f"...{alphabet[:num_wires]*2}", rho_mult_obs)
+    return math.real(trace)
 
 
 def reduce_density_matrix(  # TODO: ask if I should have state diagonalization gates?
