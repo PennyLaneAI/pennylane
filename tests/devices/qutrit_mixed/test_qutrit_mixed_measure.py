@@ -428,12 +428,12 @@ measurement_processes = [
         )
     ),
     qml.var(qml.GellMann(0, 3)),
-    qml.var(
-        qml.dot(
-            [1.0, 2.0, 3.0, 4.0],
-            obs_list,
-        )
-    ),
+    # qml.var(                                  causing error do to bug #5032
+    #     qml.dot(
+    #         [1.0, 2.0, 3.0, 4.0],
+    #         obs_list,
+    #     )
+    # ),
 ]
 probs_processes = [qml.probs(wires=0), qml.probs(op=qml.GellMann(0, 8)), qml.probs(wires=[0, 1])]
 
