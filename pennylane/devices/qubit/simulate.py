@@ -278,6 +278,7 @@ def simulate(
 
 
 def accumulate_native_mcm(circuit, one_shot_meas, new_shot):
+    """Incorporate new measurements in current measurement sequence."""
     cat_shot_meas = [None] * len(circuit.measurements)
     if not isinstance(one_shot_meas, (list, tuple)):
         return accumulate_native_mcm(circuit, [one_shot_meas], new_shot)
@@ -346,6 +347,7 @@ def has_mid_circuit_measurements(
 
 
 def requires_mid_samples(measurement):
+    """Determines whether a measurement is a mid-circuit measurement value."""
     return isinstance(measurement, (CountsMP, SampleMP, VarianceMP)) and measurement.mv is not None
 
 
@@ -370,35 +372,48 @@ def gather_native_mid_circuit_measurements(
     idx_one_shot = idx_one_shot_measurements(circuit)
     normalized_meas = [None] * len(circuit.measurements)
     for i, m in zip(idx_one_shot, one_shot_meas):
-        if isinstance(circuit.measurements[i], (ExpectationMP, ProbabilityMP)):
-            normalized_meas[i] = m / circuit.shots.total_shots
-        elif isinstance(circuit.measurements[i], SampleMP):
-            normalized_meas[i] = np.concatenate(tuple(s.ravel() for s in m))
-        elif isinstance(circuit.measurements[i], CountsMP):
-            normalized_meas[i] = dict(sorted(m.items()))
-        elif isinstance(circuit.measurements[i], VarianceMP):
-            normalized_meas[i] = m
-        else:
-            raise ValueError(
-                f"Native mid-circuit measurement mode does not support {circuit.measurements[i].__class__.__name__} measurements."
-            )
+        normalized_meas[i] = gather_measurements(circuit, i, m)
+
     idx_sample = idx_sampling_measurements(circuit)
     if any(isinstance(m, CountsMP) for m in circuit.measurements):
         counter = Counter()
         for d in mcm_shot_meas:
             counter.update(d)
     for i in idx_sample:
-        if isinstance(circuit.measurements[i], CountsMP):
-            sha = circuit.measurements[i].mv.measurements[0].hash
-            normalized_meas[i] = {0: len(mcm_shot_meas) - counter[sha], 1: counter[sha]}
-        elif isinstance(circuit.measurements[i], SampleMP):
-            sha = circuit.measurements[i].mv.measurements[0].hash
-            normalized_meas[i] = np.array([dct[sha] for dct in mcm_shot_meas])
-        elif isinstance(circuit.measurements[i], VarianceMP):
-            sha = circuit.measurements[i].mv.measurements[0].hash
-            normalized_meas[i] = qml.math.var(np.array([dct[sha] for dct in mcm_shot_meas]))
-        else:
-            raise ValueError(
-                f"Native mid-circuit measurement mode does not support {circuit.measurements[i].__class__.__name__} measurements."
-            )
+        normalized_meas[i] = gather_statistics(circuit, i, mcm_shot_meas, counter)
     return normalized_meas
+
+
+def gather_measurements(circuit, idx, measurement):
+    """Merges and normalizes several one shot measurements."""
+    if isinstance(circuit.measurements[idx], (ExpectationMP, ProbabilityMP)):
+        new_meas = measurement / circuit.shots.total_shots
+    elif isinstance(circuit.measurements[idx], SampleMP):
+        new_meas = np.concatenate(tuple(s.ravel() for s in measurement))
+    elif isinstance(circuit.measurements[idx], CountsMP):
+        new_meas = dict(sorted(measurement.items()))
+    elif isinstance(circuit.measurements[idx], VarianceMP):
+        new_meas = measurement
+    else:
+        raise ValueError(
+            f"Native mid-circuit measurement mode does not support {circuit.measurements[idx].__class__.__name__} measurements."
+        )
+    return new_meas
+
+
+def gather_statistics(circuit, idx, samples, counter):
+    """Merges and normalizes several one shot statistics."""
+    if isinstance(circuit.measurements[idx], CountsMP):
+        sha = circuit.measurements[idx].mv.measurements[0].hash
+        new_samples = {0: len(samples) - counter[sha], 1: counter[sha]}
+    elif isinstance(circuit.measurements[idx], SampleMP):
+        sha = circuit.measurements[idx].mv.measurements[0].hash
+        new_samples = np.array([dct[sha] for dct in samples])
+    elif isinstance(circuit.measurements[idx], VarianceMP):
+        sha = circuit.measurements[idx].mv.measurements[0].hash
+        new_samples = qml.math.var(np.array([dct[sha] for dct in samples]))
+    else:
+        raise ValueError(
+            f"Native mid-circuit measurement mode does not support {circuit.measurements[idx].__class__.__name__} measurements."
+        )
+    return new_samples
