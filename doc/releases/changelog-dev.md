@@ -139,6 +139,7 @@
   [(#5091)](https://github.com/PennyLaneAI/pennylane/pull/5091)
 
 * `qml.ExpvalCost` has been removed. Users should use ``qml.expval()`` moving forward.
+  [(#5097)](https://github.com/PennyLaneAI/pennylane/pull/5097)
 
 <h3>Deprecations 👋</h3>
 
