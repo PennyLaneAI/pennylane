@@ -68,6 +68,56 @@ importing PennyLane in Python.
     requires ``pip install -e .`` to be re-run in the plugin repository
     for the changes to take effect.
 
+Poetry
+------
+
+PennyLane uses `Poetry <https://python-poetry.org/>`_ to manage dependencies internally. If you
+are familiar with Poetry, you might prefer this tool over ``pip`` for installing and managing
+PennyLane on your devices. To install an editable version of PennyLane (once it's cloned to your
+machine), just run ``poetry install``.
+
+Depenency Groups
+~~~~~~~~~~~~~~~~
+
+Optional dependencies are organized into groups for convenience. While the groups are treated as
+optional for most purposes, Poetry will still lock versions of each package such that all groups
+are compatible with each other, as well as with PennyLane itself. At the time of writing, the
+groups are as follows:
+
+* ``dev``: Recommended packages for developers that wish to contribute to PennyLane
+* ``ci``: Packages used by PennyLane CI workflows
+* ``doc``: Packages used by ReadTheDocs to build PennyLane documentation
+* ``jax``: Supported versions of jax and dependent packages, for users who wish to use the jax interface
+* ``torch``: Supported version of torch, for users who wish to use the torch interface
+* ``tf``: Supported version of tensorflow and dependent packages, for users who wish to use the tensorflow interface
+* ``external``: Various external dependencies that only certain modules require, such as ``PyZX``, ``matplotlib`` and ``stim``
+* ``qcut``: Packages needed to use all features of the ``qcut`` module
+* ``qchem``: Packages needed to use all features of the ``qchem`` module
+* ``data``: Packages needed to use the ``data`` module
+
+Many commands will exclude these groups by default, as they are specified as optional. If you wish
+to include them, this can typically be done using the ``--with`` option. For example, to install
+PennyLane along with the jax and torch, you can run ``poetry install --with jax,torch``.
+
+Managing Dependencies
+~~~~~~~~~~~~~~~~~~~~~
+
+If a dependecy needs to be added to or updated in PennyLane, this is done in 2 steps. First, you
+need to update ``pyproject.toml``. If it is a core dependecy, it should go in the
+``tool.poetry.dependencies`` section of ``pyproject.toml``. Otherwise, it should go in the
+appropriate dependency group. Once this file is updated, you should run ``poetry lock --no-update``
+to update the lockfile (``poetry.lock``). Note that this file should only be modified by running
+this exact command. Manually updating it is not recommended by Poetry itself, and we prefer the
+``--no-update`` option to continue using minimal supported versions of dependencies. See `the
+documentation on version contraints <https://python-poetry.org/docs/dependency-specification/#version-constraints>`_
+provided by Poetry on how to specify supported version ranges for dependencies.
+
+.. note::
+
+    ``poetry show --tree`` will display a tree of dependencies for PennyLane, along with all
+    downstream dependencies. Used with the ``--with`` option as detailed above, this is a very
+    powerful tool for managing and understanding dependencies.
+
 Docker
 ------
 
