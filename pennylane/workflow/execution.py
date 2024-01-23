@@ -49,7 +49,17 @@ logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.Device"]
 
-jpc_interfaces = {"autograd", "numpy", "torch", "pytorch", "jax", "jax-python", "jax-jit"}
+jpc_interfaces = {
+    "autograd",
+    "numpy",
+    "torch",
+    "pytorch",
+    "jax",
+    "jax-python",
+    "jax-jit",
+    "tf",
+    "tensorflow",
+}
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -100,8 +110,14 @@ def _adjoint_jacobian_expansion(
     return tapes
 
 
+def _use_tensorflow_autograph():
+    import tensorflow as tf
+
+    return not tf.executing_eagerly()
+
+
 def _get_ml_boundary_execute(
-    interface: str, grad_on_execution: bool, device_vjp: bool = False
+    interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
     """Imports and returns the function that binds derivatives of the required ml framework.
 
@@ -122,15 +138,15 @@ def _get_ml_boundary_execute(
             from .interfaces.autograd import autograd_execute as ml_boundary
 
         elif mapped_interface == "tf":
-            import tensorflow as tf
-
-            if not tf.executing_eagerly() or "autograph" in interface:
+            if "autograph" in interface:
                 from .interfaces.tensorflow_autograph import execute as ml_boundary
 
                 ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
 
             else:
-                from .interfaces.tensorflow import execute as ml_boundary
+                from .interfaces.tensorflow import tf_execute as full_ml_boundary
+
+                ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
 
         elif mapped_interface == "torch":
             from .interfaces.torch import execute as ml_boundary
@@ -562,6 +578,8 @@ def execute(
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
+    if INTERFACE_MAP.get(interface, "") == "tf" and _use_tensorflow_autograph():
+        interface = "tf-autograph"
     if interface == "jax":
         try:  # pragma: no-cover
             from .interfaces.jax import get_jax_interface_name
@@ -801,9 +819,17 @@ def execute(
         jpc = TransformJacobianProducts(
             execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian
         )
-        for _ in range(1, max_diff):
-            ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
-            execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc, device=device)
+        for i in range(1, max_diff):
+            differentiable = i > 1
+            ml_boundary_execute = _get_ml_boundary_execute(
+                interface, _grad_on_execution, differentiable=differentiable
+            )
+            execute_fn = partial(
+                ml_boundary_execute,
+                execute_fn=execute_fn,
+                jpc=jpc,
+                device=device,
+            )
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
             if interface == "jax-jit":
@@ -819,7 +845,10 @@ def execute(
             tape.trainable_params = qml.math.get_trainable_indices(params)
 
     ml_boundary_execute = _get_ml_boundary_execute(
-        interface, _grad_on_execution, config.use_device_jacobian_product
+        interface,
+        _grad_on_execution,
+        config.use_device_jacobian_product,
+        differentiable=max_diff > 1,
     )
 
     if interface in jpc_interfaces:

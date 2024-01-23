@@ -484,7 +484,7 @@ class Device(abc.ABC):
         each individual quantum script. If the batch is of length 1, then the return tuple should still be of length 1, not squeezed.
 
         """
-        raise NotImplementedError
+        raise NotImplementedError(f"{self.name} does not support differentiable workflows.")
 
     def execute_and_compute_derivatives(
         self,
