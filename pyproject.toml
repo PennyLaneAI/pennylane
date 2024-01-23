@@ -35,7 +35,7 @@ url = "https://download.pytorch.org/whl/cpu"
 priority = "explicit"
 
 [tool.poetry.dependencies]
-python = "~3.9.0"
+python = ">=3.9.0,<3.12"
 numpy = "*"
 scipy = "*"
 networkx = "*"
