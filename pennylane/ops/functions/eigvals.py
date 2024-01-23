@@ -40,10 +40,10 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
           is applied on the dense matrix. For more details see the ``scipy.sparse.linalg.eigsh``
           `documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
         - For a second-quantized :mod:`molecular Hamiltonian <pennylane.qchem.molecular_hamiltonian>`,
-          the eigenspectrum with math:`k \geq 1` will contain energies of the charged species of the
+          the eigenspectrum with :math:`k \geq 1` will contain energies of the charged species of the
           molecule in addition to the neutral one, as this Hamiltonian is independent of the number
-          of electrons. Therefore, the smallest eigenvalue returned by ``qml.eigvals`` might not always
-          have the correct particle number and correspond to the correct ground state energy.
+          of electrons. Therefore, the `smallest` eigenvalue returned by ``qml.eigvals`` might not
+          always have the correct particle number and correspond to the correct ground state energy.
 
     Args:
         op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.

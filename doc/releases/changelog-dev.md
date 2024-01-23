@@ -185,6 +185,9 @@
 * A typo in the code example for `qml.qchem.dipole_of` has been fixed.
   [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036) 
 
+* A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
+  [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
