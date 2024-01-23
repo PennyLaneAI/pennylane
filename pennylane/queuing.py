@@ -300,8 +300,6 @@ class QueuingManager:
         cls._active_contexts = []
         try:
             yield
-        except Exception as e:
-            raise e
         finally:
             cls._active_contexts = previously_active_contexts
 
