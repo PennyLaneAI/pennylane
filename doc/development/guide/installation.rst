@@ -102,10 +102,24 @@ PennyLane along with the jax and torch, you can run ``poetry install --with jax,
 Managing Dependencies
 ~~~~~~~~~~~~~~~~~~~~~
 
-If a dependecy needs to be added to or updated in PennyLane, this is done in 2 steps. First, you
-need to update ``pyproject.toml``. If it is a core dependecy, it should go in the
-``tool.poetry.dependencies`` section of ``pyproject.toml``. Otherwise, it should go in the
-appropriate dependency group. Once this file is updated, you should run ``poetry lock --no-update``
+For core dependencies, use ``poetry add <the_dependency>``. For optional dependencies, specify the
+group using ``poetry add --group <the_group> <the_dependency>``. You can also provide a version
+specifier if you have one, otherwise Poetry will compute and provide one for you. Please note that
+if you are adding a new dependency group, they are not optional by default in Poetry, so you must
+update the group options in ``pyproject.yaml`` to ``optional = true`` manually.
+
+To update a dependency (core or optional) in the lockfile, simply run ``poetry update
+<the_dependency> --lock``. If you omit the ``--lock`` option, it will also update it in your
+environment. The Poetry CLI cannot be used to update the version constraints on a dependency; if
+you wish to do this, please update the constraints manually in ``pyproject.toml``.
+
+.. note::
+
+    Calling ``poetry update --only <group>`` will also update all core dependencies. If you wish
+    to update all dependencies in a group (but not the core dependencies), you must list each
+    package name explicitly.
+
+If you make any manual changes to ``pyproject.toml``, be sure to run ``poetry lock --no-update``
 to update the lockfile (``poetry.lock``). Note that this file should only be modified by running
 this exact command. Manually updating it is not recommended by Poetry itself, and we prefer the
 ``--no-update`` option to continue using minimal supported versions of dependencies. See `the
