@@ -68,21 +68,6 @@ Pending deprecations
   - Deprecated in v0.34
   - Will be removed in v0.36
 
-* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-
-  - Deprecated in v0.24
-  - Will be removed in v0.35
-
-  Instead, it is recommended to simply
-  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
-
-  .. code-block:: python
-
-    @qml.qnode(dev)
-    def ansatz(params):
-        some_qfunc(params)
-        return qml.expval(Hamiltonian)
-
 * ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better
   method to estimate entropies from approximate density matrix reconstructions
   (with potentially negative eigenvalues) has been implemented.
@@ -147,8 +132,8 @@ Completed deprecation cycles
   - Deprecated in v0.34
   - Removed in v0.35
 
-* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` have been removed. Users should now validate
-  these properties manually.
+* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` have been removed.
+Users should now validate these properties manually.
 
   .. code-block:: python
 
@@ -159,6 +144,18 @@ Completed deprecation cycles
     all_sampled = all(is_sample_type)
 
   - Deprecated in v0.34
+  - Removed in v0.35
+
+* ``qml.ExpvalCost`` has been removed. Users should use ``qml.expval()`` instead.
+
+  .. code-block:: python
+
+    @qml.qnode(dev)
+    def ansatz(params):
+        some_qfunc(params)
+        return qml.expval(Hamiltonian)
+
+  - Deprecated in v0.24
   - Removed in v0.35
 
 * Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.

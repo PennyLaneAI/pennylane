@@ -77,6 +77,8 @@
   validate these properties manually.
   [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
 
+* `qml.ExpvalCost` has been removed. Users should use ``qml.expval()`` moving forward.
+
 <h3>Deprecations 👋</h3>
 
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
