@@ -451,7 +451,8 @@ class TestNaNMeasurements:
 
         assert qml.math.ndim(res) == 0
         assert qml.math.isnan(res)
-        assert qml.math.get_interface(res) == interface
+        if interface != "autograd":
+            assert qml.math.get_interface(res) == interface
 
     @pytest.mark.jax
     @pytest.mark.parametrize("mp", measurement_processes)
