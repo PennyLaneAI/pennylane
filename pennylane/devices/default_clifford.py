@@ -504,27 +504,6 @@ class DefaultClifford(Device):
             paulis.append((_GATE_OPERATIONS[meas_obs.name], meas_obs.wires))
             return coeffs, paulis
 
-        # Case for simple Pauli tensor
-        if isinstance(meas_obs, qml.operation.Tensor):
-            coeffs.append(1.0)
-            paulis.append(
-                ("".join([_GATE_OPERATIONS[name] for name in meas_obs.name]), meas_obs.wires)
-            )
-            return coeffs, paulis
-
-        # Case for a Hamiltonian
-        if isinstance(meas_obs, qml.Hamiltonian):
-            cof, obs = meas_obs.terms()
-            coeffs.extend(cof)
-            for ob in obs:
-                expec = (
-                    _GATE_OPERATIONS[ob.name]
-                    if not isinstance(ob.name, list)
-                    else "".join([_GATE_OPERATIONS[o] for o in ob.name])
-                )
-                paulis.append((expec, ob.wires))
-            return coeffs, paulis
-
         # Case for Sum
         if isinstance(meas_obs, Sum):
             for op in meas_obs:
@@ -567,11 +546,13 @@ class DefaultClifford(Device):
             f"default.clifford doesn't support expectation value calculation with {type(meas_obs)} at the moment."
         )
 
-    def _measure_observable_sample(self, meas_op, stim_circuit, shots, sample_seed):
+    def _measure_observable_sample(self, meas_obs, stim_circuit, shots, sample_seed):
         """Compute sample output from a stim circuit for a given Pauli observable"""
         meas_dict = {"X": "MX", "Y": "MY", "Z": "MZ", "_": "M"}
 
+        meas_op = qml.operation.convert_to_opmath(meas_obs)
         coeffs, paulis = self._convert_op_to_linear_comb(meas_op, coeffs=[], paulis=[])
+
         samples = []
         for pauli, wire in paulis:
             stim_circ = stim_circuit.copy()
@@ -622,13 +603,9 @@ class DefaultClifford(Device):
 
             elif isinstance(meas, VarianceMP):
                 meas_obs = qml.operation.convert_to_opmath(meas_op)
-
-                check_op_math = qml.operation.active_new_opmath()
-                qml.operation.enable_new_opmath()
-                meas_obs1 = meas_obs.simplify()
-                meas_obs2 = (meas_obs1**2).simplify()
-                if not check_op_math:
-                    qml.operation.disable_new_opmath()
+                with qml.operation.use_new_opmath():
+                    meas_obs1 = meas_obs.simplify()
+                    meas_obs2 = (meas_obs1**2).simplify()
 
                 # use the naive formula for variance, i.e., Var(Q) = ⟨𝑄^2⟩−⟨𝑄⟩^2
                 vars = (
@@ -744,9 +721,9 @@ class DefaultClifford(Device):
     def _measure_expectation(self, tableau_simulator, meas_op, stim):
         """Measure the expectation value with respect to the state of simulator device."""
         # Get the observable for the expectation value measurement
-        meas_obs = meas_op.obs
-
+        meas_obs = qml.operation.convert_to_opmath(meas_op.obs)
         coeffs, paulis = self._convert_op_to_linear_comb(meas_obs, coeffs=[], paulis=[])
+
         expecs = qml.math.zeros_like(coeffs)
         for idx, (pauli, wire) in enumerate(paulis):
             pauli_term = ["I"] * max(np.max(list(wire)) + 1, tableau_simulator.num_qubits)

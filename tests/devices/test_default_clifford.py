@@ -110,12 +110,17 @@ def test_state_clifford(circuit, tableau):
     "meas_op",
     [
         qml.density_matrix([1]),
+        qml.density_matrix([1, 2]),
+        qml.density_matrix([0, 2]),
         qml.purity([1]),
-        qml.purity([0, 1]),
+        qml.purity([0, 2]),
+        qml.purity([1, 2]),
         qml.vn_entropy([0]),
         qml.vn_entropy([1]),
-        qml.vn_entropy([0, 1]),
+        qml.vn_entropy([0, 2]),
         qml.mutual_info([0], [1]),
+        qml.mutual_info([1], [0, 2]),
+        qml.mutual_info([0], [1, 2]),
     ],
 )
 def test_meas_qinfo_clifford(meas_op):
@@ -126,11 +131,14 @@ def test_meas_qinfo_clifford(meas_op):
 
     def circuit_fn():
         circuit_1()
+        qml.PauliX(wires=[2])
+        qml.Hadamard(wires=[2])
+        qml.CNOT(wires=[1, 2])
         return qml.apply(meas_op)
 
     qnode_clfrd = qml.QNode(circuit_fn, dev_c)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
-
+    print(qnode_clfrd(), qnode_qubit())
     assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
