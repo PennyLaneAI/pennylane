@@ -168,9 +168,9 @@ def calculate_probability(
             x + is_state_batched for x in range(num_state_wires) if x not in mp_wires
         )
 
-        expanded_probs = probs.reshape(expanded_shape)
+        expanded_probs = math.reshape(probs, expanded_shape)
         summed_probs = math.sum(expanded_probs, axis=wires_to_trace)
-        return summed_probs.reshape(new_shape)
+        return math.reshape(summed_probs, new_shape)
 
     return probs
 

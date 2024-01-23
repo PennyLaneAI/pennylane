@@ -91,7 +91,7 @@ def get_probs(state, num_wires, is_state_batched: bool = False):
     probs = math.einsum(f"...{indices * 2}->...{indices}", state)
     # take the real part so probabilities are not shown as complex numbers
     # also reshape to flat
-    probs = math.real(probs).reshape(final_shape)
+    probs = math.reshape(math.real(probs), final_shape)
     return math.where(probs < 0, -probs, probs)
 
 
