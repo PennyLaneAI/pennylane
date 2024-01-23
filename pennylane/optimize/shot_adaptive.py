@@ -23,8 +23,8 @@ from .gradient_descent import GradientDescentOptimizer
 
 
 class ShotAdaptiveOptimizer(GradientDescentOptimizer):
-    r"""Optimizer where the shot rate is adaptively calculated using the variances of the parameter-shift
-    gradient.
+    r"""Optimizer where the shot rate is adaptively calculated using the variances of the
+    parameter-shift gradient.
 
     By keeping a running average of the parameter-shift gradient and the *variance*
     of the parameter-shift gradient, this optimizer frugally distributes a shot
@@ -33,33 +33,22 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     In addition, weighted random sampling can be used to further distribute the
     shot budget across the local terms from which the Hamiltonian is constructed.
 
-    .. warning::
+    .. note::
 
-        ``ExpvalCost`` is deprecated. Instead, it is recommended to simply
-        pass Hamiltonians to the :func:`~pennylane.expval` function inside QNodes.
-
-        .. code-block:: python
-
-            @qml.qnode(dev)
-            def ansatz(params):
-                some_qfunc(params)
-                return qml.expval(Hamiltonian)
-
-        You should also set ``term_sampling='weighted_random_sampling'`` to continue using weighted
+        You should set ``term_sampling='weighted_random_sampling'`` to continue using weighted
         random sampling in ``ShotAdaptiveOptimizer``.
 
     .. note::
 
-        The shot adaptive optimizer only supports single QNodes or :class:`~.ExpvalCost` objects as
-        objective functions. The bound device must also be instantiated with a finite number
-        of shots.
+        The shot adaptive optimizer only supports single QNode objects as objective functions.
+        The bound device must also be instantiated with a finite number of shots.
 
     Args:
         min_shots (int): The minimum number of shots used to estimate the expectations
             of each term in the Hamiltonian. Note that this must be larger than 2 for the variance
             of the gradients to be computed.
-        mu (float): The running average constant :math:`\mu \in [0, 1]`. Used to control how quickly the
-            number of shots recommended for each gradient component changes.
+        mu (float): The running average constant :math:`\mu \in [0, 1]`. Used to control how
+            quickly the number of shots recommended for each gradient component changes.
         b (float): Regularization bias. The bias should be kept small, but non-zero.
         term_sampling (str): The random sampling algorithm to multinomially distribute the shot
             budget across terms in the Hamiltonian expectation value. Currently, only
@@ -379,38 +368,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         if self.stepsize > 2 / self.lipschitz:
             raise ValueError(f"The learning rate must be less than {2 / self.lipschitz}")
 
-    def _single_shot_expval_gradients(self, expval_cost, args, kwargs):
-        """Compute the single shot gradients of an ExpvalCost object"""
-        qnodes = expval_cost.qnodes
-        coeffs = expval_cost.hamiltonian.coeffs
-
-        self.check_device(qnodes[0].device)
-
-        if self.lipschitz is None:
-            self.check_learning_rate(coeffs)
-
-        if self.term_sampling == "weighted_random_sampling":
-            grads = self.weighted_random_sampling(
-                qnodes, coeffs, self.max_shots, self.trainable_args, *args, **kwargs
-            )
-        elif self.term_sampling is None:
-            new_shots = [(1, int(self.max_shots))]
-            # We iterate over each trainable argument, rather than using
-            # qml.jacobian(expval_cost), to take into account the edge case where
-            # different arguments have different shapes and cannot be stacked.
-            grads = [
-                qml.jacobian(expval_cost, argnum=i)(*args, **kwargs, shots=new_shots)
-                for i in self.trainable_args
-            ]
-        else:
-            raise ValueError(
-                f"Unknown Hamiltonian term sampling method {self.term_sampling}. "
-                "Only term_sampling='weighted_random_sampling' and "
-                "term_sampling=None currently supported."
-            )
-
-        return grads
-
     def _single_shot_qnode_gradients(self, qnode, args, kwargs):
         """Compute the single shot gradients of a QNode."""
         self.check_device(qnode.device)
@@ -460,14 +417,12 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             tuple[array[float], array[float]]: a tuple of NumPy arrays containing the gradient
             :math:`\nabla f(x^{(t)})` and the variance of the gradient
         """
-        if isinstance(objective_fn, qml.ExpvalCost):
-            grads = self._single_shot_expval_gradients(objective_fn, args, kwargs)
-        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
+        if isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
             grads = self._single_shot_qnode_gradients(objective_fn, args, kwargs)
         else:
             raise ValueError(
-                "The objective function must either be encoded as a single QNode or "
-                "an ExpvalCost object for the Shot adaptive optimizer. "
+                "The objective function must be encoded as a single QNode object for the shot "
+                "adaptive optimizer. "
             )
 
         # grads will have dimension [max(self.s), *params.shape]
