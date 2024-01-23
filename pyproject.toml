@@ -50,7 +50,31 @@ pennylane-lightning = ">=0.34"
 requests = "*"
 typing_extensions = "*"
 
-[tool.poetry.group.dev]
+[tool.poetry.group.ci]
+optional = true
+
+[tool.poetry.group.doc]
+optional = true
+
+[tool.poetry.group.jax]
+optional = true
+
+[tool.poetry.group.torch]
+optional = true
+
+[tool.poetry.group.tf]
+optional = true
+
+[tool.poetry.group.external]
+optional = true
+
+[tool.poetry.group.qcut]
+optional = true
+
+[tool.poetry.group.qchem]
+optional = true
+
+[tool.poetry.group.data]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
@@ -66,17 +90,11 @@ pytest-benchmark = "*"
 black = ">=21"
 tomli = "~2.0.0" # Drop once minimum Python version is 3.11
 
-[tool.poetry.group.ci]
-optional = true
-
 [tool.poetry.group.ci.dependencies]
 cvxpy = "*"
 cvxopt = "*"
 dask = "*"
 matplotlib = "*"
-
-[tool.poetry.group.doc]
-optional = true
 
 [tool.poetry.group.doc.dependencies]
 mistune = "0.8.4"
@@ -101,54 +119,33 @@ pennylane-sphinx-theme = "*"
 sphinxext-opengraph = "0.6.3" # Note: latest version 0.9.0 requires Sphinx >=4.0
 matplotlib = "3.8.0"
 
-[tool.poetry.group.jax]
-optional = true
-
 [tool.poetry.group.jax.dependencies]
 jax = ">=0.4.14"
 jaxlib = ">=0.4.14"
 
-[tool.poetry.group.torch]
-optional = true
-
 [tool.poetry.group.torch.dependencies]
 torch = [
-    { version = "2.1.0", markers = "sys_platform == 'darwin'" },
-    { version = "2.1.0+cpu", markers = "sys_platform != 'darwin'", source = "pytorch-cpu" }
+    { version = "2.1.0", source = "PyPI", platform = "darwin" },
+    { version = "2.1.0+cpu", source = "pytorch-cpu", platform = "!=darwin" },
 ]
-
-[tool.poetry.group.tf]
-optional = true
 
 [tool.poetry.group.tf.dependencies]
 tensorflow = "2.15.0"
 keras = "2.15.0"
 tensorflow-macos = { version = "2.15.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
 
-[tool.poetry.group.external]
-optional = true
-
 [tool.poetry.group.external.dependencies]
 pyzx = {git = "https://github.com/Quantomatic/pyzx.git", rev = "master"}
 matplotlib = "*"
 stim = "*"
 
-[tool.poetry.group.qcut]
-optional = true
-
 [tool.poetry.group.qcut.dependencies]
 kahypar = "1.1.7"
 opt_einsum = "*"
 
-[tool.poetry.group.qchem]
-optional = true
-
 [tool.poetry.group.qchem.dependencies]
 openfermionpyscf = "*"
 basis-set-exchange = "*"
-
-[tool.poetry.group.data]
-optional = true
 
 [tool.poetry.group.data.dependencies]
 h5py = "*"
