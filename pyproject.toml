@@ -49,3 +49,28 @@ cachetools = "*"
 pennylane-lightning = ">=0.34"
 requests = "2.31.0"
 typing_extensions = "4.5.0"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.ci]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = ">=2.19.0"
+pytest = ">=7.1.2"
+pytest-cov = ">=3.0.0"
+pytest-mock = ">=3.7.0"
+pytest-xdist = ">=2.5.0"
+pytest-split = "*"
+flaky = ">=3.7.0"
+pytest-forked = ">=1.4.0"
+pytest-benchmark = "*"
+black = ">=21"
+tomli = "~2.0.0" # Drop once minimum Python version is 3.11
+
+[tool.poetry.group.ci.dependencies]
+cvxpy = "*"
+cvxopt = "*"
+dask = "*"
+matplotlib = "*"
