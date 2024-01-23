@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for create_initial_state in devices/qutrit_mixed/apply_operation."""
+"""Unit tests for apply_operation in devices/qutrit_mixed/apply_operation."""
 
 from functools import reduce
 import pytest
