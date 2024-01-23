@@ -447,7 +447,12 @@ class DefaultQubit(Device):
         stop_cond = (
             stopping_condition if self.shots.total_shots is None else stopping_condition_shots
         )
-        transform_program.add_transform(decompose, stopping_condition=stop_cond, name=self.name)
+        transform_program.add_transform(
+            decompose,
+            stopping_condition=stop_cond,
+            stopping_condition_shots=stopping_condition_shots,
+            name=self.name,
+        )
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )

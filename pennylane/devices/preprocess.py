@@ -254,6 +254,7 @@ def validate_adjoint_trainable_params(
 def decompose(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
+    stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
     skip_initial_state_prep: bool = True,
     decomposer: Optional[
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
@@ -268,6 +269,9 @@ def decompose(
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
             a ``DecompositionUndefinedError`` will be raised.
+        stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
+            should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
+            a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape as shots.
         skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
             If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
@@ -325,6 +329,9 @@ def decompose(
 
         def decomposer(op):
             return op.decomposition()
+
+    if stopping_condition_shots is not None and tape.shots.total_shots is not None:
+        stopping_condition = stopping_condition_shots
 
     if not all(stopping_condition(op) for op in tape.operations):
         try:
