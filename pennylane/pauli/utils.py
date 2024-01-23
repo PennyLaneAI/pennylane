@@ -673,6 +673,26 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     return True
 
 
+def _are_pauli_words_qwc_pauli_rep(lst_pauli_words):
+    """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
+    qubit-wise commuting. This private method is used for oeprators that have a valid pauli
+    representation"""
+    basis = {}
+    for op in lst_pauli_words:  # iterate over the list of observables
+        pw = next(iter(op.pauli_rep))
+
+        for wire, pauli_type in pw.items():  # iterate over wires of the observable,
+            if pauli_type != "I":
+                if wire in basis and pauli_type != basis[wire]:
+                    # Only non-identity paulis are in basis, so if pauli_type doesn't match
+                    # it is guaranteed to not commute
+                    return False
+
+                basis[wire] = pauli_type
+
+    return True  # if we get through all ops, then they are qwc!
+
+
 def are_pauli_words_qwc(lst_pauli_words):
     """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
     qubit-wise commuting.
@@ -686,18 +706,24 @@ def are_pauli_words_qwc(lst_pauli_words):
     Returns:
         (bool): True if they are all qubit-wise commuting, false otherwise.
     """
-    basis = {}
+    if all(op.pauli_rep is not None for op in lst_pauli_words):
+        return _are_pauli_words_qwc_pauli_rep(lst_pauli_words)
+
+    latest_op_name_per_wire = {}
+
     for op in lst_pauli_words:  # iterate over the list of observables
-        pw = next(iter(op.pauli_rep))
+        op_names = [op.name] if not isinstance(op.name, list) else op.name
+        op_wires = op.wires.tolist()
 
-        for wire, pauli_type in pw.items():  # iterate over wires of the observable,
-            if pauli_type != "I":
-                if wire in basis and pauli_type != basis[wire]:
-                    # Only non-identity paulis are in basis, so if pauli_type doesn't match
-                    # it is guaranteed to not commute
-                    return False
-
-                basis[wire] = pauli_type
+        for op_name, wire in zip(op_names, op_wires):  # iterate over wires of the observable,
+            try:
+                if latest_op_name_per_wire[wire] != op_name and (
+                    op_name != "Identity" and latest_op_name_per_wire[wire] != "Identity"
+                ):
+                    if latest_op_name_per_wire[wire] == "Identity":
+                        latest_op_name_per_wire[wire] = op_name  # update name
+            except KeyError:
+                latest_op_name_per_wire[wire] = op_name  # add wire and name for the first time
 
     return True  # if we get through all ops, then they are qwc!
 
