@@ -13,9 +13,9 @@
 # limitations under the License.
 """Unit tests for measuring states in devices/qutrit_mixed."""
 
+from functools import reduce
 import pytest
 
-from functools import reduce
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math
