@@ -30,8 +30,8 @@ def get_einsum_mapping(
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
-        is_state_batched (bool): Boolean representing whether the state is batched or not
         map_indices (function): Maps the calculated indices to an einsum indices string
+        is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
         str: Indices mapping that defines the einsum

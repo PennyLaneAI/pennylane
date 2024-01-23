@@ -387,16 +387,22 @@ def classproperty(func):
 
 
 def _process_data(op):
+    def _mod_and_round(x, mod_val):
+        if mod_val is None:
+            return x
+        return qml.math.round(qml.math.real(x) % mod_val, 10)
+
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
+        mod_val = 2 * np.pi
+    elif op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        mod_val = 4 * np.pi
+    else:
+        mod_val = None
 
-    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
-
-    return str(op.data)
+    return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 class Operator(abc.ABC):
@@ -785,7 +791,14 @@ class Operator(abc.ABC):
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
-        if wire_order is None or self.wires == Wires(wire_order):
+        if (
+            wire_order is None
+            or self.wires == Wires(wire_order)
+            or (
+                self.name in qml.ops.qubit.attributes.symmetric_over_all_wires
+                and set(self.wires) == set(wire_order)
+            )
+        ):
             return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
@@ -1142,19 +1155,18 @@ class Operator(abc.ABC):
 
         Args:
             subspace (tuple[int]): Subspace to check for correctness
+
+        .. warning::
+
+            ``Operator.validate_subspace(subspace)`` has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed from the Operator class in an upcoming release.
         """
-        if not hasattr(subspace, "__iter__") or len(subspace) != 2:
-            raise ValueError(
-                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
-            )
 
-        if not all(s in {0, 1, 2} for s in subspace):
-            raise ValueError("Elements of the subspace must be 0, 1, or 2.")
+        warnings.warn(
+            "Operator.validate_subspace(subspace) has been relocated to the qml.ops.qutrit.parametric_ops module and will be removed from the Operator class in an upcoming release.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
-        if subspace[0] == subspace[1]:
-            raise ValueError("Elements of subspace list must be unique.")
-
-        return tuple(sorted(subspace))
+        return qml.ops.qutrit.validate_subspace(subspace)
 
     @property
     def num_params(self):

@@ -182,7 +182,7 @@ class Pow(ScalarSymbolicOp):
             ):
                 pr = base_pauli_rep
                 for _ in range(self.z - 1):
-                    pr = pr * base_pauli_rep
+                    pr = pr @ base_pauli_rep
                 self._pauli_rep = pr
             else:
                 self._pauli_rep = None
