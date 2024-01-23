@@ -51,13 +51,24 @@ def transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Transf
         TransformProrgram: the transform program corresponding to t
 
 
+    The transforms are organized as:
+
+    .. image:: ../../_static/transforms_order.png
+        :align: center
+        :width: 800px
+        :target: javascript:void(0);
+
+    where ``transform1`` is first applied to the ``QNode`` followed by ``transform2``.  First user transforms are run on the tapes,
+    followed by the gradient expansion, followed by the device expansion.  "Final" transforms, like ``param_shift`` and ``metric_tensor``,
+    always occur at the end of the program.
+
     .. code-block:: python
 
         dev = qml.device('default.qubit', wires=4)
 
-        @qml.metric_tensor
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
+        @qml.metric_tensor # final transform
+        @qml.transforms.merge_rotations # transform 2
+        @qml.transforms.cancel_inverses # transform 1
         @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
         def circuit():
             return qml.expval(qml.PauliZ(0))
@@ -119,7 +130,7 @@ def transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Transf
     elif level == "top":
         level = 0
     elif level == "user":
-        level = num_user - 1 if qnode.transform_program.has_final_transform else num_user
+        level = num_user
     elif level == "gradient":
         if getattr(qnode.gradient_fn, "expand_transform", False):
             level = slice(0, num_user + 1)
@@ -152,15 +163,20 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
 
     .. code-block:: python
 
-        x = np.array([0.1, 0.2])
-
-        dev = qml.device('default.qubit', wires=4)
-
+        @qml.transforms.undo_swaps
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
+        @partial(decompose, stopping_condition=lambda op: op.name not in {"GroverOperator", "GlobalPhase"})
         @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
-        def circuit():
-            return qml.expval(qml.PauliZ(0))
+        def circuit(x):
+            qml.GroverOperator(wires=(0,1,2))
+            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
+            qml.RX(x, wires=0)
+            qml.RX(-x, wires=0)
+            qml.SWAP((0,1))
+            qml.PauliX(0)
+            qml.PauliX(0)
+            return qml.expval(qml.PauliX(0) + qml.PauliY(0))
 
     We can inspect what the device will execute with:
 

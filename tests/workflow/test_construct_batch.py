@@ -17,10 +17,12 @@ Contains tests for the `qml.workflow.transform_program` getter.
 """
 from functools import partial
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
 from pennylane.transforms.core.transform_program import TransformProgram
-from pennylane.workflow import transform_program
+from pennylane.workflow import transform_program, construct_batch
 
 
 class TestTransformProgramGetter:
@@ -133,3 +135,71 @@ class TestTransformProgramGetter:
         def circuit():
             qml.IsingXX(1.234, wires=(0, 1))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
+
+        user_program = transform_program(circuit, level="user")
+        assert len(user_program) == 2
+        assert user_program[0].transform == qml.compile.transform
+        assert user_program[1].transform == qml.metric_tensor.expand_transform
+
+        grad_program = transform_program(circuit, level="gradient")
+        assert len(grad_program) == 3
+        assert grad_program[0].transform == qml.compile.transform
+        assert grad_program[1].transform == qml.metric_tensor.expand_transform
+        assert grad_program[2].transform == qml.gradients.param_shift.expand_transform
+
+        dev_program = transform_program(circuit, level="device")
+        assert len(dev_program) == 3 + len(circuit.device.preprocess()[0])  # currently 8
+        assert qml.metric_tensor not in dev_program
+
+        full = transform_program(circuit)
+        assert full[-1].transform == qml.metric_tensor.transform
+
+
+class TestConstructBatch:
+    """Tests for the construct_batch function."""
+
+    def test_level_zero(self):
+        """Test that level zero is purely the queued circuit."""
+
+        @qml.compile
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        def circuit(order):
+            qml.Permute(order, wires=(0, 1, 2))
+            qml.PauliX(0)
+            qml.PauliX(0)
+            return qml.state()
+
+        batch, fn = construct_batch(circuit, level=0)([2, 1, 0], shots=10)
+
+        assert len(batch) == 1
+        expected = qml.tape.QuantumScript(
+            [qml.Permute([2, 1, 0], wires=(0, 1, 2)), qml.PauliX(0), qml.PauliX(0)],
+            [qml.state()],
+            shots=10,
+        )
+        assert qml.equal(batch[0], expected)
+
+        assert fn(("a,")) == "a"
+
+    def test_user_transforms(self):
+        """Test that user transforms can be selected and applied."""
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        def circuit(weights):
+            qml.RandomLayers(weights, wires=(0, 1))
+            qml.PauliX(0)
+            qml.PauliX(0)
+            return qml.state()
+
+        weights = np.array([[1.0, 2.0]])
+
+        for level in ("user", 1):
+            batch, fn = construct_batch(circuit, level=level)(weights, shots=50)
+            assert len(batch) == 1
+
+            expected = qml.tape.QuantumScript(
+                [qml.RandomLayers(weights, wires=(0, 1))], [qml.state()], shots=50
+            )
+            assert qml.equal(batch[0], expected)
+            assert fn(("a",)) == "a"
