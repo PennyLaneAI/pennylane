@@ -258,16 +258,14 @@ def simulate(
     has_mcm = has_mid_circuit_measurements(circuit)
     has_shots = circuit.shots.total_shots is not None
     if has_mcm and has_shots:
-        tmpcirc = circuit.copy()
-        tmpcirc._shots = qml.measurements.Shots(1)
-        idx_sample = idx_sampling_measurements(circuit)
-        for i in reversed(idx_sample):
-            tmpcirc._measurements.pop(i)
-        one_shot_meas, tmp_dict = simulate_native_mcm(tmpcirc, rng, prng_key, debugger, interface)
+        aux_circuit = init_auxiliary_circuit(circuit)
+        one_shot_meas, tmp_dict = simulate_native_mcm(
+            aux_circuit, rng, prng_key, debugger, interface
+        )
         mcm_shot_meas = [tmp_dict]
         for _ in range(circuit.shots.total_shots - 1):
-            tmpmeas, tmp_dict = simulate_native_mcm(tmpcirc, rng, prng_key, debugger, interface)
-            one_shot_meas = accumulate_native_mcm(tmpcirc, one_shot_meas, tmpmeas)
+            tmpmeas, tmp_dict = simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface)
+            one_shot_meas = accumulate_native_mcm(aux_circuit, one_shot_meas, tmpmeas)
             # one_shot_meas = [m + t for m, t in zip(one_shot_meas, tmpmeas)]
             mcm_shot_meas.append(tmp_dict)
         return gather_native_mid_circuit_measurements(circuit, one_shot_meas, mcm_shot_meas)
@@ -275,6 +273,16 @@ def simulate(
     if state_cache is not None:
         state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+
+
+def init_auxiliary_circuit(circuit):
+    """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations."""
+    aux_circuit = circuit.copy()
+    aux_circuit._shots = qml.measurements.Shots(1)
+    idx_sample = idx_sampling_measurements(circuit)
+    for i in reversed(idx_sample):
+        aux_circuit._measurements.pop(i)
+    return aux_circuit
 
 
 def accumulate_native_mcm(circuit, one_shot_meas, new_shot):
@@ -375,8 +383,8 @@ def gather_native_mid_circuit_measurements(
         normalized_meas[i] = gather_measurements(circuit, i, m)
 
     idx_sample = idx_sampling_measurements(circuit)
+    counter = Counter()
     if any(isinstance(m, CountsMP) for m in circuit.measurements):
-        counter = Counter()
         for d in mcm_shot_meas:
             counter.update(d)
     for i in idx_sample:
