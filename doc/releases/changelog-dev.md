@@ -118,6 +118,10 @@
   validate these properties manually.
   [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
 
+* `qml.transforms.one_qubit_decomposition` and `qml.transforms.two_qubit_decomposition` are removed. Instead,
+  you should use `qml.ops.one_qubit_decomposition` and `qml.ops.two_qubit_decomposition`.
+  [(#5091)](https://github.com/PennyLaneAI/pennylane/pull/5091)
+
 <h3>Deprecations 👋</h3>
 
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
@@ -166,6 +170,10 @@
   [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036) 
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
+  `Operator.hash` now depends on the memory location, `id`, of a Jax tracer instead of its string representation.
+  [(#3917)](https://github.com/PennyLaneAI/pennylane/pull/3917)
 
 * `qml.transforms.undo_swaps` can now work with operators with hyperparameters or nesting.
   [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
