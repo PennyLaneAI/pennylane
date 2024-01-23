@@ -208,12 +208,15 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
 
     wire = op.wires
     probs = measure(qml.probs(wire), state)
-    dark_branch = np.random.binomial(1, probs[1])
+    dark_branch = np.random.binomial(1, probs[0])
     axis = wire.toarray()[0]
     slices = [slice(None)] * state.ndim
     slices[axis] = dark_branch
     state[tuple(slices)] = 0.0
-    return state / np.linalg.norm(state.ravel()), np.array(0) if dark_branch == 1 else np.array(1)
+    state_norm = np.linalg.norm(state.ravel())
+    if state_norm < 1.0e-15:
+        raise ValueError("Cannot normalize projected state.")
+    return state / state_norm, np.array(0) if dark_branch == 1 else np.array(1)
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):
