@@ -33,7 +33,6 @@ from pennylane.typing import TensorLike
 from .utils import (
     get_einsum_mapping,
     resquare_state,
-    get_probs,
     get_num_wires,
     get_new_state_einsum_indices,
     QUDIT_DIM,
@@ -138,6 +137,32 @@ def reduce_density_matrix(  # TODO: ask if I should have state diagonalization g
     return resquare_state(state, len(wires))
 
 
+def _get_probs(state, num_wires, is_state_batched: bool = False):
+    """Finds the probabilities of measuring states in the computational basis
+
+    Args:
+        state (array[complex]): Input quantum state
+        num_wires (int): The number of wires the state represents
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+
+    Returns:
+        Tensorlike: Vector representing probability of each state
+    """
+    # get the final shape
+    final_shape = (
+        (state.shape[0], QUDIT_DIM**num_wires) if is_state_batched else (QUDIT_DIM**num_wires,)
+    )
+
+    # probs are diagonal elements
+    # using einsum since diagonal params are not consistent across interfaces
+    indices = alphabet[:num_wires]
+    probs = math.einsum(f"...{indices * 2}->...{indices}", state)
+    # take the real part so probabilities are not shown as complex numbers
+    # also reshape to flat
+    probs = math.reshape(math.real(probs), final_shape)
+    return math.where(probs < 0, -probs, probs)
+
+
 def calculate_probability(
     measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
@@ -155,7 +180,7 @@ def calculate_probability(
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     num_state_wires = get_num_wires(state, is_state_batched)
-    probs = get_probs(state, num_state_wires, is_state_batched)
+    probs = _get_probs(state, num_state_wires, is_state_batched)
 
     if mp_wires := measurementprocess.wires:
         expanded_shape = [QUDIT_DIM] * num_state_wires
