@@ -22,10 +22,10 @@ def get_random_mixed_state(num_qutrits):
 
     rng = np.random.default_rng(seed=4774)
     basis = unitary_group(dim=dim, seed=584545).rvs()
-    Schmidt_weights = rng.dirichlet(np.ones(dim), size=1).astype(complex)[0]
+    schmidt_weights = rng.dirichlet(np.ones(dim), size=1).astype(complex)[0]
     mixed_state = np.zeros((dim, dim)).astype(complex)
     for i in range(dim):
-        mixed_state += Schmidt_weights[i] * np.outer(np.conj(basis[i]), basis[i])
+        mixed_state += schmidt_weights[i] * np.outer(np.conj(basis[i]), basis[i])
 
     return mixed_state.reshape([3] * (2 * num_qutrits))
 
