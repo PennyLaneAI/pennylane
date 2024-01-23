@@ -301,9 +301,9 @@ class QueuingManager:
         try:
             yield
         except Exception as e:
-            cls._active_contexts = previously_active_contexts
             raise e
-        cls._active_contexts = previously_active_contexts
+        finally:
+            cls._active_contexts = previously_active_contexts
 
     @classmethod
     def append(cls, obj, **kwargs):
