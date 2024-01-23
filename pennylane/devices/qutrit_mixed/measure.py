@@ -29,7 +29,6 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 from .utils import (
     get_einsum_mapping,
