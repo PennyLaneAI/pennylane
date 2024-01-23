@@ -97,7 +97,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
 def apply_operation(
     op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None
 ):
-    """Apply and operator to a given state.
+    """Apply an operation to a given state.
 
     Args:
         op (Operator): The operation to apply to ``state``
