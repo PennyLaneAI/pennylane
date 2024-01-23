@@ -2,12 +2,12 @@
 
 [[package]]
 name = "appdirs"
-version = "1.1.0"
-description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+version = "1.3.0"
+description = "A small Python module for determining appropriate \" +         \"platform-specific dirs, e.g. a \"user data dir\"."
 optional = false
 python-versions = "*"
 files = [
-    {file = "appdirs-1.1.0.zip", hash = "sha256:93d276d378ecabe567a13a3a0d3a23b155dbb8a762a95acab75b2c111acb420b"},
+    {file = "appdirs-1.3.0.tar.gz", hash = "sha256:6a5993513c9fdf0a64260cb17b032cb563064d88d9683bab091b4672c7f3cb97"},
 ]
 
 [[package]]
@@ -1578,12 +1578,12 @@ files = [
 
 [[package]]
 name = "toml"
-version = "0.6.0"
+version = "0.6.5"
 description = "Python Library for Tom's Obvious, Minimal Language"
 optional = false
 python-versions = "*"
 files = [
-    {file = "toml-0.6.0.tar.gz", hash = "sha256:0103cd3598cac83f5c4eb281c1e3381aec214776b8c719a373c7d07f52c18d9b"},
+    {file = "toml-0.6.5.tar.gz", hash = "sha256:e4d9f53755b2bdeab220b455b6654ba1080f2eee3dc3ab9adf245762c3de9f2b"},
 ]
 
 [[package]]
@@ -1673,4 +1673,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9.0,<3.12"
-content-hash = "57febc0f9fb47bf9c08132f8ee32ef1ebe4e32b195e31654c9b04f5a29255a83"
+content-hash = "8b837a7d76411ec72d27994179c835cebfa916c04d2452d3e307e3d2b5c72aae"
