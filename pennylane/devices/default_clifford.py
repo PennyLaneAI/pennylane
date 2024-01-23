@@ -449,7 +449,7 @@ class DefaultClifford(Device):
 
         global_phase_ops = []
         for op in circuit.operations[use_prep_ops:]:
-            gate, wires = self.pl_to_stim(op)
+            gate, wires = self._pl_to_stim(op)
             if gate is not None:
                 # Note: This is ~300x faster than doing stim_ct.append(gate, wires)
                 stim_ct.append_from_stim_program_text(f"{gate} {wires}")
@@ -484,7 +484,7 @@ class DefaultClifford(Device):
         return meas_results[0] if len(meas_results) == 1 else tuple(meas_results)
 
     @staticmethod
-    def pl_to_stim(op):
+    def _pl_to_stim(op):
         """Convert PennyLane operation to a Stim operation"""
         try:
             stim_op = _GATE_OPERATIONS[op.name]
@@ -868,7 +868,7 @@ class DefaultClifford(Device):
                     f"Currently, we only support observables whose diagonalizing gates are Clifford, got {diag_op}"
                 )
             # Add to the circuit to rotate the basis
-            stim_op = self.pl_to_stim(diag_op)
+            stim_op = self._pl_to_stim(diag_op)
             if stim_op[0] is not None:
                 diagonalizing_cit.append_from_stim_program_text(f"{stim_op[0]} {stim_op[1]}")
 
@@ -905,28 +905,28 @@ class DefaultClifford(Device):
         return prob_res
 
     @staticmethod
-    def _measure_single_sample(stim_circuit, meas_obs, stim):
+    def _measure_single_sample(stim_ct, meas_ops, meas_idx, meas_wire, stim):
         """Single sample output from a stim circuit"""
-        stim_ct = stim_circuit.copy()
-        stim_ct.append(meas_obs[0], meas_obs[1])
         stim_sm = stim.TableauSimulator()
         stim_sm.do_circuit(stim_ct)
-        return int(stim_sm.current_measurement_record()[0])
+        return stim_sm.measure_observable(
+            stim.PauliString([0] * meas_idx + meas_ops + [0] * (meas_wire - meas_idx - 1))
+        )
 
     def _measure_classical_shadow(self, stim_circuit, circuit, meas_op, stim):
         """Measures classical shadows from the state of simulator device"""
-        meas_dict = {0: "MX", 1: "MY", 2: "MZ"}
         meas_seed = meas_op.seed or np.random.randint(2**30)
+        meas_wire = len(circuit.wires)
 
         bits = []
         recipes = np.random.RandomState(meas_seed).randint(
-            3, size=(circuit.shots.total_shots, len(circuit.wires))
+            3, size=(circuit.shots.total_shots, meas_wire)
         )
 
         for recipe in recipes:
             bits.append(
                 [
-                    self._measure_single_sample(stim_circuit, [meas_dict[rec], idx], stim)
+                    self._measure_single_sample(stim_circuit, [rec + 1], idx, meas_wire, stim)
                     for idx, rec in enumerate(recipe)
                 ]
             )

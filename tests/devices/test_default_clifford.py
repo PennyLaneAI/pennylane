@@ -282,7 +282,7 @@ def test_meas_counts(shots, ops):
         assert qml.math.abs(counts_clfrd[k1] - counts_qubit[k2]) / shots < 5.0
 
 
-@pytest.mark.parametrize("shots", [1024])
+@pytest.mark.parametrize("shots", [1024, 10240])
 @pytest.mark.parametrize(
     "ops",
     [
@@ -358,7 +358,7 @@ def test_prep_snap_clifford(circuit):
 def test_pl_to_stim(pl_op, stim_op):
     """Test that the PennyLane operation get converted to Stim operation"""
     dev_c = qml.device("default.clifford")
-    op, wires = dev_c.pl_to_stim(pl_op)
+    op, wires = dev_c._pl_to_stim(pl_op)  # pylint:disable=protected-access
     assert op == stim_op[0]
     assert wires == " ".join(map(str, stim_op[1]))
 
