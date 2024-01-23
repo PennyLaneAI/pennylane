@@ -266,7 +266,6 @@ def simulate(
         for _ in range(circuit.shots.total_shots - 1):
             tmpmeas, tmp_dict = simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface)
             one_shot_meas = accumulate_native_mcm(aux_circuit, one_shot_meas, tmpmeas)
-            # one_shot_meas = [m + t for m, t in zip(one_shot_meas, tmpmeas)]
             mcm_shot_meas.append(tmp_dict)
         return gather_native_mid_circuit_measurements(circuit, one_shot_meas, mcm_shot_meas)
     state, is_state_batched, _ = get_final_state(circuit, debugger=debugger, interface=interface)
@@ -282,6 +281,9 @@ def init_auxiliary_circuit(circuit):
     idx_sample = idx_sampling_measurements(circuit)
     for i in reversed(idx_sample):
         aux_circuit._measurements.pop(i)
+    for i, m in enumerate(circuit.measurements):
+        if isinstance(m, VarianceMP) and m.mv is None:
+            aux_circuit._measurements[i] = SampleMP(obs=m.obs)
     return aux_circuit
 
 
@@ -333,11 +335,6 @@ def simulate_native_mcm(
         dict: The mid-circuit measurement results of the simulation
 
     """
-    # has_shots = circuit.shots.total_shots is not None
-    # if has_shots:
-    #     raise ValueError(
-    #         f"Invalid circuit.shots.total_shots value {circuit.shots.total_shots}; only None is supported."
-    #     )
     state, is_state_batched, mcm_dict = get_final_state(
         circuit, debugger=debugger, interface=interface
     )
@@ -401,7 +398,7 @@ def gather_measurements(circuit, idx, measurement):
     elif isinstance(circuit.measurements[idx], CountsMP):
         new_meas = dict(sorted(measurement.items()))
     elif isinstance(circuit.measurements[idx], VarianceMP):
-        new_meas = measurement
+        new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
     else:
         raise ValueError(
             f"Native mid-circuit measurement mode does not support {circuit.measurements[idx].__class__.__name__} measurements."
