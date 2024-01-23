@@ -351,6 +351,13 @@ class TestGroupingUtils:
         assert not are_identical_pauli_words(pauli_word_7, pauli_word_4)
         assert not are_identical_pauli_words(pauli_word_6, pauli_word_4)
 
+    def test_are_identical_pauli_words_hamiltonian_unsupported(self):
+        """Test that using Hamiltonians that are valid Pauli words with are_identical_pauli_words
+        always returns False"""
+        pauli_word_1 = qml.Hamiltonian([1.0], [qml.PauliX(0)])
+        pauli_word_2 = qml.PauliX(0)
+        assert not are_identical_pauli_words(pauli_word_1, pauli_word_2)
+
     def test_identities_always_pauli_words(self):
         """Tests that identity terms are always identical."""
         assert are_identical_pauli_words(qml.Identity(0), qml.Identity("a"))
