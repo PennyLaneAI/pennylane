@@ -186,7 +186,10 @@
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
 * A typo in the code example for `qml.qchem.dipole_of` has been fixed.
-  [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036) 
+  [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036)
+
+* Added a development guide on deprecations and removals.
+  [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
 <h3>Bug fixes 🐛</h3>
 
