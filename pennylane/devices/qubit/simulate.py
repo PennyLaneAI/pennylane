@@ -258,6 +258,14 @@ def simulate(
     has_mcm = has_mid_circuit_measurements(circuit)
     has_shots = circuit.shots.total_shots is not None
     if has_mcm and has_shots:
+        if circuit.shots.has_partitioned_shots:
+            results = []
+            for shots_copy in circuit.shots.shot_vector:
+                for _ in range(shots_copy[1]):
+                    aux_circuit = circuit.copy()
+                    aux_circuit._shots = qml.measurements.Shots(shots_copy[0])
+                    results.append(simulate(aux_circuit, rng, prng_key, debugger, interface))
+            return tuple(results)
         aux_circuit = init_auxiliary_circuit(circuit)
         one_shot_meas, tmp_dict = simulate_native_mcm(
             aux_circuit, rng, prng_key, debugger, interface
@@ -385,8 +393,10 @@ def gather_native_mid_circuit_measurements(
         for d in mcm_shot_meas:
             counter.update(d)
     for i in idx_sample:
-        normalized_meas[i] = gather_statistics(circuit, i, mcm_shot_meas, counter)
-    return normalized_meas
+        normalized_meas[i] = gather_statistics(
+            circuit.measurements[i], circuit.measurements[i].mv, mcm_shot_meas, counter
+        )
+    return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
 def gather_measurements(circuit, idx, measurement):
@@ -406,19 +416,23 @@ def gather_measurements(circuit, idx, measurement):
     return new_meas
 
 
-def gather_statistics(circuit, idx, samples, counter):
+def gather_statistics(measurement, mv, samples, counter):
     """Merges and normalizes several one shot statistics."""
-    if isinstance(circuit.measurements[idx], CountsMP):
-        sha = circuit.measurements[idx].mv.measurements[0].hash
+    if isinstance(mv, (list, tuple)):
+        new_samples = np.vstack(
+            tuple(gather_statistics(measurement, m, samples, counter) for m in mv)
+        ).T
+    elif isinstance(measurement, CountsMP):
+        sha = mv.measurements[0].hash
         new_samples = {0: len(samples) - counter[sha], 1: counter[sha]}
-    elif isinstance(circuit.measurements[idx], SampleMP):
-        sha = circuit.measurements[idx].mv.measurements[0].hash
+    elif isinstance(measurement, SampleMP):
+        sha = mv.measurements[0].hash
         new_samples = np.array([dct[sha] for dct in samples])
-    elif isinstance(circuit.measurements[idx], VarianceMP):
-        sha = circuit.measurements[idx].mv.measurements[0].hash
+    elif isinstance(measurement, VarianceMP):
+        sha = mv.measurements[0].hash
         new_samples = qml.math.var(np.array([dct[sha] for dct in samples]))
     else:
         raise ValueError(
-            f"Native mid-circuit measurement mode does not support {circuit.measurements[idx].__class__.__name__} measurements."
+            f"Native mid-circuit measurement mode does not support {measurement.__class__.__name__} measurements."
         )
     return new_samples
