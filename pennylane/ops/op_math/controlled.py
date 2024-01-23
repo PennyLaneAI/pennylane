@@ -151,11 +151,15 @@ def ctrl(op, control, control_values=None, work_wires=None):
         return custom_ops[custom_key](*op.data, control + op.wires)
     if isinstance(op, qml.PauliX):
         qml.QueuingManager.remove(op)
-        control_string = (
-            None if control_values is None else "".join([str(int(v)) for v in control_values])
-        )
         return qml.MultiControlledX(
-            wires=control + op.wires, control_values=control_string, work_wires=work_wires
+            wires=control + op.wires, control_values=control_values, work_wires=work_wires
+        )
+    if isinstance(op, Controlled):
+        return ctrl(
+            op.base,
+            control=control + op.control_wires,
+            control_values=control_values + op.control_values,
+            work_wires=work_wires + op.work_wires,
         )
     if isinstance(op, Operator):
         return Controlled(

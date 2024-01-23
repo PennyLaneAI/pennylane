@@ -118,6 +118,7 @@ from .controlled_ops import (
     CCZ,
     CH,
     Toffoli,
+    MultiControlledX,
     CSWAP,
 )
 from .decompositions import one_qubit_decomposition, two_qubit_decomposition, sk_decomposition
@@ -138,6 +139,7 @@ controlled_qubit_ops = {
     "CCZ",
     "CH",
     "Toffoli",
+    "MultiControlledX",
     "CSWAP",
     "CRX",
     "CRY",

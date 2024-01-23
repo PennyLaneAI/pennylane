@@ -83,7 +83,6 @@ __ops__ = {
     "QubitUnitary",
     "BlockEncode",
     "SpecialUnitary",
-    "MultiControlledX",
     "IntegerComparator",
     "DiagonalQubitUnitary",
     "SingleExcitation",
