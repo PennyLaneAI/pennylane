@@ -212,12 +212,6 @@ def get_measurement_function(
         Callable: function that returns the measurement result
     """
     if isinstance(measurementprocess, StateMeasurement):
-        if isinstance(measurementprocess, StateMP):
-            return reduce_density_matrix
-        if isinstance(measurementprocess, ProbabilityMP):
-            return calculate_probability
-        if isinstance(measurementprocess, VarianceMP):
-            return calculate_variance
         if isinstance(measurementprocess, ExpectationMP):
             # TODO add faster methods
             # TODO add support for sparce Hamiltonians
@@ -227,6 +221,13 @@ def get_measurement_function(
                 return sum_of_terms_method
             if measurementprocess.obs.has_matrix:
                 return trace_method
+        if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
+            if isinstance(measurementprocess, StateMP):
+                return reduce_density_matrix
+            if isinstance(measurementprocess, ProbabilityMP):
+                return calculate_probability
+            if isinstance(measurementprocess, VarianceMP):
+                return calculate_variance
 
     raise NotImplementedError
 
