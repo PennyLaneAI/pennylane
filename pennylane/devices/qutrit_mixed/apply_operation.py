@@ -72,7 +72,6 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     # Shape kraus operators
     kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_ch_wires * 2
     if not isinstance(op, Channel):
-        # TODO Channels broadcasting doesn't seem to be implemented for qubits, should they be for qutrit?
         mat = op.matrix()
         dim = QUDIT_DIM**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
