@@ -178,7 +178,7 @@ class TestSample:
     def test_observable_is_composite_measurement_value(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a composite measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", shots=shots)
 
         @qml.qnode(dev)
         @qml.defer_measurements
