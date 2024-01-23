@@ -21,21 +21,16 @@ import contextlib
 import copy
 from collections import Counter
 from typing import List, Union, Optional, Sequence
-from warnings import warn
 
 import pennylane as qml
 from pennylane.measurements import (
-    ClassicalShadowMP,
-    CountsMP,
     MeasurementProcess,
     ProbabilityMP,
-    SampleMP,
-    ShadowExpvalMP,
     StateMP,
     Shots,
 )
 from pennylane.typing import TensorLike
-from pennylane.operation import Observable, Operator, Operation
+from pennylane.operation import Observable, Operator, Operation, _UNSET_BATCH_SIZE
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.wires import Wires
@@ -93,6 +88,7 @@ class QuantumScript:
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
+        trainable_params (None, Sequence[int]): the indices for which parameters are trainable
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -176,15 +172,14 @@ class QuantumScript:
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        new_tape = cls(*data, shots=metadata[0])
-        new_tape.trainable_params = metadata[1]
-        return new_tape
+        return cls(*data, shots=metadata[0], trainable_params=metadata[1])
 
     def __init__(
         self,
         ops=None,
         measurements=None,
         shots: Optional[Union[int, Sequence, Shots]] = None,
+        trainable_params: Optional[Sequence[int]] = None,
         _update=True,
     ):
         self._ops = [] if ops is None else list(ops)
@@ -195,11 +190,11 @@ class QuantumScript:
         """list[dict[str, Operator or int]]: Parameter information.
         Values are dictionaries containing the corresponding operation and operation parameter index."""
 
-        self._trainable_params = []
+        self._trainable_params = trainable_params
         self._graph = None
         self._specs = None
-        self._output_dim = 0
-        self._batch_size = None
+        self._output_dim = None
+        self._batch_size = _UNSET_BATCH_SIZE
 
         self.wires = _empty_wires
         self.num_wires = 0
@@ -304,7 +299,6 @@ class QuantumScript:
 
         for m in self.measurements:
             if m.obs is not None:
-                m.obs._return_type = m.return_type
                 obs.append(m.obs)
             else:
                 obs.append(m)
@@ -347,11 +341,15 @@ class QuantumScript:
         Returns:
             int or None: The batch size of the quantum script if present, else ``None``.
         """
+        if self._batch_size is _UNSET_BATCH_SIZE:
+            self._update_batch_size()
         return self._batch_size
 
     @property
     def output_dim(self):
         """The (inferred) output dimension of the quantum script."""
+        if self._output_dim is None:
+            self._update_output_dim()  # this will set _batch_size if it isn't already
         return self._output_dim
 
     @property
@@ -396,34 +394,6 @@ class QuantumScript:
         """Returns the wires that the tape operations act on."""
         return Wires.all_wires(op.wires for op in self.operations)
 
-    @property
-    def is_sampled(self) -> bool:
-        """Whether any measurements are of a type that requires samples."""
-        warn(
-            "QuantumScript.is_sampled is deprecated. This property should now be "
-            "validated manually:\n\n"
-            ">>> from pennylane.measurements import *\n"
-            ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
-            ">>> is_sampled = any(isinstance(m, sample_types) for m in tape.measurements)\n",
-            qml.PennyLaneDeprecationWarning,
-        )
-        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
-        return any(isinstance(m, sample_type) for m in self.measurements)
-
-    @property
-    def all_sampled(self) -> bool:
-        """Whether all measurements are of a type that requires samples."""
-        warn(
-            "QuantumScript.all_sampled is deprecated. This property should now be "
-            "validated manually:\n\n"
-            ">>> from pennylane.measurements import *\n"
-            ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
-            ">>> all_sampled = all(isinstance(m, sample_types) for m in tape.measurements)\n",
-            qml.PennyLaneDeprecationWarning,
-        )
-        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
-        return all(isinstance(m, sample_type) for m in self.measurements)
-
     ##### Update METHODS ###############
 
     def _update(self):
@@ -433,14 +403,7 @@ class QuantumScript:
         self._update_circuit_info()  # Updates wires, num_wires; O(ops+obs)
         self._update_par_info()  # Updates _par_info; O(ops+obs)
 
-        # The following line requires _par_info to be up to date
-        self._update_trainable_params()  # Updates the _trainable_params; O(1)
-
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
-        self._update_batch_size()  # Updates _batch_size; O(ops)
-
-        # The following line requires _batch_size to be up to date
-        self._update_output_dim()  # Updates _output_dim; O(obs)
 
     def _update_circuit_info(self):
         """Update circuit metadata
@@ -472,16 +435,6 @@ class QuantumScript:
                     {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
                     for i, d in enumerate(m.obs.data)
                 )
-
-    def _update_trainable_params(self):
-        """Set the trainable parameters
-
-        Sets:
-            _trainable_params (list[int]): Script parameter indices of trainable parameters
-
-        Call `_update_par_info` before `_update_trainable_params`
-        """
-        self._trainable_params = list(range(len(self._par_info)))
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -592,6 +545,8 @@ class QuantumScript:
         >>> qscript.get_parameters()
         [0.432]
         """
+        if self._trainable_params is None:
+            self._trainable_params = list(range(len(self._par_info)))
         return self._trainable_params
 
     @trainable_params.setter
@@ -763,10 +718,12 @@ class QuantumScript:
         new_operations = new_ops[: len(self.operations)]
         new_measurements = new_ops[len(self.operations) :]
 
-        new_tape = self.__class__(new_operations, new_measurements, shots=self.shots)
-        new_tape.trainable_params = self.trainable_params
-
-        return new_tape
+        return self.__class__(
+            new_operations,
+            new_measurements,
+            shots=self.shots,
+            trainable_params=self.trainable_params,
+        )
 
     # ========================================================
     # MEASUREMENT SHAPE
@@ -886,17 +843,21 @@ class QuantumScript:
             _ops = self.operations.copy()
             _measurements = self.measurements.copy()
 
-        new_qscript = self.__class__(ops=_ops, measurements=_measurements, shots=self.shots)
+        new_qscript = self.__class__(
+            ops=_ops,
+            measurements=_measurements,
+            shots=self.shots,
+            trainable_params=list(self.trainable_params),
+        )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
         new_qscript.num_wires = self.num_wires
         new_qscript._update_par_info()
-        new_qscript.trainable_params = self.trainable_params.copy()
         new_qscript._obs_sharing_wires = self._obs_sharing_wires
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
-        new_qscript._batch_size = self.batch_size
-        new_qscript._output_dim = self.output_dim
+        new_qscript._batch_size = self._batch_size
+        new_qscript._output_dim = self._output_dim
 
         return new_qscript
 
@@ -1113,8 +1074,8 @@ class QuantumScript:
         qasm_str += f"qreg q[{len(wires)}];\n"
         qasm_str += f"creg c[{len(wires)}];\n"
 
-        # get the user applied circuit operations
-        operations = self.operations.copy()
+        # get the user applied circuit operations without interface information
+        operations = qml.transforms.convert_to_numpy_parameters(self).operations
 
         if rotations:
             # if requested, append diagonalizing gates corresponding
@@ -1125,7 +1086,7 @@ class QuantumScript:
         # pylint: disable=no-member
         just_ops = QuantumScript(operations)
         operations = just_ops.expand(
-            depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES
+            depth=10, stop_at=lambda obj: obj.name in OPENQASM_GATES
         ).operations
 
         # create the QASM code representing the operations

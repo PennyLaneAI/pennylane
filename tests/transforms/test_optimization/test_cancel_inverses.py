@@ -309,11 +309,6 @@ class TestCancelInversesInterfaces:
         import jax
         from jax import numpy as jnp
 
-        # Enable float64 support
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 

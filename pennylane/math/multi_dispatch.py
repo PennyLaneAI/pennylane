@@ -496,7 +496,7 @@ def einsum(indices, *operands, like=None, optimize=None):
             subscript labels. An implicit (classical Einstein summation) calculation is
             performed unless the explicit indicator ‘->’ is included as well as subscript
             labels of the precise output form.
-        operands (tuple[tensor_like]): The tensors for the operation.
+        *operands (tuple[tensor_like]): The tensors for the operation.
 
     Returns:
         tensor_like: The calculation based on the Einstein summation convention.
@@ -859,10 +859,23 @@ def norm(tensor, like=None, **kwargs):
             axis_val = kwargs.pop("axis")
             kwargs["dim"] = axis_val
 
+    elif (
+        like == "autograd" and kwargs.get("ord", None) is None and kwargs.get("axis", None) is None
+    ):
+        norm = _flat_autograd_norm
+
     else:
         from scipy.linalg import norm
 
     return norm(tensor, **kwargs)
+
+
+def _flat_autograd_norm(tensor, **kwargs):  # pylint: disable=unused-argument
+    """Helper function for computing the norm of an autograd tensor when the order or axes are not
+    specified. This is used for differentiability."""
+    x = np.ravel(tensor)
+    sq_norm = np.dot(x, np.conj(x))
+    return np.real(np.sqrt(sq_norm))
 
 
 @multi_dispatch(argnum=[1])

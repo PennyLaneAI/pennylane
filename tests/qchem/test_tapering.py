@@ -295,7 +295,7 @@ def test_clifford(generator, paulixops, result):
     u = clifford(generators_as_ops, paulixops)
     disable_new_opmath()
 
-    assert qml.equal(result_as_op, u)
+    assert pauli_sentence(result_as_op) == pauli_sentence(u)
 
 
 @pytest.mark.parametrize(

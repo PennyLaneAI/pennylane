@@ -20,7 +20,6 @@ from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
@@ -58,6 +57,11 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     """
     if isinstance(op, MeasurementValue):
         return VarianceMP(obs=op)
+
+    if isinstance(op, Sequence):
+        raise ValueError(
+            "qml.var does not support measuring sequences of measurements or observables"
+        )
 
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -102,16 +106,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if isinstance(self.obs, BasisStateProjector):
-            # branch specifically to handle the basis state projector observable
-            idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
-            # we use ``self.wires`` instead of ``self.obs`` because the observable was
-            # already applied before the sampling
-            probs = qml.probs(wires=self.wires).process_samples(
-                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
-            )
-            return probs[idx] - probs[idx] ** 2
-
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
@@ -126,17 +120,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         return qml.math.squeeze(qml.math.var(samples, axis=axis))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        if isinstance(self.obs, BasisStateProjector):
-            # branch specifically to handle the basis state projector observable
-            idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
-            # we use ``self.wires`` instead of ``self.obs`` because the observable was
-            # already applied to the state
-            with qml.queuing.QueuingManager.stop_recording():
-                probs = qml.probs(wires=self.wires).process_state(
-                    state=state, wire_order=wire_order
-                )
-            return probs[idx] - probs[idx] ** 2
-
+        # This also covers statistics for mid-circuit measurements manipulated using
+        # arithmetic operators
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
 
         # we use ``wires`` instead of ``op`` because the observable was

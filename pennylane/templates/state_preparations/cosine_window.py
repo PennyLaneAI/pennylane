@@ -115,9 +115,11 @@ class CosineWindow(StatePrepBase):
         if not wire_order.contains_wires(self.wires):
             raise WireError(f"Custom wire_order must contain all {self.name} wires")
 
-        indices = tuple([Ellipsis] + [slice(None)] * num_op_wires)
-
-        ket_shape = [2] * num_op_wires
+        num_total_wires = len(wire_order)
+        indices = tuple(
+            [Ellipsis] + [slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires)
+        )
+        ket_shape = [2] * num_total_wires
         ket = np.zeros(ket_shape, dtype=np.complex128)
         ket[indices] = op_vector
 

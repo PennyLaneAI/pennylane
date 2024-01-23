@@ -15,8 +15,8 @@ Batch transformation for multiple (non-trainable) input examples following issue
 """
 from typing import Callable, Sequence, Union
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import transform
 from pennylane.transforms.batch_params import _nested_stack, _split_operations
@@ -101,8 +101,9 @@ def batch_input(
 
     output_tapes = []
     for ops in _split_operations(tape.operations, all_parameters, argnum, batch_size):
-        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
-        new_tape.trainable_params = tape.trainable_params
+        new_tape = qml.tape.QuantumScript(
+            ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+        )
         output_tapes.append(new_tape)
 
     def processing_fn(res):

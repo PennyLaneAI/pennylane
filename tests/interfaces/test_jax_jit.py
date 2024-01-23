@@ -19,7 +19,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.jax
 
@@ -135,15 +135,20 @@ class TestJaxExecuteUnitTests:
         a = jax.numpy.array([0.1, 0.2])
         jax.jit(cost)(a)
 
-        # adjoint method only performs a single device execution, but gets both result and gradient
+        # adjoint method only performs a single device execution
+        # gradients are not requested when we only want the results
         assert dev.num_executions == 1
+        spy.assert_not_called()
+
+        # when the jacobian is requested, we always calculate it at the same time as the results
+        jax.grad(jax.jit(cost))(a)
         spy.assert_called()
 
     def test_no_gradients_on_execution(self, mocker):
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubitLegacy, "batch_execute")
-        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "gradients")
+        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "execute_and_gradients")
 
         def cost(a):
             with qml.queuing.AnnotatedQueue() as q:
@@ -168,7 +173,7 @@ class TestJaxExecuteUnitTests:
         spy_execute.assert_called()
         spy_gradients.assert_not_called()
 
-        jax.grad(cost)(a)
+        jax.grad(jax.jit(cost))(a)
         spy_gradients.assert_called()
 
 
@@ -178,7 +183,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -206,7 +211,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -233,7 +238,7 @@ class TestCaching:
     def test_custom_cache_multiple(self, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -491,7 +496,7 @@ class TestJaxExecuteIntegration:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         cost = jax.jit(cost)
@@ -600,7 +605,7 @@ class TestJaxExecuteIntegration:
         res = jax.jit(cost, static_argnums=2)(a, U, device=dev)
         assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
 
-        jac_fn = jax.grad(cost, argnums=(0))
+        jac_fn = jax.grad(cost, argnums=0)
         res = jac_fn(a, U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
@@ -634,7 +639,7 @@ class TestJaxExecuteIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac_fn = jax.jit(jax.grad(cost_fn, argnums=(1)), static_argnums=2)
+        jac_fn = jax.jit(jax.grad(cost_fn, argnums=1), static_argnums=2)
         res = jac_fn(a, p, device=dev)
         expected = jax.numpy.array(
             [
@@ -701,7 +706,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jit(cost)(params, cache=None)
@@ -728,7 +733,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
@@ -773,7 +778,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         res = jax.jit(cost, static_argnums=1)(params, cache=None)
@@ -807,7 +812,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         res = jax.jit(cost, static_argnums=1)(params, cache=None)
@@ -828,7 +833,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
+            res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res[0] + res[1]
 
         res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)

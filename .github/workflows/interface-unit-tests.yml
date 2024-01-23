@@ -6,11 +6,16 @@ on:
         description: The PennyLane branch to checkout and run unit tests for
         required: true
         type: string
+      pipeline_mode:
+          description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmarks
+          required: false
+          type: string
+          default: 'unit-tests'
       jax_version:
         description: The version of JAX to install for any job that requires JAX
         required: false
         type: string
-        default: 0.4.20
+        default: 0.4.23
       tensorflow_version:
         description: The version of TensorFlow to install for any job that requires TensorFlow
         required: false
@@ -31,7 +36,7 @@ on:
           Indicate if a lightened version of the CI should be run instead of the entire suite.
 
           The lightened version of the CI includes the following changes:
-          - Only Python 3.9 is tested against, instead of 3.9, 3.10, 3.11
+          - Only Python 3.9 is tested against, instead of 3.9, 3.10, 3.11, 3.12
         required: false
         type: boolean
         default: false
@@ -65,10 +70,10 @@ jobs:
           else
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.9", "3.10", "3.11"],
+            "default": ["3.9", "3.10", "3.11", "3.12"],
             "torch-tests": ["3.9", "3.11"],
-            "tf-tests": ["3.9", "3.10"],
-            "jax-tests": ["3.9", "3.11"],
+            "tf-tests": ["3.9", "3.11"],
+            "jax-tests": ["3.9", "3.12"],
             "all-interfaces-tests": ["3.9"],
             "external-libraries-tests": ["3.9"],
             "qcut-tests": ["3.9"],
@@ -153,6 +158,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: true
@@ -184,6 +190,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
@@ -215,6 +222,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: false
       install_tensorflow: true
       tensorflow_version: ${{ inputs.tensorflow_version }}
@@ -249,6 +257,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: false
@@ -285,6 +294,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
@@ -317,6 +327,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: all-interfaces-coverage
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -350,6 +361,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: external-libraries-tests-coverage
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -358,7 +370,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
-      additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst
+      additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst matplotlib stim
 
 
   qcut-tests:
@@ -383,6 +395,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qcut-coverage
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -417,6 +430,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
@@ -450,6 +464,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -483,6 +498,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: data-coverage
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
@@ -525,6 +541,7 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: ${{ contains(matrix.config.device, 'jax') }}
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: ${{ contains(matrix.config.device, 'tf') }}
@@ -559,7 +576,8 @@ jobs:
       ${{
         always() &&
         !contains(needs.*.result, 'failure') &&
-        !contains(needs.*.result, 'cancelled')
+        !contains(needs.*.result, 'cancelled') &&
+        inputs.pipeline_mode == 'unit-tests'
        }}
 
     steps:

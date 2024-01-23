@@ -20,7 +20,7 @@ from copy import copy
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
@@ -137,6 +137,7 @@ class SProd(ScalarSymbolicOp):
         return cls(data[0], data[1])
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, id=None):
+        base = convert_to_opmath(base)
         super().__init__(base=base, scalar=scalar, id=id)
 
         if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
@@ -244,8 +245,8 @@ class SProd(ScalarSymbolicOp):
         Returns:
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
         """
-        if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+        if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
         mat = self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
         mat.eliminate_zeros()
         return mat
@@ -293,7 +294,7 @@ class SProd(ScalarSymbolicOp):
             .Operator: simplified operator
         """
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 
