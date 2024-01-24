@@ -28,13 +28,13 @@ from pennylane.measurements import (
     SampleMP,
     VarianceMP,
 )
+from pennylane.ops import Conditional
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
 from .measure import measure
 from .sampling import measure_with_samples
-from pennylane.ops import Conditional
 
 
 INTERFACE_TO_LIKE = {
