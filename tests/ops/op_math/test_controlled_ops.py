@@ -896,7 +896,7 @@ class TestDecompositions:
 
         op = ops(wires=[0, 1])
         decomps = op.decomposition()
-        decomposed_matrix = qml.matrix(op.decomposition)()
+        decomposed_matrix = qml.matrix(op.decomposition, wire_order=[0, 1])()
 
         for gate, expected in zip(decomps, expected_ops):
             assert qml.equal(gate, expected, atol=tol, rtol=0)

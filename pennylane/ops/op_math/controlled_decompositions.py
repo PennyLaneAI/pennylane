@@ -199,15 +199,15 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         decomp.extend(
             [
                 qml.RY(theta / 2, wires=target_wire),
-                qml.MultiControlledX(wires=control_wires + target_wire),
+                qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires),
                 qml.RY(-theta / 2, wires=target_wire),
             ]
         )
     else:
-        decomp.append(qml.MultiControlledX(wires=control_wires + target_wire))
+        decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
     if not qml.math.isclose(-(phi + omega) / 2, 0.0, atol=1e-6, rtol=0):
         decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
-    decomp.append(qml.MultiControlledX(wires=control_wires + target_wire))
+    decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
     if not qml.math.isclose((omega - phi) / 2, 0.0, atol=1e-8, rtol=0):
         decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
 
@@ -256,9 +256,9 @@ def _ctrl_decomp_bisect_od(
 
     def component():
         return [
-            qml.MultiControlledX(wires=control_k1 + target_wire, work_wires=control_k2),
+            qml.ctrl(qml.PauliX(wires=target_wire), control=control_k1, work_wires=control_k2),
             qml.QubitUnitary(a, target_wire),
-            qml.MultiControlledX(wires=control_k2 + target_wire, work_wires=control_k1),
+            qml.ctrl(qml.PauliX(wires=target_wire), control=control_k2, work_wires=control_k1),
             qml.adjoint(qml.QubitUnitary(a, target_wire)),
         ]
 
@@ -350,9 +350,9 @@ def _ctrl_decomp_bisect_general(
 
     component = [
         qml.QubitUnitary(c2t, target_wire),
-        qml.MultiControlledX(wires=control_k2 + target_wire, work_wires=control_k1),
+        qml.ctrl(qml.PauliX(wires=target_wire), control=control_k2, work_wires=control_k1),
         qml.adjoint(qml.QubitUnitary(c1, target_wire)),
-        qml.MultiControlledX(wires=control_k1 + target_wire, work_wires=control_k2),
+        qml.ctrl(qml.PauliX(wires=target_wire), control=control_k1, work_wires=control_k2),
     ]
 
     od_decomp = _ctrl_decomp_bisect_od(d, target_wire, control_wires)
@@ -505,22 +505,10 @@ def _decompose_mcx_with_one_worker(control_wires, target_wire, work_wire):
     second_part = control_wires[partition:]
 
     gates = [
-        qml.MultiControlledX(
-            wires=first_part + work_wire,
-            work_wires=second_part + target_wire,
-        ),
-        qml.MultiControlledX(
-            wires=second_part + work_wire + target_wire,
-            work_wires=first_part,
-        ),
-        qml.MultiControlledX(
-            wires=first_part + work_wire,
-            work_wires=second_part + target_wire,
-        ),
-        qml.MultiControlledX(
-            wires=second_part + work_wire + target_wire,
-            work_wires=first_part,
-        ),
+        qml.ctrl(qml.PauliX(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qml.ctrl(qml.PauliX(target_wire), control=second_part + work_wire, work_wires=first_part),
+        qml.ctrl(qml.PauliX(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qml.ctrl(qml.PauliX(target_wire), control=second_part + work_wire, work_wires=first_part),
     ]
 
     return gates

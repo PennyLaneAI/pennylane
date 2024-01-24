@@ -337,6 +337,13 @@ class CZ(ControlledOp):
         """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
+    @staticmethod
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+        return [qml.ControlledPhaseShift(np.pi, wires=wires)]
+
+    def decomposition(self):
+        return self.compute_decomposition(self.wires)
+
     def _controlled(self, wire):
         return qml.CCZ(wires=wire + self.wires)
 
@@ -770,7 +777,7 @@ class MultiControlledX(ControlledOp):
         if len(control_wires) == 1:
             decomp = [qml.CNOT(wires=wires)]
         elif len(control_wires) == 2:
-            decomp = [qml.Toffoli(wires=wires)]
+            decomp = [qml.Toffoli.compute_decomposition(wires=wires)]
         else:
             decomp = decompose_mcx(control_wires, target_wire, work_wires)
 
@@ -928,7 +935,7 @@ class CCZ(ControlledOp):
             qml.T(wires=wires[0]),
             qml.adjoint(qml.T(wires=wires[1])),
             CNOT(wires=[wires[0], wires[1]]),
-            qml.Hadamard(wires=[2]),
+            qml.Hadamard(wires=wires[2]),
         ]
 
     def decomposition(self):
