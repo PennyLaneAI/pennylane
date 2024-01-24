@@ -212,7 +212,6 @@ def expand_fn_transform(
     >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
     >>> my_transform
     <transform: expand_fn>
-
     """
 
     @wraps(expand_fn)
