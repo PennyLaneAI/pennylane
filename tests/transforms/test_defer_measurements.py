@@ -141,6 +141,7 @@ class TestQNode:
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ():
             qml.PauliX(0)
             qml.measure(0)
@@ -239,6 +240,7 @@ class TestQNode:
         spy = mocker.spy(qml.defer_measurements, "_transform")
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def qnode1(phi, theta):
             qml.RX(phi, 0)
             m0 = qml.measure(0, reset=True)  # Reused measurement, one new wire added
@@ -251,6 +253,7 @@ class TestQNode:
         res1 = qnode1(np.pi / 4, 3 * np.pi / 4)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def qnode2(phi, theta):
             qml.RX(phi, 0)
             m0 = qml.measure(0)  # No reuse
@@ -262,7 +265,7 @@ class TestQNode:
 
         res2 = qnode2(np.pi / 4, 3 * np.pi / 4)
 
-        assert spy.call_count == 2
+        assert spy.call_count == 4
 
         deferred_tapes1, _ = qml.defer_measurements(qnode1.qtape)
         deferred_tape1 = deferred_tapes1[0]
@@ -379,6 +382,7 @@ class TestQNode:
         dev = DefaultQubit(seed=10)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ1(x):
             qml.RX(x, 0)
             m0 = qml.measure(0)
@@ -436,6 +440,7 @@ class TestQNode:
         dev = DefaultQubit(seed=10)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ1(x, y):
             qml.RX(x, 0)
             m0 = qml.measure(0)
@@ -930,6 +935,7 @@ class TestConditionalOperations:
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def qnode():
             m_0 = qml.measure(0)
             qml.cond(m_0 == control_val, qml.PauliX)(wires=1)
@@ -1002,6 +1008,7 @@ class TestConditionalOperations:
             qml.PhaseShift(a, wires=0)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def cond_qnode(x, y):
             qml.RY(x, wires=1)
             m_0 = qml.measure(1)

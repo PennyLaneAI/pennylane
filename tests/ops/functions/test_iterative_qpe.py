@@ -31,6 +31,7 @@ class TestIQPE:
         dev = qml.device("default.qubit", shots=10000000)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circuit_iterative():
             # Initial state
             qml.PauliX(wires=[0])
