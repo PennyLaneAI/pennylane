@@ -896,18 +896,19 @@ class DefaultClifford(Device):
 
         num_states = tgt_states.shape[0]
         prob_res = qml.math.ones(num_states)
-        for ind in range(num_states):
-            diagonalizing_sim = stim.TableauSimulator()
-            diagonalizing_sim.do_circuit(diagonalizing_cit)
-            for idx, wire in enumerate(meas_wires):
-                outcome = tgt_states[ind][idx]
-                expectation = diagonalizing_sim.peek_z(wire)
-                if not expectation:
-                    prob_res[ind] /= 2.0
-                elif expectation != (-1 if outcome else 1):
-                    prob_res[ind] = 0.0
-                    break
-                diagonalizing_sim.postselect_z(wire, desired_value=outcome)
+
+        diagonalizing_sim = stim.TableauSimulator()
+        diagonalizing_sim.do_circuit(diagonalizing_cit)
+        for wire in meas_wires:
+            expectation = diagonalizing_sim.peek_z(wire)
+            outcome = int(0.5 * (1 - expectation))  # -1 --> 1 and 1 --> 0
+            if not expectation:
+                prob_res /= 2.0
+            else:
+                print(np.where(outcome != tgt_states[:, wire]))
+                prob_res[np.where(outcome != tgt_states[:, wire])[0]] = 0.0
+            diagonalizing_sim.postselect_z(wire, desired_value=outcome)
+
         return prob_res
 
     @staticmethod
