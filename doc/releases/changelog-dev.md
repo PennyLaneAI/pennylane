@@ -90,6 +90,13 @@
 
 * Adds a `qml.transforms.core.expand_fn_transform` that converts a tape-> tape function into a transform.
 
+* `CRX`, `CRY`, `CRZ`, `CROT`, and `ControlledPhaseShift` (i.e. `CPhaseShift`) now inherit from `ControlledOp`, giving them additional properties such as `control_wire` and `control_values`. Calling `qml.ctrl` on `RX`, `RY`, `RZ`, `Rot`, and `PhaseShift` with a single control wire will return gates of types `CRX`, `CRY`, etc. as opposed to a general `Controlled` operator.
+  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
+
+* CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
+  and the codecov check itself would never execute.
+  [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
@@ -118,9 +125,27 @@
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
+* The decomposition of an operator created with calling `qml.ctrl` on a parametric operator (specifically `RX`, `RY`, `RZ`, `Rot`, `PhaseShift`) with a single control wire will now be the full decomposition instead of a single controlled gate. For example:
+  ```
+  >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
+  [
+    RZ(1.5707963267948966, wires=[1]), 
+    RY(0.0615, wires=[1]), 
+    CNOT(wires=[0, 1]), 
+    RY(-0.0615, wires=[1]), 
+    CNOT(wires=[0, 1]), 
+    RZ(-1.5707963267948966, wires=[1])
+  ]
+  ```
+  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
+
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
   validate these properties manually.
   [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
+
+* `qml.transforms.one_qubit_decomposition` and `qml.transforms.two_qubit_decomposition` are removed. Instead,
+  you should use `qml.ops.one_qubit_decomposition` and `qml.ops.two_qubit_decomposition`.
+  [(#5091)](https://github.com/PennyLaneAI/pennylane/pull/5091)
 
 <h3>Deprecations 👋</h3>
 
@@ -167,9 +192,16 @@
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
 * A typo in the code example for `qml.qchem.dipole_of` has been fixed.
-  [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036) 
+  [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036)
+
+* Added a development guide on deprecations and removals.
+  [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
+  `Operator.hash` now depends on the memory location, `id`, of a Jax tracer instead of its string representation.
+  [(#3917)](https://github.com/PennyLaneAI/pennylane/pull/3917)
 
 * `qml.transforms.undo_swaps` can now work with operators with hyperparameters or nesting.
   [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
@@ -188,6 +220,9 @@
 
 * `CosineWindow` no longer raises an unexpected error when used on a subset of wires at the beginning of a circuit.
   [(#5080)](https://github.com/PennyLaneAI/pennylane/pull/5080)
+
+* Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
+  [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
 <h3>Contributors ✍️</h3>
 
