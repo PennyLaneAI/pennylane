@@ -198,7 +198,7 @@ def null_postprocessing(results):
 def expand_fn_transform(
     expand_fn: Callable[["pennylane.tape.QuantumTape"], "pennylane.tape.QuantumTape"]
 ) -> "TransformDispatcher":
-    """Construct a transform from a tape-> tape function.
+    """Construct a transform from a tape-to-tape function.
 
     Args:
         expand_fn (Callable): a function from a single tape to a single tape
@@ -212,7 +212,6 @@ def expand_fn_transform(
     >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
     >>> my_transform
     <transform: expand_fn>
-
     """
 
     @wraps(expand_fn)

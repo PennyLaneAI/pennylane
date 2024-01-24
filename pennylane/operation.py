@@ -387,16 +387,20 @@ def classproperty(func):
 
 
 def _process_data(op):
+    def _mod_and_round(x, mod_val):
+        if mod_val is None:
+            return x
+        return qml.math.round(qml.math.real(x) % mod_val, 10)
+
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
+        mod_val = 2 * np.pi
+    else:
+        mod_val = None
 
-    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
-
-    return str(op.data)
+    return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 class Operator(abc.ABC):
@@ -1103,7 +1107,22 @@ class Operator(abc.ABC):
         self._batch_size = None
         params = self.data
 
-        ndims = tuple(qml.math.ndim(p) for p in params)
+        try:
+            ndims = tuple(qml.math.ndim(p) for p in params)
+        except ValueError as e:
+            # TODO:[dwierichs] When using tf.function with an input_signature that contains
+            # an unknown-shaped input, ndim() will not be able to determine the number of
+            # dimensions because they are not specified yet. Failing example: Let `fun` be
+            # a single-parameter QNode.
+            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
+            # There might be a way to support batching nonetheless, which remains to be
+            # investigated. For now, the batch_size is left to be `None` when instantiating
+            # an operation with abstract parameters that make `qml.math.ndim` fail.
+            if any(qml.math.is_abstract(p) for p in params):
+                self._batch_size = None
+                self._ndim_params = (0,) * len(params)
+                return
+            raise e  # pragma: no cover
 
         if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
