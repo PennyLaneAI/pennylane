@@ -202,10 +202,10 @@ def apply_operation(
 @apply_operation.register
 def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None):
     """Applies a native mid-circuit measurement."""
-    if is_state_batched:
-        raise ValueError("MidMeasureMP cannot be applied to batched states.")
     from .measure import measure  # pylint: disable=import-outside-toplevel
 
+    if is_state_batched:
+        raise ValueError("MidMeasureMP cannot be applied to batched states.")
     wire = op.wires
     probs = measure(qml.probs(wire), state)
     dark_branch = np.random.binomial(1, probs[0])
@@ -221,7 +221,7 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
         state = apply_operation(
             qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
         )
-    return state, np.array(0) if dark_branch == 1 else np.array(1)
+    return state, int(not dark_branch)
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):
