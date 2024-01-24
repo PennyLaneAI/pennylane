@@ -103,7 +103,7 @@ semantic-version = "2.10"
 docutils = "0.16"
 sphinx = [
     { version = "~3.5.0", markers = "python_version < '3.10'" },  # version needs finagling to export to requirements.txt
-    { version = "4.2.0", markers = "python_version >= '3.10'" }
+    #{ version = "4.2.0", markers = "python_version >= '3.10'" },
 ]
 sphinx-automodapi = "0.13"
 sphinx-copybutton = "^0.5.2"
