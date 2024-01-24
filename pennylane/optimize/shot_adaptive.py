@@ -35,11 +35,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-        You should set ``term_sampling='weighted_random_sampling'`` to continue using weighted
-        random sampling in ``ShotAdaptiveOptimizer``.
-
-    .. note::
-
         The shot adaptive optimizer only supports single QNode objects as objective functions.
         The bound device must also be instantiated with a finite number of shots.
 
