@@ -183,7 +183,7 @@ class PauliWord(dict):
             if op == I:
                 del mapping[wire]
         super().__init__(mapping)
-    
+
     @property
     def pauli_rep(self):
         """Trivial pauli_rep"""
@@ -913,7 +913,7 @@ class PauliSentence(dict):
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
                 # raise ValueError("Can't get the operation for an empty PauliSentence.")
-                wire_order=[0]
+                wire_order = [0]
             return qml.s_prod(0, Identity(wires=wire_order))
 
         summands = []
