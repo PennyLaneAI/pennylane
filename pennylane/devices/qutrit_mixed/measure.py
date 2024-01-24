@@ -100,7 +100,9 @@ def trace_method(
     obs = measurementprocess.obs
     rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
 
-    # using einsum since trace params are not consistent across interfaces
+    # using einsum since trace function axis selection parameter names
+    # are not consistent across interfaces, they don't exist for torch
+
     num_wires = get_num_wires(state, is_state_batched)
     trace = math.einsum(f"...{alphabet[:num_wires]*2}", rho_mult_obs)
     return math.real(trace)
@@ -154,7 +156,8 @@ def _get_probs(state, num_wires, is_state_batched: bool = False):
     )
 
     # probs are diagonal elements
-    # using einsum since diagonal params are not consistent across interfaces
+    # using einsum since diagonal function axis selection parameter names
+    # are not consistent across interfaces
     indices = alphabet[:num_wires]
     probs = math.einsum(f"...{indices * 2}->...{indices}", state)
     # take the real part so probabilities are not shown as complex numbers
@@ -273,7 +276,7 @@ def measure(
     )
 
 
-def sum_of_terms_method(  # TODO this is copied code, should this borrow from qubit?
+def sum_of_terms_method(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
