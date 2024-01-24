@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
+    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
     VarianceMP,
