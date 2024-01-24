@@ -264,8 +264,6 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
 
     pw = next(iter(pauli_word.pauli_rep))
 
-    wire_map = wire_map or {w: i for i, w in enumerate(pw)}
-
     n_qubits_min = max(wire_map.values()) + 1
     if n_qubits is None:
         n_qubits = n_qubits_min
