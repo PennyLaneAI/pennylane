@@ -738,14 +738,14 @@ def are_pauli_words_qwc(lst_pauli_words):
         op_wires = op.wires.tolist()
 
         for op_name, wire in zip(op_names, op_wires):  # iterate over wires of the observable,
-            try:
-                if latest_op_name_per_wire[wire] != op_name and (
-                    op_name != "Identity" and latest_op_name_per_wire[wire] != "Identity"
-                ):
-                    if latest_op_name_per_wire[wire] == "Identity":
-                        latest_op_name_per_wire[wire] = op_name  # update name
-            except KeyError:
-                latest_op_name_per_wire[wire] = op_name  # add wire and name for the first time
+            latest_op_name = latest_op_name_per_wire.get(wire, "Identity")
+            if latest_op_name != op_name and (
+                op_name != "Identity" and latest_op_name != "Identity"
+            ):
+                return False
+
+            if op_name != "Identity":
+                latest_op_name_per_wire[wire] = op_name
 
     return True  # if we get through all ops, then they are qwc!
 
