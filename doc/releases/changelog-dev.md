@@ -130,6 +130,11 @@
   is now strictly faster for jax.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
+<h3>Improvements 🛠</h3>
+
+* `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
+  [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
