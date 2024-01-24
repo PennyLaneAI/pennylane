@@ -138,6 +138,9 @@ class Permute(Operation):
 
     """
 
+    def __repr__(self):
+        return f"Permute({self.hyperparameters['permutation']}, wires={self.wires.tolist()})"
+
     num_wires = AnyWires
     grad_method = None
 

@@ -16,6 +16,7 @@ Contains tests for the `qml.workflow.transform_program` getter.
 
 """
 from functools import partial
+import pytest
 
 import numpy as np
 
@@ -26,6 +27,16 @@ from pennylane.workflow import transform_program, construct_batch
 
 
 class TestTransformProgramGetter:
+    def test_bad_string_key(self):
+        """Test a value error is raised if a bad string key is provided."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"level bah not recognized."):
+            transform_program(circuit, level="bah")
+
     def test_transform_program_gradient_fn(self):
         """Tests for the transform program when the gradient_fn is a transform."""
 
@@ -155,51 +166,215 @@ class TestTransformProgramGetter:
         assert full[-1].transform == qml.metric_tensor.transform
 
 
+@qml.transforms.merge_rotations
+@qml.transforms.cancel_inverses
+@qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+def circuit1(weights, order):
+    qml.RandomLayers(weights, wires=(0, 1))
+    qml.Permute(order, wires=(0, 1, 2))
+    qml.PauliX(0)
+    qml.PauliX(0)
+    qml.RX(0.1, wires=0)
+    qml.RX(-0.1, wires=0)
+    return qml.expval(qml.PauliX(0))
+
+
 class TestConstructBatch:
     """Tests for the construct_batch function."""
 
     def test_level_zero(self):
         """Test that level zero is purely the queued circuit."""
 
-        @qml.compile
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
-        def circuit(order):
-            qml.Permute(order, wires=(0, 1, 2))
-            qml.PauliX(0)
-            qml.PauliX(0)
-            return qml.state()
-
-        batch, fn = construct_batch(circuit, level=0)([2, 1, 0], shots=10)
+        order = [2, 1, 0]
+        weights = np.array([[1.0, 20]])
+        batch, fn = construct_batch(circuit1, level=0)(weights, order, shots=10)
 
         assert len(batch) == 1
+        expected_ops = [
+            qml.RandomLayers(weights, wires=(0, 1)),
+            qml.Permute(order, wires=(0, 1, 2)),
+            qml.PauliX(0),
+            qml.PauliX(0),
+            qml.RX(0.1, wires=0),
+            qml.RX(-0.1, wires=0),
+        ]
+
         expected = qml.tape.QuantumScript(
-            [qml.Permute([2, 1, 0], wires=(0, 1, 2)), qml.PauliX(0), qml.PauliX(0)],
-            [qml.state()],
+            expected_ops,
+            [qml.expval(qml.PauliX(0))],
             shots=10,
         )
         assert qml.equal(batch[0], expected)
 
-        assert fn(("a,")) == "a"
+        assert fn(("a",)) == ("a",)
 
-    def test_user_transforms(self):
-        """Test that user transforms can be selected and applied."""
-
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
-        def circuit(weights):
-            qml.RandomLayers(weights, wires=(0, 1))
-            qml.PauliX(0)
-            qml.PauliX(0)
-            return qml.state()
+    def test_first_transform(self):
+        """Test that the first user transform can be selected by level=1"""
 
         weights = np.array([[1.0, 2.0]])
+        order = [2, 1, 0]
 
-        for level in ("user", 1):
-            batch, fn = construct_batch(circuit, level=level)(weights, shots=50)
-            assert len(batch) == 1
+        batch, fn = construct_batch(circuit1, level=1)(weights, order=order, shots=50)
+        assert len(batch) == 1
 
-            expected = qml.tape.QuantumScript(
-                [qml.RandomLayers(weights, wires=(0, 1))], [qml.state()], shots=50
-            )
-            assert qml.equal(batch[0], expected)
-            assert fn(("a",)) == "a"
+        expected_ops = [
+            qml.RandomLayers(weights, wires=(0, 1)),
+            qml.Permute(order, wires=(0, 1, 2)),
+            # cancel inverses
+            qml.RX(0.1, wires=0),
+            qml.RX(-0.1, wires=0),
+        ]
+
+        expected = qml.tape.QuantumScript(expected_ops, [qml.expval(qml.PauliX(0))], shots=50)
+        assert qml.equal(batch[0], expected)
+        assert fn(("a",)) == ("a",)
+
+    @pytest.mark.parametrize("level", (2, "user"))
+    def test_all_user_transforms(self, level):
+        """Test that all user transforms can be selected and run."""
+
+        weights = np.array([[1.0, 2.0]])
+        order = [2, 1, 0]
+
+        batch, fn = construct_batch(circuit1, level=level)(weights, order=order, shots=50)
+        assert len(batch) == 1
+
+        expected_ops = [
+            qml.RandomLayers(weights, wires=(0, 1)),
+            qml.Permute(order, wires=(0, 1, 2)),
+            # cancel inverses
+            # merge rotations
+        ]
+
+        expected = qml.tape.QuantumScript(expected_ops, [qml.expval(qml.PauliX(0))], shots=50)
+        assert qml.equal(batch[0], expected)
+        assert fn(("a",)) == ("a",)
+
+    @pytest.mark.parametrize("level", (3, "gradient"))
+    def test_gradient_transforms(self, level):
+        """Test that the gradient transform can be selected with an integer or keyword."""
+        weights = qml.numpy.array([[1.0, 2.0]], requires_grad=True)
+        order = [2, 1, 0]
+        batch, fn = construct_batch(circuit1, level=level)(weights=weights, order=order)
+
+        expected = qml.tape.QuantumScript(
+            [
+                qml.RY(qml.numpy.array(1), 0),
+                qml.RX(qml.numpy.array(2), 1),
+                qml.Permute(order, (0, 1, 2)),
+            ],
+            [qml.expval(qml.PauliX(0))],
+        )
+        assert qml.equal(batch[0], expected)
+        assert len(batch) == 1
+        assert fn(("a",)) == ("a",)
+
+    @pytest.mark.parametrize("level", ("device", None))
+    def test_device_transforms(self, level):
+        """Test that all device transforms can be run with the device keyword."""
+
+        weights = np.array([[1.0, 2.0]])
+        order = [2, 1, 0]
+
+        batch, fn = construct_batch(circuit1, level=level)(weights, order)
+
+        expected = qml.tape.QuantumScript(
+            [qml.RY(1, 0), qml.RX(2, 1), qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))]
+        )
+        assert qml.equal(batch[0], expected)
+        assert len(batch) == 1
+        assert fn(("a",)) == ("a",)
+
+    @pytest.mark.parametrize("level", ("device", None))
+    def test_device_transforms_legacy_interface(self, level):
+        """Test that the device transforms can be selected with level=device or None."""
+
+        @qml.transforms.merge_rotations
+        @qml.qnode(qml.device("default.qubit.legacy", wires=2, shots=50))
+        def circuit(order):
+            qml.Permute(order, wires=(0, 1, 2))
+            qml.RX(0.5, wires=0)
+            qml.RX(-0.5, wires=0)
+            return qml.expval(qml.PauliX(0) + qml.PauliY(0))
+
+        batch, fn = construct_batch(circuit, level=level)((2, 1, 0))
+
+        expected0 = qml.tape.QuantumScript(
+            [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
+        )
+        assert qml.equal(expected0, batch[0])
+        expected1 = qml.tape.QuantumScript(
+            [qml.SWAP((0, 2))], [qml.expval(qml.PauliY(0))], shots=50
+        )
+        assert qml.equal(expected1, batch[1])
+        assert len(batch) == 2
+
+        assert fn((1.0, 2.0)) == (3.0,)
+
+    def test_final_transform(self):
+        """Test that the final transform is included when level=None."""
+
+        @qml.gradients.param_shift
+        @qml.transforms.merge_rotations
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.RX(x, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        batch, fn = construct_batch(circuit, level=None)(0.5)
+        assert len(batch) == 2
+        expected0 = qml.tape.QuantumScript(
+            [qml.RX(1.0 + np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
+        )
+        assert qml.equal(batch[0], expected0)
+        expected1 = qml.tape.QuantumScript(
+            [qml.RX(1.0 - np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
+        )
+        assert qml.equal(batch[1], expected1)
+
+        dummy_res = (1.0, 2.0)
+        expected_res = (1.0 - 2.0) / 2
+        assert qml.numpy.allclose(fn(dummy_res)[0], expected_res)
+
+    def test_user_transform_multiple_tapes(self):
+        """Test a user transform that creates multiple tapes."""
+
+        @qml.transforms.split_non_commuting
+        @qml.qnode(qml.device("default.qubit", shots=10))
+        def circuit():
+            qml.S(0)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        batch, fn = construct_batch(circuit, level="user")()
+
+        assert len(batch) == 2
+        expected0 = qml.tape.QuantumScript(
+            [qml.S(0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))], shots=10
+        )
+        assert qml.equal(expected0, batch[0])
+
+        expected1 = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=10)
+        assert qml.equal(expected1, batch[1])
+
+        dummy_res = (("x0", "x1"), "z0")
+        expected_res = (("x0", "z0", "x1"),)
+        assert fn(dummy_res) == expected_res
+
+    def test_slicing_level(self):
+        @qml.transforms.merge_rotations
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.RX(x, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        # by slicing starting at one, we do not run the merge rotations transform
+        batch, fn = construct_batch(circuit, slice(1, None))(0.5)
+
+        assert len(batch) == 1
+        expected = qml.tape.QuantumScript(
+            [qml.RX(0.5, 0), qml.RX(0.5, 0)], [qml.expval(qml.PauliZ(0))]
+        )
+        assert qml.equal(batch[0], expected)
+        assert fn(("a",)) == ("a",)
