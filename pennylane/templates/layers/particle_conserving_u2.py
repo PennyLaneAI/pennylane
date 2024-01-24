@@ -100,12 +100,11 @@ class ParticleConservingU2(Operation):
     .. details::
         :title: Usage Details
 
-
         #. The number of wires has to be equal to the number of spin orbitals included in
-            the active space.
+           the active space.
 
         #. The number of trainable parameters scales with the number of layers :math:`D` as
-            :math:`D(2N-1)`.
+           :math:`D(2N-1)`.
 
         An example of how to use this template is shown below:
 
