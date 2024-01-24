@@ -18,6 +18,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.devices.qubit.apply_operation import apply_operation, MidMeasureMP
+from pennylane.devices.qubit.simulate import gather_statistics
 
 
 def validate_samples(shots, results1, results2):
@@ -37,6 +39,48 @@ def validate_expval(shots, results1, results2):
     if shots is None:
         assert np.allclose(results1, results2)
     assert np.allclose(results1, results2, atol=0, rtol=0.3)
+
+
+def test_apply_operation():
+    with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
+        _ = apply_operation(MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True)
+    with pytest.raises(ValueError, match="Cannot normalize projected state."):
+        _ = apply_operation(MidMeasureMP(0), np.zeros(2))
+
+
+@pytest.mark.parametrize(
+    "measurement",
+    [
+        qml.state(),
+        qml.density_matrix(0),
+        qml.vn_entropy(0),
+        qml.mutual_info(0, 1),
+        qml.purity(0),
+        qml.classical_shadow(0),
+        qml.shadow_expval(0),
+    ],
+)
+def test_gather_statistics(measurement):
+    with pytest.raises(ValueError, match="Native mid-circuit measurement mode does not support"):
+        gather_statistics(measurement, None, None, None)
+
+
+def test_unsupported_measurement():
+    dev = qml.device("default.qubit", shots=1000)
+    params = np.pi / 4 * np.ones(2)
+
+    @qml.qnode(dev)
+    def func(x, y):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0)
+        qml.cond(m0, qml.RY)(y, wires=1)
+        return qml.classical_shadow(wires=0)
+
+    with pytest.raises(
+        ValueError,
+        match="Native mid-circuit measurement mode does not support ClassicalShadowMP measurements.",
+    ):
+        func(*params)
 
 
 @flaky(max_runs=5)

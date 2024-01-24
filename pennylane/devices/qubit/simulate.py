@@ -137,8 +137,6 @@ def get_final_state(circuit, debugger=None, interface=None):
     for op in circuit.operations[bool(prep) :]:
         if isinstance(op, Conditional):
             meas_id = op.meas_val.measurements[0].hash
-            if meas_id not in measurement_values:
-                raise KeyError(f"Measurement key {meas_id} not found.")
             if not measurement_values[meas_id]:
                 continue
             op = op.then_op
@@ -419,10 +417,8 @@ def gather_measurements(circuit, idx, measurement):
 def gather_statistics(measurement, mv, samples, counter):
     """Merges and normalizes several one shot statistics."""
     if isinstance(mv, (list, tuple)):
-        new_samples = np.vstack(
-            tuple(gather_statistics(measurement, m, samples, counter) for m in mv)
-        ).T
-    elif isinstance(measurement, ExpectationMP):
+        return np.vstack(tuple(gather_statistics(measurement, m, samples, counter) for m in mv)).T
+    if isinstance(measurement, ExpectationMP):
         sha = mv.measurements[0].hash
         new_samples = np.mean(np.array([dct[sha] for dct in samples]))
     elif isinstance(measurement, ProbabilityMP):
