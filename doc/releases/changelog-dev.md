@@ -138,7 +138,7 @@
   you should use `qml.ops.one_qubit_decomposition` and `qml.ops.two_qubit_decomposition`.
   [(#5091)](https://github.com/PennyLaneAI/pennylane/pull/5091)
 
-* `qml.ExpvalCost` has been removed. Users should use ``qml.expval()`` moving forward.
+* `qml.ExpvalCost` has been removed. Users should use `qml.expval()` moving forward.
   [(#5097)](https://github.com/PennyLaneAI/pennylane/pull/5097)
 
 <h3>Deprecations 👋</h3>

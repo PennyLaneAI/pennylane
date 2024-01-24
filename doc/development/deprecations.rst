@@ -126,7 +126,7 @@ Completed deprecation cycles
   - Removed in v0.35
 
 * ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` have been removed.
-Users should now validate these properties manually.
+  Users should now validate these properties manually.
 
   .. code-block:: python
 
@@ -144,7 +144,7 @@ Users should now validate these properties manually.
   .. code-block:: python
 
     @qml.qnode(dev)
-    def ansatz(params):
+    def cost_function(params):
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
