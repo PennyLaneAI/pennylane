@@ -213,7 +213,7 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
     slices = [slice(None)] * state.ndim
     slices[axis] = dark_branch
     state[tuple(slices)] = 0.0
-    state_norm = np.linalg.norm(state.ravel())
+    state_norm = np.linalg.norm(state)
     if state_norm < 1.0e-15:
         raise ValueError("Cannot normalize projected state.")
     state = state / state_norm
