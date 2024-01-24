@@ -863,8 +863,8 @@ class DefaultClifford(Device):
                 Please use the `probability_target` property to set them."
             )
 
-        # we might be able to skip the inverse done below
-        # as the distribution for the inverted tableau should remain same
+        # TODO: We might be able to skip the inverse done below
+        # (as the distribution should be independent of inverse)
         diagonalizing_cit = tableau_simulator.current_inverse_tableau().inverse().to_circuit()
         diagonalizing_ops = [] if not meas_op.obs else meas_op.obs.diagonalizing_gates()
         for diag_op in diagonalizing_ops:
@@ -878,13 +878,14 @@ class DefaultClifford(Device):
             if stim_op[0] is not None:
                 diagonalizing_cit.append_from_stim_program_text(f"{stim_op[0]} {stim_op[1]}")
 
+        # Build the Tableau simulator from the diagonalized circuit
+        circuit_simulator = stim.TableauSimulator()
+        circuit_simulator.do_circuit(diagonalizing_cit)
         if not self._tableau:
-            circuit_simulator = stim.TableauSimulator()
-            circuit_simulator.do_circuit(diagonalizing_cit)
             state = self._measure_state(circuit_simulator, circuit, qml.GlobalPhase(0.0))
             return meas_op.process_state(state, wire_order=circuit.wires)
 
-        # Iterate over the instructions and perform post-selection to obtain possible solutions
+        # Obtain the measurement wires for getting the basis states
         mobs_wires = meas_op.obs.wires if meas_op.obs else meas_op.wires
         meas_wires = mobs_wires if mobs_wires else circuit.wires
         tgt_states = self._prob_states
@@ -893,23 +894,20 @@ class DefaultClifford(Device):
             for state in self._prob_states:
                 if list(state[meas_wires]) not in tgt_states:
                     tgt_states.append(list(state[meas_wires]))
-            tgt_states = qml.math.array(tgt_states)
+            tgt_states = np.array(tgt_states)
 
-        num_states = tgt_states.shape[0]
-        prob_res = qml.math.ones(num_states)
-
-        diagonalizing_sim = stim.TableauSimulator()
-        diagonalizing_sim.do_circuit(diagonalizing_cit)
+        # Iterate over the measured qubits and post-select possible outcome
+        prob_res = np.ones(tgt_states.shape[0])
         for wire in meas_wires:
-            expectation = diagonalizing_sim.peek_z(wire)
+            expectation = circuit_simulator.peek_z(wire)
             outcome = int(0.5 * (1 - expectation))  # -1 --> 1 and 1 --> 0
             if not expectation:
                 prob_res /= 2.0
             else:
                 prob_res[np.where(outcome != tgt_states[:, wire])[0]] = 0.0
-            diagonalizing_sim.postselect_z(wire, desired_value=outcome)
+            circuit_simulator.postselect_z(wire, desired_value=outcome)
 
-        return prob_res
+        return prob_res / np.sum(prob_res)
 
     @staticmethod
     def _measure_single_sample(stim_ct, meas_ops, meas_idx, meas_wire, stim):
