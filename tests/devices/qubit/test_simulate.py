@@ -394,7 +394,7 @@ class TestPostselection:
         is 0."""
         tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Projector([0], 0)])
 
-        res, _ = get_final_state(tape, interface=interface)
+        res, _, _ = get_final_state(tape, interface=interface)
         assert qml.math.all(qml.math.isnan(res))
 
 
