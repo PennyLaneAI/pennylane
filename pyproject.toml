@@ -36,19 +36,19 @@ priority = "explicit"
 
 [tool.poetry.dependencies]
 python = ">=3.9.0,<3.12"
-numpy = "*"
-scipy = "*"
-networkx = "*"
-rustworkx = "*"
-autograd = "*"
-toml = "*"
-appdirs = "*"
+numpy = "^1.23"
+scipy = "^1.8"
+networkx = "^2.6"
+rustworkx = "^0.12.1"
+autograd = "^1.4"
+toml = "^0.10"
+appdirs = "^1.3"
 semantic-version = ">=2.7"
 autoray = ">=0.6.1"
 cachetools = "*"
 pennylane-lightning = ">=0.34"
-requests = "*"
-typing_extensions = "*"
+requests = "^2.31"
+typing_extensions = "^4.5"
 
 [tool.poetry.group.ci]
 optional = true
@@ -83,23 +83,22 @@ pytest = ">=7.1.2"
 pytest-cov = ">=3.0.0"
 pytest-mock = ">=3.7.0"
 pytest-xdist = ">=2.5.0"
-pytest-split = "*"
+pytest-split = "^0.8"
 flaky = ">=3.7.0"
 pytest-forked = ">=1.4.0"
-pytest-benchmark = "*"
+pytest-benchmark = ">=4.0.0"
 black = ">=21"
 tomli = "~2.0.0" # Drop once minimum Python version is 3.11
 
 [tool.poetry.group.ci.dependencies]
-cvxpy = "*"
-cvxopt = "*"
-dask = "*"
-matplotlib = "*"
+cvxpy = "^1.4.1"
+cvxopt = "^1.3.2"
+matplotlib = "^3.5.0"
 
 [tool.poetry.group.doc.dependencies]
 mistune = "0.8.4"
-m2r2 = "*"
-pygments-github-lexers = "*"
+m2r2 = "^0.3.2"
+pygments-github-lexers = "^0.0.5"
 semantic-version = "2.10"
 docutils = "0.16"
 sphinx = [
@@ -107,17 +106,15 @@ sphinx = [
     { version = "4.2.0", markers = "python_version >= '3.10'" }
 ]
 sphinx-automodapi = "0.13"
-sphinx-copybutton = "*"
+sphinx-copybutton = "^0.5.2"
 sphinxcontrib-bibtex = "2.4.2"
 tensornetwork = "0.3"
 jinja2 = "3.0.3"
-rustworkx = "0.12.1"
-networkx = "~2.6.2"
 # we do not pin the sphinx theme, to allow the
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme = "*"
 sphinxext-opengraph = "0.6.3" # Note: latest version 0.9.0 requires Sphinx >=4.0
-matplotlib = "3.8.0"
+matplotlib = "*"
 
 [tool.poetry.group.jax.dependencies]
 jax = ">=0.4.14"
