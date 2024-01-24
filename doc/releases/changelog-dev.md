@@ -212,6 +212,9 @@
 * `CosineWindow` no longer raises an unexpected error when used on a subset of wires at the beginning of a circuit.
   [(#5080)](https://github.com/PennyLaneAI/pennylane/pull/5080)
 
+* Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
+  [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
