@@ -101,12 +101,16 @@ def commutator(op1, op2, pauli=False):
         or insert an extra ``stop_recording()`` context (see :class:`~QueuingManager`).
 
     """
-    if pauli:
+    # Processing 
+    both_have_pauli_rep = not op1.pauli_rep is None and not op2.pauli_rep is None
+
+    if pauli or both_have_pauli_rep:
         if not isinstance(op1, PauliSentence):
             op1 = qml.pauli.pauli_sentence(op1)
         if not isinstance(op2, PauliSentence):
             op2 = qml.pauli.pauli_sentence(op2)
-        return op1.commutator(op2)
+        res = op1.commutator(op2)
+        return res if pauli else res.operation()
 
     with qml.QueuingManager.stop_recording():
         if isinstance(op1, (PauliWord, PauliSentence)):

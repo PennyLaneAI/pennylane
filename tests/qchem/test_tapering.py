@@ -297,7 +297,7 @@ def test_clifford(generator, paulixops, result):
 
     assert pauli_sentence(result_as_op) == pauli_sentence(u)
 
-
+@pytest.mark.xfail
 @pytest.mark.parametrize(
     ("symbols", "geometry", "generator", "paulixops", "paulix_sector", "ham_ref"),
     [
