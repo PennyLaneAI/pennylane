@@ -67,7 +67,7 @@ def commutator(op1, op2, pauli=False):
 
 
     It is also worth highlighting that computing commutators with Paulis is typically faster.
-    So whenever all input operators have a pauli representation, we recommend using `pauli=True`. 
+    So whenever all input operators have a pauli representation, we recommend using `pauli=True`.
     The result can then still be transformed into a PennyLane operator.
 
     >>> res = qml.commutator(qml.PauliX(0), qml.PauliY(0), pauli=True)

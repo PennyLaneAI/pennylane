@@ -335,7 +335,7 @@ class PauliWord(dict):
 
         if self.commutes_with(other):
             return PauliWord({}), 0.0
-        new_word, coeff = self @ other
+        new_word, coeff = self._matmul(other)
         return new_word, 2 * coeff
 
     def commutator(self, other):
