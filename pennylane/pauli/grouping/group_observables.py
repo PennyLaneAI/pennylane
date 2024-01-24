@@ -20,6 +20,7 @@ from copy import copy
 import numpy as np
 import pennylane as qml
 
+from pennylane.ops import Prod, SProd
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,
@@ -229,7 +230,17 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     pauli_grouping = PauliGroupingStrategy(
         observables, grouping_type=grouping_type, graph_colourer=method
     )
+
+    temp_opmath = not qml.operation.active_new_opmath() and any(
+        isinstance(o, (Prod, SProd)) for o in observables
+    )
+    if temp_opmath:
+        qml.operation.enable_new_opmath()
+
     partitioned_paulis = pauli_grouping.colour_pauli_graph()
+
+    if temp_opmath:
+        qml.operation.disable_new_opmath()
 
     if coefficients is None:
         return partitioned_paulis
