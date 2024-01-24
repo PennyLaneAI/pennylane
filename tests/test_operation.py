@@ -451,15 +451,8 @@ class TestBroadcasting:
         just in time (JIT) compilation."""
         import tensorflow as tf
 
-        class MyRX(qml.RX):
-            @property
-            def ndim_params(self):
-                self._check_batching()
-                return self._ndim_params
-
         def fun(x):
-            _ = qml.RX(x, 0)
-            _ = MyRX(x, 0)
+            _ = qml.RX(x, 0).batch_size
 
         # No kwargs
         fun0 = tf.function(fun)
