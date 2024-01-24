@@ -34,7 +34,7 @@ from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
 from .measure import measure
 from .sampling import measure_with_samples
-from ..default_qubit import Conditional, MidMeasureMP
+from pennylane.ops import Conditional
 
 
 INTERFACE_TO_LIKE = {
