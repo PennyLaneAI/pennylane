@@ -62,7 +62,6 @@ def box_gates_formatted(savefile="box_gates_formatted.png"):
 
 
 def autosize(savefile="box_gates_autosized.png"):
-
     drawer = MPLDrawer(n_layers=4, n_wires=2)
 
     drawer.box_gate(layer=0, wires=0, text="A longer label")
@@ -94,7 +93,7 @@ def cond(savefile="cond.png"):
 
     drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
 
-    options = {'color': "indigo", 'linewidth': 1.5}
+    options = {"color": "indigo", "linewidth": 1.5}
     drawer.cond(layer=3, measured_layer=2, wires=(1,), wires_target=(2,), options=options)
 
     plt.savefig(folder / savefile)
@@ -207,7 +206,6 @@ def integration_rcParams(savefile="example_rcParams.png"):
 
 
 def integration_formatted(savefile="example_formatted.png"):
-
     wire_options = {"color": "indigo", "linewidth": 4}
     drawer = MPLDrawer(n_wires=2, n_layers=4, wire_options=wire_options)
 
@@ -237,7 +235,6 @@ def integration_formatted(savefile="example_formatted.png"):
 
 
 def float_layer(savefile="float_layer.png"):
-
     drawer = MPLDrawer(2, 2)
 
     drawer.box_gate(layer=0.5, wires=0, text="Big Gate", extra_width=0.5)
