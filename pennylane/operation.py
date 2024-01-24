@@ -397,8 +397,6 @@ def _process_data(op):
     # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
         mod_val = 2 * np.pi
-    elif op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        mod_val = 4 * np.pi
     else:
         mod_val = None
 
