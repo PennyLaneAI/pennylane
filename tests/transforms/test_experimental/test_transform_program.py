@@ -168,6 +168,8 @@ class TestTransformProgramDunders:
         t_not = TransformContainer(transform=qml.compile)
         assert t_not not in program
 
+        assert "a" not in program
+
     def test_add_single_programs(self):
         """Test adding two transform programs"""
         transform_program1 = TransformProgram()

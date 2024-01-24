@@ -49,17 +49,13 @@ class TestTransformProgramGetter:
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
-        expected_p0 = qml.transforms.core.TransformContainer(
-            qml.transforms.cancel_inverses.transform
-        )
-        expected_p1 = qml.transforms.core.TransformContainer(
+        expected_p0 = TransformContainer(qml.transforms.cancel_inverses.transform)
+        expected_p1 = TransformContainer(
             qml.transforms.merge_rotations.transform, kwargs={"atol": 1e-5}
         )
-        expected_p2 = qml.transforms.core.TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2}
-        )
+        expected_p2 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
 
-        ps_expand_fn = qml.transforms.core.TransformContainer(
+        ps_expand_fn = TransformContainer(
             qml.gradients.param_shift.expand_transform, kwargs={"shifts": 2}
         )
 
@@ -91,6 +87,18 @@ class TestTransformProgramGetter:
         assert p_sliced[0].transform == qml.compile.transform
         assert p_sliced[1].transform == qml.devices.preprocess.validate_device_wires.transform
         assert p_sliced[2].transform == qml.devices.preprocess.decompose.transform
+
+    def test_gradient_fn_device_gradient(self):
+        """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        def circuit():
+            return qml.state()
+
+        prog = transform_program(circuit, level="gradient")
+        assert len(prog) == 1
+        assert qml.transforms.cancel_inverses in prog
 
     def test_transform_program_device_gradient(self):
         """Test the trnsform program contents when using a device derivative."""
@@ -362,6 +370,8 @@ class TestConstructBatch:
         assert fn(dummy_res) == expected_res
 
     def test_slicing_level(self):
+        """Test that the level can be a slice."""
+
         @qml.transforms.merge_rotations
         @qml.qnode(qml.device("default.qubit"))
         def circuit(x):
@@ -375,6 +385,27 @@ class TestConstructBatch:
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(
             [qml.RX(0.5, 0), qml.RX(0.5, 0)], [qml.expval(qml.PauliZ(0))]
+        )
+        assert qml.equal(batch[0], expected)
+        assert fn(("a",)) == ("a",)
+
+    def test_qfunc_with_shots_arg(self):
+        """Test that the tape uses device shots only when qfunc has a shots kwarg"""
+
+        dev = qml.device("default.qubit", shots=100)
+
+        @qml.qnode(dev)
+        def circuit(shots):
+            for _ in range(shots):
+                qml.S(0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit.qfunc_uses_shots_arg
+
+        batch, fn = construct_batch(circuit, level=None)(shots=2)
+        assert len(batch) == 1
+        expected = qml.tape.QuantumScript(
+            [qml.S(0), qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=100
         )
         assert qml.equal(batch[0], expected)
         assert fn(("a",)) == ("a",)

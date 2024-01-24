@@ -197,7 +197,7 @@ class TransformProgram:
             return obj in self._transform_program
         if isinstance(obj, TransformDispatcher):
             return any(obj.transform == t.transform for t in self)
-        raise ValueError(f"Contains not implemented for TransformProgram and object {obj}")
+        return False
 
     def push_back(self, transform_container: TransformContainer):
         """Add a transform (container) to the end of the program.
