@@ -88,9 +88,9 @@ class TestSingleShotGradientIntegration:
 
     dev = qml.device("default.qubit", wires=1, shots=100)
 
+    @staticmethod
     @qml.qnode(dev)
     def cost_fn0(x):
-        # pylint: disable=no-self-argument
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
@@ -143,9 +143,9 @@ class TestSingleShotGradientIntegration:
         assert np.allclose(grad, np.mean(single_shot_grads[0][:5]))
         assert np.allclose(grad_variance, np.var(single_shot_grads[0][:5], ddof=1))
 
+    @staticmethod
     @qml.qnode(dev)
     def cost_fn1(params):
-        # pylint: disable=no-self-argument
         ansatz1(params)
         return qml.expval(qml.PauliZ(0))
 
@@ -209,9 +209,9 @@ class TestSingleShotGradientIntegration:
 
     dev = qml.device("default.qubit", wires=2, shots=100)
 
+    @staticmethod
     @qml.qnode(dev)
     def cost_fn2(params):
-        # pylint: disable=no-self-argument
         ansatz2(params)
         return qml.expval(qml.PauliZ(0))
 
