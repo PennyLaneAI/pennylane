@@ -93,7 +93,7 @@ on:
 jobs:
   test:
     name: ${{ inputs.job_name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.pipeline_mode == 'unit-tests' && 'ubuntu-latest' || 'benchmark' }}
 
     steps:
       - name: Checkout
