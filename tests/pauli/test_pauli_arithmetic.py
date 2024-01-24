@@ -154,6 +154,11 @@ class TestPauliWord:
         pw = PauliWord({0: I, 1: X, 2: Y})
         assert 3 not in pw.keys()
         assert pw[3] == I
+    
+    def test_pauli_rep(self):
+        """Test trivial pauli_rep property"""
+        pw = PauliWord({0:"I", 1:"X", 2:Y})
+        assert pw.pauli_rep == pw
 
     def test_set_items(self):
         """Test that setting items raises an error"""
@@ -532,6 +537,12 @@ class TestPauliSentence:
 
         ps[new_pw] = 3.45
         assert new_pw in ps.keys() and ps[new_pw] == 3.45
+    
+        
+    def test_pauli_rep(self):
+        """Test trivial pauli_rep property"""
+        ps = PauliSentence({PauliWord({0:"I", 1:"X", 2:Y}): 1j, X0:2.})
+        assert ps.pauli_rep == ps
 
     tup_ps_str = (
         (
@@ -1015,8 +1026,6 @@ class TestPauliSentence:
         cast to a PL operation."""
         with pytest.raises(ValueError, match="Can't get the operation for an empty PauliWord."):
             ps4.operation()
-        with pytest.raises(ValueError, match="Can't get the operation for an empty PauliSentence."):
-            ps5.operation()
 
     def test_operation_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""

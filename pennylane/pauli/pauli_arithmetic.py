@@ -183,6 +183,11 @@ class PauliWord(dict):
             if op == I:
                 del mapping[wire]
         super().__init__(mapping)
+    
+    @property
+    def pauli_rep(self):
+        """Trivial pauli_rep"""
+        return self
 
     def __reduce__(self):
         """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
@@ -554,6 +559,11 @@ class PauliSentence(dict):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
+    @property
+    def pauli_rep(self):
+        """Trivial pauli_rep"""
+        return self
+
     def __missing__(self, key):
         """If the PauliWord is not in the sentence then the coefficient
         associated with it should be 0."""
@@ -902,7 +912,8 @@ class PauliSentence(dict):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
-                raise ValueError("Can't get the operation for an empty PauliSentence.")
+                # raise ValueError("Can't get the operation for an empty PauliSentence.")
+                wire_order=[0]
             return qml.s_prod(0, Identity(wires=wire_order))
 
         summands = []

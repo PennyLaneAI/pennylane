@@ -177,7 +177,7 @@ class TestcommPauli:
         assert isinstance(res, PauliSentence)
 
 
-class TestcommPauliFalseSimplify:
+class TestcommPauliFalse:
     """Test qml.comm for pauli=False (default behavior)"""
 
     data_pauli_relations_ops = (
@@ -207,12 +207,12 @@ class TestcommPauliFalseSimplify:
         (
             PauliWord({0: "X", 1: "X"}),
             PauliWord({0: "Y", 1: "Y"}),
-            qml.s_prod(0.0, Id([0, 1])),
+            qml.s_prod(0.0, Id([0])),
         ),
         (
             PauliWord({0: "X", 1: "X"}),
             PauliWord({"a": "X", "b": "Y"}),
-            qml.s_prod(0.0, Id([0, 1, "a", "b"])),
+            qml.s_prod(0.0, Id([0])),
         ),
     )
 

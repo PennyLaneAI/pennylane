@@ -110,7 +110,7 @@ def commutator(op1, op2, pauli=False):
         if not isinstance(op2, PauliSentence):
             op2 = qml.pauli.pauli_sentence(op2)
         res = op1.commutator(op2)
-        return res if pauli else res.operation()
+        return res if pauli else res.operation(wire_order=res.wires)
 
     with qml.QueuingManager.stop_recording():
         if isinstance(op1, (PauliWord, PauliSentence)):
