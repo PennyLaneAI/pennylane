@@ -265,12 +265,19 @@ def simulate(
                     results.append(simulate(aux_circuit, rng, prng_key, debugger, interface))
             return tuple(results)
         aux_circuit = init_auxiliary_circuit(circuit)
-        one_shot_meas, tmp_dict = simulate_native_mcm(
-            aux_circuit, rng, prng_key, debugger, interface
-        )
-        mcm_shot_meas = [tmp_dict]
-        for _ in range(circuit.shots.total_shots - 1):
+        # initialize measurements and MCM dict
+        tmpmeas = None
+        count = 0
+        while tmpmeas is None:
+            count += 1
             tmpmeas, tmp_dict = simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface)
+        one_shot_meas = tmpmeas
+        mcm_shot_meas = [tmp_dict]
+        # loop over leftover shots
+        for _ in range(circuit.shots.total_shots - count):
+            tmpmeas, tmp_dict = simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface)
+            if tmpmeas is None:  # post-selection failed
+                continue
             one_shot_meas = accumulate_native_mcm(aux_circuit, one_shot_meas, tmpmeas)
             mcm_shot_meas.append(tmp_dict)
         return gather_native_mid_circuit_measurements(circuit, one_shot_meas, mcm_shot_meas)
@@ -344,6 +351,8 @@ def simulate_native_mcm(
     state, is_state_batched, mcm_dict = get_final_state(
         circuit, debugger=debugger, interface=interface
     )
+    if not np.allclose(np.linalg.norm(state), 1.0):
+        return None, mcm_dict
     return (
         measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
         mcm_dict,
@@ -383,7 +392,7 @@ def gather_native_mid_circuit_measurements(
     idx_one_shot = idx_one_shot_measurements(circuit)
     normalized_meas = [None] * len(circuit.measurements)
     for i, m in zip(idx_one_shot, one_shot_meas):
-        normalized_meas[i] = gather_measurements(circuit, i, m)
+        normalized_meas[i] = gather_measurements(circuit.measurements[i], m, mcm_shot_meas)
 
     idx_sample = idx_sampling_measurements(circuit)
     counter = Counter()
@@ -397,19 +406,19 @@ def gather_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-def gather_measurements(circuit, idx, measurement):
+def gather_measurements(circuit_measurement, measurement, samples):
     """Merges and normalizes several one shot measurements."""
-    if isinstance(circuit.measurements[idx], (ExpectationMP, ProbabilityMP)):
-        new_meas = measurement / circuit.shots.total_shots
-    elif isinstance(circuit.measurements[idx], SampleMP):
+    if isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
+        new_meas = measurement / len(samples)
+    elif isinstance(circuit_measurement, SampleMP):
         new_meas = np.concatenate(tuple(s.ravel() for s in measurement))
-    elif isinstance(circuit.measurements[idx], CountsMP):
+    elif isinstance(circuit_measurement, CountsMP):
         new_meas = dict(sorted(measurement.items()))
-    elif isinstance(circuit.measurements[idx], VarianceMP):
+    elif isinstance(circuit_measurement, VarianceMP):
         new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
     else:
         raise ValueError(
-            f"Native mid-circuit measurement mode does not support {circuit.measurements[idx].__class__.__name__} measurements."
+            f"Native mid-circuit measurement mode does not support {circuit_measurement.__class__.__name__} measurements."
         )
     return new_meas
 
@@ -427,7 +436,11 @@ def gather_statistics(measurement, mv, samples, counter):
         new_samples = np.array([1 - p1, p1])
     elif isinstance(measurement, CountsMP):
         sha = mv.measurements[0].hash
-        new_samples = {0: len(samples) - counter[sha], 1: counter[sha]}
+        new_samples = {}
+        if len(samples) - counter[sha] > 0:
+            new_samples[0] = len(samples) - counter[sha]
+        if counter[sha] > 0:
+            new_samples[1] = counter[sha]
     elif isinstance(measurement, SampleMP):
         sha = mv.measurements[0].hash
         new_samples = np.array([dct[sha] for dct in samples])

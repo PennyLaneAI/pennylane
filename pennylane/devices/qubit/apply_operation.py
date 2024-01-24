@@ -209,6 +209,8 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
     wire = op.wires
     probs = measure(qml.probs(wire), state)
     dark_branch = np.random.binomial(1, probs[0])
+    if op.postselect is not None and dark_branch == op.postselect:
+        return np.zeros_like(state), int(not dark_branch)
     axis = wire.toarray()[0]
     slices = [slice(None)] * state.ndim
     slices[axis] = dark_branch
