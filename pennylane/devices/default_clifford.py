@@ -657,27 +657,33 @@ class DefaultClifford(Device):
 
             # Computing entropy via tableaus
             elif isinstance(meas, VnEntropyMP):
-                tableau = tableau_simulator.current_inverse_tableau() ** -1
-                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
-                res = self._measure_stabilizer_vn_entropy(zs, list(meas.wires))
+                tableau = tableau_simulator.current_inverse_tableau().inverse()
+                z_stabs = qml.math.array(
+                    [tableau.z_output(wire) for wire in range(len(circuit.wires))]
+                )
+                res = self._measure_stabilizer_vn_entropy(z_stabs, list(meas.wires))
 
             # Computing mutual-info via tableaus
             elif isinstance(meas, MutualInfoMP):
-                tableau = tableau_simulator.current_inverse_tableau() ** -1
-                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                tableau = tableau_simulator.current_inverse_tableau().inverse()
+                z_stabs = qml.math.array(
+                    [tableau.z_output(wire) for wire in range(len(circuit.wires))]
+                )
                 indices0, indices1 = getattr(meas, "_wires")
                 res = self._measure_stabilizer_vn_entropy(
-                    zs, list(indices0)
-                ) + self._measure_stabilizer_vn_entropy(zs, list(indices1))
+                    z_stabs, list(indices0)
+                ) + self._measure_stabilizer_vn_entropy(z_stabs, list(indices1))
 
             # Computing purity via tableaus
             elif isinstance(meas, PurityMP):
-                tableau = tableau_simulator.current_inverse_tableau() ** -1
-                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                tableau = tableau_simulator.current_inverse_tableau().inverse()
+                z_stabs = qml.math.array(
+                    [tableau.z_output(wire) for wire in range(len(circuit.wires))]
+                )
                 res = (
                     qml.math.array(1.0)
                     if circuit.op_wires == meas.wires
-                    else self._measure_purity(zs, list(meas.wires))
+                    else self._measure_purity(z_stabs, list(meas.wires))
                 )
 
             # Computing more measurements
