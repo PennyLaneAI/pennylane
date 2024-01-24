@@ -47,109 +47,109 @@ def u2_ex_gate(phi, wires=None):
 
 class ParticleConservingU2(Operation):
     r"""Implements the heuristic VQE ansatz for Quantum Chemistry simulations using the
-        particle-conserving entangler :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` proposed in
-        `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
+    particle-conserving entangler :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` proposed in
+    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
 
-        This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of the entangler
-        block :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` to the Hartree-Fock state
+    This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of the entangler
+    block :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` to the Hartree-Fock state
 
-        .. math::
+    .. math::
 
-            \vert \Psi(\vec{\theta}, \vec{\phi}) \rangle = \hat{U}^{(D)}_\mathrm{ent}(\vec{\theta}_D,
-            \vec{\phi}_D) \dots \hat{U}^{(2)}_\mathrm{ent}(\vec{\theta}_2, \vec{\phi}_2)
-            \hat{U}^{(1)}_\mathrm{ent}(\vec{\theta}_1, \vec{\phi}_1) \vert \mathrm{HF}\rangle,
+        \vert \Psi(\vec{\theta}, \vec{\phi}) \rangle = \hat{U}^{(D)}_\mathrm{ent}(\vec{\theta}_D,
+        \vec{\phi}_D) \dots \hat{U}^{(2)}_\mathrm{ent}(\vec{\theta}_2, \vec{\phi}_2)
+        \hat{U}^{(1)}_\mathrm{ent}(\vec{\theta}_1, \vec{\phi}_1) \vert \mathrm{HF}\rangle,
 
-        where :math:`\hat{U}^{(i)}_\mathrm{ent}(\vec{\theta}_i, \vec{\phi}_i) =
-        \hat{R}_\mathrm{z}(\vec{\theta}_i) \hat{U}_\mathrm{2,\mathrm{ex}}(\vec{\phi}_i)`.
-        The circuit implementing the entangler blocks is shown in the figure below:
+    where :math:`\hat{U}^{(i)}_\mathrm{ent}(\vec{\theta}_i, \vec{\phi}_i) =
+    \hat{R}_\mathrm{z}(\vec{\theta}_i) \hat{U}_\mathrm{2,\mathrm{ex}}(\vec{\phi}_i)`.
+    The circuit implementing the entangler blocks is shown in the figure below:
 
-        |
+    |
 
-        .. figure:: ../../_static/templates/layers/particle_conserving_u2.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
+    .. figure:: ../../_static/templates/layers/particle_conserving_u2.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
-        |
+    |
 
-        Each layer contains :math:`N` rotation gates :math:`R_\mathrm{z}(\vec{\theta})` and
-        :math:`N-1` particle-conserving exchange gates :math:`U_{2,\mathrm{ex}}(\phi)`
-        that act on pairs of nearest-neighbors qubits. The repeated units across several qubits are
-        shown in dotted boxes.  The unitary matrix representing :math:`U_{2,\mathrm{ex}}(\phi)`
-        (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_) is decomposed into its elementary
-        gates and implemented in the :func:`~.u2_ex_gate` function using PennyLane quantum operations.
+    Each layer contains :math:`N` rotation gates :math:`R_\mathrm{z}(\vec{\theta})` and
+    :math:`N-1` particle-conserving exchange gates :math:`U_{2,\mathrm{ex}}(\phi)`
+    that act on pairs of nearest-neighbors qubits. The repeated units across several qubits are
+    shown in dotted boxes.  The unitary matrix representing :math:`U_{2,\mathrm{ex}}(\phi)`
+    (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_) is decomposed into its elementary
+    gates and implemented in the :func:`~.u2_ex_gate` function using PennyLane quantum operations.
 
-        |
+    |
 
-        .. figure:: ../../_static/templates/layers/u2_decomposition.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
+    .. figure:: ../../_static/templates/layers/u2_decomposition.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
-        |
-
-
-        Args:
-            weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
-                layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
-                ``(N-1)`` gates per layer.
-            wires (Iterable): wires that the template acts on
-            init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
-                used to initialize the wires.
-
-        .. details::
-            :title: Usage Details
+    |
 
 
-            #. The number of wires has to be equal to the number of spin orbitals included in
-               the active space.
+    Args:
+        weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
+            layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
+            ``(N-1)`` gates per layer.
+        wires (Iterable): wires that the template acts on
+        init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
+            used to initialize the wires.
 
-            #. The number of trainable parameters scales with the number of layers :math:`D` as
-               :math:`D(2N-1)`.
+    .. details::
+        :title: Usage Details
 
-            An example of how to use this template is shown below:
 
-            .. code-block:: python
+        #. The number of wires has to be equal to the number of spin orbitals included in
+            the active space.
 
-                import pennylane as qml
-                import numpy as np
-                from functools import partial
+        #. The number of trainable parameters scales with the number of layers :math:`D` as
+            :math:`D(2N-1)`.
 
-                # Build the electronic Hamiltonian
-                symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-                h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+        An example of how to use this template is shown below:
 
-                # Define the HF state
-                ref_state = qml.qchem.hf_state(2, qubits)
+        .. code-block:: python
 
-                # Define the device
-                dev = qml.device('default.qubit', wires=qubits)
+            import pennylane as qml
+            import numpy as np
+            from functools import partial
 
-                # Define the ansatz
-                ansatz = partial(qml.ParticleConservingU2, init_state=ref_state, wires=dev.wires)
+            # Build the electronic Hamiltonian
+            symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
-                # Define the cost function
-                @qml.qnode(dev)
-                def cost_fn(params):
-                    ansatz(params)
-                    return qml.expval(h)
+            # Define the HF state
+            ref_state = qml.qchem.hf_state(2, qubits)
 
-                # Compute the expectation value of 'h' for a given set of parameters
-                layers = 1
-                shape = qml.ParticleConservingU2.shape(layers, qubits)
-                params = np.random.random(shape)
-                print(cost_fn(params))
+            # Define the device
+            dev = qml.device('default.qubit', wires=qubits)
 
-            **Parameter shape**
+            # Define the ansatz
+            ansatz = partial(qml.ParticleConservingU2, init_state=ref_state, wires=dev.wires)
 
-            The shape of the trainable weights tensor can be computed by the static method
-            :meth:`~qml.ParticleConservingU2.shape` and used when creating randomly
-            initialised weight tensors:
+            # Define the cost function
+            @qml.qnode(dev)
+            def cost_fn(params):
+                ansatz(params)
+                return qml.expval(h)
 
-            .. code-block:: python
+            # Compute the expectation value of 'h' for a given set of parameters
+            layers = 1
+            shape = qml.ParticleConservingU2.shape(layers, qubits)
+            params = np.random.random(shape)
+            print(cost_fn(params))
 
-                shape = qml.ParticleConservingU2.shape(n_layers=2, n_wires=2)
-                params = np.random.random(size=shape)
+        **Parameter shape**
+
+        The shape of the trainable weights tensor can be computed by the static method
+        :meth:`~qml.ParticleConservingU2.shape` and used when creating randomly
+        initialised weight tensors:
+
+        .. code-block:: python
+
+            shape = qml.ParticleConservingU2.shape(n_layers=2, n_wires=2)
+            params = np.random.random(size=shape)
     """
 
     num_wires = AnyWires
