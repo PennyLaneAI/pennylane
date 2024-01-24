@@ -108,6 +108,11 @@ sphinx = [
 sphinx-automodapi = "0.13"
 sphinx-copybutton = "^0.5.2"
 sphinxcontrib-bibtex = "2.4.2"
+sphinxcontrib-applehelp = "1.0.4"
+sphinxcontrib-devhelp = "1.0.2"
+sphinxcontrib-qthelp = "1.0.3"
+sphinxcontrib-htmlhelp = "2.0.1"
+sphinxcontrib-serializinghtml = "1.1.5"
 tensornetwork = "0.3"
 jinja2 = "3.0.3"
 # we do not pin the sphinx theme, to allow the
