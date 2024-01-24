@@ -885,7 +885,8 @@ class DefaultClifford(Device):
             return meas_op.process_state(state, wire_order=circuit.wires)
 
         # Iterate over the instructions and perform post-selection to obtain possible solutions
-        meas_wires = meas_op.obs.wires if meas_op.obs else circuit.wires
+        mobs_wires = meas_op.obs.wires if meas_op.obs else meas_op.wires
+        meas_wires = mobs_wires if mobs_wires else circuit.wires
         tgt_states = self._prob_states
         if meas_wires != tgt_states.shape[1]:
             tgt_states = []
@@ -905,7 +906,6 @@ class DefaultClifford(Device):
             if not expectation:
                 prob_res /= 2.0
             else:
-                print(np.where(outcome != tgt_states[:, wire]))
                 prob_res[np.where(outcome != tgt_states[:, wire])[0]] = 0.0
             diagonalizing_sim.postselect_z(wire, desired_value=outcome)
 
