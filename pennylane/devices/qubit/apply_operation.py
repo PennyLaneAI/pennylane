@@ -216,7 +216,12 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
     state_norm = np.linalg.norm(state.ravel())
     if state_norm < 1.0e-15:
         raise ValueError("Cannot normalize projected state.")
-    return state / state_norm, np.array(0) if dark_branch == 1 else np.array(1)
+    state = state / state_norm
+    if op.reset and dark_branch == 0:
+        state = apply_operation(
+            qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
+        )
+    return state, np.array(0) if dark_branch == 1 else np.array(1)
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):

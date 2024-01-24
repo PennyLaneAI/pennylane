@@ -361,7 +361,7 @@ def has_mid_circuit_measurements(
 
 def requires_mid_samples(measurement):
     """Determines whether a measurement is a mid-circuit measurement value."""
-    return isinstance(measurement, (CountsMP, SampleMP, VarianceMP)) and measurement.mv is not None
+    return measurement.mv is not None
 
 
 def idx_sampling_measurements(
@@ -389,7 +389,7 @@ def gather_native_mid_circuit_measurements(
 
     idx_sample = idx_sampling_measurements(circuit)
     counter = Counter()
-    if any(isinstance(m, CountsMP) for m in circuit.measurements):
+    if any(isinstance(m, (CountsMP, ProbabilityMP)) for m in circuit.measurements):
         for d in mcm_shot_meas:
             counter.update(d)
     for i in idx_sample:
@@ -422,6 +422,13 @@ def gather_statistics(measurement, mv, samples, counter):
         new_samples = np.vstack(
             tuple(gather_statistics(measurement, m, samples, counter) for m in mv)
         ).T
+    elif isinstance(measurement, ExpectationMP):
+        sha = mv.measurements[0].hash
+        new_samples = np.mean(np.array([dct[sha] for dct in samples]))
+    elif isinstance(measurement, ProbabilityMP):
+        sha = mv.measurements[0].hash
+        p1 = counter[sha] / float(len(samples))
+        new_samples = np.array([1 - p1, p1])
     elif isinstance(measurement, CountsMP):
         sha = mv.measurements[0].hash
         new_samples = {0: len(samples) - counter[sha], 1: counter[sha]}
