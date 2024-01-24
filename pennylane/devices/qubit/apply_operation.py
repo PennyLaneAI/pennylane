@@ -208,20 +208,20 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     wire = op.wires
     probs = measure(qml.probs(wire), state)
-    dark_branch = np.random.binomial(1, probs[0])
+    sample = np.random.binomial(1, probs[1])
     axis = wire.toarray()[0]
     slices = [slice(None)] * state.ndim
-    slices[axis] = dark_branch
+    slices[axis] = int(not sample)
     state[tuple(slices)] = 0.0
     state_norm = np.linalg.norm(state)
     if state_norm < 1.0e-15:
         raise ValueError("Cannot normalize projected state.")
     state = state / state_norm
-    if op.reset and dark_branch == 0:
+    if op.reset and sample == 1:
         state = apply_operation(
             qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
         )
-    return state, int(not dark_branch)
+    return state, sample
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):
