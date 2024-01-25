@@ -64,6 +64,21 @@ class TestExceptions:
         ):
             opt.step(expval_cost, np.array(0.5, requires_grad=True))
 
+    def test_compute_grad_no_qnode_error(self):
+        """Test that an exception is raised if a cost_function is not encoded
+        as a QNode Object for compute_grad()"""
+
+        def cost_fn():
+            return None
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        x_init = np.array(0.5, requires_grad=True)
+
+        with pytest.raises(
+            ValueError, match="The objective function must be encoded as a single QNode object"
+        ):
+            opt.compute_grad(cost_fn, [x_init], {})
+
 
 def ansatz0(x, **kwargs):
     qml.RX(x, wires=0)
