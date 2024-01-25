@@ -127,19 +127,24 @@ def ctrl(op, control, control_values=None, work_wires=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
 
-    custom_controlled_ops = {
+    custom_ops = {
         (qml.PauliZ, 1): qml.CZ,
         (qml.PauliY, 1): qml.CY,
         (qml.PauliX, 1): qml.CNOT,
         (qml.PauliX, 2): qml.Toffoli,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
     }
     control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
     custom_key = (type(op), len(control))
 
-    if custom_key in custom_controlled_ops and (control_values is None or all(control_values)):
+    if custom_key in custom_ops and (control_values is None or all(control_values)):
         qml.QueuingManager.remove(op)
-        return custom_controlled_ops[custom_key](control + op.wires)
+        return custom_ops[custom_key](*op.data, control + op.wires)
     if isinstance(op, qml.PauliX):
         qml.QueuingManager.remove(op)
         control_string = (
@@ -338,7 +343,12 @@ class Controlled(SymbolicOp):
         # these gates do not consider global phases in their hash
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
-                [qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in self.base.data]
+                [
+                    id(d)
+                    if qml.math.is_abstract(d)
+                    else qml.math.round(qml.math.real(d) % (4 * np.pi), 10)
+                    for d in self.base.data
+                ]
             )
             base_hash = hash(
                 (
@@ -589,7 +599,7 @@ class Controlled(SymbolicOp):
             for op in base_pow
         ]
 
-    def simplify(self) -> "Controlled":
+    def simplify(self) -> "Operator":
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
             return ctrl(
@@ -599,8 +609,12 @@ class Controlled(SymbolicOp):
                 work_wires=self.work_wires + self.base.work_wires,
             )
 
+        simplified_base = self.base.simplify()
+        if isinstance(simplified_base, qml.Identity):
+            return simplified_base
+
         return ctrl(
-            op=self.base.simplify(),
+            op=simplified_base,
             control=self.control_wires,
             control_values=self.control_values,
             work_wires=self.work_wires,

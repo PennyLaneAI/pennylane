@@ -40,6 +40,37 @@
   is now strictly faster for jax.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
+* New `qml.commutator` function that allows to compute commutators between
+  `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
+  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+
+  Basic usage with PennyLane operators.
+
+  ```pycon
+  >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
+  2j*(PauliZ(wires=[0]))
+  ```
+
+  We can return a `PauliSentence` instance by setting `pauli=True`.
+
+  ```pycon
+  >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
+  >>> op2 = qml.PauliY(0) + qml.PauliY(1)
+  >>> qml.commutator(op1, op2, pauli=True)
+  2j * X(1) @ Z(0)
+  + 2j * Z(1) @ X(0)
+  ```
+
+  We can also input `PauliWord` and `PauliSentence` instances.
+
+  ```pycon
+  >>> op1 = PauliWord({0:"X", 1:"X"})
+  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+  >>> qml.commutator(op1, op2, pauli=True)
+  2j * Z(0) @ X(1)
+  + 2j * X(0) @ Z(1)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
@@ -86,6 +117,13 @@
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
 
+* `CRX`, `CRY`, `CRZ`, `CROT`, and `ControlledPhaseShift` (i.e. `CPhaseShift`) now inherit from `ControlledOp`, giving them additional properties such as `control_wire` and `control_values`. Calling `qml.ctrl` on `RX`, `RY`, `RZ`, `Rot`, and `PhaseShift` with a single control wire will return gates of types `CRX`, `CRY`, etc. as opposed to a general `Controlled` operator.
+  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
+
+* CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
+  and the codecov check itself would never execute.
+  [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
@@ -113,6 +151,20 @@
   method to estimate entropies from approximate density matrix reconstructions
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
+
+* The decomposition of an operator created with calling `qml.ctrl` on a parametric operator (specifically `RX`, `RY`, `RZ`, `Rot`, `PhaseShift`) with a single control wire will now be the full decomposition instead of a single controlled gate. For example:
+  ```
+  >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
+  [
+    RZ(1.5707963267948966, wires=[1]), 
+    RY(0.0615, wires=[1]), 
+    CNOT(wires=[0, 1]), 
+    RY(-0.0615, wires=[1]), 
+    CNOT(wires=[0, 1]), 
+    RZ(-1.5707963267948966, wires=[1])
+  ]
+  ```
+  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
 
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
   validate these properties manually.
@@ -167,7 +219,10 @@
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
 * A typo in the code example for `qml.qchem.dipole_of` has been fixed.
-  [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036) 
+  [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036)
+
+* Added a development guide on deprecations and removals.
+  [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -192,6 +247,9 @@
 
 * `CosineWindow` no longer raises an unexpected error when used on a subset of wires at the beginning of a circuit.
   [(#5080)](https://github.com/PennyLaneAI/pennylane/pull/5080)
+
+* Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
+  [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
 <h3>Contributors ✍️</h3>
 
