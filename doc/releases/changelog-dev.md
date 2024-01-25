@@ -41,6 +41,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
+  [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
@@ -227,6 +230,7 @@ Abhishek Abhishek,
 Utkarsh Azad,
 Astral Cai,
 Isaac De Vlugt,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
