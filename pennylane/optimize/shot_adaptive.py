@@ -204,66 +204,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         super().__init__(stepsize=stepsize)
 
     @staticmethod
-    def weighted_random_sampling(qnodes, coeffs, shots, argnums, *args, **kwargs):
-        """Returns an array of length ``shots`` containing single-shot estimates
-        of the Hamiltonian gradient. The shots are distributed randomly over
-        the terms in the Hamiltonian, as per a multinomial distribution.
-
-        Args:
-            qnodes (Sequence[.QNode]): Sequence of QNodes, each one when evaluated
-                returning the corresponding expectation value of a term in the Hamiltonian.
-            coeffs (Sequence[float]): Sequences of coefficients corresponding to
-                each term in the Hamiltonian. Must be the same length as ``qnodes``.
-            shots (int): The number of shots used to estimate the Hamiltonian expectation
-                value. These shots are distributed over the terms in the Hamiltonian,
-                as per a Multinomial distribution.
-            argnums (Sequence[int]): the QNode argument indices which are trainable
-            *args: Arguments to the QNodes
-            **kwargs: Keyword arguments to the QNodes
-
-        Returns:
-            array[float]: the single-shot gradients of the Hamiltonian expectation value
-        """
-
-        # determine the shot probability per term
-        prob_shots = np.abs(coeffs) / np.sum(np.abs(coeffs))
-
-        # construct the multinomial distribution, and sample
-        # from it to determine how many shots to apply per term
-        si = multinomial(n=shots, p=prob_shots)
-        shots_per_term = si.rvs()[0]
-
-        grads = []
-
-        for h, c, p, s in zip(qnodes, coeffs, prob_shots, shots_per_term):
-            # if the number of shots is 0, do nothing
-            if s == 0:
-                continue
-
-            # set the QNode device shots
-            new_shots = 1 if s == 1 else [(1, int(s))]
-
-            if s > 1:
-
-                def cost(*args, **kwargs):
-                    # pylint: disable=cell-var-from-loop
-                    return qml.math.stack(h(*args, **kwargs))
-
-            else:
-                cost = h
-
-            jacs = qml.jacobian(cost, argnum=argnums)(*args, **kwargs, shots=new_shots)
-
-            if s == 1:
-                jacs = [np.expand_dims(j, 0) for j in jacs]
-
-            # Divide each term by the probability per shot. This is
-            # because we are sampling one at a time.
-            grads.append([(c * j / p) for j in jacs])
-
-        return [np.concatenate(i) for i in zip(*grads)]
-
-    @staticmethod
     def qnode_weighted_random_sampling(qnode, coeffs, observables, shots, argnums, *args, **kwargs):
         """Returns an array of length ``shots`` containing single-shot estimates
         of the Hamiltonian gradient. The shots are distributed randomly over
