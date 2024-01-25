@@ -261,9 +261,9 @@ class DefaultClifford(Device):
 
         .. note::
 
-            If there's a mismatch in the number of wires for the provided target state(s) and the observable,
-            then the marginal probabilities will be returned for the computational basis states for the
-            subspace built using minimum number of wires among the two.
+            If there's a mismatch in the number of ``wires`` for the provided target state(s) and
+            the observable, then the `marginal` probabilities will be returned for the computational
+            basis states for the subspace built using the minimum number of wires among the two.
 
     .. details::
         :title: Tracking
