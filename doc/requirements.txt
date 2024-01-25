@@ -94,7 +94,7 @@ sortedcontainers==2.4.0 ; python_full_version >= "3.9.0" and python_full_version
 sphinx-automodapi==0.13 ; python_full_version >= "3.9.0" and python_full_version < "4.0.0"
 sphinx-copybutton==0.5.2 ; python_full_version >= "3.9.0" and python_full_version < "4.0.0"
 sphinx-gallery==0.12.2 ; python_full_version >= "3.9.0" and python_full_version < "4.0.0"
-sphinx==3.5.4 ; python_full_version >= "3.9.0" and python_full_version < "4.0.0"
+sphinx==3.5.2 ; python_full_version >= "3.9.0" and python_full_version < "4.0.0"
 sphinxcontrib-applehelp==1.0.4 ; python_full_version >= "3.9.0" and python_full_version < "4.0.0"
 sphinxcontrib-bibtex==2.4.2 ; python_full_version >= "3.9.0" and python_full_version < "4.0.0"
 sphinxcontrib-devhelp==1.0.2 ; python_full_version >= "3.9.0" and python_full_version < "4.0.0"

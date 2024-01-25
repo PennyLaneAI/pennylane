@@ -104,10 +104,7 @@ m2r2 = "^0.3.2"
 pygments-github-lexers = "^0.0.5"
 semantic-version = "2.10"
 docutils = "0.16"
-sphinx = [
-    { version = "~3.5.0", markers = "python_version < '3.10'" },  # version needs finagling to export to requirements.txt
-    #{ version = "4.2.0", markers = "python_version >= '3.10'" },
-]
+sphinx = "~3.5.0"  # must only provide one to export, but should be 4.2.0 for python >= 3.10
 sphinx-automodapi = "0.13"
 sphinx-copybutton = "^0.5.2"
 sphinxcontrib-bibtex = "2.4.2"

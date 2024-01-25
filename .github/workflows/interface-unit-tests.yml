@@ -211,7 +211,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 3 --group ${{ matrix.group }} --durations-path='.github/workflows/tf_tests_durations.json'
-      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
+      additional_pip_packages: ml-dtypes==0.2.0 tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   jax-tests:
@@ -304,7 +304,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
       additional_poetry_groups: jax,torch
-      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
+      additional_pip_packages: ml-dtypes==0.2.0 tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   external-libraries-tests:
@@ -335,7 +335,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_poetry_groups: external,jax
-      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
+      additional_pip_packages: ml-dtypes==0.2.0 tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   qcut-tests:
@@ -365,7 +365,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
       additional_poetry_groups: qcut,jax,torch
-      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
+      additional_pip_packages: ml-dtypes==0.2.0 tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   qchem-tests:
@@ -426,7 +426,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
       additional_poetry_groups: jax,torch
-      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
+      additional_pip_packages: ml-dtypes==0.2.0 tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   data-tests:
