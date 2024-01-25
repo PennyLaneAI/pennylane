@@ -501,9 +501,9 @@ class TestPauliSentence:
         assert new_pw not in ps.keys()
         assert ps[new_pw] == 0.0
 
-    def test_wires(self):
+    @pytest.mark.parametrize("pw", words)
+    def test_wires(self, pw):
         """Test that wires are set correctly and not reshuffled when put in a PS"""
-        pw = PauliWord({"a": "Y", "b": "Z"})
         true_wires = pw.wires
         ps = PauliSentence({pw: 1.0})
         assert ps.wires == true_wires
