@@ -519,16 +519,17 @@ class BlockEncode(Operation):
 
         wires = Wires(wires)
         if pnp.sum(shape_a) <= 2:
-            normalization = A if A > 1 else 1
+            normalization = A
             subspace = (1, 1, 2 ** len(wires))
         else:
-            normalization = max(
+            normalization = qml.math.maximum(
                 norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
                 norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
             )
             subspace = (*shape_a, 2 ** len(wires))
 
-        A = qml.math.array(A) / normalization if normalization > 1 else A
+        # Clip the normalization to at least 1 (= normalize(A) if norm > 1 else A).
+        A = qml.math.array(A) / qml.math.maximum(normalization, 1.0)
 
         if subspace[2] < (subspace[0] + subspace[1]):
             raise ValueError(
