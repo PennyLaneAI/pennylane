@@ -767,6 +767,7 @@ class MultiControlledX(ControlledOp):
         if control_values is None:
             control_values = [True] * len(control_wires)
 
+        work_wires = work_wires or []
         if len(control_wires) > 2 and len(work_wires) == 0:
             raise ValueError(
                 "At least one work wire is required to decompose operation: MultiControlledX"
@@ -1149,6 +1150,36 @@ class CSWAP(ControlledOp):
         return qml.math.expand_matrix(
             canonical_matrix, wires=self.active_wires, wire_order=wire_order
         )
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.CSWAP.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CSWAP.compute_decomposition((0,1,2)))
+        [Toffoli(wires=[0, 2, 1]), Toffoli(wires=[0, 1, 2]), Toffoli(wires=[0, 2, 1])]
+
+        """
+        return [
+            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
+            qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
+            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
+        ]
+
+    def decomposition(self):
+        return self.compute_decomposition(self.wires)
 
 
 class CRX(ControlledOp):

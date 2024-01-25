@@ -607,7 +607,7 @@ class Controlled(SymbolicOp):
             return True
         if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
             return True
-        if isinstance(self.base, qml.PauliX):
+        if isinstance(self.base, (qml.PauliX, qml.CNOT, qml.Toffoli, qml.MultiControlledX)):
             return True
         if _is_single_qubit_special_unitary(self.base):
             return True
