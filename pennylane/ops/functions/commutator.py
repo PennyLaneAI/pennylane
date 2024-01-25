@@ -70,7 +70,7 @@ def commutator(op1, op2, pauli=False):
 
         The input and result of ``qml.commutator`` is not recorded in a tape context (and inside a :class:`~QNode`).
 
-        .. code-block::python3
+        .. code-block:: python3
 
             with qml.tape.QuantumTape() as tape:
                 a = qml.PauliX(0)      # gets recorded
