@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* The `default.qubit` device treats mid-circuit measurements natively when operating in
+  shots-mode (i.e. `shots is not None`). Previously, circuits with mid-circuit measurements
+  would be decomposed using the `@qml.defer_measurements` transform (which is still a valid
+  decorator), requiring one extra wire for each mid-circuit measurement. The new
+  behavior is to evaluate the circuit `shots` times, "collapsing" the circuit state
+  stochastically along the way. While this is oftentimes slower, it requires much less
+  memory for circuits with several mid-circuit measurements, or circuits which have already
+  several wires.
+  [(#5088)](https://github.com/PennyLaneAI/pennylane/pull/5088)
+
 * A new `default.clifford` device enables efficient simulation of large-scale Clifford circuits
   defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
   [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
@@ -53,7 +63,7 @@
 
 * Upgrade Pauli arithmetic:
   You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
-  You can now intuitively add together 
+  You can now intuitively add together
   `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
   For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
   sentence `ps1 = PauliSentence({pw1: 3.})`.
@@ -94,7 +104,7 @@
 
 <h4>Community contributions 🥳</h4>
 
-* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
+* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 <h3>Breaking changes 💔</h3>
@@ -124,11 +134,11 @@
   ```
   >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
   [
-    RZ(1.5707963267948966, wires=[1]), 
-    RY(0.0615, wires=[1]), 
-    CNOT(wires=[0, 1]), 
-    RY(-0.0615, wires=[1]), 
-    CNOT(wires=[0, 1]), 
+    RZ(1.5707963267948966, wires=[1]),
+    RY(0.0615, wires=[1]),
+    CNOT(wires=[0, 1]),
+    RY(-0.0615, wires=[1]),
+    CNOT(wires=[0, 1]),
     RZ(-1.5707963267948966, wires=[1])
   ]
   ```
@@ -148,9 +158,9 @@
   module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
 
-* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using 
+* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using
   the `@` operator, `*` will be used only for scalar multiplication. Note also the breaking
-  change that the product of two `PauliWord` instances now returns a `PauliSentence` instead 
+  change that the product of two `PauliWord` instances now returns a `PauliSentence` instead
   of a tuple `(new_word, coeff)`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5054)](https://github.com/PennyLaneAI/pennylane/pull/5054)
