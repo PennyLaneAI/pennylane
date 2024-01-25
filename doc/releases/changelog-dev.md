@@ -185,12 +185,14 @@
   of a tuple `(new_word, coeff)`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5054)](https://github.com/PennyLaneAI/pennylane/pull/5054)
+  [(#5109)](https://github.com/PennyLaneAI/pennylane/pull/5109)
 
 * `MeasurementProcess.name` and `MeasurementProcess.data` are now deprecated, as they contain dummy
   values that are no longer needed.
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
   [(#5071)](https://github.com/PennyLaneAI/pennylane/pull/5071)
   [(#5076)](https://github.com/PennyLaneAI/pennylane/pull/5076)
+  [(#5109)](https://github.com/PennyLaneAI/pennylane/pull/5109)
 
 * Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
   ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
