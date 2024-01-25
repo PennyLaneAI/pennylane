@@ -325,7 +325,7 @@ class PauliWord(dict):
         wires = set(self) & set(other)
         if not wires:
             return True
-        anticom_count = sum([anticom_map[self[wire]][other[wire]] for wire in wires])
+        anticom_count = sum(anticom_map[self[wire]][other[wire]] for wire in wires)
         return (anticom_count % 2) == 0
 
     def _commutator(self, other):
