@@ -143,6 +143,8 @@ def get_final_state(circuit, debugger=None, interface=None):
             op = op.then_op
         state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
         if isinstance(op, MidMeasureMP):
+            # If applying mid-circuit measurement, apply_operation returns the state
+            # and the measured value
             state, measurement_values[op.hash] = state
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
