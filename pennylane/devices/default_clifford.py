@@ -314,7 +314,6 @@ class DefaultClifford(Device):
 
         This device:
 
-        * Currently does not support finite shots
         * Currently does not intrinsically support parameter broadcasting
 
         """
@@ -324,6 +323,7 @@ class DefaultClifford(Device):
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(qml.defer_measurements, device=self)
 
+        # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
             transform_program.add_transform(
                 decompose, stopping_condition=operation_stopping_condition, name=self.name
@@ -440,6 +440,7 @@ class DefaultClifford(Device):
             prep = circuit[0]
         use_prep_ops = bool(prep)
 
+        # TODO: Add a method to prepare directly from a Tableau
         if use_prep_ops:
             initial_tableau = stim.Tableau.from_state_vector(
                 qml.math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
@@ -447,11 +448,12 @@ class DefaultClifford(Device):
             )
             tableau_simulator.do_tableau(initial_tableau, circuit.wires)
 
+        # Iterate over the gates --> manage them manually or apply them to circuit
         global_phase_ops = []
         for op in circuit.operations[use_prep_ops:]:
             gate, wires = self._pl_to_stim(op)
             if gate is not None:
-                # Note: This is ~300x faster than doing stim_ct.append(gate, wires)
+                # Note: This is a lot faster than doing `stim_ct.append(gate, wires)`
                 stim_ct.append_from_stim_program_text(f"{gate} {wires}")
             else:
                 if op.name == "GlobalPhase":
@@ -475,6 +477,7 @@ class DefaultClifford(Device):
 
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
 
+        # Perform measurments based on whether shots are provided
         if circuit.shots:
             stim_circuit = tableau_simulator.current_inverse_tableau().inverse().to_circuit()
             meas_results = self.measure_statistical(circuit, stim_circuit, stim, seed=seed)
@@ -542,6 +545,7 @@ class DefaultClifford(Device):
             return coeffs, paulis
 
         # Add support for more case when the time is right
+        # TODO: A very limited support for Exp/Evolution could be added.
         raise NotImplementedError(
             f"default.clifford doesn't support expectation value calculation with {type(meas_obs)} at the moment."
         )
@@ -699,6 +703,7 @@ class DefaultClifford(Device):
     def _measure_state(self, tableau_simulator, circuit, global_phase):
         """Measure the state of the simualtor device."""
         if self._tableau:
+            # Stack according to Sec. III, arXiv:0406196 (2008)
             tableau = tableau_simulator.current_inverse_tableau().inverse()
             x2x, x2z, z2x, z2z, x_signs, z_signs = tableau.to_numpy()
             pl_tableau = np.vstack(
@@ -769,12 +774,12 @@ class DefaultClifford(Device):
     # pylint: disable=protected-access
     @staticmethod
     def _measure_stabilizer_vn_entropy(stabilizer, wires, log_base=None):
-        r"""Computes the entanglement entropy using stabilizer information.
+        r"""Computes the Rényi entanglement entropy using stabilizer information.
 
-        Computes the entanglement entropy :math:`S_A` for a subsytem described by :math:`A`,
-        :math:`S_A = \text{rank}(\text{projection}_A {\mathcal{S}}) - |\mathcal{S}|`, where
-        :math:`\mathcal{S}` is the stabilizer group for the system using the theory described
-        in `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
+        Computes the Rényi entanglement entropy :math:`S_A` for a subsytem described by
+        :math:`A`, :math:`S_A = \text{rank}(\text{projection}_A {\mathcal{S}}) - |\mathcal{S}|`,
+        where :math:`\mathcal{S}` is the stabilizer group for the system using the theory
+        described in `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
 
         Args:
             stabilizer (TensorLike): stabilizer set for the system
@@ -827,7 +832,7 @@ class DefaultClifford(Device):
 
         Computes the state purity using the monotonically decreasing second-order Rényi entropy
         form given in `Sci Rep 13, 4601 (2023) <https://www.nature.com/articles/s41598-023-31273-9>`_.
-        We utilize the fact that Rényi entropies are independent of the Rényi indices ``n`` for the
+        We utilize the fact that Rényi entropies are equal for all Rényi indices ``n`` for the
         stabilizer states.
 
         Args:
@@ -897,10 +902,13 @@ class DefaultClifford(Device):
             tgt_states = np.array(tgt_states)
 
         # Iterate over the measured qubits and post-select possible outcome
+        # This should now scaled as O(M * N), where N is the number of measured qubits,
+        # and M is the cost of peeking and postselection of each qubit in computational basis.
         prob_res = np.ones(tgt_states.shape[0])
         for wire in meas_wires:
             expectation = circuit_simulator.peek_z(wire)
-            outcome = int(0.5 * (1 - expectation))  # -1 --> 1 and 1 --> 0
+            # (Eig --> Res) | -1 --> 1 | 1 --> 0 | 0 --> 0 / 1 |
+            outcome = int(0.5 * (1 - expectation))
             if not expectation:
                 prob_res /= 2.0
             else:
@@ -911,7 +919,7 @@ class DefaultClifford(Device):
 
     @staticmethod
     def _measure_single_sample(stim_ct, meas_ops, meas_idx, meas_wire, stim):
-        """Single sample output from a stim circuit"""
+        """Sample a single qubit Pauli measurement from a stim circuit"""
         stim_sm = stim.TableauSimulator()
         stim_sm.do_circuit(stim_ct)
         return stim_sm.measure_observable(
@@ -926,7 +934,7 @@ class DefaultClifford(Device):
         bits = []
         recipes = np.random.RandomState(meas_seed).randint(
             3, size=(circuit.shots.total_shots, meas_wire)
-        )
+        )  # Random Pauli basis to be used for measurements
 
         for recipe in recipes:
             bits.append(
@@ -942,5 +950,6 @@ class DefaultClifford(Device):
         """Measures expectation value of a Pauli observable using
         classical shadows from the state of simulator device."""
         bits, recipes = self._measure_classical_shadow(stim_circuit, circuit, meas_op, stim)
+        # TODO: Benchmark scaling for larger number of circuits for this existing functionality
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=circuit.wires.tolist())
         return shadow.expval(meas_op.H, meas_op.k)
