@@ -259,65 +259,16 @@ def simulate(
     has_mcm = has_mid_circuit_measurements(circuit)
     has_shots = circuit.shots.total_shots is not None
     if has_mcm and has_shots:
-        if circuit.shots.has_partitioned_shots:
-            results = []
-            for s in circuit.shots:
-                aux_circuit = circuit.copy()
-                aux_circuit._shots = qml.measurements.Shots(s)
-                results.append(simulate(aux_circuit, rng, prng_key, debugger, interface))
-            return tuple(results)
-        aux_circuit = init_auxiliary_circuit(circuit)
-        one_shot_meas, tmp_dict = simulate_native_mcm(
-            aux_circuit, rng, prng_key, debugger, interface
+        return simulate_native_mcm(
+            circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
         )
-        mcm_shot_meas = [tmp_dict]
-        for _ in range(circuit.shots.total_shots - 1):
-            tmpmeas, tmp_dict = simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface)
-            one_shot_meas = accumulate_native_mcm(aux_circuit, one_shot_meas, tmpmeas)
-            mcm_shot_meas.append(tmp_dict)
-        return gather_native_mid_circuit_measurements(circuit, one_shot_meas, mcm_shot_meas)
     state, is_state_batched, _ = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
 
 
-def init_auxiliary_circuit(circuit):
-    """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations."""
-    aux_circuit = circuit.copy()
-    aux_circuit._shots = qml.measurements.Shots(1)
-    idx_sample = idx_sampling_measurements(circuit)
-    for i in reversed(idx_sample):
-        aux_circuit._measurements.pop(i)
-    for i, m in enumerate(circuit.measurements):
-        if isinstance(m, VarianceMP) and m.mv is None:
-            aux_circuit._measurements[i] = SampleMP(obs=m.obs)
-    return aux_circuit
-
-
-def accumulate_native_mcm(circuit, one_shot_meas, new_shot):
-    """Incorporate new measurements in current measurement sequence."""
-    cat_shot_meas = [None] * len(circuit.measurements)
-    if not isinstance(one_shot_meas, (list, tuple)):
-        return accumulate_native_mcm(circuit, [one_shot_meas], new_shot)
-    if not isinstance(new_shot, (list, tuple)):
-        return accumulate_native_mcm(circuit, one_shot_meas, [new_shot])
-    for i, m in enumerate(circuit.measurements):
-        if isinstance(m, CountsMP):
-            tmp = Counter(one_shot_meas[i])
-            tmp.update(Counter(new_shot[i]))
-            cat_shot_meas[i] = tmp
-        elif isinstance(m, SampleMP):
-            if not isinstance(one_shot_meas[i], (list, tuple)):
-                cat_shot_meas[i] = [one_shot_meas[i]]
-            else:
-                cat_shot_meas[i] = one_shot_meas[i]
-            cat_shot_meas[i].append(new_shot[i])
-        else:
-            cat_shot_meas[i] = one_shot_meas[i] + new_shot[i]
-    return cat_shot_meas
-
-
+# pylint: disable=too-many-arguments
 def simulate_native_mcm(
     circuit: qml.tape.QuantumScript,
     rng=None,
@@ -337,11 +288,79 @@ def simulate_native_mcm(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the pre-rotated state. Used to pass the state between forward passes and vjp calculations.
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+    """
+    if circuit.shots.has_partitioned_shots:
+        results = []
+        for s in circuit.shots:
+            aux_circuit = circuit.copy()
+            aux_circuit._shots = qml.measurements.Shots(s)
+            results.append(simulate(aux_circuit, rng, prng_key, debugger, interface))
+        return tuple(results)
+    aux_circuit = init_auxiliary_circuit(circuit)
+    all_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
+        aux_circuit, rng, prng_key, debugger, interface
+    )
+    list_mcm_values_dict = [mcm_values_dict]
+    for _ in range(circuit.shots.total_shots - 1):
+        one_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
+            aux_circuit, rng, prng_key, debugger, interface
+        )
+        all_shot_meas = accumulate_native_mcm(aux_circuit, all_shot_meas, one_shot_meas)
+        list_mcm_values_dict.append(mcm_values_dict)
+    return parse_native_mid_circuit_measurements(circuit, all_shot_meas, list_mcm_values_dict)
+
+
+def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
+    """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
+
+    Measurements with non-trivial measurement values are removed from the script. VarianceMP
+    measurements are also replaced by SampleMP measurements, which are necessary to evaluate
+    the variance.
+
+    Args:
+        circuit (QuantumTape): The original QuantumScript
+
+    Returns:
+        QuantumScript: A copy of the circuit with modified measurements
+    """
+    aux_circuit = circuit.copy()
+    aux_circuit._shots = qml.measurements.Shots(1)
+    idx_sample = find_measurement_values(circuit)
+    for i in reversed(idx_sample):
+        aux_circuit._measurements.pop(i)
+    for i, m in enumerate(circuit.measurements):
+        if isinstance(m, VarianceMP) and m.mv is None:
+            aux_circuit._measurements[i] = SampleMP(obs=m.obs)
+    return aux_circuit
+
+
+def simulate_one_shot_native_mcm(
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+) -> Result:
+    """Simulate a single shot of a single quantum script with native mid-circuit measurements.
+
+    Args:
+        circuit (QuantumTape): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
+        debugger (_Debugger): The debugger to use
+        interface (str): The machine learning interface to create the initial state with
 
     Returns:
         tuple(TensorLike): The results of the simulation
         dict: The mid-circuit measurement results of the simulation
-
     """
     state, is_state_batched, mcm_dict = get_final_state(
         circuit, debugger=debugger, interface=interface
@@ -352,42 +371,111 @@ def simulate_native_mcm(
     )
 
 
+def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_shot_meas):
+    """Incorporates new measurements in current measurement sequence.
+
+    Args:
+        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
+        all_shot_meas (Sequence[Any]): List of accumulated measurement results
+        one_shot_meas (Sequence[Any]): List of measurement results
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+    """
+    new_shot_meas = [None] * len(circuit.measurements)
+    if not isinstance(all_shot_meas, (list, tuple)):
+        return accumulate_native_mcm(circuit, [all_shot_meas], one_shot_meas)
+    if not isinstance(one_shot_meas, (list, tuple)):
+        return accumulate_native_mcm(circuit, all_shot_meas, [one_shot_meas])
+    for i, m in enumerate(circuit.measurements):
+        if isinstance(m, CountsMP):
+            tmp = Counter(all_shot_meas[i])
+            tmp.update(Counter(one_shot_meas[i]))
+            new_shot_meas[i] = tmp
+        elif isinstance(m, SampleMP):
+            if not isinstance(all_shot_meas[i], (list, tuple)):
+                new_shot_meas[i] = [all_shot_meas[i]]
+            else:
+                new_shot_meas[i] = all_shot_meas[i]
+            new_shot_meas[i].append(one_shot_meas[i])
+        else:
+            new_shot_meas[i] = all_shot_meas[i] + one_shot_meas[i]
+    return new_shot_meas
+
+
 def has_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript,
 ):
-    """Returns True if the circuit contains a MidMeasureMP object and False otherwise."""
+    """Returns True if the circuit contains a MidMeasureMP object and False otherwise.
+
+    Args:
+        circuit (QuantumTape): A QuantumScript
+
+    Returns:
+        bool: Whether the circuit contains a MidMeasureMP object
+    """
     return any(isinstance(op, MidMeasureMP) for op in circuit._ops)
 
 
-def requires_mid_samples(measurement):
-    """Determines whether a measurement is a mid-circuit measurement value."""
+def has_measurement_values(measurement):
+    """Returns True if a measurement has a non-trivial measurement value and False otherwise.
+
+    Args:
+        measurement (MeasurementProcess): A QuantumScript
+
+    Returns:
+        bool: Whether the measurement contains a non-trivial measurement value
+    """
     return measurement.mv is not None
 
 
-def idx_sampling_measurements(
+def find_measurement_values(
     circuit: qml.tape.QuantumScript,
 ):
-    """Returns the indices of sample-like measurements (i.e. CountsMP, SampleMP)."""
-    return [i for i, m in enumerate(circuit.measurements) if requires_mid_samples(m)]
+    """Returns the indices of measurements with a non-trivial measurement value.
+
+    Args:
+        circuit (QuantumTape): A QuantumScript
+
+    Returns:
+        List[int]: Indices of measurements with a non-trivial measurement value.
+    """
+    return [i for i, m in enumerate(circuit.measurements) if has_measurement_values(m)]
 
 
-def idx_one_shot_measurements(
+def find_not_measurement_values(
     circuit: qml.tape.QuantumScript,
 ):
-    """Returns the indices of non sample-like measurements (i.e. not CountsMP, SampleMP)."""
-    return [i for i, m in enumerate(circuit.measurements) if not requires_mid_samples(m)]
+    """Returns the indices of measurements with a trivial measurement value.
+
+    Args:
+        circuit (QuantumTape): A QuantumScript
+
+    Returns:
+        List[int]: Indices of measurements with a trivial measurement value.
+    """
+    return [i for i, m in enumerate(circuit.measurements) if not has_measurement_values(m)]
 
 
-def gather_native_mid_circuit_measurements(
-    circuit: qml.tape.QuantumScript, one_shot_meas, mcm_shot_meas
+def parse_native_mid_circuit_measurements(
+    circuit: qml.tape.QuantumScript, all_shot_meas, mcm_shot_meas
 ):
-    """Gathers and normalizes the results of native mid-circuit measurement runs."""
-    idx_one_shot = idx_one_shot_measurements(circuit)
+    """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
+
+    Args:
+        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
+        all_shot_meas (Sequence[Any]): List of accumulated measurement results
+        mcm_shot_meas (Sequence[dict]): List of dictionaries containing the mid-circuit measurement results of each shot
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+    """
+    idx_one_shot = find_not_measurement_values(circuit)
     normalized_meas = [None] * len(circuit.measurements)
-    for i, m in zip(idx_one_shot, one_shot_meas):
-        normalized_meas[i] = gather_measurements(circuit, i, m)
+    for i, m in zip(idx_one_shot, all_shot_meas):
+        normalized_meas[i] = gather_non_mcm(circuit, i, m)
 
-    idx_sample = idx_sampling_measurements(circuit)
+    idx_sample = find_measurement_values(circuit)
     counter = Counter()
     if any(isinstance(m, (CountsMP, ProbabilityMP)) for m in circuit.measurements):
         for d in mcm_shot_meas:
@@ -399,8 +487,17 @@ def gather_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-def gather_measurements(circuit, idx, measurement):
-    """Merges and normalizes several one shot measurements."""
+def gather_non_mcm(circuit: qml.tape.QuantumScript, idx, measurement):
+    """Combines, gathers and normalizes several measurements with trivial measurement values.
+
+    Args:
+        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
+        idx (int): Measurement index
+        measurement (TensorLike): measurement results
+
+    Returns:
+        TensorLike: The combined measurement outcome
+    """
     if isinstance(circuit.measurements[idx], (ExpectationMP, ProbabilityMP)):
         new_meas = measurement / circuit.shots.total_shots
     elif isinstance(circuit.measurements[idx], SampleMP):
@@ -417,7 +514,17 @@ def gather_measurements(circuit, idx, measurement):
 
 
 def gather_statistics(measurement, mv, samples, counter):
-    """Merges and normalizes several one shot statistics."""
+    """Combines, gathers and normalizes several measurements with non-trivial measurement values.
+
+    Args:
+        measurement (MeasurementProcess): measurement
+        mv (MeasurementValue): measurement value
+        samples (QuantumTape): Measurement samples
+        counter (Counter): Measurement value counts
+
+    Returns:
+        TensorLike: The combined measurement outcome
+    """
     if isinstance(mv, (list, tuple)):
         return np.vstack(tuple(gather_statistics(measurement, m, samples, counter) for m in mv)).T
     if isinstance(measurement, ExpectationMP):
