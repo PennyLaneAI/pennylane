@@ -22,12 +22,12 @@ from typing import Callable, List, Sequence, Tuple, Union
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane import apply, expval
+from pennylane import expval
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP
 from pennylane.operation import Operator, Tensor
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import string_to_pauli_word
-from pennylane.queuing import AnnotatedQueue, WrappedObj
+from pennylane.queuing import WrappedObj
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
@@ -182,7 +182,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
         measurement_types = {type(meas) for meas in copy_meas}
         if len(measurement_types) > 1:
             raise ValueError(
-                "Only a single return type can be used for measurement " "nodes in graph_to_tape"
+                "Only a single return type can be used for measurement nodes in graph_to_tape"
             )
         measurement_type = measurement_types.pop()
 

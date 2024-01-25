@@ -24,7 +24,6 @@ from networkx import MultiDiGraph
 
 import pennylane as qml
 from pennylane.measurements import SampleMP
-from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
 from pennylane.wires import Wires
