@@ -75,7 +75,7 @@ class TestLegacySupport:
 
 
 def test_alias():
-    """Test that the alias commutator() works as expected"""
+    """Test that the alias qml.comm() works as expected"""
     res1 = qml.commutator(X0, Y0)
     res1_true = qml.commutator(X0, Y0)
     assert res1 == res1_true
