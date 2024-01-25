@@ -171,7 +171,8 @@ class MeasurementProcess(ABC):
         self.id = id
 
         if wires is not None:
-            if len(wires) == 0:
+            print(self.obs, type(self), self.__dict__)
+            if len(wires) == 0 and not isinstance(self.obs, qml.Identity):
                 raise ValueError("Cannot set an empty list of wires.")
             if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")

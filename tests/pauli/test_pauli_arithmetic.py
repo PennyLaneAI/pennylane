@@ -501,6 +501,13 @@ class TestPauliSentence:
         assert new_pw not in ps.keys()
         assert ps[new_pw] == 0.0
 
+    def test_wires(self):
+        """Test that wires are set correctly and not reshuffled when put in a PS"""
+        pw = PauliWord({"a": "Y", "b": "Z"})
+        true_wires = pw.wires
+        ps = PauliSentence({pw: 1.0})
+        assert ps.wires == true_wires
+
     def test_set_items(self):
         """Test that we can add to a PauliSentence"""
         pw = PauliWord({0: X})
