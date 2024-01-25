@@ -200,7 +200,7 @@ class PauliX(Observable, Operation):
 
     basis = "X"
 
-    batch_size = 0
+    batch_size = None
 
     _queue_category = "_ops"
 
@@ -357,7 +357,7 @@ class PauliY(Observable, Operation):
 
     basis = "Y"
 
-    batch_size = 0
+    batch_size = None
 
     _queue_category = "_ops"
 
@@ -511,7 +511,7 @@ class PauliZ(Observable, Operation):
 
     basis = "Z"
 
-    batch_size = 0
+    batch_size = None
 
     _queue_category = "_ops"
 
@@ -669,7 +669,7 @@ class S(Operation):
 
     basis = "Z"
 
-    batch_size = 0
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -780,7 +780,7 @@ class T(Operation):
 
     basis = "Z"
 
-    batch_size = 0
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -1008,7 +1008,7 @@ class CNOT(Operation):
 
     basis = "X"
 
-    batch_size = 0
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -1082,7 +1082,7 @@ class CH(Operation):
 
     basis = "Hadamard"
 
-    batch_size = 0
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "H"
@@ -1184,7 +1184,7 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    batch_size = 0
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -1276,7 +1276,7 @@ class ECR(Operation):
     num_wires = 2
     num_params = 0
 
-    batch_size = 0
+    batch_size = None
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1403,7 +1403,7 @@ class ISWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    batch_size = 0
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -1520,7 +1520,7 @@ class SISWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    batch_size = 0
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -1665,7 +1665,7 @@ class CSWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    batch_size = 0
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "SWAP"
@@ -1783,7 +1783,7 @@ class CCZ(Operation):
 
     basis = "Z"
 
-    batch_size = 0
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
@@ -1927,7 +1927,7 @@ class Toffoli(Operation):
 
     basis = "X"
 
-    batch_size = 0
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -2091,7 +2091,7 @@ class MultiControlledX(Operation):
 
     grad_method = None
 
-    batch_size = 0
+    batch_size = None
 
     def _flatten(self):
         hyperparameters = (

@@ -355,13 +355,17 @@ class Prod(CompositeOp):
         """PauliSentence representation of the Product of operations."""
         if any(op.pauli_rep is None for op in self.operands):
             return None
+        paulis = {"PauliX", "PauliY", "PauliZ"}
+
         single_word = {}
         still_single_word = True
 
         ind = 0
         for ind, op in enumerate(self):
-            if op.name[-1] in {"X", "Y", "Z", "I"} and op.wires[0] not in single_word:
-                single_word[op.name[-1]] = op.wires[0]
+            if op.name == "Identity":
+                continue
+            if op.name in paulis and op.wires[0] not in single_word:
+                single_word[op.wires[0]] = op.name[-1]
             else:
                 still_single_word = False
                 break
