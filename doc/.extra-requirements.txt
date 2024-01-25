@@ -1,0 +1,4 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
+# manually added tensorflow as it is not maintained by Poetry
+tensorflow-macos==2.15.0 ; sys_platform == "darwin" and platform_machine == "arm64" and python_version >= "3.9" and python_version < "3.12"
+tensorflow==2.15.0 ; python_version >= "3.9" and python_version < "3.12"

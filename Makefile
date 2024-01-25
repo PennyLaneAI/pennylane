@@ -82,3 +82,12 @@ lint:
 .PHONY: lint-test
 lint-test:
 	pylint tests pennylane/devices/tests --rcfile tests/.pylintrc
+
+.PHONY: lock
+lock:
+	poetry lock --no-update
+	poetry export -f requirements.txt -o requirements.txt --without-hashes --without-urls
+	poetry export -f requirements.txt -o requirements-ci.txt --without-hashes --without-urls --only ci
+	poetry export -f requirements.txt -o requirements-dev.txt --without-hashes --without-urls --only dev
+	poetry export -f requirements.txt -o doc/requirements.txt --without-hashes --without-urls --with doc,torch,jax,qchem,data
+	cat doc/.extra-requirements.txt >> doc/requirements.txt
