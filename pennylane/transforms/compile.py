@@ -17,6 +17,7 @@ from functools import partial
 from typing import Sequence, Callable
 
 from pennylane.queuing import QueuingManager
+from pennylane.measurements import MeasurementProcess
 from pennylane.ops import __all__ as all_ops
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import transform, TransformDispatcher
@@ -185,7 +186,11 @@ def compile(
         basis_set = basis_set or all_ops
 
         def stop_at(obj):
-            return obj.name in basis_set and (not getattr(obj, "only_visual", False))
+            return (
+                isinstance(obj, MeasurementProcess)
+                or obj.name in basis_set
+                and (not getattr(obj, "only_visual", False))
+            )
 
         expanded_tape = tape.expand(depth=expand_depth, stop_at=stop_at)
 

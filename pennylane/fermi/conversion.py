@@ -104,7 +104,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
             (_, wire), sign = item
 
             z_string = dict(zip(range(wire), ["Z"] * wire))
-            qubit_operator *= PauliSentence(
+            qubit_operator @= PauliSentence(
                 {
                     PauliWord({**z_string, **{wire: "X"}}): 0.5,
                     PauliWord({**z_string, **{wire: "Y"}}): coeffs[sign],
