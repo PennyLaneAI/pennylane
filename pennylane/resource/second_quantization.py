@@ -16,8 +16,7 @@ This module contains the functions needed for resource estimation with the doubl
 method.
 """
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
-import numpy
-from pennylane import numpy as np
+import numpy as np
 from pennylane.operation import AnyWires, Operation
 from pennylane.qchem import factorize
 
@@ -159,6 +158,24 @@ class DoubleFactorization(Operation):
 
         super().__init__(wires=range(self.qubits))
 
+    def _flatten(self):
+        return (self.one_electron, self.two_electron), (
+            ("error", self.error),
+            ("rank_r", self.rank_r),
+            ("rank_m", self.rank_m),
+            ("rank_max", self.rank_max),
+            ("tol_factor", self.tol_factor),
+            ("tol_eigval", self.tol_eigval),
+            ("br", self.br),
+            ("alpha", self.alpha),
+            ("beta", self.beta),
+            ("chemist_notation", True),
+        )
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, **dict(metadata))
+
     @staticmethod
     def estimation_cost(lamb, error):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
@@ -265,7 +282,7 @@ class DoubleFactorization(Operation):
         >>> unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
         2007
         """
-        if n <= 0 or not isinstance(n, (int, numpy.integer)) or n % 2 != 0:
+        if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
             raise ValueError("The number of spin-orbitals must be a positive even integer.")
 
         if rank_r <= 0 or not isinstance(rank_r, int):
@@ -351,7 +368,7 @@ class DoubleFactorization(Operation):
         >>> gate_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
         167048631
         """
-        if n <= 0 or not isinstance(n, (int, numpy.integer)) or n % 2 != 0:
+        if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
             raise ValueError("The number of spin-orbitals must be a positive even integer.")
 
         if error <= 0.0:
@@ -420,7 +437,7 @@ class DoubleFactorization(Operation):
         >>> qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
         292
         """
-        if n <= 0 or not isinstance(n, (int, numpy.integer)) or n % 2 != 0:
+        if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
             raise ValueError("The number of spin-orbitals must be a positive even integer.")
 
         if error <= 0.0:

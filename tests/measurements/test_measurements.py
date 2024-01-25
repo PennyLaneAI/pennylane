@@ -24,6 +24,7 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
+    MeasurementValue,
     MidMeasure,
     MidMeasureMP,
     MutualInfoMP,
@@ -337,9 +338,15 @@ class TestProperties:
         are correct if the internal observable is a
         MeasurementValue."""
         m0 = qml.measure(0)
+        m0.measurements[0].id = "abc"
+        m1 = qml.measure(1)
+        m1.measurements[0].id = "def"
 
-        m = qml.expval(m0)
-        assert np.all(m.eigvals() == [0, 1])
+        mp1 = qml.sample(op=[m0, m1])
+        assert np.all(mp1.eigvals() == [0, 1, 2, 3])
+
+        mp2 = qml.sample(op=3 * m0 - m1 / 2)
+        assert np.all(mp2.eigvals() == [0, -0.5, 3, 2.5])
 
     def test_error_obs_and_eigvals(self):
         """Test that providing both eigenvalues and an observable
@@ -377,6 +384,47 @@ class TestProperties:
 
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
         assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
+
+        m0 = MeasurementValue([MidMeasureMP(Wires(0), id="0")], lambda v: v)
+        m1 = MeasurementValue([MidMeasureMP(Wires(1), id="1")], lambda v: v)
+        m = ProbabilityMP(obs=[m0, m1])
+        expected = "probs([MeasurementValue(wires=[0]), MeasurementValue(wires=[1])])"
+        assert repr(m) == expected
+
+        m = ProbabilityMP(obs=m0 * m1)
+        expected = "probs(MeasurementValue(wires=[0, 1]))"
+
+    def test_measurement_value_map_wires(self):
+        """Test that MeasurementProcess.map_wires works correctly when mp.mv
+        is not None."""
+        m0 = qml.measure("a")
+        m1 = qml.measure("b")
+        m2 = qml.measure(0)
+        m3 = qml.measure(1)
+        m2.measurements[0].id = m0.measurements[0].id
+        m3.measurements[0].id = m1.measurements[0].id
+
+        wire_map = {"a": 0, "b": 1}
+
+        mp1 = qml.sample(op=[m0, m1])
+        mapped_mp1 = mp1.map_wires(wire_map)
+        assert qml.equal(mapped_mp1, qml.sample(op=[m2, m3]))
+
+        mp2 = qml.sample(op=m0 * m1)
+        mapped_mp2 = mp2.map_wires(wire_map)
+        assert qml.equal(mapped_mp2, qml.sample(op=m2 * m3))
+
+    def test_name_and_data_are_deprecated(self):
+        """Test that MP.name and MP.data are deprecated."""
+        mp = qml.expval(qml.PauliZ(0))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="MeasurementProcess.name is deprecated"
+        ):
+            _ = mp.name
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="MeasurementProcess.data is deprecated"
+        ):
+            _ = mp.data
 
 
 class TestExpansion:
@@ -521,7 +569,7 @@ class TestDiagonalizingGates:
         """Test a measurement that has no expansion"""
         m = qml.sample()
 
-        assert m.diagonalizing_gates() == []
+        assert len(m.diagonalizing_gates()) == 0
 
     def test_obs_diagonalizing_gates(self):
         """Test diagonalizing_gates method with and observable."""
@@ -580,6 +628,22 @@ class TestSampleMeasurement:
             match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
+
+    def test_process_counts_not_implemented(self):
+        """Test that process_counts is not implemented by default."""
+
+        class MyMeasurement(SampleMeasurement):
+            # pylint: disable=signature-differs
+            def process_samples(self, samples, wire_order, shot_range, bin_size):
+                return qml.math.sum(samples[..., self.wires])
+
+            @property
+            def return_type(self):
+                return Sample
+
+        m = MyMeasurement(wires=[0])
+        with pytest.raises(NotImplementedError):
+            m.process_counts({"0": 10}, wire_order=qml.wires.Wires(0))
 
 
 class TestStateMeasurement:

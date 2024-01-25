@@ -58,6 +58,9 @@ class Hermitian(Observable):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     grad_method = "F"
 
     # Qubit case
@@ -244,11 +247,21 @@ class SparseHamiltonian(Observable):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, id=id)
+        self.H = H
         mat_len = 2 ** len(self.wires)
         if H.shape != (mat_len, mat_len):
             raise ValueError(
                 f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
             )
+
+    def __mul__(self, value):
+        r"""The scalar multiplication operation between a scalar and a SparseHamiltonian."""
+        if not isinstance(value, (int, float)) and qml.math.ndim(value) != 0:
+            raise TypeError(f"Scalar value must be an int or float. Got {type(value)}")
+
+        return qml.SparseHamiltonian(csr_matrix.multiply(self.H, value), wires=self.wires)
+
+    __rmul__ = __mul__
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
@@ -369,6 +382,9 @@ class Projector(Observable):
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (1,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     def __new__(cls, state, wires, **_):
         """Changes parents based on the state representation.

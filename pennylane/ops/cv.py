@@ -1392,7 +1392,7 @@ class FockStateProjector(CVObservable):
         return f"|{basis_string}⟩⟨{basis_string}|"
 
 
-ops = {
+__ops__ = {
     "Identity",
     "Snapshot",
     "Beamsplitter",
@@ -1419,7 +1419,7 @@ ops = {
 }
 
 
-obs = {
+__obs__ = {
     "QuadOperator",
     "NumberOperator",
     "TensorN",
@@ -1430,4 +1430,4 @@ obs = {
 }
 
 
-__all__ = list(ops | obs)
+__all__ = list(__ops__ | __obs__)

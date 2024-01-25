@@ -16,7 +16,7 @@ This module contains the qml.bind_new_parameters function.
 """
 # pylint: disable=missing-docstring
 
-from typing import Sequence
+from typing import Sequence, Union
 import copy
 from functools import singledispatch
 
@@ -109,6 +109,26 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
         new_operands.append(bind_new_parameters(operand, sub_params))
 
     return op.__class__(*new_operands)
+
+
+@bind_new_parameters.register(qml.CY)
+@bind_new_parameters.register(qml.CZ)
+def bind_new_parameters_copy(
+    op: Union[qml.CY, qml.CZ], params: Sequence[TensorLike]
+):  # pylint:disable=unused-argument
+    return copy.copy(op)
+
+
+@bind_new_parameters.register(qml.CRX)
+@bind_new_parameters.register(qml.CRY)
+@bind_new_parameters.register(qml.CRZ)
+@bind_new_parameters.register(qml.CRot)
+@bind_new_parameters.register(qml.ControlledPhaseShift)
+def bind_new_parameters_parametric_controlled_ops(
+    op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot, qml.ControlledPhaseShift],
+    params: Sequence[TensorLike],
+):
+    return op.__class__(*params, wires=op.wires)
 
 
 @bind_new_parameters.register

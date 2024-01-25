@@ -340,10 +340,26 @@ def pauli_sentence(op):
     Returns:
         .PauliSentence: the PauliSentence representation of an arithmetic operator or Hamiltonian
     """
-    if (ps := op._pauli_rep) is not None:  # pylint: disable=protected-access
+
+    if isinstance(op, PauliWord):
+        return PauliSentence({op: 1.0})
+
+    if isinstance(op, PauliSentence):
+        return op
+
+    if (ps := op.pauli_rep) is not None:
         return ps
 
     return _pauli_sentence(op)
+
+
+def is_pauli_sentence(op):
+    """Returns True of the operator is a PauliSentence and False otherwise."""
+    if op.pauli_rep is not None:
+        return True
+    if isinstance(op, Hamiltonian):
+        return all(is_pauli_word(o) for o in op.ops)
+    return False
 
 
 @singledispatch
@@ -378,13 +394,13 @@ def _(op: Tensor):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
     factors = (_pauli_sentence(factor) for factor in op.obs)
-    return reduce(lambda a, b: a * b, factors)
+    return reduce(lambda a, b: a @ b, factors)
 
 
 @_pauli_sentence.register
 def _(op: Prod):
     factors = (_pauli_sentence(factor) for factor in op)
-    return reduce(lambda a, b: a * b, factors)
+    return reduce(lambda a, b: a @ b, factors)
 
 
 @_pauli_sentence.register
@@ -400,17 +416,26 @@ def _(op: Hamiltonian):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
-    summands = []
-    for coeff, term in zip(*op.terms()):
-        ps = _pauli_sentence(term)
-        for pw, sub_coeff in ps.items():
-            ps[pw] = coeff * sub_coeff
-        summands.append(ps)
+    def term_2_pauli_word(term):
+        if isinstance(term, Tensor):
+            pw = dict((obs.wires[0], obs.name[-1]) for obs in term.non_identity_obs)
+        elif isinstance(term, Identity):
+            pw = {}
+        else:
+            pw = dict([(term.wires[0], term.name[-1])])
+        return PauliWord(pw)
 
-    return reduce(lambda a, b: a + b, summands) if len(summands) > 0 else PauliSentence()
+    ps = PauliSentence()
+    for coeff, term in zip(*op.terms()):
+        sub_ps = PauliSentence({term_2_pauli_word(term): coeff})
+        ps += sub_ps
+
+    return ps
 
 
 @_pauli_sentence.register
 def _(op: Sum):
-    summands = (_pauli_sentence(summand) for summand in op)
-    return reduce(lambda a, b: a + b, summands)
+    ps = PauliSentence()
+    for term in op:
+        ps += _pauli_sentence(term)
+    return ps

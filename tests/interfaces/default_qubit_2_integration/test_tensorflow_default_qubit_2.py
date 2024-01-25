@@ -18,7 +18,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
@@ -109,14 +109,15 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit()),
-    ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint", "interface": "tensorflow"}, None, DefaultQubit()),
-    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit()),
-    ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit()),
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit(seed=42)),  # 0
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit()),  # 1
+    ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit()),  # 2
+    ({"gradient_fn": "adjoint", "interface": "tensorflow"}, None, DefaultQubit()),  # 3
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit(seed=42)),  # 4
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit()),  # 5
+    ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit()),  # 6
+    ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit()),  # 7
+    ({"gradient_fn": "adjoint", "interface": "tf", "device_vjp": True}, None, DefaultQubit()),  # 8
 ]
 
 
@@ -147,7 +148,9 @@ class TestTensorflowExecuteIntegration:
         with device.tracker:
             res = cost(a, b)
 
-        if execute_kwargs.get("gradient_fn", None) == "adjoint":
+        if execute_kwargs.get("gradient_fn", None) == "adjoint" and not execute_kwargs.get(
+            "device_vjp", False
+        ):
             assert device.tracker.totals["execute_and_derivative_batches"] == 1
         else:
             assert device.tracker.totals["batches"] == 1
@@ -164,13 +167,15 @@ class TestTensorflowExecuteIntegration:
         """Test scalar jacobian calculation"""
         a = tf.Variable(0.1, dtype=tf.float64)
 
+        device_vjp = execute_kwargs.get("device_vjp", False)
+
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             cost_res = cost(a)
-        res = tape.jacobian(cost_res, a)
+        res = tape.jacobian(cost_res, a, experimental_use_pfor=not device_vjp)
         assert res.shape == ()  # pylint: disable=no-member
 
         # compare to standard tape jacobian
@@ -188,18 +193,20 @@ class TestTensorflowExecuteIntegration:
         a = tf.Variable(0.1)
         b = tf.Variable(0.2)
 
+        device_vjp = execute_kwargs.get("device_vjp", False)
+
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
             return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = cost(a, b)
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        jac = tape.jacobian(res, [a, b])
+        jac = tape.jacobian(res, [a, b], experimental_use_pfor=not device_vjp)
         assert isinstance(jac, list) and len(jac) == 2
         assert jac[0].shape == (2,)
         assert jac[1].shape == (2,)
@@ -211,9 +218,6 @@ class TestTensorflowExecuteIntegration:
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
-
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -252,6 +256,14 @@ class TestTensorflowExecuteIntegration:
         expected = 2 + tf.cos(0.5) + tf.cos(x) * tf.cos(y)
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(NotImplementedError):
+                tape.gradient(res, params)
+            return
+
         grad = tape.gradient(res, params)
         expected = [-tf.cos(y) * tf.sin(x), -tf.cos(x) * tf.sin(y)]
         assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
@@ -265,6 +277,8 @@ class TestTensorflowExecuteIntegration:
         ):
             pytest.skip("Cannot compute the jacobian with adjoint-differentation and tf-autograph")
 
+        device_vjp = execute_kwargs.get("device_vjp", False)
+
         def cost(params):
             tape1 = qml.tape.QuantumScript(
                 [qml.RY(params[0], 0), qml.RX(params[1], 0)],
@@ -273,7 +287,7 @@ class TestTensorflowExecuteIntegration:
             )
 
             tape2 = qml.tape.QuantumScript(
-                [qml.RY(tf.constant(0.5), 0)],
+                [qml.RY(tf.constant(0.5, dtype=tf.float64), 0)],
                 [qml.expval(qml.PauliZ(0))],
                 shots=shots,
             )
@@ -287,10 +301,10 @@ class TestTensorflowExecuteIntegration:
                 execute([tape1, tape2, tape3], device, **execute_kwargs), like="tensorflow"
             )
 
-        params = tf.Variable([0.1, 0.2])
+        params = tf.Variable([0.1, 0.2], dtype=tf.float64)
         x, y = params
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = cost(params)
 
         assert isinstance(res, tf.Tensor)
@@ -301,7 +315,7 @@ class TestTensorflowExecuteIntegration:
         assert np.allclose(res[2], tf.cos(0.5), atol=atol_for_shots(shots))
         assert np.allclose(res[3], tf.cos(x) * tf.cos(y), atol=atol_for_shots(shots))
 
-        jac = tape.jacobian(res, params)
+        jac = tape.jacobian(res, params, experimental_use_pfor=not device_vjp)
         assert isinstance(jac, tf.Tensor)
         assert jac.shape == (4, 2)  # pylint: disable=no-member
 
@@ -326,32 +340,34 @@ class TestTensorflowExecuteIntegration:
         )
         assert tape.trainable_params == [0, 1]
 
+        device_vjp = execute_kwargs.get("device_vjp", False)
+
         def cost(a, b):
             new_tape = tape.bind_new_parameters([a, b], [0, 1])
             return qml.math.hstack(
                 execute([new_tape], device, **execute_kwargs)[0], like="tensorflow"
             )
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(persistent=device_vjp) as t:
             res = cost(a, b)
 
-        jac = t.jacobian(res, [a, b])
+        jac = t.jacobian(res, [a, b], experimental_use_pfor=not device_vjp)
         a = tf.Variable(0.54, dtype=tf.float64)
         b = tf.Variable(0.8, dtype=tf.float64)
 
         # check that the cost function continues to depend on the
         # values of the parameters for subsequent calls
 
-        with tf.GradientTape():
+        with tf.GradientTape(persistent=device_vjp):
             res2 = cost(2 * a, b)
 
         expected = [tf.cos(2 * a), -tf.cos(2 * a) * tf.sin(b)]
         assert np.allclose(res2, expected, atol=atol_for_shots(shots), rtol=0)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(persistent=device_vjp) as t:
             res = cost(2 * a, b)
 
-        jac = t.jacobian(res, [a, b])
+        jac = t.jacobian(res, [a, b], experimental_use_pfor=not device_vjp)
         expected = (
             [-2 * tf.sin(2 * a), 2 * tf.sin(2 * a) * tf.sin(b)],
             [0, -tf.cos(2 * a) * tf.cos(b)],
@@ -366,6 +382,8 @@ class TestTensorflowExecuteIntegration:
         b = tf.constant(0.2, dtype=tf.float64)
         c = tf.Variable(0.3, dtype=tf.float64)
 
+        device_vjp = execute_kwargs.get("device_vjp", False)
+
         def cost(a, b, c):
             ops = [
                 qml.RY(a * c, wires=0),
@@ -376,10 +394,10 @@ class TestTensorflowExecuteIntegration:
             tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             cost_res = cost(a, b, c)
 
-        res = tape.jacobian(cost_res, [a, c])
+        res = tape.jacobian(cost_res, [a, c], experimental_use_pfor=not device_vjp)
 
         # Only two arguments are trainable
         assert isinstance(res, list) and len(res) == 2
@@ -423,23 +441,27 @@ class TestTensorflowExecuteIntegration:
         U = tf.constant([[0, 1], [1, 0]], dtype=tf.complex128)
         a = tf.Variable(0.1)
 
+        device_vjp = execute_kwargs.get("device_vjp", False)
+
         def cost(a, U):
             ops = [qml.QubitUnitary(U, wires=0), qml.RY(a, wires=0)]
             tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
             return execute([tape], device, **execute_kwargs)[0]
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = cost(a, U)
 
         assert np.allclose(res, -tf.cos(a), atol=atol_for_shots(shots))
 
-        jac = tape.jacobian(res, a)
+        jac = tape.jacobian(res, a, experimental_use_pfor=not device_vjp)
         assert isinstance(jac, tf.Tensor)
         assert np.allclose(jac, tf.sin(a), atol=atol_for_shots(shots), rtol=0)
 
     def test_differentiable_expand(self, execute_kwargs, device, shots):
         """Test that operation and nested tapes expansion
         is differentiable"""
+
+        device_vjp = execute_kwargs.get("device_vjp", False)
 
         class U3(qml.U3):
             """Dummy operator."""
@@ -474,7 +496,7 @@ class TestTensorflowExecuteIntegration:
         a = tf.constant(0.1)
         p = tf.Variable([0.1, 0.2, 0.3])
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             cost_res = cost_fn(a, p)
 
         expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
@@ -482,7 +504,7 @@ class TestTensorflowExecuteIntegration:
         )
         assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = tape.jacobian(cost_res, p)
+        res = tape.jacobian(cost_res, p, experimental_use_pfor=not device_vjp)
         expected = tf.convert_to_tensor(
             [
                 tf.cos(p[1]) * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
@@ -499,19 +521,18 @@ class TestTensorflowExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("adjoint differentiation does not support probabilities")
-
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
             tape = qml.tape.QuantumScript(ops, m)
             return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
-        x = tf.Variable(0.543)
-        y = tf.Variable(-0.654)
+        device_vjp = execute_kwargs.get("device_vjp", False)
 
-        with tf.GradientTape() as tape:
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        with tf.GradientTape(persistent=device_vjp) as tape:
             cost_res = cost(x, y)
 
         expected = tf.convert_to_tensor(
@@ -526,7 +547,14 @@ class TestTensorflowExecuteIntegration:
         )
         assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = tape.jacobian(cost_res, [x, y])
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(tf.errors.UnimplementedError):
+                tape.jacobian(cost_res, [x, y])
+            return
+        res = tape.jacobian(cost_res, [x, y], experimental_use_pfor=not device_vjp)
         assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (4,)
         assert res[1].shape == (4,)
@@ -555,8 +583,8 @@ class TestTensorflowExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
+
+        device_vjp = execute_kwargs.get("device_vjp", False)
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -564,10 +592,10 @@ class TestTensorflowExecuteIntegration:
             tape = qml.tape.QuantumScript(ops, m)
             return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
-        x = tf.Variable(0.543)
-        y = tf.Variable(-0.654)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             cost_res = cost(x, y)
 
         expected = tf.convert_to_tensor(
@@ -575,7 +603,14 @@ class TestTensorflowExecuteIntegration:
         )
         assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = tape.jacobian(cost_res, [x, y])
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(tf.errors.UnimplementedError):
+                tape.jacobian(cost_res, [x, y])
+            return
+        res = tape.jacobian(cost_res, [x, y], experimental_use_pfor=not device_vjp)
         assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (3,)
         assert res[1].shape == (3,)
@@ -740,17 +775,19 @@ class TestHamiltonianWorkflows:
         if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
 
+        device_vjp = execute_kwargs.get("device_vjp", False)
+
         coeffs1 = tf.constant([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.constant([0.7], dtype=tf.float64)
         weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = cost_fn(weights, coeffs1, coeffs2)
 
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        jac = tape.jacobian(res, [weights])
+        jac = tape.jacobian(res, [weights], experimental_use_pfor=not device_vjp)
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
         assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
 

@@ -19,11 +19,10 @@ This module contains the functions needed for tapering qubits using symmetries.
 import functools
 import itertools
 
-import numpy
+import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import active_new_opmath
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence, simplify
 from pennylane.pauli.utils import _binary_matrix_from_pws
@@ -437,7 +436,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
     perm = []
     for tau in generators:
         symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires])
-        coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
+        coeff = -1 if np.logical_xor.reduce(np.logical_and(symmstr, hf_str)) else 1
         perm.append(coeff)
 
     return perm

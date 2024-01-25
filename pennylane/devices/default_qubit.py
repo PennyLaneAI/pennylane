@@ -37,7 +37,7 @@ from .preprocess import (
     validate_measurements,
     validate_multiprocessing_workers,
     validate_device_wires,
-    warn_about_trainable_observables,
+    validate_adjoint_trainable_params,
     no_sampling,
 )
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -86,7 +86,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "Snapshot":
         return True
-    if op.__class__.__name__ == "Pow" and qml.operation.is_trainable(op):
+    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
 
     return op.has_matrix
@@ -104,7 +104,62 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     )
 
 
-def _add_adjoint_transforms(program: TransformProgram) -> None:
+def null_postprocessing(results):
+    """An empty post-processing function."""
+    return results[0]
+
+
+def all_state_postprocessing(results, measurements, wire_order):
+    """Process a state measurement back into the original measurements."""
+    result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
+    return result[0] if len(measurements) == 1 else result
+
+
+@qml.transform
+def adjoint_state_measurements(
+    tape: QuantumTape, device_vjp=False
+) -> (Tuple[QuantumTape], Callable):
+    """Perform adjoint measurement preprocessing.
+
+    * Allows a tape with only expectation values through unmodified
+    * Raises an error if non-expectation value measurements exist and any have diagonalizing gates
+    * Turns the circuit into a state measurement + classical postprocesssing for arbitrary measurements
+
+    Args:
+        tape (QuantumTape): the input circuit
+
+    """
+    if all(isinstance(m, qml.measurements.ExpectationMP) for m in tape.measurements):
+        return (tape,), null_postprocessing
+
+    if any(len(m.diagonalizing_gates()) > 0 for m in tape.measurements):
+        raise qml.DeviceError(
+            "adjoint diff supports either all expectation values or only measurements without observables."
+        )
+
+    params = tape.get_parameters()
+
+    if device_vjp:
+        for p in params:
+            if (
+                qml.math.requires_grad(p)
+                and qml.math.get_interface(p) == "tensorflow"
+                and qml.math.get_dtype_name(p) in {"float32", "complex64"}
+            ):
+                raise ValueError(
+                    "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
+                )
+
+    complex_data = [qml.math.cast(p, complex) for p in params]
+    tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
+    new_mp = qml.measurements.StateMP(wires=tape.wires)
+    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
+    return (state_tape,), partial(
+        all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
+    )
+
+
+def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
 
@@ -124,9 +179,6 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
         """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
         return obs.has_matrix
 
-    def accepted_adjoint_measurement(m: qml.measurements.MeasurementProcess) -> bool:
-        return isinstance(m, qml.measurements.ExpectationMP)
-
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
     program.add_transform(
@@ -137,11 +189,11 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
         validate_measurements,
-        analytic_measurements=accepted_adjoint_measurement,
         name=name,
     )
+    program.add_transform(adjoint_state_measurements, device_vjp=device_vjp)
     program.add_transform(qml.transforms.broadcast_expand)
-    program.add_transform(warn_about_trainable_observables)
+    program.add_transform(validate_adjoint_trainable_params)
 
 
 class DefaultQubit(Device):
@@ -262,9 +314,9 @@ class DefaultQubit(Device):
         machine. You can control the number of threads per process with the environment
         variables:
 
-        * OMP_NUM_THREADS
-        * MKL_NUM_THREADS
-        * OPENBLAS_NUM_THREADS
+        * ``OMP_NUM_THREADS``
+        * ``MKL_NUM_THREADS``
+        * ``OPENBLAS_NUM_THREADS``
 
         where the last two are specific to the MKL and OpenBLAS libraries specifically.
 
@@ -297,6 +349,12 @@ class DefaultQubit(Device):
     def name(self):
         """The name of the device."""
         return "default.qubit"
+
+    _state_cache: Optional[dict] = None
+    """
+    A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and
+    subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
+    """
 
     # pylint:disable = too-many-arguments
     def __init__(
@@ -411,7 +469,9 @@ class DefaultQubit(Device):
             transform_program.add_transform(no_sampling, name="backprop + default.qubit")
 
         if config.gradient_method == "adjoint":
-            _add_adjoint_transforms(transform_program)
+            _add_adjoint_transforms(
+                transform_program, device_vjp=config.use_device_jacobian_product
+            )
 
         return transform_program, config
 
@@ -469,6 +529,7 @@ class DefaultQubit(Device):
             circuits = [circuits]
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"backprop", None}
@@ -482,6 +543,7 @@ class DefaultQubit(Device):
                     prng_key=self._prng_key,
                     debugger=self._debugger,
                     interface=interface,
+                    state_cache=self._state_cache,
                 )
                 for c in circuits
             )
@@ -724,6 +786,45 @@ class DefaultQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        r"""The vector jacobian product used in reverse-mode differentiation. ``DefaultQubit`` uses the
+        adjoint differentiation method to compute the VJP.
+
+        Args:
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
+            cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
+                of numbers.
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            tensor-like: A numeric result of computing the vector jacobian product
+
+        **Definition of vjp:**
+
+        If we have a function with jacobian:
+
+        .. math::
+
+            \vec{y} = f(\vec{x}) \qquad J_{i,j} = \frac{\partial y_i}{\partial x_j}
+
+        The vector jacobian product is the inner product of the derivatives of the output ``y`` with the
+        Jacobian matrix. The derivatives of the output vector are sometimes called the **cotangents**.
+
+        .. math::
+
+            \text{d}x_i = \Sigma_{i} \text{d}y_i J_{i,j}
+
+        **Shape of cotangents:**
+
+        The value provided to ``cotangents`` should match the output of :meth:`~.execute`. For computing the full Jacobian,
+        the cotangents can be batched to vectorize the computation. In this case, the cotangents can have the following
+        shapes. ``batch_size`` below refers to the number of entries in the Jacobian:
+
+        * For a state measurement, the cotangents must have shape ``(batch_size, 2 ** n_wires)``
+        * For ``n`` expectation values, the cotangents must have shape ``(n, batch_size)``. If ``n = 1``,
+          then the shape must be ``(batch_size,)``.
+
+        """
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -736,7 +837,16 @@ class DefaultQubit(Device):
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            res = tuple(adjoint_vjp(circuit, cots) for circuit, cots in zip(circuits, cotangents))
+
+            def _state(circuit):
+                return (
+                    None if self._state_cache is None else self._state_cache.get(circuit.hash, None)
+                )
+
+            res = tuple(
+                adjoint_vjp(circuit, cots, state=_state(circuit))
+                for circuit, cots in zip(circuits, cotangents)
+            )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:

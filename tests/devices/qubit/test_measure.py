@@ -24,6 +24,7 @@ from pennylane.devices.qubit.measure import (
     measure,
     state_diagonalizing_gates,
     csr_dot_products,
+    full_dot_products,
     get_measurement_function,
     sum_of_terms_method,
 )
@@ -61,6 +62,11 @@ class TestMeasurementDispatch:
         """Test that the state_diagonalizing gates are used when there's an observable has diagonalizing
         gates and allows the measurement to be efficiently computed with them."""
         assert get_measurement_function(m, state=1) is state_diagonalizing_gates
+
+    def test_hermitian_full_dot_product(self):
+        """Test that the expectation value of a hermitian uses the full dot products method."""
+        mp = qml.expval(qml.Hermitian(np.eye(2), wires=0))
+        assert get_measurement_function(mp, state=1) is full_dot_products
 
     def test_hamiltonian_sparse_method(self):
         """Check that the sparse expectation value method is used if the state is numpy."""
@@ -122,10 +128,14 @@ class TestMeasurements:
                 ),
                 0.5 * np.sin(0.123) + 2 * np.cos(0.123),
             ),
+            (
+                qml.Hermitian(-0.5 * qml.PauliY(0).matrix() + 2 * qml.PauliZ(0).matrix(), wires=0),
+                0.5 * np.sin(0.123) + 2 * np.cos(0.123),
+            ),
         ],
     )
     def test_hamiltonian_expval(self, obs, expected):
-        """Test that the `measure_hamiltonian_expval` function works correctly."""
+        """Test that measurements of hamiltonian/ sparse hamiltonian/ hermitians work correctly."""
         # Create RX(0.123)|0> state
         state = np.array([np.cos(0.123 / 2), -1j * np.sin(0.123 / 2)])
         res = measure(qml.expval(obs), state)
@@ -408,9 +418,8 @@ class TestSumOfTermsDifferentiability:
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)  # otherwise output is too noisy
+        jax.config.update("jax_enable_x64", True)
 
         x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
         coeffs = (5.2, 6.7)
