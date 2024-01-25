@@ -19,26 +19,49 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import apply_operation, MidMeasureMP
-from pennylane.devices.qubit.simulate import gather_statistics
+from pennylane.devices.qubit.simulate import gather_mcm
+
+
+def validate_counts(shots, results1, results2):
+    if isinstance(results1, (list, tuple)):
+        assert len(results1) == len(results2)
+        for r1, r2 in zip(results1, results2):
+            validate_counts(shots, r1, r2)
+        return
+    ncounts = 0.5 * (sum(results1.values()) + sum(results2.values()))
+    for r1, r2 in zip(sorted(results1.items()), sorted(results2.items())):
+        assert abs(sum(r1) - sum(r2)) < (ncounts // 10)
 
 
 def validate_samples(shots, results1, results2):
     for res in [results1, results2]:
-        if isinstance(shots, list):
+        if isinstance(shots, (list, tuple)):
             assert len(res) == len(shots)
             assert all(r.shape == (s,) for r, s in zip(res, shots))
             assert all(
-                abs(sum(r1) - sum(r2)) < s // 10 for r1, r2, s in zip(results1, results2, shots)
+                abs(sum(r1) - sum(r2)) < (s // 10) for r1, r2, s in zip(results1, results2, shots)
             )
         else:
             assert res.shape == (shots,)
-            assert abs(sum(results1) - sum(results2)) < shots // 10
+            assert abs(sum(results1) - sum(results2)) < (shots // 10)
 
 
 def validate_expval(shots, results1, results2):
     if shots is None:
         assert np.allclose(results1, results2)
     assert np.allclose(results1, results2, atol=0, rtol=0.3)
+
+
+def validate_measurements(func, shots, results1, results2):
+    if func is qml.counts:
+        validate_counts(shots, results1, results2)
+        return
+
+    if func is qml.sample:
+        validate_samples(shots, results1, results2)
+        return
+
+    validate_expval(shots, results1, results2)
 
 
 def test_apply_operation():
@@ -60,9 +83,9 @@ def test_apply_operation():
         qml.shadow_expval(0),
     ],
 )
-def test_gather_statistics(measurement):
+def test_gather_mcm(measurement):
     with pytest.raises(ValueError, match="Native mid-circuit measurement mode does not support"):
-        gather_statistics(measurement, None, None, None)
+        gather_mcm(measurement, None, None, None)
 
 
 def test_unsupported_measurement():
@@ -115,14 +138,7 @@ def test_single_mcm_single_measure_mcm(shots, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    if measure_f is qml.counts:
-        return
-
-    if measure_f is qml.sample:
-        validate_samples(shots, results1, results2)
-        return
-
-    validate_expval(shots, results1, results2)
+    validate_measurements(measure_f, shots, results1, results2)
 
 
 @flaky(max_runs=5)
@@ -157,14 +173,7 @@ def test_single_mcm_single_measure_obs(shots, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    if measure_f is qml.counts:
-        return
-
-    if measure_f is qml.sample:
-        validate_samples(shots, results1, results2)
-        return
-
-    validate_expval(shots, results1, results2)
+    validate_measurements(measure_f, shots, results1, results2)
 
 
 @flaky(max_runs=5)
@@ -198,11 +207,4 @@ def test_single_mcm_multiple_measurements(shots, reset, measure_f):
     results2 = func2(*params)
 
     for r1, r2 in zip(results1, results2):
-        if measure_f is qml.counts:
-            continue
-
-        if measure_f is qml.sample:
-            validate_samples(shots, r1, r2)
-            continue
-
-        validate_expval(shots, r1, r2)
+        validate_measurements(measure_f, shots, r1, r2)

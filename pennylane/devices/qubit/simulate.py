@@ -473,7 +473,7 @@ def parse_native_mid_circuit_measurements(
     idx_one_shot = find_not_measurement_values(circuit)
     normalized_meas = [None] * len(circuit.measurements)
     for i, m in zip(idx_one_shot, all_shot_meas):
-        normalized_meas[i] = gather_non_mcm(circuit, i, m)
+        normalized_meas[i] = gather_non_mcm(circuit.measurements[i], m, mcm_shot_meas)
 
     idx_sample = find_measurement_values(circuit)
     counter = Counter()
@@ -481,52 +481,52 @@ def parse_native_mid_circuit_measurements(
         for d in mcm_shot_meas:
             counter.update(d)
     for i in idx_sample:
-        normalized_meas[i] = gather_statistics(
+        normalized_meas[i] = gather_mcm(
             circuit.measurements[i], circuit.measurements[i].mv, mcm_shot_meas, counter
         )
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-def gather_non_mcm(circuit: qml.tape.QuantumScript, idx, measurement):
+def gather_non_mcm(circuit_measurement, measurement, samples):
     """Combines, gathers and normalizes several measurements with trivial measurement values.
 
     Args:
-        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
-        idx (int): Measurement index
+        circuit_measurement (MeasurementProcess): measurement
         measurement (TensorLike): measurement results
+        samples (List[dict]): Mid-circuit measurement samples
 
     Returns:
         TensorLike: The combined measurement outcome
     """
-    if isinstance(circuit.measurements[idx], (ExpectationMP, ProbabilityMP)):
-        new_meas = measurement / circuit.shots.total_shots
-    elif isinstance(circuit.measurements[idx], SampleMP):
+    if isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
+        new_meas = measurement / len(samples)
+    elif isinstance(circuit_measurement, SampleMP):
         new_meas = np.concatenate(tuple(s.ravel() for s in measurement))
-    elif isinstance(circuit.measurements[idx], CountsMP):
+    elif isinstance(circuit_measurement, CountsMP):
         new_meas = dict(sorted(measurement.items()))
-    elif isinstance(circuit.measurements[idx], VarianceMP):
+    elif isinstance(circuit_measurement, VarianceMP):
         new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
     else:
         raise ValueError(
-            f"Native mid-circuit measurement mode does not support {circuit.measurements[idx].__class__.__name__} measurements."
+            f"Native mid-circuit measurement mode does not support {circuit_measurement.__class__.__name__} measurements."
         )
     return new_meas
 
 
-def gather_statistics(measurement, mv, samples, counter):
+def gather_mcm(measurement, mv, samples, counter):
     """Combines, gathers and normalizes several measurements with non-trivial measurement values.
 
     Args:
         measurement (MeasurementProcess): measurement
         mv (MeasurementValue): measurement value
-        samples (QuantumTape): Measurement samples
+        samples (List[dict]): Mid-circuit measurement samples
         counter (Counter): Measurement value counts
 
     Returns:
         TensorLike: The combined measurement outcome
     """
     if isinstance(mv, (list, tuple)):
-        return np.vstack(tuple(gather_statistics(measurement, m, samples, counter) for m in mv)).T
+        return np.vstack(tuple(gather_mcm(measurement, m, samples, counter) for m in mv)).T
     if isinstance(measurement, ExpectationMP):
         sha = mv.measurements[0].hash
         new_samples = np.mean(np.array([dct[sha] for dct in samples]))
@@ -536,7 +536,11 @@ def gather_statistics(measurement, mv, samples, counter):
         new_samples = np.array([1 - p1, p1])
     elif isinstance(measurement, CountsMP):
         sha = mv.measurements[0].hash
-        new_samples = {0: len(samples) - counter[sha], 1: counter[sha]}
+        new_samples = {}
+        if len(samples) - counter[sha] > 0:
+            new_samples[0] = len(samples) - counter[sha]
+        if counter[sha] > 0:
+            new_samples[1] = counter[sha]
     elif isinstance(measurement, SampleMP):
         sha = mv.measurements[0].hash
         new_samples = np.array([dct[sha] for dct in samples])
