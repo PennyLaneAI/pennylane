@@ -89,7 +89,6 @@ groups are as follows:
 * ``doc``: Packages used by ReadTheDocs to build PennyLane documentation
 * ``jax``: Supported versions of jax and dependent packages, for users who wish to use the jax interface
 * ``torch``: Supported version of torch, for users who wish to use the torch interface
-* ``tf``: Supported version of tensorflow and dependent packages, for users who wish to use the tensorflow interface
 * ``external``: Various external dependencies that only certain modules require, such as ``PyZX``, ``matplotlib`` and ``stim``
 * ``qcut``: Packages needed to use all features of the ``qcut`` module
 * ``qchem``: Packages needed to use all features of the ``qchem`` module
@@ -98,6 +97,14 @@ groups are as follows:
 Many commands will exclude these groups by default, as they are specified as optional. If you wish
 to include them, this can typically be done using the ``--with`` option. For example, to install
 PennyLane along with the jax and torch, you can run ``poetry install --with jax,torch``.
+
+.. note::
+
+    Unfortunately, TensorFlow (and sometimes other packages) does not remain up-to-date with the
+    rest of the PennyLane ecosystem. Poetry requires that all dependencies, soft or not, are
+    compatible with each other for all supported versions specified. If you are tasked with
+    updating TensorFlow, please update ``doc/.extra-requirements.txt`` and
+    ``.github/workflows/interface-unit-tests.yml``. Complete list of files is subject to change.
 
 Managing Dependencies
 ~~~~~~~~~~~~~~~~~~~~~
@@ -119,11 +126,9 @@ you wish to do this, please update the constraints manually in ``pyproject.toml`
     to update all dependencies in a group (but not the core dependencies), you must list each
     package name explicitly.
 
-If you make any manual changes to ``pyproject.toml``, be sure to run ``poetry lock --no-update``
-to update the lockfile (``poetry.lock``). Note that this file should only be modified by running
-this exact command. Manually updating it is not recommended by Poetry itself, and we prefer the
-``--no-update`` option to continue using minimal supported versions of dependencies. See `the
-documentation on version contraints <https://python-poetry.org/docs/dependency-specification/#version-constraints>`_
+If you make any manual changes to ``pyproject.toml``, be sure to run ``make lock`` afterwards,
+as is detailed in the section below. See `the documentation on version
+contraints <https://python-poetry.org/docs/dependency-specification/#version-constraints>`_
 provided by Poetry on how to specify supported version ranges for dependencies.
 
 .. note::
@@ -135,20 +140,11 @@ provided by Poetry on how to specify supported version ranges for dependencies.
 Updating requirements.txt files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Many external users will choose to stick to pip, or some installation tool other than poetry. To
-continue supporting all users, we should export version contraints from Poetry to this format using
-a command like the following:
-
-.. code::
-
-    poetry export -f requirements.txt -o <target-file-name>.txt --without-hashes --without-urls
-
-Each requirement files requires additional options to ensure completeness. They are as follows:
-
-* ``requirements.txt``: None
-* ``requirements-dev.txt``: ``--only dev``
-* ``requirements-ci.txt``: ``--only ci``
-* ``doc/requirements.txt``: ``--with doc,torch,jax,tf``
+Many users will choose to stick to pip, or some installation tool other than poetry. To continue
+supporting all users, including some CI actions, we should export version contraints from Poetry
+to this format. This sequence of commands can be executed with a single call to ``make lock``.
+To account for TensorFlow and some other stuff, it is strongly encouraged to use this make target
+as it encapsulates some custom behaviour.
 
 Docker
 ------

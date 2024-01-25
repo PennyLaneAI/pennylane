@@ -19,6 +19,7 @@ help:
 	@echo "  format [check=1]   to apply black formatter; use with 'check=1' to check instead of modify (requires black)"
 	@echo "  lint               to run pylint on source files"
 	@echo "  lint-test          to run pylint on test files"
+	@echo "  lock               to run poetry lock and auto-generate requirements.txt files"
 
 .PHONY: install
 install:
@@ -85,9 +86,14 @@ lint-test:
 
 .PHONY: lock
 lock:
-	poetry lock --no-update
-	poetry export -f requirements.txt -o requirements.txt --without-hashes --without-urls
-	poetry export -f requirements.txt -o requirements-ci.txt --without-hashes --without-urls --only ci
-	poetry export -f requirements.txt -o requirements-dev.txt --without-hashes --without-urls --only dev
-	poetry export -f requirements.txt -o doc/requirements.txt --without-hashes --without-urls --with doc,torch,jax,qchem,data
-	cat doc/.extra-requirements.txt >> doc/requirements.txt
+	@echo "Calling poetry lock:"
+	@poetry lock --no-update
+	@echo "Using poetry export to generate all requirements.txt files"
+	@poetry export -f requirements.txt -o requirements.txt --without-hashes --without-urls
+	@poetry export -f requirements.txt -o requirements-ci.txt --without-hashes --without-urls --only ci
+	@poetry export -f requirements.txt -o requirements-dev.txt --without-hashes --without-urls --only dev
+	@poetry export -f requirements.txt -o doc/requirements.txt --without-hashes --without-urls --with doc,torch,jax,qchem,data
+	@echo "Hacking in un-poetic changes to doc/requirements.txt:"
+	@cat doc/.extra-requirements.txt >> doc/requirements.txt
+	@sed -i '' 's/torch==2\.1\.0/torch==1.9.0/g' doc/requirements.txt
+	@sed -i '' 's/ml-dtypes==0\.3\.2/ml-dtypes==0.2.0/g' doc/requirements.txt
