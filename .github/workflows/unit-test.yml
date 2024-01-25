@@ -147,8 +147,7 @@ jobs:
         run: |
           which python
           which pip
-          
-          exit 1
+          python --version
 
       - name: Upgrade PIP
         if: steps.continue.outputs.confirm == 'true'
