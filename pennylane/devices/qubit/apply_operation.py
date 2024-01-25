@@ -202,12 +202,10 @@ def apply_operation(
 @apply_operation.register
 def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None):
     """Applies a native mid-circuit measurement."""
-    from .measure import measure  # pylint: disable=import-outside-toplevel
-
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     wire = op.wires
-    probs = measure(qml.probs(wire), state)
+    probs = qml.devices.qubit.measure(qml.probs(wire), state)
     sample = np.random.binomial(1, probs[1])
     axis = wire.toarray()[0]
     slices = [slice(None)] * state.ndim
