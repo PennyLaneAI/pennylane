@@ -132,7 +132,7 @@ torch = [
 ]
 
 [tool.poetry.group.external.dependencies]
-pyzx = {git = "https://github.com/Quantomatic/pyzx.git", rev = "master"}
+pyzx = "^0.7.1"
 matplotlib = "*"
 stim = "*"
 
