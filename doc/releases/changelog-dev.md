@@ -192,9 +192,6 @@
 * Added a development guide on deprecations and removals.
   [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
-* The mentioning of QNodecollection has been removed from the Installation and dependencies page because 
-  the `collections` module has been removed from PennyLane since v0.31.
-  [(#4857)](https://github.com/PennyLaneAI/pennylane/pull/4857)
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
