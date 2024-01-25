@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, protected-access
 import pickle
 from copy import copy, deepcopy
 import pytest
@@ -86,7 +86,7 @@ class TestDeprecations:
 def test_legacy_multiplication_pwords(pauli1, pauli2):
     """Test the legacy behavior for using the star operator for matrix multiplication of pauli words"""
     res1, coeff1 = pauli1 * pauli2
-    res2, coeff2 = pauli1 @ pauli2
+    res2, coeff2 = pauli1._matmul(pauli2)
     assert res1 == res2
     assert coeff1 == coeff2
 
@@ -304,10 +304,21 @@ class TestPauliWord:
 
     @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_matmult)
     def test_matmul(self, word1, word2, result_pw, coeff):
+        """Test the user facing matrix multiplication between two pauli words"""
         copy_pw1 = copy(word1)
         copy_pw2 = copy(word2)
 
-        assert word1 @ word2 == (result_pw, coeff)
+        assert word1 @ word2 == PauliSentence({result_pw: coeff})
+        assert copy_pw1 == word1  # check for mutation of the pw themselves
+        assert copy_pw2 == word2
+
+    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_matmult)
+    def test_private_private_matmul(self, word1, word2, result_pw, coeff):
+        """Test the private matrix multiplication that returns a tuple (new_word, coeff)"""
+        copy_pw1 = copy(word1)
+        copy_pw2 = copy(word2)
+
+        assert word1._matmul(word2) == (result_pw, coeff)
         assert copy_pw1 == word1  # check for mutation of the pw themselves
         assert copy_pw2 == word2
 

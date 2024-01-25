@@ -34,14 +34,6 @@ pauli_ops_and_prod = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.ops.
 pauli_ops_and_tensor = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.operation.Tensor)
 
 
-def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
-    """Computes the ExpvalCost and catches the initial deprecation warning."""
-
-    with pytest.warns(UserWarning, match="is deprecated,"):
-        res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
-    return res
-
-
 @pytest.fixture(
     scope="module",
     params=[
@@ -678,7 +670,7 @@ def test_pennylane_to_openfermion_no_decomp():
 def test_integration_observable_to_vqe_cost(
     monkeypatch, _, terms_ref, expected_cost, custom_wires, tol
 ):
-    r"""Test if `import_operator()` integrates with `ExpvalCost()` in pennylane"""
+    r"""Test if `import_operator()` integrates with `QNode` in pennylane"""
 
     qOp = openfermion.QubitOperator()
     if terms_ref is not None:
@@ -686,7 +678,6 @@ def test_integration_observable_to_vqe_cost(
     vqe_observable = qml.qchem.convert.import_operator(qOp, "openfermion", custom_wires)
 
     num_qubits = len(vqe_observable.wires)
-    assert vqe_observable.terms.__repr__()  # just to satisfy codecov
 
     if custom_wires is None:
         wires = num_qubits
@@ -694,14 +685,15 @@ def test_integration_observable_to_vqe_cost(
         wires = qml.qchem.convert._process_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
+
     dev = qml.device("default.qubit", wires=wires)
 
-    # can replace the ansatz with more suitable ones later.
-    def dummy_ansatz(phis, wires):
-        for phi, w in zip(phis, wires):
+    @qml.qnode(dev)
+    def dummy_cost(params):
+        for phi, w in zip(params, dev.wires):
             qml.RX(phi, wires=w)
+        return qml.expval(vqe_observable)
 
-    dummy_cost = catch_warn_ExpvalCost(dummy_ansatz, vqe_observable, dev)
     params = [0.1 * i for i in range(num_qubits)]
     res = dummy_cost(params)
 
@@ -776,7 +768,7 @@ def test_integration_mol_file_to_vqe_cost(
     name, core, active, mapping, expected_cost, custom_wires, tol
 ):
     r"""Test if the output of `decompose()` works with `import_operator()`
-    to generate `ExpvalCost()`"""
+    to generate `QNode`"""
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
     qubit_hamiltonian = qchem.decompose(
@@ -800,16 +792,16 @@ def test_integration_mol_file_to_vqe_cost(
         wires = qml.qchem.convert._process_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
+
     dev = qml.device("default.qubit", wires=wires)
-
-    # can replace the ansatz with more suitable ones later.
-    def dummy_ansatz(phis, wires):
-        for phi, w in zip(phis, wires):
-            qml.RX(phi, wires=w)
-
     phis = np.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
 
-    dummy_cost = catch_warn_ExpvalCost(dummy_ansatz, vqe_hamiltonian, dev)
+    @qml.qnode(dev)
+    def dummy_cost(params):
+        for phi, w in zip(params, dev.wires):
+            qml.RX(phi, wires=w)
+        return qml.expval(vqe_hamiltonian)
+
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
