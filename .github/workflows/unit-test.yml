@@ -144,6 +144,7 @@ jobs:
           echo "${{ github.workspace }}/$VENV_NAME/bin" >> $GITHUB_PATH
 
       - name: Validate Python
+        if: steps.continue.outputs.confirm == 'true'
         run: |
           which python
           which pip
