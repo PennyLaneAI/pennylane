@@ -225,7 +225,12 @@ def test_meas_samples(shots):
 @pytest.mark.parametrize("shots", [None, 8192])
 @pytest.mark.parametrize(
     "ops",
-    [None, qml.PauliY(0), qml.PauliX(0) @ qml.PauliY(1)],
+    [
+        None,
+        qml.PauliY(0),
+        qml.PauliX(0) @ qml.PauliY(1),
+        qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2),
+    ],
 )
 def test_meas_probs(tableau, shots, ops):
     """Test if samples are returned with shots given in the clifford device."""
@@ -234,8 +239,10 @@ def test_meas_probs(tableau, shots, ops):
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
-        qml.PauliX(0)
-        qml.PauliX(1)
+        for wire in range(3):
+            qml.PauliX(wire)
+            qml.PauliY(wire)
+            qml.PauliZ(wire)
         return qml.probs(op=ops) if ops else qml.probs(wires=[0, 1])
 
     qnode_clfrd = qml.QNode(circuit_fn, dev_c)
@@ -248,10 +255,23 @@ def test_meas_probs(tableau, shots, ops):
         ):
             qnode_clfrd()
 
+        with pytest.raises(
+            ValueError,
+            match="Cannot set an empty list of target states.",
+        ):
+            dev_c.probability_target = []
+            qnode_clfrd()
+
         dev_c.probability_target = [[0, 0], [1, 0], [0, 1], [1, 1]]
         assert dev_c.probability_target is not None
 
-    assert qml.math.allclose(qnode_clfrd(), qnode_qubit(), atol=1e-2 if shots else 1e-8)
+    gotten_probs, target_probs = qnode_clfrd(), qnode_qubit()
+    if gotten_probs.shape[-1] != target_probs.shape[-1]:
+        target_probs = qml.math.sum(target_probs.reshape((2,) * len(ops.wires)), axis=-1).reshape(
+            1, -1
+        )
+
+    assert qml.math.allclose(gotten_probs, target_probs, atol=1e-2 if shots else 1e-8)
 
 
 @pytest.mark.parametrize("shots", [1024, 4096])

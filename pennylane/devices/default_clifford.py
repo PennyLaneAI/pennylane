@@ -222,6 +222,50 @@ class DefaultClifford(Device):
         makes the calculations of increasingly large Clifford circuits more efficient on this device.
 
     .. details::
+        :title: Probabilities for Basis States
+        :href: clifford-probabilities
+
+        One can compute the analytical probability of each computational basis state using
+        :func:`qml.probs <pennylane.probs>`, which also accepts a wire specification for obtaining marginal
+        probabilities and an observable for obtaining probabilities from the rotated computational basis.
+        As the ``default.clifford`` device supports executingm quantum circuits with a large number of qubits,
+        we restrict the ability to compute the probabilities for `all` computational basis states at once to
+        maintain computational efficiency. In contrast, one can specify target state(s), i.e., subset
+        `basis states` of interest, using the ``probability_target`` property of the device.
+
+        .. code-block:: python
+
+            import pennylane as qml
+            import numpy as np
+
+            dev = qml.device("default.clifford")
+            dev.probability_target = np.array([[0, 0], [1, 0]])
+
+        After doing this, one can simply use the :func:`qml.probs <pennylane.probs>` with its usual arguments
+        and probabilities for the specified target states would be computed and returned.
+
+        .. code-block:: python
+
+            wires = np.random.randint(3, size=(10000, 3))
+
+            @qml.qnode(dev)
+            def circuit():
+                for w in wires:
+                    qml.PauliX(w[0])
+                    qml.PauliY(w[1])
+                    qml.PauliZ(w[2])
+                return qml.probs(op = qml.PauliX(0) @ qml.PauliY(1))
+
+        >>> circuit()
+        tensor([0.25, 0.25], requires_grad=True)
+
+        .. note::
+
+            If there's a mismatch in the number of wires for the provided target state(s) and the observable,
+            then the marginal probabilities will be returned for the computational basis states for the
+            subspace built using minimum number of wires among the two.
+
+    .. details::
         :title: Tracking
         :href: clifford-tracking
 
@@ -894,12 +938,17 @@ class DefaultClifford(Device):
         mobs_wires = meas_op.obs.wires if meas_op.obs else meas_op.wires
         meas_wires = mobs_wires if mobs_wires else circuit.wires
         tgt_states = self._prob_states
-        if meas_wires != tgt_states.shape[1]:
+        if not tgt_states.shape[1]:
+            raise ValueError("Cannot set an empty list of target states.")
+
+        if len(meas_wires) <= tgt_states.shape[1]:
             tgt_states = []
             for state in self._prob_states:
                 if list(state[meas_wires]) not in tgt_states:
                     tgt_states.append(list(state[meas_wires]))
             tgt_states = np.array(tgt_states)
+        else:
+            meas_wires = meas_wires[: tgt_states.shape[1]]
 
         # Iterate over the measured qubits and post-select possible outcome
         # This should now scaled as O(M * N), where N is the number of measured qubits,
@@ -915,7 +964,7 @@ class DefaultClifford(Device):
                 prob_res[np.where(outcome != tgt_states[:, wire])[0]] = 0.0
             circuit_simulator.postselect_z(wire, desired_value=outcome)
 
-        return prob_res / np.sum(prob_res)
+        return prob_res
 
     @staticmethod
     def _measure_single_sample(stim_ct, meas_ops, meas_idx, meas_wire, stim):
