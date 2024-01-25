@@ -11,6 +11,11 @@ on:
           required: false
           type: string
           default: 'unit-tests'
+      tensorflow_version:
+        description: The version of TensorFlow to install for any job that requires TensorFlow
+        required: false
+        type: string
+        default: 2.15.0
       pytest_coverage_flags:
         description: PyTest Coverage flags to pass to all jobs
         required: false
@@ -206,7 +211,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 3 --group ${{ matrix.group }} --durations-path='.github/workflows/tf_tests_durations.json'
-      additional_poetry_groups: tf
+      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   jax-tests:
@@ -298,7 +303,8 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
-      additional_poetry_groups: jax,tf,torch
+      additional_poetry_groups: jax,torch
+      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   external-libraries-tests:
@@ -328,7 +334,8 @@ jobs:
       install_catalyst: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
-      additional_poetry_groups: external,jax,tf
+      additional_poetry_groups: external,jax
+      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   qcut-tests:
@@ -357,7 +364,8 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
-      additional_poetry_groups: qcut,jax,tf,torch
+      additional_poetry_groups: qcut,jax,torch
+      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   qchem-tests:
@@ -417,7 +425,8 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
-      additional_poetry_groups: jax,tf,torch
+      additional_poetry_groups: jax,torch
+      additional_pip_packages: tensorflow==${{ inputs.tensorflow_version }} keras==${{ inputs.tensorflow_version }}
 
 
   data-tests:

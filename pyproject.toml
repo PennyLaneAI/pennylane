@@ -35,7 +35,7 @@ url = "https://download.pytorch.org/whl/cpu"
 priority = "explicit"
 
 [tool.poetry.dependencies]
-python = ">=3.9.0,<3.12"
+python = "^3.9.0"
 numpy = "^1.23"
 scipy = "^1.8"
 networkx = "^2.6"
@@ -60,9 +60,6 @@ optional = true
 optional = true
 
 [tool.poetry.group.torch]
-optional = true
-
-[tool.poetry.group.tf]
 optional = true
 
 [tool.poetry.group.external]
@@ -130,11 +127,6 @@ torch = [
     { version = "2.1.0", source = "PyPI", platform = "darwin" },
     { version = "2.1.0+cpu", source = "pytorch-cpu", platform = "!=darwin" },
 ]
-
-[tool.poetry.group.tf.dependencies]
-tensorflow = "^2.15.0"
-keras = "^2.15.0"
-tensorflow-macos = { version = "^2.15.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
 
 [tool.poetry.group.external.dependencies]
 pyzx = {git = "https://github.com/Quantomatic/pyzx.git", rev = "master"}

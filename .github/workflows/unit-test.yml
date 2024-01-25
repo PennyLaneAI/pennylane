@@ -64,6 +64,11 @@ on:
         required: false
         type: string
         default: ''
+      additional_pip_packages:
+        description: Additional packages to install that do not work with Poetry. Values will be passed to pip install {value}
+        required: false
+        type: string
+        default: ''
 
 jobs:
   test:
@@ -119,6 +124,10 @@ jobs:
       - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
         run: poetry install --with dev,ci,${{ inputs.additional_poetry_groups || 'main' }}
+
+      - name: Install additional PIP packages
+        if: inputs.additional_pip_packages != '' && steps.continue.outputs.confirm == 'true'
+        run: pip install ${{ inputs.additional_pip_packages }}
 
       - name: Install PennyLane-Lightning master
         if: inputs.install_pennylane_lightning_master == true && steps.continue.outputs.confirm == 'true'
