@@ -15,8 +15,8 @@ r"""
 Contains the BasisEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 

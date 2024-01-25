@@ -15,8 +15,8 @@
 This module contains the functions needed for creating fermionic and qubit observables.
 """
 # pylint: disable= too-many-branches, too-many-return-statements
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.operation import active_new_opmath
 from pennylane.pauli.utils import simplify

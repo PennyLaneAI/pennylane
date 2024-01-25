@@ -17,7 +17,6 @@
 import autoray
 import numpy as onp
 import pytest
-import scipy as s
 from autoray import numpy as anp
 
 from pennylane import math as fn
@@ -159,18 +158,6 @@ def test_unwrap():
     assert out[4] == 0.5
 
 
-def test_kron():
-    """Test that a deprecation warning is avoided when arrays
-    are dispatched to scipy.kron."""
-    m1 = s.array([[0, 1], [1, 0]])
-    m2 = s.array([[1, 0], [0, 1]])
-    expected_result = onp.kron(m1, m2)
-
-    assert np.allclose(expected_result, fn.kron(m1, m2, like="scipy"))
-    with pytest.warns(DeprecationWarning):
-        _ = s.kron(m1, m2)
-
-
 @pytest.mark.parametrize(
     ("n", "t", "gamma_ref"),
     [
@@ -293,3 +280,38 @@ class TestNorm:
         computed_norm = fn.norm(arr, ord=np.inf, **kwargs)
         assert np.allclose(computed_norm, expected_norm)
         assert fn.get_interface(computed_norm) == expected_intrf
+
+    @pytest.mark.parametrize(
+        "arr",
+        [
+            np.array([1.0, 2.0, 3.0, 4.0, 5.0]),
+            np.array(
+                [
+                    [[0.123, 0.456, 0.789], [-0.123, -0.456, -0.789]],
+                    [[1.23, 4.56, 7.89], [-1.23, -4.56, -7.89]],
+                ]
+            ),
+            np.array(
+                [
+                    [
+                        [0.123 - 0.789j, 0.456 + 0.456j, 0.789 - 0.123j],
+                        [-0.123 + 0.789j, -0.456 - 0.456j, -0.789 + 0.123j],
+                    ],
+                    [
+                        [1.23 + 4.56j, 4.56 - 7.89j, 7.89 + 1.23j],
+                        [-1.23 - 7.89j, -4.56 + 1.23j, -7.89 - 4.56j],
+                    ],
+                ]
+            ),
+        ],
+    )
+    def test_autograd_norm_gradient(self, arr):
+        """Test that qml.math.norm has the correct gradient with autograd
+        when the order and axis are not specified."""
+        norm = fn.norm(arr)
+        expected_norm = onp.linalg.norm(arr)
+        assert np.isclose(norm, expected_norm)
+
+        grad = qml_grad(fn.norm)(arr)
+        expected_grad = (norm**-1) * arr.conj()
+        assert fn.allclose(grad, expected_grad)

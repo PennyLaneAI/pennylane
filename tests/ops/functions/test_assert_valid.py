@@ -315,3 +315,69 @@ def test_data_is_tuple():
 
     with pytest.raises(AssertionError, match=r"op.data must be a tuple"):
         assert_valid(BadData(2.0, wires=0))
+
+
+def create_op_instance(c):
+    """Given an Operator class, create an instance of it."""
+    n_wires = c.num_wires
+    if n_wires == qml.operation.AllWires:
+        n_wires = 0
+    elif n_wires == qml.operation.AnyWires:
+        n_wires = 1
+
+    wires = qml.wires.Wires(range(n_wires))
+    if (num_params := c.num_params) == 0:
+        return c(wires) if wires else c()
+    if isinstance(num_params, property):
+        num_params = 1
+
+    # get ndim_params
+    if isinstance((ndim_params := c.ndim_params), property):
+        ndim_params = (0,) * num_params
+
+    # turn ndim_params into valid params
+    [dim] = set(ndim_params)
+    if dim == 0:
+        params = [1] * len(ndim_params)
+    elif dim == 1:
+        params = [[1] * 2**n_wires] * len(ndim_params)
+    elif dim == 2:
+        params = [np.eye(2)] * len(ndim_params)
+    else:
+        raise ValueError("unexpected dim:", dim)
+
+    return c(*params, wires=wires) if wires else c(*params)
+
+
+def test_generated_list_of_ops(class_to_validate):
+    """Test every auto-generated operator instance."""
+    if class_to_validate.__module__[14:20] == "qutrit":
+        pytest.xfail(reason="qutrit ops fail matrix validation")
+
+    # If you defined a new Operator and this call to `create_op_instance` failed, it might
+    # be the fault of the test and not your Operator. Please do one of the following things:
+    #   1. Update your Operator to meet PL standards so it passes
+    #   2. Improve `create_op_instance` so it can create an instance of your op (it is quite hacky)
+    #   3. Add an instance of your class to `_INSTANCES_TO_TEST` in ./conftest.py
+    #       Note: if it then fails validation, move it to `_INSTANCES_TO_FAIL` as described below.
+    op = create_op_instance(class_to_validate)
+
+    # If you defined a new Operator and this call to `assert_valid` failed, the Operator doesn't
+    # follow PL standards. Please do one of the following things:
+    #   1. Preferred action: Update your Operator to meet PL standards so it passes
+    #   2. Add an instance of your class to `_INSTANCES_TO_FAIL` in ./conftest.py, along with the
+    #       exception type raised by the assertion and a comment explaining the assumption your
+    #       operator makes.
+    assert_valid(op)
+
+
+def test_explicit_list_of_ops(valid_instance):
+    """Test the validity of operators that could not be auto-generated."""
+    assert_valid(valid_instance)
+
+
+def test_explicit_list_of_failing_ops(invalid_instance_and_error):
+    """Test instances of ops that fail validation."""
+    op, exc_type = invalid_instance_and_error
+    with pytest.raises(exc_type):
+        assert_valid(op)

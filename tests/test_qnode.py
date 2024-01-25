@@ -921,23 +921,6 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == call_count  # once for each preprocessing
 
-    def test_drawing_has_deferred_measurements(self):
-        """Test that `qml.draw` with qnodes uses defer_measurements
-        to draw circuits with mid-circuit measurements."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            m = qml.measure(0)
-            qml.cond(m, qml.PauliX)(wires=1)
-            return qml.expval(qml.PauliZ(wires=1))
-
-        res = qml.draw(circuit)("x")
-        expected = "0: ──RX(x)─╭●─┤     \n1: ────────╰X─┤  <Z>"
-
-        assert res == expected
-
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
@@ -1677,7 +1660,6 @@ class TestTapeExpansion:
         assert tape.operations[0].name == "RX"
         assert np.allclose(tape.operations[0].parameters, 3 * x)
 
-    @pytest.mark.xfail(reason="not implemented yet")
     @pytest.mark.autograd
     def test_no_gradient_expansion(self, mocker):
         """Test that an unsupported operation with defined gradient recipe is

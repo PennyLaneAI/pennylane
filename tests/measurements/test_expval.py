@@ -94,6 +94,54 @@ class TestExpval:
         atol = tol if shots is None else tol_stochastic
         assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
 
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    def test_observable_is_composite_measurement_value(
+        self, shots, phi, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that expectation values for mid-circuit measurement values
+        are correct for a composite measurement value."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(0.5 * phi, 1)
+            m1 = qml.measure(1)
+            qml.RX(2 * phi, 2)
+            m2 = qml.measure(2)
+            return qml.expval(m0 * m1 + m2)
+
+        res = circuit(phi, shots=shots)
+
+        @qml.qnode(dev)
+        def expected_circuit(phi):
+            qml.RX(phi, 0)
+            qml.RX(0.5 * phi, 1)
+            qml.RX(2 * phi, 2)
+            return (
+                qml.expval(qml.Projector([1], 0)),
+                qml.expval(qml.Projector([1], 1)),
+                qml.expval(qml.Projector([1], 2)),
+            )
+
+        evals = expected_circuit(phi)
+        expected = evals[0] * evals[1] + evals[2]
+
+        atol = tol if shots is None else tol_stochastic
+        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+
+    def test_measurement_value_list_not_allowed(self):
+        """Test that measuring a list of measurement values raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        with pytest.raises(
+            ValueError, match="qml.expval does not support measuring sequences of measurements"
+        ):
+            _ = qml.expval([m0, m1])
+
     @pytest.mark.parametrize(
         "obs",
         [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
@@ -227,3 +275,22 @@ class TestExpval:
 
         state = tf.Variable(state, dtype=tf.float64)
         assert qml.math.allequal(compute_expval(state), expected)
+
+    def test_batched_hamiltonian(self):
+        """Test that the expval interface works"""
+        dev = qml.device("default.qubit")
+        ops = (qml.Hadamard(0), qml.PauliZ(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3))
+        H = qml.Hamiltonian([0.5, 1.0], ops)
+
+        @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
+        def cost_circuit(params):
+            qml.RX(params, 0)
+            qml.CNOT([0, 1])
+            return qml.expval(H)
+
+        rng = np.random.default_rng(42)
+        params = rng.normal(0, np.pi, 4)
+        energy = [cost_circuit(p) for p in params]
+        energy_batched = cost_circuit(params)
+
+        assert qml.math.allequal(energy_batched, energy)

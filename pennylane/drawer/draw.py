@@ -179,8 +179,10 @@ def draw(
 
     .. code-block:: python
 
-        @qml.gradients.param_shift(shifts=[(0.1,)])
-        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        from functools import partial
+
+        @partial(qml.gradients.param_shift, shifts=[(0.1,)])
+        @qml.qnode(qml.device('default.qubit', wires=1))
         def transformed_circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -266,15 +268,7 @@ def _draw_qnode(
                 tapes = qnode.construct(args, kwargs)
                 if isinstance(qnode.device, qml.devices.Device):
                     program = qnode.transform_program
-                    if any(
-                        isinstance(op, qml.measurements.MidMeasureMP)
-                        for op in qnode.tape.operations
-                    ):
-                        tapes, _ = qml.defer_measurements(qnode.tape, device=qnode.device)
-                    else:
-                        tapes = [qnode.tape]
-
-                    tapes = program(tapes)
+                    tapes = program([qnode.tape])
 
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
@@ -323,6 +317,8 @@ def draw_mpl(
     decimals=None,
     expansion_strategy=None,
     style=None,
+    *,
+    fig=None,
     **kwargs,
 ):
     """Draw a qnode with matplotlib
@@ -335,11 +331,11 @@ def draw_mpl(
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
-        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch', 'pennylane',
-            'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            global style set with :func:`~.use_style` will be used, and the initial default is 'black_white'.
-            If you would like to use your environment's current rcParams, set `style` to "rcParams".
-            Setting style does not modify matplotlib global plotting settings.
+        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
+            'pennylane', 'pennylane_sketch', 'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``.
+            If no style is specified, the global style set with :func:`~.use_style` will be used, and the
+            initial default is 'black_white'. If you would like to use your environment's current rcParams,
+            set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -356,7 +352,7 @@ def draw_mpl(
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
-
+        fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -483,7 +479,7 @@ def draw_mpl(
         You can also control the appearance with matplotlib's provided tools, see the
         `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
         For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
-        ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style=None``:
+        ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style="rcParams"``:
 
         .. code-block:: python
 
@@ -497,7 +493,7 @@ def draw_mpl(
             plt.rcParams['lines.linewidth'] = 5
             plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-            fig, ax = qml.draw_mpl(circuit, style=None)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit, style="rcParams")(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/rcparams.png
@@ -521,6 +517,8 @@ def draw_mpl(
                 :target: javascript:void(0);
 
     """
+    if catalyst_qjit(qnode):
+        qnode = qnode.user_function
     if hasattr(qnode, "construct"):
         return _draw_mpl_qnode(
             qnode,
@@ -529,6 +527,7 @@ def draw_mpl(
             decimals=decimals,
             expansion_strategy=expansion_strategy,
             style=style,
+            fig=fig,
             **kwargs,
         )
 
@@ -549,6 +548,7 @@ def draw_mpl(
             show_all_wires=show_all_wires,
             decimals=decimals,
             style=style,
+            fig=fig,
             **kwargs,
         )
 
@@ -562,6 +562,8 @@ def _draw_mpl_qnode(
     decimals=None,
     expansion_strategy=None,
     style="black_white",
+    *,
+    fig=None,
     **kwargs,
 ):
     @wraps(qnode)
@@ -579,16 +581,7 @@ def _draw_mpl_qnode(
                 qnode.construct(args, kwargs_qnode)
                 if isinstance(qnode.device, qml.devices.Device):
                     program = qnode.transform_program
-                    if any(
-                        isinstance(op, qml.measurements.MidMeasureMP)
-                        for op in qnode.tape.operations
-                    ):
-                        tapes, _ = qml.defer_measurements(qnode.tape, device=qnode.device)
-                    else:
-                        tapes = [qnode.tape]
-
-                    tapes, _ = program(tapes)
-                    tape = tapes[0]
+                    [tape], _ = program([qnode.tape])
                 else:
                     tape = qnode.tape
             finally:
@@ -602,6 +595,7 @@ def _draw_mpl_qnode(
             show_all_wires=show_all_wires,
             decimals=decimals,
             style=style,
+            fig=fig,
             **kwargs,
         )
 

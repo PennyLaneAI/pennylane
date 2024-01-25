@@ -15,11 +15,13 @@
 import pytest
 import numpy as np
 
+from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
+from pennylane.measurements import Shots
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -121,17 +123,23 @@ class TestCaching:
 
 # add tests for lightning 2 when possible
 # set rng for device when possible
+no_shots = Shots(None)
+shots_2_10k = Shots((10000, 10000))
+dev_def = DefaultQubit()
+dev_ps = ParamShiftDerivativesDevice(seed=54353453)
 test_matrix = [
-    ({"gradient_fn": param_shift}, 100000, DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, None, DefaultQubit()),
-    ({"gradient_fn": "backprop"}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint"}, None, DefaultQubit()),
+    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),  # 0
+    ({"gradient_fn": param_shift}, no_shots, dev_def),  # 1
+    ({"gradient_fn": "backprop"}, no_shots, dev_def),  # 2
+    ({"gradient_fn": "adjoint"}, no_shots, dev_def),  # 3
+    ({"gradient_fn": "adjoint", "device_vjp": True}, no_shots, dev_def),  # 4
+    ({"gradient_fn": "device"}, shots_2_10k, dev_ps),  # 5
 ]
 
 
 def atol_for_shots(shots):
     """Return higher tolerance if finite shots."""
-    return 1e-2 if shots else 1e-6
+    return 3e-2 if shots else 1e-6
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
@@ -157,14 +165,15 @@ class TestJaxExecuteIntegration:
             res = cost(a, b)
 
         if execute_kwargs.get("gradient_fn", None) == "adjoint":
-            assert device.tracker.totals["execute_and_derivative_batches"] == 1
+            assert device.tracker.totals.get("execute_and_derivative_batches", 0) == 0
         else:
             assert device.tracker.totals["batches"] == 1
         assert device.tracker.totals["executions"] == 2  # different wires so different hashes
 
         assert len(res) == 2
-        assert res[0].shape == ()
-        assert res[1].shape == ()
+        if not shots.has_partitioned_shots:
+            assert res[0].shape == ()
+            assert res[1].shape == ()
 
         assert qml.math.allclose(res[0], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
         assert qml.math.allclose(res[1], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
@@ -178,7 +187,8 @@ class TestJaxExecuteIntegration:
             return execute([tape], device, **execute_kwargs)[0]
 
         res = jax.jacobian(cost)(a)
-        assert res.shape == ()  # pylint: disable=no-member
+        if not shots.has_partitioned_shots:
+            assert res.shape == ()  # pylint: disable=no-member
 
         # compare to standard tape jacobian
         tape = qml.tape.QuantumScript([qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))])
@@ -192,6 +202,7 @@ class TestJaxExecuteIntegration:
 
     def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
+
         a = jnp.array(0.1)
         b = jnp.array(0.2)
 
@@ -199,27 +210,36 @@ class TestJaxExecuteIntegration:
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            return jnp.hstack(execute([tape], device, **execute_kwargs)[0])
+            return execute([tape], device, **execute_kwargs)[0]
 
         res = cost(a, b)
         expected = [jnp.cos(a), -jnp.cos(a) * jnp.sin(b)]
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[0], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[1], expected, atol=2 * atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = jax.jacobian(cost, argnums=[0, 1])(a, b)
-        assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == (2,)
-        assert res[1].shape == (2,)
+        g = jax.jacobian(cost, argnums=[0, 1])(a, b)
+        assert isinstance(g, tuple) and len(g) == 2
 
         expected = ([-jnp.sin(a), jnp.sin(a) * jnp.sin(b)], [0, -jnp.cos(a) * jnp.cos(b)])
-        for _r, _e in zip(res, expected):
-            assert np.allclose(_r, _e, atol=atol_for_shots(shots))
+
+        if shots.has_partitioned_shots:
+            for i in (0, 1):
+                assert np.allclose(g[i][0][0], expected[0][0], atol=atol_for_shots(shots), rtol=0)
+                assert np.allclose(g[i][1][0], expected[0][1], atol=atol_for_shots(shots), rtol=0)
+                assert np.allclose(g[i][0][1], expected[1][0], atol=atol_for_shots(shots), rtol=0)
+                assert np.allclose(g[i][1][1], expected[1][1], atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(g[0][0], expected[0][0], atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(g[1][0], expected[0][1], atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(g[0][1], expected[1][0], atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(g[1][1], expected[1][1], atol=atol_for_shots(shots), rtol=0)
 
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
-
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -241,28 +261,28 @@ class TestJaxExecuteIntegration:
             tape4 = qml.tape.QuantumScript(
                 [qml.RY(jnp.array(0.5), 0)], [qml.probs(wires=[0, 1])], shots=shots
             )
-            return sum(jnp.hstack(execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)))
+            res = execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
+            res = jax.tree_util.tree_leaves(res)
+            out = sum(jnp.hstack(res))
+            if shots.has_partitioned_shots:
+                out = out / shots.num_copies
+            return out
 
         params = jnp.array([0.1, 0.2])
+
         x, y = params
 
         res = cost(params)
         expected = 2 + jnp.cos(0.5) + jnp.cos(x) * jnp.cos(y)
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        # TODO: jax does not allow computing tapes with different gradient
-        # shapes like [None, None, *, None] here
+        grad = jax.grad(cost)(params)
+        expected = [-jnp.cos(y) * jnp.sin(x), -jnp.cos(x) * jnp.sin(y)]
+        assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
-        # grad = jax.grad(cost)(params)
-        # expected = [-jnp.cos(y) * jnp.sin(x), -jnp.cos(x) * jnp.sin(y)]
-        # assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
-
+    # pylint: disable=too-many-statements
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
         """Test that tapes wit different can be executed and differentiated."""
-
-        # TODO: Will probably fail if we update jax to fix this test
-        # if execute_kwargs["gradient_fn"] == "backprop":
-        #     pytest.xfail("backprop is not compatible with something about this situation.")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -280,35 +300,63 @@ class TestJaxExecuteIntegration:
                 [qml.expval(qml.PauliZ(0))],
                 shots=shots,
             )
-            return jnp.hstack(execute([tape1, tape2, tape3], device, **execute_kwargs))
+            res = qml.execute([tape1, tape2, tape3], device, **execute_kwargs)
+            leaves = jax.tree_util.tree_leaves(res)
+            return jnp.hstack(leaves)
 
         params = jnp.array([0.1, 0.2])
         x, y = params
 
         res = cost(params)
         assert isinstance(res, jax.Array)
-        assert res.shape == (4,)
+        assert res.shape == (4 * shots.num_copies,) if shots.has_partitioned_shots else (4,)
 
-        assert np.allclose(res[0], jnp.cos(x) * jnp.cos(y), atol=atol_for_shots(shots))
-        assert np.allclose(res[1], 1, atol=atol_for_shots(shots))
-        assert np.allclose(res[2], jnp.cos(0.5), atol=atol_for_shots(shots))
-        assert np.allclose(res[3], jnp.cos(x) * jnp.cos(y), atol=atol_for_shots(shots))
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[0], jnp.cos(x) * jnp.cos(y), atol=atol_for_shots(shots))
+            assert np.allclose(res[2], jnp.cos(x) * jnp.cos(y), atol=atol_for_shots(shots))
+            assert np.allclose(res[1], 1, atol=atol_for_shots(shots))
+            assert np.allclose(res[3], 1, atol=atol_for_shots(shots))
+            assert np.allclose(res[4], jnp.cos(0.5), atol=atol_for_shots(shots))
+            assert np.allclose(res[5], jnp.cos(0.5), atol=atol_for_shots(shots))
+            assert np.allclose(res[6], jnp.cos(x) * jnp.cos(y), atol=atol_for_shots(shots))
+            assert np.allclose(res[7], jnp.cos(x) * jnp.cos(y), atol=atol_for_shots(shots))
+        else:
+            assert np.allclose(res[0], jnp.cos(x) * jnp.cos(y), atol=atol_for_shots(shots))
+            assert np.allclose(res[1], 1, atol=atol_for_shots(shots))
+            assert np.allclose(res[2], jnp.cos(0.5), atol=atol_for_shots(shots))
+            assert np.allclose(res[3], jnp.cos(x) * jnp.cos(y), atol=atol_for_shots(shots))
 
-        # TODO: jax does not allow computing tapes with different gradient shapes
+        jac = jax.jacobian(cost)(params)
+        assert isinstance(jac, jnp.ndarray)
+        assert (
+            jac.shape == (8, 2) if shots.has_partitioned_shots else (4, 2)
+        )  # pylint: disable=no-member
 
-        # jac = jax.jacobian(cost)(params)
-        # assert isinstance(jac, jnp.ndarray)
-        # assert jac.shape == (4, 2)  # pylint: disable=no-member
+        if shots.has_partitioned_shots:
+            assert np.allclose(jac[1], 0, atol=atol_for_shots(shots))
+            assert np.allclose(jac[3:5], 0, atol=atol_for_shots(shots))
+        else:
+            assert np.allclose(jac[1:3], 0, atol=atol_for_shots(shots))
 
-        # assert np.allclose(jac[1:3], 0, atol=atol_for_shots(shots))
+        d1 = -jnp.sin(x) * jnp.cos(y)
+        if shots.has_partitioned_shots:
+            assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
+            assert np.allclose(jac[2, 0], d1, atol=atol_for_shots(shots))
+            assert np.allclose(jac[6, 0], d1, atol=atol_for_shots(shots))
+            assert np.allclose(jac[7, 0], d1, atol=atol_for_shots(shots))
+        else:
+            assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
+            assert np.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
 
-        # d1 = -jnp.sin(x) * jnp.cos(y)
-        # assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
-        # assert np.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
-
-        # d2 = -jnp.cos(x) * jnp.sin(y)
-        # assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
-        # assert np.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
+        d2 = -jnp.cos(x) * jnp.sin(y)
+        if shots.has_partitioned_shots:
+            assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
+            assert np.allclose(jac[2, 1], d2, atol=atol_for_shots(shots))
+            assert np.allclose(jac[6, 1], d2, atol=atol_for_shots(shots))
+            assert np.allclose(jac[7, 1], d2, atol=atol_for_shots(shots))
+        else:
+            assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
+            assert np.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
 
     def test_reusing_quantum_tape(self, execute_kwargs, shots, device):
         """Test re-using a quantum tape by passing new parameters"""
@@ -339,7 +387,11 @@ class TestJaxExecuteIntegration:
         # values of the parameters for subsequent calls
         res2 = cost(2 * a, b)
         expected = [jnp.cos(2 * a), -jnp.cos(2 * a) * jnp.sin(b)]
-        assert np.allclose(res2, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res2[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res2[2:], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res2, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(lambda a, b: cost(2 * a, b), argnums=[0, 1])
         jac = jac_fn(a, b)
@@ -348,8 +400,15 @@ class TestJaxExecuteIntegration:
             [0, -jnp.cos(2 * a) * jnp.cos(b)],
         )
         assert isinstance(jac, tuple) and len(jac) == 2
-        for _j, _e in zip(jac, expected):
-            assert np.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            for offset in (0, 2):
+                assert np.allclose(jac[0][0 + offset], expected[0][0], atol=atol_for_shots(shots))
+                assert np.allclose(jac[0][1 + offset], expected[0][1], atol=atol_for_shots(shots))
+                assert np.allclose(jac[1][0 + offset], expected[1][0], atol=atol_for_shots(shots))
+                assert np.allclose(jac[1][1 + offset], expected[1][1], atol=atol_for_shots(shots))
+        else:
+            for _j, _e in zip(jac, expected):
+                assert np.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
     def test_classical_processing(self, execute_kwargs, shots, device):
         """Test classical processing within the quantum tape"""
@@ -371,8 +430,9 @@ class TestJaxExecuteIntegration:
 
         # Only two arguments are trainable
         assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == ()
-        assert res[1].shape == ()
+        if not shots.has_partitioned_shots:
+            assert res[0].shape == ()
+            assert res[1].shape == ()
 
         # I tried getting analytic results for this circuit but I kept being wrong and am giving up
 
@@ -392,7 +452,8 @@ class TestJaxExecuteIntegration:
 
         jac_fn = jax.jacobian(cost)
         jac = jac_fn(a, U)
-        assert isinstance(jac, jnp.ndarray)
+        if not shots.has_partitioned_shots:
+            assert isinstance(jac, jnp.ndarray)
         assert np.allclose(jac, jnp.sin(a), atol=atol_for_shots(shots), rtol=0)
 
     def test_differentiable_expand(self, execute_kwargs, device, shots):
@@ -459,9 +520,6 @@ class TestJaxExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("adjoint differentiation does not support probabilities")
-
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -482,13 +540,17 @@ class TestJaxExecuteIntegration:
                 ],
             ]
         )
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[:, 0:2].flatten(), expected, atol=atol_for_shots(shots))
+            assert np.allclose(res[:, 2:].flatten(), expected, atol=atol_for_shots(shots))
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
         res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == (4,)
-        assert res[1].shape == (4,)
+        assert res[0].shape == (2, 4) if shots.has_partitioned_shots else (4,)
+        assert res[1].shape == (2, 4) if shots.has_partitioned_shots else (4,)
 
         expected = (
             jnp.array(
@@ -508,20 +570,25 @@ class TestJaxExecuteIntegration:
             ),
         )
 
-        assert np.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
-        assert np.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[0][:, 0:2].flatten(), expected[0], atol=atol_for_shots(shots))
+            assert np.allclose(res[0][:, 2:].flatten(), expected[0], atol=atol_for_shots(shots))
+            assert np.allclose(res[1][:, :2].flatten(), expected[1], atol=atol_for_shots(shots))
+            assert np.allclose(res[1][:, 2:].flatten(), expected[1], atol=atol_for_shots(shots))
+        else:
+            assert np.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
 
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            return jnp.hstack(execute([tape], device, **execute_kwargs)[0])
+            res = qml.execute([tape], device, **execute_kwargs)[0]
+            return jnp.hstack(jax.tree_util.tree_leaves(res))
 
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
@@ -530,20 +597,30 @@ class TestJaxExecuteIntegration:
         expected = jnp.array(
             [jnp.cos(x), (1 + jnp.cos(x) * jnp.cos(y)) / 2, (1 - jnp.cos(x) * jnp.cos(y)) / 2]
         )
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[:3], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[3:], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
         res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == (3,)
-        assert res[1].shape == (3,)
+        assert res[0].shape == (3 * shots.num_copies,) if shots.has_partitioned_shots else (3,)
+        assert res[1].shape == (3 * shots.num_copies,) if shots.has_partitioned_shots else (3,)
 
         expected = (
             jnp.array([-jnp.sin(x), -jnp.sin(x) * jnp.cos(y) / 2, jnp.sin(x) * jnp.cos(y) / 2]),
             jnp.array([0, -jnp.cos(x) * jnp.sin(y) / 2, jnp.cos(x) * jnp.sin(y) / 2]),
         )
-        assert np.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
-        assert np.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[0][:3], expected[0], atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[0][3:], expected[0], atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[1][:3], expected[1], atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[1][3:], expected[1], atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
 
 
 class TestHigherOrderDerivatives:
@@ -652,7 +729,10 @@ class TestHamiltonianWorkflows:
                 qml.expval(H2)
 
             tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-            return jnp.hstack(execute([tape], device, **execute_kwargs)[0])
+            res = execute([tape], device, **execute_kwargs)[0]
+            if shots.has_partitioned_shots:
+                return jnp.hstack(res[0] + res[1])
+            return jnp.hstack(res)
 
         return _cost_fn
 
@@ -698,11 +778,19 @@ class TestHamiltonianWorkflows:
 
         res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = jax.jacobian(cost_fn)(weights, coeffs1, coeffs2)
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, use_new_op_math):
         """Test hamiltonian with trainable parameters."""
@@ -717,8 +805,17 @@ class TestHamiltonianWorkflows:
 
         res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = jnp.hstack(jax.jacobian(cost_fn, argnums=[0, 1, 2])(weights, coeffs1, coeffs2))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            pytest.xfail(
+                "multiple hamiltonians with shot vectors does not seem to be differentiable."
+            )
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
