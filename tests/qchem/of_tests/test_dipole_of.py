@@ -242,18 +242,16 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
 def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
     r"""Tests the correctness of the computed dipole moment."""
 
-    n_qubits = len(hf_state)
-
-    dev = qml.device("default.qubit", wires=n_qubits)
+    dev = qml.device("default.qubit")
 
     dip_obs = qml.qchem.dipole_of(symbols, coords, charge=charge, outpath=tmpdir.strpath)
 
-    def circuit(params, wires):
-        # pylint: disable=unused-argument
-        qml.BasisState(hf_state, wires=wires)
+    @qml.qnode(dev)
+    def circuit(hf_state, obs):
+        qml.BasisState(hf_state, wires=range(len(hf_state)))
+        return qml.expval(obs)
 
-    with pytest.warns(UserWarning, match="is deprecated,"):
-        dipole = np.array([qml.ExpvalCost(circuit, obs, dev)(None) for obs in dip_obs])
+    dipole = np.array([circuit(hf_state, obs) for obs in dip_obs])
 
     assert np.allclose(dipole, exp_dipole, **tol)
 

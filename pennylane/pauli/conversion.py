@@ -340,6 +340,13 @@ def pauli_sentence(op):
     Returns:
         .PauliSentence: the PauliSentence representation of an arithmetic operator or Hamiltonian
     """
+
+    if isinstance(op, PauliWord):
+        return PauliSentence({op: 1.0})
+
+    if isinstance(op, PauliSentence):
+        return op
+
     if (ps := op.pauli_rep) is not None:
         return ps
 
