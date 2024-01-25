@@ -60,6 +60,11 @@ mat_map = {
 
 
 @lru_cache
+def _make_operation(op, wire):
+    return op_map[op](wire)
+
+
+@lru_cache
 def _cached_sparse_data(op):
     """Returns the sparse data and indices of a Pauli operator."""
     if op == "I":
@@ -433,7 +438,7 @@ class PauliWord(dict):
                 raise ValueError("Can't get the operation for an empty PauliWord.")
             return Identity(wires=wire_order)
 
-        factors = [op_map[op](wire) for wire, op in self.items()]
+        factors = [_make_operation(op, wire) for wire, op in self.items()]
 
         if get_as_tensor:
             return factors[0] if len(factors) == 1 else Tensor(*factors)
@@ -446,7 +451,7 @@ class PauliWord(dict):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
-        obs = [op_map[op](wire) for wire, op in self.items()]
+        obs = [_make_operation(op, wire) for wire, op in self.items()]
         return Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
 
     def map_wires(self, wire_map: dict) -> "PauliWord":

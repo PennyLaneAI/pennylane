@@ -310,9 +310,10 @@ class CompositeOp(Operator):
     def queue(self, context=qml.QueuingManager):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
-        for op in self:
-            context.remove(op)
-        context.append(self)
+        if qml.QueuingManager.recording():
+            for op in self:
+                context.remove(op)
+            context.append(self)
         return self
 
     @classmethod
