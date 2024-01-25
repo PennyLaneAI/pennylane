@@ -39,6 +39,37 @@
   is now strictly faster for jax.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
+* New `qml.commutator` function that allows to compute commutators between
+  `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
+  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+
+  Basic usage with PennyLane operators.
+
+  ```pycon
+  >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
+  2j*(PauliZ(wires=[0]))
+  ```
+
+  We can return a `PauliSentence` instance by setting `pauli=True`.
+
+  ```pycon
+  >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
+  >>> op2 = qml.PauliY(0) + qml.PauliY(1)
+  >>> qml.commutator(op1, op2, pauli=True)
+  2j * X(1) @ Z(0)
+  + 2j * Z(1) @ X(0)
+  ```
+
+  We can also input `PauliWord` and `PauliSentence` instances.
+
+  ```pycon
+  >>> op1 = PauliWord({0:"X", 1:"X"})
+  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+  >>> qml.commutator(op1, op2, pauli=True)
+  2j * Z(0) @ X(1)
+  + 2j * X(0) @ Z(1)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
