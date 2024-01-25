@@ -132,7 +132,7 @@ provided by Poetry on how to specify supported version ranges for dependencies.
     downstream dependencies. Used with the ``--with`` option as detailed above, this is a very
     powerful tool for managing and understanding dependencies.
 
-Updating requirements.txt Files
+Updating requirements.txt files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Many external users will choose to stick to pip, or some installation tool other than poetry. To
@@ -148,7 +148,7 @@ Each requirement files requires additional options to ensure completeness. They 
 * ``requirements.txt``: None
 * ``requirements-dev.txt``: ``--only dev``
 * ``requirements-ci.txt``: ``--only ci``
-* ``doc/requirements.txt``: ``--with doc,torch,jax,tf ``
+* ``doc/requirements.txt``: ``--with doc,torch,jax,tf``
 
 Docker
 ------
