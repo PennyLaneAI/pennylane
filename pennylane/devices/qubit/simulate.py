@@ -261,11 +261,10 @@ def simulate(
     if has_mcm and has_shots:
         if circuit.shots.has_partitioned_shots:
             results = []
-            for shots_copy in circuit.shots.shot_vector:
-                for _ in range(shots_copy[1]):
-                    aux_circuit = circuit.copy()
-                    aux_circuit._shots = qml.measurements.Shots(shots_copy[0])
-                    results.append(simulate(aux_circuit, rng, prng_key, debugger, interface))
+            for s in circuit.shots:
+                aux_circuit = circuit.copy()
+                aux_circuit._shots = qml.measurements.Shots(s)
+                results.append(simulate(aux_circuit, rng, prng_key, debugger, interface))
             return tuple(results)
         aux_circuit = init_auxiliary_circuit(circuit)
         one_shot_meas, tmp_dict = simulate_native_mcm(
