@@ -112,6 +112,7 @@ def commutator(op1, op2, pauli=False):
         res = op1.commutator(op2)
         return res if pauli else res.operation(wire_order=res.wires)
 
+    # If no pauli processing is possible, use operator arithmetic
     with qml.QueuingManager.stop_recording():
         if isinstance(op1, (PauliWord, PauliSentence)):
             op1 = op1.operation()
