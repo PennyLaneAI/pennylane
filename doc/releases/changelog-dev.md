@@ -88,6 +88,9 @@
 * `CRX`, `CRY`, `CRZ`, `CROT`, and `ControlledPhaseShift` (i.e. `CPhaseShift`) now inherit from `ControlledOp`, giving them additional properties such as `control_wire` and `control_values`. Calling `qml.ctrl` on `RX`, `RY`, `RZ`, `Rot`, and `PhaseShift` with a single control wire will return gates of types `CRX`, `CRY`, etc. as opposed to a general `Controlled` operator.
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
 
+* `fable`  is added as a template for constructing efficient circuits using FABLE. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+[(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
