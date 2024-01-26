@@ -17,17 +17,15 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
-import warnings
 from copy import copy
 from functools import lru_cache
 
 import numpy as np
 
 from scipy import sparse
-from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable, Operation
+from pennylane.operation import Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
