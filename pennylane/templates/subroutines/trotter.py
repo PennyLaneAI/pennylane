@@ -166,11 +166,11 @@ class TrotterProduct(Operation):
                 f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
             )
 
-        if isinstance(hamiltonian, qml.Hamiltonian):
-            coeffs, ops = hamiltonian.terms()
+        if isinstance(hamiltonian, (qml.Hamiltonian, SProd)):
+            coeffs, ops = hamiltonian.simplify().terms()
             if len(coeffs) < 2:
                 raise ValueError(
-                    "There should be atleast 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+                    "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
 
             hamiltonian = qml.dot(coeffs, ops)
@@ -180,7 +180,7 @@ class TrotterProduct(Operation):
                 hamiltonian = hamiltonian.simplify()
             else:
                 raise TypeError(
-                    f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
+                    f"The given operator must be a PennyLane ~.Hamiltonian, ~.Sum or ~.SProd, got {hamiltonian}"
                 )
 
         if check_hermitian:
