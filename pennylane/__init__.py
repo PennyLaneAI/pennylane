@@ -112,9 +112,10 @@ from pennylane.ops.functions import (
     matrix,
     simplify,
     iterative_qpe,
+    commutator,
+    comm,
 )
 from pennylane.optimize import *
-from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
@@ -202,6 +203,9 @@ def device(name, *args, **kwargs):
 
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
+
+    * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
+      simulator of Clifford circuits.
 
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more

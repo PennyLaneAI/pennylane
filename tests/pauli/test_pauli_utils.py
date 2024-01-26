@@ -676,13 +676,23 @@ class TestPauliGroup:
 
     def test_deprecated_pauli_mult(self):
         """Test that pauli_mult is deprecated."""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match=""):
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`pauli_mult` is deprecated"):
             pauli_mult(PauliX(0), PauliY(1))
 
-    def test_deprecated_pauli_mult_with_phase(self):
+    @pytest.mark.parametrize(
+        "pauli_word_1,pauli_word_2,expected_phase",
+        [
+            (PauliZ(0), PauliY(0), -1j),
+            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), -1),
+        ],
+    )
+    def test_deprecated_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, expected_phase):
         """Test that pauli_mult_with_phase is deprecated."""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match=""):
-            pauli_mult_with_phase(PauliX(0), PauliY(1))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="`pauli_mult_with_phase` is deprecated"
+        ):
+            _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2)
+        assert obtained_phase == expected_phase
 
 
 class TestPartitionPauliGroup:

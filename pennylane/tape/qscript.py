@@ -21,16 +21,11 @@ import contextlib
 import copy
 from collections import Counter
 from typing import List, Union, Optional, Sequence
-from warnings import warn
 
 import pennylane as qml
 from pennylane.measurements import (
-    ClassicalShadowMP,
-    CountsMP,
     MeasurementProcess,
     ProbabilityMP,
-    SampleMP,
-    ShadowExpvalMP,
     StateMP,
     Shots,
 )
@@ -398,34 +393,6 @@ class QuantumScript:
     def op_wires(self) -> Wires:
         """Returns the wires that the tape operations act on."""
         return Wires.all_wires(op.wires for op in self.operations)
-
-    @property
-    def is_sampled(self) -> bool:
-        """Whether any measurements are of a type that requires samples."""
-        warn(
-            "QuantumScript.is_sampled is deprecated. This property should now be "
-            "validated manually:\n\n"
-            ">>> from pennylane.measurements import *\n"
-            ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
-            ">>> is_sampled = any(isinstance(m, sample_types) for m in tape.measurements)\n",
-            qml.PennyLaneDeprecationWarning,
-        )
-        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
-        return any(isinstance(m, sample_type) for m in self.measurements)
-
-    @property
-    def all_sampled(self) -> bool:
-        """Whether all measurements are of a type that requires samples."""
-        warn(
-            "QuantumScript.all_sampled is deprecated. This property should now be "
-            "validated manually:\n\n"
-            ">>> from pennylane.measurements import *\n"
-            ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
-            ">>> all_sampled = all(isinstance(m, sample_types) for m in tape.measurements)\n",
-            qml.PennyLaneDeprecationWarning,
-        )
-        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
-        return all(isinstance(m, sample_type) for m in self.measurements)
 
     ##### Update METHODS ###############
 

@@ -165,9 +165,9 @@ class TestMethods:
 
         decomp = op.compute_decomposition(base=op.base, control_wires=op.control, lazy=False)
         expected_decomp = [
-            qml.ops.op_math.Controlled(qml.RX(0.25 * 4, wires=3), control_wires="a"),
-            qml.ops.op_math.Controlled(qml.RX(0.25 * 2, wires=3), control_wires=1),
-            qml.ops.op_math.Controlled(qml.RX(0.25 * 1, wires=3), control_wires="blue"),
+            qml.CRX(0.25 * 4, wires=["a", 3]),
+            qml.CRX(0.25 * 2, wires=[1, 3]),
+            qml.CRX(0.25 * 1, wires=["blue", 3]),
         ]
 
         for op1, op2 in zip(decomp, expected_decomp):
@@ -178,9 +178,9 @@ class TestMethods:
 
         decomp = op.decomposition()
         expected_decomp = [
-            qml.ops.op_math.Controlled(qml.RX(0.25 * 4, wires=3), control_wires="a"),
-            qml.ops.op_math.Controlled(qml.RX(0.25 * 2, wires=3), control_wires=1),
-            qml.ops.op_math.Controlled(qml.RX(0.25 * 1, wires=3), control_wires="blue"),
+            qml.CRX(0.25 * 4, wires=["a", 3]),
+            qml.CRX(0.25 * 2, wires=[1, 3]),
+            qml.CRX(0.25 * 1, wires=["blue", 3]),
         ]
 
         for op1, op2 in zip(decomp, expected_decomp):
