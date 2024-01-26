@@ -1588,7 +1588,14 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
         assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
 
-    @pytest.mark.parametrize("bases_bases_match", BASES)
+    additional_cases = [
+        (qml.sum(qml.PauliX(0), qml.PauliY(0)), qml.sum(qml.PauliY(0), qml.PauliX(0)), True),
+        (qml.sum(qml.PauliX(0), qml.PauliY(1)), qml.sum(qml.PauliX(1), qml.PauliY(0)), False),
+        (qml.prod(qml.PauliX(0), qml.PauliY(1)), qml.prod(qml.PauliY(1), qml.PauliX(0)), True),
+        (qml.prod(qml.PauliX(0), qml.PauliY(1)), qml.prod(qml.PauliX(1), qml.PauliY(0)), False),
+    ]
+
+    @pytest.mark.parametrize("bases_bases_match", BASES + additional_cases)
     @pytest.mark.parametrize("params_params_match", PARAMS)
     def test_s_prod_comparison(self, bases_bases_match, params_params_match):
         """Test that equal compares two objects of the SProd class"""
@@ -1781,7 +1788,7 @@ class TestSumComparisons:
             qml.s_prod(2j, qml.prod(qml.PauliZ(0), qml.PauliX(1))),
             qml.s_prod(2j, qml.prod(qml.PauliX(0), qml.PauliZ(1))),
         )
-        # true_res = true_res.simplify()
+        true_res = true_res.simplify()
 
         res = qml.prod(H1, H2) - qml.prod(H2, H1)
         res = res.simplify()
