@@ -176,12 +176,9 @@ class TrotterProduct(Operation):
             hamiltonian = qml.dot(coeffs, ops)
 
         if not isinstance(hamiltonian, Sum):
-            if isinstance(hamiltonian, SProd):
-                hamiltonian = hamiltonian.simplify()
-            else:
-                raise TypeError(
-                    f"The given operator must be a PennyLane ~.Hamiltonian, ~.Sum or ~.SProd, got {hamiltonian}"
-                )
+            raise TypeError(
+                f"The given operator must be a PennyLane ~.Hamiltonian, ~.Sum or ~.SProd, got {hamiltonian}"
+            )
 
         if check_hermitian:
             for op in hamiltonian.operands:
