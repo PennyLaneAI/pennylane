@@ -70,6 +70,9 @@
   + 2j * X(0) @ Z(1)
   ```
 
+* Added new error tracking and propagation functionality. 
+  [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
+
 <h3>Improvements 🛠</h3>
 
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
@@ -273,3 +276,4 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
 Matthew Silverman.
+Jay Soni,
