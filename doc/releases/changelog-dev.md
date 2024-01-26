@@ -300,8 +300,6 @@
    qubit_ham = qml.parity_transform(w, n=6)
    ```
 
-   This maps the fermionic Hamiltonian to qubit Hamiltonian through parity transform.
-
    ```pycon
    >>> print(qubit_ham)
    (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
