@@ -617,7 +617,7 @@
 * `qml.map_wires` no longer fails when mapping nested quantum tapes.
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
-* `parity_transform`  is added for parity mapping of a fermionic Hamiltonian.
+* `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
    [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
 
 <h3>Contributors ✍️</h3>
