@@ -23,7 +23,7 @@
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
-* Documentation for `qml.data` has been updated.
+* Documentation `qml.data` has been updated and now mentions a way to access the same dataset simultaneously from multiple environments.
   [(#5029)](https://github.com/PennyLaneAI/pennylane/pull/5029)
 
 <h3>Bug fixes 🐛</h3>
