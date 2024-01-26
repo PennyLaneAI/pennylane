@@ -60,6 +60,13 @@ class Identity(CVObservable, Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
+    
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"I('{wire}')"
+        return f"I({wire})"
 
     @staticmethod
     def compute_eigvals(n_wires=1):  # pylint: disable=arguments-differ

@@ -90,7 +90,7 @@ ops_rep = (
     "1j * Hadamard(wires=[0])",
     "1.23 * CNOT(wires=[0, 1])",
     "4.56 * RX(1.23, wires=[1])",
-    "(1+2j) * Identity(wires=[0])",
+    "(1+2j) * I(0)",
     "10 * IsingXX(4.56, wires=[2, 3])",
     "0j * Toffoli(wires=[1, 2, 3])",
     "42 * Rot(0.34, 1.0, 0, wires=[0])",
