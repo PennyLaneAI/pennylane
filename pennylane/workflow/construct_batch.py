@@ -14,6 +14,7 @@
 """Contains a function extracting the tapes at postprocessing at any stage of a transform program.
 
 """
+import inspect
 from typing import Union, Callable, Tuple
 
 import pennylane as qml
@@ -253,7 +254,7 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
 
     def batch_constructor(*args, **kwargs) -> Tuple[Tuple["qml.tape.QuantumTape", Callable]]:
         """Create a batch of tapes and a post processing function."""
-        if qnode.qfunc_uses_shots_arg:
+        if "shots" in inspect.signature(qnode.func).parameters:
             shots = _get_device_shots(qnode.device)
         else:
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))

@@ -400,8 +400,6 @@ class TestConstructBatch:
                 qml.S(0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.qfunc_uses_shots_arg
-
         batch, fn = construct_batch(circuit, level=None)(shots=2)
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(

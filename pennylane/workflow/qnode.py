@@ -535,14 +535,6 @@ class QNode:
         )
 
     @property
-    def qfunc_uses_shots_arg(self) -> bool:
-        """Whether or not the qfunc has a ``shots`` keyword argument.
-
-        If so, shots cannot be dynamically set on a call to a ``QNode``.
-        """
-        return self._qfunc_uses_shots_arg
-
-    @property
     def interface(self):
         """The interface used by the QNode"""
         return self._interface
