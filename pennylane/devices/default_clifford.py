@@ -228,7 +228,7 @@ class DefaultClifford(Device):
         One can compute the analytical probability of each computational basis state using
         :func:`qml.probs <pennylane.probs>`, which also accepts a wire specification for obtaining marginal
         probabilities and an observable for obtaining probabilities from the rotated computational basis.
-        As the ``default.clifford`` device supports executingm quantum circuits with a large number of qubits,
+        As the ``default.clifford`` device supports executing quantum circuits with a large number of qubits,
         we restrict the ability to compute the probabilities for `all` computational basis states at once to
         maintain computational efficiency. In contrast, one can specify target state(s), i.e., subset
         `basis states` of interest, using the ``probability_target`` property of the device.
@@ -475,7 +475,8 @@ class DefaultClifford(Device):
 
         # Build a stim circuit, tableau and simulator
         stim_ct = stim.Circuit()
-        initial_tableau = stim.Tableau.from_circuit(stim_ct)
+        initial_circuit = stim.Circuit()
+        initial_tableau = stim.Tableau.from_circuit(initial_circuit)
         tableau_simulator = stim.TableauSimulator()
 
         # Account for state preparation operation
@@ -490,6 +491,7 @@ class DefaultClifford(Device):
                 qml.math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
                 endian="big",
             )
+            initial_circuit = initial_tableau.to_circuit()
             tableau_simulator.do_tableau(initial_tableau, circuit.wires)
 
         # Iterate over the gates --> manage them manually or apply them to circuit
@@ -517,16 +519,17 @@ class DefaultClifford(Device):
                         flat_state = qml.math.flatten(state)
                         debugger.snapshots[op.tag or len(debugger.snapshots)] = flat_state
 
+        stim_circuit = initial_circuit + stim_ct
         tableau_simulator.do_circuit(stim_ct)
-
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
 
         # Perform measurments based on whether shots are provided
         if circuit.shots:
-            stim_circuit = tableau_simulator.current_inverse_tableau().inverse().to_circuit()
             meas_results = self.measure_statistical(circuit, stim_circuit, stim, seed=seed)
         else:
-            meas_results = self.measure_analytical(circuit, tableau_simulator, global_phase, stim)
+            meas_results = self.measure_analytical(
+                circuit, stim_circuit, tableau_simulator, global_phase, stim
+            )
 
         return meas_results[0] if len(meas_results) == 1 else tuple(meas_results)
 
@@ -679,7 +682,7 @@ class DefaultClifford(Device):
                 results.append(meas.process_samples(samples=samples, wire_order=circuit.wires))
         return results
 
-    def measure_analytical(self, circuit, tableau_simulator, global_phase, stim):
+    def measure_analytical(self, circuit, stim_circuit, tableau_simulator, global_phase, stim):
         """Given a circuit, compute tableau and return the analytical measurement results."""
         results = []
         for meas in circuit.measurements:
@@ -701,7 +704,7 @@ class DefaultClifford(Device):
 
             # Computing probabilities via tableau
             elif isinstance(meas, ProbabilityMP):
-                res = self._measure_probability(tableau_simulator, circuit, meas, stim)
+                res = self._measure_probability(circuit, stim_circuit, meas, stim)
 
             # Computing entropy via tableaus
             elif isinstance(meas, VnEntropyMP):
@@ -821,7 +824,7 @@ class DefaultClifford(Device):
         r"""Computes the Rényi entanglement entropy using stabilizer information.
 
         Computes the Rényi entanglement entropy :math:`S_A` for a subsytem described by
-        :math:`A`, :math:`S_A = \text{rank}(\text{projection}_A {\mathcal{S}}) - |\mathcal{S}|`,
+        :math:`A`, :math:`S_A = \text{rank}(\text{proj}_A {\mathcal{S}}) - |\mathcal{S}|`,
         where :math:`\mathcal{S}` is the stabilizer group for the system using the theory
         described in `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
 
@@ -902,7 +905,7 @@ class DefaultClifford(Device):
         )
 
     # pylint: disable=too-many-branches
-    def _measure_probability(self, tableau_simulator, circuit, meas_op, stim):
+    def _measure_probability(self, circuit, stim_circuit, meas_op, stim):
         """Measure the probability of each computational basis state."""
 
         if self._prob_states is None and self._tableau:
@@ -915,7 +918,7 @@ class DefaultClifford(Device):
 
         # TODO: We might be able to skip the inverse done below
         # (as the distribution should be independent of inverse)
-        diagonalizing_cit = tableau_simulator.current_inverse_tableau().inverse().to_circuit()
+        diagonalizing_cit = stim_circuit.copy()
         diagonalizing_ops = [] if not meas_op.obs else meas_op.obs.diagonalizing_gates()
         for diag_op in diagonalizing_ops:
             # Check if it is Clifford
@@ -942,7 +945,7 @@ class DefaultClifford(Device):
         if not tgt_states.shape[1]:
             raise ValueError("Cannot set an empty list of target states.")
 
-        if len(meas_wires) <= tgt_states.shape[1]:
+        if len(meas_wires) < tgt_states.shape[1]:
             tgt_states = []
             for state in self._prob_states:
                 if list(state[meas_wires]) not in tgt_states:
