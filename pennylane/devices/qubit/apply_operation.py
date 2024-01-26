@@ -207,6 +207,8 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
     wire = op.wires
     probs = qml.devices.qubit.measure(qml.probs(wire), state)
     sample = np.random.binomial(1, probs[1])
+    if op.postselect is not None and sample != op.postselect:
+        return np.zeros_like(state), sample
     axis = wire.toarray()[0]
     slices = [slice(None)] * state.ndim
     slices[axis] = int(not sample)

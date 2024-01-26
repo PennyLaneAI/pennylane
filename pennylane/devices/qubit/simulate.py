@@ -301,14 +301,19 @@ def simulate_native_mcm(
             results.append(simulate(aux_circuit, rng, prng_key, debugger, interface))
         return tuple(results)
     aux_circuit = init_auxiliary_circuit(circuit)
-    all_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
-        aux_circuit, rng, prng_key, debugger, interface
-    )
+    all_shot_meas, count = None, 0
+    while all_shot_meas is None:
+        count += 1
+        all_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
+            aux_circuit, rng, prng_key, debugger, interface
+        )
     list_mcm_values_dict = [mcm_values_dict]
-    for _ in range(circuit.shots.total_shots - 1):
+    for _ in range(circuit.shots.total_shots - count):
         one_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
             aux_circuit, rng, prng_key, debugger, interface
         )
+        if one_shot_meas is None:
+            continue
         all_shot_meas = accumulate_native_mcm(aux_circuit, all_shot_meas, one_shot_meas)
         list_mcm_values_dict.append(mcm_values_dict)
     return parse_native_mid_circuit_measurements(circuit, all_shot_meas, list_mcm_values_dict)
@@ -365,6 +370,8 @@ def simulate_one_shot_native_mcm(
     state, is_state_batched, mcm_dict = get_final_state(
         circuit, debugger=debugger, interface=interface
     )
+    if not np.allclose(np.linalg.norm(state), 1.0):
+        return None, mcm_dict
     return (
         measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
         mcm_dict,
