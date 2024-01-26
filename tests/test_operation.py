@@ -44,22 +44,14 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-qutrit_subspace_error_data = [
-    ([1, 1], "Elements of subspace list must be unique."),
-    ([1, 2, 3], "The subspace must be a sequence with"),
-    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
-    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
-    ([1], "The subspace must be a sequence with"),
-    (0, "The subspace must be a sequence with two unique"),
-]
+def test_validate_subspace_is_deprecated():
+    """Test that Operator.validate_subspace() is deprecated"""
 
-
-@pytest.mark.parametrize("subspace, err_msg", qutrit_subspace_error_data)
-def test_qutrit_subspace_op_errors(subspace, err_msg):
-    """Test that the correct errors are raised when subspace is incorrectly defined"""
-
-    with pytest.raises(ValueError, match=err_msg):
-        _ = Operator.validate_subspace(subspace)
+    with pytest.warns(
+        expected_warning=qml.PennyLaneDeprecationWarning,
+        match=r"Operator\.validate_subspace\(subspace\)",
+    ):
+        _ = Operator.validate_subspace([0, 1])
 
 
 class TestOperatorConstruction:
@@ -459,15 +451,8 @@ class TestBroadcasting:
         just in time (JIT) compilation."""
         import tensorflow as tf
 
-        class MyRX(qml.RX):
-            @property
-            def ndim_params(self):
-                self._check_batching()
-                return self._ndim_params
-
         def fun(x):
-            _ = qml.RX(x, 0)
-            _ = MyRX(x, 0)
+            _ = qml.RX(x, 0).batch_size
 
         # No kwargs
         fun0 = tf.function(fun)
@@ -1012,7 +997,9 @@ class TestObservableConstruction:
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
 
-    def test_wire_is_given_in_argument(self):
+    def test_raises_if_no_wire_is_given(self):
+        """Test that an error is raised if no wire is passed at initialization."""
+
         class DummyObservable(qml.operation.Observable):
             num_wires = 1
 
@@ -1201,11 +1188,8 @@ class TestOperatorIntegration:
         """Test that the division of an operator with an unknown object is not supported."""
         obs = qml.PauliX(0)
 
-        class UnknownObject:
-            pass
-
         with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = obs / UnknownObject()
+            _ = obs / object()
 
     def test_dunder_method_with_new_class(self):
         """Test that when calling any Operator dunder method with a non-supported class that
