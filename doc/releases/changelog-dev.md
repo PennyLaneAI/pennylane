@@ -228,6 +228,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
+  [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
+
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
   `Operator.hash` now depends on the memory location, `id`, of a Jax tracer instead of its string representation.
   [(#3917)](https://github.com/PennyLaneAI/pennylane/pull/3917)
