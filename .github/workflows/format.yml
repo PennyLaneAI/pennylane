@@ -18,7 +18,7 @@ jobs:
           python-version: 3.9
 
       - name: Install dependencies
-        run: pip install black
+        run: pip install black~=23.11
 
       - uses: actions/checkout@v2
 
