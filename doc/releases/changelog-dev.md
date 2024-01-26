@@ -82,6 +82,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `default.qubit` device handles post-selection when executing mid-circuit measurements natively.
+  [(#5111)](https://github.com/PennyLaneAI/pennylane/pull/5111)
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
