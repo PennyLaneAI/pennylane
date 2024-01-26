@@ -458,9 +458,7 @@ class DefaultQubit(Device):
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(mid_circuit_measurements, device=self)
-        stop_cond = (
-            stopping_condition if self.shots.total_shots is None else stopping_condition_shots
-        )
+        stop_cond = stopping_condition if not self.shots else stopping_condition_shots
         transform_program.add_transform(
             decompose,
             stopping_condition=stop_cond,

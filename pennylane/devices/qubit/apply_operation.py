@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane import math
-from ..default_qubit import MidMeasureMP
+from pennylane.measurements import MidMeasureMP
 
 SQRT2INV = 1 / math.sqrt(2)
 
@@ -56,6 +56,28 @@ def _get_slice(index, axis, num_axes):
     idx = [slice(None)] * num_axes
     idx[axis] = index
     return tuple(idx)
+
+
+def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None):
+    """Applies a native mid-circuit measurement."""
+    if is_state_batched:
+        raise ValueError("MidMeasureMP cannot be applied to batched states.")
+    wire = op.wires
+    probs = qml.devices.qubit.measure(qml.probs(wire), state)
+    sample = np.random.binomial(1, probs[1])
+    axis = wire.toarray()[0]
+    slices = [slice(None)] * state.ndim
+    slices[axis] = int(not sample)
+    state[tuple(slices)] = 0.0
+    state_norm = np.linalg.norm(state)
+    if state_norm < 1.0e-15:
+        raise ValueError("Cannot normalize projected state.")
+    state = state / state_norm
+    if op.reset and sample == 1:
+        state = apply_operation(
+            qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
+        )
+    return state, sample
 
 
 def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
@@ -197,29 +219,6 @@ def apply_operation(
 
     """
     return _apply_operation_default(op, state, is_state_batched, debugger)
-
-
-@apply_operation.register
-def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None):
-    """Applies a native mid-circuit measurement."""
-    if is_state_batched:
-        raise ValueError("MidMeasureMP cannot be applied to batched states.")
-    wire = op.wires
-    probs = qml.devices.qubit.measure(qml.probs(wire), state)
-    sample = np.random.binomial(1, probs[1])
-    axis = wire.toarray()[0]
-    slices = [slice(None)] * state.ndim
-    slices[axis] = int(not sample)
-    state[tuple(slices)] = 0.0
-    state_norm = np.linalg.norm(state)
-    if state_norm < 1.0e-15:
-        raise ValueError("Cannot normalize projected state.")
-    state = state / state_norm
-    if op.reset and sample == 1:
-        state = apply_operation(
-            qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
-        )
-    return state, sample
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):

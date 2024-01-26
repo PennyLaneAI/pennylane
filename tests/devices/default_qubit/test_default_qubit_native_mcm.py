@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices.qubit.apply_operation import apply_operation, MidMeasureMP
+from pennylane.devices.qubit.apply_operation import apply_mid_measure, MidMeasureMP
 from pennylane.devices.qubit.simulate import gather_mcm
 
 
@@ -64,11 +64,11 @@ def validate_measurements(func, shots, results1, results2):
     validate_expval(shots, results1, results2)
 
 
-def test_apply_operation():
+def test_apply_mid_measure():
     with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
-        _ = apply_operation(MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True)
+        _ = apply_mid_measure(MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True)
     with pytest.raises(ValueError, match="Cannot normalize projected state."):
-        _ = apply_operation(MidMeasureMP(0), np.zeros(2))
+        _ = apply_mid_measure(MidMeasureMP(0), np.zeros(2))
 
 
 @pytest.mark.parametrize(

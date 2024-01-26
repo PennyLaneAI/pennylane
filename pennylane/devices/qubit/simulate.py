@@ -32,7 +32,7 @@ from pennylane.ops import Conditional
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
-from .apply_operation import apply_operation
+from .apply_operation import apply_operation, apply_mid_measure
 from .measure import measure
 from .sampling import measure_with_samples
 
@@ -141,11 +141,12 @@ def get_final_state(circuit, debugger=None, interface=None):
             if not measurement_values[meas_id]:
                 continue
             op = op.then_op
-        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
         if isinstance(op, MidMeasureMP):
-            # If applying mid-circuit measurement, apply_operation returns the state
-            # and the measured value
-            state, measurement_values[op.hash] = state
+            state, measurement_values[op.hash] = apply_mid_measure(
+                op, state, is_state_batched=is_state_batched, debugger=debugger
+            )
+        else:
+            state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             state, circuit._shots = _postselection_postprocess(
@@ -256,9 +257,7 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
-    has_mcm = has_mid_circuit_measurements(circuit)
-    has_shots = circuit.shots.total_shots is not None
-    if has_mcm and has_shots:
+    if circuit.shots and has_mid_circuit_measurements(circuit):
         return simulate_native_mcm(
             circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
         )
