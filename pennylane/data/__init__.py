@@ -133,9 +133,12 @@ it from the file:
 >>> my_dataset = Dataset.open("~/dataset/my_dataset/h5", mode="copy")
 >>> my_dataset.new_attribute = "abc"
 
-Since opened datasets stream data from the disk, it is not possible to simultaneously access the same dataset
-from multiple variables, from separately running scripts, or multiple notebooks. To get around this, either make a
-copy of the dataset in the disk or access the dataset using ``mode="copy"``.
+.. important::
+
+    Since opened datasets stream data from the disk, it is not possible to simultaneously access the same
+    dataset from separately running scripts or multiple Jupyter notebooks. To get around
+    this, either make a copy of the dataset in the disk or access the dataset using :meth:`Dataset.open()`
+    with ``mode="copy"``.
 
 Attribute Metadata
 ------------------
