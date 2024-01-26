@@ -1124,6 +1124,7 @@ def _dmrg_state(wavefunction, tol=1e-15):
 
     # filter based on tolerance cutoff
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
     return dict_fcimatr
 
 
