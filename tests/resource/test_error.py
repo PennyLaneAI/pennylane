@@ -1,0 +1,85 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Test base AlgorithmicError class and its associated methods
+"""
+import pytest
+
+import pennylane as qml
+from pennylane.resource.error import AlgorithmicError
+
+
+class SimpleError(AlgorithmicError):
+    def combine(self, other):
+        return self.__class__(self.error + other.error)
+
+    @staticmethod
+    def get_error(approx_op, other_op):  # get simple error is always 0.5
+        return 0.5
+
+
+class ErrorNoCombine(AlgorithmicError):
+    @staticmethod
+    def get_error(approx_op, other_op):  # get simple error is always 0.5
+        return 0.5
+
+
+class ErrorNoGetError(AlgorithmicError):
+    def combine(self, other):
+        return self.__class__(self.error + other.error)
+
+
+class TestAlgorithmicError:
+    """Test the methods and attributes of the Resource class"""
+
+    @pytest.mark.parametrize("error", [1.23, 0.45, -6])
+    def test_error_attribute(self, error):
+        """Test that instantiation works"""
+        ErrorObj = SimpleError(error)
+        assert ErrorObj.error == error
+
+    def test_combine_not_implemented(self):
+        """Test NotImplementedError is raised if the method is not defined."""
+        ErrorObj1 = ErrorNoCombine(1.23)
+        ErrorObj2 = ErrorNoCombine(0.45)
+
+        with pytest.raises(NotImplementedError):
+            _ = ErrorObj1.combine(ErrorObj2)
+
+    @pytest.mark.parametrize("err1", [1.23, 0.45, -6])
+    @pytest.mark.parametrize("err2", [1.23, 0.45, -6])
+    def test_combine(self, err1, err2):
+        """Test that combine works as expected"""
+        ErrorObj1 = SimpleError(err1)
+        ErrorObj2 = SimpleError(err2)
+
+        res = ErrorObj1.combine(ErrorObj2)
+        assert res.error == err1 + err2
+        assert isinstance(res, type(ErrorObj1))
+
+    def test_get_error_not_implemented(self):
+        """Test NotImplementedError is raised if the method is not defined."""
+        approx_op = qml.RZ(0.01, 0)
+        exact_op = qml.PauliZ(0)
+
+        with pytest.raises(NotImplementedError):
+            _ = ErrorNoGetError.get_error(approx_op, exact_op)
+
+    def test_get_error(self):
+        """Test that get_error works as expected"""
+        approx_op = qml.RZ(0.01, 0)
+        exact_op = qml.PauliZ(0)
+
+        res = SimpleError.get_error(approx_op, exact_op)
+        assert res == 0.5
