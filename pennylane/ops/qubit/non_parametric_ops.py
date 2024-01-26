@@ -209,6 +209,13 @@ class PauliX(Observable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"X('{wire}')"
+        return f"X({wire})"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -361,6 +368,13 @@ class PauliY(Observable, Operation):
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"Y('{wire}')"
+        return f"Y({wire})"
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
@@ -512,6 +526,13 @@ class PauliZ(Observable, Operation):
     def __init__(self, *params, wires=None, id=None):
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
+
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"Z('{wire}')"
+        return f"Z({wire})"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
