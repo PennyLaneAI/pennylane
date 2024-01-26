@@ -259,7 +259,7 @@
   spatial orbital index, the ordering adopted in PennyLane (rather than commuting 
   all spin-up operators to the left as is standard in quantum chemistry), leading 
   to a sign-flip for some determinants. 
-  [(#xxxx)](https://github.com/PennyLaneAI/pennylane/pull/xxxx)
+  [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
 
 <h3>Contributors ✍️</h3>
 
