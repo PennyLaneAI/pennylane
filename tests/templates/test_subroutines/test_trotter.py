@@ -264,7 +264,8 @@ class TestInitialization:
         """Test an error is raised of an incorrect type is passed"""
         if raise_error:
             with pytest.raises(
-                TypeError, match="The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
+                TypeError,
+                match="The given operator must be a PennyLane ~.Hamiltonian, ~.Sum or ~.SProd",
             ):
                 qml.TrotterProduct(hamiltonian, time=1.23)
 
@@ -298,7 +299,9 @@ class TestInitialization:
 
     def test_error_hamiltonian(self):
         """Test that an error is raised if the input hamultonian has only 1 term."""
-        with pytest.raises(ValueError, match="There should be atleast 2 terms in the Hamiltonian."):
+        with pytest.raises(
+            ValueError, match="There should be at least 2 terms in the Hamiltonian."
+        ):
             qml.TrotterProduct(qml.Hamiltonian([1.0], [qml.PauliX(0)]), 1.23, n=2, order=4)
 
     @pytest.mark.parametrize("order", (-1, 0, 0.5, 3, 7.0))
