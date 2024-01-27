@@ -1,9 +1,0 @@
-test>=7.1.2
-pytest-cov>=3.0.0
-pytest-mock>=3.7.0
-pytest-xdist>=2.5.0
-flaky>=3.7.0
-pytest-forked>=1.4.0
-pytest-benchmark
-black~=23.12
-tomli~=2.0.0 # Drop once minimum Python version is 3.11
