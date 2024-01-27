@@ -161,7 +161,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/templates
    introduction/inspecting_circuits
    introduction/compiling_circuits
-   introduction/compiling_workflows
    introduction/chemistry
    introduction/data
    introduction/returns
@@ -184,7 +183,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
-   code/qml_compiler
    code/qml_data
    code/qml_drawer
    code/qml_fermi
@@ -197,7 +195,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_ops_op_math
    code/qml_pauli
    code/qml_pulse
-   code/qml_qcut
    code/qml_qinfo
    code/qml_resource
    code/qml_shadows

@@ -437,18 +437,14 @@ class BasisStateProjector(Projector, Operation):
     def __init__(self, state, wires, id=None):
         wires = qml.wires.Wires(wires)
 
-        if state is None:
-            raise ValueError("Basis state cannot be None")
-
         if not qml.math.is_abstract(state):
-            state_array = qml.math.toarray(state)
+            # for cases like [jax.numpy.array(0), jax.numpy.array(1)]
+            state_array = qml.math.asarray(state)
             state_array = state_array.astype(int)
-            if not qml.math.isininterval(state_array, 0, 1).all():
+            if not all(x in [0, 1] for x in state_array):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_array}")
         else:
             state_array = qml.math.asarray(state)
-
-        super().__init__(state_array, wires=wires, id=id)
 
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)

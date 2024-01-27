@@ -21,7 +21,6 @@ import pathlib
 import matplotlib.pyplot as plt
 
 import pennylane as qml
-from pennylane.drawer.style import _styles_map
 import matplotlib.pyplot as plt
 
 folder = pathlib.Path(__file__).parent
@@ -30,8 +29,7 @@ folder = pathlib.Path(__file__).parent
 def make_imag(circuit, style):
     qml.drawer.use_style(style)
 
-    fig, _ = qml.draw_mpl(circuit)(1.2345, 1.2345)
-    _styles_map[style]()
+    fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
     fig.suptitle(style, fontsize="xx-large")
 
     plt.savefig(folder / (style + "_style.png"), transparent=False)
