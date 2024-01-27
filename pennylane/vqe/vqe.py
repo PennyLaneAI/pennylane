@@ -212,9 +212,11 @@ class ExpvalCost:
                 res = [q(*args, **kwargs) for q in self.qnodes]
                 # pylint: disable=no-member
                 res = [
-                    qml.math.stack(r)
-                    if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
-                    else r
+                    (
+                        qml.math.stack(r)
+                        if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
+                        else r
+                    )
                     for r in res
                 ]
                 return sum(c * q for c, q in zip(coeffs, res))

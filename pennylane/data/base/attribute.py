@@ -64,8 +64,7 @@ class AttributeInfo(MutableMapping):
         doc: Optional[str] = None,
         py_type: Optional[str] = None,
         **kwargs: Any,
-    ):
-        ...
+    ): ...
 
     @overload
     def __init__(self):  # need at least two overloads when using @overload

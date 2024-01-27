@@ -295,15 +295,13 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("jit", [False, True])
     def test_max_entropy_grad_jax(self, params, wires, base, check_state, jit):
         """Test `max_entropy` differentiability with jax."""
- master
+
         import jax
         import jax.numpy as jnp
-        
 
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
 
- master
         params = jnp.array(params)
 
         max_entropy_grad = jax.grad(qml.math.max_entropy)
@@ -318,15 +316,8 @@ class TestMaxEntropy:
         assert qml.math.allclose(gradient, 0.0)
 
 
- master
 class TestMinEntropy:
     """Test for computing the minimum entropy of a given state."""
-
-    state_vector = [
-        ([1, 0, 0, 1] / np.sqrt(2), False),
-        ([1, 0, 0, 0], True),
-        ([1, 0, 1, 0] / np.sqrt(2), True),
-    ]
 
     single_wires_list = [
         [0],
@@ -336,45 +327,6 @@ class TestMinEntropy:
     base = [2, np.exp(1), 10]
 
     check_state = [True, False]
-
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("state_vector,pure", state_vector)
-    @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
-    def test_state_vector_min_entropy_without_base(
-        self, state_vector, wires, check_state, pure, interface
-    ):
-        """Test minimum entropy for different state vectors without base for log."""
-        if interface:
-            state_vector = qml.math.asarray(state_vector, like=interface)
-
-        entropy = qml.math.min_entropy(state_vector, wires, check_state=check_state)
-
-        if pure:
-            expected_min_entropy = 0
-        else:
-            expected_min_entropy = np.log(2)
-        assert qml.math.allclose(entropy, expected_min_entropy)
-
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("state_vector,pure", state_vector)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
-    def test_state_vector_min_entropy(
-        self, state_vector, wires, base, check_state, pure, interface
-    ):
-        """Test manimum entropy for different state vectors and log bases."""
-        if interface:
-            state_vector = qml.math.asarray(state_vector, like=interface)
-
-            entropy = qml.math.min_entropy(state_vector, wires, base, check_state=check_state)
-
-            if pure:
-                expected_min_entropy = 0
-            else:
-                expected_min_entropy = np.log(2) / np.log(base)
-            assert qml.math.allclose(entropy, expected_min_entropy)
 
     density_matrices = [
         ([[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]], False),
@@ -403,7 +355,6 @@ class TestMinEntropy:
         assert qml.math.allclose(entropy, expected_min_entropy)
 
     parameters = [
-        [1, 0, 0, 1] / np.sqrt(2),
         [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
     ]
 
@@ -540,6 +491,7 @@ class TestMinEntropy:
         for grad, result in zip(gradient, expected_results):
             assert qml.math.allclose(grad, result)
 
+
 class TestEntropyBroadcasting:
     """Test that broadcasting works as expected for the entropy functions"""
 
@@ -642,4 +594,3 @@ class TestEntropyBroadcasting:
 
         entropy = qml.math.max_entropy(density_matrix, wires, check_state=check_state)
         assert qml.math.allclose(entropy, expected)
- master

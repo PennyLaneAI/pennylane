@@ -787,8 +787,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mat = [
-            np.kron(np.eye(2**missing_wires), mat[i]) if missing_wires else mat[i]
-            for i in range(3)
+            np.kron(np.eye(2**missing_wires), mat[i]) if missing_wires else mat[i] for i in range(3)
         ]
         expected = [(expanded_mat[i] @ state.flatten()).reshape((2, 2, 2)) for i in range(3)]
 
@@ -821,8 +820,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mat = [
-            np.kron(np.eye(2**missing_wires), mat[i]) if missing_wires else mat[i]
-            for i in range(3)
+            np.kron(np.eye(2**missing_wires), mat[i]) if missing_wires else mat[i] for i in range(3)
         ]
         expected = [(expanded_mat[i] @ state[i].flatten()).reshape((2, 2, 2)) for i in range(3)]
 

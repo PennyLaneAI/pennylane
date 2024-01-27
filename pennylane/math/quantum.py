@@ -1015,16 +1015,14 @@ def _compute_max_entropy(density_matrix, base):
     return maximum_entropy
 
 
- master
 def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
-    r"""Compute the minimum entropy from a state vector or density matrix on a given subsystem. It supports all
-    interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+    r"""Compute the minimum entropy from a density matrix.
 
     .. math::
         S_{\text{min}}( \rho ) = -\log( \max_{i} ( p_{i} ))
 
     Args:
-        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state (tensor_like): Density matrix of shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
         indices (list(int)): List of indices in the considered subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
@@ -1035,10 +1033,12 @@ def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
 
     **Example**
 
-    The minimum entropy of a subsystem for any state vector can be obtained. Here is an example for the
+    The minimum entropy of a subsystem for any state vector can be obtained by first calling
+    :func:`~.math.dm_from_state_vector` on the input. Here is an example for the
     maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
 
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
+        >>> x = dm_from_state_vector(x)
     >>> min_entropy(x, indices=[0])
     0.6931472
 
@@ -1056,13 +1056,14 @@ def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     The Von Neumann entropy is always greater than the minimum entropy.
 
     >>> x = [np.cos(np.pi/8), 0, 0, -1j*np.sin(np.pi/8)]
+        >>> x = dm_from_state_vector(x)
     >>> vn_entropy(x, indices=[1])
     0.4164955
     >>> min_entropy(x, indices=[1])
     0.15834718382037496
 
     """
-    density_matrix = reduced_dm(state, indices, check_state, c_dtype)
+    density_matrix = reduce_dm(state, indices, check_state, c_dtype)
     minimum_entropy = _compute_min_entropy(density_matrix, base)
 
     return minimum_entropy
@@ -1087,7 +1088,6 @@ def _compute_min_entropy(density_matrix, base):
     >>> x = [[1/2, 0], [0, 1/2]]
     >>> _compute_min_entropy(x, base=2)
     1.0
-
     """
     # Change basis if necessary
     if base:
@@ -1100,6 +1100,7 @@ def _compute_min_entropy(density_matrix, base):
     minimum_entropy = -qml.math.log(qml.math.max(evs)) / div_base
 
     return minimum_entropy
+
 
 def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     r"""
@@ -1177,4 +1178,3 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     eigvals = qml.math.abs(qml.math.eigvalsh(state0 - state1))
 
     return qml.math.sum(eigvals, axis=-1) / 2
- master

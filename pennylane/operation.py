@@ -684,6 +684,7 @@ class Operator(abc.ABC):
         one of them (in other words, without the leading underscore) for the first time will
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
+
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     def __init_subclass__(cls, **_):
@@ -1795,6 +1796,7 @@ class Channel(Operation, abc.ABC):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
 
     @staticmethod
@@ -2786,6 +2788,7 @@ class CVObservable(CV, Observable):
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
 

@@ -559,9 +559,7 @@ class TestDefaultGaussianDevice:
         dev.apply("SqueezedState", wires=Wires([0]), par=[r, 0])
         mean = dev.expval("FockStateProjector", Wires([0]), [np.array([2 * n])])
         expected = (
-            np.abs(
-                np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
-            )
+            np.abs(np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r)))
             ** 2
         )
         assert mean == pytest.approx(expected, abs=tol)
@@ -616,9 +614,7 @@ class TestDefaultGaussianDevice:
         dev.apply("SqueezedState", wires=Wires([0]), par=[r, 0])
         var = dev.var("FockStateProjector", Wires([0]), [np.array([2 * n])])
         mean = (
-            np.abs(
-                np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
-            )
+            np.abs(np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r)))
             ** 2
         )
         assert var == pytest.approx(mean * (1 - mean), abs=tol)

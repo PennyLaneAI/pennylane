@@ -97,12 +97,10 @@ class DatasetList(  # pylint: disable=too-many-ancestors
         return f"[{items_repr}]"
 
     @overload
-    def __getitem__(self, index: slice) -> typing.List[T]:
-        ...
+    def __getitem__(self, index: slice) -> typing.List[T]: ...
 
     @overload
-    def __getitem__(self, index: int) -> T:
-        ...
+    def __getitem__(self, index: int) -> T: ...
 
     def __getitem__(self, index: Union[int, slice]):
         if isinstance(index, slice):

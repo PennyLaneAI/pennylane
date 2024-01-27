@@ -90,6 +90,9 @@
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
+* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+  [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
+
 <h3>Breaking changes 💔</h3>
 
 * `gradient_analysis_and_validation` is now renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
@@ -192,6 +195,7 @@ Abhishek Abhishek,
 Utkarsh Azad,
 Astral Cai,
 Isaac De Vlugt,
+Eugenio Gigante,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,

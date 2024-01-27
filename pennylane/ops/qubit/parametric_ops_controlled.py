@@ -53,6 +53,7 @@ class ControlledPhaseShift(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -242,6 +243,7 @@ class CPhaseShift00(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -428,6 +430,7 @@ class CPhaseShift01(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -606,6 +609,7 @@ class CPhaseShift10(Operation):
         wires (Any, Wires): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -788,6 +792,7 @@ class CRX(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -950,6 +955,7 @@ class CRY(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1111,6 +1117,7 @@ class CRZ(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1302,6 +1309,7 @@ class CRot(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
