@@ -435,13 +435,20 @@ class BasisStateProjector(Projector, Operation):
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
-        wires = Wires(wires)
-        state = list(qml.math.toarray(state).astype(int))
+        wires = qml.wires.Wires(wires)
 
-        if not set(state).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
+        if state is None:
+            raise ValueError("Basis state cannot be None")
 
-        super().__init__(state, wires=wires, id=id)
+        if not qml.math.is_abstract(state):
+            state_array = qml.math.toarray(state)
+            state_array = state_array.astype(int)
+            if not qml.math.isininterval(state_array, 0, 1).all():
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_array}")
+        else:
+            state_array = qml.math.asarray(state)
+
+        super().__init__(state_array, wires=wires, id=id)
 
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
@@ -525,9 +532,9 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
-        w = np.zeros(2 ** len(basis_state))
-        idx = int("".join(str(i) for i in basis_state), 2)
-        w[idx] = 1
+        w = qml.math.zeros(2 ** len(basis_state))
+        idx = qml.math.dot(basis_state, 2 ** qml.math.arange(len(basis_state) - 1, -1, -1))
+        w = qml.math.where(w, idx, 1)
         return w
 
     @staticmethod
