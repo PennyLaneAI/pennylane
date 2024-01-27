@@ -17,7 +17,7 @@
   import pennylane as qml
 
   dev = qml.device("default.clifford", tableau=True)
-
+  
   @qml.qnode(dev)
   def circuit():
       qml.CNOT(wires=[0, 1])
@@ -69,6 +69,7 @@
   2j * Z(0) @ X(1)
   + 2j * X(0) @ Z(1)
   ```
+
 
 <h4>Parity Mapping</h4>
 
@@ -294,3 +295,4 @@ Mudit Pandey,
 Alex Preciado,
 Matthew Silverman,
 Diksha Dhawan.
+
