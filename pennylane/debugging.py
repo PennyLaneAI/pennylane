@@ -34,7 +34,9 @@ class _Debugger:
             raise DeviceError("Device does not support snapshots.")
 
         # new device API: check if it's the simulator device
-        if isinstance(dev, qml.devices.Device) and not isinstance(dev, qml.devices.DefaultQubit):
+        if isinstance(dev, qml.devices.Device) and not isinstance(
+            dev, (qml.devices.DefaultQubit, qml.devices.DefaultClifford)
+        ):
             raise DeviceError("Device does not support snapshots.")
 
         self.snapshots = {}
@@ -81,8 +83,8 @@ def snapshots(qnode):
 
     >>> qml.snapshots(circuit)()
     {0: 1.0,
-    'very_important_state': array([0.70710678, 0.        , 0.70710678, 0.        ]),
-    2: array([0.70710678, 0.        , 0.        , 0.70710678]),
+    'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
+    2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
     'execution_results': 0.0}
     """
 

@@ -127,27 +127,13 @@ class TransformDispatcher:
         #
         # result = some_transform(*transform_args)(qnode)(*qnode_args)
 
-        warnings.warn(
+        raise TransformError(
             "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
-            "deprecated and will be removed in a future version. Please decorate "
-            "with @functools.partial(transform_fn, **transform_kwargs) instead, "
-            "or call the transform directly using qnode = transform_fn(qnode, "
+            "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
+            "instead, or call the transform directly using qnode = transform_fn(qnode, "
             "**transform_kwargs). Visit the deprecations page for more details: "
-            "https://docs.pennylane.ai/en/stable/development/deprecations.html",
-            qml.PennyLaneDeprecationWarning,
+            "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
         )
-
-        if obj is not None:
-            targs = (obj, *targs)
-
-        def wrapper(obj):
-            return self(obj, *targs, **tkwargs)
-
-        wrapper.__doc__ = (
-            f"Partial of transform {self._transform} with bound arguments and keyword arguments."
-        )
-
-        return wrapper
 
     def __repr__(self):
         return f"<transform: {self._transform.__name__}>"
@@ -238,7 +224,8 @@ class TransformDispatcher:
                 qfunc_output = qfunc(*args, **kwargs)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
+            with qml.QueuingManager.stop_recording():
+                transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
 
             if len(transformed_tapes) != 1:
                 raise TransformError(

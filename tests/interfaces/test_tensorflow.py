@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 
 pytestmark = pytest.mark.tf
 
@@ -137,7 +137,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
         a = tf.Variable([0.1, 0.2])
 
         with tf.GradientTape() as t:
@@ -159,7 +159,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(qml.workflow, "cache_execute")
         a = tf.Variable([0.1, 0.2])
         custom_cache = {}
 
@@ -856,7 +856,7 @@ class TestHigherOrderDerivatives:
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
         dev = qml.device("default.qubit.legacy", wires=2)
-        params = tf.Variable([0.543, -0.654])
+        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape() as t2:
             with tf.GradientTape() as t1:

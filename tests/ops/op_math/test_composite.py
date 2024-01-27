@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math import CompositeOp
+from pennylane.ops.op_math import CompositeOp, Prod, Sum, SProd
 from pennylane.wires import Wires
 
 ops = (
@@ -72,9 +72,7 @@ class TestConstruction:
 
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp fails"""
-        with pytest.raises(
-            TypeError, match="Can't instantiate abstract class CompositeOp with abstract methods"
-        ):
+        with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
             _ = CompositeOp(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
 
     def test_raise_error_fewer_than_2_operands(self):
@@ -209,6 +207,27 @@ class TestConstruction:
         """Test the build_pauli_rep"""
         op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
+
+    def test_tensor_and_hamiltonian_converted(self):
+        """Test that Tensor and Hamiltonian instances get converted to Prod and Sum."""
+        operands = [
+            qml.Hamiltonian(
+                [1.1, 2.2], [qml.PauliZ(0), qml.operation.Tensor(qml.PauliX(0), qml.PauliZ(1))]
+            ),
+            qml.prod(qml.PauliX(0), qml.PauliZ(1)),
+            qml.operation.Tensor(qml.PauliX(2), qml.PauliZ(3)),
+        ]
+        op = ValidOp(*operands)
+        assert isinstance(op[0], Sum)
+        assert isinstance(op[0][1], SProd)
+        assert isinstance(op[0][1].base, Prod)
+        assert op[1] is operands[1]
+        assert isinstance(op[2], Prod)
+        assert op.operands == (
+            qml.dot([1.1, 2.2], [qml.PauliZ(0), qml.prod(qml.PauliX(0), qml.PauliZ(1))]),
+            operands[1],
+            qml.prod(qml.PauliX(2), qml.PauliZ(3)),
+        )
 
 
 class TestMscMethods:

@@ -283,9 +283,6 @@ class TestComputeJVPSingle:
         """Test that using the JAX interface the dtype of the result is
         determined by the dtype of the dy."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dtype = dtype1
         dtype1 = getattr(jax.numpy, dtype1)

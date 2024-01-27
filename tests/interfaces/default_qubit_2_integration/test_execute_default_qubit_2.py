@@ -16,7 +16,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.interfaces.execution import _preprocess_expand_fn
+from pennylane.workflow.execution import _preprocess_expand_fn
 
 from pennylane.devices import DefaultQubit
 
@@ -161,8 +161,8 @@ def test_caching(gradient_fn):
     assert len(cache) == 1
     assert cache[qs.hash] == -1.0
 
-    assert results == [-1.0, -1.0]
-    assert results2 == [-1.0, -1.0]
+    assert list(results) == [-1.0, -1.0]
+    assert list(results2) == [-1.0, -1.0]
 
     assert tracker.totals["batches"] == 1
     assert tracker.totals["executions"] == 1

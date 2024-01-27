@@ -1660,7 +1660,6 @@ class TestTapeExpansion:
         assert tape.operations[0].name == "RX"
         assert np.allclose(tape.operations[0].parameters, 3 * x)
 
-    @pytest.mark.xfail(reason="not implemented yet")
     @pytest.mark.autograd
     def test_no_gradient_expansion(self, mocker):
         """Test that an unsupported operation with defined gradient recipe is

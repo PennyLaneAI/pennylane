@@ -58,8 +58,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.one_qubit_decomposition
-    ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
     ~transforms.to_zx
@@ -84,12 +82,6 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
 
     ~clifford_t_decomposition
 
-The following function assists in decomposing operations to the Clifford+T basis.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.sk_decomposition
 
 Transforms for error mitigation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -269,8 +261,8 @@ passes on a QNode to maximize gate reduction before execution.
 .. code-block:: python
 
         dev = qml.device("default.qubit", wires=1)
-        @qml.merge_rotations
-        @qml.cancel_inverses
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
         @qml.qnode(device=dev):
         def circuit(x, y):
             qml.Hadamard(wires=0)
@@ -302,12 +294,9 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-from .decompositions import (
-    one_qubit_decomposition,
-    two_qubit_decomposition,
-    sk_decomposition,
-    clifford_t_decomposition,
-)
+
+
+from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand

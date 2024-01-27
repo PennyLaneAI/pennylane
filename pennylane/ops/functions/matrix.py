@@ -14,21 +14,31 @@
 """
 This module contains the qml.matrix function.
 """
-# pylint: disable=protected-access
-from typing import Sequence, Callable
+# pylint: disable=protected-access,too-many-branches
+from typing import Sequence, Callable, Union
 from functools import partial
+from warnings import warn
 
 import pennylane as qml
 from pennylane.transforms.op_transforms import OperationTransformError
 from pennylane import transform
 from pennylane.typing import TensorLike
+from pennylane.operation import Operator
+from pennylane.pauli import PauliWord, PauliSentence
+
+_wire_order_none_warning = (
+    "Calling qml.matrix() on a QuantumTape, quantum functions, or certain QNodes without "
+    "specifying a value for wire_order is deprecated. Please provide a wire_order value to avoid "
+    "future issues. Note that a wire order is not required for QNodes with devices that have "
+    "wires specified, because the wire order is taken from the device."
+)
 
 
-def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
+def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
     Args:
-        op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
+        op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
         wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
             The default wire order depends on the type of ``op``:
 
@@ -43,7 +53,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     Returns:
         TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        If an operator is provided as input, the matrix is returned directly in the form of a tensor.
+        If an operator, :class:`~PauliWord` or :class:`~PauliSentence` is provided as input, the matrix is returned directly in the form of a tensor.
         Otherwise, the transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
         Executing this circuit will provide its matrix representation.
 
@@ -76,6 +86,13 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 
     .. details::
         :title: Usage Details
+
+        ``qml.matrix`` can also be used with :class:`~PauliWord` and :class:`~PauliSentence` instances.
+        Internally, we are using their ``to_mat()`` methods.
+
+        >>> X0 = PauliWord({0:"X"})
+        >>> np.allclose(qml.matrix(X0), X0.to_mat())
+        True
 
         ``qml.matrix`` can also be used with QNodes, tapes, or quantum functions that
         contain multiple operations.
@@ -167,8 +184,22 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
             wires specified, and this is the order in which wires appear in ``circuit()``.
 
     """
-    if not isinstance(op, qml.operation.Operator):
-        if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
+    if not isinstance(op, Operator):
+        if isinstance(op, (PauliWord, PauliSentence)):
+            if wire_order is None and len(op.wires) > 1:
+                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+            return op.to_mat(wire_order=wire_order)
+
+        if isinstance(op, qml.tape.QuantumScript):
+            if wire_order is None and len(op.wires) > 1:
+                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+        elif isinstance(op, qml.QNode):
+            if wire_order is None and op.device.wires is None:
+                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+        elif callable(op):
+            if wire_order is None:
+                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+        else:
             raise OperationTransformError(
                 "Input is not an Operator, tape, QNode, or quantum function"
             )

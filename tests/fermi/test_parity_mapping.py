@@ -30,7 +30,7 @@ def test_warning_is_raised_with_use():
 
     with pytest.warns(
         UserWarning,
-        match="This mapping is not, yet, fully compatible with other parts of PennyLane",
+            match="This mapping should be used with operators and states in the parity basis.",
     ):
         parity_transform(FermiWord({(0, 1): "-", (1, 0): "+", (2, 2): "-"}), 4)
 

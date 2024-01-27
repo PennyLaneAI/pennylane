@@ -134,10 +134,9 @@ def full_dot_products(
         TensorLike: the result of the measurement
     """
     ket = apply_operation(measurementprocess.obs, state, is_state_batched=is_state_batched)
-    total_indices = len(state.shape) - is_state_batched
-    flattened_state = flatten_state(state, total_indices)
-    flattened_ket = flatten_state(ket, total_indices)
-    dot_product = math.sum(math.conj(flattened_state) * flattened_ket, axis=int(is_state_batched))
+    dot_product = math.sum(
+        math.conj(state) * ket, axis=tuple(range(int(is_state_batched), math.ndim(state)))
+    )
     return math.real(dot_product)
 
 
