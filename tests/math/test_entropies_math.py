@@ -296,7 +296,6 @@ class TestMaxEntropy:
     def test_max_entropy_grad_jax(self, params, wires, base, check_state, jit):
         """Test `max_entropy` differentiability with jax."""
 
-        import jax
         import jax.numpy as jnp
 
         jnp = jax.numpy
@@ -393,7 +392,6 @@ class TestMinEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_min_entropy_grad_torch(self, params, wires, base, check_state):
         """Test `min_entropy` differentiability with torch interface."""
-        import torch
 
         # It handles different parameters' shapes
         if len(np.array(params).shape) > 1:
@@ -424,7 +422,6 @@ class TestMinEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_min_entropy_grad_tf(self, params, wires, base, check_state):
         """Test `min_entropy` differentiability with tensorflow interface."""
-        import tensorflow as tf
 
         # It handles different parameters' shapes
         if len(np.array(params).shape) > 1:
@@ -457,12 +454,10 @@ class TestMinEntropy:
     @pytest.mark.parametrize("jit", [False, True])
     def test_min_entropy_grad_jax(self, params, wires, base, check_state, jit):
         """Test `min_entropy` differentiability with jax."""
-        import jax
+
         import jax.numpy as jnp
 
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)  # Enabling complex128 datatypes for jax
+        jax.config.update("jax_enable_x64", True)  # Enabling complex128 datatypes for jax
 
         # It handles different parameters' shapes
         if len(np.array(params).shape) > 1:
