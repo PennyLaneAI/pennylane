@@ -679,7 +679,8 @@ class DefaultClifford(Device):
                         )[0]
                     ]
                 )
-                results.append(meas.process_samples(samples=samples, wire_order=circuit.wires))
+                wire_order = {wire: idx for idx, wire in enumerate(meas.wires)}
+                results.append(meas.process_samples(samples=samples, wire_order=wire_order))
         return results
 
     def measure_analytical(self, circuit, stim_circuit, tableau_simulator, global_phase, stim):
