@@ -134,14 +134,21 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
             # explicitly selected grouping, but indices not yet computed
             hamiltonian.compute_grouping()
 
-        coeff_groupings = [
-            qml.math.stack([hamiltonian.data[i] for i in indices])
-            for indices in hamiltonian.grouping_indices
-        ]
-        obs_groupings = [
-            [hamiltonian.ops[i] for i in indices] for indices in hamiltonian.grouping_indices
-        ]
-
+        coeff_groupings = []
+        obs_groupings = []
+        offset = 0
+        coeffs, obs = hamiltonian.terms()
+        for indices in hamiltonian.grouping_indices:
+            group_coeffs = []
+            obs_groupings.append([])
+            for i in indices:
+                print(i)
+                if isinstance(obs[i], qml.Identity):
+                    offset += coeffs[i]
+                else:
+                    group_coeffs.append(coeffs[i])
+                    obs_groupings[-1].append(obs[i])
+            coeff_groupings.append(qml.math.stack(group_coeffs))
         # make one tape per grouping, measuring the
         # observables in that grouping
         tapes = []
@@ -160,7 +167,8 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
                 for r in res_groupings
             ]
             res_groupings = [
-                qml.math.reshape(r, (1,)) if r.shape == () else r for r in res_groupings
+                qml.math.reshape(r, (1,)) if getattr(r, "shape", tuple()) == () else r
+                for r in res_groupings
             ]
             dot_products = []
             for c_group, r_group in zip(coeff_groupings, res_groupings):
@@ -172,18 +180,22 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
                     dot_products.append(qml.math.dot(r_group, c_group))
             summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
 
-            return qml.math.convert_like(summed_dot_products, res_groupings[0])
+            return qml.math.convert_like(summed_dot_products + offset, res_groupings[0])
 
         return tapes, processing_fn
 
-    coeffs = hamiltonian.data
-
     # make one tape per observable
     tapes = []
-    for o in hamiltonian.ops:
+    offset = 0
+    coeffs = []
+    for c, o in zip(*hamiltonian.terms()):
         # pylint: disable=protected-access
-        new_tape = tape.__class__(tape.operations, [qml.expval(o)], shots=tape.shots)
-        tapes.append(new_tape)
+        if isinstance(o, qml.Identity):
+            offset += c
+        else:
+            new_tape = tape.__class__(tape.operations, [qml.expval(o)], shots=tape.shots)
+            tapes.append(new_tape)
+            coeffs.append(c)
 
     # pylint: disable=function-redefined
     def processing_fn(res):
@@ -194,7 +206,7 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
             else:
                 dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
         summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-        return qml.math.convert_like(summed_dot_products, res[0])
+        return qml.math.convert_like(summed_dot_products + offset, res[0])
 
     return tapes, processing_fn
 
