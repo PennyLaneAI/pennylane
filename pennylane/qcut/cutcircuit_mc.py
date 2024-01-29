@@ -700,9 +700,8 @@ def expand_fragment_tapes_mc(
                 elif not isinstance(op, MeasureNode):
                     expanded_circuit_operations.append(op)
                 else:
-                    meas_w = op.wires[0]
                     expanded_circuit_measurements.append(
-                        MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
+                        MC_MEASUREMENTS[meas_settings[op.id][shot]](w)
                     )
 
             frag_config.append(
