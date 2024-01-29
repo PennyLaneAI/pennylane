@@ -23,11 +23,12 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires
+from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
+
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -144,8 +145,8 @@ class ControlledQubitUnitary(ControlledOp):
         self._name = "ControlledQubitUnitary"
 
     def _controlled(self, wire):
-        ctrl_wires = self.control_wires + wire
-        values = None if self.control_values is None else self.control_values + [True]
+        ctrl_wires = wire + self.control_wires
+        values = None if self.control_values is None else [True] + self.control_values
         return ControlledQubitUnitary(
             self.base,
             control_wires=ctrl_wires,
@@ -391,11 +392,18 @@ class MultiControlledX(ControlledOp):
 
     name = "MultiControlledX"
 
+    def _flatten(self):
+        return (), (self.active_wires, tuple(self.control_values), self.work_wires)
+
+    @classmethod
+    def _unflatten(cls, _, metadata):
+        return cls(wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
+
     # pylint: disable=too-many-arguments
     def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
         if wires is None:
             raise ValueError("Must specify the wires where the operation acts on")
-
+        wires = wires if isinstance(wires, Wires) else Wires(wires)
         if control_wires is not None:
             warnings.warn(
                 "The control_wires keyword will be removed soon. Use wires = (control_wires, "
@@ -407,7 +415,7 @@ class MultiControlledX(ControlledOp):
         else:
             if len(wires) < 2:
                 raise ValueError(
-                    "MultiControlledX: wrong number of wires. {len(wires)} given. Need at least 2."
+                    f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. Need at least 2."
                 )
             control_wires = wires[:-1]
             wires = wires[-1:]
@@ -425,6 +433,9 @@ class MultiControlledX(ControlledOp):
             control_values=control_values,
             work_wires=work_wires,
         )
+
+    def __repr__(self):
+        return f"MultiControlledX(wires={self.active_wires.tolist()}, control_values={self.control_values})"
 
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
@@ -500,7 +511,7 @@ class MultiControlledX(ControlledOp):
         Toffoli(wires=[0, 1, 'aux'])]
         """
         if len(wires) < 2:
-            raise ValueError("Wrong number of wires. {len(wires)} given. Need at least 2.")
+            raise ValueError(f"Wrong number of wires. {len(wires)} given. Need at least 2.")
 
         target_wire = wires[-1]
         control_wires = wires[:-1]
@@ -519,7 +530,7 @@ class MultiControlledX(ControlledOp):
         if len(control_wires) == 1:
             decomp = [qml.CNOT(wires=wires)]
         elif len(control_wires) == 2:
-            decomp = [qml.Toffoli.compute_decomposition(wires=wires)]
+            decomp = qml.Toffoli.compute_decomposition(wires=wires)
         else:
             decomp = decompose_mcx(control_wires, target_wire, work_wires)
 
@@ -528,7 +539,7 @@ class MultiControlledX(ControlledOp):
         return flips1 + decomp + flips2
 
     def decomposition(self):
-        return self.compute_decomposition(self.wires, self.work_wires, self.control_values)
+        return self.compute_decomposition(self.active_wires, self.work_wires, self.control_values)
 
 
 class CRX(ControlledOp):

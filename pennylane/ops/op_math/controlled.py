@@ -764,6 +764,16 @@ def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
     if type(op.base) in pauli_x_based_ctrl_ops:
         # has some special case handling of its own for further decomposition
         return _decompose_pauli_x_based_no_control_values(op)
+
+    # TODO: will be removed the second part of the controlled rework
+    if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
+        result = op.base._controlled(op.control_wires[0])
+        # disallow decomposing to itself
+        # pylint: disable=unidiomatic-typecheck
+        if type(result) != type(op):
+            return [result]
+        qml.QueuingManager.remove(result)
+
     if _is_single_qubit_special_unitary(op.base):
         if len(op.control_wires) >= 2 and qmlmath.get_interface(*op.data) == "numpy":
             return ctrl_decomp_bisect(op.base, op.control_wires)

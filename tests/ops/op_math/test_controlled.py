@@ -1897,8 +1897,56 @@ class _Rot(Operation):
         return self.compute_decomposition(*self.parameters, wires=self.wires)
 
 
+unitaries = (
+    [
+        qml.PauliX.compute_matrix(),
+        qml.PauliY.compute_matrix(),
+        qml.PauliZ.compute_matrix(),
+        qml.Hadamard.compute_matrix(),
+        pnp.array(
+            [
+                [1 + 2j, -3 + 4j],
+                [3 + 4j, 1 - 2j],
+            ]
+        )
+        * 30**-0.5,
+    ],
+)
+
+
 class TestTapeExpansionWithControlled:
     """Tests expansion of tapes containing Controlled operations"""
+
+    def test_ctrl_values_sanity_check(self):
+        """Test that control works with control values on a very standard usecase."""
+
+        def make_ops():
+            qml.RX(0.123, wires=0)
+            qml.RY(0.456, wires=2)
+            qml.RX(0.789, wires=0)
+            qml.Rot(0.111, 0.222, 0.333, wires=2)
+            qml.PauliX(wires=2)
+            qml.PauliY(wires=4)
+            qml.PauliZ(wires=0)
+
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            ctrl(make_ops, control=1, control_values=0)()
+
+        tape = QuantumScript.from_queue(q_tape)
+        expected = [
+            qml.PauliX(wires=1),
+            *qml.CRX(0.123, wires=[1, 0]).decomposition(),
+            *qml.CRY(0.456, wires=[1, 2]).decomposition(),
+            *qml.CRX(0.789, wires=[1, 0]).decomposition(),
+            *qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]).decomposition(),
+            qml.CNOT(wires=[1, 2]),
+            *qml.CY(wires=[1, 4]).decomposition(),
+            *qml.CZ(wires=[1, 0]).decomposition(),
+            qml.PauliX(wires=1),
+        ]
+        assert len(tape) == 9
+        expanded = tape.expand(stop_at=lambda obj: not isinstance(obj, Controlled))
+        assert expanded.circuit == expected
 
     @pytest.mark.parametrize(
         "op",
@@ -2051,6 +2099,32 @@ class TestTapeExpansionWithControlled:
             *qml.CRX(0.456, wires=[2, 0]).decomposition(),
         ]
 
+    @pytest.mark.parametrize("ctrl_values", [[0, 0], [0, 1], [1, 0], [1, 1]])
+    def test_multi_ctrl_values(self, ctrl_values):
+        """Test control with a list of wires and control values."""
+
+        def expected_ops(ctrl_val):
+            exp_op = []
+            ctrl_wires = [3, 7]
+            for i, j in enumerate(ctrl_val):
+                if not bool(j):
+                    exp_op.append(qml.PauliX(ctrl_wires[i]))
+            exp_op.append(Controlled(qml.ControlledPhaseShift(pnp.pi / 2, [7, 0]), 3))
+            for i, j in enumerate(ctrl_val):
+                if not bool(j):
+                    exp_op.append(qml.PauliX(ctrl_wires[i]))
+
+            return exp_op
+
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            ctrl(qml.S, control=[3, 7], control_values=ctrl_values)(wires=0)
+        tape = QuantumScript.from_queue(q_tape)
+        assert len(tape.operations) == 1
+        op = tape.operations[0]
+        assert isinstance(op, Controlled)
+        new_tape = expand_tape(tape, 1)
+        assert equal_list(list(new_tape), expected_ops(ctrl_values))
+
     def test_diagonal_ctrl(self):
         """Test ctrl on diagonal gates."""
         with qml.queuing.AnnotatedQueue() as q_tape:
@@ -2059,125 +2133,67 @@ class TestTapeExpansionWithControlled:
         tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
         assert tape[0] == qml.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
 
+    @pytest.mark.parametrize("M", unitaries)
+    def test_qubit_unitary(self, M):
+        """Test ctrl on QubitUnitary"""
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            ctrl(qml.QubitUnitary, 1)(M, wires=0)
 
-@pytest.mark.parametrize(
-    "M",
-    [
-        qml.PauliX.compute_matrix(),
-        qml.PauliY.compute_matrix(),
-        qml.PauliZ.compute_matrix(),
-        qml.Hadamard.compute_matrix(),
-        pnp.array(
-            [
-                [1 + 2j, -3 + 4j],
-                [3 + 4j, 1 - 2j],
-            ]
-        )
-        * 30**-0.5,
-    ],
-)
-def test_qubit_unitary(M):
-    """Test ctrl on QubitUnitary and ControlledQubitUnitary"""
-    with qml.queuing.AnnotatedQueue() as q_tape:
-        ctrl(qml.QubitUnitary, 1)(M, wires=0)
+        tape = QuantumScript.from_queue(q_tape)
+        expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
+        assert equal_list(list(tape), expected)
 
-    tape = QuantumScript.from_queue(q_tape)
-    expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
-    assert equal_list(list(tape), expected)
+        # causes decomposition into more basic operators
+        tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
+        assert not equal_list(list(tape), expected)
 
-    # causes decomposition into more basic operators
-    tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
-    assert not equal_list(list(tape), expected)
+    @pytest.mark.parametrize("M", unitaries)
+    def test_controlled_qubit_unitary(self, M):
+        """Test ctrl on ControlledQubitUnitary."""
 
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            ctrl(qml.ControlledQubitUnitary, 1)(M, control_wires=2, wires=0)
 
-@pytest.mark.parametrize(
-    "M",
-    [
-        pytest.param(qml.PauliX.compute_matrix(), marks=pytest.mark.xfail),
-        pytest.param(qml.PauliY.compute_matrix(), marks=pytest.mark.xfail),
-        pytest.param(qml.PauliZ.compute_matrix(), marks=pytest.mark.xfail),
-        pytest.param(qml.Hadamard.compute_matrix(), marks=pytest.mark.xfail),
-        pnp.array(
-            [
-                [1 + 2j, -3 + 4j],
-                [3 + 4j, 1 - 2j],
-            ]
-        )
-        * 30**-0.5,
-    ],
-)
-def test_controlledqubitunitary(M):
-    """Test ctrl on ControlledQubitUnitary."""
-    with qml.queuing.AnnotatedQueue() as q_tape:
-        ctrl(qml.ControlledQubitUnitary, 1)(M, control_wires=2, wires=0)
+        tape = QuantumScript.from_queue(q_tape)
+        # will immediately decompose according to selected decomposition algorithm
+        tape = tape.expand(1, stop_at=lambda op: not isinstance(op, Controlled))
 
-    tape = QuantumScript.from_queue(q_tape)
-    # will immediately decompose according to selected decomposition algorithm
-    tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
+        expected = qml.ControlledQubitUnitary(M, control_wires=[1, 2], wires=0).decomposition()
+        assert tape.circuit == expected
 
-    expected = qml.ControlledQubitUnitary(M, control_wires=[2, 1], wires=0).decomposition()
-    assert equal_list(list(tape), expected)
+    @pytest.mark.parametrize(
+        "op, params, depth, expected",
+        [
+            (qml.templates.QFT, [], 2, 14),
+            (qml.templates.BasicEntanglerLayers, [pnp.ones([3, 2])], 1, 9),
+        ],
+    )
+    def test_ctrl_templates(self, op, params, depth, expected):
+        """Test ctrl on two different templates."""
 
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            ctrl(op, 2)(*params, wires=[0, 1])
+        tape = QuantumScript.from_queue(q_tape)
+        expanded_tape = tape.expand(depth=depth)
+        assert len(expanded_tape.operations) == expected
 
-@pytest.mark.parametrize("depth, length", [(1, 4), (2, 14), (3, 96)])
-def test_no_control_defined(depth, length):
-    """Test a custom operation with no control transform defined."""
-    with qml.queuing.AnnotatedQueue() as q_tape:
-        # QFT has no control rule defined.
-        ctrl(qml.templates.QFT, 2)(wires=[0, 1])
-    tape = QuantumScript.from_queue(q_tape)
-    expanded_tape = tape.expand(depth=depth)
-    assert len(expanded_tape.operations) == length
+    def test_ctrl_template_and_operations(self):
+        """Test that a combination of controlled templates and operations correctly expands
+        on a device that doesn't support it"""
 
+        weights = pnp.ones([3, 2])
 
-def test_decomposition_defined():
-    """Test that a controlled gate that has no control transform defined,
-    and a decomposition transformed defined, still works correctly"""
+        def ansatz(weights, wires):
+            qml.PauliX(wires=wires[0])
+            qml.templates.BasicEntanglerLayers(weights, wires=wires)
 
-    with qml.queuing.AnnotatedQueue() as q_tape:
-        ctrl(qml.CY, 0)(wires=[1, 2])
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            ctrl(ansatz, 0)(weights, wires=[1, 2])
 
-    tape = QuantumScript.from_queue(q_tape)
-    tape = tape.expand()
-
-    assert len(tape.operations) == 2
-
-    assert tape.operations[0].name == "C(CRY)"
-    assert tape.operations[1].name == "C(S)"
-
-
-def test_ctrl_template():
-    """Test that a controlled template correctly expands
-    on a device that doesn't support it"""
-
-    weights = pnp.ones([3, 2])
-
-    with qml.queuing.AnnotatedQueue() as q_tape:
-        ctrl(qml.templates.BasicEntanglerLayers, 0)(weights, wires=[1, 2])
-
-    tape = QuantumScript.from_queue(q_tape)
-    tape = expand_tape(tape, depth=2)
-    assert len(tape) == 9
-    assert all(o.name in {"CRX", "Toffoli"} for o in tape.operations)
-
-
-def test_ctrl_template_and_operations():
-    """Test that a combination of controlled templates and operations correctly expands
-    on a device that doesn't support it"""
-
-    weights = pnp.ones([3, 2])
-
-    def ansatz(weights, wires):
-        qml.PauliX(wires=wires[0])
-        qml.templates.BasicEntanglerLayers(weights, wires=wires)
-
-    with qml.queuing.AnnotatedQueue() as q_tape:
-        ctrl(ansatz, 0)(weights, wires=[1, 2])
-
-    tape = QuantumScript.from_queue(q_tape)
-    tape = tape.expand(depth=2, stop_at=lambda obj: not isinstance(obj, Controlled))
-    assert len(tape.operations) == 10
-    assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
+        tape = QuantumScript.from_queue(q_tape)
+        tape = tape.expand(depth=1, stop_at=lambda obj: not isinstance(obj, Controlled))
+        assert len(tape.operations) == 10
+        assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
 
 
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
@@ -2277,66 +2293,3 @@ class TestCtrlTransformDifferentiation:
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)
-
-
-def test_ctrl_values_sanity_check():
-    """Test that control works with control values on a very standard usecase."""
-
-    def make_ops():
-        qml.RX(0.123, wires=0)
-        qml.RY(0.456, wires=2)
-        qml.RX(0.789, wires=0)
-        qml.Rot(0.111, 0.222, 0.333, wires=2)
-        qml.PauliX(wires=2)
-        qml.PauliY(wires=4)
-        qml.PauliZ(wires=0)
-
-    with qml.queuing.AnnotatedQueue() as q_tape:
-        cmake_ops = ctrl(make_ops, control=1, control_values=0)
-        # Execute controlled version.
-        cmake_ops()
-
-    tape = QuantumScript.from_queue(q_tape)
-    expected = [
-        qml.PauliX(wires=1),
-        *qml.CRX(0.123, wires=[1, 0]).decomposition(),
-        *qml.CRY(0.456, wires=[1, 2]).decomposition(),
-        *qml.CRX(0.789, wires=[1, 0]).decomposition(),
-        *qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]).decomposition(),
-        qml.CNOT(wires=[1, 2]),
-        *qml.CY(wires=[1, 4]).decomposition(),
-        *qml.CZ(wires=[1, 0]).decomposition(),
-        qml.PauliX(wires=1),
-    ]
-    assert len(tape) == 9
-    expanded = tape.expand(stop_at=lambda obj: not isinstance(obj, Controlled))
-    for op1, op2 in zip(expanded, expected):
-        assert qml.equal(op1, op2)
-
-
-@pytest.mark.parametrize("ctrl_values", [[0, 0], [0, 1], [1, 0], [1, 1]])
-def test_multi_ctrl_values(ctrl_values):
-    """Test control with a list of wires and control values."""
-
-    def expected_ops(ctrl_val):
-        exp_op = []
-        ctrl_wires = [3, 7]
-        for i, j in enumerate(ctrl_val):
-            if not bool(j):
-                exp_op.append(qml.PauliX(ctrl_wires[i]))
-        exp_op.append(Controlled(qml.PhaseShift(pnp.pi / 2, 0), [3, 7]))
-        for i, j in enumerate(ctrl_val):
-            if not bool(j):
-                exp_op.append(qml.PauliX(ctrl_wires[i]))
-
-        return exp_op
-
-    with qml.queuing.AnnotatedQueue() as q_tape:
-        CCS = ctrl(qml.S, control=[3, 7], control_values=ctrl_values)
-        CCS(wires=0)
-    tape = QuantumScript.from_queue(q_tape)
-    assert len(tape.operations) == 1
-    op = tape.operations[0]
-    assert isinstance(op, Controlled)
-    new_tape = expand_tape(tape, 1)
-    assert equal_list(list(new_tape), expected_ops(ctrl_values))
