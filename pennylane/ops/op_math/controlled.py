@@ -141,6 +141,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     # Flatten nested controlled operations to a multi-controlled operation for better
     # decomposition algorithms. This includes special cases like CRX, CRot, etc.
     if isinstance(op, Controlled):
+        work_wires = work_wires or []
         return ctrl(
             op.base,
             control=control + op.control_wires,

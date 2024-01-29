@@ -699,26 +699,22 @@ class MultiControlledX(ControlledOp):
          [0. 0. 0. 1.]]
 
         """
-        if control_values is None:
-            control_bitstring = "1" * len(control_wires)
 
-        elif isinstance(control_values, str):
+        if isinstance(control_values, str):
             # Make sure all values are either 0 or 1
             if not set(control_values).issubset({"1", "0"}):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
-            control_bitstring = control_values
+        control_values = (
+            [int(x) for x in control_values]
+            if control_values is not None
+            else [1] * len(control_wires)
+        )
 
-        elif isinstance(control_values, (int, bool)):
-            control_bitstring = "1" if control_values else "0"
-
-        else:
-            control_bitstring = "".join(str(int(x)) for x in control_values)
-
-        if len(control_bitstring) != len(control_wires):
+        if len(control_values) != len(control_wires):
             raise ValueError("Length of control values must equal number of control wires.")
 
-        padding_left = int(control_bitstring, 2) * 2
+        padding_left = sum(2**i * int(val) for i, val in enumerate(reversed(control_values))) * 2
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
         return block_diag(np.eye(padding_left), qml.PauliX.compute_matrix(), np.eye(padding_right))
 

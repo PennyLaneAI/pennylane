@@ -155,12 +155,11 @@ class Hadamard(Observable, Operation):
         PhaseShift(1.5707963267948966, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi / 2, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
-        return decomp_ops
 
     def _controlled(self, wire):
         return qml.CH(wires=Wires(wire) + self.wires)
@@ -307,12 +306,11 @@ class PauliX(Observable, Operation):
         PhaseShift(1.5707963267948966, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         return PauliX(wires=self.wires)
@@ -464,12 +462,11 @@ class PauliY(Observable, Operation):
         PhaseShift(1.5707963267948966, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RY(np.pi, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         return PauliY(wires=self.wires)
@@ -950,13 +947,12 @@ class SX(Operation):
         PhaseShift(1.5707963267948966, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             qml.RZ(np.pi / 2, wires=wires),
             qml.RY(np.pi / 2, wires=wires),
             qml.RZ(-np.pi, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
-        return decomp_ops
 
     def pow(self, z):
         z_mod4 = z % 4
@@ -1036,12 +1032,11 @@ class SWAP(Operation):
         [CNOT(wires=[0, 1]), CNOT(wires=[1, 0]), CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = [
+        return [
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
-        return decomp_ops
 
     def pow(self, z):
         return super().pow(z % 2)
@@ -1282,7 +1277,7 @@ class ISWAP(Operation):
         Hadamard(wires=[1])]
 
         """
-        decomp_ops = [
+        return [
             S(wires=wires[0]),
             S(wires=wires[1]),
             Hadamard(wires=wires[0]),
@@ -1290,7 +1285,6 @@ class ISWAP(Operation):
             qml.CNOT(wires=[wires[1], wires[0]]),
             Hadamard(wires=wires[1]),
         ]
-        return decomp_ops
 
     def pow(self, z):
         z_mod2 = z % 2
@@ -1411,7 +1405,7 @@ class SISWAP(Operation):
         SX(wires=[1])]
 
         """
-        decomp_ops = [
+        return [
             SX(wires=wires[0]),
             qml.RZ(np.pi / 2, wires=wires[0]),
             qml.CNOT(wires=[wires[0], wires[1]]),
@@ -1425,7 +1419,6 @@ class SISWAP(Operation):
             SX(wires=wires[0]),
             SX(wires=wires[1]),
         ]
-        return decomp_ops
 
     def pow(self, z):
         z_mod4 = z % 4
