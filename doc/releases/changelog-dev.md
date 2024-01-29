@@ -72,6 +72,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
+  for large workflows.
+  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
@@ -275,6 +279,7 @@ Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,

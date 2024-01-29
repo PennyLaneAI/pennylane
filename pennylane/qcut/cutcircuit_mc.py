@@ -24,7 +24,6 @@ from networkx import MultiDiGraph
 
 import pennylane as qml
 from pennylane.measurements import SampleMP
-from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
 from pennylane.wires import Wires
@@ -565,19 +564,19 @@ MC_STATES = [
 
 
 def _identity(wire):
-    qml.sample(qml.Identity(wires=wire))
+    return qml.sample(qml.Identity(wires=wire))
 
 
 def _pauliX(wire):
-    qml.sample(qml.PauliX(wires=wire))
+    return qml.sample(qml.PauliX(wires=wire))
 
 
 def _pauliY(wire):
-    qml.sample(qml.PauliY(wires=wire))
+    return qml.sample(qml.PauliY(wires=wire))
 
 
 def _pauliZ(wire):
-    qml.sample(qml.PauliZ(wires=wire))
+    return qml.sample(qml.PauliZ(wires=wire))
 
 
 MC_MEASUREMENTS = [
@@ -692,22 +691,26 @@ def expand_fragment_tapes_mc(
     for tape in tapes:
         frag_config = []
         for shot in range(shots):
-            with AnnotatedQueue() as q:
-                for op in tape.operations:
-                    w = op.wires[0]
-                    if isinstance(op, PrepareNode):
-                        MC_STATES[prep_settings[op.id][shot]](w)
-                    elif not isinstance(op, MeasureNode):
-                        qml.apply(op)
+            expanded_circuit_operations = []
+            expanded_circuit_measurements = tape.measurements.copy()
+            for op in tape.operations:
+                w = op.wires[0]
+                if isinstance(op, PrepareNode):
+                    expanded_circuit_operations.extend(MC_STATES[prep_settings[op.id][shot]](w))
+                elif not isinstance(op, MeasureNode):
+                    expanded_circuit_operations.append(op)
+                else:
+                    expanded_circuit_measurements.append(
+                        MC_MEASUREMENTS[meas_settings[op.id][shot]](w)
+                    )
 
-                for meas in tape.measurements:
-                    qml.apply(meas)
-                for op in tape.operations:
-                    if isinstance(op, MeasureNode):
-                        meas_w = op.wires[0]
-                        MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
-
-            frag_config.append(QuantumScript.from_queue(q, shots=1))
+            frag_config.append(
+                QuantumScript(
+                    ops=expanded_circuit_operations,
+                    measurements=expanded_circuit_measurements,
+                    shots=1,
+                )
+            )
 
         all_configs.append(frag_config)
 
