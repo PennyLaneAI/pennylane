@@ -16,6 +16,8 @@ Stores classes and logic to define and track algorithmic error in a quantum work
 """
 from abc import abstractmethod
 
+from pennylane.operation import Operation
+
 
 class AlgorithmicError:
     """Abstract base class representing different types of mathematical errors."""
@@ -48,5 +50,24 @@ class AlgorithmicError:
         Returns:
             float: The error between the exact operator and its
             approximation.
+        """
+        raise NotImplementedError
+
+
+class ErrorOperation(Operation):
+    r"""Base class that represents quantum gates or channels applied to quantum
+    states and stores the error of the quantum gate.
+
+    .. note::
+        Child classes must implement the :func:`~.ErrorOperation.error` method which computes
+        the error of the operation.
+    """
+
+    @abstractmethod
+    def error(self) -> AlgorithmicError:
+        """Computes the error of the operation.
+
+        Returns:
+            AlgorithmicError: The error.
         """
         raise NotImplementedError

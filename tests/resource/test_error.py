@@ -17,7 +17,7 @@ Test base AlgorithmicError class and its associated methods
 import pytest
 
 import pennylane as qml
-from pennylane.resource.error import AlgorithmicError
+from pennylane.resource.error import AlgorithmicError, ErrorOperation
 
 
 class SimpleError(AlgorithmicError):
@@ -83,3 +83,18 @@ class TestAlgorithmicError:
 
         res = SimpleError.get_error(approx_op, exact_op)
         assert res == 0.5
+
+
+class TestErrorOperation:
+    """Test the abstract error operation class."""
+
+    def test_error_method(self):
+        """Test that a NotImplemented error is raised if no error method is provided."""
+
+        class SimpleErrorOperation(ErrorOperation):
+            @property
+            def error(self):
+                return len(self.wires)
+
+        no_error_op = SimpleErrorOperation(wires=[1, 2, 3])
+        assert no_error_op.error == 3
