@@ -72,7 +72,7 @@
 
 <h4>Parity Mapping</h4>
 
-* `parity_transform`  is added for parity mapping of a fermionic Hamiltonian.
+* `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
    [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
    It is now possible to transform fermionic Hamiltonian to qubit Hamiltonian through parity mapping.
 
