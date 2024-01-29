@@ -15,6 +15,7 @@
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
 import warnings
+import functools
 from copy import copy
 from functools import wraps
 from inspect import signature
@@ -187,6 +188,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     return wrapper
 
 
+@functools.lru_cache()
 def _get_special_ops():
     """Gets a list of special operations with custom controlled versions.
 
@@ -271,6 +273,16 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
     if isinstance(op, qml.PauliX):
         return qml.MultiControlledX(
             wires=control + op.wires, control_values=control_values, work_wires=work_wires
+        )
+
+    # TODO: remove special handling of CNOT and Toffoli when they inherit from Controlled
+    if isinstance(op, qml.CNOT):
+        return qml.MultiControlledX(
+            wires=control + op.wires, control_values=control_values + [1], work_wires=work_wires
+        )
+    if isinstance(op, qml.Toffoli):
+        return qml.MultiControlledX(
+            wires=control + op.wires, control_values=control_values + [1, 1], work_wires=work_wires
         )
 
     work_wires = work_wires or []
