@@ -798,23 +798,23 @@ class TestSortWires:
     def test_sorting_operators_with_one_wire(self):
         """Test that the sorting algorithm works for operators that act on one wire."""
         op_list = [
-            qml.PauliX(3),
-            qml.PauliZ(2),
+            qml.X(3),
+            qml.Z(2),
             qml.RX(1, 5),
-            qml.PauliY(0),
-            qml.PauliY(1),
-            qml.PauliZ(3),
-            qml.PauliX(5),
+            qml.Y(0),
+            qml.Y(1),
+            qml.Z(3),
+            qml.X(5),
         ]
         sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
         final_list = [
-            qml.PauliY(0),
-            qml.PauliY(1),
-            qml.PauliZ(2),
-            qml.PauliX(3),
-            qml.PauliZ(3),
-            qml.PauliX(5),
+            qml.Y(0),
+            qml.Y(1),
+            qml.Z(2),
+            qml.X(3),
+            qml.Z(3),
             qml.RX(1, 5),
+            qml.X(5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
@@ -823,27 +823,27 @@ class TestSortWires:
     def test_sorting_operators_with_multiple_wires(self):
         """Test that the sorting algorithm works for operators that act on multiple wires."""
         op_tuple = (
-            qml.PauliX(3),
-            qml.PauliX(5),
+            qml.X(3),
+            qml.X(5),
             qml.Toffoli([2, 3, 4]),
             qml.CNOT([2, 5]),
             qml.RX(1, 5),
-            qml.PauliY(0),
+            qml.Y(0),
             qml.CRX(1, [0, 2]),
-            qml.PauliZ(3),
+            qml.Z(3),
             qml.CRY(1, [1, 2]),
         )
         sorted_list = Sum._sort(op_tuple)  # pylint: disable=protected-access
         final_list = [
-            qml.PauliY(0),
+            qml.Y(0),
             qml.CRX(1, [0, 2]),
             qml.CRY(1, [1, 2]),
             qml.CNOT([2, 5]),
             qml.Toffoli([2, 3, 4]),
-            qml.PauliX(3),
-            qml.PauliZ(3),
-            qml.PauliX(5),
+            qml.X(3),
+            qml.Z(3),
             qml.RX(1, 5),
+            qml.X(5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
@@ -852,29 +852,29 @@ class TestSortWires:
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting algorithm works using a wire map."""
         op_list = [
-            qml.PauliX("three"),
-            qml.PauliX(5),
+            qml.X("three"),
+            qml.X(5),
             qml.Toffoli([2, "three", 4]),
             qml.CNOT([2, 5]),
             qml.RX(1, 5),
-            qml.PauliY(0),
+            qml.Y(0),
             qml.CRX(1, ["test", 2]),
-            qml.PauliZ("three"),
+            qml.Z("three"),
             qml.CRY(1, ["test", 2]),
         ]
         sorted_list = Sum._sort(  # pylint: disable=protected-access
             op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5}
         )
         final_list = [
-            qml.PauliY(0),
+            qml.Y(0),
             qml.CRX(1, ["test", 2]),
             qml.CRY(1, ["test", 2]),
             qml.CNOT([2, 5]),
             qml.Toffoli([2, "three", 4]),
-            qml.PauliX("three"),
-            qml.PauliZ("three"),
-            qml.PauliX(5),
+            qml.X("three"),
+            qml.Z("three"),
             qml.RX(1, 5),
+            qml.X(5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
