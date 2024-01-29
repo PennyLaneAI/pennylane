@@ -104,7 +104,6 @@ class TestExpval:
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
-        @qml.defer_measurements
         def circuit(phi):
             qml.RX(phi, 0)
             m0 = qml.measure(0)
