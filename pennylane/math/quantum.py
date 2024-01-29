@@ -719,8 +719,8 @@ def _compute_mutual_info(
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
 
 
-def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype="complex128"):
-    r"""Compute the expectation value of an operator with respect to a pure state.
+def expectation_value(operator_matrix, state_vector, check_state=False, check_operator=False):
+    r"""Compute the expectation value of an operator concerning a pure state.
 
     The expectation value of an operator :math:`A` for a pure state given by a state vector :math:`\ket{\psi}`
     is defined as
@@ -740,25 +740,26 @@ def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype=
 
     **Example**
 
-    An operator matrix and a state vector can be used as arguments to obtain the expectation value, e.g.:
+    The expectation value for any operator can obtained by passing their matrix representation as an argument.
+    For example, for a 2 qubit state, we can compute the expectation value of the operator :math: `Z \otimes I` as
 
-    >>> state_vector = np.array([0, 1])
-    >>> operator_matrix = np.array([[0,1],[1,0]])
+
+    >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
+    >>> operator_matrix = qml.PauliZ(0).matrix(wire_order=[0,1])
     >>> qml.math.expectation_value(operator_matrix, state_vector)
-    0.0
+    tensor(-2.23711432e-17+0.j, requires_grad=True)
 
     .. seealso:: :func:`pennylane.math.fidelity`
 
     """
-    # Cast as a c_dtype array
-    state_vector = cast(state_vector, dtype=c_dtype)
-
-    # Cannot be cast_like if jit
-    if not is_abstract(state_vector):
-        operator_matrix = cast_like(operator_matrix, state_vector)
 
     if check_state:
         _check_state_vector(state_vector)
+
+    if check_operator:
+        conj_trans = np.transpose(np.conj(operator_matrix))
+        if not allclose(operator_matrix, conj_trans):
+            raise ValueError("The matrix is not Hermitian.")
 
     if qml.math.shape(operator_matrix)[-1] != qml.math.shape(state_vector)[-1]:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")

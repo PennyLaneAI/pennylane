@@ -40,6 +40,11 @@ class TestExpectationValueMath:
             [0.8660254, 0.5],
             0.8077935208042251,
         ),
+        (
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]],
+            [1, 0, 1, 0] / np.sqrt(2),
+            0,
+        ),
     ]
 
     array_funcs = [
@@ -65,7 +70,10 @@ class TestExpectationValueMath:
         overlap = qml.math.expectation_value(ops, state_vectors, check_state)
         assert qml.math.allclose(expected, overlap)
 
-    state_wrong_amp = [([[1, 0], [0, 1]], [0.5, 0]), ([[1, 0], [0, 1]], [26, 70])]
+    state_wrong_amp = [
+        ([[1, 0], [0, 1]], [0.5, 0]),
+        ([[1, 0], [0, 1]], [26, 70]),
+    ]
 
     @pytest.mark.parametrize("ops,state_vectors", state_wrong_amp)
     def test_state_vector_wrong_amplitudes(self, ops, state_vectors):
@@ -73,7 +81,10 @@ class TestExpectationValueMath:
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
             qml.math.expectation_value(ops, state_vectors, check_state=True)
 
-    state_wrong_shape = [([[1, 0], [0, 1]], [0, 1, 0]), ([[1, 0], [0, 1]], [0, 0, 0, 0, 1])]
+    state_wrong_shape = [
+        ([[1, 0], [0, 1]], [0, 1, 0]),
+        ([[1, 0], [0, 1]], [0, 0, 0, 0, 1]),
+    ]
 
     @pytest.mark.parametrize("ops,state_vectors", state_wrong_shape)
     def test_state_vector_wrong_shape(self, ops, state_vectors):
@@ -86,7 +97,8 @@ class TestExpectationValueMath:
         ops = np.diag([0, 1, 0, 0])
         state_vectors = [1, 0]
         with pytest.raises(
-            qml.QuantumFunctionError, match="The two states must have the same number of wires"
+            qml.QuantumFunctionError,
+            match="The two states must have the same number of wires",
         ):
             qml.math.expectation_value(ops, state_vectors, check_state=True)
 
@@ -103,7 +115,12 @@ class TestExpectationValueMath:
             )
         )
         state_vectors = qml.math.stack(
-            [func([0, 1]), func([1, 0]), func([1, 1] / np.sqrt(2)), func([0.8660254, 0.5])]
+            [
+                func([0, 1]),
+                func([1, 0]),
+                func([1, 1] / np.sqrt(2)),
+                func([0.8660254, 0.5]),
+            ]
         )
         expected = [0, 0.5, 0.5, 0.8077935208042251]
 
@@ -116,7 +133,12 @@ class TestExpectationValueMath:
         """Test broadcasting works for expectation values when the operators input is unbatched"""
         ops = func([[1, 0], [0, 0]])
         state_vectors = qml.math.stack(
-            [func([0, 1]), func([1, 0]), func([1, 1] / np.sqrt(2)), func([0.8660254, 0.5])]
+            [
+                func([0, 1]),
+                func([1, 0]),
+                func([1, 1] / np.sqrt(2)),
+                func([0.8660254, 0.5]),
+            ]
         )
         expected = [0, 1, 0.5, 0.7499999934451599]
 
