@@ -184,7 +184,9 @@ class Identity(CVObservable, Operation):
     def pow(self, _):
         return [Identity(wires=self.wires)]
 
+
 I = Identity
+
 
 class GlobalPhase(Operation):
     r"""A global phase operation that multiplies all components of the state by :math:`e^{-i \phi}`.
