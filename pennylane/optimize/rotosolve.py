@@ -324,6 +324,7 @@ class RotosolveOptimizer:
     to converge than previously, Rotosolve was able to adapt to the more complicated
     dependence on the input arguments and still found the global minimum successfully.
     """
+
     # pylint: disable=too-few-public-methods
 
     def __init__(self, substep_optimizer="brute", substep_kwargs=None):
