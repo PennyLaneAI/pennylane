@@ -20,9 +20,8 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math
 
-# from pennylane.devices.qutrit_mixed. import measure # TODO add when added to __init__
+from pennylane.devices.qutrit_mixed import measure
 from pennylane.devices.qutrit_mixed.measure import (
-    measure,
     apply_observable_einsum,
     get_measurement_function,
     trace_method,

@@ -135,6 +135,9 @@
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
+* A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
+  [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
+
 <h3>Breaking changes 💔</h3>
 
 * Pin Black to `v23.12` to prevent unnecessary formatting changes.
