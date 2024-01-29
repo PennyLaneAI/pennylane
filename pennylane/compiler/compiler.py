@@ -61,8 +61,12 @@ def _check_compiler_version(name):
     """Check if the installed version of the given compiler is greater than
     or equal to the required minimum version.
     """
-    if AvailableCompilers.compiler_checked.get(name, None):
-        return  # Used the cached value!
+    if version := AvailableCompilers.compiler_checked.get(name, None):
+        if name == "catalyst":
+            installed_catalyst_version = metadata.version("pennylane-catalyst")
+            if installed_catalyst_version == version:
+                return  # Used the cached value!
+
     version = None
     if name == "catalyst":
         installed_catalyst_version = metadata.version("pennylane-catalyst")
