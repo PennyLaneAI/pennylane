@@ -979,3 +979,77 @@ def molecular_hamiltonian(
     h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
 
     return h_pl, qubits
+
+
+def _active_space_integrals(core_constant, one, two, core=None, active=None):
+    r"""Return active space integrals in the molecular orbital basis."""
+
+    if core is None and active is None:
+        return core_constant, one, two
+
+    for i in core:
+        core_constant = core_constant + 2 * one[i][i]
+        for j in core:
+            core_constant = core_constant + 2 * two[i][j][j][i] - two[i][j][i][j]
+
+    for p in active:
+        for q in active:
+            for i in core:
+                o = qml.math.zeros(one.shape)
+                o[p, q] = 1.0
+                one = one + (2 * two[i][p][q][i] - two[i][p][i][q]) * o
+
+    one = one[qml.math.ix_(active, active)]
+    two = two[qml.math.ix_(active, active, active, active)]
+
+    return core_constant, one, two
+
+
+def _pyscf_integrals(
+    symbols,
+    coordinates,
+    charge=0,
+    mult=1,
+    basis="sto-3g",
+    active_electrons=None,
+    active_orbitals=None,
+):
+    r"""Compute pyscf integrals."""
+
+    import pyscf
+
+    geometry = [
+        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
+        for i, symbol in enumerate(symbols)
+    ]
+
+    mol = pyscf.gto.Mole()
+    mol.atom = geometry
+    mol.basis = basis
+    mol.charge = charge
+    mol.spin = mult - 1
+    mol.verbose = 0
+
+    mol_pyscf = mol.build()
+    myhf = pyscf.scf.ROHF(mol_pyscf)
+    _ = myhf.kernel()
+
+    nmo = mol.nelectron
+
+    core, active = qml.qchem.active_space(
+        mol.nelectron, mol.nao, mult, active_electrons, active_orbitals
+    )
+
+    one_ao = mol_pyscf.intor_symmetric("int1e_kin") + mol_pyscf.intor_symmetric("int1e_nuc")
+    two_ao = mol_pyscf.intor("int2e_sph")
+    one_mo = np.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
+    two_mo = pyscf.ao2mo.incore.full(two_ao, myhf.mo_coeff)
+
+    core_constant = np.array([myhf.energy_nuc()])
+    two_mo = np.swapaxes(two_mo, 1, 3)
+
+    core_constant, one_mo, two_mo = _active_space_integrals(
+        core_constant, one_mo, two_mo, core, active
+    )
+
+    return core_constant, one_mo, two_mo
