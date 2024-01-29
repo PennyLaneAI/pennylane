@@ -39,6 +39,37 @@
   is now strictly faster for jax.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
+* New `qml.commutator` function that allows to compute commutators between
+  `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
+  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+
+  Basic usage with PennyLane operators.
+
+  ```pycon
+  >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
+  2j*(PauliZ(wires=[0]))
+  ```
+
+  We can return a `PauliSentence` instance by setting `pauli=True`.
+
+  ```pycon
+  >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
+  >>> op2 = qml.PauliY(0) + qml.PauliY(1)
+  >>> qml.commutator(op1, op2, pauli=True)
+  2j * X(1) @ Z(0)
+  + 2j * Z(1) @ X(0)
+  ```
+
+  We can also input `PauliWord` and `PauliSentence` instances.
+
+  ```pycon
+  >>> op1 = PauliWord({0:"X", 1:"X"})
+  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+  >>> qml.commutator(op1, op2, pauli=True)
+  2j * Z(0) @ X(1)
+  + 2j * X(0) @ Z(1)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
@@ -53,7 +84,7 @@
 
 * Upgrade Pauli arithmetic:
   You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
-  You can now intuitively add together 
+  You can now intuitively add together
   `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
   For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
   sentence `ps1 = PauliSentence({pw1: 3.})`.
@@ -88,15 +119,22 @@
 * `CRX`, `CRY`, `CRZ`, `CROT`, and `ControlledPhaseShift` (i.e. `CPhaseShift`) now inherit from `ControlledOp`, giving them additional properties such as `control_wire` and `control_values`. Calling `qml.ctrl` on `RX`, `RY`, `RZ`, `Rot`, and `PhaseShift` with a single control wire will return gates of types `CRX`, `CRY`, etc. as opposed to a general `Controlled` operator.
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
 
+* CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
+  and the codecov check itself would never execute.
+  [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
+
 <h4>Community contributions 🥳</h4>
 
-* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
+* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
 <h3>Breaking changes 💔</h3>
+
+* Pin Black to `v23.12` to prevent unnecessary formatting changes.
+  [(#5112)](https://github.com/PennyLaneAI/pennylane/pull/5112)
 
 * `gradient_analysis_and_validation` is now renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
@@ -123,11 +161,11 @@
   ```
   >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
   [
-    RZ(1.5707963267948966, wires=[1]), 
-    RY(0.0615, wires=[1]), 
-    CNOT(wires=[0, 1]), 
-    RY(-0.0615, wires=[1]), 
-    CNOT(wires=[0, 1]), 
+    RZ(1.5707963267948966, wires=[1]),
+    RY(0.0615, wires=[1]),
+    CNOT(wires=[0, 1]),
+    RY(-0.0615, wires=[1]),
+    CNOT(wires=[0, 1]),
     RZ(-1.5707963267948966, wires=[1])
   ]
   ```
@@ -141,15 +179,18 @@
   you should use `qml.ops.one_qubit_decomposition` and `qml.ops.two_qubit_decomposition`.
   [(#5091)](https://github.com/PennyLaneAI/pennylane/pull/5091)
 
+* `qml.ExpvalCost` has been removed. Users should use `qml.expval()` moving forward.
+  [(#5097)](https://github.com/PennyLaneAI/pennylane/pull/5097)
+
 <h3>Deprecations 👋</h3>
 
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
   module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
 
-* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using 
+* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using
   the `@` operator, `*` will be used only for scalar multiplication. Note also the breaking
-  change that the product of two `PauliWord` instances now returns a `PauliSentence` instead 
+  change that the product of two `PauliWord` instances now returns a `PauliSentence` instead
   of a tuple `(new_word, coeff)`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5054)](https://github.com/PennyLaneAI/pennylane/pull/5054)
@@ -215,6 +256,9 @@
 * `CosineWindow` no longer raises an unexpected error when used on a subset of wires at the beginning of a circuit.
   [(#5080)](https://github.com/PennyLaneAI/pennylane/pull/5080)
 
+* Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
+  [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -227,6 +271,7 @@ Isaac De Vlugt,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
+Vincent Michaud-Rioux,
 Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
