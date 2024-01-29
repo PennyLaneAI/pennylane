@@ -339,6 +339,7 @@ class PauliX(Observable, Operation):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
         return [np.pi / 2, np.pi, -np.pi / 2]
 
+X = PauliX
 
 class PauliY(Observable, Operation):
     r"""PauliY(wires)
@@ -500,6 +501,7 @@ class PauliY(Observable, Operation):
         # Y = RZ(0) RY(\pi) RZ(0)
         return [0.0, np.pi, 0.0]
 
+Y = PauliY
 
 class PauliZ(Observable, Operation):
     r"""PauliZ(wires)
@@ -660,6 +662,7 @@ class PauliZ(Observable, Operation):
         # Z = RZ(\pi) RY(0) RZ(0)
         return [np.pi, 0.0, 0.0]
 
+Z = PauliZ
 
 class S(Operation):
     r"""S(wires)
