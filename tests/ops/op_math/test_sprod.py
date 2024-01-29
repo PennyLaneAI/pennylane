@@ -204,7 +204,7 @@ class TestMscMethods:
         res = qml.s_prod(0.5, qml.PauliX(0))
         true_res = "0.5 * X(0)"
         assert repr(res) == true_res
-    
+
     def test_string_with_sum_of_pauli(self):
         """Test the string representation with single pauli"""
         res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX("b")))
@@ -215,7 +215,7 @@ class TestMscMethods:
         true_res = "0.5 * (X(0) + X(1))"
         assert repr(res) == true_res
 
-        res = qml.s_prod(0.5, qml.sum(qml.PauliX('a'), qml.PauliX(1)))
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX(1)))
         true_res = "0.5 * (X('a') + X(1))"
         assert repr(res) == true_res
 

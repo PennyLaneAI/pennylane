@@ -60,7 +60,7 @@ class Identity(CVObservable, Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
-    
+
     def __repr__(self):
         """String representation."""
         wire = self.wires[0]
