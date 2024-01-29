@@ -17,6 +17,7 @@
   import pennylane as qml
 
   dev = qml.device("default.clifford", tableau=True)  
+
   @qml.qnode(dev)
   def circuit():
       qml.CNOT(wires=[0, 1])
