@@ -137,8 +137,7 @@ def get_final_state(circuit, debugger=None, interface=None):
     measurement_values = {}
     for op in circuit.operations[bool(prep) :]:
         if isinstance(op, Conditional):
-            meas_id = op.meas_val.measurements[0].hash
-            if not measurement_values[meas_id]:
+            if not op.meas_val.concretize(measurement_values):
                 continue
             op = op.then_op
         if isinstance(op, MidMeasureMP):
@@ -527,25 +526,19 @@ def gather_mcm(measurement, mv, samples, counter):
     if isinstance(mv, (list, tuple)):
         return np.vstack(tuple(gather_mcm(measurement, m, samples, counter) for m in mv)).T
     if isinstance(measurement, ExpectationMP):
-        sha = mv.measurements[0].hash
-        new_samples = np.mean(np.array([dct[sha] for dct in samples]))
+        new_samples = np.mean(np.array([mv.concretize(dct) for dct in samples]))
     elif isinstance(measurement, ProbabilityMP):
-        sha = mv.measurements[0].hash
-        p1 = counter[sha] / float(len(samples))
-        new_samples = np.array([1 - p1, p1])
+        counts = dict(sorted(Counter(np.array([mv.concretize(dct) for dct in samples])).items()))
+        num = sum(counts.values())
+        new_samples = np.array([counts[0] / num, counts[1] / num])
     elif isinstance(measurement, CountsMP):
-        sha = mv.measurements[0].hash
-        new_samples = {}
-        if len(samples) - counter[sha] > 0:
-            new_samples[0] = len(samples) - counter[sha]
-        if counter[sha] > 0:
-            new_samples[1] = counter[sha]
+        new_samples = dict(
+            sorted(Counter(np.array([mv.concretize(dct) for dct in samples])).items())
+        )
     elif isinstance(measurement, SampleMP):
-        sha = mv.measurements[0].hash
-        new_samples = np.array([dct[sha] for dct in samples])
+        new_samples = np.array([mv.concretize(dct) for dct in samples])
     elif isinstance(measurement, VarianceMP):
-        sha = mv.measurements[0].hash
-        new_samples = qml.math.var(np.array([dct[sha] for dct in samples]))
+        new_samples = qml.math.var(np.array([mv.concretize(dct) for dct in samples]))
     else:
         raise ValueError(
             f"Native mid-circuit measurement mode does not support {measurement.__class__.__name__} measurements."
