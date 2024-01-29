@@ -907,11 +907,13 @@ class ThermalRelaxationError(Channel):
             v1 = np.array([[0, 1], [0, 0]])
             K1 = np.sqrt(e1 + np.eps) * v1
             base = sum(
-                4 * eT2**2,
-                4 * p_reset**2 * pe**2,
-                -4 * p_reset**2 * pe,
-                p_reset**2,
-                np.eps,
+                (
+                    4 * eT2**2,
+                    4 * p_reset**2 * pe**2,
+                    -4 * p_reset**2 * pe,
+                    p_reset**2,
+                    np.eps,
+                )
             )
             common_term = np.sqrt(base)
             e2 = 1 - p_reset / 2 - common_term / 2
