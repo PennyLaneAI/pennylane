@@ -496,19 +496,19 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
     Returns:
         TensorLike: The combined measurement outcome
     """
-    if isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
-        new_meas = measurement / len(samples)
+    if isinstance(circuit_measurement, CountsMP):
+        new_measurement = dict(sorted(measurement.items()))
+    elif isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
+        new_measurement = measurement / len(samples)
     elif isinstance(circuit_measurement, SampleMP):
-        new_meas = np.concatenate(tuple(s.ravel() for s in measurement))
-    elif isinstance(circuit_measurement, CountsMP):
-        new_meas = dict(sorted(measurement.items()))
+        new_measurement = np.concatenate(tuple(s.ravel() for s in measurement))
     elif isinstance(circuit_measurement, VarianceMP):
-        new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
+        new_measurement = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
     else:
         raise ValueError(
             f"Native mid-circuit measurement mode does not support {circuit_measurement.__class__.__name__} measurements."
         )
-    return new_meas
+    return new_measurement
 
 
 def gather_mcm(measurement, mv, samples, counter):
@@ -525,22 +525,21 @@ def gather_mcm(measurement, mv, samples, counter):
     """
     if isinstance(mv, (list, tuple)):
         return np.vstack(tuple(gather_mcm(measurement, m, samples, counter) for m in mv)).T
-    if isinstance(measurement, ExpectationMP):
-        new_samples = np.mean(np.array([mv.concretize(dct) for dct in samples]))
-    elif isinstance(measurement, ProbabilityMP):
-        counts = dict(sorted(Counter(np.array([mv.concretize(dct) for dct in samples])).items()))
-        num = sum(counts.values())
-        new_samples = np.array([counts[0] / num, counts[1] / num])
-    elif isinstance(measurement, CountsMP):
-        new_samples = dict(
-            sorted(Counter(np.array([mv.concretize(dct) for dct in samples])).items())
-        )
-    elif isinstance(measurement, SampleMP):
-        new_samples = np.array([mv.concretize(dct) for dct in samples])
-    elif isinstance(measurement, VarianceMP):
-        new_samples = qml.math.var(np.array([mv.concretize(dct) for dct in samples]))
-    else:
+    if not isinstance(measurement, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
         raise ValueError(
             f"Native mid-circuit measurement mode does not support {measurement.__class__.__name__} measurements."
         )
-    return new_samples
+    mcm_samples = np.array([mv.concretize(dct) for dct in samples])
+    if isinstance(measurement, CountsMP):
+        new_measurement = dict(sorted(Counter(mcm_samples).items()))
+    elif isinstance(measurement, ExpectationMP):
+        new_measurement = np.mean(mcm_samples)
+    elif isinstance(measurement, ProbabilityMP):
+        counts = dict(sorted(Counter(mcm_samples).items()))
+        num = sum(counts.values())
+        new_measurement = np.array([counts[0] / num, counts[1] / num])
+    elif isinstance(measurement, SampleMP):
+        new_measurement = mcm_samples
+    elif isinstance(measurement, VarianceMP):
+        new_measurement = qml.math.var(mcm_samples)
+    return new_measurement
