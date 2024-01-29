@@ -275,5 +275,5 @@ Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
-Matthew Silverman.
-Jay Soni,
+Matthew Silverman,
+Jay Soni.
