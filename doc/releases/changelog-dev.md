@@ -16,7 +16,7 @@
   ```python
   import pennylane as qml
 
-  dev = qml.device("default.clifford", tableau=True)
+  dev = qml.device("default.clifford", tableau=True)  
   @qml.qnode(dev)
   def circuit():
       qml.CNOT(wires=[0, 1])
@@ -72,7 +72,7 @@
 
 <h4>Parity Mapping</h4>
 
-* `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
+* `parity_transform`  is added for parity mapping of a fermionic Hamiltonian.
    [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
    It is now possible to transform fermionic Hamiltonian to qubit Hamiltonian through parity mapping.
 
@@ -293,4 +293,3 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
 Matthew Silverman.
-
