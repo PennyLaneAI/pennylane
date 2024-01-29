@@ -236,6 +236,9 @@
 * Added a development guide on deprecations and removals.
   [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
+* A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
+  [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
