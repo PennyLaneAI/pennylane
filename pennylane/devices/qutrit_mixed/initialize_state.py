@@ -16,8 +16,7 @@
 from typing import Iterable, Union
 import pennylane as qml
 from pennylane.operation import StatePrepBase
-
-qudit_dim = 3  # specifies qudit dimension
+from .utils import QUDIT_DIM
 
 
 def create_initial_state(
@@ -55,18 +54,18 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
 
     Args:
         state (array[complex]): normalized input state of length
-            ``qudit_dim**num_wires``, where ``qudit_dim`` is the dimension of the system.
+            ``QUDIT_DIM**num_wires``, where ``QUDIT_DIM`` is the dimension of the system.
         num_wires (int): number of wires that get initialized in the state
 
     Returns:
-        array[complex]: complex array of shape ``[qudit_dim] * (2 * num_wires)``
-        representing the density matrix of this state, where ``qudit_dim`` is
+        array[complex]: complex array of shape ``[QUDIT_DIM] * (2 * num_wires)``
+        representing the density matrix of this state, where ``QUDIT_DIM`` is
         the dimension of the system.
     """
 
     # Initialize the entire set of wires with the state
     rho = qml.math.outer(state, qml.math.conj(state))
-    return qml.math.reshape(rho, [qudit_dim] * 2 * num_wires)
+    return qml.math.reshape(rho, [QUDIT_DIM] * 2 * num_wires)
 
 
 def _create_basis_state(num_wires, index):  # function is easy to abstract for qudit
@@ -77,10 +76,10 @@ def _create_basis_state(num_wires, index):  # function is easy to abstract for q
         index (int): integer representing the computational basis state.
 
     Returns:
-        array[complex]: complex array of shape ``[qudit_dim] * (2 * num_wires)``
-        representing the density matrix of the basis state, where ``qudit_dim`` is
+        array[complex]: complex array of shape ``[QUDIT_DIM] * (2 * num_wires)``
+        representing the density matrix of the basis state, where ``QUDIT_DIM`` is
         the dimension of the system.
     """
-    rho = qml.math.zeros((qudit_dim**num_wires, qudit_dim**num_wires))
+    rho = qml.math.zeros((QUDIT_DIM**num_wires, QUDIT_DIM**num_wires))
     rho[index, index] = 1
-    return qml.math.reshape(rho, [qudit_dim] * (2 * num_wires))
+    return qml.math.reshape(rho, [QUDIT_DIM] * (2 * num_wires))

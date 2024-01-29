@@ -1064,6 +1064,8 @@ class TestApplyGroverOperator:
         when applying it to a Jax state."""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         # Input state
