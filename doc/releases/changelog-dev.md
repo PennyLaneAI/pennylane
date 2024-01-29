@@ -220,7 +220,6 @@
   [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
 * `PauliSentence.wires` no longer imposes a false order.
-  [(#5040)](https://github.com/PennyLaneAI/pennylane/issues/5040)
   [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
 
 <h3>Contributors ✍️</h3>
