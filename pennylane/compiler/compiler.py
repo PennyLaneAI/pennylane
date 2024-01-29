@@ -48,36 +48,17 @@ class AvailableCompilers:
     # and their entry point loaders.
     names_entrypoints = defaultdict(dict)
 
-    # The map consists of supported compiler names (str) and their compatible version (str or None).
-    # This boolean indicates whether the installed version of a compiler package is greater
-    # than or equal to the minimum version. If `None`, it checks the compatibility again before
-    # raising a `CompileError`.
-    # This value will be updated in `_check_compiler_version` to reduce the required
-    # version checks of installed compiler packages at runtime.
-    compiler_checked = defaultdict(dict)
-
 
 def _check_compiler_version(name):
     """Check if the installed version of the given compiler is greater than
     or equal to the required minimum version.
     """
-    if version := AvailableCompilers.compiler_checked.get(name, None):
-        if name == "catalyst":
-            installed_catalyst_version = metadata.version("pennylane-catalyst")
-            if installed_catalyst_version == version:
-                return  # Used the cached value!
-
-    version = None
     if name == "catalyst":
         installed_catalyst_version = metadata.version("pennylane-catalyst")
-        version = installed_catalyst_version
         if Version(re.sub(r"\.dev\d+", "", installed_catalyst_version)) < PL_CATALYST_MIN_VERSION:
             raise CompileError(
                 f"PennyLane-Catalyst {PL_CATALYST_MIN_VERSION} or greater is required, but installed {installed_catalyst_version}"
             )
-
-    # else
-    AvailableCompilers.compiler_checked[name] = version
 
 
 def _refresh_compilers():
