@@ -21,6 +21,7 @@ from importlib.metadata import distribution
 import warnings
 
 import pennylane as qml
+from pennylane.workflow import construct_batch
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
@@ -36,6 +37,7 @@ def catalyst_qjit(qnode):
 
 def draw(
     qnode,
+    level="user",
     wire_order=None,
     show_all_wires=False,
     decimals=2,
@@ -213,12 +215,12 @@ def draw(
     if hasattr(qnode, "construct"):
         return _draw_qnode(
             qnode,
+            level=level,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
-            expansion_strategy=expansion_strategy,
         )
 
     if expansion_strategy is not None:
@@ -246,36 +248,20 @@ def draw(
 
 def _draw_qnode(
     qnode,
+    level="user",
     wire_order=None,
     show_all_wires=False,
     decimals=2,
     max_length=100,
     show_matrices=True,
-    expansion_strategy=None,
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        if isinstance(qnode.device, qml.devices.Device) and (
-            expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
-        ):
-            qnode.construct(args, kwargs)
-            program, _ = qnode.device.preprocess()
-            tapes = program([qnode.tape])
-        else:
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                tapes = qnode.construct(args, kwargs)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    tapes = program([qnode.tape])
 
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
-
+        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs)
         _wire_order = wire_order or qnode.device.wires or qnode.tape.wires
 
-        if tapes is not None:
+        if len(tapes) > 1:
             cache = {"tape_offset": 0, "matrices": []}
             res = [
                 tape_text(
@@ -287,7 +273,7 @@ def _draw_qnode(
                     max_length=max_length,
                     cache=cache,
                 )
-                for t in tapes[0]
+                for t in tapes
             ]
             if show_matrices and cache["matrices"]:
                 mat_str = ""
@@ -299,7 +285,7 @@ def _draw_qnode(
             return "\n\n".join(res)
 
         return tape_text(
-            qnode.qtape,
+            tapes[0],
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
@@ -312,6 +298,7 @@ def _draw_qnode(
 
 def draw_mpl(
     qnode,
+    level="user",
     wire_order=None,
     show_all_wires=False,
     decimals=None,
@@ -519,13 +506,17 @@ def draw_mpl(
     """
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
+
     if hasattr(qnode, "construct"):
+        if expansion_strategy:
+            warnings.warn("Please use level instead.", UserWarning)
+            level = expansion_strategy
         return _draw_mpl_qnode(
             qnode,
+            level=level,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
-            expansion_strategy=expansion_strategy,
             style=style,
             fig=fig,
             **kwargs,
@@ -557,10 +548,10 @@ def draw_mpl(
 
 def _draw_mpl_qnode(
     qnode,
+    level="user",
     wire_order=None,
     show_all_wires=False,
     decimals=None,
-    expansion_strategy=None,
     style="black_white",
     *,
     fig=None,
@@ -568,29 +559,16 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
-            qnode.construct(args, kwargs)
-            program, _ = qnode.device.preprocess()
-            tapes, _ = program([qnode.tape])
-            tape = tapes[0]
-        else:
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs_qnode)
+        if len(tapes) > 0:
+            warnings.warn(
+                "More than one tape constructed, but only displaying the first one.", UserWarning
+            )
 
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                qnode.construct(args, kwargs_qnode)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    [tape], _ = program([qnode.tape])
-                else:
-                    tape = qnode.tape
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
-
-        _wire_order = wire_order or qnode.device.wires or tape.wires
+        _wire_order = wire_order or qnode.device.wires or tapes[0].wires
 
         return tape_mpl(
-            tape,
+            tapes[0],
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
