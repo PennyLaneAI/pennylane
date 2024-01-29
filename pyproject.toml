@@ -84,7 +84,7 @@ pytest-split = "^0.8"
 flaky = ">=3.7.0"
 pytest-forked = ">=1.4.0"
 pytest-benchmark = ">=4.0.0"
-black = ">=21"
+black = "~23.12"
 tomli = "~2.0.0" # Drop once minimum Python version is 3.11
 
 [tool.poetry.group.ci.dependencies]
