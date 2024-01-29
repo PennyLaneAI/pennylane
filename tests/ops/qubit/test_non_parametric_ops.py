@@ -78,6 +78,7 @@ STRING_REPR = (
     (qml.PauliZ("a"), "Z('a')"),
 )
 
+
 class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
     def test_op_copy(self, op_cls, _, tol):
@@ -94,7 +95,7 @@ class TestOperations:
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
-    
+
     @pytest.mark.parametrize("op, str_repr", STRING_REPR)
     def test_string_repr(self, op, str_repr):
         """Test explicit string representations that overwrite the Operator default"""
