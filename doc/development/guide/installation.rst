@@ -109,8 +109,8 @@ PennyLane along with the jax and torch, you can run ``poetry install --with jax,
 Managing Dependencies
 ~~~~~~~~~~~~~~~~~~~~~
 
-For core dependencies, use ``poetry add <the_dependency>``. For optional dependencies, specify the
-group using ``poetry add --group <the_group> <the_dependency>``. You can also provide a version
+To add core dependencies, use ``poetry add <the_dependency>``. For optional dependencies, specify
+the group using ``poetry add --group <the_group> <the_dependency>``. You can also provide a version
 specifier if you have one, otherwise Poetry will compute and provide one for you. Please note that
 if you are adding a new dependency group, they are not optional by default in Poetry, so you must
 update the group options in ``pyproject.yaml`` to ``optional = true`` manually.
@@ -120,16 +120,16 @@ To update a dependency (core or optional) in the lockfile, simply run ``poetry u
 environment. The Poetry CLI cannot be used to update the version constraints on a dependency; if
 you wish to do this, please update the constraints manually in ``pyproject.toml``.
 
-.. note::
+After making any changes, including manual changes to ``pyproject.toml``, be sure to run
+``make lock``, as is detailed in the section below. See `the documentation on version
+contraints <https://python-poetry.org/docs/dependency-specification/#version-constraints>`_
+provided by Poetry on how to specify supported version ranges for dependencies.
+
+.. warning::
 
     Calling ``poetry update --only <group>`` will also update all core dependencies. If you wish
     to update all dependencies in a group (but not the core dependencies), you must list each
     package name explicitly.
-
-If you make any manual changes to ``pyproject.toml``, be sure to run ``make lock`` afterwards,
-as is detailed in the section below. See `the documentation on version
-contraints <https://python-poetry.org/docs/dependency-specification/#version-constraints>`_
-provided by Poetry on how to specify supported version ranges for dependencies.
 
 .. note::
 
