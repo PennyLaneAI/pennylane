@@ -283,6 +283,7 @@ Abhishek Abhishek,
 Utkarsh Azad,
 Astral Cai,
 Isaac De Vlugt,
+Diksha Dhawan,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
@@ -291,6 +292,5 @@ Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
-Matthew Silverman,
-Diksha Dhawan.
+Matthew Silverman.
 
