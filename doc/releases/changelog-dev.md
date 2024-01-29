@@ -72,6 +72,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
+  for large workflows.
+  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
@@ -232,6 +236,9 @@
 * Added a development guide on deprecations and removals.
   [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
+* A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
+  [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
@@ -275,6 +282,7 @@ Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
