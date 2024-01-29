@@ -76,6 +76,17 @@ def test_snapshot_multiprocessing_qnode():
         qml.snapshots(circuit)()
 
 
+def test_Identity_nowires_raises_error():
+    """Test that measuring qml.Identity() raises error"""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def qnode():
+        return qml.expval(qml.Identity())
+
+    with pytest.raises(ValueError, match="Cannot set an empty list of wires"):
+        _ = qnode()
+
+
 class TestSupportsDerivatives:
     """Test that DefaultQubit states what kind of derivatives it supports."""
 
