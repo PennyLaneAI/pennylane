@@ -650,12 +650,11 @@ class Rot(Operation):
         [RZ(1.2, wires=[0]), RY(2.3, wires=[0]), RZ(3.4, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
             RZ(omega, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         phi, theta, omega = self.parameters
@@ -920,12 +919,11 @@ class U2(Operation):
 
         """
         pi_half = qml.math.ones_like(delta) * (np.pi / 2)
-        decomp_ops = [
+        return [
             Rot(delta, pi_half, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         phi, delta = self.parameters
@@ -1076,12 +1074,11 @@ class U3(Operation):
         PhaseShift(2.34, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             Rot(delta, theta, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         theta, phi, delta = self.parameters

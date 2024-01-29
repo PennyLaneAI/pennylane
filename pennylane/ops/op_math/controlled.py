@@ -127,36 +127,33 @@ def ctrl(op, control, control_values=None, work_wires=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
 
-    custom_ops = {
-        (qml.PauliZ, 1): qml.CZ,
-        (qml.PauliY, 1): qml.CY,
-        (qml.PauliX, 1): qml.CNOT,
-        (qml.PauliX, 2): qml.Toffoli,
-        (qml.RX, 1): qml.CRX,
-        (qml.RY, 1): qml.CRY,
-        (qml.RZ, 1): qml.CRZ,
-        (qml.Rot, 1): qml.CRot,
-        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
-    }
-    control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
-    custom_key = (type(op), len(control))
+    control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
+    if control_values is None:
+        control_values = [True] * len(control)
 
-    if custom_key in custom_ops and (control_values is None or all(control_values)):
-        qml.QueuingManager.remove(op)
-        return custom_ops[custom_key](*op.data, control + op.wires)
-    if isinstance(op, qml.PauliX):
-        qml.QueuingManager.remove(op)
-        control_string = (
-            None if control_values is None else "".join([str(int(v)) for v in control_values])
+    ctrl_op = _try_wrap_in_custom_ctrl_op(
+        op, control, control_values=control_values, work_wires=work_wires
+    )
+    if ctrl_op is not None:
+        return ctrl_op
+
+    # Flatten nested controlled operations to a multi-controlled operation for better
+    # decomposition algorithms. This includes special cases like CRX, CRot, etc.
+    if isinstance(op, Controlled):
+        work_wires = work_wires or []
+        return ctrl(
+            op.base,
+            control=control + op.control_wires,
+            control_values=control_values + op.control_values,
+            work_wires=work_wires + op.work_wires,
         )
-        return qml.MultiControlledX(
-            wires=control + op.wires, control_values=control_string, work_wires=work_wires
-        )
+
     if isinstance(op, Operator):
         return Controlled(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
         )
+
     if not callable(op):
         raise ValueError(
             f"The object {op} of type {type(op)} is not an Operator or callable. "
@@ -188,6 +185,100 @@ def ctrl(op, control, control_values=None, work_wires=None):
         return qscript.measurements
 
     return wrapper
+
+
+def _get_special_ops():
+    """Gets a list of special operations with custom controlled versions.
+
+    This is placed inside a function to avoid circular imports.
+
+    """
+
+    pauli_x_based_ctrl_ops = {qml.PauliX, qml.CNOT, qml.Toffoli, qml.MultiControlledX}
+    ops_with_custom_ctrl_ops = {
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliZ, 2): qml.CCZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.CZ, 1): qml.CCZ,
+        (qml.SWAP, 1): qml.CSWAP,
+        (qml.Hadamard, 1): qml.CH,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
+    }
+    return pauli_x_based_ctrl_ops, ops_with_custom_ctrl_ops
+
+
+def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=None):
+    """Wraps a controlled operation in custom ControlledOp, returns None if not applicable."""
+
+    pauli_x_based_ctrl_ops, ops_with_custom_ctrl_ops = _get_special_ops()
+    custom_key = (type(op), len(control))
+
+    if custom_key in ops_with_custom_ctrl_ops and all(control_values):
+        qml.QueuingManager.remove(op)
+        return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
+
+    # PauliX-based controlled operations need special treatment
+    if type(op) in pauli_x_based_ctrl_ops:
+        qml.QueuingManager.remove(op)
+        return _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires)
+
+    if isinstance(op, qml.QubitUnitary):
+        return qml.ControlledQubitUnitary(
+            op, control_wires=control, control_values=control_values, work_wires=work_wires
+        )
+
+    # A controlled ControlledPhaseShift should not be compressed to a multi controlled
+    # PhaseShift because the decomposition of PhaseShift contains a GlobalPhase that we
+    # do not have a controlled version of.
+    # TODO: remove this special case when we support ControlledGlobalPhase
+    if isinstance(op, qml.ControlledPhaseShift):
+        return Controlled(
+            op, control_wires=control, control_values=control_values, work_wires=work_wires
+        )
+    # Similarly, compress the bottom levels of a multi-controlled PhaseShift to a
+    # ControlledPhaseShift if possible to avoid dealing with a controlled GlobalPhase
+    # during decomposition. This should also be removed in the future.
+    if isinstance(op, qml.PhaseShift) and control_values[-1]:
+        op = qml.ControlledPhaseShift(*op.data, wires=control[-1:] + op.wires)
+        return Controlled(
+            op,
+            control_wires=control[:-1],
+            control_values=control_values[:-1],
+            work_wires=work_wires,
+        )
+
+    return None
+
+
+def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires):
+    """Handles PauliX-based controlled operations."""
+
+    op_map = {
+        (qml.PauliX, 1): qml.CNOT,
+        (qml.PauliX, 2): qml.Toffoli,
+        (qml.CNOT, 1): qml.Toffoli,
+    }
+
+    custom_key = (type(op), len(control))
+    if custom_key in op_map and all(control_values):
+        qml.QueuingManager.remove(op)
+        return op_map[custom_key](wires=control + op.wires)
+
+    if isinstance(op, qml.PauliX):
+        return qml.MultiControlledX(
+            wires=control + op.wires, control_values=control_values, work_wires=work_wires
+        )
+
+    work_wires = work_wires or []
+    return qml.MultiControlledX(
+        wires=control + op.wires,
+        control_values=control_values + op.control_values,
+        work_wires=work_wires + op.work_wires,
+    )
 
 
 # pylint: disable=too-many-arguments, too-many-public-methods
@@ -529,7 +620,7 @@ class Controlled(SymbolicOp):
             return True
         if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
             return True
-        if isinstance(self.base, qml.PauliX):
+        if isinstance(self.base, (qml.PauliX, qml.CNOT, qml.Toffoli, qml.MultiControlledX)):
             return True
         if _is_single_qubit_special_unitary(self.base):
             return True
@@ -630,20 +721,37 @@ def _is_single_qubit_special_unitary(op):
 
 
 # pylint: disable=protected-access
-def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Operator"]:
-    """Provides a decomposition without considering control values. Returns None if
-    no decomposition.
-    """
-    if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
-        result = op.base._controlled(op.control_wires[0])
-        # disallow decomposing to itself
-        # pylint: disable=unidiomatic-typecheck
-        if type(result) != type(op):
-            return [result]
-        qml.QueuingManager.remove(result)
-    if isinstance(op.base, qml.PauliX):
+def _decompose_pauli_x_based_no_control_values(op: Controlled):
+    """Decomposes a PauliX-based operation"""
+
+    if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 1:
+        return [qml.CNOT(wires=op.active_wires)]
+
+    if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 2:
+        return qml.Toffoli.compute_decomposition(wires=op.active_wires)
+
+    if isinstance(op.base, qml.CNOT) and len(op.control_wires) == 1:
+        return qml.Toffoli.compute_decomposition(wires=op.active_wires)
+
+    return qml.MultiControlledX.compute_decomposition(
+        wires=op.active_wires,
+        work_wires=op.work_wires,
+    )
+
+
+# pylint: disable=protected-access
+def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
+    """Decompose without considering control values. Returns None if no decomposition."""
+
+    pauli_x_based_ctrl_ops, ops_with_custom_ctrl_ops = _get_special_ops()
+
+    custom_key = (type(op.base), len(op.control_wires))
+    if custom_key in ops_with_custom_ctrl_ops:
+        custom_op_cls = ops_with_custom_ctrl_ops[custom_key]
+        return custom_op_cls.compute_decomposition(*op.data, op.active_wires)
+    if type(op.base) in pauli_x_based_ctrl_ops:
         # has some special case handling of its own for further decomposition
-        return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
+        return _decompose_pauli_x_based_no_control_values(op)
     if _is_single_qubit_special_unitary(op.base):
         if len(op.control_wires) >= 2 and qmlmath.get_interface(*op.data) == "numpy":
             return ctrl_decomp_bisect(op.base, op.control_wires)
@@ -661,7 +769,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
             UserWarning,
         )
 
-    return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
+    return [ctrl(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
 
 class ControlledOp(Controlled, operation.Operation):

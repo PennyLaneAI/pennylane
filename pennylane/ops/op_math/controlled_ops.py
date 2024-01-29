@@ -336,6 +336,13 @@ class CZ(ControlledOp):
     def _controlled(self, wire):
         return qml.CCZ(wires=wire + self.wires)
 
+    @staticmethod
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+        return [qml.ControlledPhaseShift(np.pi, wires=wires)]
+
+    def decomposition(self):
+        return self.compute_decomposition(self.wires)
+
 
 class CRX(ControlledOp):
     r"""The controlled-RX operator
