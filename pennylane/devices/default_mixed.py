@@ -23,6 +23,7 @@ import functools
 import itertools
 from collections import defaultdict
 from string import ascii_letters as ABC
+import numpy as np
 
 import pennylane as qml
 import pennylane.math as qnp
@@ -34,7 +35,6 @@ from pennylane import (
     StatePrep,
     Snapshot,
 )
-from pennylane import numpy as np
 from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP, PurityMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
@@ -652,7 +652,7 @@ class DefaultMixed(QubitDevice):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
+            circuit (QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported

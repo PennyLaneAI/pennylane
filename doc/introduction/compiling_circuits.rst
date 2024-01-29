@@ -1,26 +1,28 @@
 .. role:: html(raw)
    :format: html
 
-.. _intro_ref_compile:
+.. _intro_ref_compile_circuits:
 
 Compiling circuits
 ==================
 
 PennyLane offers multiple tools for compiling circuits. We use the term "compilation"
 here in a loose sense as the process of transforming one circuit 
-into one or more differing circuits. A circuit could be either a quantum function or a sequence of operators. For example, such a transformation could
+into one or more differing circuits. A circuit could be either a quantum function or a sequence of operators. For
+example, such a transformation could
 replace a gate type with another, fuse gates, exploit mathematical relations that simplify an observable,
 or replace a large circuit by a number of smaller circuits.
 
-Compilation functionality is mostly designed as **transforms**, which you can read up on in the
-section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
+Compilation functionality is mostly designed as **transforms**; see the
+the :doc:`transforms documentation <../code/qml_transforms>` for more details,
+as well as information on how to write your own custom transforms.
 
 In addition to quantum circuit transforms, PennyLane also
-supports experimental just-in-time compilation, via
+supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
 `Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
 supports full hybrid compilation --- compiling both the classical and quantum components
 of your workflow into a binary that can be run close to the accelerators.
-that you are using.
+that you are using. More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
 
 Simplifying Operators
 ----------------------
@@ -135,9 +137,9 @@ For example, take the following decorated quantum function:
 
     dev = qml.device('default.qubit', wires=[0, 1, 2])
 
+    @qml.compile
     @qml.qnode(dev)
-    @qml.compile()
-    def qfunc(x, y, z):
+    def circuit(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)
         qml.Hadamard(wires=2)
@@ -157,7 +159,7 @@ The default behaviour of :func:`~.pennylane.compile` applies a sequence of three
 transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylane.transforms.cancel_inverses`,
 and then :func:`~.pennylane.transforms.merge_rotations`.
 
->>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
+>>> print(qml.draw(circuit)(0.2, 0.3, 0.4))
 0: ──H──RX(0.60)─────────────────┤  <Z>
 1: ──H─╭X─────────────────────╭●─┤     
 2: ──H─╰●─────────RX(0.30)──Y─╰Z─┤     
@@ -173,8 +175,8 @@ controlled gates and cancel adjacent inverses, we could do:
     from pennylane.transforms import commute_controlled, cancel_inverses
     pipeline = [commute_controlled, cancel_inverses]
 
+    @partial(qml.compile, pipeline=pipeline)
     @qml.qnode(dev)
-    @qml.compile(pipeline=pipeline)
     def qfunc(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)
@@ -338,69 +340,4 @@ observables and coefficients:
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
-This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.pauli` module.
-
-Just-in-time compilation with Catalyst
---------------------------------------
-
-In addition to quantum circuit transformations, PennyLane also supports full
-hybrid just-in-time (JIT) compilation via `Catalyst
-<https://github.com/pennylaneai/catalyst>`__. Catalyst allows you to compile
-the entire quantum-classical workflow, including any optimization loops,
-which allows for optimized performance, and the ability to run the entire
-workflow on accelerator devices as appropriate.
-
-Currently, Catalyst must be installed separately, and only supports the JAX
-interface and ``lightning.qubit``. Check out the Catalyst documentation for
-`installation instructions
-<https://docs.pennylane.ai/projects/catalyst/en/latest/dev/installation.html>`__.
-
-Using Catalyst with PennyLane is a simple as using the ``@qjit`` decorator to
-compile your hybrid workflows:
-
-.. code-block:: python
-
-    from catalyst import qjit
-    from jax import numpy as jnp
-
-    dev = qml.device("lightning.qubit", wires=2, shots=1000)
-
-    @qjit
-    @qml.qnode(dev)
-    def cost(params):
-        qml.Hadamard(0)
-        qml.RX(jnp.sin(params[0]) ** 2, wires=1)
-        qml.CRY(params[0], wires=[0, 1])
-        qml.RX(jnp.sqrt(params[1]), wires=1)
-        return qml.expval(qml.PauliZ(1))
-
-The ``qjit`` decorator can also be used on hybrid cost functions -- that is,
-cost functions that include both QNodes and classical processing. We can even
-JIT compile the full optimization loop, for example when training models:
-
-.. code-block:: python
-
-    import jaxopt
-
-    @jax.jit
-    def optimization():
-        # initial parameter
-        params = jnp.array([0.54, 0.3154])
-
-        # define the optimizer
-        opt = jaxopt.GradientDescent(cost, stepsize=0.4)
-        update = lambda i, args: tuple(opt.update(*args))
-
-        # perform optimization loop
-        state = opt.init_state(params)
-        (params, _) = jax.lax.fori_loop(0, 100, update, (params, state))
-
-        return params
-
-Finally, Catalyst provides additional features to PennyLane, such as classical
-control of quantum operations that are JIT-enabled, via the function
-``catalyst.for_loop`` and ``catalyst.cond``. It also enables arbitrary
-post-processing of mid-circuit measurements.
-
-For more details, see the `Catalyst documentation and tutorials
-<https://docs.pennylane.ai/projects/catalyst/>`__.
+This and more logic to manipulate Pauli observables is found in the :doc:`pauli module <../code/qml_pauli>`.

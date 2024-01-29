@@ -34,14 +34,6 @@ pauli_ops_and_prod = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.ops.
 pauli_ops_and_tensor = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.operation.Tensor)
 
 
-def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
-    """Computes the ExpvalCost and catches the initial deprecation warning."""
-
-    with pytest.warns(UserWarning, match="is deprecated,"):
-        res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
-    return res
-
-
 @pytest.fixture(
     scope="module",
     params=[
@@ -678,7 +670,7 @@ def test_pennylane_to_openfermion_no_decomp():
 def test_integration_observable_to_vqe_cost(
     monkeypatch, _, terms_ref, expected_cost, custom_wires, tol
 ):
-    r"""Test if `import_operator()` integrates with `ExpvalCost()` in pennylane"""
+    r"""Test if `import_operator()` integrates with `QNode` in pennylane"""
 
     qOp = openfermion.QubitOperator()
     if terms_ref is not None:
@@ -686,7 +678,6 @@ def test_integration_observable_to_vqe_cost(
     vqe_observable = qml.qchem.convert.import_operator(qOp, "openfermion", custom_wires)
 
     num_qubits = len(vqe_observable.wires)
-    assert vqe_observable.terms.__repr__()  # just to satisfy codecov
 
     if custom_wires is None:
         wires = num_qubits
@@ -694,14 +685,15 @@ def test_integration_observable_to_vqe_cost(
         wires = qml.qchem.convert._process_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
+
     dev = qml.device("default.qubit", wires=wires)
 
-    # can replace the ansatz with more suitable ones later.
-    def dummy_ansatz(phis, wires):
-        for phi, w in zip(phis, wires):
+    @qml.qnode(dev)
+    def dummy_cost(params):
+        for phi, w in zip(params, dev.wires):
             qml.RX(phi, wires=w)
+        return qml.expval(vqe_observable)
 
-    dummy_cost = catch_warn_ExpvalCost(dummy_ansatz, vqe_observable, dev)
     params = [0.1 * i for i in range(num_qubits)]
     res = dummy_cost(params)
 
@@ -776,7 +768,7 @@ def test_integration_mol_file_to_vqe_cost(
     name, core, active, mapping, expected_cost, custom_wires, tol
 ):
     r"""Test if the output of `decompose()` works with `import_operator()`
-    to generate `ExpvalCost()`"""
+    to generate `QNode`"""
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
     qubit_hamiltonian = qchem.decompose(
@@ -800,16 +792,16 @@ def test_integration_mol_file_to_vqe_cost(
         wires = qml.qchem.convert._process_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
+
     dev = qml.device("default.qubit", wires=wires)
-
-    # can replace the ansatz with more suitable ones later.
-    def dummy_ansatz(phis, wires):
-        for phi, w in zip(phis, wires):
-            qml.RX(phi, wires=w)
-
     phis = np.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
 
-    dummy_cost = catch_warn_ExpvalCost(dummy_ansatz, vqe_hamiltonian, dev)
+    @qml.qnode(dev)
+    def dummy_cost(params):
+        for phi, w in zip(params, dev.wires):
+            qml.RX(phi, wires=w)
+        return qml.expval(vqe_hamiltonian)
+
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
@@ -918,7 +910,7 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
     ],
 )
 @pytest.mark.parametrize("method", ["rcisd", "ucisd", "rccsd", "uccsd"])
-def test_import_state(molecule, basis, symm, method, wf_ref):
+def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
     r"""Test that import_state returns the correct state vector."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
@@ -942,13 +934,85 @@ def test_import_state(molecule, basis, symm, method, wf_ref):
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
 
 
+@pytest.mark.parametrize(
+    ("detscoeffs", "wf_ref"),
+    [
+        (
+            # dmrg
+            ([[0, 3], [3, 0]], np.array([-0.10660077, 0.9943019]).numpy()),
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.10660077,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.9943019,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ).numpy(),
+        ),
+        (
+            # shci
+            (["02", "20"], np.array([-0.1066467, 0.99429698]).numpy()),
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.1066467,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.99429698,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ).numpy(),
+        ),
+    ],
+)
+def test_import_state_nonpyscf(detscoeffs, wf_ref):
+    r"""Test that import_state returns the correct state vector."""
+
+    wf_comp = qchem.convert.import_state(detscoeffs)
+
+    # overall sign could be different in each PySCF run
+    assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+
+
 def test_import_state_error():
     r"""Test that an error is raised by import_state if a wrong object is entered."""
 
     myci = "wrongobject"
 
     with pytest.raises(ValueError, match="The supported objects"):
-        _ = qchem.convert.import_state(myci)
+        qchem.convert.import_state(myci)
+
+    mytuple = (np.array([[3, 0], [0, 3]]), np.array([0]))
+
+    with pytest.raises(ValueError, match="For tuple input"):
+        qchem.convert.import_state(mytuple)
+
+    mytuple = ([[3, 0], [0, 3]], [0], [0])
+
+    with pytest.raises(ValueError, match="The supported objects"):
+        qchem.convert.import_state(mytuple)
 
 
 @pytest.mark.parametrize(("excitation"), [-1, 0, 3])
@@ -1076,3 +1140,117 @@ def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
 
     assert wf_ccsd.keys() == wf_ref.keys()
     assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("sitevec", "format", "state_ref"),
+    [([1, 2, 1, 0, 0, 2], "dmrg", (5, 34)), (["a", "b", "a", "0", "0", "b"], "shci", (5, 34))],
+)
+def test_sitevec_to_fock(sitevec, format, state_ref):
+    r"""Test that _sitevec_to_fock returns the correct state."""
+
+    state = qml.qchem.convert._sitevec_to_fock(sitevec, format)
+
+    assert state == state_ref
+
+
+@pytest.mark.parametrize(
+    ("wavefunction", "state_ref"),
+    [
+        (
+            ([[0, 3], [3, 0]], np.array([-0.10660077, 0.9943019])),
+            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+        ),
+        (
+            ([[0, 3], [1, 2], [3, 0]], np.array([0.69958765, 0.70211014, 0.1327346])),
+            {
+                (2, 2): np.array([0.69958765]),
+                (1, 2): np.array([0.70211014]),
+                (1, 1): np.array([0.1327346]),
+            },
+        ),
+        (
+            (
+                [
+                    [3, 3, 3, 0, 0, 0, 0, 0, 0, 0],
+                    [3, 3, 0, 3, 0, 0, 0, 0, 0, 0],
+                    [3, 3, 0, 0, 3, 0, 0, 0, 0, 0],
+                    [3, 3, 0, 0, 0, 3, 0, 0, 0, 0],
+                ],
+                np.array(
+                    [-0.887277400314367, 0.308001203411555, 0.307470727263604, 0.145118175734375]
+                ),
+            ),
+            {
+                (35, 35): np.array([-0.145118175734375]),
+                (19, 19): np.array([-0.307470727263604]),
+                (11, 11): np.array([-0.308001203411555]),
+                (7, 7): np.array([0.887277400314367]),
+            },
+        ),
+    ],
+)
+def test_dmrg_state(wavefunction, state_ref):
+    r"""Test that _dmrg_state returns the correct state."""
+
+    state = qml.qchem.convert._dmrg_state(wavefunction)
+
+    assert state == state_ref
+
+
+@pytest.mark.parametrize(
+    ("wavefunction", "state_ref"),
+    [
+        (
+            (
+                ["02", "20"],
+                np.array([-0.10660077, 0.9943019]),
+            ),
+            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+        ),
+        (
+            (["02", "ab", "20"], np.array([0.69958765, 0.70211014, 0.1327346])),
+            {
+                (2, 2): np.array([0.69958765]),
+                (1, 2): np.array([0.70211014]),
+                (1, 1): np.array([0.1327346]),
+            },
+        ),
+        (
+            (
+                [
+                    "2220000000",
+                    "2202000000",
+                    "2200200000",
+                    "2200020000",
+                    "22b00000a0",
+                    "22a00000b0",
+                ],
+                np.array(
+                    [
+                        0.8874197325,
+                        -0.3075732772,
+                        -0.3075732772,
+                        -0.1450493028,
+                        -0.0226602105,
+                        -0.0226602105,
+                    ]
+                ),
+            ),
+            {
+                (7, 7): np.array([0.8874197325]),
+                (11, 11): np.array([-0.3075732772]),
+                (19, 19): np.array([-0.3075732772]),
+                (35, 35): np.array([-0.1450493028]),
+                (259, 7): np.array([-0.0226602105]),
+                (7, 259): np.array([-0.0226602105]),
+            },
+        ),
+    ],
+)
+def test_shci_state(wavefunction, state_ref):
+    r"""Test that _shci_state returns the correct state."""
+
+    state = qml.qchem.convert._shci_state(wavefunction)
+
+    assert state == state_ref

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Setup file for package installation."""
+# pylint: disable=unspecified-encoding, consider-using-with
 
 from setuptools import setup, find_packages
 
@@ -28,9 +29,9 @@ requirements = [
     "toml",
     "appdirs",
     "semantic-version>=2.7",
-    "autoray>=0.3.1",
+    "autoray>=0.6.1",
     "cachetools",
-    "pennylane-lightning>=0.32",
+    "pennylane-lightning>=0.34",
     "requests",
     "typing_extensions",
 ]
@@ -47,7 +48,7 @@ info = {
         # TODO: rename entry point 'pennylane.plugins' to 'pennylane.devices'.
         # This requires a rename in the setup file of all devices, and is best done during another refactor
         "pennylane.plugins": [
-            "default.qubit = pennylane.devices:DefaultQubitLegacy",
+            "default.qubit = pennylane.devices:DefaultQubit",
             "default.qubit.legacy = pennylane.devices:DefaultQubitLegacy",
             "default.gaussian = pennylane.devices:DefaultGaussian",
             "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
@@ -57,6 +58,7 @@ info = {
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
+            "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
@@ -85,6 +87,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Physics",
 ]

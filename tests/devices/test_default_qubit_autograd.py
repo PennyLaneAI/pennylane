@@ -487,7 +487,7 @@ class TestPassthruIntegration:
 
         def cost(a, b):
             prob_wire_1 = circuit(a, b)
-            return prob_wire_1[1] - prob_wire_1[0]
+            return prob_wire_1[1] - prob_wire_1[0]  # pylint:disable=unsubscriptable-object
 
         res = cost(a, b)
         expected = -np.cos(a) * np.cos(b)
@@ -513,7 +513,7 @@ class TestPassthruIntegration:
 
         def cost(a, b):
             prob_wire_1 = circuit(a, b)
-            return prob_wire_1[:, 1] - prob_wire_1[:, 0]
+            return prob_wire_1[:, 1] - prob_wire_1[:, 0]  # pylint:disable=unsubscriptable-object
 
         res = cost(a, b)
         expected = -np.cos(a) * np.cos(b)

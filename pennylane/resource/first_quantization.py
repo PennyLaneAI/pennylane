@@ -16,10 +16,9 @@ This module contains the functions needed for estimating the number of logical q
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
-import numpy
+import numpy as np
 from scipy import integrate
 
-from pennylane import numpy as np
 from pennylane.operation import AnyWires, Operation
 
 
@@ -135,6 +134,19 @@ class FirstQuantization(Operation):
         )
 
         super().__init__(wires=range(self.qubits))
+
+    def _flatten(self):
+        return (self.n, self.eta), (
+            ("omega", self.omega),
+            ("error", self.error),
+            ("charge", self.charge),
+            ("br", self.br),
+            ("vectors", self.vectors),
+        )
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, **dict(metadata))
 
     @staticmethod
     def success_prob(n, br):
@@ -269,7 +281,7 @@ class FirstQuantization(Operation):
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
 
-        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
+        if eta <= 0 or not isinstance(eta, (int, np.integer)):
             raise ValueError("The number of electrons must be a positive integer.")
 
         if omega <= 0:
@@ -360,7 +372,7 @@ class FirstQuantization(Operation):
         >>> _cost_qrom(lz)
         21
         """
-        if lz <= 0 or not isinstance(lz, (int, numpy.integer)):
+        if lz <= 0 or not isinstance(lz, (int, np.integer)):
             raise ValueError("The sum of the atomic numbers must be a positive integer.")
 
         k_f = np.floor(np.log2(lz) / 2)
@@ -402,7 +414,7 @@ class FirstQuantization(Operation):
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
 
-        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
+        if eta <= 0 or not isinstance(eta, (int, np.integer)):
             raise ValueError("The number of electrons must be a positive integer.")
 
         if omega <= 0:
@@ -538,7 +550,7 @@ class FirstQuantization(Operation):
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
 
-        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
+        if eta <= 0 or not isinstance(eta, (int, np.integer)):
             raise ValueError("The number of electrons must be a positive integer.")
 
         if omega <= 0:
@@ -597,7 +609,7 @@ class FirstQuantization(Operation):
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
 
-        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
+        if eta <= 0 or not isinstance(eta, (int, np.integer)):
             raise ValueError("The number of electrons must be a positive integer.")
 
         if omega <= 0:

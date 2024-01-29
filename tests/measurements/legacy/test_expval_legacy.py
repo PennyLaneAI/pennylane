@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import Expectation, Shots
+from pennylane.devices.qubit.measure import flatten_state
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -24,7 +25,7 @@ def custom_measurement_process(device, spy):
     assert len(spy.call_args_list) > 0  # make sure method is mocked properly
 
     samples = device._samples  # pylint: disable=protected-access
-    state = device._state  # pylint: disable=protected-access
+    state = flatten_state(device._state, device.num_wires)  # pylint: disable=protected-access
     call_args_list = list(spy.call_args_list)
     for call_args in call_args_list:
         obs = call_args.args[1]
@@ -113,6 +114,80 @@ class TestExpval:
         circuit()
 
         custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value(
+        self, shots, phi, mocker, tol, tol_stochastic, device_name
+    ):  # pylint: disable=too-many-arguments
+        """Test that expectation values for mid-circuit measurement values
+        are correct for a single measurement value."""
+        np.random.seed(42)
+        dev = qml.device(device_name, wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.expval(m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "expval")
+
+        res = circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+        assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_composite_measurement_value(
+        self, shots, phi, mocker, tol, tol_stochastic, device_name
+    ):  # pylint: disable=too-many-arguments
+        """Test that expectation values for mid-circuit measurement values
+        are correct for a composite measurement value."""
+        np.random.seed(42)
+        dev = qml.device(device_name, wires=6, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(0.5 * phi, 1)
+            m1 = qml.measure(1)
+            qml.RX(2 * phi, 2)
+            m2 = qml.measure(2)
+            return qml.expval(m0 * m1 + m2)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "expval")
+
+        res = circuit(phi, shots=shots)
+
+        @qml.qnode(dev)
+        def expected_circuit(phi):
+            qml.RX(phi, 0)
+            qml.RX(0.5 * phi, 1)
+            qml.RX(2 * phi, 2)
+            return (
+                qml.expval(qml.Projector([1], 0)),
+                qml.expval(qml.Projector([1], 1)),
+                qml.expval(qml.Projector([1], 2)),
+            )
+
+        evals = expected_circuit(phi, shots=None)
+        expected = evals[0] * evals[1] + evals[2]
+
+        atol = tol if shots is None else tol_stochastic
+        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize(
         "obs",

@@ -176,6 +176,14 @@ def test_symbolic_ops(op, new_params, expected_op):
     assert new_op.base is not op.base
 
 
+def test_controlled_sequence():
+    """Test integration of controlled sequence with bind_new_parameters."""
+    op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
+    new_op = bind_new_parameters(op, (0.5,))
+    assert qml.math.allclose(new_op.data[0], 0.5)
+    assert qml.equal(new_op.base, qml.RX(0.5, wires=3))
+
+
 @pytest.mark.parametrize(
     "H, new_coeffs, expected_H",
     [

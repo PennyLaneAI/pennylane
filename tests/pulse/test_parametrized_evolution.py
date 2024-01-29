@@ -14,7 +14,7 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
-# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel
+# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access
 from functools import reduce
 import numpy as np
 
@@ -24,15 +24,82 @@ from pennylane.operation import AnyWires
 from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 from pennylane.tape import QuantumTape
+from pennylane.devices import DefaultQubit, DefaultQubitLegacy
 
 
-class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
+class MyOp(qml.RX):
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
     has_adjoint = False
     has_decomposition = False
     has_diagonalizing_gates = False
+
+
+def amp0(p, t):
+    return p * t
+
+
+def amp1(p, t):
+    return p[0] * t + p[1]
+
+
+H0 = qml.PauliX(1) + amp0 * qml.PauliZ(0) + amp0 * qml.PauliY(1)
+params0_ = [0.5, 0.5]
+
+H1 = qml.PauliX(1) + amp0 * qml.PauliZ(0) + amp1 * qml.PauliY(1)
+params1_ = (0.5, [0.5, 0.5])
+
+example_pytree_evolutions = [
+    qml.pulse.ParametrizedEvolution(H0),
+    qml.pulse.ParametrizedEvolution(H0, params0_),
+    qml.pulse.ParametrizedEvolution(H0, t=0.3),
+    qml.pulse.ParametrizedEvolution(H0, params0_, t=0.5),
+    qml.pulse.ParametrizedEvolution(H0, params0_, t=[0.5, 1.0]),
+    qml.pulse.ParametrizedEvolution(H0, params0_, t=0.5, return_intermediate=True),
+    qml.pulse.ParametrizedEvolution(
+        H0, params0_, t=0.5, return_intermediate=True, complementary=True
+    ),
+    qml.pulse.ParametrizedEvolution(
+        H0, params0_, t=0.5, return_intermediate=True, complementary=True, atol=1e-4, rtol=1e-4
+    ),
+    qml.pulse.ParametrizedEvolution(
+        H0,
+        params0_,
+        t=0.5,
+        return_intermediate=True,
+        complementary=True,
+        atol=1e-4,
+        rtol=1e-4,
+        dense=True,
+    ),
+    qml.pulse.ParametrizedEvolution(H1, params1_, t=0.5),
+    qml.pulse.ParametrizedEvolution(H1, params1_, t=0.5, return_intermediate=True),
+]
+
+
+@pytest.mark.jax
+class TestPytree:
+    """Testing pytree related functionality"""
+
+    @pytest.mark.parametrize("evol", example_pytree_evolutions)
+    def test_flatten_unflatten_identity(self, evol):
+        """Test that flattening and unflattening is yielding the same parametrized evolution"""
+        assert evol._unflatten(*evol._flatten()) == evol
+
+
+@pytest.mark.jax
+def test_standard_validity():
+    """Run standard validity checks on the parametrized evolution."""
+
+    def f1(p, t):
+        return p * t
+
+    H = f1 * qml.PauliY(0)
+    params = (0.5,)
+
+    ev = qml.pulse.ParametrizedEvolution(H, params, 0.5)
+    qml.ops.functions.assert_valid(ev, skip_pickle=True)
 
 
 def time_independent_hamiltonian():
@@ -476,10 +543,11 @@ class TestMatrix:
 class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
 
+    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
     @pytest.mark.parametrize("time", [0.3, 1, [0, 2], [0.4, 2], (3, 3.1)])
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
     @pytest.mark.parametrize("use_jit", [False, True])
-    def test_time_input_formats(self, time, time_interface, use_jit):
+    def test_time_input_formats(self, device_class, time, time_interface, use_jit):
         import jax
         import jax.numpy as jnp
 
@@ -489,7 +557,7 @@ class TestIntegration:
             time = np.array(time)
         H = qml.pulse.ParametrizedHamiltonian([2], [qml.PauliX(0)])
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = device_class(wires=1)
 
         @qml.qnode(dev, interface="jax")
         def circuit(t):
@@ -503,15 +571,16 @@ class TestIntegration:
         duration = time if qml.math.ndim(time) == 0 else time[1] - time[0]
         assert qml.math.isclose(res, qml.math.cos(4 * duration))
 
+    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
     # pylint: disable=unused-argument
-    def test_time_independent_hamiltonian(self):
+    def test_time_independent_hamiltonian(self, device_class):
         """Test the execution of a time independent hamiltonian."""
         import jax
         import jax.numpy as jnp
 
         H = time_independent_hamiltonian()
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = device_class(wires=2)
 
         t = 4
 
@@ -543,8 +612,9 @@ class TestIntegration:
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
 
+    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
     @pytest.mark.slow
-    def test_time_dependent_hamiltonian(self):
+    def test_time_dependent_hamiltonian(self, device_class):
         """Test the execution of a time dependent hamiltonian. This test approximates the
         time-ordered exponential with a product of exponentials using small time steps.
         For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
@@ -553,8 +623,8 @@ class TestIntegration:
 
         H = time_dependent_hamiltonian()
 
-        dev = qml.device("default.qubit", wires=2)
-        t = 2
+        dev = device_class(wires=2)
+        t = 0.1
 
         def generator(params):
             time_step = 1e-3
@@ -590,7 +660,56 @@ class TestIntegration:
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
 
-    def test_two_commuting_parametrized_hamiltonians(self):
+    @pytest.mark.slow
+    def test_map_wires_with_time_independent_hamiltonian(self):
+        """Test the wire mapping for custom wire labels works as expected with DefaultQubit"""
+        import jax
+        from jax import numpy as jnp
+
+        def f1(params, t):
+            return params  # constant
+
+        def f2(params, t):
+            return params  # constant
+
+        ops = [qml.PauliX("a"), qml.PauliZ("b"), qml.PauliY("a"), qml.PauliX("b")]
+        coeffs = [f1, f2, 4, 9]
+        H = ParametrizedHamiltonian(coeffs, ops)
+
+        dev = DefaultQubit()
+
+        t = 4
+
+        @qml.qnode(dev)
+        def circuit(params):
+            ParametrizedEvolution(H=H, params=params, t=t)
+            return qml.expval(qml.PauliX("a") @ qml.PauliX("b"))
+
+        @jax.jit
+        @qml.qnode(dev)
+        def jitted_circuit(params):
+            ParametrizedEvolution(H=H, params=params, t=t)
+            return qml.expval(qml.PauliX("a") @ qml.PauliX("b"))
+
+        @qml.qnode(dev)
+        def true_circuit(params):
+            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+            QubitUnitary(U=true_mat, wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+
+        params = jnp.array([1.0, 2.0])
+
+        assert qml.math.allclose(circuit(params), true_circuit(params), atol=1e-3)
+        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=1e-3)
+        assert qml.math.allclose(
+            jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
+        )
+        assert qml.math.allclose(
+            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
+        )
+
+    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
+    def test_two_commuting_parametrized_hamiltonians(self, device_class):
         """Test that the evolution of two parametrized hamiltonians that commute with each other
         is equal to evolve the two hamiltonians simultaneously. This test uses 8 wires for the device
         to test the case where 2 * n < N (the matrix is evolved instead of the state)."""
@@ -605,28 +724,28 @@ class TestIntegration:
 
         coeffs = [1, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliX(2)]
-        H1 = qml.dot(coeffs, ops)
+        H1_ = qml.dot(coeffs, ops)
 
         def f3(p, t):
             return jnp.cos(t) * (p + 1)
 
         coeffs = [7, f3]
         ops = [qml.PauliX(0), qml.PauliX(2)]
-        H2 = qml.dot(coeffs, ops)
+        H2_ = qml.dot(coeffs, ops)
 
-        dev = qml.device("default.qubit", wires=8)
+        dev = device_class(wires=8)
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit1(params):
-            qml.evolve(H1)(params[0], t=2)
-            qml.evolve(H2)(params[1], t=2)
+            qml.evolve(H1_)(params[0], t=2)
+            qml.evolve(H2_)(params[1], t=2)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit2(params):
-            qml.evolve(H1 + H2)(params, t=2)
+            qml.evolve(H1_ + H2_)(params, t=2)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
         params1 = [(1.0, 2.0), (3.0,)]
@@ -704,3 +823,28 @@ class TestIntegration:
         jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
 
         assert qml.math.allclose(jac, jac_jit)
+
+
+@pytest.mark.jax
+def test_map_wires():
+    """Test that map wires returns a new ParametrizedEvolution, with wires updated on
+    both the operator and the corresponding Hamiltonian"""
+
+    def f1(p, t):
+        return p * t
+
+    coeffs = [2, 4, f1]
+    ops = [qml.PauliX("a"), qml.PauliX("b"), qml.PauliX("c")]
+
+    H = qml.dot(coeffs, ops)
+
+    op = qml.evolve(H)([3], 2)
+
+    wire_map = {"a": 3, "b": 5, "c": 7}
+    new_op = op.map_wires(wire_map)
+
+    assert op.wires == qml.wires.Wires(["a", "b", "c"])
+    assert op.H.wires == qml.wires.Wires(["a", "b", "c"])
+
+    assert new_op.wires == qml.wires.Wires([3, 5, 7])
+    assert new_op.H.wires == qml.wires.Wires([3, 5, 7])

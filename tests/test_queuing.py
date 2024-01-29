@@ -137,6 +137,15 @@ class TestStopRecording:
         result = my_circuit()
         assert result == -1.0
 
+    def test_stop_recording_within_tape_cleans_up(self):
+        """Test if some error is raised within a stop_recording context, the previously
+        active contexts are still returned to avoid popping from an empty deque"""
+
+        with pytest.raises(ValueError):
+            with AnnotatedQueue():
+                with QueuingManager.stop_recording():
+                    raise ValueError
+
 
 class TestQueuingManager:
     """Test the logic associated with the QueuingManager class."""
@@ -463,6 +472,13 @@ class TestWrappedObj:
         wo1 = WrappedObj(obj1)
         wo2 = WrappedObj(obj2)
         assert wo1 != wo2
+
+    def test_wrapped_obj_eq_false_other_obj(self):
+        """Test that WrappedObj.__eq__ returns False when the object being compared is not
+        a WrappedObj."""
+        op = qml.PauliX(0)
+        wo = WrappedObj(op)
+        assert wo != op
 
     def test_wrapped_obj_eq_true(self):
         """Test that ``WrappedObj.__eq__`` returns True when expected."""

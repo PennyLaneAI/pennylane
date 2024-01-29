@@ -18,6 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.measurements import ProbabilityMP, Shots
+from pennylane.devices.qubit.measure import flatten_state
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -25,7 +26,7 @@ def custom_measurement_process(device, spy):
     assert len(spy.call_args_list) > 0  # make sure method is mocked properly
 
     samples = device._samples  # pylint: disable=protected-access
-    state = device._state  # pylint: disable=protected-access
+    state = flatten_state(device._state, device.num_wires)  # pylint: disable=protected-access
     call_args_list = list(spy.call_args_list)
     for call_args in call_args_list:
         wires, shot_range, bin_size = (
@@ -171,6 +172,86 @@ class TestProbs:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         custom_measurement_process(dev, spy_probs)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value(
+        self, shots, phi, mocker, tol, tol_stochastic, device_name
+    ):  # pylint: disable=too-many-arguments
+        """Test that probs for mid-circuit measurement values
+        are correct for a single measurement value."""
+        np.random.seed(42)
+        dev = qml.device(device_name, wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.probs(op=m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "probability")
+
+        res = circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+        expected = np.array([np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
+
+        if not isinstance(shots, list):
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        else:
+            for r in res:  # pylint: disable=not-an-iterable
+                assert np.allclose(r, expected, atol=atol, rtol=0)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value_list(
+        self, shots, phi, mocker, tol, tol_stochastic, device_name
+    ):  # pylint: disable=too-many-arguments
+        """Test that probs for mid-circuit measurement values
+        are correct for a list of measurement value."""
+        np.random.seed(42)
+        dev = qml.device(device_name, wires=6, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(0.5 * phi, 1)
+            m1 = qml.measure(1)
+            qml.RX(2.0 * phi, 2)
+            m2 = qml.measure(2)
+            return qml.probs(op=[m0, m1, m2])
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "probability")
+
+        res = circuit(phi, shots=shots)
+
+        @qml.qnode(dev)
+        def expected_circuit(phi):
+            qml.RX(phi, 0)
+            qml.RX(0.5 * phi, 1)
+            qml.RX(2.0 * phi, 2)
+            return qml.probs(wires=[0, 1, 2])
+
+        expected = expected_circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+
+        if not isinstance(shots, list):
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        else:
+            for r in res:  # pylint: disable=not-an-iterable
+                assert np.allclose(r, expected, atol=atol, rtol=0)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
 
     def test_integration(self, tol, mocker):
         """Test the probability is correct for a known state preparation."""

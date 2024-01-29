@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.measurements import MeasurementShapeError, Sample, Shots
 from pennylane.operation import EigvalsUndefinedError, Operator
 
-# pylint: disable=protected-access, no-member
+# pylint: disable=protected-access, no-member, too-many-public-methods
 
 
 class TestSample:
@@ -46,7 +46,6 @@ class TestSample:
             (n_sample,) if not n_sample == 1 else ()
         )
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
         n_sample = 10
@@ -152,6 +151,95 @@ class TestSample:
             return res
 
         circuit()
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
+    def test_observable_is_measurement_value(self, shots, phi):
+        """Test that samples for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.sample(m0)
+
+        res = circuit(phi)
+
+        if isinstance(shots, list):
+            assert len(res) == len(shots)
+            assert all(r.shape == (s,) for r, s in zip(res, shots))
+        else:
+            assert res.shape == (shots,)
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
+    def test_observable_is_composite_measurement_value(self, shots, phi):
+        """Test that samples for mid-circuit measurement values
+        are correct for a composite measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(phi, 1)
+            m1 = qml.measure(1)
+            return qml.sample(op=m0 + m1)
+
+        res = circuit(phi)
+
+        if isinstance(shots, list):
+            assert len(res) == len(shots)
+            assert all(r.shape == (s,) for r, s in zip(res, shots))
+        else:
+            assert res.shape == (shots,)
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
+    def test_observable_is_measurement_value_list(self, shots, phi):
+        """Test that samples for mid-circuit measurement values
+        are correct for a measurement value list."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            return qml.sample(op=[m0, m1])
+
+        res = circuit(phi)
+
+        if isinstance(shots, list):
+            assert len(res) == len(shots)
+            assert all(r.shape == (s, 2) for r, s in zip(res, shots))
+        else:
+            assert res.shape == (shots, 2)
+
+    def test_mixed_lists_as_op_not_allowed(self):
+        """Test that passing a list not containing only measurement values raises an error."""
+        m0 = qml.measure(0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.sample(op=[m0, qml.PauliZ(0)])
+
+    def test_composed_measurement_value_lists_not_allowed(self):
+        """Test that passing a list containing measurement values composed with arithmetic
+        raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        m2 = qml.measure(2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.sample(op=[m0 + m1, m2])
 
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are specified"""

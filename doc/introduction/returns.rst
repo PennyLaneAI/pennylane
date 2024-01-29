@@ -18,6 +18,11 @@ provides additional details about the update and can be used to troubleshoot iss
       `bug report <https://github.com/PennyLaneAI/pennylane/issues/new?labels=bug+%3Abug%3A&template=bug_report.yml&title=[BUG]>`_
       on the PennyLane GitHub page.
 
+.. note::
+
+    The old return system has been completely removed from PennyLane as of version 0.33.0, along with the
+    ``enable_return()`` and ``disable_return()`` toggle functions.
+
 Summary of the update
 ---------------------
 
@@ -60,9 +65,6 @@ and probabilities separately:
     >>> circuit(0.5)
     (tensor(0.87758256, requires_grad=True),
      tensor([0.93879128, 0.06120872], requires_grad=True))
-
-For a detailed explanation of this change, along with code examples, check out the
-:func:`~.enable_return` function documentation.
 
 Motivation
 ----------

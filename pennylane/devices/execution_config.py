@@ -17,7 +17,7 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass
 from typing import Optional
 
-from pennylane.interfaces import SUPPORTED_INTERFACES
+from pennylane.workflow import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
 
 SUPPORTED_GRADIENT_METHODS = [
@@ -52,6 +52,15 @@ class ExecutionConfig:
     ``None`` indicates to use the device if possible, but to fall back to pennylane behavior if it isn't.
 
     True indicates a request to either use the device gradient or fail.
+    """
+
+    use_device_jacobian_product: Optional[bool] = None
+    """Whether or not to use the device provided vjp or jvp to compute gradients.
+
+    ``None`` indicates to use the device if possible, but to fall back to the device Jacobian
+    or PennyLane behaviour if it isn't.
+
+    ``True`` indicates to either use the device Jacobian products or fail.
     """
 
     gradient_method: Optional[str] = None

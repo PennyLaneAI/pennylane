@@ -181,6 +181,8 @@ class WrappedObj:
         return id(self.obj)
 
     def __eq__(self, other):
+        if not isinstance(other, WrappedObj):
+            return False
         return id(self.obj) == id(other.obj)
 
     def __repr__(self):
@@ -298,10 +300,8 @@ class QueuingManager:
         cls._active_contexts = []
         try:
             yield
-        except Exception as e:
+        finally:
             cls._active_contexts = previously_active_contexts
-            raise e
-        cls._active_contexts = previously_active_contexts
 
     @classmethod
     def append(cls, obj, **kwargs):

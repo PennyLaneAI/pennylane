@@ -347,9 +347,9 @@ class IntegerComparator(Operation):
     ...     qml.IntegerComparator(value, geq=geq, wires=range(3))
     ...     return qml.state()
     >>> circuit([1, 0, 1], 1, True).reshape(2, 2, 2)[1, 0, 0]
-    (1+0j)
+    tensor(1.+0.j, requires_grad=True)
     >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
-    (1+0j)
+    tensor(1.+0.j, requires_grad=True)
     """
     is_self_inverse = True
     num_wires = AnyWires

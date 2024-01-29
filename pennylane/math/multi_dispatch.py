@@ -496,7 +496,7 @@ def einsum(indices, *operands, like=None, optimize=None):
             subscript labels. An implicit (classical Einstein summation) calculation is
             performed unless the explicit indicator ‘->’ is included as well as subscript
             labels of the precise output form.
-        operands (tuple[tensor_like]): The tensors for the operation.
+        *operands (tuple[tensor_like]): The tensors for the operation.
 
     Returns:
         tensor_like: The calculation based on the Einstein summation convention.
@@ -540,6 +540,13 @@ def einsum(indices, *operands, like=None, optimize=None):
     if optimize is None or like == "torch":
         # torch einsum doesn't support the optimize keyword argument
         return np.einsum(indices, *operands, like=like)
+    if like == "tensorflow":
+        # Unpacking and casting necessary for higher order derivatives,
+        # and avoiding implicit fp32 down-conversions.
+        op1, op2 = operands
+        op1 = array(op1, like=op1[0], dtype=op1[0].dtype)
+        op2 = array(op2, like=op2[0], dtype=op2[0].dtype)
+        return np.einsum(indices, op1, op2, like=like)
     return np.einsum(indices, *operands, like=like, optimize=optimize)
 
 
@@ -754,14 +761,20 @@ def unwrap(values, max_depth=None):
     """
 
     def convert(val):
-        if isinstance(val, list):
+        if isinstance(val, (tuple, list)):
             return unwrap(val)
         new_val = (
             np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
         )
         return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
-    return [convert(val) for val in values]
+    if isinstance(values, (tuple, list)):
+        return type(values)(convert(val) for val in values)
+    return (
+        np.to_numpy(values, max_depth=max_depth)
+        if isinstance(values, ArrayBox)
+        else np.to_numpy(values)
+    )
 
 
 @multi_dispatch(argnum=[0, 1])
@@ -846,10 +859,23 @@ def norm(tensor, like=None, **kwargs):
             axis_val = kwargs.pop("axis")
             kwargs["dim"] = axis_val
 
+    elif (
+        like == "autograd" and kwargs.get("ord", None) is None and kwargs.get("axis", None) is None
+    ):
+        norm = _flat_autograd_norm
+
     else:
         from scipy.linalg import norm
 
     return norm(tensor, **kwargs)
+
+
+def _flat_autograd_norm(tensor, **kwargs):  # pylint: disable=unused-argument
+    """Helper function for computing the norm of an autograd tensor when the order or axes are not
+    specified. This is used for differentiability."""
+    x = np.ravel(tensor)
+    sq_norm = np.dot(x, np.conj(x))
+    return np.real(np.sqrt(sq_norm))
 
 
 @multi_dispatch(argnum=[1])
@@ -917,7 +943,7 @@ def detach(tensor, like=None):
     return tensor
 
 
-def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
+def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
     The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
     of Jax in order to mark trainable parameters.
@@ -925,7 +951,8 @@ def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
     Args:
         qnode(qml.QNode): the quantum node.
         argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
-        expand_fn(callable): the function that is expanding the tape.
+        program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
+
 
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
@@ -944,10 +971,9 @@ def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
 
     qnode.construct(args_jvp, kwargs)
     tape = qnode.qtape
-    tape = expand_fn(tape)
-    params = tape.get_parameters(trainable_only=False)
+    tapes, _ = program((tape,))
     del trace
-    return params
+    return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
 
 
 @multi_dispatch(tensor_list=[1])

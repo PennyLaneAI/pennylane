@@ -28,12 +28,24 @@ from pennylane import operation
 from pennylane import math as qmlmath
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+from pennylane.compiler import compiler
 
 from .symbolicop import SymbolicOp
+from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
     """Create a method that applies a controlled version of the provided op.
+    :func:`~.qjit` compatible.
+
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        See :func:`catalyst.ctrl` for more details.
+
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
 
     Args:
         op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
@@ -68,7 +80,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     >>> circuit(x)
     tensor(0.36235775, requires_grad=True)
     >>> qml.grad(circuit)(x)
-    -0.9320390859672264
+    tensor(-0.93203909, requires_grad=True)
 
     :func:`~.ctrl` works on both callables like ``qml.RX`` or a quantum function
     and individual :class:`~.operation.Operator`'s.
@@ -82,20 +94,57 @@ def ctrl(op, control, control_values=None, work_wires=None):
     >>> qml.simplify(qml.adjoint(op))
     Controlled(RY(12.466370614359173, wires=[0]) @ RX(10.166370614359172, wires=[0]), control_wires=[1])
 
+    **Example with compiler**
+
+    .. code-block:: python
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def workflow(theta, w, cw):
+            qml.Hadamard(wires=[0])
+            qml.Hadamard(wires=[1])
+
+            def func(arg):
+                qml.RX(theta, wires=arg)
+
+            def cond_fn():
+                qml.RY(theta, wires=w)
+
+            qml.ctrl(func, control=[cw])(w)
+            qml.ctrl(qml.cond(theta > 0.0, cond_fn), control=[cw])()
+            qml.ctrl(qml.RZ, control=[cw])(theta, wires=w)
+            qml.ctrl(qml.RY(theta, wires=w), control=[cw])
+            return qml.probs()
+
+    >>> workflow(jnp.pi/4, 1, 0)
+    array([0.25, 0.25, 0.03661165, 0.46338835])
     """
-    custom_controlled_ops = {
+
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
+
+    custom_ops = {
         (qml.PauliZ, 1): qml.CZ,
         (qml.PauliY, 1): qml.CY,
         (qml.PauliX, 1): qml.CNOT,
         (qml.PauliX, 2): qml.Toffoli,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
     }
     control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
     custom_key = (type(op), len(control))
 
-    if custom_key in custom_controlled_ops and (control_values is None or all(control_values)):
+    if custom_key in custom_ops and (control_values is None or all(control_values)):
         qml.QueuingManager.remove(op)
-        return custom_controlled_ops[custom_key](control + op.wires)
+        return custom_ops[custom_key](*op.data, control + op.wires)
     if isinstance(op, qml.PauliX):
         qml.QueuingManager.remove(op)
         control_string = (
@@ -264,14 +313,6 @@ class Controlled(SymbolicOp):
         if control_values is None:
             control_values = [True] * len(control_wires)
         else:
-            if isinstance(control_values, str):
-                warnings.warn(
-                    "Specifying control values as a string is deprecated. Please use Sequence[Bool]",
-                    UserWarning,
-                )
-                # All values not 0 are cast as true. Assumes a string of 1s and 0s.
-                control_values = [(x != "0") for x in control_values]
-
             control_values = (
                 [bool(control_values)]
                 if isinstance(control_values, int)
@@ -302,7 +343,12 @@ class Controlled(SymbolicOp):
         # these gates do not consider global phases in their hash
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
-                [qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in self.base.data]
+                [
+                    id(d)
+                    if qml.math.is_abstract(d)
+                    else qml.math.round(qml.math.real(d) % (4 * np.pi), 10)
+                    for d in self.base.data
+                ]
             )
             base_hash = hash(
                 (
@@ -327,10 +373,6 @@ class Controlled(SymbolicOp):
     @property
     def has_matrix(self):
         return self.base.has_matrix
-
-    # pylint: disable=protected-access
-    def _check_batching(self, params):
-        self.base._check_batching(params)
 
     @property
     def batch_size(self):
@@ -489,8 +531,8 @@ class Controlled(SymbolicOp):
             return True
         if isinstance(self.base, qml.PauliX):
             return True
-        # if len(self.base.wires) == 1 and getattr(self.base, "has_matrix", False):
-        #    return True
+        if _is_single_qubit_special_unitary(self.base):
+            return True
         if self.base.has_decomposition:
             return True
 
@@ -524,8 +566,14 @@ class Controlled(SymbolicOp):
 
     def generator(self):
         sub_gen = self.base.generator()
-        proj_tensor = operation.Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
-        return 1.0 * proj_tensor @ sub_gen
+        projectors = (
+            qml.Projector([val], wires=w) for val, w in zip(self.control_values, self.control_wires)
+        )
+
+        if qml.operation.active_new_opmath():
+            return qml.prod(*projectors, sub_gen)
+
+        return 1.0 * operation.Tensor(*projectors) @ sub_gen
 
     @property
     def has_adjoint(self):
@@ -551,7 +599,7 @@ class Controlled(SymbolicOp):
             for op in base_pow
         ]
 
-    def simplify(self) -> "Controlled":
+    def simplify(self) -> "Operator":
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
             return ctrl(
@@ -561,12 +609,24 @@ class Controlled(SymbolicOp):
                 work_wires=self.work_wires + self.base.work_wires,
             )
 
+        simplified_base = self.base.simplify()
+        if isinstance(simplified_base, qml.Identity):
+            return simplified_base
+
         return ctrl(
-            op=self.base.simplify(),
+            op=simplified_base,
             control=self.control_wires,
             control_values=self.control_values,
             work_wires=self.work_wires,
         )
+
+
+def _is_single_qubit_special_unitary(op):
+    if not op.has_matrix or len(op.wires) != 1:
+        return False
+    mat = op.matrix()
+    det = mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]
+    return qmlmath.allclose(det, 1)
 
 
 # pylint: disable=protected-access
@@ -584,21 +644,22 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     if isinstance(op.base, qml.PauliX):
         # has some special case handling of its own for further decomposition
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
-    # if (
-    #    len(op.base.wires) == 1
-    #    and len(op.control_wires) >= 2
-    #    and getattr(op.base, "has_matrix", False)
-    #    and qmlmath.get_interface(*op.data) == "numpy"  # as implemented, not differentiable
-    # ):
-    # Bisect algorithms use CNOTs and single qubit unitary
-    #    return ctrl_decomp_bisect(op.base, op.control_wires)
-    # if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
-    #    return ctrl_decomp_zyz(op.base, op.control_wires)
+    if _is_single_qubit_special_unitary(op.base):
+        if len(op.control_wires) >= 2 and qmlmath.get_interface(*op.data) == "numpy":
+            return ctrl_decomp_bisect(op.base, op.control_wires)
+        return ctrl_decomp_zyz(op.base, op.control_wires)
 
     if not op.base.has_decomposition:
         return None
 
     base_decomp = op.base.decomposition()
+    if len(base_decomp) == 0 and isinstance(op.base, qml.GlobalPhase):
+        warnings.warn(
+            "Controlled-GlobalPhase currently decomposes to nothing, and this will likely "
+            "produce incorrect results. Consider implementing your circuit with a different set "
+            "of operations, or use a device that natively supports GlobalPhase.",
+            UserWarning,
+        )
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
@@ -636,11 +697,6 @@ class ControlledOp(Controlled, operation.Operation):
     def grad_method(self):
         return self.base.grad_method
 
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
-
     @property
     def parameter_frequencies(self):
         if self.base.num_params == 1:
@@ -655,7 +711,7 @@ class ControlledOp(Controlled, operation.Operation):
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                base_gen_eigvals = qml.eigvals(base_gen)
+                base_gen_eigvals = qml.eigvals(base_gen, k=2**self.base.num_wires)
 
             # The projectors in the full generator add a eigenvalue of `0` to
             # the eigenvalues of the base generator.

@@ -38,6 +38,8 @@ from gate_data import (
     Y,
     Z,
     CH,
+    CY,
+    CZ,
 )
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
@@ -49,31 +51,26 @@ from pennylane.wires import Wires
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.Identity, I),
-    (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
     (qml.SISWAP, SISWAP),
-    (qml.CCZ, CCZ),
     (qml.S, S),
     (qml.T, T),
-    (qml.CSWAP, CSWAP),
-    (qml.Toffoli, Toffoli),
     (qml.ECR, ECR),
+    # Controlled operations
+    (qml.CNOT, CNOT),
     (qml.CH, CH),
+    (qml.Toffoli, Toffoli),
+    (qml.CSWAP, CSWAP),
+    (qml.CY, CY),
+    (qml.CZ, CZ),
+    (qml.CCZ, CCZ),
 ]
-
-SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
-    (qml.Identity(wires=0), I),
-    (qml.Hadamard(wires=0), H),
-    (qml.PauliZ(wires=0), Z),
-    (qml.PauliX(wires=0), X),
-    (qml.PauliY(wires=0), Y),
-)
 
 
 class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
-    def test_nonparametrized_op_copy(self, op_cls, _, tol):
+    def test_op_copy(self, op_cls, _, tol):
         """Tests that copied nonparametrized ops function as expected"""
         op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
         copied_op = copy.copy(op)
@@ -90,6 +87,8 @@ class TestOperations:
 
 
 class TestDecompositions:
+    """Tests that the decomposition of non-parametrized operations is correct"""
+
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
         op = qml.PauliX(wires=0)
@@ -537,196 +536,13 @@ class TestEigenval:
         expected = np.linalg.eigvals(qml.SX(wires=0).matrix())
         assert np.allclose(evals, expected)
 
+    def test_cz_eigenval(self):
+        """Tests that the CZ eigenvalue matches the numpy eigenvalues of the CZ matrix"""
 
-class TestBarrier:
-    """Tests that the Barrier gate is correct."""
-
-    def test_use_barrier(self):
-        r"""Test that the barrier influences compilation."""
-
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["resources"].gate_sizes[1]
-
-        assert gates == 3
-
-        optimized_qfunc = qml.compile(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
-
-        assert optimized_gates == 2
-
-    def test_barrier_only_visual(self):
-        r"""Test that the barrier doesn't influence compilation when the only_visual parameter is True."""
-
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(only_visual=True, wires=0)
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        optimized_qfunc = qml.compile(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
-
-        assert optimized_gates == 0
-
-    def test_barrier_edge_cases(self):
-        r"""Test that the barrier works in edge cases."""
-
-        def qfunc():
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["resources"].gate_sizes[1]
-
-        assert gates == 4
-
-        optimized_qfunc = qml.compile(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
-
-        assert optimized_gates == 0
-
-        def qfunc1():
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc1, dev)
-        gates = qml.specs(qnode)()["resources"].gate_sizes[1]
-
-        assert gates == 4
-
-        def qfunc2():
-            qml.Hadamard(wires=0)
-            qml.Barrier(only_visual=True, wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        optimized_qfunc = qml.compile(qfunc2)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
-
-        assert optimized_gates == 2
-
-    def test_barrier_adjoint(self):
-        """Test if adjoint of a Barrier is decomposed correctly."""
-
-        base = qml.Barrier(wires=(0, 1))
-        adj = qml.ops.op_math.Adjoint(base)
-
-        assert adj.decomposition()[0].name == "Barrier"
-
-    def test_barrier_control(self):
-        """Test if Barrier is correctly included in queue when controlling"""
-        dev = qml.device("default.qubit", wires=3)
-
-        def barrier():
-            qml.PauliX(wires=0)
-            qml.Barrier(wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
-
-        @qml.qnode(dev)
-        def circuit():
-            barrier()
-            qml.ctrl(barrier, 2)()
-            return qml.state()
-
-        circuit()
-        tape = circuit.tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
-
-        assert tape.operations[1].name == "Barrier"
-        assert tape.operations[4].name == "Barrier"
-
-    def test_barrier_empty_wire_list_no_error(self):
-        """Test that barrier does not raise an error when instantiated with wires=[]."""
-        barrier = qml.Barrier(wires=[])
-        assert isinstance(barrier, qml.Barrier)
-
-    def test_simplify_only_visual_one_wire(self):
-        """Test that if `only_visual=True`, the operation simplifies to the identity."""
-        op = qml.Barrier(wires="a", only_visual=True)
-        simplified = op.simplify()
-        assert qml.equal(simplified, qml.Identity("a"))
-
-    def test_simplify_only_visual_multiple_wires(self):
-        """Test that if `only_visual=True`, the operation simplifies to a product of identities."""
-        op = qml.Barrier(wires=(0, 1, 2), only_visual=True)
-        simplified = op.simplify()
-        assert isinstance(simplified, qml.ops.op_math.Prod)
-        for i, op in enumerate(simplified.operands):
-            assert qml.equal(op, qml.Identity(i))
-
-    def test_simplify_only_visual_False(self):
-        """Test that no simplification occurs if only_visual is False."""
-        op = qml.Barrier(wires=(0, 1, 2, 3), only_visual=False)
-        assert op.simplify() is op
-
-    def test_qml_matrix_fails(self):
-        """Test that qml.matrix(op) and op.matrix() both fail."""
-        op = qml.Barrier(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            qml.matrix(op)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            op.matrix()
-
-
-class TestWireCut:
-    """Tests for the WireCut operator"""
-
-    def test_behaves_as_identity(self):
-        """Tests that the WireCut operator behaves as the Identity in the
-        absence of cutting"""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def with_wirecut():
-            qml.PauliX(wires=0)
-            qml.WireCut(wires=0)
-            return qml.state()
-
-        @qml.qnode(dev)
-        def without_wirecut():
-            qml.PauliX(wires=0)
-            return qml.state()
-
-        assert np.allclose(with_wirecut(), without_wirecut())
-
-    def test_wires_empty_list_raises_error(self):
-        """Test that the WireCut operator raises an error when instantiated with an empty list."""
-        with pytest.raises(
-            ValueError, match="WireCut: wrong number of wires. At least one wire has to be given."
-        ):
-            qml.WireCut(wires=[])
-
-    def test_qml_matrix_fails(self):
-        """Test that qml.matrix(op) and op.matrix() both fail."""
-        op = qml.WireCut(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            qml.matrix(op)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            op.matrix()
+        op = qml.CZ(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
 
 
 class TestMultiControlledX:
@@ -1128,11 +944,14 @@ period_two_ops = (
     qml.PauliY(0),
     qml.PauliZ(0),
     qml.Hadamard("a"),
-    qml.CNOT(wires=(0, 1)),
-    qml.CH(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
+    # Controlled operations
+    qml.CNOT(wires=(0, 1)),
+    qml.CY(wires=(0, 1)),
+    qml.CZ(wires=(0, 1)),
+    qml.CH(wires=(0, 1)),
     qml.CCZ(wires=(0, 1, 2)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
@@ -1156,10 +975,21 @@ class TestPowMethod:
     @pytest.mark.parametrize("op", period_two_ops)
     def test_period_two_noninteger_power(self, op):
         """Test that ops with a period of 2 raised to a non-integer power raise an error."""
-        if op.__class__ is qml.PauliZ:
+        if op.__class__ in [qml.PauliZ, qml.CZ]:
             pytest.skip("PauliZ can be raised to any power.")
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(1.234)
+
+    @pytest.mark.parametrize("n", (0.12, -3.462, 3.693))
+    def test_cz_general_power(self, n):
+        """Check that CZ raised to a non-integer power that's not the square root
+        results in a controlled PhaseShift."""
+        op_pow = qml.CZ(wires=[0, 1]).pow(n)
+
+        assert len(op_pow) == 1
+        assert isinstance(op_pow[0], qml.ops.ControlledOp)
+        assert isinstance(op_pow[0].base, qml.PhaseShift)
+        assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
 
     @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
     def test_paulix_squareroot(self, n):
@@ -1321,16 +1151,31 @@ class TestControlledMethod:
         out = original._controlled("a")
         assert qml.equal(original, out)
 
+    def test_CZ(self):
+        """Test the PauliZ _controlled method."""
+        out = qml.CZ(wires=[0, 1])._controlled("a")
+        assert qml.equal(out, qml.CCZ(("a", 0, 1)))
 
-class TestSparseMatrix:
-    @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
-    def test_sparse_matrix(self, op, mat):
-        expected_sparse_mat = csr_matrix(mat)
-        sparse_mat = op.sparse_matrix()
 
-        assert isinstance(sparse_mat, type(expected_sparse_mat))
-        assert all(sparse_mat.data == expected_sparse_mat.data)
-        assert all(sparse_mat.indices == expected_sparse_mat.indices)
+SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
+    (qml.Identity(wires=0), I),
+    (qml.Hadamard(wires=0), H),
+    (qml.PauliZ(wires=0), Z),
+    (qml.PauliX(wires=0), X),
+    (qml.PauliY(wires=0), Y),
+    (qml.CY(wires=[0, 1]), CY),
+    (qml.CZ(wires=[0, 1]), CZ),
+)
+
+
+@pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
+def test_sparse_matrix(op, mat):
+    expected_sparse_mat = csr_matrix(mat)
+    sparse_mat = op.sparse_matrix()
+
+    assert isinstance(sparse_mat, type(expected_sparse_mat))
+    assert all(sparse_mat.data == expected_sparse_mat.data)
+    assert all(sparse_mat.indices == expected_sparse_mat.indices)
 
 
 label_data = [
@@ -1342,19 +1187,22 @@ label_data = [
     (qml.S(wires=0), "S"),
     (qml.T(wires=0), "T"),
     (qml.SX(wires=0), "SX"),
-    (qml.CNOT(wires=(0, 1)), "X"),
-    (qml.CH(wires=(0, 1)), "H"),
     (qml.SWAP(wires=(0, 1)), "SWAP"),
     (qml.ISWAP(wires=(0, 1)), "ISWAP"),
     (qml.ECR(wires=(0, 1)), "ECR"),
     (qml.SISWAP(wires=(0, 1)), "SISWAP"),
     (qml.SQISW(wires=(0, 1)), "SISWAP"),
+    (qml.Barrier(0), "||"),
+    (qml.WireCut(wires=0), "//"),
+    # Controlled operations
+    (qml.CY(wires=(0, 1)), "Y"),
+    (qml.CZ(wires=(0, 1)), "Z"),
+    (qml.CNOT(wires=(0, 1)), "X"),
+    (qml.CH(wires=(0, 1)), "H"),
     (qml.CCZ(wires=(0, 1, 2)), "Z"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X"),
-    (qml.Barrier(0), "||"),
-    (qml.WireCut(wires=0), "//"),
 ]
 
 
@@ -1376,6 +1224,9 @@ control_data = [
     (qml.ISWAP(wires=(0, 1)), Wires([])),
     (qml.SISWAP(wires=(0, 1)), Wires([])),
     (qml.ECR(wires=(0, 1)), Wires([])),
+    # Controlled operations
+    (qml.CY(wires=(0, 1)), Wires(0)),
+    (qml.CZ(wires=(0, 1)), Wires(0)),
     (qml.CNOT(wires=(0, 1)), Wires(0)),
     (qml.CH(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
@@ -1388,7 +1239,6 @@ control_data = [
 @pytest.mark.parametrize("op, control_wires", control_data)
 def test_control_wires(op, control_wires):
     """Test ``control_wires`` attribute for non-parametrized operations."""
-
     assert op.control_wires == control_wires
 
 
@@ -1398,21 +1248,24 @@ involution_ops = [  # ops who are their own inverses
     qml.PauliX(0),
     qml.PauliY(0),
     qml.PauliZ(0),
-    qml.CNOT((0, 1)),
-    qml.CH((0, 1)),
     qml.SWAP((0, 1)),
     qml.ECR((0, 1)),
+    qml.Barrier(0),
+    qml.WireCut(0),
+    # Controlled operations
+    qml.CNOT((0, 1)),
+    qml.CH((0, 1)),
+    qml.CY((0, 1)),
+    qml.CZ(wires=(0, 1)),
     qml.CSWAP((0, 1, 2)),
     qml.CCZ((0, 1, 2)),
     qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
-    qml.Barrier(0),
-    qml.WireCut(0),
 ]
 
 
 @pytest.mark.parametrize("op", involution_ops)
-def test_adjoint_method(op):
+def test_involution_operators(op):
     adj_op = copy.copy(op)
     for _ in range(4):
         adj_op = adj_op.adjoint()
@@ -1431,4 +1284,4 @@ op_pauli_rep = (
 @pytest.mark.parametrize("op, rep", op_pauli_rep)
 def test_pauli_rep(op, rep):
     # pylint: disable=protected-access
-    assert op._pauli_rep == rep
+    assert op.pauli_rep == rep

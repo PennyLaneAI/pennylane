@@ -17,6 +17,7 @@ Differentiability tests are still in the ml-framework specific files.
 """
 import copy
 from typing import Tuple, Callable
+from functools import partial
 import pytest
 
 import numpy as np
@@ -250,3 +251,32 @@ class TestTransformProgram:
         assert qml.math.allclose(results_reverse[0], 4.0)
         # (-1.0 + 1.0) * 2.0 = 0.0
         assert qml.math.allclose(results_reverse[1], 0.0)
+
+    def test_composable_transform(self):
+        """Test the composition of a gradient transform with another transform."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.gradients.param_shift, argnums=[0, 1])
+        @qml.transforms.split_non_commuting
+        @qml.qnode(device=dev, interface="jax")
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RZ(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliY(wires=0))
+
+        x = jax.numpy.array(0.1)
+        y = jax.numpy.array(0.2)
+
+        res = circuit(x, y)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+
+        assert isinstance(res[1], tuple)
+        assert len(res[1]) == 2

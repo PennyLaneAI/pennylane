@@ -25,6 +25,7 @@ to verify and test quantum gradient computations.
     :toctree: api
 
 
+    default_qubit
     default_qubit_legacy
     default_qubit_jax
     default_qubit_torch
@@ -33,6 +34,7 @@ to verify and test quantum gradient computations.
     default_gaussian
     default_mixed
     default_qutrit
+    default_clifford
     tests
 
 Next generation devices
@@ -52,6 +54,36 @@ accessible from the ``pennylane.devices`` submodule.
     Device
     DefaultQubit
 
+Preprocessing Transforms
+------------------------
+
+The ``preprocess`` module offers several transforms that can be used in constructing the :meth:`~.devices.Device.preprocess`
+method for devices.
+
+.. currentmodule:: pennylane.devices.preprocess
+.. autosummary::
+    :toctree: api
+
+    decompose
+    validate_observables
+    validate_measurements
+    validate_device_wires
+    validate_multiprocessing_workers
+    validate_adjoint_trainable_params
+    no_sampling
+
+Other transforms that may be relevant to device preprocessing include:
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
+    defer_measurements
+    transforms.broadcast_expand
+    transforms.sum_expand
+    transforms.split_non_commuting
+    transforms.hamiltonian_expand
+
 Qubit Simulation Tools
 ----------------------
 
@@ -70,4 +102,5 @@ from .default_qubit import DefaultQubit
 from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
+from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit

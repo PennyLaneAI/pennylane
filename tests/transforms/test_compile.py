@@ -30,6 +30,7 @@ from pennylane.transforms.optimization import (
     merge_rotations,
     single_qubit_fusion,
 )
+from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
 
 def build_qfunc(wires):
@@ -168,6 +169,13 @@ class TestCompileIntegration:
 
         assert np.allclose(qfun_res, qnode_res)
 
+    def test_compile_default_pipeline_removes_barrier(self):
+        """Test that the default pipeline removes Barriers."""
+
+        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Barrier([0, 1]), qml.CNOT([0, 1])])
+        [compiled_tape], _ = qml.compile(tape)
+        assert compiled_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1])]
+
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
         """Test that using non-default arguments returns the correct results."""
@@ -243,7 +251,7 @@ class TestCompileIntegration:
 
         pipeline = [partial(commute_controlled, direction="left"), cancel_inverses, merge_rotations]
 
-        basis_set = ["CNOT", "RX", "RY", "RZ"]
+        basis_set = ["CNOT", "RX", "RY", "RZ", "GlobalPhase"]
 
         transformed_qfunc = compile(qfunc, pipeline=pipeline, basis_set=basis_set)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
@@ -266,6 +274,7 @@ class TestCompileIntegration:
             "CNOT",
             "RY",
             "CNOT",
+            "GlobalPhase",
         ]
 
         wires_expected = [
@@ -282,18 +291,23 @@ class TestCompileIntegration:
             Wires([wires[1], wires[2]]),
             Wires(wires[2]),
             Wires([wires[1], wires[2]]),
+            Wires([]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tansformed_ops = _fuse_global_phases(transformed_qnode.qtape.operations)
+        compare_operation_lists(tansformed_ops, names_expected, wires_expected)
 
     def test_compile_template(self):
         """Test that functions with templates are correctly expanded and compiled."""
 
         # Push commuting gates to the right and merging rotations gives a circuit
         # with alternating RX and CNOT gates
+        # pylint: disable=expression-not-assigned
         def qfunc(x, params):
             qml.templates.AngleEmbedding(x, wires=range(3))
-            qml.templates.BasicEntanglerLayers(params, wires=range(3))
+            qml.adjoint(
+                qml.adjoint(qml.templates.BasicEntanglerLayers(params, wires=range(3)))
+            ) ** 2
             return qml.expval(qml.PauliZ(wires=2))
 
         dev = qml.device("default.qubit", wires=3)
@@ -310,7 +324,7 @@ class TestCompileIntegration:
         transformed_result = transformed_qnode(x, params)
         assert np.allclose(original_result, transformed_result)
 
-        names_expected = ["RX", "CNOT"] * 6
+        names_expected = ["RX", "CNOT"] * 12
         wires_expected = [
             Wires(0),
             Wires([0, 1]),
@@ -318,7 +332,7 @@ class TestCompileIntegration:
             Wires([1, 2]),
             Wires(2),
             Wires([2, 0]),
-        ] * 2
+        ] * 4
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
@@ -454,10 +468,6 @@ class TestCompileInterfaces:
         import jax
         from jax import numpy as jnp
 
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         original_qnode = qml.QNode(qfunc_emb, dev_3wires, diff_method=diff_method)
         transformed_qnode = qml.QNode(transformed_qfunc_emb, dev_3wires, diff_method=diff_method)
 
@@ -484,9 +494,6 @@ class TestCompileInterfaces:
         """Test that compilation pipelines work with jax.jit, unitary_to_rot, and fusion."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 

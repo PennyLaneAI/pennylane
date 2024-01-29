@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-The default.qubit device is PennyLane's standard qubit-based device.
+This module contains the legacy implementation of default.qubit.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
@@ -104,8 +104,8 @@ class DefaultQubitLegacy(QubitDevice):
             returns analytical results.
     """
 
-    name = "Default qubit PennyLane plugin"
-    short_name = "default.qubit"
+    name = "Default qubit PennyLane plugin (Legacy)"
+    short_name = "default.qubit.legacy"
     pennylane_requires = __version__
     version = __version__
     author = "Xanadu Inc."
@@ -232,7 +232,7 @@ class DefaultQubitLegacy(QubitDevice):
             if getattr(obj, "has_matrix", False):
                 # pow operations dont work with backprop or adjoint without decomposition
                 # use class name string so we don't need to use isinstance check
-                return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj))
+                return not (obj.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(obj))
             return obj.name in self.observables.union(self.operations)
 
         return qml.BooleanFn(accepts_obj)
