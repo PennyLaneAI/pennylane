@@ -699,7 +699,7 @@ def expand_fragment_tapes_mc(
                     expanded_circuit_operations.extend(MC_STATES[prep_settings[op.id][shot]](w))
                 elif not isinstance(op, MeasureNode):
                     expanded_circuit_operations.append(op)
-                elif isinstance(op, MeasureNode):
+                else:
                     meas_w = op.wires[0]
                     expanded_circuit_measurements.append(
                         MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
