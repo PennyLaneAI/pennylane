@@ -78,9 +78,9 @@
 
    ```python
    import pennylane as qml
-   fermi_ham = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+   fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
 
-   qubit_ham = qml.parity_transform(w, n=6)
+   qubit_ham = qml.fermi.parity_transform(fermi_ham, n=6)
    ```
 
    ```pycon
