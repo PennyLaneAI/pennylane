@@ -964,6 +964,33 @@ def molecular_hamiltonian(
             h = qml.map_wires(h, wires_map)
         return h, 2 * len(active)
 
+    if mapping.strip().lower() == "jordan_wigner":
+        core_constant, one_mo, two_mo = _pyscf_integrals(
+            symbols, geometry_hf, charge, mult, basis, active_electrons, active_orbitals
+        )
+
+        hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
+
+        if wires:
+            wires_new = qml.qchem.convert._process_wires(wires)
+            wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
+
+            if active_new_opmath():
+                h_pl = qml.jordan_wigner(hf, wire_map=wires_map)
+            else:
+                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map).hamiltonian()
+                h_pl = qml.Hamiltonian(np.real(h_pl.coeffs), h_pl.ops)
+
+            return h_pl, len(h_pl.wires)
+
+        if active_new_opmath():
+            h_pl = qml.jordan_wigner(hf)
+        else:
+            h_pl = qml.jordan_wigner(hf, ps=True).hamiltonian()
+            h_pl = qml.Hamiltonian(np.real(h_pl.coeffs), h_pl.ops)
+
+        return h_pl, len(h_pl.wires)
+
     openfermion, _ = _import_of()
 
     hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
@@ -978,7 +1005,7 @@ def molecular_hamiltonian(
 
     h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
 
-    return h_pl, qubits
+    return h_pl, len(h_pl.wires)
 
 
 def _active_space_integrals(core_constant, one, two, core=None, active=None):
