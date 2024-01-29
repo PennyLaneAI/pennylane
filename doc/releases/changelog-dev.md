@@ -78,7 +78,6 @@
    It is now possible to transform fermionic Hamiltonian to qubit Hamiltonian through parity mapping.
 
    ```python
-   
    import pennylane as qml
    fermi_ham = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
 
