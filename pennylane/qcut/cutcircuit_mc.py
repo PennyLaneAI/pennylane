@@ -692,18 +692,14 @@ def expand_fragment_tapes_mc(
         frag_config = []
         for shot in range(shots):
             expanded_circuit_operations = []
-            expanded_circuit_measurements = []
+            expanded_circuit_measurements = tape.measurements.copy()
             for op in tape.operations:
                 w = op.wires[0]
                 if isinstance(op, PrepareNode):
                     expanded_circuit_operations.extend(MC_STATES[prep_settings[op.id][shot]](w))
                 elif not isinstance(op, MeasureNode):
                     expanded_circuit_operations.append(op)
-
-            for meas in tape.measurements:
-                expanded_circuit_measurements.append(meas)
-            for op in tape.operations:
-                if isinstance(op, MeasureNode):
+                elif isinstance(op, MeasureNode):
                     meas_w = op.wires[0]
                     expanded_circuit_measurements.append(
                         MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
