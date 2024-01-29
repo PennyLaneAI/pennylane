@@ -1,4 +1,4 @@
-# Copyright 2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,320 +11,277 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-The null.qubit device is a no-op device for benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
-from collections import defaultdict
+The null.qubit device is a no-op device for benchmarking PennyLane's
+auxiliary functionality outside direct circuit evaluations.
+"""
+# pylint:disable=unused-argument
+
+from numbers import Number
+from typing import Union, Callable, Tuple, Sequence
+import inspect
+import logging
 import numpy as np
 
-from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.typing import Result, ResultBatch
 
-from pennylane import QubitDevice
-from pennylane.measurements import Shots
-from pennylane.resource import Resources
-from .._version import __version__
+from . import Device
+from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .qubit.sampling import get_num_shots_and_executions
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+Result_or_ResultBatch = Union[Result, ResultBatch]
+QuantumTapeBatch = Sequence[QuantumTape]
+QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
+# always a function from a resultbatch to either a result or a result batch
+PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
-# pylint: disable=unused-argument, no-self-use
-class NullQubit(QubitDevice):
+class NullQubit(Device):
     """Null qubit device for PennyLane. This device performs no operations involved in numerical calculations.
        Instead the time spent in execution is dominated by support (or setting up) operations, like tape creation etc.
 
-    .. warning::
-
-        The API of ``NullQubit`` will be updated soon to follow a new device interface described
-        in :class:`pennylane.devices.Device`.
-
-        This change will not alter device behaviour for most workflows, but may have implications for
-        plugin developers and users who directly interact with device methods. Please consult
-        :class:`pennylane.devices.Device` and the implementation in
-        :class:`pennylane.devices.DefaultQubit` for more information on what the new
-        interface will look like and be prepared to make updates in a coming release. If you have any
-        feedback on these changes, please create an
-        `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
-        `discussion forum <https://discuss.pennylane.ai/>`_.
-
     Args:
-        wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
-            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
+            to use in executions involving this device.
+
+    **Example:**
+
+    .. code-block:: python
+
+        # TODO
+
+    .. details::
+        :title: Tracking
+
+        ``NullQubit`` tracks:
+
+        * ``executions``: the number of unique circuits that would be required on quantum hardware
+        * ``shots``: the number of shots
+        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
+        * ``batches``: The number of times :meth:`~.execute` is called.
+        * ``results``: The results of each call of :meth:`~.execute`
+        * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
+        * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
+        * ``vjp_batches``: How many times :meth:`~.compute_vjp` is called
+        * ``execute_and_vjp_batches``: How many times :meth:`~.execute_and_compute_vjp` is called
+        * ``jvp_batches``: How many times :meth:`~.compute_jvp` is called
+        * ``execute_and_jvp_batches``: How many times :meth:`~.execute_and_compute_jvp` is called
+        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives`.
+        * ``vjps``: How many circuits are submitted to :meth:`~.compute_vjp` or :meth:`~.execute_and_compute_vjp`
+        * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
+
     """
 
-    name = "Null qubit PennyLane plugin"
-    short_name = "null.qubit"
-    pennylane_requires = __version__
-    version = __version__
-    author = "Xanadu Inc."
+    @property
+    def name(self):
+        """The name of the device."""
+        return "null.qubit"
 
-    operations = {
-        "Identity",
-        "Snapshot",
-        "BasisState",
-        "StatePrep",
-        "QubitStateVector",
-        "QubitUnitary",
-        "ControlledQubitUnitary",
-        "BlockEncode",
-        "MultiControlledX",
-        "DiagonalQubitUnitary",
-        "SpecialUnitary",
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "MultiRZ",
-        "Hadamard",
-        "S",
-        "Adjoint(S)",
-        "T",
-        "Adjoint(T)",
-        "SX",
-        "Adjoint(SX)",
-        "CNOT",
-        "SWAP",
-        "ISWAP",
-        "PSWAP",
-        "Adjoint(ISWAP)",
-        "SISWAP",
-        "Adjoint(SISWAP)",
-        "SQISW",
-        "CSWAP",
-        "Toffoli",
-        "CY",
-        "CZ",
-        "CCZ",
-        "CH",
-        "PhaseShift",
-        "PCPhase",
-        "ControlledPhaseShift",
-        "CPhase",
-        "RX",
-        "RY",
-        "RZ",
-        "Rot",
-        "CRX",
-        "CRY",
-        "CRZ",
-        "CRot",
-        "IsingXX",
-        "IsingYY",
-        "IsingZZ",
-        "IsingXY",
-        "SingleExcitation",
-        "SingleExcitationPlus",
-        "SingleExcitationMinus",
-        "DoubleExcitation",
-        "DoubleExcitationPlus",
-        "DoubleExcitationMinus",
-        "QubitCarry",
-        "QubitSum",
-        "OrbitalRotation",
-        "QFT",
-        "ECR",
-    }
-
-    observables = {
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "Hadamard",
-        "Hermitian",
-        "Identity",
-        "Projector",
-        "SparseHamiltonian",
-        "Hamiltonian",
-        "Sum",
-        "SProd",
-        "Prod",
-        "Exp",
-    }
-
-    def __init__(self, wires, *args, **kwargs):
-        defaultKwargs = {
-            "shots": None,
-            "analytic": None,
-            "r_dtype": np.float64,
-            "c_dtype": np.complex128,
-        }
-        kwargs = {**defaultKwargs, **kwargs}
-
-        self._operation_calls = defaultdict(int)
-        super().__init__(
-            wires,
-            shots=kwargs["shots"],
-            r_dtype=kwargs["r_dtype"],
-            c_dtype=kwargs["c_dtype"],
-            analytic=kwargs["analytic"],
-        )
+    def __init__(self, wires=None, shots=None) -> None:
+        super().__init__(wires=wires, shots=shots)
         self._debugger = None
 
-        # Create the initial state. The state will always be None.
-        self._state = self._create_basis_state(0)  # pylint: disable=assignment-from-none
-        self._pre_rotated_state = self._state
-
-        self._apply_ops = {
-            "PauliX": self._apply_x,
-            "PauliY": self._apply_y,
-            "PauliZ": self._apply_z,
-            "Hadamard": self._apply_hadamard,
-            "S": self._apply_s,
-            "T": self._apply_t,
-            "SX": self._apply_sx,
-            "CNOT": self._apply_cnot,
-            "SWAP": self._apply_swap,
-            "CZ": self._apply_cz,
-            "Toffoli": self._apply_toffoli,
-        }
-
-    # pylint: disable=arguments-differ
-    def apply(self, operations, *args, **kwargs):
-        for op in operations:
-            self._apply_operation(self._state, op)
-
-    def _apply_operation(self, state, operation):
-        self._operation_calls[operation.name] += 1
-
-        if operation.name in self._apply_ops:
-            return self._apply_ops[operation.name](state, axes=None)
-
-        wires = operation.wires
-        if operation in diagonal_in_z_basis:
-            return self._apply_diagonal_unitary(state, None, wires)
-        if len(wires) <= 2:
-            # Einsum is faster for small gates
-            return self._apply_unitary_einsum(state, None, wires)
-        return self._apply_unitary(state, None, wires)
-
-    def _apply_x(self, state, axes, **kwargs):
-        return [0.0]
-
-    def _apply_y(self, state, axes, **kwargs):
-        return [0.0]
-
-    def _apply_z(self, state, axes, **kwargs):
-        return [0.0]
-
-    def _apply_hadamard(self, state, axes, **kwargs):
-        return [0.0]
-
-    def _apply_s(self, state, axes, inverse=False):
-        return [0.0]
-
-    def _apply_t(self, state, axes, inverse=False):
-        return [0.0]
-
-    def _apply_sx(self, state, axes, inverse=False):
-        return [0.0]
-
-    def _apply_cnot(self, state, axes, **kwargs):
-        return [0.0]
-
-    def _apply_swap(self, state, axes, **kwargs):
-        return [0.0]
-
-    def _apply_cz(self, state, axes, **kwargs):
-        return [0.0]
-
-    def _apply_toffoli(self, state, axes, **kwargs):
-        return [0.0]
-
-    def _apply_phase(self, state, axes, parameters, inverse=False):
-        return [0.0]
-
-    def expval(self, observable, shot_range=None, bin_size=None):
-        return [0.0]
-
-    def var(self, observable, shot_range=None, bin_size=None):
-        return [0.0]
-
-    @classmethod
-    def capabilities(cls):
-        capabilities = super().capabilities().copy()
-        capabilities.update(
-            model="qubit",
-            supports_inverse_operations=True,
-            supports_analytic_computation=True,
-            supports_broadcasting=False,
-            returns_state=True,
-            passthru_devices={
-                "tf": "null.qubit",
-                "torch": "null.qubit",
-                "autograd": "null.qubit",
-                "jax": "null.qubit",
-            },
-        )
-        return capabilities
+    def _simulate(self, circuit):  # pylint:disable=no-self-use
+        # TODO
+        return 0.0
 
     @staticmethod
-    def _create_basis_state(index):
-        return [0.0]
+    def _derivatives(circuit):
+        # TODO
+        return 0.0
 
-    @property
-    def state(self):
-        return [0.0]
+    @staticmethod
+    def _vjp(circuit, cots):
+        # TODO
+        return 0.0
 
-    def density_matrix(self, wires):
-        return [0.0]
+    @staticmethod
+    def _jvp(circuit, tans):
+        # TODO
+        return 0.0
 
-    def _apply_state_vector(self, state, device_wires):
-        return [0.0]
-
-    def _apply_basis_state(self, state, wires):
-        return [0.0]
-
-    def _apply_unitary(self, state, mat, wires):
-        return [0.0]
-
-    def _apply_unitary_einsum(self, state, mat, wires):
-        return [0.0]
-
-    def _apply_diagonal_unitary(self, state, phases, wires):
-        return [0.0]
-
-    def reset(self):
-        self._operation_calls = defaultdict(int)
-
-    def analytic_probability(self, wires=None):
-        return [0.0]
-
-    def generate_samples(self):
-        """Returns the computational basis samples generated for all wires.
-        In the _qubit_device.py, the function calls for analytic_probability for its operations."""
-        self.analytic_probability()
-
-    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
-        return [0.0]
-
-    def operation_calls(self):
-        """Statistics of operation calls"""
-        return self._operation_calls
-
-    def execute(self, circuit, **kwargs):
-        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
-
-        if self.tracker.active:
-            shots_from_dev = self._shots
-            tape_resources = circuit.specs["resources"]
-
-            resources = Resources(  # temporary until shots get updated on tape !
-                tape_resources.num_wires,
-                tape_resources.num_gates,
-                tape_resources.gate_types,
-                tape_resources.gate_sizes,
-                tape_resources.depth,
-                Shots(shots_from_dev),
+    def execute(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> Result_or_ResultBatch:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                """Entry with args=(circuits=%s) called by=%s""",
+                circuits,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
             )
-            self.tracker.update(executions=1, shots=self._shots, resources=resources)
-            self.tracker.record()
-        return [0.0]
 
-    def batch_execute(self, circuits, **kwargs):
-        res = []
-        for c in circuits:
-            res.append(self.execute(c))
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+
+        results = tuple(self._simulate(c) for c in circuits)
+
         if self.tracker.active:
-            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.update(batches=1)
             self.tracker.record()
-        return res
+            for c, res in zip(circuits, results):
+                qpu_executions, shots = get_num_shots_and_executions(c)
+                if isinstance(res, Number):
+                    res = np.array(res)
+                if c.shots:
+                    self.tracker.update(
+                        simulations=1,
+                        executions=qpu_executions,
+                        results=res,
+                        shots=shots,
+                        resources=c.specs["resources"],
+                    )
+                else:
+                    self.tracker.update(
+                        simulations=1,
+                        executions=qpu_executions,
+                        results=res,
+                        resources=c.specs["resources"],
+                    )
+                self.tracker.record()
 
-    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
-        return [0.0]
+        return results[0] if is_single_circuit else results
+
+    def compute_derivatives(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+
+        if self.tracker.active:
+            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
+
+        res = tuple(self._derivatives(c) for c in circuits)
+        return res[0] if is_single_circuit else res
+
+    def execute_and_compute_derivatives(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+
+        if self.tracker.active:
+            for c in circuits:
+                self.tracker.update(resources=c.specs["resources"])
+            self.tracker.update(
+                execute_and_derivative_batches=1,
+                executions=len(circuits),
+                derivatives=len(circuits),
+            )
+            self.tracker.record()
+
+        results = tuple(self._simulate(c) for c in circuits)
+        jacs = tuple(self._derivatives(c) for c in circuits)
+
+        return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
+
+    def compute_jvp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        tangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+            tangents = [tangents]
+
+        if self.tracker.active:
+            self.tracker.update(jvp_batches=1, jvps=len(circuits))
+            self.tracker.record()
+
+        res = tuple(self._jvp(c, tans) for c, tans in zip(circuits, tangents))
+
+        return res[0] if is_single_circuit else res
+
+    def execute_and_compute_jvp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        tangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+            tangents = [tangents]
+
+        if self.tracker.active:
+            for c in circuits:
+                self.tracker.update(resources=c.specs["resources"])
+            self.tracker.update(
+                execute_and_jvp_batches=1, executions=len(circuits), jvps=len(circuits)
+            )
+            self.tracker.record()
+
+        results = tuple(self._simulate(c) for c in circuits)
+        jvps = tuple(self._jvp(c, tans) for c, tans in zip(circuits, tangents))
+
+        return (results[0], jvps[0]) if is_single_circuit else (results, jvps)
+
+    def compute_vjp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        cotangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+            cotangents = [cotangents]
+
+        if self.tracker.active:
+            self.tracker.update(vjp_batches=1, vjps=len(circuits))
+            self.tracker.record()
+
+        res = tuple(self._vjp(c, cots) for c, cots in zip(circuits, cotangents))
+
+        return res[0] if is_single_circuit else res
+
+    def execute_and_compute_vjp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        cotangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+            cotangents = [cotangents]
+
+        if self.tracker.active:
+            for c in circuits:
+                self.tracker.update(resources=c.specs["resources"])
+            self.tracker.update(
+                execute_and_vjp_batches=1, executions=len(circuits), vjps=len(circuits)
+            )
+            self.tracker.record()
+
+        results = tuple(self._simulate(c) for c in circuits)
+        vjps = tuple(self._vjp(c, cots) for c, cots in zip(circuits, cotangents))
+        return (results[0], vjps[0]) if is_single_circuit else (results, vjps)

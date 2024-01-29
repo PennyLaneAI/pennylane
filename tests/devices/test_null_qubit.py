@@ -25,6 +25,8 @@ from pennylane.devices.null_qubit import NullQubit
 from pennylane.measurements import Shots
 from pennylane import Tracker
 
+pytest.importorskip("totally_real_package_for_null_qubit")
+
 
 @pytest.fixture(
     name="nullqubit_device",
