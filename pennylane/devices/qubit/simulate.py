@@ -14,7 +14,9 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from collections import Counter
+from itertools import product
 from typing import Optional
+import copy
 
 from numpy.random import default_rng
 import numpy as np
@@ -523,6 +525,14 @@ def gather_mcm(measurement, mv, samples, counter):
     Returns:
         TensorLike: The combined measurement outcome
     """
+    if isinstance(measurement, ProbabilityMP) and isinstance(mv, (list, tuple)):
+        probs = []
+        for m in mv:
+            meas = copy.copy(measurement)
+            meas.mv = m
+            probs.append(gather_mcm(meas, m, samples, counter))
+        probs = tuple(np.prod(np.array(i)) for i in product(*probs))
+        return np.array(probs)
     if isinstance(mv, (list, tuple)):
         return np.vstack(tuple(gather_mcm(measurement, m, samples, counter) for m in mv)).T
     if not isinstance(measurement, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
@@ -537,6 +547,9 @@ def gather_mcm(measurement, mv, samples, counter):
     elif isinstance(measurement, ProbabilityMP):
         counts = dict(sorted(Counter(mcm_samples).items()))
         num = sum(counts.values())
+        for i in [0, 1]:
+            if i not in counts.keys():
+                counts.update({i: 0})
         new_measurement = np.array([counts[0] / num, counts[1] / num])
     elif isinstance(measurement, SampleMP):
         new_measurement = mcm_samples

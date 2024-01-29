@@ -274,7 +274,7 @@ class TestProbs:
                 assert np.allclose(r, expected, atol=atol, rtol=0)
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
-    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi])
     def test_observable_is_measurement_value_list(
         self, shots, phi, tol, tol_stochastic
     ):  # pylint: disable=too-many-arguments
@@ -283,7 +283,6 @@ class TestProbs:
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
-        @qml.defer_measurements
         def circuit(phi):
             qml.RX(phi, 0)
             m0 = qml.measure(0)

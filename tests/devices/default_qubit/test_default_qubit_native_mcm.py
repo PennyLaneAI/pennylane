@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+from itertools import product
+
 from flaky import flaky
 import numpy as np
 import pytest
@@ -288,3 +290,45 @@ def test_composite_mcm_single_measure_obs(shots, reset, measure_f):
     results2 = func2(param)
 
     validate_measurements(measure_f, shots, results1, results2)
+
+
+@flaky(max_runs=5)
+@pytest.mark.parametrize("shots", [2000, [2000, 2001]])
+@pytest.mark.parametrize("reset", [False, True])
+def test_composite_mcm_measure_value_list(shots, reset):
+    """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
+    conditional gate. A single measurement of a composite mid-circuit measurement is performed
+    at the end."""
+    dev = qml.device("default.qubit", shots=shots)
+    param = np.pi / 3
+
+    @qml.qnode(dev)
+    def func1(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1, reset=reset)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        m2 = qml.measure(0)
+        return qml.probs(op=[m0, m1, m2])
+
+    @qml.qnode(dev)
+    @qml.defer_measurements
+    def func2(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1, reset=reset)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        m2 = qml.measure(0)
+        return [qml.probs(op=m0), qml.probs(op=m1), qml.probs(op=m2)]
+
+    results1 = func1(param)
+    results2 = func2(param)
+
+    if isinstance(shots, (list, tuple)):
+        results2 = [np.array(tuple(np.prod(np.array(i)) for i in product(*r))) for r in results2]
+    else:
+        results2 = np.array(tuple(np.prod(np.array(i)) for i in product(*results2)))
+
+    validate_measurements(qml.probs, shots, results1, results2)
