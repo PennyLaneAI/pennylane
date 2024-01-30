@@ -74,7 +74,7 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
     slices[axis] = int(not sample)
     state[tuple(slices)] = 0.0
     state_norm = np.linalg.norm(state)
-    if state_norm < 1.0e-15:
+    if state_norm < 1.0e-15:  # pragma: no cover
         return np.zeros_like(state), 0
     state = state / state_norm
     if op.reset and sample == 1:
