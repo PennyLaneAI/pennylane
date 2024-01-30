@@ -62,17 +62,18 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
     """Applies a native mid-circuit measurement."""
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
+    if not np.allclose(np.linalg.norm(state), 1.0):
+        return np.zeros_like(state), 0
     wire = op.wires
     probs = qml.devices.qubit.measure(qml.probs(wire), state)
     sample = np.random.binomial(1, probs[1])
+    if op.postselect is not None and sample != op.postselect:
+        return np.zeros_like(state), sample
     axis = wire.toarray()[0]
     slices = [slice(None)] * state.ndim
     slices[axis] = int(not sample)
     state[tuple(slices)] = 0.0
-    state_norm = np.linalg.norm(state)
-    if state_norm < 1.0e-15:
-        raise ValueError("Cannot normalize projected state.")
-    state = state / state_norm
+    state = state / np.linalg.norm(state)
     if op.reset and sample == 1:
         state = apply_operation(
             qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
