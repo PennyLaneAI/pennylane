@@ -75,6 +75,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
+  for large workflows.
+  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
@@ -130,6 +134,9 @@
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
+
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
 <h3>Breaking changes 💔</h3>
 
@@ -232,6 +239,9 @@
 * Added a development guide on deprecations and removals.
   [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
+* A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
+  [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
@@ -250,6 +260,9 @@
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
 
+* `qml.equal` works well with `qml.Sum` operators when wire labels are a mix of integers and strings.
+  [(#5037)](https://github.com/PennyLaneAI/pennylane/pull/5037)
+
 * The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
   [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
 
@@ -259,21 +272,26 @@
 * Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
   [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
+* `PauliSentence.wires` no longer imposes a false order.
+  [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
-Matthew Silverman.
-Jay Soni,
+Matthew Silverman,
+Jay Soni.

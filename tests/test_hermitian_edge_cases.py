@@ -20,6 +20,8 @@ import numpy as np
 
 import pennylane as qml
 
+np.random.seed(0)
+
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
