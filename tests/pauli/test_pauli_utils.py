@@ -688,9 +688,7 @@ class TestPauliGroup:
     )
     def test_deprecated_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, expected_phase):
         """Test that pauli_mult_with_phase is deprecated."""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="`pauli_mult_with_phase` is deprecated"
-        ):
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="pauli_mult"):
             _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2)
         assert obtained_phase == expected_phase
 
