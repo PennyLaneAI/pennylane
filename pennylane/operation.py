@@ -56,7 +56,7 @@ Differentiation
 ^^^^^^^^^^^^^^^
 
 In general, an :class:`Operation` is differentiable (at least using the finite-difference
-method) with respect to a parameter iff
+method) with respect to a parameter if
 
 * the domain of that parameter is continuous.
 
