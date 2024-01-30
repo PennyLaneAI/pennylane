@@ -451,16 +451,21 @@ class MultiControlledX(ControlledOp):
     @staticmethod
     def compute_matrix(control_wires, control_values=None, **kwargs):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
         .. seealso:: :meth:`~.MultiControlledX.matrix`
+
         Args:
             control_wires (Any or Iterable[Any]): wires to place controls on
             control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+
         Returns:
            tensor_like: matrix representation
+
         **Example**
+
         >>> print(qml.MultiControlledX.compute_matrix([0], 1))
         [[1. 0. 0. 0.]
          [0. 1. 0. 0.]
@@ -471,6 +476,7 @@ class MultiControlledX(ControlledOp):
          [1. 0. 0. 0.]
          [0. 0. 1. 0.]
          [0. 0. 0. 1.]]
+
         """
 
         if isinstance(control_values, str):
@@ -502,24 +508,31 @@ class MultiControlledX(ControlledOp):
     @staticmethod
     def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
         r"""Representation of the operator as a product of other operators (static method).
+
         .. math:: O = O_1 O_2 \dots O_n.
         .. seealso:: :meth:`~.MultiControlledX.decomposition`.
+
         Args:
             wires (Iterable[Any] or Wires): wires that the operation acts on
             work_wires (Wires): optional work wires used to decompose
                 the operation into a series of Toffoli gates.
             control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+
         Returns:
             list[Operator]: decomposition into lower level operations
+
         **Example:**
+
         >>> print(qml.MultiControlledX.compute_decomposition(
         ...     wires=[0,1,2,3], control_values=[1,1,1], work_wires=qml.wires.Wires("aux")))
         [Toffoli(wires=[2, 'aux', 3]),
         Toffoli(wires=[0, 1, 'aux']),
         Toffoli(wires=[2, 'aux', 3]),
         Toffoli(wires=[0, 1, 'aux'])]
+
         """
+
         if len(wires) < 2:
             raise ValueError(f"Wrong number of wires. {len(wires)} given. Need at least 2.")
 
