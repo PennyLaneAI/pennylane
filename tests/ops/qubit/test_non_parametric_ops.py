@@ -574,7 +574,7 @@ class TestMultiControlledX:
                 None,
                 [0, 1, 2],
                 "011",
-                "control_values should be the same length as control_wires",
+                "Length of control values must equal number of control wires.",
             ),
             (
                 None,
@@ -584,7 +584,7 @@ class TestMultiControlledX:
             ),
             ([0], None, "", "Must specify the wires where the operation acts on"),
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
-            ([0, 1], 2, "011", "control_values should be the same length as control_wires"),
+            ([0, 1], 2, "011", "Length of control values must equal number of control wires."),
             ([0, 1], [2, 3], "10", "MultiControlledX accepts a single target wire."),
         ],
     )
