@@ -502,7 +502,7 @@ class TestPauliSentence:
         assert ps[new_pw] == 0.0
 
     @pytest.mark.parametrize("pw", words)
-    def test_wires(self, pw):
+    def test_wires_not_reordered(self, pw):
         """Test that wires are set correctly and not reshuffled when put in a PS"""
         true_wires = pw.wires
         ps = PauliSentence({pw: 1.0})
