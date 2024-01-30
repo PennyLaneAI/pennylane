@@ -97,7 +97,7 @@ jobs:
           {
             "default": 1,
             "tf-tests": 3,
-            "core-tests": 3,
+            "core-tests": 5,
             "jax-tests": 5,
             "gradients-tests": 2
           }
