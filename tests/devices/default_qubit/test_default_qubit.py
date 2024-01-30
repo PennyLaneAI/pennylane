@@ -1722,6 +1722,7 @@ class TestPostselection:
     ):
         """Test that the results of a circuit with postselection is expected with
         finite shots."""
+        np.random.seed(1967)
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 

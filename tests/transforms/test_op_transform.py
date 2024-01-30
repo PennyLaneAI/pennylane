@@ -302,7 +302,7 @@ def simplify_rotation(op):
     return op
 
 
-with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of `op_transform`"):
+with pytest.warns(qml.PennyLaneDeprecationWarning):
     simplify_rotation = qml.op_transform(simplify_rotation)
 
     @simplify_rotation.tape_transform

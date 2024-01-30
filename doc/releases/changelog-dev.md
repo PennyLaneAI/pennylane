@@ -127,6 +127,10 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+* Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
+  are being raised unexpectedly.
+  [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
