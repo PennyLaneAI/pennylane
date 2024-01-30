@@ -14,7 +14,7 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from collections import Counter
-from typing import Optional
+from typing import Optional, Sequence
 
 from numpy.random import default_rng
 import numpy as np
@@ -410,13 +410,13 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
         tuple(TensorLike): The results of the simulation
     """
     new_shot_meas = [None] * len(circuit.measurements)
-    if not isinstance(all_shot_meas, (list, tuple)):
+    if not isinstance(all_shot_meas, Sequence):
         return accumulate_native_mcm(circuit, [all_shot_meas], one_shot_meas)
-    if not isinstance(one_shot_meas, (list, tuple)):
+    if not isinstance(one_shot_meas, Sequence):
         return accumulate_native_mcm(circuit, all_shot_meas, [one_shot_meas])
     for i, m in enumerate(circuit.measurements):
         if isinstance(m, SampleMP):
-            if not isinstance(all_shot_meas[i], (list, tuple)):
+            if not isinstance(all_shot_meas[i], Sequence):
                 new_shot_meas[i] = [all_shot_meas[i]]
             else:
                 new_shot_meas[i] = all_shot_meas[i]
@@ -536,7 +536,7 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
     Returns:
         TensorLike: The combined measurement outcome
     """
-    if isinstance(measurement, ProbabilityMP) and isinstance(mv, (list, tuple)):
+    if isinstance(measurement, ProbabilityMP) and isinstance(mv, Sequence):
         mcm_samples = list(np.array([m.concretize(dct) for dct in samples]) for m in reversed(mv))
         idx = 0
         for i, s in enumerate(mcm_samples):
@@ -548,7 +548,7 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
                 counts.update({i: 0})
         num = sum(counts.values())
         return np.array([counts[ev] / num for ev in eigvals])
-    if isinstance(mv, (list, tuple)):
+    if isinstance(mv, Sequence):
         return np.vstack(tuple(gather_mcm(measurement, m, samples) for m in mv)).T
     if not isinstance(measurement, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
         raise ValueError(
