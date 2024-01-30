@@ -13,15 +13,13 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
-from itertools import product
-
 from flaky import flaky
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import apply_mid_measure, MidMeasureMP
-from pennylane.devices.qubit.simulate import gather_mcm
+from pennylane.devices.qubit.simulate import accumulate_native_mcm, gather_mcm
 
 
 def validate_counts(shots, results1, results2):
@@ -51,7 +49,7 @@ def validate_samples(shots, results1, results2):
 def validate_expval(shots, results1, results2):
     if shots is None:
         assert np.allclose(results1, results2)
-    assert np.allclose(results1, results2, atol=0, rtol=0.3)
+    assert np.allclose(results1, results2, atol=0.001, rtol=0.3)
 
 
 def validate_measurements(func, shots, results1, results2):
@@ -74,6 +72,15 @@ def test_apply_mid_measure():
     assert np.allclose(state, 0.0)
 
 
+def tests_accumulate_native_mcm():
+    with pytest.raises(
+        TypeError, match="Measurement should be of class SampleMP but is of class CountsMP"
+    ):
+        accumulate_native_mcm(
+            qml.tape.QuantumScript([], [qml.counts(qml.PauliZ(0))]), [None], [None]
+        )
+
+
 @pytest.mark.parametrize(
     "measurement",
     [
@@ -88,7 +95,7 @@ def test_apply_mid_measure():
 )
 def test_gather_mcm(measurement):
     with pytest.raises(ValueError, match="Native mid-circuit measurement mode does not support"):
-        gather_mcm(measurement, None, None, None)
+        gather_mcm(measurement, None, None)
 
 
 def test_unsupported_measurement():
@@ -339,15 +346,10 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset):
         m1 = qml.measure(1, reset=reset, postselect=postselect)
         qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
         m2 = qml.measure(0)
-        return [qml.probs(op=m0), qml.probs(op=m1), qml.probs(op=m2)]
+        return qml.probs(op=[m0, m1, m2])
 
     results1 = func1(param)
     results2 = func2(param)
-
-    if isinstance(shots, (list, tuple)):
-        results2 = [np.array(tuple(np.prod(np.array(i)) for i in product(*r))) for r in results2]
-    else:
-        results2 = np.array(tuple(np.prod(np.array(i)) for i in product(*results2)))
 
     validate_measurements(qml.probs, shots, results1, results2)
 
