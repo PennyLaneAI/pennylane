@@ -41,15 +41,6 @@ def catalyst_incompatible_version():
         yield
 
 
-# TODO: Remove this fixture after the Catalyst v0.4.0 release
-@pytest.fixture
-def catalyst_compatible_version():
-    """A compatible (high) version for Catalyst"""
-    with patch("importlib.metadata.version") as mock_version:
-        mock_version.return_value = "0.4.0"
-        yield
-
-
 @pytest.mark.usefixtures("catalyst_incompatible_version")
 def test_catalyst_incompatible():
     """Test qjit with an incompatible Catalyst version < 0.4.0"""
@@ -67,7 +58,6 @@ def test_catalyst_incompatible():
         qml.qjit(circuit)()
 
 
-@pytest.mark.usefixtures("catalyst_compatible_version")
 class TestCatalyst:
     """Test ``qml.qjit`` with Catalyst"""
 
@@ -312,7 +302,6 @@ class TestCatalyst:
         )
 
 
-@pytest.mark.usefixtures("catalyst_compatible_version")
 class TestCatalystControlFlow:
     """Test ``qml.qjit`` with Catalyst's control-flow operations"""
 
@@ -516,7 +505,6 @@ class TestCatalystControlFlow:
             circuit(1.5)
 
 
-@pytest.mark.usefixtures("catalyst_compatible_version")
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 

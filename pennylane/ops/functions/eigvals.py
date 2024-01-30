@@ -32,13 +32,17 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
     .. note::
 
-        For a :class:`~.SparseHamiltonian` object, the eigenvalues are computed with the efficient
-        ``scipy.sparse.linalg.eigsh`` method which returns :math:`k` eigenvalues. The default value
-        of :math:`k` is :math:`1`. For an :math:`N \times N` sparse matrix, :math:`k` must be
-        smaller than :math:`N - 1`, otherwise ``scipy.sparse.linalg.eigsh`` fails. If the requested
-        :math:`k` is equal or larger than :math:`N - 1`, the regular ``qml.math.linalg.eigvalsh``
-        is applied on the dense matrix. For more details see the ``scipy.sparse.linalg.eigsh``
-        `documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
+        - For a :class:`~.SparseHamiltonian` object, the eigenvalues are computed with the efficient
+          ``scipy.sparse.linalg.eigsh`` method which returns :math:`k` eigenvalues. The default value
+          of :math:`k` is :math:`1`. For an :math:`N \times N` sparse matrix, :math:`k` must be
+          smaller than :math:`N - 1`, otherwise ``scipy.sparse.linalg.eigsh`` fails. If the requested
+          :math:`k` is equal or larger than :math:`N - 1`, the regular ``qml.math.linalg.eigvalsh``
+          is applied on the dense matrix. For more details see the ``scipy.sparse.linalg.eigsh``
+          `documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
+        - A second-quantized :mod:`molecular Hamiltonian <pennylane.qchem.molecular_hamiltonian>` is
+          independent of the number of electrons and its eigenspectrum contains the energies of the
+          neutral and charged molecules. Therefore, the `smallest` eigenvalue returned by ``qml.eigvals``
+          for a molecular Hamiltonian might not always correspond to the neutral molecule.
 
     Args:
         op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
