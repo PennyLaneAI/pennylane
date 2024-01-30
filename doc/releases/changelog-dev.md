@@ -127,7 +127,7 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
-* `qml.Identity()` can be initialized without wires.
+* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
   [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
 
 <h4>Community contributions 🥳</h4>
