@@ -663,6 +663,11 @@ class TestMultiControlledX:
 
         assert np.allclose(mpmct_state, pauli_x_state)
 
+    def test_decomposition_not_enough_wires(self):
+        """Test that the decomposition raises an error if the number of wires"""
+        with pytest.raises(ValueError, match="Wrong number of wires"):
+            qml.MultiControlledX.compute_decomposition((0,), control_values=[1])
+
     def test_decomposition_no_control_values(self):
         """Test decomposition has default control values of all ones."""
         decomp1 = qml.MultiControlledX.compute_decomposition((0, 1, 2))
