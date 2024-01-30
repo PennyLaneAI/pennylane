@@ -349,6 +349,24 @@ class CZ(ControlledOp):
         return self.compute_decomposition(self.wires)
 
 
+def _check_and_convert_control_values(control_values, control_wires):
+    # TODO: maybe at some point actually deprecate string representations of control values?
+    if isinstance(control_values, str):
+        # Make sure all values are either 0 or 1
+        if not set(control_values).issubset({"1", "0"}):
+            raise ValueError("String of control values can contain only '0' or '1'.")
+
+        return [bool(int(x)) for x in control_values]
+
+    if control_values is None:
+        return [True] * len(control_wires)
+
+    if len(control_values) != len(control_wires):
+        raise ValueError("Length of control values must equal number of control wires.")
+
+    return control_values
+
+
 class MultiControlledX(ControlledOp):
     r"""MultiControlledX(control_wires, wires, control_values)
     Apply a Pauli X gate controlled on an arbitrary computational basis state.
@@ -436,12 +454,7 @@ class MultiControlledX(ControlledOp):
             control_wires = wires[:-1]
             wires = wires[-1:]
 
-        if isinstance(control_values, str):
-            # Make sure all values are either 0 or 1
-            if not set(control_values).issubset({"1", "0"}):
-                raise ValueError("String of control values can contain only '0' or '1'.")
-
-            control_values = [int(x) for x in control_values]
+        control_values = _check_and_convert_control_values(control_values, control_wires)
 
         super().__init__(
             qml.PauliX(wires=wires),
@@ -486,19 +499,13 @@ class MultiControlledX(ControlledOp):
 
         """
 
-        if isinstance(control_values, str):
-            # Make sure all values are either 0 or 1
-            if not set(control_values).issubset({"1", "0"}):
-                raise ValueError("String of control values can contain only '0' or '1'.")
+        control_values = _check_and_convert_control_values(control_values, control_wires)
 
         control_values = (
             [int(x) for x in control_values]
             if control_values is not None
             else [1] * len(control_wires)
         )
-
-        if len(control_values) != len(control_wires):
-            raise ValueError("Length of control values must equal number of control wires.")
 
         padding_left = sum(2**i * int(val) for i, val in enumerate(reversed(control_values))) * 2
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
