@@ -269,6 +269,9 @@
 * Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
   [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
+* `PauliSentence.wires` no longer imposes a false order.
+  [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
