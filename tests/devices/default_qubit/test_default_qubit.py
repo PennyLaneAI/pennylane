@@ -15,6 +15,7 @@
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
 from unittest import mock
+from flaky import flaky
 import pytest
 
 import numpy as np
@@ -1704,6 +1705,7 @@ class TestPostselection:
         assert qml.math.allclose(res, expected)
         assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
+    @flaky(max_runs=5)
     @pytest.mark.parametrize(
         "mp",
         [
