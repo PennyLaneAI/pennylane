@@ -319,7 +319,6 @@ def simulate_native_mcm(
     all_shot_meas = [np.concatenate(tuple(s.ravel() for s in m)) for m in all_shot_meas]
     return parse_native_mid_circuit_measurements(circuit, all_shot_meas, list_mcm_values_dict)
 
-
 def circuit_measurement_map(circuit: qml.tape.QuantumScript):
     obs = []
     obs_map = {}
@@ -333,7 +332,6 @@ def circuit_measurement_map(circuit: qml.tape.QuantumScript):
             obs.append(op)
             obs_map[i] = len(obs) - 1
     return obs, obs_map
-
 
 def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
     """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
@@ -354,9 +352,7 @@ def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
     for i in reversed(idx_sample):
         aux_circuit._measurements.pop(i)
     obs, _ = circuit_measurement_map(circuit)
-    aux_circuit._measurements = [
-        SampleMP(wires=m) if isinstance(m, qml.wires.Wires) else SampleMP(obs=m) for m in obs
-    ]
+    aux_circuit._measurements = [SampleMP(wires=m) if isinstance(m, qml.wires.Wires) else SampleMP(obs=m) for m in obs]    
     return aux_circuit
 
 
@@ -501,6 +497,10 @@ def parse_native_mid_circuit_measurements(
         if i not in idx_one_shot:
             continue
         normalized_meas[i] = gather_non_mcm(circuit.measurements[i], m, all_shot_meas[obs_map[i]])
+        
+    # for i, m in zip(idx_one_shot, all_shot_meas):
+        
+    #     normalized_meas[i] = gather_non_mcm(circuit.measurements[i], m, mcm_shot_meas)
 
     idx_sample = find_measurement_values(circuit)
     counter = Counter()
@@ -514,12 +514,13 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-def gather_non_mcm(circuit_measurement, samples):
+def gather_non_mcm(circuit_measurement, measurement, samples):
     """Combines, gathers and normalizes several measurements with trivial measurement values.
 
     Args:
         circuit_measurement (MeasurementProcess): measurement
-        samples (TensorLike): measurement results
+        measurement (TensorLike): measurement results
+        samples (List[dict]): Mid-circuit measurement samples
 
     Returns:
         TensorLike: The combined measurement outcome
@@ -530,11 +531,11 @@ def gather_non_mcm(circuit_measurement, samples):
         new_measurement = np.mean(samples)
     elif isinstance(circuit_measurement, ProbabilityMP):
         counts = dict(sorted(Counter(samples).items()))
+        num = sum(counts.values())
         eigvals = [0, 1] if circuit_measurement.obs is None else circuit_measurement.obs.eigvals()
         for i in eigvals:
             if i not in counts.keys():
                 counts.update({i: 0})
-        num = sum(counts.values())
         new_measurement = np.array([counts[eigvals[0]] / num, counts[eigvals[1]] / num])
     elif isinstance(circuit_measurement, SampleMP):
         new_measurement = samples
@@ -547,13 +548,14 @@ def gather_non_mcm(circuit_measurement, samples):
     return new_measurement
 
 
-def gather_mcm(measurement, mv, samples):
+def gather_mcm(measurement, mv, samples, counter):
     """Combines, gathers and normalizes several measurements with non-trivial measurement values.
 
     Args:
         measurement (MeasurementProcess): measurement
         mv (MeasurementValue): measurement value
         samples (List[dict]): Mid-circuit measurement samples
+        counter (Counter): Measurement value counts
 
     Returns:
         TensorLike: The combined measurement outcome
@@ -563,11 +565,11 @@ def gather_mcm(measurement, mv, samples):
         for m in mv:
             meas = copy.copy(measurement)
             meas.mv = m
-            probs.append(gather_mcm(meas, m, samples))
+            probs.append(gather_mcm(meas, m, samples, counter))
         probs = tuple(np.prod(np.array(i)) for i in product(*probs))
         return np.array(probs)
     if isinstance(mv, (list, tuple)):
-        return np.vstack(tuple(gather_mcm(measurement, m, samples) for m in mv)).T
+        return np.vstack(tuple(gather_mcm(measurement, m, samples, counter) for m in mv)).T
     if not isinstance(measurement, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
         raise ValueError(
             f"Native mid-circuit measurement mode does not support {measurement.__class__.__name__} measurements."
@@ -579,10 +581,10 @@ def gather_mcm(measurement, mv, samples):
         new_measurement = np.mean(mcm_samples)
     elif isinstance(measurement, ProbabilityMP):
         counts = dict(sorted(Counter(mcm_samples).items()))
+        num = sum(counts.values())
         for i in [0, 1]:
             if i not in counts.keys():
                 counts.update({i: 0})
-        num = sum(counts.values())
         new_measurement = np.array([counts[0] / num, counts[1] / num])
     elif isinstance(measurement, SampleMP):
         new_measurement = mcm_samples
