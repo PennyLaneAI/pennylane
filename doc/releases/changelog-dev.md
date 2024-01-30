@@ -72,6 +72,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
+  for large workflows.
+  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
@@ -84,7 +88,7 @@
 
 * Upgrade Pauli arithmetic:
   You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
-  You can now intuitively add together 
+  You can now intuitively add together
   `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
   For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
   sentence `ps1 = PauliSentence({pw1: 3.})`.
@@ -125,10 +129,16 @@
 
 <h4>Community contributions 🥳</h4>
 
-* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. 
+* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
 <h3>Breaking changes 💔</h3>
+
+* Pin Black to `v23.12` to prevent unnecessary formatting changes.
+  [(#5112)](https://github.com/PennyLaneAI/pennylane/pull/5112)
 
 * `gradient_analysis_and_validation` is now renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
@@ -155,11 +165,11 @@
   ```
   >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
   [
-    RZ(1.5707963267948966, wires=[1]), 
-    RY(0.0615, wires=[1]), 
-    CNOT(wires=[0, 1]), 
-    RY(-0.0615, wires=[1]), 
-    CNOT(wires=[0, 1]), 
+    RZ(1.5707963267948966, wires=[1]),
+    RY(0.0615, wires=[1]),
+    CNOT(wires=[0, 1]),
+    RY(-0.0615, wires=[1]),
+    CNOT(wires=[0, 1]),
     RZ(-1.5707963267948966, wires=[1])
   ]
   ```
@@ -182,9 +192,9 @@
   module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
 
-* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using 
+* Matrix and tensor products between `PauliWord` and `PauliSentence` instances are done using
   the `@` operator, `*` will be used only for scalar multiplication. Note also the breaking
-  change that the product of two `PauliWord` instances now returns a `PauliSentence` instead 
+  change that the product of two `PauliWord` instances now returns a `PauliSentence` instead
   of a tuple `(new_word, coeff)`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5054)](https://github.com/PennyLaneAI/pennylane/pull/5054)
@@ -226,6 +236,9 @@
 * Added a development guide on deprecations and removals.
   [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
+* A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
+  [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
@@ -243,6 +256,9 @@
 
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
+
+* `qml.equal` works well with `qml.Sum` operators when wire labels are a mix of integers and strings.
+  [(#5037)](https://github.com/PennyLaneAI/pennylane/pull/5037)
 
 * The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
   [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
@@ -267,13 +283,17 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
+Vincent Michaud-Rioux,
+Romain Moyard,
 Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
 Matthew Silverman.
+Jay Soni,
