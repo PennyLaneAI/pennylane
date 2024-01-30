@@ -269,6 +269,9 @@
 * Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
   [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
+* `PauliSentence.wires` no longer imposes a false order.
+  [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
+
 * `qml.qchem.import_state` now applies the chemist-to-physicist 
   sign convention when initializing a PennyLane state vector from
   classically pre-computed wavefunctions. That is, it interleaves 
