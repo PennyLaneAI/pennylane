@@ -253,12 +253,12 @@
 * Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
   [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
-* `import_state` now applies the chemist-to-physicist sign convention when
-  initializing a PennyLane state vector from classically pre-computed
-  wavefunctions. That is, it interleaves spin-up/spin-down operators for the same 
-  spatial orbital index, the ordering adopted in PennyLane (rather than commuting 
-  all spin-up operators to the left as is standard in quantum chemistry), leading 
-  to a sign-flip for some determinants. 
+* `qml.qchem.import_state` now applies the chemist-to-physicist 
+  sign convention when initializing a PennyLane state vector from
+  classically pre-computed wavefunctions. That is, it interleaves 
+  spin-up/spin-down operators for the same spatial orbital index,
+  as standard in PennyLane (instead of commuting all spin-up 
+  operators to the left, as is standard in quantum chemistry). 
   [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
 
 <h3>Contributors ✍️</h3>
