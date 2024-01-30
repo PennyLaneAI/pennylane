@@ -23,6 +23,7 @@ import pennylane as qml
 
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
+np.random.seed(0)
 
 def test_name():
     """Tests the name of DefaultQubit."""
@@ -1716,7 +1717,7 @@ class TestPostselection:
         ],
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
-    @pytest.mark.parametrize("shots", [50000, (50000, 50000)])
+    @pytest.mark.parametrize("shots", [500000, (500000, 500000)])
     def test_postselection_valid_finite_shots(
         self, param, mp, shots, interface, use_jit, tol_stochastic
     ):
