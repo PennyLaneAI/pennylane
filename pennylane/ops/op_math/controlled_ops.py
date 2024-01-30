@@ -403,7 +403,7 @@ class MultiControlledX(ControlledOp):
     name = "MultiControlledX"
 
     def _flatten(self):
-        return (), (self.active_wires, self.control_values, self.work_wires)
+        return (), (self.active_wires, tuple(self.control_values), self.work_wires)
 
     @classmethod
     def _unflatten(cls, _, metadata):
