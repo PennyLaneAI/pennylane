@@ -144,12 +144,12 @@ class PauliWord(dict):
     >>> w
     X(a) @ Y(2) @ Z(3)
 
-    When multiplying Pauli words together we obtain the resulting word and the scalar coefficient.
+    When multiplying Pauli words together, we obtain a :class:`~PauliSentence` with the resulting ``PauliWord`` as a key and the corresponding coefficient as its value.
 
     >>> w1 = PauliWord({0:"X", 1:"Y"})
     >>> w2 = PauliWord({1:"X", 2:"Z"})
     >>> w1 @ w2
-    (Z(1) @ Z(2) @ X(0), -1j)
+    -1j * Z(1) @ Z(2) @ X(0)
 
     We can multiply scalars to Pauli words or add/subtract them, resulting in a :class:`~PauliSentence` instance.
     >>> 0.5 * w1 - 1.5 * w2 + 2
@@ -202,19 +202,8 @@ class PauliWord(dict):
     def __hash__(self):
         return hash(frozenset(self.items()))
 
-    def __matmul__(self, other):
-        """Multiply two Pauli words together using the matrix product if wires overlap
-        and the tensor product otherwise.
-
-        Empty Pauli words are treated as the Identity operator on all wires.
-
-        Args:
-            other (PauliWord): The Pauli word to multiply with
-
-        Returns:
-            result(PauliWord): The resulting operator of the multiplication
-            coeff(complex): The complex phase factor
-        """
+    def _matmul(self, other):
+        """Private matrix multiplication that returns (pauli_word, coeff) tuple for more lightweight processing"""
         base, iterator, swapped = (
             (self, other, False) if len(self) > len(other) else (other, self, True)
         )
@@ -234,6 +223,21 @@ class PauliWord(dict):
 
         return PauliWord(result), coeff
 
+    def __matmul__(self, other):
+        """Multiply two Pauli words together using the matrix product if wires overlap
+        and the tensor product otherwise.
+
+        Empty Pauli words are treated as the Identity operator on all wires.
+
+        Args:
+            other (PauliWord): The Pauli word to multiply with
+
+        Returns:
+            PauliSentence: coeff * new_word
+        """
+        new_word, coeff = self._matmul(other)
+        return PauliSentence({new_word: coeff})
+
     def __mul__(self, other):
         """Multiply a PauliWord by a scalar
 
@@ -246,10 +250,13 @@ class PauliWord(dict):
         if isinstance(other, PauliWord):
             # this is legacy support and will be removed after a deprecation cycle
             warnings.warn(
-                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences"
+                "is deprecated, use @ instead. Note also that moving forward the product between two"
+                "PauliWords will return a PauliSentence({new_word: ceoff}) instead of a tuple (coeff, new_word)."
+                "The latter can still be achieved via pw1._matmul(pw2) for lightweight processing",
                 qml.PennyLaneDeprecationWarning,
             )
-            return self @ other
+            return self._matmul(other)
 
         if isinstance(other, TensorLike):
             if not qml.math.ndim(other) == 0:
@@ -581,7 +588,7 @@ class PauliSentence(dict):
 
         for pw1 in self:
             for pw2 in other:
-                prod_pw, coeff = pw1 @ pw2
+                prod_pw, coeff = pw1._matmul(pw2)
                 final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps

@@ -1372,7 +1372,7 @@ class TestQubitReuseAndReset:
             qml.Hadamard(0),
             qml.CNOT([0, 2]),
             qml.CNOT([2, 0]),
-            qml.ops.Controlled(qml.RX(0.123, 1), 2),
+            qml.CRX(0.123, wires=[2, 1]),
             qml.expval(qml.PauliZ(1)),
         ]
 

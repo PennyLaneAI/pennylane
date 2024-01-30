@@ -19,8 +19,6 @@ import itertools
 from copy import copy
 from typing import List
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
@@ -330,7 +328,7 @@ class Sum(CompositeOp):
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return np.min(wires), len(wires), str(op)
+            return sorted(list(map(str, wires)))[0], len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 
