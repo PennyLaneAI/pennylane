@@ -14,8 +14,10 @@
 """
 Tests for the controlled decompositions.
 """
-import pytest
+
 import itertools
+
+import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.ops import ctrl_decomp_zyz

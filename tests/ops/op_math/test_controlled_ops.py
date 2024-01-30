@@ -15,8 +15,6 @@
 Unit tests for Operators inheriting from ControlledOp.
 """
 
-import functools
-
 import numpy as np
 import pytest
 from scipy.linalg import fractional_matrix_power

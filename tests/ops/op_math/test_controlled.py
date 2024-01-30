@@ -50,6 +50,7 @@ from pennylane.wires import Wires
 # pylint: disable=protected-access
 # pylint: disable=pointless-statement
 # pylint: disable=expression-not-assigned
+# pylint: disable=too-many-arguments
 
 
 def equal_list(lhs, rhs):
@@ -70,7 +71,7 @@ class TempOperation(Operation):
 
 class OpWithDecomposition(Operation):
     @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters):
+    def compute_decomposition(*params, wires=None, **_):
         return [
             qml.Hadamard(wires=wires[0]),
             qml.S(wires=wires[1]),
@@ -1155,11 +1156,11 @@ class TestDecomposition:
             assert qml.equal(decomp[4], qml.PauliX(2))
 
     @pytest.mark.parametrize(
-        "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
+        "base_cls, params, base_wires, ctrl_wires, _, expected",
         custom_ctrl_op_decomps,
     )
     def test_control_on_zero_custom_ops(
-        self, base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected
+        self, base_cls, params, base_wires, ctrl_wires, _, expected
     ):
         """Tests that custom ops are not converted when wires are control-on-zero."""
 
