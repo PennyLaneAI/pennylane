@@ -19,7 +19,6 @@ Tests for the QubitUnitary decomposition transforms.
 from functools import reduce
 import pytest
 from gate_data import I, Z, S, T, H, X, Y, CNOT, SWAP
-from tests.transforms.test_optimization.utils import check_matrix_equivalence
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -32,6 +31,16 @@ from pennylane.ops.op_math.decompositions.two_qubit_unitary import (
     _su2su2_to_tensor_products,
     _compute_num_cnots,
 )
+
+
+def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
+    """Takes two matrices and checks if multiplying one by the conjugate
+    transpose of the other gives the identity."""
+
+    mat_product = qml.math.dot(qml.math.conj(qml.math.T(matrix_obtained)), matrix_expected)
+    mat_product = mat_product / mat_product[0, 0]
+
+    return qml.math.allclose(mat_product, qml.math.eye(matrix_expected.shape[0]), atol=atol)
 
 
 def _run_assertions(U, expected_gates, expected_params, obtained_gates):
@@ -1221,25 +1230,3 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         jitted_matrix = jax.jit(wrapped_decomposition)(U)
 
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
-
-
-class TestTransformsDeprecations:
-    def test_one_qubit_decomposition_deprecation(self):
-        """Test the deprecation of one qubit decomposition from the transforms module."""
-        U = np.array(
-            [
-                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
-                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
-            ]
-        )
-
-        with pytest.warns(qml.PennyLaneDeprecationWarning):
-            qml.transforms.one_qubit_decomposition(U, 0, "ZYZ")
-
-    @pytest.mark.parametrize("U", samples_3_cnots)
-    def test_two_qubit_decomposition_deprecation(self, U):
-        """Test the deprecation of two qubit decomposition from the transforms module."""
-        U = _convert_to_su4(np.array(U))
-
-        with pytest.warns(qml.PennyLaneDeprecationWarning):
-            qml.transforms.two_qubit_decomposition(U, wires=[0, 1])

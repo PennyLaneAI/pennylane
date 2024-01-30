@@ -20,7 +20,7 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 from pennylane.measurements import Shots
 
 jax = pytest.importorskip("jax")
@@ -202,10 +202,6 @@ class TestJaxExecuteIntegration:
 
     def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
-        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
-            "device_vjp", False
-        ):
-            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
 
         a = jnp.array(0.1)
         b = jnp.array(0.2)
@@ -287,11 +283,6 @@ class TestJaxExecuteIntegration:
     # pylint: disable=too-many-statements
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
         """Test that tapes wit different can be executed and differentiated."""
-
-        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
-            "device_vjp", False
-        ):
-            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -387,14 +378,6 @@ class TestJaxExecuteIntegration:
             return jnp.hstack(execute([new_tape], device, **execute_kwargs)[0])
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
-        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
-            "device_vjp", False
-        ):
-            with pytest.raises(
-                NotImplementedError, match=r"adjoint_vjp does not yet support JAX Jacobians"
-            ):
-                jac = jac_fn(a, b)
-            return
         jac = jac_fn(a, b)
 
         a = jnp.array(0.54)
@@ -564,10 +547,6 @@ class TestJaxExecuteIntegration:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
-        if execute_kwargs.get("device_vjp", False):
-            with pytest.raises(NotImplementedError):
-                jac_fn(x, y)
-            return
         res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2, 4) if shots.has_partitioned_shots else (4,)
@@ -625,10 +604,6 @@ class TestJaxExecuteIntegration:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
-        if execute_kwargs.get("device_vjp", False):
-            with pytest.raises(NotImplementedError):
-                jac_fn(x, y)
-            return
         res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3 * shots.num_copies,) if shots.has_partitioned_shots else (3,)
@@ -796,8 +771,6 @@ class TestHamiltonianWorkflows:
 
         if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
-        if execute_kwargs["gradient_fn"] == "adjoint" and execute_kwargs.get("device_vjp", False):
-            pytest.xfail("adjoint vjp does not yet support jax jacobians.")
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
         coeffs2 = jnp.array([0.7])

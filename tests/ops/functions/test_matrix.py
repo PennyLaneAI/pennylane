@@ -16,6 +16,7 @@ Unit tests for the get_unitary_matrix transform
 """
 # pylint: disable=too-few-public-methods,too-many-function-args
 from functools import reduce, partial
+from warnings import catch_warnings
 
 import pytest
 
@@ -24,6 +25,7 @@ from gate_data import I, X, Y, Z, H, S, CNOT, Rotx as RX, Roty as RY
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.pauli import PauliWord, PauliSentence
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -394,6 +396,62 @@ class TestCustomWireOrdering:
         expected_matrix = np.kron(RY(x), np.kron(X, Z))
         assert np.allclose(testcircuit2(x), expected_matrix)
 
+    @pytest.mark.parametrize("wire_order", [[0, 2, 1], [1, 0, 2], [2, 1, 0]])
+    def test_pauli_word_wireorder(self, wire_order):
+        """Test changing the wire order when using PauliWord"""
+        pw = PauliWord({0: "X", 1: "Y", 2: "Z"})
+        op = qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2)
+        assert qml.math.allclose(qml.matrix(pw, wire_order), qml.matrix(op, wire_order))
+
+    @pytest.mark.parametrize("wire_order", [[0, 2, 1], [1, 0, 2], [2, 1, 0]])
+    def test_pauli_sentence_wireorder(self, wire_order):
+        """Test changing the wire order when using PauliWord"""
+        pauli1 = PauliWord({0: "X", 1: "Y", 2: "Z"})
+        pauli2 = PauliWord({0: "Y", 1: "Z", 2: "X"})
+        ps = PauliSentence({pauli1: 1.5, pauli2: 0.5})
+
+        op1 = qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2)
+        op2 = qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(2)
+        op = 1.5 * op1 + 0.5 * op2
+        assert qml.math.allclose(qml.matrix(ps, wire_order), qml.matrix(op, wire_order))
+
+
+pw1 = PauliWord({0: "X", 1: "Z"})
+pw2 = PauliWord({0: "Y", 1: "Z"})
+pw3 = PauliWord({"a": "Y", "b": "Z"})
+op_pairs = (
+    (pw1, qml.prod(qml.PauliX(0), qml.PauliZ(1))),
+    (pw2, qml.prod(qml.PauliY(0), qml.PauliZ(1))),
+    # (pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))), # uncomment after fix 5041
+)
+
+
+class TestPauliWordPauliSentence:
+    @pytest.mark.parametrize("pw, op", op_pairs)
+    def test_PauliWord_matrix(self, pw, op):
+        """Test that a PauliWord is correctly transformed using qml.matrix"""
+        res = qml.matrix(pw)
+        true_res = qml.matrix(op)
+        assert qml.math.allclose(res, true_res)
+
+    @pytest.mark.parametrize("pw, op", op_pairs)
+    def test_PauliSentence_matrix(self, pw, op):
+        """Test that a PauliWord is correctly transformed using qml.matrix"""
+        res = qml.matrix(PauliSentence({pw: 0.5}))
+        true_res = qml.matrix(qml.s_prod(0.5, op))
+        assert qml.math.allclose(res, true_res)
+
+    @pytest.mark.xfail
+    def test_PauliSentence_matrix_xfail(self, pw, op):
+        """Test that a PauliWord is correctly transformed using qml.matrix"""
+        # needs fix https://github.com/PennyLaneAI/pennylane/pull/5041
+        # once fixed, uncomment the last line in op_pairs above, i.e. add
+        # (pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))),
+        pw, op = pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))
+        res = qml.matrix(PauliSentence({pw: 0.5}))
+        true_res = qml.matrix(qml.s_prod(0.5, op))
+        assert qml.math.allclose(res, true_res)
+
 
 class TestTemplates:
     """These tests are useful as they test operators that might not have
@@ -735,6 +793,64 @@ class TestMeasurements:
         """Test that the matrix of a script with only observables is Identity."""
         qscript = qml.tape.QuantumScript(measurements=measurements)
         assert np.array_equal(qml.matrix(qscript), np.eye(N))
+
+
+class TestWireOrderDeprecation:
+    """Test that wire_order=None is deprecated for the qml.matrix transform."""
+
+    def test_warning_pauli_word(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a PauliWord"""
+        pw = PauliWord({0: "X", 1: "X"})
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(pw)
+
+    def test_warning_pauli_sentence(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a PauliSentence"""
+        ps = PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0})
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(ps)
+
+    def test_warning_tape(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a tape."""
+        qs = qml.tape.QuantumScript([qml.PauliX(1), qml.PauliX(0)])
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(qs)
+
+    def test_warning_qnode(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a QNode."""
+
+        @qml.qnode(qml.device("default.qubit"))  # devices does not provide wire_order
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(circuit)
+
+    def test_warning_qfunc(self):
+        """Test that a warning is raised when calling qml.matrix without wire_order on a qfunc."""
+
+        def circuit():
+            qml.PauliX(0)
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+            _ = qml.matrix(circuit)
+
+    def test_no_warning_cases(self):
+        """Test that a warning is not raised when calling qml.matrix on an operator, a
+        single-wire tape, or a QNode with a device that provides wires."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))  # device provides wire_order
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        with catch_warnings(record=True) as record:
+            qml.matrix(qml.PauliX(0))
+            qml.matrix(qml.tape.QuantumScript([qml.PauliX(1)]))
+            qml.matrix(circuit)
+
+        assert len(record) == 0
 
 
 @pytest.mark.jax

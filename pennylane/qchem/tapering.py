@@ -299,7 +299,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
         ts_ps += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
 
     wireset = ps_u.wires + ps_h.wires
-    wiremap = dict(zip(wireset, range(len(wireset) + 1)))
+    wiremap = dict(zip(list(wireset.toset()), range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulixops]
 
     o = []
@@ -435,7 +435,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
     perm = []
     for tau in generators:
-        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires])
+        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires.toset()])
         coeff = -1 if np.logical_xor.reduce(np.logical_and(symmstr, hf_str)) else 1
         perm.append(coeff)
 

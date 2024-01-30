@@ -31,13 +31,12 @@ from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
-
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_tape_batching,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
+    choose_trainable_params,
+    find_and_validate_gradient_methods,
     _no_trainable_grad,
 )
 
@@ -221,7 +220,8 @@ def finite_diff(
         tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         h (float): finite difference method step size
         approx_order (int): The approximation order of the finite-difference method to use.
         n (int): compute the :math:`n`-th derivative
@@ -286,9 +286,10 @@ def finite_diff(
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
-        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
-        of the QNode decorator, and differentiating with your preferred machine learning framework.
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
+        objects. However, for performance reasons, we recommend providing the gradient transform
+        as the ``diff_method`` argument of the QNode decorator, and differentiating with your
+        preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
@@ -323,8 +324,19 @@ def finite_diff(
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
 
-        The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
+        Note that ``argnum`` refers to the index of a parameter within the list of trainable
+        parameters. For example, if we have:
+
+        >>> tape = qml.tape.QuantumScript(
+        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
+        ...     [qml.expval(qml.PauliZ(0))],
+        ...     trainable_params = [1, 2]
+        ... )
+        >>> qml.gradients.finite_diff(tape, argnum=1)
+
+        The code above will differentiate the third parameter rather than the second.
+
+        The output tapes can then be evaluated and post-processed to retrieve the gradient:
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
@@ -369,14 +381,14 @@ def finite_diff(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    if validate_params:
-        diff_methods = gradient_analysis_and_validation(
-            tape, "numeric", grad_fn=finite_diff, overwrite=False
-        )
-    else:
-        diff_methods = ["F" for i in tape.trainable_params]
+    trainable_params = choose_trainable_params(tape, argnum)
+    diff_methods = (
+        find_and_validate_gradient_methods(tape, "numeric", trainable_params)
+        if validate_params
+        else {idx: "F" for idx in trainable_params}
+    )
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
     gradient_tapes = []
@@ -399,10 +411,8 @@ def finite_diff(
         shifts = shifts[1:]
         coeffs = coeffs[1:]
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
     for i, _ in enumerate(tape.trainable_params):
-        if i not in method_map or method_map[i] == "0":
+        if i not in diff_methods or diff_methods[i] == "0":
             # parameter has zero gradient
             shapes.append(0)
             continue
