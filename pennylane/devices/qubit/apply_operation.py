@@ -73,7 +73,10 @@ def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, d
     slices = [slice(None)] * state.ndim
     slices[axis] = int(not sample)
     state[tuple(slices)] = 0.0
-    state = state / np.linalg.norm(state)
+    state_norm = np.linalg.norm(state)
+    if state_norm < 1.0e-15:
+        return np.zeros_like(state), 0
+    state = state / state_norm
     if op.reset and sample == 1:
         state = apply_operation(
             qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
