@@ -23,9 +23,9 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
+from pennylane.wires import Wires
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
-from pennylane.wires import Wires
 
 no_mat_ops = (
     qml.Barrier,
@@ -800,11 +800,13 @@ class TestSortWires:
         op_list = [
             qml.X(3),
             qml.Z(2),
+            qml.Y("a"),
             qml.RX(1, 5),
             qml.Y(0),
             qml.Y(1),
-            qml.Z(3),
+            qml.Z("c"),
             qml.X(5),
+            qml.Z("ba"),
         ]
         sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
         final_list = [
@@ -812,9 +814,11 @@ class TestSortWires:
             qml.Y(1),
             qml.Z(2),
             qml.X(3),
-            qml.Z(3),
             qml.RX(1, 5),
             qml.X(5),
+            qml.Y("a"),
+            qml.Z("ba"),
+            qml.Z("c"),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
@@ -827,23 +831,29 @@ class TestSortWires:
             qml.X(5),
             qml.Toffoli([2, 3, 4]),
             qml.CNOT([2, 5]),
+            qml.Z("ba"),
             qml.RX(1, 5),
             qml.Y(0),
             qml.CRX(1, [0, 2]),
             qml.Z(3),
+            qml.Toffoli([1, "c", "ab"]),
             qml.CRY(1, [1, 2]),
+            qml.X("d"),
         )
         sorted_list = Sum._sort(op_tuple)  # pylint: disable=protected-access
         final_list = [
             qml.Y(0),
             qml.CRX(1, [0, 2]),
             qml.CRY(1, [1, 2]),
+            qml.Toffoli([1, "c", "ab"]),
             qml.CNOT([2, 5]),
             qml.Toffoli([2, 3, 4]),
             qml.X(3),
             qml.Z(3),
             qml.RX(1, 5),
             qml.X(5),
+            qml.Z("ba"),
+            qml.X("d"),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
