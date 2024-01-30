@@ -227,6 +227,9 @@
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
+* Documentation `qml.data` has been updated and now mentions a way to access the same dataset simultaneously from multiple environments.
+  [(#5029)](https://github.com/PennyLaneAI/pennylane/pull/5029)
+
 * Clarification for the definition of `argnum` added to gradient methods
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
@@ -289,6 +292,7 @@ Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
+Diego Guala,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
