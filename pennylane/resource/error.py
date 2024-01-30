@@ -63,7 +63,7 @@ class ErrorOperation(Operation):
         the error of the operation.
     """
 
-    @abstractmethod
+    @property
     def error(self) -> AlgorithmicError:
         """Computes the error of the operation.
 
