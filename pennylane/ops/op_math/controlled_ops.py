@@ -350,7 +350,8 @@ class CZ(ControlledOp):
 
 
 class MultiControlledX(ControlledOp):
-    r"""A Pauli X gate controlled on an arbitrary computational basis state.
+    r"""MultiControlledX(control_wires, wires, control_values)
+    Apply a Pauli X gate controlled on an arbitrary computational basis state.
 
     **Details:**
 
@@ -359,23 +360,28 @@ class MultiControlledX(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        control_wires (Union[Wires, Sequence[int], int]): Deprecated way to indicate the control
-            wires. Users should use "wires" to indicate both the control wires and the target wire.
-        wires (Union[Wires, Sequence[int], int]): control wire(s) followed by a single target wire
-            where the operation acts on.
+        control_wires (Union[Wires, Sequence[int], or int]): Deprecated way to indicate the control wires.
+            Now users should use "wires" to indicate both the control wires and the target wire.
+        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
+            the operation acts on
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
-            should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+                should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of Toffoli gates
 
+
     .. note::
+
         If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
         the operation into :class:`~.Toffoli` and/or :class:`~.CNOT` gates. When controlling on
         three or more wires, the Toffoli-based decompositions described in Lemmas 7.2 and 7.3 of
         `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ will be used. These methods
         require at least one work wire.
-        The number of work wires determines the decomposition method used and the resulting number
-        of Toffoli gates required. When ``MultiControlledX`` is controlling on :math:`n` wires:
+
+        The number of work wires provided determines the decomposition method used and the resulting
+        number of Toffoli gates required. When ``MultiControlledX`` is controlling on :math:`n`
+        wires:
+
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
            applied using the first :math:`n - 2` work wires.
         #. If fewer than :math:`n - 2` work wires are provided, a combination of Lemmas 7.3 and 7.2
@@ -454,6 +460,7 @@ class MultiControlledX(ControlledOp):
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
         .. seealso:: :meth:`~.MultiControlledX.matrix`
 
         Args:
@@ -462,7 +469,7 @@ class MultiControlledX(ControlledOp):
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
 
         Returns:
-           tensor_like: matrix representation
+            tensor_like: matrix representation
 
         **Example**
 
@@ -510,6 +517,7 @@ class MultiControlledX(ControlledOp):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
+
         .. seealso:: :meth:`~.MultiControlledX.decomposition`.
 
         Args:
