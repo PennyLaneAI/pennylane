@@ -751,9 +751,8 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
     )
 
 
-# pylint: disable=protected-access
-def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
-    """Decompose without considering control values. Returns None if no decomposition."""
+def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
+    """Custom handling for decomposing a controlled operation"""
 
     pauli_x_based_ctrl_ops, ops_with_custom_ctrl_ops = _get_special_ops()
 
@@ -765,7 +764,7 @@ def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
         # has some special case handling of its own for further decomposition
         return _decompose_pauli_x_based_no_control_values(op)
 
-    # TODO: will be removed the second part of the controlled rework
+    # TODO: will be removed in the second part of the controlled rework
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
         result = op.base._controlled(op.control_wires[0])
         # disallow decomposing to itself
@@ -773,6 +772,17 @@ def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
         if type(result) != type(op):
             return [result]
         qml.QueuingManager.remove(result)
+
+    return None
+
+
+# pylint: disable=protected-access
+def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
+    """Decompose without considering control values. Returns None if no decomposition."""
+
+    decomp = _decompose_custom_ops(op)
+    if decomp is not None:
+        return decomp
 
     if _is_single_qubit_special_unitary(op.base):
         if len(op.control_wires) >= 2 and qmlmath.get_interface(*op.data) == "numpy":
