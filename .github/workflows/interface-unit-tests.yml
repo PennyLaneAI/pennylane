@@ -97,19 +97,19 @@ jobs:
           {
             "default": 1,
             "core-tests": 5,
-            "gradients-tests": 2
+            "gradients-tests": 2,
             "jax-tests": 5,
-            "tf-tests": 3,
+            "tf-tests": 3
           }
           EOF
           else
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 5
+            "core-tests": 5,
             "jax-tests": 10,
             "tf-tests": 6,
-            "torch-tests": 2,
+            "torch-tests": 2
           }
           EOF
           fi
