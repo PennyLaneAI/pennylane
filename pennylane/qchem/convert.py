@@ -1110,7 +1110,7 @@ def _dmrg_state(wavefunction, tol=1e-15):
 
     row, col = [], []
 
-    for ii, det in enumerate(dets):
+    for det in dets:
         stra, strb = _sitevec_to_fock(det, format="dmrg")
         row.append(stra)
         col.append(strb)
