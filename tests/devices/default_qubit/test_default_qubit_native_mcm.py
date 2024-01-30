@@ -220,7 +220,7 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [None, 1000, [1000, 1001]])
+@pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.expval, qml.sample, qml.counts, qml.var])
