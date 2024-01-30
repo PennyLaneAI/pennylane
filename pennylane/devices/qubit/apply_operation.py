@@ -270,7 +270,7 @@ def apply_multicontrolledx(
     r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
     for 8 operation wires or less. Otherwise, apply a custom kernel based on
     composing transpositions, rolling of control axes and the CNOT logic above."""
-    if len(op.wires) < 9:
+    if len(op.active_wires) < 9:
         return _apply_operation_default(op, state, is_state_batched, debugger)
     ctrl_wires = [w + is_state_batched for w in op.control_wires]
     # apply x on all control wires with control value 0
@@ -287,10 +287,10 @@ def apply_multicontrolledx(
             [
                 w - is_state_batched
                 for w in range(len(orig_shape))
-                if w - is_state_batched not in op.wires
+                if w - is_state_batched not in op.active_wires
             ]
-            + [op.wires[-1]]
-            + op.wires[:-1].tolist()
+            + [op.active_wires[-1]]
+            + op.active_wires[:-1].tolist()
         )
         + is_state_batched
     )

@@ -260,7 +260,7 @@ class TestQuantumMonteCarlo:
 
         dev = qml.device("default.qubit", wires=wires + estimation_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, expansion_strategy="device")
         def circuit():
             qmc_circuit()
             return qml.probs(estimation_wires)
