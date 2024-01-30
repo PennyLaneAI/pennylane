@@ -1476,7 +1476,7 @@ class QubitDevice(Device):
         # translate to wire labels used by device. observable is list when measuring sequence
         # of multiple MeasurementValues
         device_wires = self.map_wires(observable.wires)
-        name = observable.name
+        name = None if no_observable_provided else observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples
