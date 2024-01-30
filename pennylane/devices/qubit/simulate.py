@@ -14,9 +14,7 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from collections import Counter
-from itertools import product
 from typing import Optional
-import copy
 
 from numpy.random import default_rng
 import numpy as np
@@ -512,7 +510,7 @@ def gather_non_mcm(circuit_measurement, samples):
         counts = dict(sorted(Counter(samples).items()))
         eigvals = [0, 1] if circuit_measurement.obs is None else circuit_measurement.obs.eigvals()
         for i in eigvals:
-            if i not in counts.keys():
+            if i not in counts:
                 counts.update({i: 0})
         num = sum(counts.values())
         new_measurement = np.array([counts[ev] / num for ev in eigvals])
@@ -527,7 +525,7 @@ def gather_non_mcm(circuit_measurement, samples):
     return new_measurement
 
 
-def gather_mcm(measurement, mv, samples):
+def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
     """Combines, gathers and normalizes several measurements with non-trivial measurement values.
 
     Args:
@@ -539,13 +537,17 @@ def gather_mcm(measurement, mv, samples):
         TensorLike: The combined measurement outcome
     """
     if isinstance(measurement, ProbabilityMP) and isinstance(mv, (list, tuple)):
-        probs = []
-        for m in mv:
-            meas = copy.copy(measurement)
-            meas.mv = m
-            probs.append(gather_mcm(meas, m, samples))
-        probs = tuple(np.prod(np.array(i)) for i in product(*probs))
-        return np.array(probs)
+        mcm_samples = list(np.array([m.concretize(dct) for dct in samples]) for m in reversed(mv))
+        idx = 0
+        for i, s in enumerate(mcm_samples):
+            idx += 2**i * s
+        counts = Counter(idx)
+        eigvals = range(2 ** len(mv))
+        for i in eigvals:
+            if i not in counts:
+                counts.update({i: 0})
+        num = sum(counts.values())
+        return np.array([counts[ev] / num for ev in eigvals])
     if isinstance(mv, (list, tuple)):
         return np.vstack(tuple(gather_mcm(measurement, m, samples) for m in mv)).T
     if not isinstance(measurement, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
@@ -561,7 +563,7 @@ def gather_mcm(measurement, mv, samples):
         counts = dict(sorted(Counter(mcm_samples).items()))
         eigvals = [0, 1]
         for i in eigvals:
-            if i not in counts.keys():
+            if i not in counts:
                 counts.update({i: 0})
         num = sum(counts.values())
         new_measurement = np.array([counts[ev] / num for ev in eigvals])

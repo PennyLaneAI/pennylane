@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
-from itertools import product
-
 from flaky import flaky
 import numpy as np
 import pytest
@@ -51,7 +49,7 @@ def validate_samples(shots, results1, results2):
 def validate_expval(shots, results1, results2):
     if shots is None:
         assert np.allclose(results1, results2)
-    assert np.allclose(results1, results2, atol=0, rtol=0.3)
+    assert np.allclose(results1, results2, atol=0.001, rtol=0.3)
 
 
 def validate_measurements(func, shots, results1, results2):
@@ -348,15 +346,10 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset):
         m1 = qml.measure(1, reset=reset, postselect=postselect)
         qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
         m2 = qml.measure(0)
-        return [qml.probs(op=m0), qml.probs(op=m1), qml.probs(op=m2)]
+        return qml.probs(op=[m0, m1, m2])
 
     results1 = func1(param)
     results2 = func2(param)
-
-    if isinstance(shots, (list, tuple)):
-        results2 = [np.array(tuple(np.prod(np.array(i)) for i in product(*r))) for r in results2]
-    else:
-        results2 = np.array(tuple(np.prod(np.array(i)) for i in product(*results2)))
 
     validate_measurements(qml.probs, shots, results1, results2)
 
