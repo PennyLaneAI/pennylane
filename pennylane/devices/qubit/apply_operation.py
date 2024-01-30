@@ -274,9 +274,7 @@ def apply_multicontrolledx(
         return _apply_operation_default(op, state, is_state_batched, debugger)
     ctrl_wires = [w + is_state_batched for w in op.control_wires]
     # apply x on all control wires with control value 0
-    roll_axes = [
-        w for val, w in zip(op.hyperparameters["control_values"], ctrl_wires) if val == "0"
-    ]
+    roll_axes = [w for val, w in zip(op.control_values, ctrl_wires) if val is False]
     for ax in roll_axes:
         state = math.roll(state, 1, ax)
 
@@ -297,7 +295,7 @@ def apply_multicontrolledx(
     state = math.transpose(state, transpose_axes)
 
     # Reshape the state into 3-dimensional array with axes [batch+other, target, controls]
-    state = math.reshape(state, (-1, 2, 2 ** (len(op.wires) - 1)))
+    state = math.reshape(state, (-1, 2, 2 ** (len(op.active_wires) - 1)))
 
     # The part of the state to which we want to apply PauliX is now in the last entry along the
     # third axis. Extract it, apply the PauliX along the target axis (1), and append a dummy axis
