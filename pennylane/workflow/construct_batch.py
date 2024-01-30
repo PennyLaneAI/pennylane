@@ -169,9 +169,9 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         Callable:  a function with the same call signature as the initial quantum function. This function returns
             a batch (tuple) of tapes and postprocessing function.
 
-    ..seealso:: :func:`pennylane.workflow.transform_program` to inspect the contents of the transform program for a specified level.
+    .. seealso:: :func:`pennylane.workflow.transform_program` to inspect the contents of the transform program for a specified level.
 
-    Suppose we have a device with several user transforms.
+    Suppose we have a QNode with several user transforms.
 
     .. code-block:: python
 
@@ -259,10 +259,7 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         else:
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qnode.func(*args, **kwargs)
-
-        initial_tape = qml.tape.QuantumScript.from_queue(q, shots)
+        initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
         return program((initial_tape,))
 
     return batch_constructor
