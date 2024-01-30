@@ -41,12 +41,10 @@ hermitian_ops = [
 
 pauli_ops = [
     op_cls(wires)
-    for op_cls, wires in itertools.product(
-        [qml.PauliX, qml.PauliY, qml.PauliZ], [0, 1, "q", None, [1]]
-    )
+    for op_cls, wires in itertools.product([qml.PauliX, qml.PauliY, qml.PauliZ], [0, 1, "q", [1]])
 ]
 
-identity = [qml.Identity(wires) for wires in [0, 1, "q", None, [1, "a"]]]
+identity = [qml.Identity(wires) for wires in [0, 1, "q", [1, "a"]]]
 
 hamiltonians = [
     qml.Hamiltonian(*args)
@@ -113,7 +111,7 @@ class TestDatasetOperator:
         [
             qml.RX(1.1, 0),
             qml.FermionicSWAP(1.3, [1, "a"]),
-            qml.Toffoli([1, "a", None]),
+            qml.Toffoli([1, "a", 2]),
             qml.Hamiltonian([], []),
         ],
     )
@@ -148,7 +146,7 @@ class TestDatasetOperator:
         [
             qml.RX(1.1, 0),
             qml.FermionicSWAP(1.3, [1, "a"]),
-            qml.Toffoli([1, "a", None]),
+            qml.Toffoli([1, "a", 2]),
             qml.Hamiltonian([], []),
         ],
     )
