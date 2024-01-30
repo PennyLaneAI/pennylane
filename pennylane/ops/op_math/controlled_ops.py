@@ -356,10 +356,10 @@ def _check_and_convert_control_values(control_values, control_wires):
         if not set(control_values).issubset({"1", "0"}):
             raise ValueError("String of control values can contain only '0' or '1'.")
 
-        return [bool(int(x)) for x in control_values]
+        control_values = [int(x) for x in control_values]
 
     if control_values is None:
-        return [True] * len(control_wires)
+        return [1] * len(control_wires)
 
     if len(control_values) != len(control_wires):
         raise ValueError("Length of control values must equal number of control wires.")
@@ -500,13 +500,6 @@ class MultiControlledX(ControlledOp):
         """
 
         control_values = _check_and_convert_control_values(control_values, control_wires)
-
-        control_values = (
-            [int(x) for x in control_values]
-            if control_values is not None
-            else [1] * len(control_wires)
-        )
-
         padding_left = sum(2**i * int(val) for i, val in enumerate(reversed(control_values))) * 2
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
         return block_diag(np.eye(padding_left), qml.PauliX.compute_matrix(), np.eye(padding_right))
