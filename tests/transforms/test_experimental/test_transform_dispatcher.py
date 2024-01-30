@@ -637,10 +637,10 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 def test_expand_fn_transform():
     """Tests the expand_fn_transform."""
 
-    def my_expand_fn(tape):
+    def my_expand_fn(tape, op1, op2=qml.S(0), op3=qml.S(0)):
         """my docstring."""
         return qml.tape.QuantumScript(
-            tape.operations + [qml.PauliX(0)], tape.measurements, tape.shots
+            tape.operations + [op1, op2, op3], tape.measurements, tape.shots
         )
 
     t = qml.transforms.core.expand_fn_transform(my_expand_fn)
@@ -648,10 +648,10 @@ def test_expand_fn_transform():
     assert isinstance(t, TransformDispatcher)
     tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=50)
 
-    batch, fn = t(tape)
+    batch, fn = t(tape, qml.PauliX(0), op3=qml.T(0))
     assert len(batch) == 1
     expected = qml.tape.QuantumScript(
-        [qml.S(0), qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=50
+        [qml.S(0), qml.PauliX(0), qml.S(0), qml.T(0)], [qml.expval(qml.PauliZ(0))], shots=50
     )
     assert qml.equal(batch[0], expected)
     assert fn(("a",)) == "a"

@@ -77,9 +77,9 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
     By default, we get the full transform program. This can be manaully specified by ``level=None``.
 
     >>> qml.workflow.get_transform_program(circuit)
-    TransformProgram(compile, _expand_metric_tensor, _expand_transform_param_shift,
-    validate_device_wires, defer_measurements, decompose, validate_measurements,
-    validate_observables, metric_tensor)
+    TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor,
+    _expand_transform_param_shift, validate_device_wires, defer_measurements,
+    decompose, validate_measurements, validate_observables, metric_tensor)
 
     The ``"user"`` transforms are the ones manually applied to the qnode, :class:`~.cancel_inverses` and
     :class:`~.merge_rotations`.
@@ -178,7 +178,7 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         @qml.transforms.undo_swaps
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(qml.device('default.qubit'), diff_method="parameter-shift", shifts=np.pi / 4)
         def circuit(x):
             qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
             qml.RX(x, wires=0)
