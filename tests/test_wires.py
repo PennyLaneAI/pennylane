@@ -55,6 +55,12 @@ class TestWires:
         wires = Wires(Wires([0, 1, 2]))
         assert wires.labels == (0, 1, 2)
 
+    def test_creation_from_none(self):
+        """Tests that a Wires object can be created from a None object."""
+
+        wires = Wires(None)
+        assert wires.labels == ()
+
     def test_creation_from_wires_lists(self):
         """Tests that a Wires object can be created from a list of Wires."""
 

@@ -382,7 +382,7 @@ class IntegerComparator(Operation):
                 f"{len(wires)} wire(s) given. Need at least 2."
             )
 
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+        work_wires = Wires(work_wires)
         total_wires = control_wires + wires
 
         if Wires.shared_wires([total_wires, work_wires]):

@@ -1071,7 +1071,7 @@ class Operator(abc.ABC):
                 f"{len(params)} parameters passed, {self.num_params} expected."
             )
 
-        self._wires = wires if isinstance(wires, Wires) else Wires(wires)
+        self._wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
         if self.num_wires in {AllWires, AnyWires}:

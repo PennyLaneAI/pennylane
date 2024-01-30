@@ -47,6 +47,9 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
+    if wires is None:
+        return ()
+
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
@@ -431,9 +434,7 @@ class Wires(Sequence):
         >>> Wires.all_wires(list_of_wires)
         <Wires = [4, 0, 1, 3, 5]>
         """
-        converted_wires = (
-            wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
-        )
+        converted_wires = (Wires(wires) for wires in list_of_wires)
         all_wires_list = itertools.chain(*(w.labels for w in converted_wires))
         combined = list(dict.fromkeys(all_wires_list))
 

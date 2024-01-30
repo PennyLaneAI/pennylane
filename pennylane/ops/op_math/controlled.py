@@ -308,7 +308,7 @@ class Controlled(SymbolicOp):
     # pylint: disable=too-many-function-args
     def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
         control_wires = Wires(control_wires)
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+        work_wires = Wires(work_wires)
 
         if control_values is None:
             control_values = [True] * len(control_wires)

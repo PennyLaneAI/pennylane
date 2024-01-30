@@ -584,7 +584,7 @@ class PCPhase(Operation):
         return tuple(self.data), (self.wires, hyperparameter)
 
     def __init__(self, phi, dim, wires, id=None):
-        wires = wires if isinstance(wires, Wires) else Wires(wires)
+        wires = Wires(wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
             raise ValueError(
