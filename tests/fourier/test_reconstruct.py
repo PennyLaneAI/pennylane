@@ -194,6 +194,8 @@ class TestReconstructEqu:
         functions are differentiable for JAX input variables."""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         # Convert fun to have integer frequencies
         _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency, interface="jax")
