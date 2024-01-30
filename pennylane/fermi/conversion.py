@@ -162,7 +162,7 @@ def parity_transform(
 
     In parity mapping, qubit :math:`j` stores the parity of all :math:`j-1` qubits before it.
     In comparison, :func:`~.jordan_wigner` simply uses qubit :math:`j` to store the occupation number.
-    The fermionic creation and annihilation operators are mapped to the Pauli operators as
+    In parity mapping, the fermionic creation and annihilation operators are mapped to the Pauli operators as
 
     .. math::
         \begin{align*}
