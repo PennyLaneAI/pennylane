@@ -351,10 +351,13 @@ class CZ(ControlledOp):
 
 class MultiControlledX(ControlledOp):
     r"""A Pauli X gate controlled on an arbitrary computational basis state.
+
     **Details:**
+
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 0
     * Gradient recipe: None
+
     Args:
         control_wires (Union[Wires, Sequence[int], int]): Deprecated way to indicate the control
             wires. Users should use "wires" to indicate both the control wires and the target wire.
@@ -364,6 +367,7 @@ class MultiControlledX(ControlledOp):
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of Toffoli gates
+
     .. note::
         If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
         the operation into :class:`~.Toffoli` and/or :class:`~.CNOT` gates. When controlling on
@@ -376,10 +380,13 @@ class MultiControlledX(ControlledOp):
            applied using the first :math:`n - 2` work wires.
         #. If fewer than :math:`n - 2` work wires are provided, a combination of Lemmas 7.3 and 7.2
            will be applied using only the first work wire.
+
         These methods present a tradeoff between qubit number and depth. The method in point 1
         requires fewer Toffoli gates but a greater number of qubits.
+
         Note that the state of the work wires before and after the decomposition takes place is
         unchanged.
+
     """
     num_wires = AnyWires
     """int: Number of wires the operation acts on."""
