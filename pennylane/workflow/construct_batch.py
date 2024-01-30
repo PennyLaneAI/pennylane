@@ -36,20 +36,20 @@ def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformP
     return program
 
 
-def transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.TransformProgram":
+def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.TransformProgram":
     """Extract a transform program at a designated level.
 
     Args:
         qnode (QNode): the qnode to get the transform program for.
-        level (None, str, int, slice): And indication
+        level (None, str, int, slice): And indication of what transforms to use from the full program.
 
             * ``None``: use the full transform program
-            * ``str``: Acceptable keys are ``"user"``, ``"device"``, and ``"gradient"``
+            * ``str``: Acceptable keys are ``"user"``, ``"device"``, ``"top"`` and ``"gradient"``
             * ``int``: How many transforms to include, starting from the front of the program
             * ``slice``: a slice to select out components of the transform program.
 
     Returns:
-        TransformProrgram: the transform program corresponding to t
+        TransformProrgram: the transform program corresponding to the requested level.
 
 
     The transforms are organized as:
@@ -76,7 +76,7 @@ def transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Transf
 
     By default, we get the full transform program. This can be manaully specified by ``level=None``.
 
-    >>> qml.workflow.transform_program(circuit)
+    >>> qml.workflow.get_transform_program(circuit)
     TransformProgram(compile, _expand_metric_tensor, _expand_transform_param_shift,
     validate_device_wires, defer_measurements, decompose, validate_measurements,
     validate_observables, metric_tensor)
@@ -84,43 +84,43 @@ def transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Transf
     The ``"user"`` transforms are the ones manually applied to the qnode, :class:`~.cancel_inverses` and
     :class:`~.merge_rotations`.
 
-    >>> qml.workflow.transform_program(circuit, level="user")
+    >>> qml.workflow.get_transform_program(circuit, level="user")
     TransformProgram(cancel_inverses, merge_rotations)
 
     The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.  This expands all trainable
     operations to a state where the parameter shift transform can operate on them. For example, it will decompose
     any parametrized templates into operators that have generators.
 
-    >>> qml.workflow.transform_program(circuit, level="gradient")
+    >>> qml.workflow.get_transform_program(circuit, level="gradient")
     TransformProgram(cancel_inverses, merge_rotations, _expand_transform_param_shift)
 
     ``"device"`` includes all transforms except for a ``"final"`` transform, if it exists.  This usually
     corresponds to the circuits that will be sent to the device to execute.
 
-    >>> qml.workflow.transform_program(circuit, level="device")
+    >>> qml.workflow.get_transform_program(circuit, level="device")
     TransformProgram(cancel_inverses, merge_rotations, _expand_transform_param_shift,
     validate_device_wires, defer_measurements, decompose, validate_measurements,
     validate_observables)
 
     ``"top"`` and ``0`` both return empty transform programs.
 
-    >>> qml.workflow.transform_program(circuit, level="top")
+    >>> qml.workflow.get_transform_program(circuit, level="top")
     TransformProgram()
-    >>> qml.workflow.transform_program(circuit, level=0)
+    >>> qml.workflow.get_transform_program(circuit, level=0)
     TransformProgram()
 
     The ``level`` can also be any integer, corresponding to a number of transforms in the program.
 
-    >>> qml.workflow.transform_program(circuit, level=2)
+    >>> qml.workflow.get_transform_program(circuit, level=2)
     TransformProgram(cancel_inverses, merge_rotations)
 
     ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
     transform program.  This allows you to select different starting transforms or strides.
     For example, you can skip the first transform or reverse the order:
 
-    >>> qml.workflow.transform_program(circuit, level=slice(1,3))
+    >>> qml.workflow.get_transform_program(circuit, level=slice(1,3))
     TransformProgram(merge_rotations, _expand_transform_param_shift)
-    >>> qml.workflow.transform_program(circuit, level=slice(None, None, -1))
+    >>> qml.workflow.get_transform_program(circuit, level=slice(None, None, -1))
     TransformProgram(metric_tensor, validate_observables, validate_measurements,
     decompose, defer_measurements, validate_device_wires, _expand_transform_param_shift,
     _expand_metric_tensor, merge_rotations, cancel_inverses)
@@ -158,7 +158,7 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
-        level (None, str, int, slice): And indication
+        level (None, str, int, slice): And indication of what transforms to use from the full program.
 
             * ``None``: use the full transform program
             * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
@@ -167,9 +167,9 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
 
     Returns:
         Callable:  a function with the same call signature as the initial quantum function. This function returns
-            a batch (tuple) of tapes and postprocessing function.
+        a batch (tuple) of tapes and postprocessing function.
 
-    .. seealso:: :func:`pennylane.workflow.transform_program` to inspect the contents of the transform program for a specified level.
+    .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the transform program for a specified level.
 
     Suppose we have a QNode with several user transforms.
 
@@ -250,7 +250,7 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
     + (1) [Y0])]
 
     """
-    program = transform_program(qnode, level=level)
+    program = get_transform_program(qnode, level=level)
 
     def batch_constructor(*args, **kwargs) -> Tuple[Tuple["qml.tape.QuantumTape", Callable]]:
         """Create a batch of tapes and a post processing function."""

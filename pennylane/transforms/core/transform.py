@@ -195,9 +195,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-def expand_fn_transform(
-    expand_fn: Callable[["pennylane.tape.QuantumTape"], "pennylane.tape.QuantumTape"]
-) -> "TransformDispatcher":
+def expand_fn_transform(expand_fn: Callable) -> "TransformDispatcher":
     """Construct a transform from a tape-to-tape function.
 
     Args:
@@ -215,7 +213,7 @@ def expand_fn_transform(
     """
 
     @wraps(expand_fn)
-    def wrapped_expand_fn(tape):
-        return (expand_fn(tape),), null_postprocessing
+    def wrapped_expand_fn(tape, *args, **kwargs):
+        return (expand_fn(tape, *args, **kwargs),), null_postprocessing
 
     return transform(wrapped_expand_fn)

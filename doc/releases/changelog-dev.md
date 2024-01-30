@@ -116,7 +116,7 @@
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
 
-* Adds `qml.workflow.transform_program` and `qml.workflow.construct_batch` to inspect the transform program and batch of tapes
+* Adds `qml.workflow.get_transform_program` and `qml.workflow.construct_batch` to inspect the transform program and batch of tapes
   at different stages.
   [(#5084)](https://github.com/PennyLaneAI/pennylane/pull/5084)
 
