@@ -92,6 +92,7 @@ class QubitCarry(Operation):
     >>> carry
     1
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -235,6 +236,7 @@ class QubitSum(Operation):
     >>> abc_sum
     1
     """
+
     num_wires = 3
     """int: Number of wires that the operator acts on."""
 
@@ -351,6 +353,7 @@ class IntegerComparator(Operation):
     >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
     tensor(1.+0.j, requires_grad=True)
     """
+
     is_self_inverse = True
     num_wires = AnyWires
     num_params = 0
