@@ -152,7 +152,7 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
 
 
 def parity_transform(
-    fermi_operator: (Union[FermiWord, FermiSentence]),
+    fermi_operator: Union[FermiWord, FermiSentence],
     n: int,
     ps: bool = False,
     wire_map: dict = None,
