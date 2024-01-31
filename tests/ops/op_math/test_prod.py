@@ -212,9 +212,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_NOPAULI)
     def test_terms_no_pauli_rep(self, op, coeffs_true, ops_true):
         """Test that Prod.terms() is correct for operators that dont all have a pauli_rep"""
-        coeffs, ops = op.terms()
+        coeffs, ops1 = op.terms()
         assert coeffs == coeffs_true
-        assert ops == ops_true
+        assert ops1 == ops_true
 
     PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
         (qml.prod(X(0), X(1), X(2)), [1.0], [qml.prod(X(0), X(1), X(2))]),  # trivial product
@@ -243,9 +243,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI)
     def test_terms_pauli_rep(self, op, coeffs_true, ops_true):
         """Test that Prod.terms() is correct for operators that all have a pauli_rep"""
-        coeffs, ops = op.terms()
+        coeffs, ops1 = op.terms()
         assert coeffs == coeffs_true
-        assert ops == ops_true
+        assert ops1 == ops_true
 
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
