@@ -249,9 +249,13 @@ class TransformJacobianProducts(JacobianProductCalculator):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 "TransformJacobianProduct being created with (%s, %s, %s, %s)",
-                inspect.getsource(inner_execute)
-                if (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(inner_execute))
-                else inner_execute,
+                (
+                    inspect.getsource(inner_execute)
+                    if (
+                        logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(inner_execute)
+                    )
+                    else inner_execute
+                ),
                 gradient_transform,
                 gradient_kwargs,
                 cache_full_jacobian,

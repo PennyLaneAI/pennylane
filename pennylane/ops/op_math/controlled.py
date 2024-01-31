@@ -344,9 +344,11 @@ class Controlled(SymbolicOp):
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
                 [
-                    id(d)
-                    if qml.math.is_abstract(d)
-                    else qml.math.round(qml.math.real(d) % (4 * np.pi), 10)
+                    (
+                        id(d)
+                        if qml.math.is_abstract(d)
+                        else qml.math.round(qml.math.real(d) % (4 * np.pi), 10)
+                    )
                     for d in self.base.data
                 ]
             )

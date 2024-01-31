@@ -150,6 +150,73 @@ def informative_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quan
     return [tape], fn
 
 
+class TestTransformContainer:
+    """Tests for the TransformContainer dataclass."""
+
+    def test_repr(self):
+        """Tests for the repr of a transform container."""
+        t1 = qml.transforms.core.TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        assert repr(t1) == "<compile([], {'num_passes': 2, 'expand_depth': 1})>"
+
+    def test_equality(self):
+        """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
+
+        t1 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t2 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t3 = TransformContainer(
+            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
+        )
+        t4 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 2}
+        )
+
+        t5 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
+        t6 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-7,))
+
+        # test for equality of identical transformers
+        assert t1 == t2
+
+        # test for inequality of different transformers
+        assert t1 != t3
+        assert t2 != t3
+        assert t1 != 2
+        assert t1 != t4
+        assert t5 != t6
+        assert t5 != t1
+
+        # Test equality with the same args
+        t5_copy = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
+        assert t5 == t5_copy
+
+    def test_the_transform_container_attributes(self):
+        """Test the transform container attributes."""
+        container = qml.transforms.core.TransformContainer(
+            first_valid_transform, args=[0], kwargs={}, classical_cotransform=None
+        )
+
+        q_transform, args, kwargs, cotransform, is_informative, final_transform = container
+
+        assert q_transform is first_valid_transform
+        assert args == [0]
+        assert kwargs == {}
+        assert cotransform is None
+        assert not is_informative
+        assert not final_transform
+
+        assert container.transform is first_valid_transform
+        assert container.args == [0]
+        assert not container.kwargs
+        assert container.classical_cotransform is None
+        assert not container.is_informative
+        assert not container.final_transform
+
+
 class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
@@ -194,7 +261,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(
             qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
-        assert not dispatched_transform.is_informative
+        assert dispatched_transform.is_informative is False
 
     def test_integration_dispatcher_with_informative_transform(self):
         """Test that no error is raised with the transform function and that the transform dispatcher returns
@@ -275,40 +342,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
                 qml.PauliX(wires=0)
                 qml.RZ(a, wires=1)
                 return qml.expval(qml.PauliZ(wires=0))
-
-    def test_equality(self):
-        """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
-
-        t1 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
-        t2 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
-        t3 = TransformContainer(
-            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
-        )
-        t4 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 2}
-        )
-
-        t5 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
-        t6 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-7,))
-
-        # test for equality of identical transformers
-        assert t1 == t2
-
-        # test for inequality of different transformers
-        assert t1 != t3
-        assert t2 != t3
-        assert t1 != 2
-        assert t1 != t4
-        assert t5 != t6
-        assert t5 != t1
-
-        # Test equality with the same args
-        t5_copy = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
-        assert t5 == t5_copy
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""
@@ -436,28 +469,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert dispatched_transform.transform is first_valid_transform
         assert dispatched_transform.expand_transform is None
         assert dispatched_transform.classical_cotransform is None
-
-    def test_the_transform_container_attributes(self):
-        """Test the transform container attributes."""
-        container = qml.transforms.core.TransformContainer(
-            first_valid_transform, args=[0], kwargs={}, classical_cotransform=None
-        )
-
-        q_transform, args, kwargs, cotransform, is_informative, final_transform = container
-
-        assert q_transform is first_valid_transform
-        assert args == [0]
-        assert kwargs == {}
-        assert cotransform is None
-        assert not is_informative
-        assert not final_transform
-
-        assert container.transform is first_valid_transform
-        assert container.args == [0]
-        assert not container.kwargs
-        assert container.classical_cotransform is None
-        assert not container.is_informative
-        assert not container.final_transform
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_custom_qnode_transform(self, valid_transform):
