@@ -15,12 +15,11 @@
 This module contains the tests for the clifford simulator based on stim
 """
 import os
-import sys
 import pytest
 import numpy as np
 import pennylane as qml
 
-from pennylane.devices.default_clifford import _import_stim
+from pennylane.devices.default_clifford import _pl_to_stim
 
 stim = pytest.importorskip("stim")
 
@@ -377,8 +376,7 @@ def test_prep_snap_clifford(circuit):
 )
 def test_pl_to_stim(pl_op, stim_op):
     """Test that the PennyLane operation get converted to Stim operation"""
-    dev_c = qml.device("default.clifford")
-    op, wires = dev_c._pl_to_stim(pl_op)  # pylint:disable=protected-access
+    op, wires = _pl_to_stim(pl_op)  # pylint:disable=protected-access
     assert op == stim_op[0]
     assert wires == " ".join(map(str, stim_op[1]))
 
@@ -468,14 +466,15 @@ def test_debugger():
     assert len(result) == 2
 
     assert list(debugger.snapshots.keys()) == [0, "final_state"]
-    assert qml.math.allclose(debugger.snapshots[0], qml.math.array([1, 0]))
+    assert qml.math.allclose(debugger.snapshots[0], qml.math.array([[1., 0., 0.], [0., 1., 0.]]))
     assert qml.math.allclose(
-        debugger.snapshots["final_state"], qml.math.array([1, 1]) / qml.math.sqrt(2)
+        debugger.snapshots["final_state"], qml.math.array([[0., 1., 0.], [1., 0., 0.]])
     )
 
     assert qml.math.allclose(result[0], 1.0)
     assert qml.math.allclose(result[1], 0.0)
 
+    dev = qml.device("default.clifford", tableau=False)
     @qml.qnode(dev)
     def circuit():
         for op in ops:
@@ -575,6 +574,6 @@ def test_fail_import_stim(monkeypatch):
     """Test if an ImportError is raised when stim is requested but not installed."""
 
     with monkeypatch.context() as m:
-        m.setitem(sys.modules, "stim", None)
+        m.setattr(qml.devices.default_clifford, "has_stim", False)
         with pytest.raises(ImportError, match="This feature requires stim"):
-            _import_stim()
+            qml.device("default.clifford")
