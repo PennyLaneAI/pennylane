@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit preprocessing."""
+from typing import Sequence
 
 from flaky import flaky
 import numpy as np
@@ -23,27 +24,28 @@ from pennylane.devices.qubit.simulate import accumulate_native_mcm, gather_mcm
 
 
 def validate_counts(shots, results1, results2):
-    if isinstance(results1, (list, tuple)):
+    if isinstance(results1, Sequence):
         assert len(results1) == len(results2)
         for r1, r2 in zip(results1, results2):
             validate_counts(shots, r1, r2)
         return
-    ncounts = 0.5 * (sum(results1.values()) + sum(results2.values()))
     for r1, r2 in zip(sorted(results1.items()), sorted(results2.items())):
-        assert abs(sum(r1) - sum(r2)) < (ncounts // 10)
+        key1, val1 = r1
+        key2, val2 = r2
+        assert key1 == key2
+        assert abs(val1 - val2) < (abs(val1 + val2) // 10)
 
 
 def validate_samples(shots, results1, results2):
     for res in [results1, results2]:
-        if isinstance(shots, (list, tuple)):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s,) for r, s in zip(res, shots))
-            assert all(
-                abs(sum(r1) - sum(r2)) < (s // 10) for r1, r2, s in zip(results1, results2, shots)
-            )
+        if isinstance(shots, Sequence):
+            for s, r1, r2 in zip(shots, results1, results2):
+                validate_samples(s, r1, r2)
         else:
-            assert res.shape == (shots,)
-            assert abs(sum(results1) - sum(results2)) < (shots // 10)
+            sh1, sh2 = results1.shape[0], results2.shape[0]
+            assert abs(sh1 - sh2) < (abs(sh1 + sh2) // 10)
+            assert results1.shape[1] == results2.shape[1]
+            assert abs(np.sum(results1) - np.sum(results2)) < (results2.size // 10)
 
 
 def validate_expval(shots, results1, results2):
@@ -120,7 +122,7 @@ def test_unsupported_measurement():
 @pytest.mark.parametrize("shots", [None, 1000, [1000, 1001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_f", [qml.expval, qml.probs, qml.sample, qml.counts, qml.var])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
     conditional gate. A single measurement of the mid-circuit measurement value is performed at
@@ -158,7 +160,7 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
 @pytest.mark.parametrize("shots", [None, 1000, [1000, 1001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_f", [qml.expval, qml.probs, qml.sample, qml.counts, qml.var])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
     conditional gate. A single measurement of a common observable is performed at the end."""
@@ -196,7 +198,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f):
 @pytest.mark.parametrize("shots", [1000])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_f", [qml.expval, qml.probs, qml.sample, qml.counts, qml.var])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
     and a conditional gate. Multiple measurements of the mid-circuit measurement value are
@@ -233,7 +235,7 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
 @pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_f", [qml.expval, qml.sample, qml.counts, qml.var])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.sample, qml.var])
 def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
     conditional gate. A single measurement of a composite mid-circuit measurement is performed
@@ -277,7 +279,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
 @pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_f", [qml.expval, qml.probs, qml.sample, qml.counts, qml.var])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
     conditional gate. A single measurement of a common observable is performed at the end."""
@@ -319,7 +321,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
 @pytest.mark.parametrize("shots", [10000, [10000, 10001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.counts])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample])
 def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
     conditional gate. A single measurement of a composite mid-circuit measurement is performed

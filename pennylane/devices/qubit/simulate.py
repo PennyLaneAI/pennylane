@@ -560,8 +560,8 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
         TensorLike: The combined measurement outcome
     """
     if isinstance(measurement, (CountsMP, ProbabilityMP)) and isinstance(mv, Sequence):
-        mcm_samples = list(np.array([m.concretize(dct) for dct in samples]) for m in reversed(mv))
         width = len(measurement.mv)
+        mcm_samples = list(np.array([m.concretize(dct) for dct in samples]) for m in reversed(mv))
         idx = 0
         for i, s in enumerate(mcm_samples):
             idx += 2**i * s
@@ -598,7 +598,14 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
         num = sum(counts.values())
         new_measurement = np.array([counts[ev] / num for ev in eigvals])
     elif isinstance(measurement, SampleMP):
-        new_measurement = mcm_samples
+        width = len(mv) if isinstance(mv, Sequence) else 1
+        if width > 1:
+            new_measurement = np.hstack(
+                np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1))
+                for m in reversed(mv)
+            )
+        else:
+            new_measurement = mcm_samples
     elif isinstance(measurement, VarianceMP):
         new_measurement = qml.math.var(mcm_samples)
     return new_measurement
