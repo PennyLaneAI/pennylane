@@ -494,7 +494,7 @@ class DefaultClifford(Device):
             stim_tableau = stim.Tableau.from_state_vector(
                 qml.math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
                 endian="big",
-            ).to_circuit()
+            )
             stim_circuit += stim_tableau.to_circuit()
 
         # Iterate over the gates --> manage them manually or apply them to circuit
@@ -514,14 +514,11 @@ class DefaultClifford(Device):
                             raise ValueError(
                                 f"{self.name} does not support arbitrary measurements of a state with snapshots."
                             )
-
+                        # Build a temporary simulator for obtaining state
                         snap_sim = stim.TableauSimulator()
                         snap_sim.do_circuit(stim_circuit)
-                        gb_phase = qml.GlobalPhase(
-                            qml.math.sum(gop.data[0] for gop in global_phase_ops)
-                        )
-                        state = self._measure_state(snap_sim, circuit, gb_phase)
-
+                        state = self._measure_state(meas, snap_sim, circuit=circuit)
+                        # Add to the debugger snapshot
                         debugger.snapshots[op.tag or len(debugger.snapshots)] = state
 
         tableau_simulator.do_circuit(stim_circuit)
@@ -544,7 +541,7 @@ class DefaultClifford(Device):
         meas_obs = qml.operation.convert_to_opmath(meas_op)
         meas_rep = meas_obs.pauli_rep
         # Use manual decomposition for enabling Hermitian and partial Projector support
-        if isinstance(meas_obs, qml.Hermitian) or isinstance(meas_obs, BasisStateProjector):
+        if isinstance(meas_obs, (qml.Hermitian, BasisStateProjector)):
             meas_rep = qml.pauli_decompose(meas_obs.matrix(), wire_order=meas_obs.wires, pauli=True)
 
         # A Pauli decomposition for the observable must exist
@@ -650,71 +647,49 @@ class DefaultClifford(Device):
 
     def measure_analytical(self, circuit, stim_circuit, tableau_simulator, global_phase):
         """Given a circuit, compute tableau and return the analytical measurement results."""
+        # maps measurement type to the measurement function
+        measurement_map = {
+            DensityMatrixMP: self._measure_density_matrix,
+            StateMP: self._measure_state,  # kwargs -> circuit, global_phase
+            ExpectationMP: self._measure_expectation,
+            VarianceMP: self._measure_variance,
+            VnEntropyMP: self._measure_vn_entropy,  # kwargs -> circuit
+            MutualInfoMP: self._measure_mutual_info,  # kwargs -> circuit
+            PurityMP: self._measure_purity,  # kwargs -> circuit
+            ProbabilityMP: self._measure_probability,  # kwargs -> circuit, stim_circuit
+        }
+
         results = []
         for meas in circuit.measurements:
-            # Computing density matrix via tableaus
-            if isinstance(meas, DensityMatrixMP):  # do first because it is a child of StateMP
-                res = self._measure_density_matrix(tableau_simulator, list(meas.wires))
-
-            # Computing statevector via tableaus
-            elif isinstance(meas, StateMP):
-                res = self._measure_state(tableau_simulator, circuit, global_phase)
-
-            # Computing expectation values via measurement
-            elif isinstance(meas, ExpectationMP):
-                res = self._measure_expectation(tableau_simulator, meas)
-
-            # Computing variance via measurement
-            elif isinstance(meas, VarianceMP):
-                res = self._measure_variance(tableau_simulator, meas)
-
-            # Computing probabilities via tableau
-            elif isinstance(meas, ProbabilityMP):
-                res = self._measure_probability(circuit, stim_circuit, meas)
-
-            # Computing entropy via tableaus
-            elif isinstance(meas, VnEntropyMP):
-                tableau = tableau_simulator.current_inverse_tableau().inverse()
-                z_stabs = qml.math.array(
-                    [tableau.z_output(wire) for wire in range(len(circuit.wires))]
-                )
-                res = self._measure_stabilizer_vn_entropy(z_stabs, list(meas.wires))
-
-            # Computing mutual-info via tableaus
-            elif isinstance(meas, MutualInfoMP):
-                tableau = tableau_simulator.current_inverse_tableau().inverse()
-                z_stabs = qml.math.array(
-                    [tableau.z_output(wire) for wire in range(len(circuit.wires))]
-                )
-                indices0, indices1 = getattr(meas, "_wires")
-                res = self._measure_stabilizer_vn_entropy(
-                    z_stabs, list(indices0)
-                ) + self._measure_stabilizer_vn_entropy(z_stabs, list(indices1))
-
-            # Computing purity via tableaus
-            elif isinstance(meas, PurityMP):
-                tableau = tableau_simulator.current_inverse_tableau().inverse()
-                z_stabs = qml.math.array(
-                    [tableau.z_output(wire) for wire in range(len(circuit.wires))]
-                )
-                res = (
-                    qml.math.array(1.0)
-                    if circuit.op_wires == meas.wires
-                    else self._measure_purity(z_stabs, list(meas.wires))
-                )
-
-            # Computing more measurements
-            else:  # pragma: no cover
+            ## measurement_func(meas, tableaus_simulator, **kwargs) -> meas_result
+            measurement_func = measurement_map.get(type(meas), None)
+            if measurement_func is None:  # pragma: no cover
                 raise NotImplementedError(
-                    f"default.clifford doesn't support the {type(meas)} measurement at the moment."
+                    f"default.clifford doesn't support the {type(meas)} measurement analytically at the moment."
                 )
-
-            results.append(res)
+            results.append(
+                measurement_func(
+                    meas,
+                    tableau_simulator,
+                    circuit=circuit,
+                    stim_circuit=stim_circuit,
+                    global_phase=global_phase,
+                )
+            )
 
         return results
 
-    def _measure_state(self, tableau_simulator, circuit, global_phase):
+    @staticmethod
+    def _measure_density_matrix(meas, tableau_simulator, **kwargs):
+        """Measure the density matrix from the state of simulator device."""
+        wires, _ = list(meas.wires), kwargs
+        state_vector = qml.math.array(tableau_simulator.state_vector(endian="big"))
+        return qml.math.reduce_dm(qml.math.einsum("i, j->ij", state_vector, state_vector), wires)
+
+    def _measure_state(self, meas, tableau_simulator, **kwargs):  # circuit, global_phase):
         """Measure the state of the simualtor device."""
+        wires, _ = kwargs.get("circuit").wires, meas
+        global_phase = kwargs.get("global_phase", qml.GlobalPhase(0.0))
         if self._tableau:
             # Stack according to Sec. III, arXiv:0406196 (2008)
             tableau = tableau_simulator.current_inverse_tableau().inverse()
@@ -725,27 +700,21 @@ class DefaultClifford(Device):
                     np.hstack((z2x, z2z, z_signs.reshape(-1, 1))),
                 )
             ).astype(int)
-            if pl_tableau.shape == (0, 1) and circuit.num_wires:
+            if pl_tableau.shape == (0, 1) and len(wires):
                 return np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
             return pl_tableau
 
         state = qml.math.array(tableau_simulator.state_vector(endian="big"))
-        if state.shape == (1,) and circuit.num_wires:
+        if state.shape == (1,) and len(wires):
             # following is faster than using np.eye(length=1, size, index)
-            state = qml.math.zeros(2**circuit.num_wires, dtype=complex)
+            state = qml.math.zeros(2 ** len(wires), dtype=complex)
             state[0] = 1.0 + 0.0j
         return state * qml.matrix(global_phase)
 
-    @staticmethod
-    def _measure_density_matrix(tableau_simulator, wires):
-        """Measure the density matrix from the state of simulator device."""
-        state_vector = qml.math.array(tableau_simulator.state_vector(endian="big"))
-        return qml.math.reduce_dm(qml.math.einsum("i, j->ij", state_vector, state_vector), wires)
-
-    def _measure_expectation(self, tableau_simulator, meas_op):
+    def _measure_expectation(self, meas, tableau_simulator, **kwargs):
         """Measure the expectation value with respect to the state of simulator device."""
         # Get the observable for the expectation value measurement
-        coeffs, paulis = self._convert_op_to_linear_comb(meas_op.obs)
+        (coeffs, paulis), _ = self._convert_op_to_linear_comb(meas.obs), kwargs
 
         expecs = qml.math.zeros_like(coeffs)
         for idx, (pauli, wire) in enumerate(paulis):
@@ -770,21 +739,62 @@ class DefaultClifford(Device):
 
         return qml.math.dot(coeffs, expecs)
 
-    def _measure_variance(self, tableau_simulator, meas_op):
+    def _measure_variance(self, meas, tableau_simulator, **kwargs):
         """Measure the variance with respect to the state of simulator device."""
-        meas_obs = qml.operation.convert_to_opmath(meas_op.obs)
+        meas_obs, _ = qml.operation.convert_to_opmath(meas.obs), kwargs
         meas_obs1 = meas_obs.simplify()
         meas_obs2 = (meas_obs1**2).simplify()
 
         # use the naive formula for variance, i.e., Var(Q) = ⟨𝑄^2⟩−⟨𝑄⟩^2
         return (
-            self._measure_expectation(tableau_simulator, ExpectationMP(meas_obs2))
-            - self._measure_expectation(tableau_simulator, ExpectationMP(meas_obs1)) ** 2
+            self._measure_expectation(ExpectationMP(meas_obs2), tableau_simulator)
+            - self._measure_expectation(ExpectationMP(meas_obs1), tableau_simulator) ** 2
         )
+
+    def _measure_vn_entropy(self, meas, tableau_simulator, **kwargs):
+        """Measure the Von Neumann entropy with respect to the state of simulator device."""
+        wires = kwargs.get("circuit").wires
+        tableau = tableau_simulator.current_inverse_tableau().inverse()
+        z_stabs = qml.math.array([tableau.z_output(wire) for wire in range(len(wires))])
+        return self._measure_stabilizer_entropy(z_stabs, list(meas.wires), meas.log_base)
+
+    def _measure_mutual_info(self, meas, tableau_simulator, **kwargs):
+        """Measure the mutual information between the subsystems of simulator device."""
+        wires = kwargs.get("circuit").wires
+        tableau = tableau_simulator.current_inverse_tableau().inverse()
+        z_stabs = qml.math.array([tableau.z_output(wire) for wire in range(len(wires))])
+        indices0, indices1 = getattr(meas, "_wires")
+        return self._measure_stabilizer_entropy(
+            z_stabs, list(indices0), meas.log_base
+        ) + self._measure_stabilizer_entropy(z_stabs, list(indices1), meas.log_base)
+
+    def _measure_purity(self, meas, tableau_simulator, **kwargs):
+        r"""Measure the purity of the state of simulator device.
+
+        Computes the state purity using the monotonically decreasing second-order Rényi entropy
+        form given in `Sci Rep 13, 4601 (2023) <https://www.nature.com/articles/s41598-023-31273-9>`_.
+        We utilize the fact that Rényi entropies are equal for all Rényi indices ``n`` for the
+        stabilizer states.
+
+        Args:
+            stabilizer (TensorLike): stabilizer set for the system
+            wires (Iterable): wires describing the subsystem
+            log_base (int): base for the logarithm.
+
+        Returns:
+            (float): entanglement entropy of the subsystem
+        """
+        wires = kwargs.get("circuit").wires
+        if wires == meas.wires:
+            return qml.math.array(1.0)
+
+        tableau = tableau_simulator.current_inverse_tableau().inverse()
+        z_stabs = qml.math.array([tableau.z_output(wire) for wire in range(len(wires))])
+        return 2 ** (-self._measure_stabilizer_entropy(z_stabs, list(meas.wires), log_base=2))
 
     # pylint: disable=protected-access
     @staticmethod
-    def _measure_stabilizer_vn_entropy(stabilizer, wires, log_base=None):
+    def _measure_stabilizer_entropy(stabilizer, wires, log_base=None):
         r"""Computes the Rényi entanglement entropy using stabilizer information.
 
         Computes the Rényi entanglement entropy :math:`S_A` for a subsytem described by
@@ -838,24 +848,6 @@ class DefaultClifford(Device):
 
         return entropy / qml.math.log(log_base)
 
-    def _measure_purity(self, stabilizer, wires):
-        r"""Measure the purity of the state of simulator device.
-
-        Computes the state purity using the monotonically decreasing second-order Rényi entropy
-        form given in `Sci Rep 13, 4601 (2023) <https://www.nature.com/articles/s41598-023-31273-9>`_.
-        We utilize the fact that Rényi entropies are equal for all Rényi indices ``n`` for the
-        stabilizer states.
-
-        Args:
-            stabilizer (TensorLike): stabilizer set for the system
-            wires (Iterable): wires describing the subsystem
-            log_base (int): base for the logarithm.
-
-        Returns:
-            (float): entanglement entropy of the subsystem
-        """
-        return 2 ** (-self._measure_stabilizer_vn_entropy(stabilizer, wires, log_base=2))
-
     @property
     def probability_target(self):
         """Get the target computational basis states for computing outcome probability."""
@@ -869,9 +861,9 @@ class DefaultClifford(Device):
         )
 
     # pylint: disable=too-many-branches
-    def _measure_probability(self, circuit, stim_circuit, meas_op):
+    def _measure_probability(self, meas, tableau_simulator, **kwargs):
         """Measure the probability of each computational basis state."""
-
+        circuit, _ = kwargs.get("circuit"), tableau_simulator
         if self._prob_states is None and self._tableau:
             raise ValueError(
                 "In order to maintain computational efficiency, \
@@ -882,8 +874,8 @@ class DefaultClifford(Device):
 
         # TODO: We might be able to skip the inverse done below
         # (as the distribution should be independent of inverse)
-        diagonalizing_cit = stim_circuit.copy()
-        diagonalizing_ops = [] if not meas_op.obs else meas_op.obs.diagonalizing_gates()
+        diagonalizing_cit = kwargs.get("stim_circuit").copy()
+        diagonalizing_ops = [] if not meas.obs else meas.obs.diagonalizing_gates()
         for diag_op in diagonalizing_ops:
             # Check if it is Clifford
             if diag_op.name not in _GATE_OPERATIONS:  # pragma: no cover
@@ -899,11 +891,11 @@ class DefaultClifford(Device):
         circuit_simulator = stim.TableauSimulator()
         circuit_simulator.do_circuit(diagonalizing_cit)
         if not self._tableau:
-            state = self._measure_state(circuit_simulator, circuit, qml.GlobalPhase(0.0))
-            return meas_op.process_state(state, wire_order=circuit.wires)
+            state = self._measure_state(meas, circuit_simulator, circuit=circuit)
+            return meas.process_state(state, wire_order=circuit.wires)
 
         # Obtain the measurement wires for getting the basis states
-        mobs_wires = meas_op.obs.wires if meas_op.obs else meas_op.wires
+        mobs_wires = meas.obs.wires if meas.obs else meas.wires
         meas_wires = mobs_wires if mobs_wires else circuit.wires
         tgt_states = self._prob_states
         if not tgt_states.shape[1]:
