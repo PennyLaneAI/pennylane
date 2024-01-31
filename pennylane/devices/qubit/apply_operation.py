@@ -270,7 +270,7 @@ def apply_multicontrolledx(
     r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
     for 8 operation wires or less. Otherwise, apply a custom kernel based on
     composing transpositions, rolling of control axes and the CNOT logic above."""
-    if len(op.active_wires) < 9:
+    if len(op.wires) < 9:
         return _apply_operation_default(op, state, is_state_batched, debugger)
     ctrl_wires = [w + is_state_batched for w in op.control_wires]
     # apply x on all control wires with control value 0
@@ -285,17 +285,17 @@ def apply_multicontrolledx(
             [
                 w - is_state_batched
                 for w in range(len(orig_shape))
-                if w - is_state_batched not in op.active_wires
+                if w - is_state_batched not in op.wires
             ]
-            + [op.active_wires[-1]]
-            + op.active_wires[:-1].tolist()
+            + [op.wires[-1]]
+            + op.wires[:-1].tolist()
         )
         + is_state_batched
     )
     state = math.transpose(state, transpose_axes)
 
     # Reshape the state into 3-dimensional array with axes [batch+other, target, controls]
-    state = math.reshape(state, (-1, 2, 2 ** (len(op.active_wires) - 1)))
+    state = math.reshape(state, (-1, 2, 2 ** (len(op.wires) - 1)))
 
     # The part of the state to which we want to apply PauliX is now in the last entry along the
     # third axis. Extract it, apply the PauliX along the target axis (1), and append a dummy axis
