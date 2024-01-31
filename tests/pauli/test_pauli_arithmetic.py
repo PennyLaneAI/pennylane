@@ -1140,15 +1140,19 @@ class TestPaulicomms:
         matrix = np.eye(2)
         with pytest.raises(NotImplementedError, match="Cannot compute natively a commutator"):
             op1.commutator(matrix)
-    
+
     def test_pauli_raises_NotImplementedError_without_pauli_rep_ps(self):
         """Test that a NotImplementedError is raised in PauliSentence when ``other`` is an operator without a pauli_rep"""
-        with pytest.raises(NotImplementedError, match="Cannot compute a native commutator of a Pauli word"):
+        with pytest.raises(
+            NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
+        ):
             _ = ps1.commutator(qml.Hadamard(0))
-    
+
     def test_pauli_raises_NotImplementedError_without_pauli_rep_pw(self):
         """Test that a NotImplementedError is raised in PauliWord when ``other`` is an operator without a pauli_rep"""
-        with pytest.raises(NotImplementedError, match="Cannot compute a native commutator of a Pauli word"):
+        with pytest.raises(
+            NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
+        ):
             _ = pw1.commutator(qml.Hadamard(0))
 
     def test_commutators_with_zeros_ps(self):

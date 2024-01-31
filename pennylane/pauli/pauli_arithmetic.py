@@ -344,7 +344,7 @@ class PauliWord(dict):
 
         .. math:: [P, O] = P O - O P
 
-        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`, 
+        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`,
         this method is faster than computing ``P @ O - O @ P``. It is what is being used
         in :func:`~commutator` when setting ``pauli=True``.
 
@@ -374,7 +374,7 @@ class PauliWord(dict):
             return PauliSentence({new_word: coeff})
 
         if isinstance(other, qml.operation.Operator):
-            op_self = PauliSentence({self: 1.})
+            op_self = PauliSentence({self: 1.0})
             return op_self.commutator(other)
 
         if isinstance(other, PauliSentence):
@@ -730,7 +730,7 @@ class PauliSentence(dict):
 
         .. math:: [P, O] = P O - O P
 
-        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`, 
+        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`,
         this method is faster than computing ``P @ O - O @ P``. It is what is being used
         in :func:`~commutator` when setting ``pauli=True``.
 
@@ -770,7 +770,7 @@ class PauliSentence(dict):
                 raise NotImplementedError(
                     f"Cannot compute a native commutator of a Pauli word or sentence with the operator {other} of type {type(other)}."
                     f"You can try to use qml.commutator(op1, op2, pauli=False) instead."
-                    )
+                )
             other = qml.pauli.pauli_sentence(other)
 
         for pw1 in self:
