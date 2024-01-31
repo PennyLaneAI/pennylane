@@ -93,6 +93,7 @@ class HilbertSchmidt(Operation):
         1
 
     """
+
     num_wires = AnyWires
     grad_method = None
 
