@@ -20,51 +20,52 @@ import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops import SymbolicOp
 
+
 class Reflection(SymbolicOp, Operation):
     r"""Reflection(U, alpha)
-        Apply a :math:`\alpha`-reflection over the state :math:`|\Psi\rangle = U|0\rangle`.
+    Apply a :math:`\alpha`-reflection over the state :math:`|\Psi\rangle = U|0\rangle`.
 
-        .. math::
+    .. math::
 
-            \text{Reflection}(U, \alpha) = \identity - (1 - e^{-i\alpha}) |\Psi\rangle \langle \Psi|
+        \text{Reflection}(U, \alpha) = \identity - (1 - e^{-i\alpha}) |\Psi\rangle \langle \Psi|
 
 
-        Args:
-            U (qml.ops.op_math.prod.Prod): the product of operations that generate the state :math:`|\Psi\rangle`.
-            alpha (float): the reflection angle.
+    Args:
+        U (qml.ops.op_math.prod.Prod): the product of operations that generate the state :math:`|\Psi\rangle`.
+        alpha (float): the reflection angle.
 
-        **Example**
+    **Example**
 
-        The reflection :math:`\identity - 2|+\rangle \langle +|` applied to the state :math:`|1\rangle` would be as follows:
+    The reflection :math:`\identity - 2|+\rangle \langle +|` applied to the state :math:`|1\rangle` would be as follows:
 
-        .. code-block::
+    .. code-block::
 
-            @qml.prod
-            def generator(wires):
-                qml.Hadamard(wires=wires)
+        @qml.prod
+        def generator(wires):
+            qml.Hadamard(wires=wires)
 
-            U = generator(wires=0)
+        U = generator(wires=0)
 
-            dev = qml.device('default.qubit')
+        dev = qml.device('default.qubit')
 
-            @qml.qnode(dev)
-            def circuit():
+        @qml.qnode(dev)
+        def circuit():
 
-                # Initialize to the state |1>
-                qml.qml.PauliX(wires=0)
+            # Initialize to the state |1>
+            qml.qml.PauliX(wires=0)
 
-                # Apply the reflection
-                qml.Reflection(U, alpha=np.pi)
+            # Apply the reflection
+            qml.Reflection(U, alpha=np.pi)
 
-                return qml.state()
+            return qml.state()
 
-            circuit()
-        """
+        circuit()
+    """
 
-    def __init__(self, U, alpha, id = None):
-      self.alpha = alpha
-      self.U = U
-      super().__init__(base = U, id = id)
+    def __init__(self, U, alpha, id=None):
+        self.U = U
+        self.alpha = alpha
+        super().__init__(base=U, id=id)
 
     @property
     def has_matrix(self):
@@ -75,15 +76,20 @@ class Reflection(SymbolicOp, Operation):
         return self.U.wires
 
     def decomposition(self):
-        print(type(self.U))
         wires = self.U.wires
 
         ops = []
 
         ops.append(qml.adjoint(self.U))
-        ops.append(qml.PauliX(wires = wires[-1]))
-        ops.append(qml.ctrl(qml.PhaseShift(-self.alpha, wires = wires[-1]), control = wires[:-1], control_values = [0] * (len(wires) -1)))
-        ops.append(qml.PauliX(wires = wires[-1]))
+        ops.append(qml.PauliX(wires=wires[-1]))
+        ops.append(
+            qml.ctrl(
+                qml.PhaseShift(-self.alpha, wires=wires[-1]),
+                control=wires[:-1],
+                control_values=[0] * (len(wires) - 1),
+            )
+        )
+        ops.append(qml.PauliX(wires=wires[-1]))
         ops.append(self.U)
 
         return ops
