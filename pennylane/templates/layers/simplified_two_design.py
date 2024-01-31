@@ -98,6 +98,7 @@ class SimplifiedTwoDesign(Operation):
             weights = [np.random.random(size=shape) for shape in shapes]
 
     """
+
     num_wires = AnyWires
     grad_method = None
 

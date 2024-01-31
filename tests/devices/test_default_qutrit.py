@@ -115,9 +115,11 @@ class TestApply:
         qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
         qutrit_device_1_wire.apply(
             [
-                qml.adjoint(operation(wires=[0]))
-                if subspace is None
-                else qml.adjoint(operation(wires=[0], subspace=subspace))
+                (
+                    qml.adjoint(operation(wires=[0]))
+                    if subspace is None
+                    else qml.adjoint(operation(wires=[0], subspace=subspace))
+                )
             ]
         )
 
@@ -172,9 +174,11 @@ class TestApply:
         )
         qutrit_device_2_wires.apply(
             [
-                operation(wires=[0, 1])
-                if subspace is None
-                else operation(wires=[0, 1], subspace=subspace)
+                (
+                    operation(wires=[0, 1])
+                    if subspace is None
+                    else operation(wires=[0, 1], subspace=subspace)
+                )
             ]
         )
 
@@ -196,9 +200,11 @@ class TestApply:
         )
         qutrit_device_2_wires.apply(
             [
-                qml.adjoint(operation(wires=[0, 1]))
-                if subspace is None
-                else qml.adjoint(operation(wires=[0, 1], subspace=subspace))
+                (
+                    qml.adjoint(operation(wires=[0, 1]))
+                    if subspace is None
+                    else qml.adjoint(operation(wires=[0, 1], subspace=subspace))
+                )
             ]
         )
 

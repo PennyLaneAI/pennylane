@@ -156,8 +156,9 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Pin Black to `v23.12` to prevent unnecessary formatting changes.
+* Make PennyLane code compatible with the latest version of `black`.
   [(#5112)](https://github.com/PennyLaneAI/pennylane/pull/5112)
+  [(#5119)](https://github.com/PennyLaneAI/pennylane/pull/5119)
 
 * `gradient_analysis_and_validation` is now renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)

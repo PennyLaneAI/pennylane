@@ -36,6 +36,7 @@ class Barrier(Operation):
         only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
         wires (Sequence[int] or int): the wires the operation acts on
     """
+
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -110,6 +111,7 @@ class WireCut(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
+
     num_params = 0
     num_wires = AnyWires
     grad_method = None
@@ -194,6 +196,7 @@ class Snapshot(Operation):
 
     .. seealso:: :func:`~.snapshots`
     """
+
     num_wires = AnyWires
     num_params = 0
     grad_method = None
