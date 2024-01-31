@@ -212,9 +212,6 @@
 * `qml.ExpvalCost` has been removed. Users should use `qml.expval()` moving forward.
   [(#5097)](https://github.com/PennyLaneAI/pennylane/pull/5097)
 
-* For `MultiControlledX`, the `wires` attribute now refers to all wires, as in `control_wires + target_wire + work_wires`, to access only the `control_wires + target_wires`, use the `active_wires` attribute.
-  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
-
 <h3>Deprecations 👋</h3>
 
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`

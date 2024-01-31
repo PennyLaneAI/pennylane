@@ -470,6 +470,10 @@ class MultiControlledX(ControlledOp):
     def __repr__(self):
         return f"MultiControlledX(wires={self.active_wires.tolist()}, control_values={self.control_values})"
 
+    @property
+    def wires(self):
+        return self.active_wires
+
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
     def compute_matrix(control_wires, control_values=None, **kwargs):
