@@ -79,7 +79,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
             * ``slice``: a slice to select out components of the transform program.
 
     Returns:
-        TransformProrgram: the transform program corresponding to the requested level.
+        TransformProgram: the transform program corresponding to the requested level.
 
 
     The transforms are organized as:
@@ -104,7 +104,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
-    By default, we get the full transform program. This can be manaully specified by ``level=None``.
+    By default, we get the full transform program. This can be manually specified by ``level=None``.
 
     >>> qml.workflow.get_transform_program(circuit)
     TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor,
@@ -242,7 +242,7 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
     expval(  (1) [X0]
     + (1) [Y0])]
 
-    We can inpsect what was directly captured from the qfunc with ``level=0``.
+    We can inspect what was directly captured from the qfunc with ``level=0``.
 
     >>> batch, fn = construct_batch(circuit, level=0)(1.23)
     >>> batch[0].circuit
