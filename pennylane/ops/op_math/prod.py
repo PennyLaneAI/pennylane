@@ -370,9 +370,9 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
-        """
-        Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
-        :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator
+        r"""
+        Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where 
+        :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator 
         or pure product of single PL operators.
         """
         # try using pauli_rep:
@@ -422,8 +422,21 @@ class Prod(CompositeOp):
             op_list[j + 1] = key_op
 
         return op_list
+    
+    def terms(self):
+        r"""
+        Return coefficients and operators of ``Sum`` instance
 
-    def terms(self):  # is this method necessary for this class?
+        ** Example **
+
+        >>> qml.operation.enable_new_opmath()
+        >>> op = X(0) @ (0.5 * X(1) + X(2))
+        >>> op.terms()
+        ([0.5, 1.0],
+        [PauliX(wires=[1]) @ PauliX(wires=[0]),
+        PauliX(wires=[2]) @ PauliX(wires=[0])])
+        
+        """
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.simplify()
