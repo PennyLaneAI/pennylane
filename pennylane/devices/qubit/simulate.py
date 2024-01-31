@@ -480,6 +480,8 @@ def parse_native_mid_circuit_measurements(
             normalized_meas[i] = gather_mcm(m, m.mv, mcm_shot_meas)
         else:
             normalized_meas[i] = m.process_samples(all_shot_meas, wire_order=wires)
+        if isinstance(m, SampleMP):
+            normalized_meas[i] = qml.math.squeeze(normalized_meas[i])
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
@@ -494,7 +496,7 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
     Returns:
         TensorLike: The combined measurement outcome
     """
-    if isinstance(measurement, (CountsMP, ProbabilityMP)) and isinstance(mv, Sequence):
+    if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
         wires = qml.wires.Wires(range(len(mv)))
         mcm_samples = list(
             np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1)) for m in mv
@@ -502,11 +504,13 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
         mcm_samples = np.concatenate(mcm_samples, axis=1)
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    if isinstance(mv, Sequence):
-        return np.vstack(tuple(gather_mcm(measurement, m, samples) for m in mv)).T
-    if not isinstance(measurement, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
-        raise ValueError(
-            f"Native mid-circuit measurement mode does not support {measurement.__class__.__name__} measurements."
-        )
+    # if isinstance(mv, Sequence):
+    #     return np.vstack(tuple(gather_mcm(measurement, m, samples) for m in mv)).T
     mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
-    return measurement.process_samples(mcm_samples, wire_order=mv.wires)
+    if len(mv.wires) == len(mv.measurements):
+        wires = mv.wires
+        meas_tmp = measurement
+    else:
+        wires = qml.wires.Wires(0)
+        meas_tmp = measurement.__class__(wires=wires)
+    return meas_tmp.process_samples(mcm_samples, wire_order=wires)

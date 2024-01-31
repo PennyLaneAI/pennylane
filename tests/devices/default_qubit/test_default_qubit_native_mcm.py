@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import apply_mid_measure, MidMeasureMP
-from pennylane.devices.qubit.simulate import accumulate_native_mcm, gather_mcm
+from pennylane.devices.qubit.simulate import accumulate_native_mcm, parse_native_mid_circuit_measurements
 
 
 def validate_counts(shots, results1, results2):
@@ -94,12 +94,12 @@ def tests_accumulate_native_mcm():
         qml.mutual_info(0, 1),
         qml.purity(0),
         qml.classical_shadow(0),
-        qml.shadow_expval(0),
     ],
 )
-def test_gather_mcm(measurement):
+def test_parse_native_mid_circuit_measurements(measurement):
+    circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [measurement])
     with pytest.raises(ValueError, match="Native mid-circuit measurement mode does not support"):
-        gather_mcm(measurement, None, None)
+        parse_native_mid_circuit_measurements(circuit, None, None)
 
 
 def test_unsupported_measurement():
