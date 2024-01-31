@@ -314,7 +314,7 @@ def simulate_native_mcm(
             continue
         all_shot_meas = accumulate_native_mcm(aux_circuit, all_shot_meas, one_shot_meas)
         list_mcm_values_dict.append(mcm_values_dict)
-    all_shot_meas = [np.concatenate(tuple(s.ravel() for s in m)) for m in all_shot_meas]
+    all_shot_meas = [np.concatenate(tuple(s.reshape(1, -1) for s in m)) for m in all_shot_meas]
     return parse_native_mid_circuit_measurements(circuit, all_shot_meas, list_mcm_values_dict)
 
 
@@ -502,20 +502,35 @@ def gather_non_mcm(circuit_measurement, samples):
     Returns:
         TensorLike: The combined measurement outcome
     """
+
+    def sample_2_counts(samples, all_outcomes=False):    
+        idx = 0
+        width = len(circuit_measurement.wires)
+        for i in range(width):
+            idx += 2**i * samples[:, i]
+        counts = Counter(idx)
+        if all_outcomes:
+            eigvals = range(2**width) if circuit_measurement.obs is None else circuit_measurement.obs.eigvals()
+            counts.update(dict((x, 0) for x in eigvals))
+        return counts
+    
     if isinstance(circuit_measurement, CountsMP):
-        new_measurement = dict(sorted(Counter(samples).items()))
+        counts = sample_2_counts(samples, all_outcomes=circuit_measurement.all_outcomes)
+        width = len(circuit_measurement.wires)
+        new_measurement = dict(sorted(counts.items()))
+        if width > 1:
+            new_measurement = dict((f"{x:064b}"[-width:], y) for x, y in new_measurement.items())
     elif isinstance(circuit_measurement, ExpectationMP):
         new_measurement = np.mean(samples)
     elif isinstance(circuit_measurement, ProbabilityMP):
-        counts = dict(sorted(Counter(samples).items()))
-        eigvals = [0, 1] if circuit_measurement.obs is None else circuit_measurement.obs.eigvals()
-        for i in eigvals:
-            if i not in counts:
-                counts.update({i: 0})
+        width = len(circuit_measurement.wires)
+        counts = sample_2_counts(samples, all_outcomes=True)
+        eigvals = range(2**width) if circuit_measurement.obs is None else circuit_measurement.obs.eigvals()
         num = sum(counts.values())
         new_measurement = np.array([counts[ev] / num for ev in eigvals])
     elif isinstance(circuit_measurement, SampleMP):
-        new_measurement = samples
+        width = len(circuit_measurement.wires)
+        new_measurement = samples if width > 1 else samples.ravel()
     elif isinstance(circuit_measurement, VarianceMP):
         new_measurement = qml.math.var(samples)
     else:
