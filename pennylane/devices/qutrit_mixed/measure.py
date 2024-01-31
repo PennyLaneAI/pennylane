@@ -57,7 +57,7 @@ def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = Fal
     def map_indices(
         state_indices, row_indices, new_row_indices, **kwargs
     ):  # pylint: disable=unused-argument
-        """map indices to wires
+        """Map indices to wires
         Args:
             state_indices (str): Indices that are summed
             row_indices (str): Indices that must be replaced with sums
@@ -91,9 +91,10 @@ def trace_method(
     """Measure the expectation value of an observable by finding the trace of obs@rho.
 
     Args:
-        measurementprocess (ExpectationMP): measurement process to apply to the state
-        state (TensorLike): the state to measure
-        is_state_batched (bool): whether the state is batched or not
+        measurementprocess (ExpectationMP): measurement process to apply to the state.
+        state (TensorLike): the state to measure.
+        is_state_batched (bool): whether the state is batched or not.
+
     Returns:
         TensorLike: the result of the measurement
     """
@@ -286,13 +287,13 @@ def sum_of_terms_method(
     and it must be backpropagation compatible.
 
     Args:
-        measurementprocess (ExpectationMP): measurement process to apply to the state
-        state (TensorLike): the state to measure
-        is_state_batched (bool): whether the state is batched or not
-        measure_func (function): measure function to use
+        measurementprocess (ExpectationMP): measurement process to apply to the state.
+        state (TensorLike): the state to measure.
+        is_state_batched (bool): whether the state is batched or not.
+        measure_func (function): measure function to use.
 
     Returns:
-        TensorLike: the result of the measurement
+        TensorLike: the result of the measurement.
     """
     if isinstance(measurementprocess.obs, Sum):
         # Recursively call measure on each term, so that the best measurement method can
