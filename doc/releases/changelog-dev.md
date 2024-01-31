@@ -192,7 +192,8 @@
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
-* Controlled operators with a custom controlled version decomposes like how their controlled counterpart decomposes, as opposed to decomposing into their controlled version.   
+* Controlled operators with a custom controlled version decomposes like how their
+  controlled counterpart decomposes, as opposed to decomposing into their controlled version.   
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
   
