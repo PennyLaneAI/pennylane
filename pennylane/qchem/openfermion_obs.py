@@ -40,6 +40,19 @@ def _import_of():
     return openfermion, openfermionpyscf
 
 
+def _import_pyscf():
+    """Import pyscf."""
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import pyscf
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires pyscf. " "It can be installed with: pip install pyscf."
+        ) from Error
+
+    return pyscf
+
+
 def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     r"""Builds the fermionic many-body observable whose expectation value can be
     measured in PennyLane.
@@ -812,7 +825,7 @@ def molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e012,
-):  # pylint:disable=too-many-arguments
+):  # pylint:disable=too-many-arguments, too-many-statements
     r"""Generate the qubit Hamiltonian of a molecule.
 
     This function drives the construction of the second-quantized electronic Hamiltonian
@@ -1043,7 +1056,7 @@ def _pyscf_integrals(
 ):
     r"""Compute pyscf integrals."""
 
-    import pyscf
+    pyscf = _import_pyscf()
 
     geometry = [
         [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
