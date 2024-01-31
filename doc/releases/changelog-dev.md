@@ -300,6 +300,14 @@
 * `PauliSentence.wires` no longer imposes a false order.
   [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
 
+* `qml.qchem.import_state` now applies the chemist-to-physicist 
+  sign convention when initializing a PennyLane state vector from
+  classically pre-computed wavefunctions. That is, it interleaves 
+  spin-up/spin-down operators for the same spatial orbital index,
+  as standard in PennyLane (instead of commuting all spin-up 
+  operators to the left, as is standard in quantum chemistry). 
+  [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
