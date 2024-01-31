@@ -314,7 +314,10 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
                 if isinstance(summand, SProd):
                     coeff = summand.scalar
                     summand = summand.base
-                s_m = qml.expval(summand)
+                if len(summand.wires) == 0 and isinstance(summand, qml.Identity):
+                    s_m = qml.expval(qml.Identity(tape.wires[0]))
+                else:
+                    s_m = qml.expval(summand)
                 if s_m.hash not in measurements_dict:
                     measurements_dict[s_m.hash] = s_m
                     idxs_coeffs_dict[s_m.hash] = [(idx, coeff)]
@@ -325,7 +328,10 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
         coeff = 1 if isinstance(m, ExpectationMP) else None
         if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
             coeff = obs.scalar
-            m = qml.expval(obs.base)
+            if len(obs.wires) == 0 and isinstance(obs.base, qml.Identity):
+                m = qml.expval(coeff * qml.Identity(tape.wires[0]))
+            else:
+                m = qml.expval(obs.base)
 
         if m.hash not in measurements_dict:
             measurements_dict[m.hash] = m

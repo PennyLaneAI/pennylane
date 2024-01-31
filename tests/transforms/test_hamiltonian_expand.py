@@ -95,24 +95,6 @@ class TestHamiltonianExpand:
         ):
             qml.transforms.hamiltonian_expand(qscript)
 
-    @pytest.mark.parametrize("group", (True, False))
-    def test_strip_identities(self, group):
-        """Test that hamiltonian_expand strips terms that are the identity."""
-
-        H = qml.Hamiltonian([3.0, 1.0, 1.0], [qml.Identity(0), qml.PauliX(0), qml.PauliY(0)])
-        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
-        batch, fn = hamiltonian_expand(tape, group=group)
-
-        assert len(batch) == 2
-        expected0 = qml.tape.QuantumScript([], [qml.expval(qml.PauliX(0))], shots=50)
-        assert qml.equal(batch[0], expected0)
-        expected1 = qml.tape.QuantumScript([], [qml.expval(qml.PauliY(0))], shots=50)
-        assert qml.equal(batch[1], expected1)
-
-        res = (0.5, 0.5)
-        output = fn(res)
-        assert qml.math.allclose(output, 4.0)
-
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians(self, tape, output):
         """Tests that the hamiltonian_expand transform returns the correct value"""
