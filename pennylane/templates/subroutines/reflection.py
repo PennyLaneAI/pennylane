@@ -63,6 +63,7 @@ class Reflection(SymbolicOp, Operation):
 
     def __init__(self, U, alpha, id = None):
       self.alpha = alpha
+      self.U = U
       super().__init__(base = U, id = id)
 
     @property
@@ -71,18 +72,18 @@ class Reflection(SymbolicOp, Operation):
 
     @property
     def wires(self):
-        return self.base.wires
+        return self.U.wires
 
     def decomposition(self):
 
-        wires = self.base.wires
+        wires = self.U.wires
 
         ops = []
 
-        ops.append(qml.adjoint(self.base))
+        ops.append(qml.adjoint(self.U))
         ops.append(qml.PauliX(wires = wires[-1]))
         ops.append(qml.ctrl(qml.PhaseShift(-self.alpha, wires = wires[-1]), control = wires[:-1], control_values = [0] * (len(wires) -1)))
         ops.append(qml.PauliX(wires = wires[-1]))
-        ops.append(self.base)
+        ops.append(self.U)
 
         return ops
