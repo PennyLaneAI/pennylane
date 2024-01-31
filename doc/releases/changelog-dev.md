@@ -266,6 +266,8 @@
 * A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
+* Update the RTD build to fail on warnings, and remove the now-redundant warning-checking action.
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
