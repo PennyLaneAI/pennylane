@@ -1071,10 +1071,11 @@ def _pyscf_integrals(
     mol.verbose = 0
 
     mol_pyscf = mol.build()
-    myhf = pyscf.scf.ROHF(mol_pyscf)
-    _ = myhf.kernel()
-
-    nmo = mol.nelectron
+    if mult == 1:
+        molhf = pyscf.scf.RHF(mol_pyscf)
+    else:
+        molhf = pyscf.scf.ROHF(mol_pyscf)
+    _ = molhf.kernel()
 
     core, active = qml.qchem.active_space(
         mol.nelectron, mol.nao, mult, active_electrons, active_orbitals
@@ -1082,10 +1083,10 @@ def _pyscf_integrals(
 
     one_ao = mol_pyscf.intor_symmetric("int1e_kin") + mol_pyscf.intor_symmetric("int1e_nuc")
     two_ao = mol_pyscf.intor("int2e_sph")
-    one_mo = np.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
-    two_mo = pyscf.ao2mo.incore.full(two_ao, myhf.mo_coeff)
+    one_mo = np.einsum("pi,pq,qj->ij", molhf.mo_coeff, one_ao, molhf.mo_coeff)
+    two_mo = pyscf.ao2mo.incore.full(two_ao, molhf.mo_coeff)
 
-    core_constant = np.array([myhf.energy_nuc()])
+    core_constant = np.array([molhf.energy_nuc()])
     two_mo = np.swapaxes(two_mo, 1, 3)
 
     core_constant, one_mo, two_mo = _active_space_integrals(
