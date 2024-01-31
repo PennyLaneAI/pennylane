@@ -173,19 +173,6 @@ class Sum(CompositeOp):
 
         return all(s.is_hermitian for s in self)
 
-    def terms(self):
-        r"""Representation of the operator as a linear combination of other operators.
-
-        .. math:: O = \sum_i c_i O_i
-
-        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
-
-        Returns:
-            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
-            and list of operations :math:`O_i`
-        """
-        return [1.0] * len(self), list(self)
-
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
@@ -297,6 +284,36 @@ class Sum(CompositeOp):
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
         return qml.s_prod(0, qml.Identity(self.wires))
+
+    def terms(self):
+        r"""Representation of the operator as a linear combination of other operators.
+
+        .. math:: O = \sum_i c_i O_i
+
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
+        """
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            pr.simplify()
+            ops = [pauli.operation() for pauli in pr.keys()]
+            return list(pr.values()), ops
+
+        new_summands = self._simplify_summands(summands=self.operands).get_summands()
+
+        coeffs = []
+        ops = []
+        for factor in new_summands:
+            if isinstance(factor, qml.ops.SProd):
+                coeffs.append(factor.scalar)
+                ops.append(factor.base)
+            else:
+                coeffs.append(1.0)
+                ops.append(factor)
+        return coeffs, ops
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
