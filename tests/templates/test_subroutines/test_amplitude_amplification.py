@@ -78,10 +78,10 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "U, O, raise_error",
         (
-            (generator(wires=[0, 1, 2]), oracle(wires=[0, 1, 2]), False),
-            (generator(wires=[0, 2, 1]), oracle(wires=[0, 1, 2]), False),
-            (generator(wires=[0, 1, 3]), oracle(wires=[0, 1, 2]), True),
-            (generator(wires=[0, 1, 2, 3]), oracle(wires=[0, 1, 2]), True),
+            (generator(wires=[0, 1, 2]), oracle([0, 1], wires=[0, 1, 2]), False),
+            (generator(wires=[0, 2, 1]), oracle([0, 1], wires=[0, 1, 2]), False),
+            (generator(wires=[0, 1, 3]), oracle([0, 1], wires=[0, 1, 2]), True),
+            (generator(wires=[0, 1, 2, 3]), oracle([0, 1], wires=[0, 1, 2]), True),
         ),
     )
     def test_error_wrong_wires(self, U, O, raise_error):
@@ -129,9 +129,9 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "U, O, iters, fixed_point, aux_wire",
         (
-            (generator(wires=range(3)), oracle(wires=range(3)), True, 3),
-            (generator(wires=range(2)), oracle(wires=range(2)), False, 2),
-            (generator(wires=range(4)), oracle(wires=range(4)), True, 5),
+            (generator(wires=range(3)), oracle([0, 1], wires=range(3)), True, 3),
+            (generator(wires=range(2)), oracle([0, 1], wires=range(2)), False, 2),
+            (generator(wires=range(4)), oracle([0, 1], wires=range(4)), True, 5),
         ),
     )
     def test_init_correctly(self, U, O, iters, fixed_point, aux_wire):
