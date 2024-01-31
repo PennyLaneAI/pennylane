@@ -159,6 +159,16 @@ def adjoint_state_measurements(
     )
 
 
+def adjoint_ops(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator is supported by adjoint differentiation."""
+    return op.num_params == 0 or (op.num_params == 1 and op.has_generator)
+
+
+def adjoint_observables(obs: qml.operation.Operator) -> bool:
+    """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
+    return obs.has_matrix
+
+
 def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
@@ -170,14 +180,6 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None
         Adds transforms to the input program.
 
     """
-
-    def adjoint_ops(op: qml.operation.Operator) -> bool:
-        """Specify whether or not an Operator is supported by adjoint differentiation."""
-        return op.num_params == 0 or op.num_params == 1 and op.has_generator
-
-    def adjoint_observables(obs: qml.operation.Operator) -> bool:
-        """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
-        return obs.has_matrix
 
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)

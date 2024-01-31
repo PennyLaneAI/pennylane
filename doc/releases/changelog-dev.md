@@ -139,6 +139,10 @@
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
 
+* Adds `qml.workflow.get_transform_program` and `qml.workflow.construct_batch` to inspect the transform program and batch of tapes
+  at different stages.
+  [(#5084)](https://github.com/PennyLaneAI/pennylane/pull/5084)
+
 * `CRX`, `CRY`, `CRZ`, `CROT`, and `ControlledPhaseShift` (i.e. `CPhaseShift`) now inherit from `ControlledOp`, giving them additional properties such as `control_wire` and `control_values`. Calling `qml.ctrl` on `RX`, `RY`, `RZ`, `Rot`, and `PhaseShift` with a single control wire will return gates of types `CRX`, `CRY`, etc. as opposed to a general `Controlled` operator.
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
 
