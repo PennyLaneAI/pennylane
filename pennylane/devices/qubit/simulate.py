@@ -561,7 +561,7 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
     """
     if isinstance(measurement, (CountsMP, ProbabilityMP)) and isinstance(mv, Sequence):
         mcm_samples = list(np.array([m.concretize(dct) for dct in samples]) for m in reversed(mv))
-        width = len(measurement.wires)
+        width = len(measurement.mv)
         idx = 0
         for i, s in enumerate(mcm_samples):
             idx += 2**i * s
