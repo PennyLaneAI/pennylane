@@ -502,16 +502,16 @@ def gather_non_mcm(circuit_measurement, samples):
     Returns:
         TensorLike: The combined measurement outcome
     """
+    n_sample = samples.shape[1]
 
     def sample_2_counts(samples, all_outcomes=False):
         idx = 0
-        width = len(circuit_measurement.wires)
-        for i in range(width):
-            idx += 2**i * samples[:, i]
+        for i in range(n_sample):
+            idx += 2**i * samples[:, n_sample - 1 - i]
         counts = Counter(idx)
         if all_outcomes:
             eigvals = (
-                range(2**width)
+                range(2**n_sample)
                 if circuit_measurement.obs is None
                 else circuit_measurement.obs.eigvals()
             )
@@ -520,25 +520,22 @@ def gather_non_mcm(circuit_measurement, samples):
 
     if isinstance(circuit_measurement, CountsMP):
         counts = sample_2_counts(samples, all_outcomes=circuit_measurement.all_outcomes)
-        width = len(circuit_measurement.wires)
         new_measurement = dict(sorted(counts.items()))
-        if width > 1:
-            new_measurement = dict((f"{x:064b}"[-width:], y) for x, y in new_measurement.items())
+        if circuit_measurement.obs is None:
+            new_measurement = dict((f"{x:064b}"[-n_sample:], y) for x, y in new_measurement.items())
     elif isinstance(circuit_measurement, ExpectationMP):
         new_measurement = np.mean(samples)
     elif isinstance(circuit_measurement, ProbabilityMP):
-        width = len(circuit_measurement.wires)
         counts = sample_2_counts(samples, all_outcomes=True)
         eigvals = (
-            range(2**width)
+            range(2**n_sample)
             if circuit_measurement.obs is None
             else circuit_measurement.obs.eigvals()
         )
         num = sum(counts.values())
         new_measurement = np.array([counts[ev] / num for ev in eigvals])
     elif isinstance(circuit_measurement, SampleMP):
-        width = len(circuit_measurement.wires)
-        new_measurement = samples if width > 1 else samples.ravel()
+        new_measurement = samples if n_sample > 1 else samples.ravel()
     elif isinstance(circuit_measurement, VarianceMP):
         new_measurement = qml.math.var(samples)
     else:
@@ -560,21 +557,18 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
         TensorLike: The combined measurement outcome
     """
     if isinstance(measurement, (CountsMP, ProbabilityMP)) and isinstance(mv, Sequence):
-        width = len(measurement.mv)
+        n_sample = len(measurement.mv)
         mcm_samples = list(np.array([m.concretize(dct) for dct in samples]) for m in reversed(mv))
         idx = 0
         for i, s in enumerate(mcm_samples):
             idx += 2**i * s
         counts = Counter(idx)
         if isinstance(measurement, ProbabilityMP) or measurement.all_outcomes:
-            eigvals = range(2**width)
+            eigvals = range(2**n_sample)
             counts.update(dict((x, 0) for x in eigvals))
         if isinstance(measurement, CountsMP):
             new_measurement = dict(sorted(counts.items()))
-            if width > 1:
-                new_measurement = dict(
-                    (f"{x:064b}"[-width:], y) for x, y in new_measurement.items()
-                )
+            new_measurement = dict((f"{x:064b}"[-n_sample:], y) for x, y in new_measurement.items())
             return new_measurement
         num = sum(counts.values())
         return np.array([counts[ev] / num for ev in eigvals])
@@ -598,8 +592,8 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
         num = sum(counts.values())
         new_measurement = np.array([counts[ev] / num for ev in eigvals])
     elif isinstance(measurement, SampleMP):
-        width = len(mv) if isinstance(mv, Sequence) else 1
-        if width > 1:
+        n_sample = len(mv) if isinstance(mv, Sequence) else 1
+        if n_sample > 1:
             new_measurement = np.hstack(
                 np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1))
                 for m in reversed(mv)
