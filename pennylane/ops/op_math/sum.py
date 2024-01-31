@@ -184,13 +184,7 @@ class Sum(CompositeOp):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        coeffs = []
-        targets = []
-        for term in self:
-            new_coeffs, new_targets = term.terms()
-            coeffs.extend(new_coeffs)
-            targets.extend(new_targets)
-        return coeffs, targets
+        return [1.0] * len(self), list(self)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
