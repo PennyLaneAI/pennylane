@@ -17,7 +17,6 @@
   import pennylane as qml
 
   dev = qml.device("default.clifford", tableau=True)
-
   @qml.qnode(dev)
   def circuit():
       qml.CNOT(wires=[0, 1])
@@ -70,7 +69,31 @@
   + 2j * X(0) @ Z(1)
   ```
 
+
+<h4>Parity Mapping</h4>
+
+* `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
+   [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
+   It is now possible to transform a fermionic Hamiltonian to a qubit Hamiltonian with parity mapping.
+
+   ```python
+   import pennylane as qml
+   fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+
+   qubit_ham = qml.fermi.parity_transform(fermi_ham, n=6)
+   ```
+
+   ```pycon
+   >>> print(qubit_ham)
+   (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
+   ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
+   ```
+
 <h3>Improvements 🛠</h3>
+
+* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
+  for large workflows.
+  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
 
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
@@ -224,6 +247,9 @@
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
+* Documentation `qml.data` has been updated and now mentions a way to access the same dataset simultaneously from multiple environments.
+  [(#5029)](https://github.com/PennyLaneAI/pennylane/pull/5029)
+
 * Clarification for the definition of `argnum` added to gradient methods
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
@@ -232,6 +258,9 @@
 
 * Added a development guide on deprecations and removals.
   [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
+
+* A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
+  [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -251,6 +280,9 @@
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
 
+* `qml.equal` works well with `qml.Sum` operators when wire labels are a mix of integers and strings.
+  [(#5037)](https://github.com/PennyLaneAI/pennylane/pull/5037)
+
 * The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
   [(#5068)](https://github.com/PennyLaneAI/pennylane/pull/5068)
 
@@ -259,6 +291,9 @@
 
 * Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
   [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
+
+* `PauliSentence.wires` no longer imposes a false order.
+  [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
 
 <h3>Contributors ✍️</h3>
 
@@ -269,12 +304,17 @@ Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
+Diksha Dhawan,
+Diego Guala,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
-Matthew Silverman.
+Matthew Silverman,
+Jay Soni.
+
