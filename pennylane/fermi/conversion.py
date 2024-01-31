@@ -249,7 +249,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
         )
         pw2 = PauliWord({**{wire: "Y"}, **x_string})
 
-        qubit_operator *= PauliSentence({pw1: 0.5, pw2: coeffs[sign]})
+        qubit_operator @= PauliSentence({pw1: 0.5, pw2: coeffs[sign]})
 
     for pw in qubit_operator:
         if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
