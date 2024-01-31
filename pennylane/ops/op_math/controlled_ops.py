@@ -415,6 +415,7 @@ class MultiControlledX(ControlledOp):
         unchanged.
 
     """
+
     is_self_inverse = True
     """bool: Whether or not the operator is self-inverse."""
 
@@ -659,6 +660,7 @@ class CRX(ControlledOp):
                 [0.0+0.0j, 0.0+0.0j, 0.9689+0.0j, 0.0-0.2474j],
                 [0.0+0.0j, 0.0+0.0j, 0.0-0.2474j, 0.9689+0.0j]])
         """
+
         interface = qml.math.get_interface(theta)
 
         c = qml.math.cos(theta / 2)
