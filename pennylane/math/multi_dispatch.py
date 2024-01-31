@@ -963,9 +963,11 @@ def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
         trace = jax.interpreters.ad.JVPTrace(main, 0)
 
     args_jvp = [
-        jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-        if i in argnums
-        else arg
+        (
+            jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+            if i in argnums
+            else arg
+        )
         for i, arg in enumerate(args)
     ]
 

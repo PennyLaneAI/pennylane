@@ -57,6 +57,7 @@ class MultiRZ(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -239,6 +240,7 @@ class PauliRot(Operation):
     >>> print(example_circuit())
     0.8775825618903724
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -564,6 +566,7 @@ class PCPhase(Operation):
      [0.  +0.j   0.  +0.j   0.33+0.94j 0.  +0.j  ]
      [0.  +0.j   0.  +0.j   0.  +0.j   0.33-0.94j]]
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -759,6 +762,7 @@ class IsingXX(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -894,6 +898,7 @@ class IsingYY(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1036,6 +1041,7 @@ class IsingZZ(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1218,6 +1224,7 @@ class IsingXY(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1396,6 +1403,7 @@ class PSWAP(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1549,6 +1557,7 @@ class CPhaseShift00(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1735,6 +1744,7 @@ class CPhaseShift01(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1913,6 +1923,7 @@ class CPhaseShift10(Operation):
         wires (Any, Wires): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
