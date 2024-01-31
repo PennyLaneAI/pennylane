@@ -214,15 +214,6 @@ class Prod(CompositeOp):
     _op_symbol = "@"
     _math_op = math.prod
 
-    def terms(self):  # is this method necessary for this class?
-        coeffs = []
-        targets = []
-        for term in self:
-            new_coeffs, new_targets = term.terms()
-            coeffs.extend(new_coeffs)
-            targets.extend(new_targets)
-        return coeffs, targets
-
     @property
     def is_hermitian(self):
         """Check if the product operator is hermitian.
@@ -379,6 +370,11 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
+        """
+        Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where 
+        :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator 
+        or pure product of single PL operators.
+        """
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.simplify()
@@ -426,6 +422,31 @@ class Prod(CompositeOp):
             op_list[j + 1] = key_op
 
         return op_list
+    
+    def terms(self):  # is this method necessary for this class?
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            pr.simplify()
+            ops = [pauli.operation() for pauli in pr.keys()]
+            return list(pr.values()), ops
+
+        global_phase, factors = self._simplify_factors(factors=self.operands)
+
+        factors = list(itertools.product(*factors))
+
+        factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
+
+        # harvest coeffs and ops
+        coeffs = []
+        ops = []
+        for factor in factors:
+            if isinstance(factor, SProd):
+                coeffs.append(global_phase * factor.scalar)
+                ops.append(factor.base)
+            else:
+                coeffs.append(1.)
+                ops.append(factor)
+        return coeffs, ops
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:

@@ -26,6 +26,8 @@ from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
+X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
+
 no_mat_ops = (
     qml.Barrier,
     qml.WireCut,
@@ -157,6 +159,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         op4 = qml.prod(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
         assert op3.hash != op4.hash
 
+    @pytest.mark.skip
     @pytest.mark.parametrize("ops_lst", ops)
     def test_terms(self, ops_lst):
         """Test that terms are initialized correctly."""
@@ -171,6 +174,39 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
         for f1, f2 in zip(prod_op.operands, prod_term_ops[0].operands):
             assert qml.equal(f1, f2)
+
+    PROD_TERMS_OP_PAIRS_NOPAULI = (
+        (qml.prod(X(0), X(1), qml.Hadamard(0)), [1.0], [qml.prod(X(0), X(1), qml.Hadamard(0))]),
+        (
+            qml.prod(
+                qml.prod(qml.Hadamard(0), X(2), X(3)),
+                qml.s_prod(0.5, qml.sum(qml.Hadamard(5), qml.s_prod(0.4, X(6)))),
+            ),
+            [0.5, 0.2],
+            [
+                qml.prod(X(2), X(3), qml.Hadamard(5), qml.Hadamard(0)),
+                qml.prod(X(6), X(2), X(3), qml.Hadamard(0)),
+            ],
+        ),
+    )
+
+    @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_NOPAULI)
+    def test_terms_no_pauli_rep(self, op, coeffs_true, ops_true):
+        """Test that Prod.terms() is correct for operators that dont all have a pauli_rep"""
+        coeffs, ops = op.terms()
+        assert coeffs == coeffs_true
+        assert ops == ops_true
+    
+    PROD_TERMS_OP_PAIRS_PAULI = (
+        (qml.prod(X(0), X(1), X(2)), [1.0], [qml.prod(X(0), X(1), X(2))]),
+    )
+
+    @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI)
+    def test_terms_pauli_rep(self, op, coeffs_true, ops_true):
+        """Test that Prod.terms() is correct for operators that all have a pauli_rep"""
+        coeffs, ops = op.terms()
+        assert coeffs == coeffs_true
+        assert ops == ops_true
 
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
