@@ -50,6 +50,7 @@ class QutritBasisStatePreparation(Operation):
     >>> print(circuit(basis_state, obs))
     [array(0.70710678), array(-0.70710678), array(-0.70710678), array(0.70710678)]
     """
+
     num_params = 1
     num_wires = AnyWires
     grad_method = None

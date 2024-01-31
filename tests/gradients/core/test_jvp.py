@@ -979,9 +979,11 @@ class TestBatchJVP:
             tapes,
             tangents,
             param_shift,
-            reduction=lambda jvps, x: jvps.extend(qml.math.reshape(x, (1,)))
-            if not isinstance(x, tuple) and x.shape == ()
-            else jvps.extend(x),
+            reduction=lambda jvps, x: (
+                jvps.extend(qml.math.reshape(x, (1,)))
+                if not isinstance(x, tuple) and x.shape == ()
+                else jvps.extend(x)
+            ),
         )
         res = fn(dev.execute(v_tapes))
 
