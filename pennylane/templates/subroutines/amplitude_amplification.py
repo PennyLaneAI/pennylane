@@ -85,19 +85,13 @@ class AmplitudeAmplification(Operation):
         self.queue()
 
         if fixed_point and aux_wire is None:
-            raise ValueError(
-                f"aux_wire must be specified if fixed_point == True."
-            )
+            raise ValueError(f"aux_wire must be specified if fixed_point == True.")
 
         if fixed_point and len(U.wires + qml.wires.Wires(aux_wire)) == len(U.wires):
-            raise ValueError(
-                f"aux_wire must be different from the wires of U."
-            )
+            raise ValueError(f"aux_wire must be different from the wires of U.")
 
         if set(U.wires) != set(O.wires):
-            raise ValueError(
-                f"U and O must act on the same wires."
-            )
+            raise ValueError(f"U and O must act on the same wires.")
         if fixed_point:
             super().__init__(wires=U.wires + qml.wires.Wires(aux_wire))
         else:
