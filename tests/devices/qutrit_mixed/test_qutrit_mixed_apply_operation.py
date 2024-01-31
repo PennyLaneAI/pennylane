@@ -20,7 +20,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Channel
-from pennylane.devices.qutrit_mixed import apply_operation
+from pennylane.devices.qutrit_mixed import apply_operation, measure
 
 ml_frameworks_list = [
     "numpy",
@@ -320,3 +320,219 @@ class TestChannels:  # pylint: disable=too-few-public-methods
 
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
+
+
+class TestTRXCalcGrad:
+    """Tests the application and differentiation of a TRX gate in the different interfaces."""
+
+    phi = 0.325
+
+    def compare_expected_result(self, phi, state, new_state, g):
+        pass
+
+    @pytest.mark.autograd
+    def test_trx_grad_autograd(self):
+        """Test that the application of a trx gate is differentiable with autograd."""
+
+        state = qml.numpy.array(self.state)
+
+        def f(phi):
+            op = qml.TRX(phi, wires=0)
+            new_state = apply_operation(op, state)
+            return measure(qml.probs(), new_state)
+
+        phi = qml.numpy.array(self.phi + 0j, requires_grad=True)
+
+        probs = f(phi)
+        g = qml.jacobian(lambda x: qml.math.real(f(x)))(phi)
+        self.compare_expected_result(phi, state, probs, g)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_trx_grad_jax(self, use_jit):
+        """Test that the application of a trx gate is differentiable with jax."""
+
+        import jax
+
+        state = jax.numpy.array(self.state)
+
+        def f(phi):
+            op = qml.TRX(phi, wires=0)
+            new_state = apply_operation(op, state)
+            return measure(qml.probs(), new_state)
+
+        if use_jit:
+            f = jax.jit(f)
+
+        phi = self.phi
+
+        probs = f(phi)
+        g = jax.jacobian(f, holomorphic=True)(phi + 0j)
+        self.compare_expected_result(phi, state, probs, g)
+
+    @pytest.mark.torch
+    def test_trx_grad_torch(self):
+        """Tests the application and differentiation of a trx gate with torch."""
+
+        import torch
+
+        state = torch.tensor(self.state)
+
+        def f(phi):
+            op = qml.TRX(phi, wires=0)
+            new_state = apply_operation(op, state)
+            return measure(qml.probs(), new_state)
+
+        phi = torch.tensor(self.phi, requires_grad=True)
+
+        probs = f(phi)
+        # forward-mode needed with complex results.
+        # See bug: https://github.com/pytorch/pytorch/issues/94397
+        g = torch.autograd.functional.jacobian(f, phi + 0j, strategy="forward-mode", vectorize=True)
+
+        self.compare_expected_result(
+            phi.detach().numpy(),
+            state.detach().numpy(),
+            probs.detach().numpy(),
+            g.detach().numpy(),
+        )
+
+    @pytest.mark.tf
+    def test_trx_grad_tf(self):
+        """Tests the application and differentiation of a trx gate with tensorflow"""
+        import tensorflow as tf
+
+        state = tf.Variable(self.state)
+        phi = tf.Variable(0.8589 + 0j)  # TODO, what should this value be
+
+        with tf.GradientTape() as grad_tape:
+            op = qml.TRX(phi, wires=0)
+            new_state = apply_operation(op, state)
+            probs = measure(qml.probs(), new_state)
+
+        grads = grad_tape.jacobian(probs, [phi])
+        # tf takes gradient with respect to conj(z), so we need to conj the gradient
+        phi_grad = tf.math.conj(grads[0])
+
+        self.compare_expected_result(phi, state, new_state, phi_grad)
+
+
+class TestChannelCalcGrad:
+    """Tests the application and differentiation of a Channel in the different interfaces."""
+
+    pass
+
+
+# TODO: move to other file when measurements PR is done
+class TestSumOfTermsDifferentiability:
+    x = 0.52
+
+    @staticmethod
+    def f(scale, coeffs, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
+
+        if convert_to_hamiltonian:
+            H = qml.Hamiltonian(
+                coeffs,
+                [
+                    qml.operation.Tensor(*(qml.PauliZ(i) for i in range(n_wires))),
+                    qml.operation.Tensor(*(qml.PauliY(i) for i in range(n_wires))),
+                ],
+            )
+        else:
+            t1 = qml.s_prod(coeffs[0], qml.prod(*(qml.PauliZ(i) for i in range(n_wires))))
+            t2 = qml.s_prod(coeffs[1], qml.prod(*(qml.PauliY(i) for i in range(n_wires))))
+            H = t1 + t2
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        return  # TODO simulate(qs)
+
+    @staticmethod
+    def expected(scale, coeffs, n_wires=10, offset=0.1, like="numpy"):
+        phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
+        cosines = qml.math.cos(phase)
+        sines = qml.math.sin(phase)
+        return coeffs[0] * qml.math.prod(cosines) + coeffs[1] * qml.math.prod(sines)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+    @pytest.mark.parametrize(
+        "coeffs",
+        [
+            (qml.numpy.array(2.5), qml.numpy.array(6.2)),
+            (qml.numpy.array(2.5, requires_grad=False), qml.numpy.array(6.2, requires_grad=False)),
+        ],
+    )
+    def test_autograd_backprop(self, convert_to_hamiltonian, coeffs):
+        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
+        x = qml.numpy.array(self.x)
+        out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x, coeffs)
+        assert qml.math.allclose(out, expected_out)
+
+        g = qml.grad(self.f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_g = qml.grad(self.expected)(x, coeffs)
+        assert qml.math.allclose(g, expected_g)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+    def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
+        """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        x = jax.numpy.array(self.x, dtype=jax.numpy.float64)
+        coeffs = (5.2, 6.7)
+        f = jax.jit(self.f, static_argnums=(1, 2, 3, 4)) if use_jit else self.f
+
+        out = f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x, coeffs)
+        assert qml.math.allclose(out, expected_out)
+
+        g = jax.grad(f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_g = jax.grad(self.expected)(x, coeffs)
+        assert qml.math.allclose(g, expected_g)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+    def test_torch_backprop(self, convert_to_hamiltonian):
+        """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
+        import torch
+
+        coeffs = [
+            torch.tensor(9.2, requires_grad=False, dtype=torch.float64),
+            torch.tensor(6.2, requires_grad=False, dtype=torch.float64),
+        ]
+
+        x = torch.tensor(
+            -0.289, requires_grad=True, dtype=torch.float64
+        )  # TODO what should I make these values
+        x2 = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
+        out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x2, coeffs, like="torch")
+        assert qml.math.allclose(out, expected_out)
+
+        out.backward()
+        expected_out.backward()
+        assert qml.math.allclose(x.grad, x2.grad)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+    def test_tf_backprop(self, convert_to_hamiltonian):
+        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
+        import tensorflow as tf
+
+        x = tf.Variable(self.x)
+        coeffs = [8.3, 5.7]
+
+        with tf.GradientTape() as tape1:
+            out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+
+        with tf.GradientTape() as tape2:
+            expected_out = self.expected(x, coeffs)
+
+        assert qml.math.allclose(out, expected_out)
+        g1 = tape1.gradient(out, x)
+        g2 = tape2.gradient(expected_out, x)
+        assert qml.math.allclose(g1, g2)
