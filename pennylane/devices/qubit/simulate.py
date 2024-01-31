@@ -503,17 +503,21 @@ def gather_non_mcm(circuit_measurement, samples):
         TensorLike: The combined measurement outcome
     """
 
-    def sample_2_counts(samples, all_outcomes=False):    
+    def sample_2_counts(samples, all_outcomes=False):
         idx = 0
         width = len(circuit_measurement.wires)
         for i in range(width):
             idx += 2**i * samples[:, i]
         counts = Counter(idx)
         if all_outcomes:
-            eigvals = range(2**width) if circuit_measurement.obs is None else circuit_measurement.obs.eigvals()
+            eigvals = (
+                range(2**width)
+                if circuit_measurement.obs is None
+                else circuit_measurement.obs.eigvals()
+            )
             counts.update(dict((x, 0) for x in eigvals))
         return counts
-    
+
     if isinstance(circuit_measurement, CountsMP):
         counts = sample_2_counts(samples, all_outcomes=circuit_measurement.all_outcomes)
         width = len(circuit_measurement.wires)
@@ -525,7 +529,11 @@ def gather_non_mcm(circuit_measurement, samples):
     elif isinstance(circuit_measurement, ProbabilityMP):
         width = len(circuit_measurement.wires)
         counts = sample_2_counts(samples, all_outcomes=True)
-        eigvals = range(2**width) if circuit_measurement.obs is None else circuit_measurement.obs.eigvals()
+        eigvals = (
+            range(2**width)
+            if circuit_measurement.obs is None
+            else circuit_measurement.obs.eigvals()
+        )
         num = sum(counts.values())
         new_measurement = np.array([counts[ev] / num for ev in eigvals])
     elif isinstance(circuit_measurement, SampleMP):
@@ -551,16 +559,23 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
     Returns:
         TensorLike: The combined measurement outcome
     """
-    if isinstance(measurement, ProbabilityMP) and isinstance(mv, Sequence):
+    if isinstance(measurement, (CountsMP, ProbabilityMP)) and isinstance(mv, Sequence):
         mcm_samples = list(np.array([m.concretize(dct) for dct in samples]) for m in reversed(mv))
+        width = len(measurement.wires)
         idx = 0
         for i, s in enumerate(mcm_samples):
             idx += 2**i * s
         counts = Counter(idx)
-        eigvals = range(2 ** len(mv))
-        for i in eigvals:
-            if i not in counts:
-                counts.update({i: 0})
+        if isinstance(measurement, ProbabilityMP) or measurement.all_outcomes:
+            eigvals = range(2**width)
+            counts.update(dict((x, 0) for x in eigvals))
+        if isinstance(measurement, CountsMP):
+            new_measurement = dict(sorted(counts.items()))
+            if width > 1:
+                new_measurement = dict(
+                    (f"{x:064b}"[-width:], y) for x, y in new_measurement.items()
+                )
+            return new_measurement
         num = sum(counts.values())
         return np.array([counts[ev] / num for ev in eigvals])
     if isinstance(mv, Sequence):
