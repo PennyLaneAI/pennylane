@@ -365,8 +365,10 @@ def mock_from_cid(cid, record_type, pcp=None):
     if [cid, record_type] in [[297, "3d"], [783, "2d"]]:
         return pcp.Compound(records[cid])
 
-    raise pcp.NotFoundError if [cid, record_type] == [783, "3d"] else ValueError(
-        "Provided CID (or Identifier) is None."
+    raise (
+        pcp.NotFoundError
+        if [cid, record_type] == [783, "3d"]
+        else ValueError("Provided CID (or Identifier) is None.")
     )
 
 
