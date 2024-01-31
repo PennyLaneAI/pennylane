@@ -75,7 +75,7 @@ class Reflection(SymbolicOp, Operation):
         return self.U.wires
 
     def decomposition(self):
-
+        print(type(self.U))
         wires = self.U.wires
 
         ops = []
