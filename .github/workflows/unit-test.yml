@@ -115,6 +115,7 @@ jobs:
           pip install --upgrade pip wheel
 
       - name: Install Poetry
+        id: poetry
         uses: XanaduAI/cloud-actions/install-python-poetry@main
         with:
           poetry_version: 1.7.1
@@ -122,7 +123,7 @@ jobs:
 
       - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
-        run: poetry install --with dev,ci,${{ inputs.additional_poetry_groups || 'main' }}
+        run: ${{ steps.poetry.outputs.poetry_bin }} install --with dev,ci,${{ inputs.additional_poetry_groups || 'main' }}
 
       - name: Install additional PIP packages
         if: inputs.additional_pip_packages != '' && steps.continue.outputs.confirm == 'true'
