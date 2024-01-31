@@ -215,7 +215,13 @@ class Prod(CompositeOp):
     _math_op = math.prod
 
     def terms(self):  # is this method necessary for this class?
-        return [1.0], [self]
+        coeffs = []
+        targets = []
+        for term in self:
+            new_coeffs, new_targets = term.terms()
+            coeffs.extend(new_coeffs)
+            targets.extend(new_targets)
+        return coeffs, targets
 
     @property
     def is_hermitian(self):
