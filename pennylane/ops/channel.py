@@ -53,6 +53,7 @@ class AmplitudeDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -131,6 +132,7 @@ class GeneralizedAmplitudeDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
@@ -209,6 +211,7 @@ class PhaseDamping(Channel):
         gamma (float): phase damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -294,6 +297,7 @@ class DepolarizingChannel(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -367,6 +371,7 @@ class BitFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -449,6 +454,7 @@ class ResetError(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
@@ -550,6 +556,7 @@ class PauliError(Channel):
         array([[0.        , 0.70710678],
                [0.70710678, 0.        ]])
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -651,6 +658,7 @@ class PhaseFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -701,6 +709,7 @@ class QubitChannel(Channel):
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = AnyWires
     grad_method = None
 
@@ -830,6 +839,7 @@ class ThermalRelaxationError(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 4
     num_wires = 1
     grad_method = "F"
@@ -896,13 +906,16 @@ class ThermalRelaxationError(Channel):
             e1 = -p_reset * pe + p_reset
             v1 = np.array([[0, 1], [0, 0]])
             K1 = np.sqrt(e1 + np.eps) * v1
-            common_term = np.sqrt(
-                4 * eT2**2
-                + 4 * p_reset**2 * pe**2
-                - 4 * p_reset**2 * pe
-                + p_reset**2
-                + np.eps
+            base = sum(
+                (
+                    4 * eT2**2,
+                    4 * p_reset**2 * pe**2,
+                    -4 * p_reset**2 * pe,
+                    p_reset**2,
+                    np.eps,
+                )
             )
+            common_term = np.sqrt(base)
             e2 = 1 - p_reset / 2 - common_term / 2
             term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
             v2 = (term2 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(
