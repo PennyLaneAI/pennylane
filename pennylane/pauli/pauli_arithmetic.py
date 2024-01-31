@@ -347,7 +347,7 @@ class PauliWord(dict):
             return PauliSentence({new_word: coeff})
 
         if isinstance(other, qml.operation.Operator):
-            op_self = qml.pauli.pauli_sentence(self)
+            op_self = PauliSentence({self: 1.})
             return op_self.commutator(other)
 
         if isinstance(other, PauliSentence):
