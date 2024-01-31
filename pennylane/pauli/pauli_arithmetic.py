@@ -339,7 +339,34 @@ class PauliWord(dict):
         return new_word, 2 * coeff
 
     def commutator(self, other):
-        """comm between two PauliWords"""
+        """
+        Compute commutator between a ``PauliWord`` :math:`P` and other operator :math:`O`
+
+        .. math:: [P, O] = P O - O P
+
+        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`, 
+        this method is faster than computing ``P @ O - O @ P``. It is what is being used
+        in :func:`~commutator` when setting ``pauli=True``.
+
+        Args:
+            other (Union[Operator, PauliWord, PauliSentence]): Second operator
+
+        Returns:
+            ~PauliSentence: The commutator result in form of a :class:`~PauliSentence` instances.
+
+        **Examples**
+
+        You can compute commutators between :class:`~PauliWord` instances.
+
+        >>> pw = PauliWord({0:"X"})
+        >>> pw.commutator(PauliWord({0:"Y"}))
+        2j * Z(0)
+
+        You can also compute the commutator with other operator types if they have a Pauli representation.
+
+        >>> pw.commutator(qml.PauliY(0))
+        2j * Z(0)
+        """
         if isinstance(other, PauliWord):
             new_word, coeff = self._commutator(other)
             if coeff == 0:
@@ -698,8 +725,36 @@ class PauliSentence(dict):
         )
 
     def commutator(self, other):
-        """Compute comm between two Pauli sentences by iterating over each sentence and commuting
-        the Pauli words pair-wise"""
+        """
+        Compute commutator between a ``PauliSentence`` :math:`P` and other operator :math:`O`
+
+        .. math:: [P, O] = P O - O P
+
+        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`, 
+        this method is faster than computing ``P @ O - O @ P``. It is what is being used
+        in :func:`~commutator` when setting ``pauli=True``.
+
+        Args:
+            other (Union[Operator, PauliWord, PauliSentence]): Second operator
+
+        Returns:
+            ~PauliSentence: The commutator result in form of a :class:`~PauliSentence` instances.
+
+        **Examples**
+
+        You can compute commutators between :class:`~PauliSentence` instances.
+
+        >>> pw1 = PauliWord({0:"X"})
+        >>> pw2 = PauliWord({1:"X"})
+        >>> ps1 = PauliSentence({pw1: 1., pw2: 2.})
+        >>> ps2 = PauliSentence({pw1: 0.5j, pw2: 1j})
+        >>> ps1.commutator(ps2)
+        0 * I
+
+        You can also compute the commutator with other operator types if they have a Pauli representation.
+
+        >>> ps1.commutator(qml.PauliY(0))
+        2j * Z(0)"""
         final_ps = PauliSentence()
 
         if isinstance(other, PauliWord):
@@ -711,6 +766,11 @@ class PauliSentence(dict):
             return final_ps
 
         if not isinstance(other, PauliSentence):
+            if other.pauli_rep is None:
+                raise NotImplementedError(
+                    f"Cannot compute a native commutator of a Pauli word or sentence with the operator {other} of type {type(other)}."
+                    f"You can try to use qml.commutator(op1, op2, pauli=False) instead."
+                    )
             other = qml.pauli.pauli_sentence(other)
 
         for pw1 in self:
