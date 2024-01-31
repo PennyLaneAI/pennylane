@@ -17,7 +17,6 @@
   import pennylane as qml
 
   dev = qml.device("default.clifford", tableau=True)
-
   @qml.qnode(dev)
   def circuit():
       qml.CNOT(wires=[0, 1])
@@ -69,6 +68,26 @@
   2j * Z(0) @ X(1)
   + 2j * X(0) @ Z(1)
   ```
+
+
+<h4>Parity Mapping</h4>
+
+* `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
+   [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
+   It is now possible to transform a fermionic Hamiltonian to a qubit Hamiltonian with parity mapping.
+
+   ```python
+   import pennylane as qml
+   fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+
+   qubit_ham = qml.fermi.parity_transform(fermi_ham, n=6)
+   ```
+
+   ```pycon
+   >>> print(qubit_ham)
+   (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
+   ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
+   ```
 
 <h3>Improvements 🛠</h3>
 
@@ -291,6 +310,7 @@ Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
+Diksha Dhawan,
 Diego Guala,
 Korbinian Kottmann,
 Christina Lee,
@@ -301,5 +321,6 @@ Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
-Matthew Silverman.
-Jay Soni,
+Matthew Silverman,
+Jay Soni.
+
