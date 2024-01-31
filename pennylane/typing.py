@@ -73,6 +73,7 @@ class TensorLike(metaclass=TensorLikeMETA):
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
+    # pylint: disable=c-extension-no-member
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
             import jax
@@ -85,7 +86,7 @@ def _is_jax(other, subclass=False):
                     jax.Array  # TODO: keep this after jax>=0.4 is required
                     if hasattr(jax, "Array")
                     else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer]
-                ),  # pylint: disable=c-extension-no-member
+                ),
             ]
             check = issubclass if subclass else isinstance
 

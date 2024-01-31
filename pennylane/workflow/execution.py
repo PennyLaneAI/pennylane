@@ -19,10 +19,10 @@ Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
 
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
-# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
-# pylint: disable=too-many-statements, invalid-unary-operand-type, function-redefined
-# pylint: disable=isinstance-second-argument-not-valid-type
+# pylint: disable=import-outside-toplevel,too-many-branches,not-callable,unexpected-keyword-arg
+# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
+# pylint: disable=invalid-unary-operand-type,isinstance-second-argument-not-valid-type
+# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args
 
 import inspect
 import warnings
