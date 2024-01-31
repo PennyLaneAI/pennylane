@@ -25,6 +25,7 @@ from pennylane.devices import DefaultQubit, ExecutionConfig
 
 np.random.seed(0)
 
+
 def test_name():
     """Tests the name of DefaultQubit."""
     assert DefaultQubit().name == "default.qubit"
