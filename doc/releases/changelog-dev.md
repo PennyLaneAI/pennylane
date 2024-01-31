@@ -150,7 +150,11 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
-* `qml.ctrl` called on operators with custom controlled versions will return instances of the custom class, and it will also flatten nested controlled operators to a single multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`, calling `qml.ctrl` will always resolve to the best option in `CNOT`, `Toffoli`, or `MultiControlledX` depending on the number of control wires and control values.
+* `qml.ctrl` called on operators with custom controlled versions will return instances
+  of the custom class, and it will also flatten nested controlled operators to a single
+  multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
+  calling `qml.ctrl` will always resolve to the best option in `CNOT`, `Toffoli`, or
+  `MultiControlledX` depending on the number of control wires and control values.
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
 
 <h4>Community contributions 🥳</h4>
