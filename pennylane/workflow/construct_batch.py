@@ -14,11 +14,41 @@
 """Contains a function extracting the tapes at postprocessing at any stage of a transform program.
 
 """
+from functools import wraps
 import inspect
 from typing import Union, Callable, Tuple
 
 import pennylane as qml
 from .qnode import QNode, _make_execution_config, _get_device_shots
+
+
+def null_postprocessing(results):
+    """A postprocessing function with null behavior."""
+    return results[0]
+
+
+def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDispatcher":
+    """Construct a transform from a tape-to-tape function.
+
+    Args:
+        expand_fn (Callable): a function from a single tape to a single tape
+
+    Returns:
+
+        .TransformDispatcher: Returns a transform dispatcher object that that can transform any
+        circuit-like object in PennyLane.
+
+    >>> device = qml.device('default.qubit.legacy', wires=2)
+    >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
+    >>> my_transform
+    <transform: expand_fn>
+    """
+
+    @wraps(expand_fn)
+    def wrapped_expand_fn(tape, *args, **kwargs):
+        return (expand_fn(tape, *args, **kwargs),), null_postprocessing
+
+    return qml.transform(wrapped_expand_fn)
 
 
 def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformProgram":
@@ -32,7 +62,7 @@ def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformP
         config = _make_execution_config(qnode)
         return program + qnode.device.preprocess(config)[0]
     program.add_transform(qml.transform(qnode.device.batch_transform))
-    program.add_transform(qml.transforms.core.expand_fn_transform(qnode.device.expand_fn))
+    program.add_transform(expand_fn_transform(qnode.device.expand_fn))
     return program
 
 
