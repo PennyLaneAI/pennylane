@@ -517,7 +517,9 @@ class DefaultClifford(Device):
 
                         snap_sim = stim.TableauSimulator()
                         snap_sim.do_circuit(stim_circuit)
-                        gb_phase = qml.GlobalPhase(qml.math.sum(gop.data[0] for gop in global_phase_ops))
+                        gb_phase = qml.GlobalPhase(
+                            qml.math.sum(gop.data[0] for gop in global_phase_ops)
+                        )
                         state = self._measure_state(snap_sim, circuit, gb_phase)
 
                         debugger.snapshots[op.tag or len(debugger.snapshots)] = state

@@ -466,15 +466,18 @@ def test_debugger():
     assert len(result) == 2
 
     assert list(debugger.snapshots.keys()) == [0, "final_state"]
-    assert qml.math.allclose(debugger.snapshots[0], qml.math.array([[1., 0., 0.], [0., 1., 0.]]))
     assert qml.math.allclose(
-        debugger.snapshots["final_state"], qml.math.array([[0., 1., 0.], [1., 0., 0.]])
+        debugger.snapshots[0], qml.math.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+    )
+    assert qml.math.allclose(
+        debugger.snapshots["final_state"], qml.math.array([[0.0, 1.0, 0.0], [1.0, 0.0, 0.0]])
     )
 
     assert qml.math.allclose(result[0], 1.0)
     assert qml.math.allclose(result[1], 0.0)
 
     dev = qml.device("default.clifford", tableau=False)
+
     @qml.qnode(dev)
     def circuit():
         for op in ops:
