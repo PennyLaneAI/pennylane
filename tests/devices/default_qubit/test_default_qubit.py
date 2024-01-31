@@ -23,6 +23,7 @@ import pennylane as qml
 
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
+np.random.seed(0)
 
 def test_name():
     """Tests the name of DefaultQubit."""
