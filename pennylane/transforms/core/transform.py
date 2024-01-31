@@ -45,14 +45,15 @@ def transform(
             * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
               qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
 
-        expand_transform (Callable): An optional expand transform is applied directly before the input
+    Keyword Args:
+        expand_transform=None (Optional[Callable]): An optional expand transform is applied directly before the input
             quantum transform. It must be a function that satisfies the same requirements as
             ``quantum_transform``.
-        classical_cotransform (Callable): A classical co-transform is a function to post-process the classical
+        classical_cotransform=None (Optional[Callable]): A classical co-transform is a function to post-process the classical
             jacobian and the quantum jacobian and has the signature: ``my_cotransform(qjac, cjac, tape) -> tensor_like``
         is_informative=False (bool): Whether or not a transform is informative. If true the transform is queued at the end
             of the transform program and the tapes or qnode aren't executed.
-        final_transform (bool): Whether or not the transform is terminal. If true the transform is queued at the end
+        final_transform=False (bool): Whether or not the transform is terminal. If true the transform is queued at the end
             of the transform program. ``is_informative`` supersedes ``final_transform``.
 
     Returns:
