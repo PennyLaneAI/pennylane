@@ -57,6 +57,7 @@ class RX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -152,6 +153,7 @@ class RY(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -246,6 +248,7 @@ class RZ(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -381,6 +384,7 @@ class PhaseShift(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -555,6 +559,7 @@ class Rot(Operation):
         wires (Any, Wires): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
@@ -718,6 +723,7 @@ class U1(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -845,6 +851,7 @@ class U2(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
@@ -986,6 +993,7 @@ class U3(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""

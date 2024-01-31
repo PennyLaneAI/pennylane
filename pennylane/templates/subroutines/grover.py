@@ -97,6 +97,7 @@ class GroverOperator(Operation):
     Optimally, the oracle-operator pairing should be repeated :math:`\lceil \frac{\pi}{4}\sqrt{2^{n}} \rceil` times.
 
     """
+
     num_wires = AnyWires
     grad_method = None
 
