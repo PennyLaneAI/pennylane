@@ -15,7 +15,7 @@
 This module contains the ``TransformProgram`` class.
 """
 from functools import partial
-from typing import Callable, List, Tuple, Optional, Sequence
+from typing import Callable, List, Tuple, Optional, Sequence, Union
 
 import pennylane as qml
 from pennylane.typing import Result, ResultBatch
@@ -117,6 +117,35 @@ class TransformProgram:
 
     .. seealso:: :func:`~.pennylane.transform`
 
+    **Implemented Dunder methods**
+
+    Programs have several implemented dunder methods for easy manipulation.
+
+    >>> program = TransformProgram()
+    >>> program.add_transform(qml.compile)
+    >>> program.add_transform(qml.transforms.cancel_inverses)
+    >>> [t for t in program]  # Iteration
+    [<compile([], {})>, <cancel_inverses([], {})>]
+    >>> program[0]
+    <compile([], {})>
+    >>> program[::-1]
+    TransformProgram(cancel_inverses, compile)
+    >>> len(program)
+    2
+    >>> True if program else False
+    True
+    >>> True if TransformProgram() else False
+    False
+    >>> program2 = copy.copy(program)
+    >>> program2 == program
+    True
+    >>> qml.compile in program
+    True
+    >>> qml.transforms.hamiltonian_expand in program
+    False
+    >>> program + program
+    TransformProgram(compile, cancel_inverses, compile, cancel_inverses)
+
     """
 
     def __init__(self, initial_program: Optional[Sequence] = None):
@@ -132,9 +161,11 @@ class TransformProgram:
         """int: Return the number transforms in the program."""
         return len(self._transform_program)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> Union["TransformProgram", "TransformContainer"]:
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         transform program"""
+        if isinstance(idx, slice):
+            return TransformProgram(self._transform_program[idx])
         return self._transform_program[idx]
 
     def __bool__(self):
@@ -155,11 +186,18 @@ class TransformProgram:
         contents = ", ".join(f"{transform_c.transform.__name__}" for transform_c in self)
         return f"TransformProgram({contents})"
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, TransformProgram):
             return False
 
         return self._transform_program == other._transform_program
+
+    def __contains__(self, obj):
+        if isinstance(obj, TransformContainer):
+            return obj in self._transform_program
+        if isinstance(obj, TransformDispatcher):
+            return any(obj.transform == t.transform for t in self)
+        return False
 
     def push_back(self, transform_container: TransformContainer):
         """Add a transform (container) to the end of the program.
@@ -172,7 +210,10 @@ class TransformProgram:
 
         # Program can only contain one informative transform and at the end of the program
         if self.has_final_transform:
-            raise TransformError("The transform program already has a terminal transform.")
+            if transform_container.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
+            self._transform_program.insert(-1, transform_container)
+            return
         self._transform_program.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):
@@ -290,7 +331,7 @@ class TransformProgram:
     @property
     def has_final_transform(self) -> bool:
         """``True`` if the transform program has a terminal transform."""
-        return self[-1].final_transform if self else False
+        return self[-1].final_transform if self else False  # pylint: disable=no-member
 
     def has_classical_cotransform(self) -> bool:
         """Check if the transform program has some classical cotransforms.
