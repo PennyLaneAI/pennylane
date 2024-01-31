@@ -239,6 +239,9 @@
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
+* Documentation `qml.data` has been updated and now mentions a way to access the same dataset simultaneously from multiple environments.
+  [(#5029)](https://github.com/PennyLaneAI/pennylane/pull/5029)
+
 * Clarification for the definition of `argnum` added to gradient methods
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
@@ -281,6 +284,9 @@
 * Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
   [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
+* `PauliSentence.wires` no longer imposes a false order.
+  [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -290,6 +296,7 @@ Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
+Diego Guala,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,

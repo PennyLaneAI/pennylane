@@ -8,7 +8,6 @@ autograd
 toml
 appdirs
 semantic_version
-dask[delayed]
 autoray
 matplotlib
 requests
