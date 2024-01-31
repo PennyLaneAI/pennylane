@@ -22,7 +22,7 @@ from pennylane.operation import Operation
 
 
 class AmplitudeAmplification(Operation):
-    """AmplitudeAmplification(U, O, iters=1, fixed_point=False, aux_wire=None)
+    r"""AmplitudeAmplification(U, O, iters=1, fixed_point=False, aux_wire=None)
 
     Given a state :math:`|\Psi\rangle = \alpha |\psi\rangle + \beta|\psi^{\perp}}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\psi\rangle`.
 
