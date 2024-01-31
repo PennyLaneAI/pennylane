@@ -573,7 +573,7 @@ class PauliSentence(dict):
     Or, alternatively, use :func:`~commutator`.
     >>> qml.commutator(op1, op2, pauli=True)
 
-    Note that we need to specify `pauli=True` as the function returns PennyLane operators by default.
+    Note that we need to specify ``pauli=True`` as :func:`~.commutator` returns PennyLane operators by default.
 
     """
 
