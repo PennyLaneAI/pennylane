@@ -175,8 +175,27 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         for f1, f2 in zip(prod_op.operands, prod_term_ops[0].operands):
             assert qml.equal(f1, f2)
 
-    PROD_TERMS_OP_PAIRS_NOPAULI = (
-        (qml.prod(X(0), X(1), qml.Hadamard(0)), [1.0], [qml.prod(X(0), X(1), qml.Hadamard(0))]),
+    PROD_TERMS_OP_PAIRS_NOPAULI = (  # not ll operands have pauli representation
+        (
+            qml.prod(qml.Hadamard(0), X(1), X(2)),
+            [1.0],
+            [qml.prod(qml.Hadamard(0), X(1), X(2))],
+        ),  # trivial product
+        (
+            qml.prod(qml.Hadamard(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
+            [2 * 4],
+            [qml.prod(qml.Hadamard(0), X(1), X(2))],
+        ),  # product with scalar products inside
+        (
+            qml.prod(qml.Hadamard(0), qml.s_prod(4, X(0)), qml.s_prod(2, X(1))),
+            [2 * 4],
+            [qml.prod(qml.Hadamard(0), X(0), X(1))],
+        ),  # product with scalar products on same wire
+        (
+            qml.prod(qml.Hadamard(0), qml.s_prod(4, Y(1)), qml.sum(X(2), X(3))),
+            [4, 4],
+            [qml.prod(qml.Hadamard(0), Y(1), X(2)), qml.prod(qml.Hadamard(0), Y(1), X(3))],
+        ),  # product with sums inside
         (
             qml.prod(
                 qml.prod(qml.Hadamard(0), X(2), X(3)),
@@ -187,7 +206,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
                 qml.prod(X(2), X(3), qml.Hadamard(5), qml.Hadamard(0)),
                 qml.prod(X(6), X(2), X(3), qml.Hadamard(0)),
             ],
-        ),
+        ),  # contrived example
     )
 
     @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_NOPAULI)
@@ -196,9 +215,29 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         coeffs, ops = op.terms()
         assert coeffs == coeffs_true
         assert ops == ops_true
-    
-    PROD_TERMS_OP_PAIRS_PAULI = (
-        (qml.prod(X(0), X(1), X(2)), [1.0], [qml.prod(X(0), X(1), X(2))]),
+
+    PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
+        (qml.prod(X(0), X(1), X(2)), [1.0], [qml.prod(X(0), X(1), X(2))]),  # trivial product
+        (
+            qml.prod(X(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
+            [2 * 4],
+            [qml.prod(X(0), X(1), X(2))],
+        ),  # product with scalar products inside
+        (
+            qml.prod(X(0), qml.s_prod(4, X(0)), qml.s_prod(2, X(1))),
+            [2 * 4],
+            [X(1)],
+        ),  # product with scalar products on same wire
+        (
+            qml.prod(X(0), qml.s_prod(4, Y(0)), qml.s_prod(2, X(1))),
+            [1j * 2 * 4],
+            [qml.prod(Z(0), X(1))],
+        ),  # product with scalar products on same wire
+        (
+            qml.prod(X(0), qml.s_prod(4, Y(1)), qml.sum(X(2), X(3))),
+            [4, 4],
+            [qml.prod(X(0), Y(1), X(2)), qml.prod(X(0), Y(1), X(3))],
+        ),  # product with sums inside
     )
 
     @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI)

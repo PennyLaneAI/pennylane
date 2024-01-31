@@ -371,8 +371,8 @@ class Prod(CompositeOp):
 
     def simplify(self) -> Union["Prod", Sum]:
         """
-        Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where 
-        :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator 
+        Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
+        :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator
         or pure product of single PL operators.
         """
         # try using pauli_rep:
@@ -422,7 +422,7 @@ class Prod(CompositeOp):
             op_list[j + 1] = key_op
 
         return op_list
-    
+
     def terms(self):  # is this method necessary for this class?
         # try using pauli_rep:
         if pr := self.pauli_rep:
@@ -444,7 +444,7 @@ class Prod(CompositeOp):
                 coeffs.append(global_phase * factor.scalar)
                 ops.append(factor.base)
             else:
-                coeffs.append(1.)
+                coeffs.append(global_phase)
                 ops.append(factor)
         return coeffs, ops
 
