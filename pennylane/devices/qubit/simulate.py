@@ -504,13 +504,16 @@ def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
         mcm_samples = np.concatenate(mcm_samples, axis=1)
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    # if isinstance(mv, Sequence):
-    #     return np.vstack(tuple(gather_mcm(measurement, m, samples) for m in mv)).T
     mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
-    if len(mv.wires) == len(mv.measurements):
-        wires = mv.wires
-        meas_tmp = measurement
+    use_as_is = len(mv.measurements) == 1
+    if use_as_is:
+        wires, meas_tmp = mv.wires, measurement
     else:
+        if isinstance(measurement, (ExpectationMP, VarianceMP)):
+            mcm_samples = mcm_samples.ravel()
         wires = qml.wires.Wires(0)
         meas_tmp = measurement.__class__(wires=wires)
-    return meas_tmp.process_samples(mcm_samples, wire_order=wires)
+    new_measurement = meas_tmp.process_samples(mcm_samples, wire_order=wires)
+    if isinstance(measurement, CountsMP) and not use_as_is:
+        new_measurement = dict((int(x), y) for x, y in new_measurement.items())
+    return new_measurement
