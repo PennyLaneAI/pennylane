@@ -151,6 +151,7 @@ def _convert_op_to_linear_comb(meas_op):
 
     return coeffs, paulis
 
+
 # pylint:disable = too-many-instance-attributes
 class DefaultClifford(Device):
     r"""A PennyLane device for fast simulation of Clifford circuits using
