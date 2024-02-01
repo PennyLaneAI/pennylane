@@ -165,8 +165,16 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+* `qml.ctrl` called on operators with custom controlled versions will return instances
+  of the custom class, and it will also flatten nested controlled operators to a single
+  multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
+  calling `qml.ctrl` will always resolve to the best option in `CNOT`, `Toffoli`, or
+  `MultiControlledX` depending on the number of control wires and control values.
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
+
 * `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
   [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
+
 
 <h4>Community contributions 🥳</h4>
 
@@ -206,7 +214,12 @@
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
-* The decomposition of an operator created with calling `qml.ctrl` on a parametric operator (specifically `RX`, `RY`, `RZ`, `Rot`, `PhaseShift`) with a single control wire will now be the full decomposition instead of a single controlled gate. For example:
+* Controlled operators with a custom controlled version decomposes like how their
+  controlled counterpart decomposes, as opposed to decomposing into their controlled version.   
+  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
+  
+  For example:
   ```
   >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
   [
@@ -218,7 +231,6 @@
     RZ(-1.5707963267948966, wires=[1])
   ]
   ```
-  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
 
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
   validate these properties manually.
