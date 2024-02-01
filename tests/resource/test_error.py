@@ -85,13 +85,13 @@ class TestAlgorithmicError:
         assert res == 0.5
 
 
-class TestErrorOperation:
+class TestErrorOperation:  # pylint: disable=too-few-public-methods
     """Test the abstract error operation class."""
 
     def test_error_method(self):
         """Test that a NotImplemented error is raised if no error method is provided."""
 
-        class SimpleErrorOperation(ErrorOperation):
+        class SimpleErrorOperation(ErrorOperation):  # pylint: disable=too-few-public-methods
             @property
             def error(self):
                 return len(self.wires)
