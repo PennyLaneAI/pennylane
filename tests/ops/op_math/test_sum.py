@@ -173,22 +173,24 @@ class TestInitialization:
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
-    
+
     qml.operation.enable_new_opmath()
     SUM_REPR = (
-        (qml.sum(X(0), X(1), X(2)), '(\n    X(0) + \n    X(1) + \n    X(2)\n)'),
-        (X(0) + X(1) +X(2), '(\n    X(0) + \n    X(1) + \n    X(2)\n)'),
-        (0.5 * X(0) + 0.7 * X(1), '(\n    0.5 * X(0) + \n    0.7 * X(1)\n)'),
-        (0.5 * (X(0) @ X(1)) + 0.7 * X(1), '(\n    0.5 * (X(0) @ X(1)) + \n    0.7 * X(1)\n)'),
-        (0.5 * (X(0) @ (0.5 * X(1))) + 0.7 * X(1), '(\n    0.5 * (X(0) @ (0.5 * X(1))) + \n    0.7 * X(1)\n)')
+        (qml.sum(X(0), X(1), X(2)), "(\n    X(0) + \n    X(1) + \n    X(2)\n)"),
+        (X(0) + X(1) + X(2), "(\n    X(0) + \n    X(1) + \n    X(2)\n)"),
+        (0.5 * X(0) + 0.7 * X(1), "(\n    0.5 * X(0) + \n    0.7 * X(1)\n)"),
+        (0.5 * (X(0) @ X(1)) + 0.7 * X(1), "(\n    0.5 * (X(0) @ X(1)) + \n    0.7 * X(1)\n)"),
+        (
+            0.5 * (X(0) @ (0.5 * X(1))) + 0.7 * X(1),
+            "(\n    0.5 * (X(0) @ (0.5 * X(1))) + \n    0.7 * X(1)\n)",
+        ),
     )
     qml.operation.disable_new_opmath()
-    
+
     @pytest.mark.parametrize("op, repr_true", SUM_REPR)
     def test_repr(self, op, repr_true):
         """Test the string representation of Sum instances"""
         assert repr(op) == repr_true
-
 
 
 class TestMatrix:
