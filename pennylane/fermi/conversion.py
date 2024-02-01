@@ -25,7 +25,7 @@ from .fermionic import FermiSentence, FermiWord
 
 # pylint: disable=unexpected-keyword-arg
 def jordan_wigner(
-    fermi_operator: (Union[FermiWord, FermiSentence]),
+    fermi_operator: Union[FermiWord, FermiSentence],
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,

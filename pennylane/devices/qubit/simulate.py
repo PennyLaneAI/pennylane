@@ -314,32 +314,7 @@ def simulate_native_mcm(
             continue
         all_shot_meas = accumulate_native_mcm(aux_circuit, all_shot_meas, one_shot_meas)
         list_mcm_values_dict.append(mcm_values_dict)
-    all_shot_meas = [np.concatenate(tuple(s.ravel() for s in m)) for m in all_shot_meas]
     return parse_native_mid_circuit_measurements(circuit, all_shot_meas, list_mcm_values_dict)
-
-
-def circuit_measurement_map(circuit: qml.tape.QuantumScript):
-    """Returns a list of wires/observables to sample and a map from the circuit measurements to those wires/observables.
-
-    Args:
-        circuit (QuantumTape): The original QuantumScript
-
-    Returns:
-        List: A list of wires/observables to sample
-        Dict: A map from the circuit measurements to those wires/observables
-    """
-    obs = []
-    obs_map = {}
-    for i, m in enumerate(circuit.measurements):
-        if m.mv is not None:
-            continue
-        op = m.wires if m.obs is None else m.obs
-        if op in obs:
-            obs_map[i] = obs.index(op)
-        else:
-            obs.append(op)
-            obs_map[i] = len(obs) - 1
-    return obs, obs_map
 
 
 def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
@@ -356,10 +331,12 @@ def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
     """
     aux_circuit = circuit.copy()
     aux_circuit._shots = qml.measurements.Shots(1)
-    obs, _ = circuit_measurement_map(circuit)
-    aux_circuit._measurements = [
-        SampleMP(wires=m) if isinstance(m, qml.wires.Wires) else SampleMP(obs=m) for m in obs
-    ]
+    idx_sample = find_measurement_values(circuit)
+    for i in reversed(idx_sample):
+        aux_circuit._measurements.pop(i)
+    for i, m in enumerate(circuit.measurements):
+        if isinstance(m, VarianceMP) and m.mv is None:
+            aux_circuit._measurements[i] = SampleMP(obs=m.obs)
     return aux_circuit
 
 
@@ -415,16 +392,20 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
     if not isinstance(one_shot_meas, Sequence):
         return accumulate_native_mcm(circuit, all_shot_meas, [one_shot_meas])
     for i, m in enumerate(circuit.measurements):
-        if isinstance(m, SampleMP):
-            if not isinstance(all_shot_meas[i], Sequence):
+        if isinstance(m, CountsMP):
+            tmp = Counter(all_shot_meas[i])
+            tmp.update(Counter(one_shot_meas[i]))
+            new_shot_meas[i] = tmp
+        elif isinstance(m, (ExpectationMP, ProbabilityMP)):
+            new_shot_meas[i] = all_shot_meas[i] + one_shot_meas[i]
+        elif isinstance(m, SampleMP):
+            if not isinstance(all_shot_meas[i], (list, tuple)):
                 new_shot_meas[i] = [all_shot_meas[i]]
             else:
                 new_shot_meas[i] = all_shot_meas[i]
             new_shot_meas[i].append(one_shot_meas[i])
         else:
-            raise TypeError(
-                f"Measurement should be of class SampleMP but is of class {m.__class__.__name__}"
-            )
+            raise TypeError(f"Unsupported measurement of {type(m)}.")
     return new_shot_meas
 
 
@@ -483,92 +464,75 @@ def parse_native_mid_circuit_measurements(
     """
     idx_sample = find_measurement_values(circuit)
     normalized_meas = [None] * len(circuit.measurements)
-    _, obs_map = circuit_measurement_map(circuit)
     for i, m in enumerate(circuit.measurements):
+        if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
+            raise ValueError(
+                f"Native mid-circuit measurement mode does not support {type(m)} measurements."
+            )
         if i in idx_sample:
-            normalized_meas[i] = gather_mcm(m, m.mv, mcm_shot_meas)
+            normalized_meas[i] = gather_mcm(m, mcm_shot_meas)
         else:
-            normalized_meas[i] = gather_non_mcm(m, all_shot_meas[obs_map[i]])
+            normalized_meas[i] = gather_non_mcm(m, all_shot_meas[i], mcm_shot_meas)
+        if isinstance(m, SampleMP):
+            normalized_meas[i] = qml.math.squeeze(normalized_meas[i])
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-def gather_non_mcm(circuit_measurement, samples):
+def gather_non_mcm(circuit_measurement, measurement, samples):
     """Combines, gathers and normalizes several measurements with trivial measurement values.
 
     Args:
         circuit_measurement (MeasurementProcess): measurement
-        samples (TensorLike): measurement results
-
-    Returns:
-        TensorLike: The combined measurement outcome
-    """
-    if isinstance(circuit_measurement, CountsMP):
-        new_measurement = dict(sorted(Counter(samples).items()))
-    elif isinstance(circuit_measurement, ExpectationMP):
-        new_measurement = np.mean(samples)
-    elif isinstance(circuit_measurement, ProbabilityMP):
-        counts = dict(sorted(Counter(samples).items()))
-        eigvals = [0, 1] if circuit_measurement.obs is None else circuit_measurement.obs.eigvals()
-        for i in eigvals:
-            if i not in counts:
-                counts.update({i: 0})
-        num = sum(counts.values())
-        new_measurement = np.array([counts[ev] / num for ev in eigvals])
-    elif isinstance(circuit_measurement, SampleMP):
-        new_measurement = samples
-    elif isinstance(circuit_measurement, VarianceMP):
-        new_measurement = qml.math.var(samples)
-    else:
-        raise ValueError(
-            f"Native mid-circuit measurement mode does not support {circuit_measurement.__class__.__name__} measurements."
-        )
-    return new_measurement
-
-
-def gather_mcm(measurement, mv, samples):  # pylint: disable=too-many-branches
-    """Combines, gathers and normalizes several measurements with non-trivial measurement values.
-
-    Args:
-        measurement (MeasurementProcess): measurement
-        mv (MeasurementValue): measurement value
+        measurement (TensorLike): measurement results
         samples (List[dict]): Mid-circuit measurement samples
 
     Returns:
         TensorLike: The combined measurement outcome
     """
-    if isinstance(measurement, ProbabilityMP) and isinstance(mv, Sequence):
-        mcm_samples = list(np.array([m.concretize(dct) for dct in samples]) for m in reversed(mv))
-        idx = 0
-        for i, s in enumerate(mcm_samples):
-            idx += 2**i * s
-        counts = Counter(idx)
-        eigvals = range(2 ** len(mv))
-        for i in eigvals:
-            if i not in counts:
-                counts.update({i: 0})
-        num = sum(counts.values())
-        return np.array([counts[ev] / num for ev in eigvals])
-    if isinstance(mv, Sequence):
-        return np.vstack(tuple(gather_mcm(measurement, m, samples) for m in mv)).T
-    if not isinstance(measurement, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
+    if isinstance(circuit_measurement, CountsMP):
+        new_meas = dict(sorted(measurement.items()))
+    elif isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
+        new_meas = measurement / len(samples)
+    elif isinstance(circuit_measurement, SampleMP):
+        new_meas = np.squeeze(np.concatenate(tuple(s.reshape(1, -1) for s in measurement)))
+    elif isinstance(circuit_measurement, VarianceMP):
+        new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
+    else:
         raise ValueError(
-            f"Native mid-circuit measurement mode does not support {measurement.__class__.__name__} measurements."
+            f"Native mid-circuit measurement mode does not support {type(circuit_measurement)} measurements."
         )
-    mcm_samples = np.array([mv.concretize(dct) for dct in samples])
-    if isinstance(measurement, CountsMP):
-        new_measurement = dict(sorted(Counter(mcm_samples).items()))
-    elif isinstance(measurement, ExpectationMP):
-        new_measurement = np.mean(mcm_samples)
-    elif isinstance(measurement, ProbabilityMP):
-        counts = dict(sorted(Counter(mcm_samples).items()))
-        eigvals = [0, 1]
-        for i in eigvals:
-            if i not in counts:
-                counts.update({i: 0})
-        num = sum(counts.values())
-        new_measurement = np.array([counts[ev] / num for ev in eigvals])
-    elif isinstance(measurement, SampleMP):
-        new_measurement = mcm_samples
-    elif isinstance(measurement, VarianceMP):
-        new_measurement = qml.math.var(mcm_samples)
+    return new_meas
+
+
+def gather_mcm(measurement, samples):
+    """Combines, gathers and normalizes several measurements with non-trivial measurement values.
+
+    Args:
+        measurement (MeasurementProcess): measurement
+        samples (List[dict]): Mid-circuit measurement samples
+
+    Returns:
+        TensorLike: The combined measurement outcome
+    """
+    mv = measurement.mv
+    if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
+        wires = qml.wires.Wires(range(len(mv)))
+        mcm_samples = list(
+            np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1)) for m in mv
+        )
+        mcm_samples = np.concatenate(mcm_samples, axis=1)
+        meas_tmp = measurement.__class__(wires=wires)
+        return meas_tmp.process_samples(mcm_samples, wire_order=wires)
+    mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
+    use_as_is = len(mv.measurements) == 1
+    if use_as_is:
+        wires, meas_tmp = mv.wires, measurement
+    else:
+        if isinstance(measurement, (ExpectationMP, VarianceMP)):
+            mcm_samples = mcm_samples.ravel()
+        wires = qml.wires.Wires(0)
+        meas_tmp = measurement.__class__(wires=wires)
+    new_measurement = meas_tmp.process_samples(mcm_samples, wire_order=wires)
+    if isinstance(measurement, CountsMP) and not use_as_is:
+        new_measurement = dict((int(x), y) for x, y in new_measurement.items())
     return new_measurement

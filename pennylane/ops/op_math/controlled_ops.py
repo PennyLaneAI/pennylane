@@ -95,6 +95,7 @@ class ControlledQubitUnitary(ControlledOp):
 
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values=[False, True, True])
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -186,6 +187,7 @@ class CY(ControlledOp):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -288,6 +290,7 @@ class CZ(ControlledOp):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -375,6 +378,7 @@ class CRX(ControlledOp):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
@@ -532,6 +536,7 @@ class CRY(ControlledOp):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
@@ -690,6 +695,7 @@ class CRZ(ControlledOp):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
@@ -880,6 +886,7 @@ class CRot(ControlledOp):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_wires = 2
     """int: Number of wires this operator acts on."""
 
@@ -1049,6 +1056,7 @@ class ControlledPhaseShift(ControlledOp):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_wires = 2
     """int: Number of wires the operator acts on."""
 
