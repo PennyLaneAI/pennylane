@@ -405,7 +405,7 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
                 new_shot_meas[i] = all_shot_meas[i]
             new_shot_meas[i].append(one_shot_meas[i])
         else:
-            raise TypeError(f"Unsupported measurement of class {m.__class__.__name__}.")
+            raise TypeError(f"Unsupported measurement of {type(m)}.")
     return new_shot_meas
 
 
@@ -467,7 +467,7 @@ def parse_native_mid_circuit_measurements(
     for i, m in enumerate(circuit.measurements):
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise ValueError(
-                f"Native mid-circuit measurement mode does not support {m.__class__.__name__} measurements."
+                f"Native mid-circuit measurement mode does not support {type(m)} measurements."
             )
         if i in idx_sample:
             normalized_meas[i] = gather_mcm(m, mcm_shot_meas)
@@ -499,7 +499,7 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
         new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
     else:
         raise ValueError(
-            f"Native mid-circuit measurement mode does not support {circuit_measurement.__class__.__name__} measurements."
+            f"Native mid-circuit measurement mode does not support {type(circuit_measurement)} measurements."
         )
     return new_meas
 
