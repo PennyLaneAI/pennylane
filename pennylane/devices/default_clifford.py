@@ -125,6 +125,7 @@ def _pl_to_stim(op):
         ) from e
     return stim_op, " ".join(map(str, op.wires))
 
+
 def _convert_op_to_linear_comb(meas_op):
     """Convert a PennyLane observable to a linear combination of stim Pauli terms"""
 
