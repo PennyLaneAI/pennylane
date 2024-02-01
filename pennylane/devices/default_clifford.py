@@ -60,7 +60,7 @@ from .preprocess import (
 has_stim = True
 try:
     import stim
-except (ModuleNotFoundError, ImportError) as import_error:
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_stim = False
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
@@ -151,7 +151,7 @@ def _convert_op_to_linear_comb(meas_op):
 
     return coeffs, paulis
 
-
+# pylint:disable = too-many-instance-attributes
 class DefaultClifford(Device):
     r"""A PennyLane device for fast simulation of Clifford circuits using
     `stim <https://github.com/quantumlib/stim/>`_.
@@ -166,6 +166,9 @@ class DefaultClifford(Device):
         tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
             When ``True``, the device returns the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
+        target_states (array[int]):  Target basis state(s) for which analytical probabilities should be computed with
+            :func:`qml.probs <pennylane.probs>`. By default, if no wires are provided, probabilities are computed
+            for the complete computational space up to ``24`` qubits.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
@@ -254,21 +257,21 @@ class DefaultClifford(Device):
         :title: Probabilities for Basis States
         :href: clifford-probabilities
 
-        One can compute the analytical probability of each computational basis state using
-        :func:`qml.probs <pennylane.probs>`, which also accepts a wire specification for obtaining marginal
-        probabilities and an observable for obtaining probabilities from the rotated computational basis.
         As the ``default.clifford`` device supports executing quantum circuits with a large number of qubits,
-        we restrict the ability to compute the probabilities for `all` computational basis states at once to
-        maintain computational efficiency. In contrast, one can specify target state(s), i.e., subset
-        `basis states` of interest, using the ``probability_target`` property of the device.
+        we restrict the ability to compute the ``analytical`` probabilities for `all` computational basis
+        states at once to maintain computational efficiency when system size scales beyond ``24`` qubits.
+        Instead, one can sepcify the target basis state(s), i.e., subset `basis state(s)` of interest,
+        either during the initialization of device via the ``target_states`` keyword argument,
+        or at any other stage before executing the circuit by setting the ``probability_target``
+        property of the device.
 
         .. code-block:: python
 
             import pennylane as qml
             import numpy as np
 
-            dev = qml.device("default.clifford")
-            dev.probability_target = np.array([[0, 0], [1, 0]])
+            basis_states = np.array([[0, 0], [1, 0]])
+            dev = qml.device("default.clifford", target_states = basis_states)
 
         After doing this, one can simply use the :func:`qml.probs <pennylane.probs>` with its usual arguments
         and probabilities for the specified target states would be computed and returned.
@@ -287,6 +290,9 @@ class DefaultClifford(Device):
 
         >>> circuit()
         tensor([0.25, 0.25], requires_grad=True)
+        >>> dev.probability_target = np.array([1, 1])
+        >>> circuit()
+        tensor([0.25], requires_grad=True)
 
         .. note::
 
@@ -329,6 +335,7 @@ class DefaultClifford(Device):
         shots=None,
         check_clifford=True,
         tableau=True,
+        target_states=None,
         seed="global",
         max_workers=None,
     ) -> None:
@@ -343,7 +350,10 @@ class DefaultClifford(Device):
         self._check_clifford = check_clifford
 
         self._tableau = tableau
+
         self._prob_states = None
+        if target_states is not None:
+            self.probability_target = target_states
 
         self._seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         self._rng = np.random.default_rng(self._seed)
@@ -827,13 +837,24 @@ class DefaultClifford(Device):
     def _measure_probability(self, meas, tableau_simulator, **kwargs):
         """Measure the probability of each computational basis state."""
         circuit, _ = kwargs.get("circuit"), tableau_simulator
-        if self._prob_states is None and self._tableau:
+
+        # Obtain the measurement wires for getting the basis states
+        mobs_wires = meas.obs.wires if meas.obs else meas.wires
+        meas_wires = mobs_wires if mobs_wires else circuit.wires
+
+        if len(meas_wires) > 24 and self._prob_states is None and self._tableau:
             raise ValueError(
                 "In order to maintain computational efficiency, \
-                with ``tableau=True``, the clifford device supports returning \
-                probability only for selected target computational basis states. \
+                with ``tableau=True``, the clifford device supports \
+                returning probability only for selected target \
+                computational basis states made of more than 24 qubits. \
                 Please use the `probability_target` property to set them."
             )
+
+        if self._prob_states is None:
+            num_wires = len(meas_wires)
+            basis_vec = np.arange(2**num_wires)[:, np.newaxis]
+            self._prob_states = (((basis_vec & (1 << np.arange(num_wires)))) > 0).astype(int)
 
         # TODO: We might be able to skip the inverse done below
         # (as the distribution should be independent of inverse)
@@ -857,9 +878,6 @@ class DefaultClifford(Device):
             state = self._measure_state(meas, circuit_simulator, circuit=circuit)
             return meas.process_state(state, wire_order=circuit.wires)
 
-        # Obtain the measurement wires for getting the basis states
-        mobs_wires = meas.obs.wires if meas.obs else meas.wires
-        meas_wires = mobs_wires if mobs_wires else circuit.wires
         tgt_states = self._prob_states
         if not tgt_states.shape[1]:
             raise ValueError("Cannot set an empty list of target states.")

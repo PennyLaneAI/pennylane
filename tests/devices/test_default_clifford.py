@@ -235,7 +235,7 @@ def test_meas_samples(shots):
     ],
 )
 def test_meas_probs(tableau, shots, ops):
-    """Test if samples are returned with shots given in the clifford device."""
+    """Test if probabilities are returned in the clifford device."""
 
     dev_c = qml.device("default.clifford", tableau=tableau, shots=shots, seed=24)
     dev_q = qml.device("default.qubit")
@@ -253,12 +253,6 @@ def test_meas_probs(tableau, shots, ops):
     if tableau and shots is None:
         with pytest.raises(
             ValueError,
-            match="In order to maintain computational efficiency,",
-        ):
-            qnode_clfrd()
-
-        with pytest.raises(
-            ValueError,
             match="Cannot set an empty list of target states.",
         ):
             dev_c.probability_target = []
@@ -274,6 +268,33 @@ def test_meas_probs(tableau, shots, ops):
         )
 
     assert qml.math.allclose(gotten_probs, target_probs, atol=1e-2 if shots else 1e-8)
+
+
+def test_meas_probs_large():
+    """Test if probabilities are returned in the clifford device with target basis states"""
+    basis_states = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
+    dev_c1 = qml.device("default.clifford", seed=24)
+    dev_c2 = qml.device("default.clifford", seed=24, target_states=basis_states)
+
+    def circuit_fn():
+        for wire in range(30):
+            qml.PauliX(wire)
+            qml.PauliY(wire)
+            qml.PauliZ(wire)
+        return qml.probs(wires=range(25))
+
+    qnode_clfrd1 = qml.QNode(circuit_fn, dev_c1)
+    qnode_clfrd2 = qml.QNode(circuit_fn, dev_c2)
+
+    with pytest.raises(
+        ValueError,
+        match="In order to maintain computational efficiency,",
+    ):
+        qnode_clfrd1()
+
+    dev_c1.probability_target = basis_states
+    probs1, probs2 = qnode_clfrd1(), qnode_clfrd2()
+    assert qml.math.allclose(probs1, probs2)
 
 
 @pytest.mark.parametrize("shots", [1024, 4096])
