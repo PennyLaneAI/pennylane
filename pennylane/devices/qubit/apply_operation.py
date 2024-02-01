@@ -274,9 +274,7 @@ def apply_multicontrolledx(
         return _apply_operation_default(op, state, is_state_batched, debugger)
     ctrl_wires = [w + is_state_batched for w in op.control_wires]
     # apply x on all control wires with control value 0
-    roll_axes = [
-        w for val, w in zip(op.hyperparameters["control_values"], ctrl_wires) if val == "0"
-    ]
+    roll_axes = [w for val, w in zip(op.control_values, ctrl_wires) if val is False]
     for ax in roll_axes:
         state = math.roll(state, 1, ax)
 
