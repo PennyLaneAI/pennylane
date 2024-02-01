@@ -51,6 +51,7 @@ class BasisStatePreparation(Operation):
     [ 1. -1. -1.  1.]
 
     """
+
     num_params = 1
     num_wires = AnyWires
     grad_method = None
