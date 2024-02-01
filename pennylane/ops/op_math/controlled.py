@@ -248,7 +248,7 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
     # A controlled ControlledPhaseShift should not be compressed to a multi controlled
     # PhaseShift because the decomposition of PhaseShift contains a GlobalPhase that we
     # do not have a controlled version of.
-    # TODO: remove this special case when we support ControlledGlobalPhase
+    # TODO: remove this special case when we support ControlledGlobalPhase (sc-44933)
     if isinstance(op, qml.ControlledPhaseShift):
         return Controlled(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
