@@ -27,4 +27,3 @@ config.toml
 qml_debug.log
 datasets/*
 .benchmarks/*
-pennylane-venv/
