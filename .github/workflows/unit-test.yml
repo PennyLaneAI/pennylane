@@ -130,6 +130,8 @@ jobs:
           
           ${{ steps.poetry.outputs.poetry_bin }} env info
           which python
+          
+          ${{ steps.poetry.outputs.poetry_bin }} env use system
 
       - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
