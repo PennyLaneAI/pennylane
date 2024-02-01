@@ -691,6 +691,8 @@ class Operator(abc.ABC):
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
+    __array_priority__ = 1000
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
 

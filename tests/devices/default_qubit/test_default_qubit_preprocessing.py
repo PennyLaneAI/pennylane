@@ -680,9 +680,9 @@ class TestAdjointDiffTapeValidation:
         """Test that the trainable parameters of a tape are updated when it is expanded"""
 
         ops = [
-            qml.QubitUnitary([[0, 1], [1, 0]], wires=0),
+            qml.QubitUnitary(qml.numpy.array([[0, 1], [1, 0]]), wires=0),
             qml.CNOT([0, 1]),
-            qml.Rot(0.1, 0.2, 0.3, wires=0),
+            qml.Rot(qml.numpy.array(0.1), qml.numpy.array(0.2), qml.numpy.array(0.3), wires=0),
         ]
         qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
 
@@ -695,13 +695,13 @@ class TestAdjointDiffTapeValidation:
 
         assert isinstance(res, qml.tape.QuantumScript)
         assert len(res.operations) == 7
-        assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
-        assert qml.equal(res[1], qml.RY(np.pi, 0))
-        assert qml.equal(res[2], qml.RZ(7 * np.pi / 2, 0))
+        assert qml.equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
+        assert qml.equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
+        assert qml.equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
         assert qml.equal(res[3], qml.CNOT([0, 1]))
-        assert qml.equal(res[4], qml.RZ(0.1, 0))
-        assert qml.equal(res[5], qml.RY(0.2, 0))
-        assert qml.equal(res[6], qml.RZ(0.3, 0))
+        assert qml.equal(res[4], qml.RZ(qml.numpy.array(0.1), 0))
+        assert qml.equal(res[5], qml.RY(qml.numpy.array(0.2), 0))
+        assert qml.equal(res[6], qml.RZ(qml.numpy.array(0.3), 0))
         assert res.trainable_params == [0, 1, 2, 3, 4, 5]
 
         qs.trainable_params = [2, 3]
@@ -709,21 +709,22 @@ class TestAdjointDiffTapeValidation:
         res = res[0]
         assert isinstance(res, qml.tape.QuantumScript)
         assert len(res.operations) == 7
-        assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
-        assert qml.equal(res[1], qml.RY(np.pi, 0))
-        assert qml.equal(res[2], qml.RZ(7 * np.pi / 2, 0))
+        assert qml.equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
+        assert qml.equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
+        assert qml.equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
         assert qml.equal(res[3], qml.CNOT([0, 1]))
-        assert qml.equal(res[4], qml.RZ(0.1, 0))
-        assert qml.equal(res[5], qml.RY(0.2, 0))
-        assert qml.equal(res[6], qml.RZ(0.3, 0))
+        assert qml.equal(res[4], qml.RZ(qml.numpy.array(0.1), 0))
+        assert qml.equal(res[5], qml.RY(qml.numpy.array(0.2), 0))
+        assert qml.equal(res[6], qml.RZ(qml.numpy.array(0.3), 0))
         assert res.trainable_params == [0, 1, 2, 3, 4, 5]
 
     def test_u3_non_trainable_params(self):
         """Test that a warning is raised and all parameters are trainable in the expanded
         tape when not all parameters in U3 are trainable"""
-        qs = qml.tape.QuantumScript([qml.U3(0.2, 0.4, 0.6, wires=0)], [qml.expval(qml.PauliZ(0))])
-        qs.trainable_params = [0, 2]
-
+        qs = qml.tape.QuantumScript(
+            [qml.U3(qml.numpy.array(0.2), 0.4, qml.numpy.array(0.6), wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+        )
         program = qml.device("default.qubit").preprocess(
             ExecutionConfig(gradient_method="adjoint")
         )[0]
@@ -733,7 +734,7 @@ class TestAdjointDiffTapeValidation:
 
         # U3 decomposes into 5 operators
         assert len(res.operations) == 5
-        assert res.trainable_params == [0, 1, 2, 3, 4]
+        assert res.trainable_params == [0, 1, 2, 3]
 
     def test_unsupported_obs(self):
         """Test that the correct error is raised if a Hamiltonian measurement is differentiated"""
@@ -774,7 +775,7 @@ class TestAdjointDiffTapeValidation:
             qml.numpy.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
         )
         qs = qml.tape.QuantumScript(
-            ops=[prep_op, G(np.pi, wires=[0])],
+            ops=[prep_op, G(qml.numpy.array(np.pi), wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],
         )
 
@@ -787,7 +788,7 @@ class TestAdjointDiffTapeValidation:
         qs_valid = qs_valid[0]
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.operations, qs_valid.operations))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs_valid.trainable_params == [0, 1]
+        assert qs_valid.trainable_params == [1]
 
     def test_valid_tape_with_expansion(self):
         """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
@@ -796,7 +797,12 @@ class TestAdjointDiffTapeValidation:
             qml.numpy.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
         )
         qs = qml.tape.QuantumScript(
-            ops=[prep_op, qml.Rot(0.1, 0.2, 0.3, wires=[0])],
+            ops=[
+                prep_op,
+                qml.Rot(
+                    qml.numpy.array(0.1), qml.numpy.array(0.2), qml.numpy.array(0.3), wires=[0]
+                ),
+            ],
             measurements=[qml.expval(qml.PauliZ(0))],
         )
 
@@ -804,18 +810,17 @@ class TestAdjointDiffTapeValidation:
             ExecutionConfig(gradient_method="adjoint")
         )[0]
 
-        qs.trainable_params = {1, 2, 3}
         qs_valid, _ = program((qs,))
         qs_valid = qs_valid[0]
 
         expected_ops = [
             prep_op,
-            qml.RZ(0.1, wires=[0]),
-            qml.RY(0.2, wires=[0]),
-            qml.RZ(0.3, wires=[0]),
+            qml.RZ(qml.numpy.array(0.1), wires=[0]),
+            qml.RY(qml.numpy.array(0.2), wires=[0]),
+            qml.RZ(qml.numpy.array(0.3), wires=[0]),
         ]
 
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs_valid.trainable_params == [0, 1, 2, 3]
+        assert qs_valid.trainable_params == [1, 2, 3]
         assert qs.shots == qs_valid.shots

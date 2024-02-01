@@ -810,6 +810,7 @@ class TestMetricTensor:
             qml.IsingZZ(-4.2, wires=[1, 2])
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1, 2, 3]
         tapes, _ = qml.metric_tensor(tape, approx="block-diag")
         assert len(tapes) == 4
         assert [len(tape.operations) for tape in tapes] == [3, 5, 4, 5]
