@@ -72,6 +72,7 @@ def s_prod(scalar, operator, lazy=True, id=None):
     array([[ 0., 2.],
            [ 2., 0.]])
     """
+    operator = convert_to_opmath(operator)
     if lazy or not isinstance(operator, SProd):
         return SProd(scalar, operator, id=id)
 
@@ -140,7 +141,6 @@ class SProd(ScalarSymbolicOp):
     def __init__(
         self, scalar: Union[int, float, complex], base: Operator, id=None, _pauli_rep=None
     ):
-        base = convert_to_opmath(base)
         super().__init__(base=base, scalar=scalar, id=id)
 
         if _pauli_rep:
