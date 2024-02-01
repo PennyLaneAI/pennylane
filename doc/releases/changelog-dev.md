@@ -17,7 +17,6 @@
   import pennylane as qml
 
   dev = qml.device("default.clifford", tableau=True)
-
   @qml.qnode(dev)
   def circuit():
       qml.CNOT(wires=[0, 1])
@@ -70,6 +69,26 @@
   + 2j * X(0) @ Z(1)
   ```
 
+
+<h4>Parity Mapping</h4>
+
+* `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
+   [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
+   It is now possible to transform a fermionic Hamiltonian to a qubit Hamiltonian with parity mapping.
+
+   ```python
+   import pennylane as qml
+   fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+
+   qubit_ham = qml.fermi.parity_transform(fermi_ham, n=6)
+   ```
+
+   ```pycon
+   >>> print(qubit_ham)
+   (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
+   ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
+   ```
+
 <h3>Improvements 🛠</h3>
 
 * Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
@@ -120,6 +139,10 @@
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
 
+* Adds `qml.workflow.get_transform_program` and `qml.workflow.construct_batch` to inspect the transform program and batch of tapes
+  at different stages.
+  [(#5084)](https://github.com/PennyLaneAI/pennylane/pull/5084)
+
 * `CRX`, `CRY`, `CRZ`, `CROT`, and `ControlledPhaseShift` (i.e. `CPhaseShift`) now inherit from `ControlledOp`, giving them additional properties such as `control_wire` and `control_values`. Calling `qml.ctrl` on `RX`, `RY`, `RZ`, `Rot`, and `PhaseShift` with a single control wire will return gates of types `CRX`, `CRY`, etc. as opposed to a general `Controlled` operator.
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
 
@@ -137,8 +160,9 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Pin Black to `v23.12` to prevent unnecessary formatting changes.
+* Make PennyLane code compatible with the latest version of `black`.
   [(#5112)](https://github.com/PennyLaneAI/pennylane/pull/5112)
+  [(#5119)](https://github.com/PennyLaneAI/pennylane/pull/5119)
 
 * `gradient_analysis_and_validation` is now renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
@@ -227,6 +251,9 @@
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
+* Documentation `qml.data` has been updated and now mentions a way to access the same dataset simultaneously from multiple environments.
+  [(#5029)](https://github.com/PennyLaneAI/pennylane/pull/5029)
+
 * Clarification for the definition of `argnum` added to gradient methods
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
@@ -269,6 +296,17 @@
 * Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
   [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
+* `PauliSentence.wires` no longer imposes a false order.
+  [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
+
+* `qml.qchem.import_state` now applies the chemist-to-physicist 
+  sign convention when initializing a PennyLane state vector from
+  classically pre-computed wavefunctions. That is, it interleaves 
+  spin-up/spin-down operators for the same spatial orbital index,
+  as standard in PennyLane (instead of commuting all spin-up 
+  operators to the left, as is standard in quantum chemistry). 
+  [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -278,6 +316,8 @@ Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
+Diksha Dhawan,
+Diego Guala,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
@@ -287,5 +327,6 @@ Pablo Antonio Moreno Casares,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
-Matthew Silverman.
-Jay Soni,
+Matthew Silverman,
+Jay Soni.
+

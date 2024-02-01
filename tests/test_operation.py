@@ -73,6 +73,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         with pytest.raises(ValueError, match="wrong number of wires"):
@@ -83,6 +84,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
@@ -102,6 +104,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares num_params as an instance property"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -117,6 +120,7 @@ class TestOperatorConstruction:
 
         class DummyOp2(qml.operation.Operator):
             r"""Dummy custom operator that declares num_params as a class property"""
+
             num_params = 4
             num_wires = 1
             grad_method = "A"
@@ -130,6 +134,7 @@ class TestOperatorConstruction:
 
         class DummyOp3(qml.operation.Operator):
             r"""Dummy custom operator that does not declare num_params at all"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -142,6 +147,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as an instance property"""
+
             num_wires = 1
             grad_method = "A"
             ndim_params = (0,)
@@ -155,6 +161,7 @@ class TestOperatorConstruction:
 
         class DummyOp2(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (1, 2)
             num_wires = 1
             grad_method = "A"
@@ -169,6 +176,7 @@ class TestOperatorConstruction:
 
         class DummyOp3(qml.operation.Operator):
             r"""Dummy custom operator that does not declare ndim_params at all"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -180,6 +188,7 @@ class TestOperatorConstruction:
 
         class DummyOp4(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -193,6 +202,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         op = DummyOp(wires=0)
@@ -203,6 +213,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         op = DummyOp([1, 2, 3], wires=0)
@@ -238,6 +249,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         op = DummyOp(wires=0)
@@ -370,6 +382,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -385,6 +398,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -402,6 +416,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -419,6 +434,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -436,6 +452,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -651,6 +668,7 @@ class TestModificationMethods:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             num_wires = 1
 
         op = DummyOp(wires=0)
@@ -662,6 +680,7 @@ class TestModificationMethods:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
@@ -690,6 +709,7 @@ class TestModificationMethods:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
@@ -709,6 +729,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -728,6 +749,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
 
             @property
@@ -745,6 +767,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
 
             def generator(self):
@@ -761,6 +784,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
 
         x = 0.654
@@ -774,6 +798,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_recipe = ["not a recipe"]
 
@@ -788,6 +813,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
 
         op = DummyOp(wires=0)
@@ -799,6 +825,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -815,6 +842,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_params = 3
             num_wires = 1
             grad_method = "A"
@@ -833,6 +861,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_params = num_param
             num_wires = 1
             grad_method = "A"
@@ -863,6 +892,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             num_params = 1
             grad_method = None
@@ -875,6 +905,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = None
 
@@ -886,6 +917,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = None
 
@@ -897,6 +929,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = None
 
@@ -912,6 +945,7 @@ class TestObservableConstruction:
 
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
+
             num_wires = 1
             grad_method = None
 
@@ -929,6 +963,7 @@ class TestObservableConstruction:
 
         class DummyObserv(qml.operation.Observable, qml.operation.Operation):
             r"""Dummy custom observable"""
+
             num_wires = 1
             grad_method = None
 
@@ -991,6 +1026,7 @@ class TestObservableConstruction:
 
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
+
             num_wires = 1
             grad_method = None
 
@@ -1011,6 +1047,7 @@ class TestObservableConstruction:
 
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
+
             num_wires = 1
             grad_method = None
 
@@ -1029,6 +1066,7 @@ class TestOperatorIntegration:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
+
             num_wires = qml.operation.WiresEnum.AllWires
 
         @qml.qnode(dev1)
@@ -1048,6 +1086,7 @@ class TestOperatorIntegration:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         with pytest.raises(TypeError, match="unsupported operand type"):
@@ -2254,6 +2293,7 @@ class TestChannel:
 
         class DummyOp(qml.operation.Channel):
             r"""Dummy custom channel"""
+
             num_wires = 1
             grad_method = "F"
 

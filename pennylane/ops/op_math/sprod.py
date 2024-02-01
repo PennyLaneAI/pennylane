@@ -127,6 +127,7 @@ class SProd(ScalarSymbolicOp):
         (array(-0.68362956), array(0.21683382))
 
     """
+
     _name = "SProd"
 
     def _flatten(self):
