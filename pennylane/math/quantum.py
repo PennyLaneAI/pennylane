@@ -1038,7 +1038,7 @@ def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
 
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
-    >>> x = dm_from_state_vector(x)
+        >>> x = dm_from_state_vector(x)
     >>> min_entropy(x, indices=[0])
     0.6931472
 
@@ -1056,7 +1056,7 @@ def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     The Von Neumann entropy is always greater than the minimum entropy.
 
     >>> x = [np.cos(np.pi/8), 0, 0, -1j*np.sin(np.pi/8)]
-    >>> x = dm_from_state_vector(x)
+        >>> x = dm_from_state_vector(x)
     >>> vn_entropy(x, indices=[1])
     0.4164955
     >>> min_entropy(x, indices=[1])
@@ -1090,7 +1090,7 @@ def _compute_min_entropy(density_matrix, base):
     1.0
     """
     # Change basis if necessary
-   div_base = np.log(base) if base else 1
+    div_base = np.log(base) if base else 1
 
     evs, _ = qml.math.linalg.eigh(density_matrix)
     evs = qml.math.real(evs)
