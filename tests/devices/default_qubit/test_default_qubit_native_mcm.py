@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit preprocessing."""
+from functools import reduce
 from typing import Sequence
 
 from flaky import flaky
@@ -28,6 +29,7 @@ from pennylane.devices.qubit.simulate import (
 
 def validate_counts(shots, results1, results2):
     if isinstance(results1, Sequence):
+        assert isinstance(results2, Sequence)
         assert len(results1) == len(results2)
         for r1, r2 in zip(results1, results2):
             validate_counts(shots, r1, r2)
@@ -41,6 +43,9 @@ def validate_counts(shots, results1, results2):
 
 def validate_samples(shots, results1, results2):
     if isinstance(shots, Sequence):
+        assert isinstance(results1, Sequence)
+        assert isinstance(results2, Sequence)
+        assert len(results1) == len(results2)
         for s, r1, r2 in zip(shots, results1, results2):
             validate_samples(s, r1, r2)
     else:
@@ -53,9 +58,16 @@ def validate_samples(shots, results1, results2):
 
 
 def validate_expval(shots, results1, results2):
+    if isinstance(results1, Sequence):
+        assert isinstance(results2, Sequence)
+        assert len(results1) == len(results2)
+        results1 = reduce(lambda x, y: x + y, results1) / len(results1)
+        results2 = reduce(lambda x, y: x + y, results2) / len(results2)
+        validate_expval(shots, results1, results2)
+        return
     if shots is None:
         assert np.allclose(results1, results2)
-    assert np.allclose(results1, results2, atol=0.001, rtol=0.3)
+    assert np.allclose(results1, results2, atol=0.01, rtol=0.1)
 
 
 def validate_measurements(func, shots, results1, results2):
@@ -156,8 +168,27 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
         validate_measurements(measure_f, shots, results1, results2)
 
 
+# pylint: disable=unused-argument
+def obs_tape(x, y, z, reset=False, postselect=None):
+    qml.RX(x, 0)
+    qml.RZ(np.pi / 4, 0)
+    m0 = qml.measure(0, reset=reset)
+    qml.cond(m0 == 0, qml.RX)(np.pi / 4, 0)
+    qml.cond(m0 == 0, qml.RZ)(np.pi / 4, 0)
+    qml.cond(m0 == 1, qml.RX)(-np.pi / 4, 0)
+    qml.cond(m0 == 1, qml.RZ)(-np.pi / 4, 0)
+    qml.RX(y, 1)
+    qml.RZ(np.pi / 4, 1)
+    m1 = qml.measure(1, postselect=postselect)
+    qml.cond(m1 == 0, qml.RX)(np.pi / 4, 1)
+    qml.cond(m1 == 0, qml.RZ)(np.pi / 4, 1)
+    qml.cond(m1 == 1, qml.RX)(-np.pi / 4, 1)
+    qml.cond(m1 == 1, qml.RZ)(-np.pi / 4, 1)
+    return m0, m1
+
+
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [None, 1000, [1000, 1001]])
+@pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -167,23 +198,17 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
     conditional gate. A single measurement of a common observable is performed at the end."""
 
     dev = qml.device("default.qubit", shots=shots)
-    params = np.pi / 4 * np.ones(2)
+    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
 
     @qml.qnode(dev)
-    def func1(x, y):
-        qml.RX(x, wires=0)
-        qml.RX(9/20 * np.pi, wires=1)
-        m0 = qml.measure(0, reset=reset, postselect=postselect)
-        qml.cond(m0, qml.RY)(y, wires=1)
+    def func1(x, y, z):
+        obs_tape(x, y, z, reset=reset, postselect=postselect)
         return measure_f(op=obs)
 
     @qml.qnode(dev)
     @qml.defer_measurements
-    def func2(x, y):
-        qml.RX(x, wires=0)
-        qml.RX(9/20 * np.pi, wires=1)
-        m0 = qml.measure(0, reset=reset, postselect=postselect)
-        qml.cond(m0, qml.RY)(y, wires=1)
+    def func2(x, y, z):
+        obs_tape(x, y, z, reset=reset, postselect=postselect)
         return measure_f(op=obs)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
@@ -235,7 +260,7 @@ def test_single_mcm_single_measure_wires(shots, postselect, reset, measure_f, wi
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [1000])
+@pytest.mark.parametrize("shots", [10000])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -246,24 +271,18 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f, o
     performed."""
 
     dev = qml.device("default.qubit", shots=shots)
-    params = np.pi / 4 * np.ones(2)
+    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
 
     @qml.qnode(dev)
-    def func1(x, y):
-        qml.RX(x, wires=0)
-        qml.RX(9/20 * np.pi, wires=1)
-        m0 = qml.measure(0, reset=reset, postselect=postselect)
-        qml.cond(m0, qml.RY)(y, wires=1)
-        return measure_f(op=obs), measure_f(op=m0)
+    def func1(x, y, z):
+        mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
+        return measure_f(op=obs), measure_f(op=mcms[0])
 
     @qml.qnode(dev)
     @qml.defer_measurements
-    def func2(x, y):
-        qml.RX(x, wires=0)
-        qml.RX(9/20 * np.pi, wires=1)
-        m0 = qml.measure(0, reset=reset, postselect=postselect)
-        qml.cond(m0, qml.RY)(y, wires=1)
-        return measure_f(op=obs), measure_f(op=m0)
+    def func2(x, y, z):
+        mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
+        return measure_f(op=obs), measure_f(op=mcms[0])
 
     results1 = func1(*params)
     results2 = func2(*params)
@@ -328,32 +347,28 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f, o
     conditional gate. A single measurement of a common observable is performed at the end."""
 
     dev = qml.device("default.qubit", shots=shots)
-    param = np.pi / 3
+    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
 
     @qml.qnode(dev)
-    def func1(x):
-        qml.RX(x, 0)
-        m0 = qml.measure(0)
-        qml.RX(0.5 * x, 1)
-        m1 = qml.measure(1, reset=reset, postselect=postselect)
-        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+    def func1(x, y, z):
+        mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
+        qml.cond(mcms[0] != mcms[1], qml.RY)(z, wires=0)
+        qml.cond(mcms[0] == mcms[1], qml.RY)(z, wires=1)
         return measure_f(op=obs)
 
     @qml.qnode(dev)
     @qml.defer_measurements
-    def func2(x):
-        qml.RX(x, 0)
-        m0 = qml.measure(0)
-        qml.RX(0.5 * x, 1)
-        m1 = qml.measure(1, reset=reset, postselect=postselect)
-        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+    def func2(x, y, z):
+        mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
+        qml.cond(mcms[0] != mcms[1], qml.RY)(z, wires=0)
+        qml.cond(mcms[0] == mcms[1], qml.RY)(z, wires=1)
         return measure_f(op=obs)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
 
-    results1 = func1(param)
-    results2 = func2(param)
+    results1 = func1(*params)
+    results2 = func2(*params)
 
     if postselect is None or measure_f in (qml.expval, qml.probs, qml.var):
         validate_measurements(measure_f, shots, results1, results2)
