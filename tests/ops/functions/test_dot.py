@@ -211,27 +211,15 @@ class TestDotSum:
             [1.0, 2.0, 3.0],
             [H1, H2, H3],
         ),
+        (
+            [1.0, 2.0, 3.0],
+            [pw3, pw4, ps2],
+        ),  # comparisons for Sum objects with string valued wires
     )
 
     @pytest.mark.parametrize("coeff, ops", data_words_and_sentences_pauli_false)
     def test_dot_with_words_and_sentences_pauli_false(self, coeff, ops):
         """Test operators that are a mix of pauli words and pauli sentences"""
-        dot_res = qml.dot(coeff, ops, pauli=False)
-        true_res = qml.dot(coeff, [op.operation() for op in ops], pauli=False)
-        assert dot_res == true_res
-
-    data_words_and_sentences_pauli_false_xfail = (
-        (
-            [1.0, 2.0, 3.0],
-            [pw3, pw4, ps2],
-        ),  # comparisons for Sum objects with string valued wires does not work atm see https://github.com/PennyLaneAI/pennylane/issues/5033
-    )
-
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("coeff, ops", data_words_and_sentences_pauli_false_xfail)
-    def test_dot_with_words_and_sentences_pauli_false_integer_wires(self, coeff, ops):
-        """Same test as above but currently xails because comparisons between operators with strings has a bug here"""
-        # should not xfail after https://github.com/PennyLaneAI/pennylane/issues/5033
         dot_res = qml.dot(coeff, ops, pauli=False)
         true_res = qml.dot(coeff, [op.operation() for op in ops], pauli=False)
         assert dot_res == true_res
@@ -252,27 +240,16 @@ class TestDotSum:
             [pw2, ps1, op5],
             qml.sum(qml.s_prod(3.0 * 1, op1), qml.s_prod(3 * 2.0 + 2, op2), qml.s_prod(1j, op5)),
         ),
+        (
+            [1.0, 2.0, 3.0, 1j],
+            [pw3, pw4, ps2, op3],
+            qml.sum(qml.s_prod(3.0 * 1 + 1 + 1j, op3), qml.s_prod(3 * 2.0 + 2, op4)),
+        ),  # string valued wires
     )
 
     @pytest.mark.parametrize("coeff, ops, res", data_op_words_and_sentences_pauli_false)
     def test_dot_with_ops_words_and_sentences(self, coeff, ops, res):
         """Test operators that are a mix of PL operators, pauli words and pauli sentences with pauli=False (i.e. returning operators)"""
-        dot_res = qml.dot(coeff, ops, pauli=False).simplify()
-        assert dot_res == res
-
-    data_op_words_and_sentences_pauli_false = (
-        (
-            [1.0, 2.0, 3.0, 1j],
-            [pw3, pw4, ps2, op3],
-            qml.sum(qml.s_prod(3.0 * 1 + 1 + 1j, op3), qml.s_prod(3 * 2.0 + 2, op4)),
-        ),  # same issue 5033
-    )
-
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("coeff, ops, res", data_op_words_and_sentences_pauli_false)
-    def test_dot_with_ops_words_and_sentences_xfail_integer_wires(self, coeff, ops, res):
-        """Test operators that are a mix of PL operators, pauli words and pauli sentences with pauli=False (i.e. returning operators)"""
-        # xfail same problem as in test above test_dot_with_words_and_sentences_pauli_false_integer_wires()
         dot_res = qml.dot(coeff, ops, pauli=False).simplify()
         assert dot_res == res
 

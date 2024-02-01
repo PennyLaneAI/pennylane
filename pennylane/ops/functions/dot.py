@@ -107,20 +107,7 @@ def dot(
         return _dot_with_ops_and_paulis(coeffs, ops)
 
     if any(isinstance(op, (PauliWord, PauliSentence)) for op in ops):
-        # promote any PauliWord/Sentence instances to operators
-        # Looks a bit complicated, mainly due to the fact of having so single out identities since they currently dont have an .operation()
-        # else we could just do ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
-        IdWord = PauliWord({})
-        new_ops = []
-        for op in ops:
-            if isinstance(op, (PauliWord, PauliSentence)):
-                if op == IdWord:
-                    new_ops.append(qml.Identity(0))
-                else:
-                    new_ops.append(op.operation())
-            else:
-                new_ops.append(op)
-        ops = new_ops
+        ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
     # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
     ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
