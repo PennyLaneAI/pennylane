@@ -336,6 +336,7 @@ class QuantumMonteCarlo(Operation):
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
         0.4327096457464369
     """
+
     num_wires = AnyWires
     grad_method = None
 
