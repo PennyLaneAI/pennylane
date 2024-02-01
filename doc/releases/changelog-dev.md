@@ -41,6 +41,7 @@
 * New `qml.commutator` function that allows to compute commutators between
   `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
   [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+  [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
 
   Basic usage with PennyLane operators.
 
@@ -69,6 +70,16 @@
   + 2j * X(0) @ Z(1)
   ```
 
+  We can also compute commutators with Pauli operators natively with the `PauliSentence.commutator` method.
+
+  ```pycon
+  >>> op1 = PauliWord({0:"X", 1:"X"})
+  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+  >>> op1.commutator(op2)
+  2j * Z(0) @ X(1)
+  + 2j * X(0) @ Z(1)
+  ```
+
 
 <h4>Parity Mapping</h4>
 
@@ -89,7 +100,11 @@
    ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
    ```
 
+
 <h3>Improvements 🛠</h3>
+
+* The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
+  [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
 
 * Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
   for large workflows.
@@ -149,6 +164,9 @@
 * CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
+
+* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
+  [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
 
 <h4>Community contributions 🥳</h4>
 
@@ -321,6 +339,7 @@ Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
 Diego Guala,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
