@@ -25,7 +25,7 @@ from pennylane import math
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, s_prod, Sum
+from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 
 
 I = "I"
@@ -826,7 +826,8 @@ class PauliSentence(dict):
         wire_order = wire_order or self.wires
         for pw, coeff in self.items():
             pw_op = pw.operation(wire_order=list(wire_order))
-            summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
+            rep = PauliSentence({pw: coeff})
+            summands.append(pw_op if coeff == 1 else SProd(coeff, pw_op, _pauli_rep=rep))
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def hamiltonian(self, wire_order=None):

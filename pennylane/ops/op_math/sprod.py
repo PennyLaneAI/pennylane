@@ -137,11 +137,17 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(self, scalar: Union[int, float, complex], base: Operator, id=None):
+    def __init__(
+        self, scalar: Union[int, float, complex], base: Operator, id=None, _pauli_rep=None
+    ):
         base = convert_to_opmath(base)
         super().__init__(base=base, scalar=scalar, id=id)
 
-        if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
+        if _pauli_rep:
+            self._pauli_rep = _pauli_rep
+        elif (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+            self.batch_size is None
+        ):
             scalar = copy(self.scalar)
             if qnp.get_interface(scalar) == "tensorflow" and not scalar.dtype.is_complex:
                 scalar = qnp.cast(scalar, "complex128")
