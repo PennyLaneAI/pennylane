@@ -33,7 +33,7 @@ class FABLE(Operation):
     * Gradient recipe: None
 
     Args:
-        A (tensor_like): an :math:`(N \times N)` matrix to be encoded, where N should be equal to 2^n where n is an integer.
+        A (tensor_like): an :math:`(N \times N)` matrix to be encoded, where N should have dimension equal to 2^n where n is an integer.
         tol (float): tolerance - a value that removes rotation gates that have an angle smaller than the value.
         id (str or None): string representing the operation (optional)
 
