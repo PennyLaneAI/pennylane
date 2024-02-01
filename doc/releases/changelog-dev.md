@@ -8,44 +8,6 @@
 
 <h4>Work easily and efficiently with Pauli operators 🔧</h4>
 
-<h4>Easy to inspect transforms 🔎</h4>
-
-<h4>New Clifford and noisy qutrit devices 🦾</h4>
-
-* A new `default.clifford` device enables efficient simulation of large-scale Clifford circuits
-  defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
-  [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
-
-  Given a circuit with only Clifford gates, one can use this device to obtain the usual range
-  of PennyLane [measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html)
-  as well as the state represented in the Tableau form of
-  [Aaronson & Gottesman (2004)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328):
-
-  ```python
-  import pennylane as qml
-
-  dev = qml.device("default.clifford", tableau=True)
-  @qml.qnode(dev)
-  def circuit():
-      qml.CNOT(wires=[0, 1])
-      qml.PauliX(wires=[1])
-      qml.ISWAP(wires=[0, 1])
-      qml.Hadamard(wires=[0])
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> circuit()
-  array([[0, 1, 1, 0, 0],
-         [1, 0, 1, 1, 1],
-         [0, 0, 0, 1, 0],
-         [1, 0, 0, 1, 1]])
-  ```
-
-* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
-  is now strictly faster for jax.
-  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
-
 * New `qml.commutator` function that allows to compute commutators between
   `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
   [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
@@ -88,6 +50,40 @@
   + 2j * X(0) @ Z(1)
   ```
 
+<h4>Easy to inspect transforms 🔎</h4>
+
+<h4>New Clifford and noisy qutrit devices 🦾</h4>
+
+* A new `default.clifford` device enables efficient simulation of large-scale Clifford circuits
+  defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
+  [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
+
+  Given a circuit with only Clifford gates, one can use this device to obtain the usual range
+  of PennyLane [measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html)
+  as well as the state represented in the Tableau form of
+  [Aaronson & Gottesman (2004)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328):
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.clifford", tableau=True)
+  @qml.qnode(dev)
+  def circuit():
+      qml.CNOT(wires=[0, 1])
+      qml.PauliX(wires=[1])
+      qml.ISWAP(wires=[0, 1])
+      qml.Hadamard(wires=[0])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([[0, 1, 1, 0, 0],
+         [1, 0, 1, 1, 1],
+         [0, 0, 0, 1, 0],
+         [1, 0, 0, 1, 1]])
+  ```
+
 <h3>Improvements 🛠</h3>
 
 <h4>Parity Mapping</h4>
@@ -110,6 +106,10 @@
    ```
 
 <h4>Other improvements</h4>
+
+* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
+  is now strictly faster for jax.
+  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
