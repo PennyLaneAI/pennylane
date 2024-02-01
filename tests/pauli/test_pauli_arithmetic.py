@@ -995,7 +995,7 @@ class TestPauliSentence:
         assert op.name == id.name
         assert op.wires == id.wires
 
-    def test_operation_empty_error(self):
+    def test_operation_empty_nowires(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a PL operation."""
         res1 = ps4.operation()
