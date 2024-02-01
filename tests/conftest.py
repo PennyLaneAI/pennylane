@@ -239,7 +239,6 @@ def pytest_collection_modifyitems(items, config):
                     "all_interfaces",
                     "finite-diff",
                     "param-shift",
-                    "external",
                 ]
                 for elem in markers
             )
