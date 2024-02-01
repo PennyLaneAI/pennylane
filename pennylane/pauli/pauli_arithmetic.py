@@ -430,7 +430,7 @@ class PauliWord(dict):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
-                raise ValueError("Can't get the operation for an empty PauliWord.")
+                wire_order = [0] # temp for debugging #raise ValueError("Can't get the operation for an empty PauliWord.")
             return Identity(wires=wire_order)
 
         factors = [op_map[op](wire) for wire, op in self.items()]

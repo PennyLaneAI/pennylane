@@ -298,7 +298,6 @@ class Sum(CompositeOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
             ops = [pauli.operation() for pauli in pr.keys()]
             return list(pr.values()), ops
 
