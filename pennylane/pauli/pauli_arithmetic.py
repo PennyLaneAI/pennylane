@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
+# pylint:disable=protected-access
 import warnings
 from copy import copy
 from functools import reduce, lru_cache
@@ -56,6 +57,13 @@ mat_map = {
     X: matX,
     Y: matY,
     Z: matZ,
+}
+
+anticom_map = {
+    I: {I: 0, X: 0, Y: 0, Z: 0},
+    X: {I: 0, X: 0, Y: 1, Z: 1},
+    Y: {I: 0, X: 1, Y: 0, Z: 1},
+    Z: {I: 0, X: 1, Y: 1, Z: 0},
 }
 
 
@@ -312,6 +320,71 @@ class PauliWord(dict):
             f"PauliWord can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
         )
 
+    def commutes_with(self, other):
+        """Fast check if two PauliWords commute with each other"""
+        wires = set(self) & set(other)
+        if not wires:
+            return True
+        anticom_count = sum(anticom_map[self[wire]][other[wire]] for wire in wires)
+        return (anticom_count % 2) == 0
+
+    def _commutator(self, other):
+        """comm between two PauliWords, returns tuple (new_word, coeff) for faster arithmetic"""
+        # This may be helpful to developers that need a more lightweight comm between pauli words
+        # without creating PauliSentence classes
+
+        if self.commutes_with(other):
+            return PauliWord({}), 0.0
+        new_word, coeff = self._matmul(other)
+        return new_word, 2 * coeff
+
+    def commutator(self, other):
+        """
+        Compute commutator between a ``PauliWord`` :math:`P` and other operator :math:`O`
+
+        .. math:: [P, O] = P O - O P
+
+        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`,
+        this method is faster than computing ``P @ O - O @ P``. It is what is being used
+        in :func:`~commutator` when setting ``pauli=True``.
+
+        Args:
+            other (Union[Operator, PauliWord, PauliSentence]): Second operator
+
+        Returns:
+            ~PauliSentence: The commutator result in form of a :class:`~PauliSentence` instances.
+
+        **Examples**
+
+        You can compute commutators between :class:`~PauliWord` instances.
+
+        >>> pw = PauliWord({0:"X"})
+        >>> pw.commutator(PauliWord({0:"Y"}))
+        2j * Z(0)
+
+        You can also compute the commutator with other operator types if they have a Pauli representation.
+
+        >>> pw.commutator(qml.PauliY(0))
+        2j * Z(0)
+        """
+        if isinstance(other, PauliWord):
+            new_word, coeff = self._commutator(other)
+            if coeff == 0:
+                return PauliSentence({})
+            return PauliSentence({new_word: coeff})
+
+        if isinstance(other, qml.operation.Operator):
+            op_self = PauliSentence({self: 1.0})
+            return op_self.commutator(other)
+
+        if isinstance(other, PauliSentence):
+            # for infix method, this would be handled by __ror__
+            return -1.0 * other.commutator(self)
+
+        raise NotImplementedError(
+            f"Cannot compute natively a commutator between PauliWord and {other} of type {type(other)}"
+        )
+
     def __str__(self):
         """String representation of a PauliWord."""
         if len(self) == 0:
@@ -482,6 +555,24 @@ class PauliSentence(dict):
     + 1 * I
     + 1.0 * Z(3)
 
+    Note that while the empty :class:`~PauliWord` ``PauliWord({})`` respresents the identity, the empty ``PauliSentence`` represents 0
+
+    >>> PauliSentence({})
+    0 * I
+
+    We can compute commutators using the `PauliSentence.commutator()` method
+
+    >>> op1 = PauliWord({0:"X", 1:"X"})
+    >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+    >>> op1.commutator(op2)
+    2j * Z(0) @ X(1)
+    + 2j * X(0) @ Z(1)
+
+    Or, alternatively, use :func:`~commutator`.
+    >>> qml.commutator(op1, op2, pauli=True)
+
+    Note that we need to specify ``pauli=True`` as :func:`~.commutator` returns PennyLane operators by default.
+
     """
 
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
@@ -631,6 +722,63 @@ class PauliSentence(dict):
             f"PauliSentence can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
         )
 
+    def commutator(self, other):
+        """
+        Compute commutator between a ``PauliSentence`` :math:`P` and other operator :math:`O`
+
+        .. math:: [P, O] = P O - O P
+
+        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`,
+        this method is faster than computing ``P @ O - O @ P``. It is what is being used
+        in :func:`~commutator` when setting ``pauli=True``.
+
+        Args:
+            other (Union[Operator, PauliWord, PauliSentence]): Second operator
+
+        Returns:
+            ~PauliSentence: The commutator result in form of a :class:`~PauliSentence` instances.
+
+        **Examples**
+
+        You can compute commutators between :class:`~PauliSentence` instances.
+
+        >>> pw1 = PauliWord({0:"X"})
+        >>> pw2 = PauliWord({1:"X"})
+        >>> ps1 = PauliSentence({pw1: 1., pw2: 2.})
+        >>> ps2 = PauliSentence({pw1: 0.5j, pw2: 1j})
+        >>> ps1.commutator(ps2)
+        0 * I
+
+        You can also compute the commutator with other operator types if they have a Pauli representation.
+
+        >>> ps1.commutator(qml.PauliY(0))
+        2j * Z(0)"""
+        final_ps = PauliSentence()
+
+        if isinstance(other, PauliWord):
+            for pw1 in self:
+                comm_pw, coeff = pw1._commutator(other)
+                if len(comm_pw) != 0:
+                    final_ps[comm_pw] += coeff * self[pw1]
+
+            return final_ps
+
+        if not isinstance(other, PauliSentence):
+            if other.pauli_rep is None:
+                raise NotImplementedError(
+                    f"Cannot compute a native commutator of a Pauli word or sentence with the operator {other} of type {type(other)}."
+                    f"You can try to use qml.commutator(op1, op2, pauli=False) instead."
+                )
+            other = qml.pauli.pauli_sentence(other)
+
+        for pw1 in self:
+            for pw2 in other:
+                comm_pw, coeff = pw1._commutator(pw2)
+                if len(comm_pw) != 0:
+                    final_ps[comm_pw] += coeff * self[pw1] * other[pw2]
+
+        return final_ps
+
     def __str__(self):
         """String representation of the PauliSentence."""
         if len(self) == 0:
@@ -767,7 +915,6 @@ class PauliSentence(dict):
             mv += vector[:, entries] * data.reshape(1, -1)
         return mv.reshape(vector.shape)
 
-    # pylint: disable=protected-access
     def _get_same_structure_csr(self, pauli_words, wire_order):
         """Returns the CSR indices and data for Pauli words with the same sparse structure."""
         indices = pauli_words[0]._get_csr_indices(wire_order)
