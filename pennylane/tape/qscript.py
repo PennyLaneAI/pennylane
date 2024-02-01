@@ -546,7 +546,8 @@ class QuantumScript:
         [0.432]
         """
         if self._trainable_params is None:
-            self._trainable_params = list(range(len(self._par_info)))
+            params = self.get_parameters(trainable_only=False)
+            self._trainable_params = sorted(set(qml.math.get_trainable_indices(params)))
         return self._trainable_params
 
     @trainable_params.setter
