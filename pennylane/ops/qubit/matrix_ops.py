@@ -535,7 +535,7 @@ class BlockEncode(Operation):
             subspace = (*shape_a, 2 ** len(wires))
 
         # Clip the normalization to at least 1 (= normalize(A) if norm > 1 else A).
-        A = qml.math.array(A) / qml.math.maximum(normalization, 1.0)
+        A = qml.math.array(A) / qml.math.maximum(normalization, qml.math.ones_like(normalization))
 
         if subspace[2] < (subspace[0] + subspace[1]):
             raise ValueError(
