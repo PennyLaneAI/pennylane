@@ -74,12 +74,18 @@ class AmplitudeAmplification(Operation):
 
     """
 
-    def __init__(self, U, O, iters=1, fixed_point=False, aux_wire=None):
+    def __init__(self, U, O, iters=1, fixed_point=False, aux_wire=None, reflection_wires = None):
         self.U = U
         self.O = O
         self.aux_wire = aux_wire
         self.fixed_point = fixed_point
         self.n_iterations = iters
+
+        if not reflection_wires:
+            self.reflection_wires = U.wires
+        else:
+            self.reflection_wires = reflection_wires
+
         self.gamma = 0.99
 
         self.queue()
@@ -111,12 +117,12 @@ class AmplitudeAmplification(Operation):
                 ops.append(qml.ctrl(self.O, control=self.aux_wire))
                 ops.append(qml.Hadamard(wires=self.aux_wire))
 
-                ops.append(qml.Reflection(self.U, alphas[iter]))
+                ops.append(qml.Reflection(self.U, alphas[iter], reflection_wires=self.reflection_wires))
 
         else:
             for _ in range(self.n_iterations):
                 ops.append(self.O)
-                ops.append(qml.Reflection(self.U, np.pi))
+                ops.append(qml.Reflection(self.U, np.pi, reflection_wires=self.reflection_wires))
 
         return ops
 

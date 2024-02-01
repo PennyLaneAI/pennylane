@@ -62,9 +62,15 @@ class Reflection(SymbolicOp, Operation):
         circuit()
     """
 
-    def __init__(self, U, alpha, id=None):
+    def __init__(self, U, alpha, reflection_wires = None, id=None):
         self.U = U
         self.alpha = alpha
+
+        if reflection_wires is None:
+            self.reflection_wires = U.wires
+        else:
+            self.reflection_wires = reflection_wires
+
         super().__init__(base=U, id=id)
 
     @property
@@ -76,20 +82,28 @@ class Reflection(SymbolicOp, Operation):
         return self.U.wires
 
     def decomposition(self):
-        wires = self.U.wires
+        wires = qml.wires.Wires(self.reflection_wires)
 
         ops = []
 
         ops.append(qml.adjoint(self.U))
-        ops.append(qml.PauliX(wires=wires[-1]))
-        ops.append(
-            qml.ctrl(
-                qml.PhaseShift(-self.alpha, wires=wires[-1]),
-                control=wires[:-1],
-                control_values=[0] * (len(wires) - 1),
+
+        if len(wires) > 1:
+            ops.append(qml.PauliX(wires=wires[-1]))
+            ops.append(
+                qml.ctrl(
+                    qml.PhaseShift(-self.alpha, wires=wires[-1]),
+                    control=wires[:-1],
+                    control_values=[0] * (len(wires) - 1),
+                )
             )
-        )
-        ops.append(qml.PauliX(wires=wires[-1]))
+            ops.append(qml.PauliX(wires=wires[-1]))
+
+        else:
+            ops.append(qml.PauliX(wires=wires))
+            ops.append(qml.PhaseShift(-self.alpha, wires=wires))
+            ops.append(qml.PauliX(wires=wires))
+
         ops.append(self.U)
 
         return ops
