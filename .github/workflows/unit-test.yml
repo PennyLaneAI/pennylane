@@ -124,13 +124,12 @@ jobs:
       - name: Configure Poetry
         run: |
           ${{ steps.poetry.outputs.poetry_bin }} config virtualenvs.create "false"
-           ${{ steps.poetry.outputs.poetry_bin }} config virtualenvs.in-project false
+          ${{ steps.poetry.outputs.poetry_bin }} config virtualenvs.in-project false
+          ${{ steps.poetry.outputs.poetry_bin }} config virtualenvs.prefer-active-python true
           ${{ steps.poetry.outputs.poetry_bin }} --version
           
           ${{ steps.poetry.outputs.poetry_bin }} env info
           which python
-          
-          ${{ steps.poetry.outputs.poetry_bin }} env use $(which python)
 
       - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
