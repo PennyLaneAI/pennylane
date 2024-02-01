@@ -79,8 +79,8 @@ def _refresh_compilers():
 
     for entry in entries:
         # Only need name of the parent module
-        module_name = entry.module.split(".")[0]
-        AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
+        module_name, entry_name = entry.name.split(".")
+        AvailableCompilers.names_entrypoints[module_name][entry_name] = entry
 
     # Check whether available compilers follow the entry_point interface
     # by validating that all entry points (qjit, context, and ops) are defined.
