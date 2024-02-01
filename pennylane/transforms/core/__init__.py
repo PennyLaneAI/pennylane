@@ -14,6 +14,6 @@
 r"""This module contains the experimental transforms building blocks (core).
 """
 
-from .transform import transform, expand_fn_transform
+from .transform import transform
 from .transform_dispatcher import TransformDispatcher, TransformContainer, TransformError
 from .transform_program import TransformProgram

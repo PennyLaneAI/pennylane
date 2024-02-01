@@ -186,7 +186,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         processed_level = slice(0, processed_level)
 
     sub_program = full_transform_program[processed_level]
-    if len(sub_program) >= num_user and qnode.transform_program.has_final_transform:
+    if level and len(sub_program) >= num_user and qnode.transform_program.has_final_transform:
         sub_program.push_back(qnode.transform_program[-1])
 
     return sub_program
@@ -303,6 +303,8 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))
 
         initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        params = initial_tape.get_parameters(trainable_only=False)
+        initial_tape.trainable_params = qml.math.get_trainable_indices(params)
         return program((initial_tape,))
 
     return batch_constructor

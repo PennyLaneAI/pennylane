@@ -15,8 +15,7 @@
 This module contains the transform function/decorator to make your custom transforms compatible with tapes, quantum
 functions and QNodes.
 """
-from functools import wraps
-from typing import get_type_hints, Callable
+from typing import get_type_hints
 from .transform_dispatcher import TransformDispatcher, TransformError
 
 
@@ -46,14 +45,15 @@ def transform(
             * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
               qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
 
-        expand_transform (Callable): An optional expand transform is applied directly before the input
+    Keyword Args:
+        expand_transform=None (Optional[Callable]): An optional expand transform is applied directly before the input
             quantum transform. It must be a function that satisfies the same requirements as
             ``quantum_transform``.
-        classical_cotransform (Callable): A classical co-transform is a function to post-process the classical
+        classical_cotransform=None (Optional[Callable]): A classical co-transform is a function to post-process the classical
             jacobian and the quantum jacobian and has the signature: ``my_cotransform(qjac, cjac, tape) -> tensor_like``
         is_informative=False (bool): Whether or not a transform is informative. If true the transform is queued at the end
             of the transform program and the tapes or qnode aren't executed.
-        final_transform (bool): Whether or not the transform is terminal. If true the transform is queued at the end
+        final_transform=False (bool): Whether or not the transform is terminal. If true the transform is queued at the end
             of the transform program. ``is_informative`` supersedes ``final_transform``.
 
     Returns:
@@ -188,34 +188,3 @@ def transform(
         is_informative=is_informative,
         final_transform=final_transform,
     )
-
-
-def null_postprocessing(results):
-    """A postprocessing function with null behavior."""
-    return results[0]
-
-
-def expand_fn_transform(
-    expand_fn: Callable[["pennylane.tape.QuantumTape"], "pennylane.tape.QuantumTape"]
-) -> "TransformDispatcher":
-    """Construct a transform from a tape-to-tape function.
-
-    Args:
-        expand_fn (Callable): a function from a single tape to a single tape
-
-    Returns:
-
-        .TransformDispatcher: Returns a transform dispatcher object that that can transform any
-        circuit-like object in PennyLane.
-
-    >>> device = qml.device('default.qubit.legacy', wires=2)
-    >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
-    >>> my_transform
-    <transform: expand_fn>
-    """
-
-    @wraps(expand_fn)
-    def wrapped_expand_fn(tape):
-        return (expand_fn(tape),), null_postprocessing
-
-    return transform(wrapped_expand_fn)

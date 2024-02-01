@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains tests for the `qml.workflow.transform_program` getter.
+Contains tests for the `qml.workflow.get_transform_program` getter and `construct_batch`.
 
 """
 from functools import partial
@@ -23,7 +23,34 @@ import numpy as np
 import pennylane as qml
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
 from pennylane.transforms.core.transform_program import TransformProgram
-from pennylane.workflow import transform_program, construct_batch
+from pennylane.workflow import get_transform_program, construct_batch
+from pennylane.workflow.construct_batch import expand_fn_transform
+
+
+def test_expand_fn_transform():
+    """Tests the expand_fn_transform."""
+
+    def my_expand_fn(tape, op1, op2=qml.S(0), op3=qml.S(0)):
+        """my docstring."""
+        return qml.tape.QuantumScript(
+            tape.operations + [op1, op2, op3], tape.measurements, tape.shots
+        )
+
+    t = expand_fn_transform(my_expand_fn)
+
+    assert isinstance(t, qml.transforms.core.TransformDispatcher)
+    tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=50)
+
+    batch, fn = t(tape, qml.PauliX(0), op3=qml.T(0))
+    assert len(batch) == 1
+    expected = qml.tape.QuantumScript(
+        [qml.S(0), qml.PauliX(0), qml.S(0), qml.T(0)], [qml.expval(qml.PauliZ(0))], shots=50
+    )
+    assert qml.equal(batch[0], expected)
+    assert fn(("a",)) == "a"
+
+    assert repr(t) == "<transform: my_expand_fn>"
+    assert t.__doc__ == "my docstring."
 
 
 class TestTransformProgramGetter:
@@ -35,9 +62,9 @@ class TestTransformProgramGetter:
             return qml.state()
 
         with pytest.raises(ValueError, match=r"level bah not recognized."):
-            transform_program(circuit, level="bah")
+            get_transform_program(circuit, level="bah")
 
-    def test_transform_program_gradient_fn(self):
+    def test_get_transform_program_gradient_fn_transform(self):
         """Tests for the transform program when the gradient_fn is a transform."""
 
         dev = qml.device("default.qubit", wires=4)
@@ -59,30 +86,30 @@ class TestTransformProgramGetter:
             qml.gradients.param_shift.expand_transform, kwargs={"shifts": 2}
         )
 
-        p0 = transform_program(circuit, level=0)
+        p0 = get_transform_program(circuit, level=0)
         assert isinstance(p0, TransformProgram)
         assert len(p0) == 0
 
-        p0 = transform_program(circuit, level="top")
+        p0 = get_transform_program(circuit, level="top")
         assert isinstance(p0, TransformProgram)
         assert len(p0) == 0
 
-        p_grad = transform_program(circuit, level="gradient")
+        p_grad = get_transform_program(circuit, level="gradient")
         assert isinstance(p_grad, TransformProgram)
         assert len(p_grad) == 4
         assert p_grad == TransformProgram([expected_p0, expected_p1, expected_p2, ps_expand_fn])
 
-        p_dev = transform_program(circuit, level="device")
+        p_dev = get_transform_program(circuit, level="device")
         assert isinstance(p_grad, TransformProgram)
-        p_default = transform_program(circuit)
-        p_none = transform_program(circuit, None)
+        p_default = get_transform_program(circuit)
+        p_none = get_transform_program(circuit, None)
         assert p_dev == p_default
         assert p_none == p_dev
         assert len(p_dev) == 9
         assert p_dev == p_grad + dev.preprocess()[0]
 
         # slicing
-        p_sliced = transform_program(circuit, slice(2, 7, 2))
+        p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
         assert p_sliced[0].transform == qml.compile.transform
         assert p_sliced[1].transform == qml.devices.preprocess.validate_device_wires.transform
@@ -96,11 +123,11 @@ class TestTransformProgramGetter:
         def circuit():
             return qml.state()
 
-        prog = transform_program(circuit, level="gradient")
+        prog = get_transform_program(circuit, level="gradient")
         assert len(prog) == 1
         assert qml.transforms.cancel_inverses in prog
 
-    def test_transform_program_device_gradient(self):
+    def test_get_transform_program_device_gradient(self):
         """Test the trnsform program contents when using a device derivative."""
 
         dev = qml.device("default.qubit")
@@ -111,7 +138,7 @@ class TestTransformProgramGetter:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        full_prog = transform_program(circuit)
+        full_prog = get_transform_program(circuit)
         assert len(full_prog) == 13
 
         config = qml.devices.ExecutionConfig(
@@ -124,7 +151,7 @@ class TestTransformProgramGetter:
         expected += dev_program
         assert full_prog == expected
 
-    def test_transform_program_legacy_device_interface(self):
+    def test_get_transform_program_legacy_device_interface(self):
         """Test the contents of the transform program with the legacy device interface."""
 
         dev = qml.device("default.qubit.legacy", wires=5)
@@ -135,7 +162,7 @@ class TestTransformProgramGetter:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        program = transform_program(circuit)
+        program = get_transform_program(circuit)
 
         m1 = TransformContainer(qml.transforms.merge_rotations.transform)
         m2 = TransformContainer(dev.batch_transform)
@@ -145,7 +172,7 @@ class TestTransformProgramGetter:
         # this is the best proxy I can find
         assert program[2].transform.__wrapped__ == dev.expand_fn
 
-    def test_transform_program_final_transform(self):
+    def test_get_transform_program_final_transform(self):
         """Test that gradient preprocessing and device transform occur before a final transform."""
 
         @qml.metric_tensor
@@ -155,22 +182,22 @@ class TestTransformProgramGetter:
             qml.IsingXX(1.234, wires=(0, 1))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
 
-        user_program = transform_program(circuit, level="user")
+        user_program = get_transform_program(circuit, level="user")
         assert len(user_program) == 2
         assert user_program[0].transform == qml.compile.transform
         assert user_program[1].transform == qml.metric_tensor.expand_transform
 
-        grad_program = transform_program(circuit, level="gradient")
+        grad_program = get_transform_program(circuit, level="gradient")
         assert len(grad_program) == 3
         assert grad_program[0].transform == qml.compile.transform
         assert grad_program[1].transform == qml.metric_tensor.expand_transform
         assert grad_program[2].transform == qml.gradients.param_shift.expand_transform
 
-        dev_program = transform_program(circuit, level="device")
+        dev_program = get_transform_program(circuit, level="device")
         assert len(dev_program) == 3 + len(circuit.device.preprocess()[0])  # currently 8
         assert qml.metric_tensor not in dev_program
 
-        full = transform_program(circuit)
+        full = get_transform_program(circuit)
         assert full[-1].transform == qml.metric_tensor.transform
 
 
