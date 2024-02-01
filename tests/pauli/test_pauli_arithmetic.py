@@ -439,11 +439,10 @@ class TestPauliWord:
         assert op.name == id.name
         assert op.wires == id.wires
 
-    def test_operation_empty_error(self):
-        """Test that a ValueError is raised if an empty PauliWord is
-        cast to a PL operation."""
-        with pytest.raises(ValueError, match="Can't get the operation for an empty PauliWord."):
-            pw4.operation()
+    def test_operation_empty_nowires(self):
+        """Test that an empty PauliWord is cast to qml.Identity() operation."""
+        res = pw4.operation()
+        assert res == qml.Identity()
 
     tup_pw_hamiltonian = (
         (PauliWord({0: X}), 1 * qml.PauliX(wires=0)),
@@ -999,10 +998,10 @@ class TestPauliSentence:
     def test_operation_empty_error(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a PL operation."""
-        with pytest.raises(ValueError, match="Can't get the operation for an empty PauliWord."):
-            ps4.operation()
-        with pytest.raises(ValueError, match="Can't get the operation for an empty PauliSentence."):
-            ps5.operation()
+        res1 = ps4.operation()
+        assert res1 == qml.Identity()
+        res2 = ps5.operation()
+        assert res2 == qml.s_prod(0, qml.Identity())
 
     def test_operation_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""
