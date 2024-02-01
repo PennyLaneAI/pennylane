@@ -174,12 +174,18 @@ class TestInitialization:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
     
+    qml.operation.enable_new_opmath()
     SUM_REPR = (
-
+        (qml.sum(X(0), X(1), X(2)), '(\n    X(0) + \n    X(1) + \n    X(2)\n)'),
+        (X(0) + X(1) +X(2), '(\n    X(0) + \n    X(1) + \n    X(2)\n)'),
     )
+    qml.operation.disable_new_opmath()
     
-    def test_repr(self):
+    @pytest.mark.parametrize("op, repr_true", SUM_REPR)
+    def test_repr(self, op, repr_true):
         """Test the string representation of Sum instances"""
+        assert repr(op) == repr_true
+
 
 
 class TestMatrix:
