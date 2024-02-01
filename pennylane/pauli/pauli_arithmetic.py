@@ -219,7 +219,6 @@ class PauliWord(dict):
 
         for wire, term in iterator.items():
             if wire in base:
-                print(wire, term)
                 factor, new_op = mul_map[term][base[wire]] if swapped else mul_map[base[wire]][term]
                 if new_op == I:
                     del result[wire]
