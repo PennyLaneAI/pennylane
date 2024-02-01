@@ -135,11 +135,11 @@ jobs:
 
       - name: Install additional PIP packages
         if: inputs.additional_pip_packages != '' && steps.continue.outputs.confirm == 'true'
-        run: pip install ${{ inputs.additional_pip_packages }}
+        run: ${{ steps.poetry.outputs.poetry_bin }} run python -m pip install ${{ inputs.additional_pip_packages }}
 
       - name: Install PennyLane-Lightning master
         if: inputs.install_pennylane_lightning_master == true && steps.continue.outputs.confirm == 'true'
-        run: pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+        run: ${{ steps.poetry.outputs.poetry_bin }} run python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Set PyTest Args
         if: steps.continue.outputs.confirm == 'true'
