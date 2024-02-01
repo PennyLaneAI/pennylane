@@ -150,6 +150,19 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+* String representations of Pauli operators have been improved. There are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
+  ```
+  >>> qml.PauliX(0)
+  X(0)
+  >>> qml.PauliX('a')
+  X('a')
+  >>> 0.5 * X(0) # no unnecessary bracket
+  0.5 * X(0)
+  >>> 0.5 * (X(0) + Y(1)) # keeps necessary bracket
+  0.5 * (X(0) + Y(1))
+  ```
+  [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
