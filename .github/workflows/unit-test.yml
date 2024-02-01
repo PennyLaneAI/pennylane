@@ -119,17 +119,17 @@ jobs:
         uses: XanaduAI/cloud-actions/install-python-poetry@main
         with:
           poetry_version: 1.7.1
-          add_poetry_to_path: true
+          add_poetry_to_path: false
 
       - name: Configure Poetry
         run: |
-          poetry config virtualenvs.create "false"
-          poetry --version
+          ${{ steps.poetry.outputs.poetry_bin }} config virtualenvs.create "false"
+          ${{ steps.poetry.outputs.poetry_bin }} --version
           
-          poetry env info
+          ${{ steps.poetry.outputs.poetry_bin }} env info
           which python
           
-          poetry env use $(which python)
+          ${{ steps.poetry.outputs.poetry_bin }} env use $(which python)
 
       - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
