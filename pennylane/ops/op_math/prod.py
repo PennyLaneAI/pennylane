@@ -425,7 +425,7 @@ class Prod(CompositeOp):
 
     def terms(self):
         r"""
-        Return coefficients and operators of ``Sum`` instance
+        Return coefficients and operators of ``Sum`` instance.
 
         ** Example **
 
@@ -433,8 +433,8 @@ class Prod(CompositeOp):
         >>> op = X(0) @ (0.5 * X(1) + X(2))
         >>> op.terms()
         ([0.5, 1.0],
-        [PauliX(wires=[1]) @ PauliX(wires=[0]),
-        PauliX(wires=[2]) @ PauliX(wires=[0])])
+         [PauliX(wires=[1]) @ PauliX(wires=[0]),
+          PauliX(wires=[2]) @ PauliX(wires=[0])])
 
         """
         # try using pauli_rep:
