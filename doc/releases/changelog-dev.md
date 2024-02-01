@@ -150,6 +150,17 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+* Upgrade the `Prod.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
+  ```python3
+  >>> qml.operation.enable_new_opmath()
+  >>> op = X(0) @ (0.5 * X(1) + X(2))
+  >>> op.terms()
+  ([0.5, 1.0],
+  [PauliX(wires=[1]) @ PauliX(wires=[0]),
+   PauliX(wires=[2]) @ PauliX(wires=[0])])
+  ```
+  [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
