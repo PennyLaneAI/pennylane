@@ -32,7 +32,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.workflow import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -1037,7 +1036,7 @@ class QubitDevice(Device):
         n_snapshots = self.shots
         seed = obs.seed
 
-        with set_shots(self, shots=1):
+        with qml.workflow.set_shots(self, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
