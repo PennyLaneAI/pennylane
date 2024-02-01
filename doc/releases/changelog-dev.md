@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+<h4>Native mid-circuit measurements on default qubit 💡</h4>
+
+<h4>Work easily and efficiently with Pauli operators 🔧</h4>
+
+<h4>Easy to inspect transforms 🔎</h4>
+
+<h4>New Clifford and noisy qutrit devices 🦾</h4>
+
 * A new `default.clifford` device enables efficient simulation of large-scale Clifford circuits
   defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
   [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
