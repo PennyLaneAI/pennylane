@@ -686,7 +686,8 @@ class DefaultClifford(Device):
             state[0] = 1.0 + 0.0j
         return state * qml.matrix(global_phase)
 
-    def _measure_expectation(self, meas, tableau_simulator, **kwargs):
+    @staticmethod
+    def _measure_expectation(meas, tableau_simulator, **kwargs):
         """Measure the expectation value with respect to the state of simulator device."""
         # Get the observable for the expectation value measurement
         (coeffs, paulis), _ = _convert_op_to_linear_comb(meas.obs), kwargs
