@@ -238,7 +238,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
 
     # Compute the partial trace
     traced_wires = [x for x in consecutive_indices if x not in indices]
-    density_matrix = _batched_partial_trace(density_matrix, traced_wires)
+    density_matrix = batched_partial_trace(density_matrix, traced_wires)
 
     if batch_dim is None:
         density_matrix = density_matrix[0]
@@ -247,7 +247,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
-def _batched_partial_trace(density_matrix, indices):
+def batched_partial_trace(density_matrix, indices):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
@@ -262,7 +262,7 @@ def _batched_partial_trace(density_matrix, indices):
 
     >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
     ...               [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
-    >>> _batched_partial_trace(x, indices=[0])
+    >>> batched_partial_trace(x, indices=[0])
     array([[[1, 0],
             [0, 0]],
 
@@ -271,7 +271,7 @@ def _batched_partial_trace(density_matrix, indices):
 
     >>> x = tf.Variable([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
     ...                  [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
-    >>> _batched_partial_trace(x, indices=[1])
+    >>> batched_partial_trace(x, indices=[1])
     <tf.Tensor: shape=(2, 2, 2), dtype=complex128, numpy=
     array([[[1.+0.j, 0.+0.j],
             [0.+0.j, 0.+0.j]],
