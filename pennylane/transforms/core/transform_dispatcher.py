@@ -343,6 +343,9 @@ class TransformContainer:
         self._is_informative = is_informative
         self._final_transform = is_informative or final_transform
 
+    def __repr__(self):
+        return f"<{self._transform.__name__}({self._args}, {self._kwargs})>"
+
     def __iter__(self):
         return iter(
             (
