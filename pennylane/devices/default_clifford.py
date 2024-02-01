@@ -585,55 +585,22 @@ class DefaultClifford(Device):
         num_shots = circuit.shots.total_shots
         sample_seed = seed if isinstance(seed, int) else self._seed
 
+        # maps measurement type to the desired analytic measurement method
+        measurement_map = {
+            ExpectationMP: self._sample_expectation,
+            VarianceMP: self._sample_variance,
+            ClassicalShadowMP: self._sample_classical_shadow,
+            ShadowExpvalMP: self._sample_expval_shadow, 
+        }
+
         results = []
         for meas in circuit.measurements:
-            meas_op = meas.obs
-            if meas_op is None:
-                meas_op = qml.prod(
-                    *[
-                        qml.PauliZ(idx)
-                        for idx in (meas.wires if meas.wires else range(stim_circuit.num_qubits))
-                    ]
-                )
-            # Computing samples via stim's compiled sampler
-            if isinstance(meas, SampleMP):
-                results.append(
-                    self._measure_observable_sample(meas_op, stim_circuit, num_shots, sample_seed)[
-                        0
-                    ][0]
-                )
-            # Computing classical shadows via manual single sampling
-            elif isinstance(meas, ClassicalShadowMP):
-                results.append(self._measure_classical_shadow(stim_circuit, circuit, meas))
-
-            # Computing observable expectation value using above classical shadows
-            elif isinstance(meas, ShadowExpvalMP):
-                results.append(self._measure_expval_shadow(stim_circuit, circuit, meas))
-
-            elif isinstance(meas, ExpectationMP):
-                results.append(
-                    self._measure_expectation_samples(stim_circuit, meas_op, num_shots, sample_seed)
-                )
-
-            elif isinstance(meas, VarianceMP):
-                meas_obs = qml.operation.convert_to_opmath(meas_op)
-                meas_obs1 = meas_obs.simplify()
-                meas_obs2 = (meas_obs1**2).simplify()
-
-                # use the naive formula for variance, i.e., Var(Q) = ⟨𝑄^2⟩−⟨𝑄⟩^2
-                vars = (
-                    self._measure_expectation_samples(
-                        stim_circuit, meas_obs2, num_shots, sample_seed
-                    )
-                    - self._measure_expectation_samples(
-                        stim_circuit, meas_obs1, num_shots, sample_seed
-                    )
-                    ** 2
-                )
-                results.append(vars)
-
-            # Computing rest of the measurement by processing samples
+            measurement_func = measurement_map.get(type(meas), None)
+            if measurement_func is not None:
+                res = measurement_func(meas, stim_circuit, shots=num_shots, seed=sample_seed)
             else:
+                meas_wires = meas.wires if meas.wires else range(stim_circuit.num_qubits)
+                meas_op = meas.obs or qml.prod(*[qml.PauliZ(idx) for idx in meas_wires])
                 samples = qml.math.array(
                     [
                         self._measure_observable_sample(
@@ -642,12 +609,19 @@ class DefaultClifford(Device):
                     ]
                 )
                 wire_order = {wire: idx for idx, wire in enumerate(meas.wires)}
-                results.append(meas.process_samples(samples=samples, wire_order=wire_order))
+                res = (
+                    qml.math.squeeze(samples[0], axis=0)
+                    if isinstance(meas, SampleMP)
+                    else meas.process_samples(samples=samples, wire_order=wire_order)
+                )
+
+            results.append(res)
+
         return results
 
     def measure_analytical(self, circuit, stim_circuit, tableau_simulator, global_phase):
         """Given a circuit, compute tableau and return the analytical measurement results."""
-        # maps measurement type to the measurement function
+        # maps measurement type to the desired analytic measurement method
         measurement_map = {
             DensityMatrixMP: self._measure_density_matrix,
             StateMP: self._measure_state,  # kwargs -> circuit, global_phase
@@ -723,19 +697,6 @@ class DefaultClifford(Device):
                 pauli_term[wr] = op
             stim_pauli = stim.PauliString("".join(pauli_term))
             expecs[idx] = tableau_simulator.peek_observable_expectation(stim_pauli)
-
-        return qml.math.dot(coeffs, expecs)
-
-    def _measure_expectation_samples(self, stim_circuit, meas_op, num_shots, sample_seed):
-        """Measure the expectation value with respect to samples from simulator device."""
-        # Get the observable for the expectation value measurement
-        samples, coeffs = self._measure_observable_sample(
-            meas_op, stim_circuit, num_shots, sample_seed
-        )
-        expecs = [
-            qml.math.mean(qml.math.power([-1] * num_shots, qml.math.sum(sample, axis=1)))
-            for sample in samples
-        ]
 
         return qml.math.dot(coeffs, expecs)
 
@@ -926,6 +887,42 @@ class DefaultClifford(Device):
 
         return prob_res
 
+    def _sample_expectation(self, meas, stim_circuit, shots, seed):
+        """Measure the expectation value with respect to samples from simulator device."""
+        # Get the observable for the expectation value measurement
+        meas_op = meas.obs
+        if meas_op is None:
+            meas_op = qml.prod(
+                *[
+                    qml.PauliZ(idx)
+                    for idx in (meas.wires if meas.wires else range(stim_circuit.num_qubits))
+                ]
+            )
+        samples, coeffs = self._measure_observable_sample(meas.obs, stim_circuit, shots, seed)
+        expecs = [
+            qml.math.mean(qml.math.power([-1] * shots, qml.math.sum(sample, axis=1)))
+            for sample in samples
+        ]
+
+        return qml.math.dot(coeffs, expecs)
+
+    def _sample_variance(self, meas, stim_circuit, shots, seed):
+        """Measure the variance with respect to samples from simulator device."""
+        # Get the observable for the expectation value measurement
+        meas_op = meas.obs
+        if meas_op is None:
+            return 1 - self._sample_expectation(meas, stim_circuit, shots, seed) ** 2
+
+        meas_obs = qml.operation.convert_to_opmath(meas_op)
+        meas_obs1 = meas_obs.simplify()
+        meas_obs2 = (meas_obs1**2).simplify()
+
+        # use the naive formula for variance, i.e., Var(Q) = ⟨𝑄^2⟩−⟨𝑄⟩^2
+        return (
+            self._sample_expectation(qml.expval(meas_obs2), stim_circuit, shots, seed)
+            - self._sample_expectation(qml.expval(meas_obs1), stim_circuit, shots, seed) ** 2
+        )
+
     @staticmethod
     def _measure_single_sample(stim_ct, meas_ops, meas_idx, meas_wire):
         """Sample a single qubit Pauli measurement from a stim circuit"""
@@ -935,14 +932,14 @@ class DefaultClifford(Device):
             stim.PauliString([0] * meas_idx + meas_ops + [0] * (meas_wire - meas_idx - 1))
         )
 
-    def _measure_classical_shadow(self, stim_circuit, circuit, meas_op):
+    def _sample_classical_shadow(self, meas, stim_circuit, shots, seed):
         """Measures classical shadows from the state of simulator device"""
-        meas_seed = meas_op.seed or np.random.randint(2**30)
-        meas_wire = len(circuit.wires)
+        meas_seed = meas.seed or seed
+        meas_wire = stim_circuit.num_qubits
 
         bits = []
         recipes = np.random.RandomState(meas_seed).randint(
-            3, size=(circuit.shots.total_shots, meas_wire)
+            3, size=(shots, meas_wire)
         )  # Random Pauli basis to be used for measurements
 
         for recipe in recipes:
@@ -955,10 +952,11 @@ class DefaultClifford(Device):
 
         return np.asarray(bits, dtype=int), np.asarray(recipes, dtype=int)
 
-    def _measure_expval_shadow(self, stim_circuit, circuit, meas_op):
+    def _sample_expval_shadow(self, meas, stim_circuit, shots, seed):
         """Measures expectation value of a Pauli observable using
         classical shadows from the state of simulator device."""
-        bits, recipes = self._measure_classical_shadow(stim_circuit, circuit, meas_op)
+        bits, recipes = self._sample_classical_shadow(meas, stim_circuit, shots, seed)
         # TODO: Benchmark scaling for larger number of circuits for this existing functionality
-        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=circuit.wires.tolist())
-        return shadow.expval(meas_op.H, meas_op.k)
+        wires_map = list(range(stim_circuit.num_qubits))
+        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=wires_map)
+        return shadow.expval(meas.H, meas.k)
