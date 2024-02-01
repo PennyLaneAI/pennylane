@@ -513,14 +513,18 @@ class BlockEncode(Operation):
     """Gradient computation method."""
 
     def __init__(self, A, wires, id=None):
+        wires = Wires(wires)
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
             A = qml.math.reshape(A, [1, 1])
-
-        wires = Wires(wires)
-        if pnp.sum(shape_a) <= 2:
-            normalization = A
+            normalization = qml.math.abs(A)
             subspace = (1, 1, 2 ** len(wires))
+        
+        elif len(shape_a)==1:
+            A = qml.math.reshape(A, [1, len(A)])
+            normalization = qml.math.max(A)
+            subspace = (1, shape_a[0], 2**len(wires))
+
         else:
             normalization = qml.math.maximum(
                 norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),

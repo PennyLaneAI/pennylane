@@ -795,6 +795,7 @@ class TestBlockEncode:
             (1, 1, {"norm": 1, "subspace": (1, 1, 2)}),
             ([1], 1, {"norm": 1, "subspace": (1, 1, 2)}),
             ([[1]], 1, {"norm": 1, "subspace": (1, 1, 2)}),
+            ([1,0], [0,1], {"norm":1, "subspace":(1, 2, 4)}),
             (pnp.array(1), [1], {"norm": 1, "subspace": (1, 1, 2)}),
             (pnp.array([1]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
             (pnp.array([[1]]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
