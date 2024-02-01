@@ -129,6 +129,8 @@ jobs:
           poetry --version          
           poetry env info
           
+          echo "PYTHON_BIN=poetry run python" >> $GITHUB_ENV
+          echo "PYTEST_BIN=poetry run python -m pytest" >> $GITHUB_ENV
           echo "PIP_BIN=poetry run python -m pip" >> $GITHUB_ENV
 
       - name: Install PennyLane and dependencies
@@ -164,7 +166,7 @@ jobs:
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: poetry run python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
+        run: $PYTEST_BIN ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
       - name: Adjust coverage file for Codecov
         if: inputs.pipeline_mode == 'unit-tests'
@@ -186,19 +188,19 @@ jobs:
         if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmarks.json') != '' && hashFiles('benchmark_reference/benchmarks.json') != ''
         run: |
           mkdir ${{ github.workspace }}/benchmark_results
-          poetry run python .github/workflows/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename_XUBM benchmark_results/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }} --github_reference ${{ github.ref }}
-          poetry run python .github/workflows/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename benchmark_reference/benchmarks.json --filename_XUBM benchmark_reference/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }}
+          $PYTHON_BIN .github/workflows/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename_XUBM benchmark_results/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }} --github_reference ${{ github.ref }}
+          $PYTHON_BIN .github/workflows/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename benchmark_reference/benchmarks.json --filename_XUBM benchmark_reference/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }}
 
       - name: Plotting benchmark graphs
         if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != ''
         run: |
-          poetry run python .github/workflows/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ steps.benchmark_name.outputs.benchmark_name }}
+          $PYTHON_BIN .github/workflows/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ steps.benchmark_name.outputs.benchmark_name }}
 
       # Merge benchmarks data in a single JSON. Create a CSV file with runtimes. Move data to the artifact directory.
       - name: Post-process benchmark data
         if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != ''
         run: |
-          poetry run python .github/workflows/scripts/benchmarks/export_benchmarks_data.py
+          $PYTHON_BIN .github/workflows/scripts/benchmarks/export_benchmarks_data.py
 
       # If this is an assessment benchmark, upload the data as an artifact.
       - name: Upload pytest benchmark results
