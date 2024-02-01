@@ -88,6 +88,7 @@
   + 2j * X(0) @ Z(1)
   ```
 
+<h3>Improvements 🛠</h3>
 
 <h4>Parity Mapping</h4>
 
@@ -108,8 +109,7 @@
    ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
    ```
 
-
-<h3>Improvements 🛠</h3>
+<h4>Other improvements</h4>
 
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
