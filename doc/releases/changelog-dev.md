@@ -66,6 +66,15 @@
 * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
   [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
 
+* Composite operations (eg. those made with `qml.prod` and `qml.sum`) and `SProd` operations convert `Hamiltonian` and
+  `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
+  incompatible operator types.
+  [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
+  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
+
+* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
+  [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
+
 <h4>Easy to inspect transforms 🔎</h4>
 
 <h4>New Clifford and noisy qutrit devices 🦾</h4>
@@ -100,9 +109,32 @@
          [1, 0, 0, 1, 1]])
   ```
 
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
 <h3>Improvements 🛠</h3>
 
-<h4>Parity Mapping</h4>
+<h4>Faster gradients with JVPs and other performance improvements</h4>
+
+* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
+  is now strictly faster for jax.
+  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
+
+* `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
+  for `tf.Function` and Tensorflow Autograph.
+  [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
+
+* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
+  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
+
+* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
+  for large workflows.
+  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
+
+* Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
+  [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
+
+<h4>Community contributions 🥳</h4>
 
 * `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
    [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
@@ -121,43 +153,22 @@
    ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
    ```
 
-<h4>Other improvements</h4>
-
-* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
-  is now strictly faster for jax.
-  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
-
-* The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
-  [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
-
-* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
-  for large workflows.
-  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
-
-* `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
-  for `tf.Function` and Tensorflow Autograph.
-  [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
-
-* Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
-  [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
-
-* Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
-  [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
+* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
+  [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 * Improve efficiency of matrix calculation when operator is symmetric over wires
    [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
-* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
-  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
+<h4>Other improvements</h4>
+
+* The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
+  [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
+
+* Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
+  [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
-
-* Composite operations (eg. those made with `qml.prod` and `qml.sum`) and `SProd` operations convert `Hamiltonian` and
-  `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
-  incompatible operator types.
-  [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
-  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
 
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
@@ -172,17 +183,6 @@
 * CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
-
-* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
-  [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
-
-<h4>Community contributions 🥳</h4>
-
-* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
-  [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
-
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
 <h3>Breaking changes 💔</h3>
 
