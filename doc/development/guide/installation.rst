@@ -47,7 +47,10 @@ Installation
 ------------
 
 For development purposes, it is recommended to install PennyLane source code
-using development mode:
+using development mode, and this can be done easily with ``pip`` or ``Poetry``:
+
+Installing using pip
+~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -65,6 +68,20 @@ importing PennyLane in Python.
     plugins, changes to PennyLane device class locations or shortnames
     requires ``pip install -e .`` to be re-run in the plugin repository
     for the changes to take effect.
+
+Installing using Poetry
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    git clone https://github.com/PennyLaneAI/pennylane
+    cd pennylane
+    poetry install
+
+This will automatically install PennyLane in editable mode. If you wish to install PennyLane with
+optional dependency groups, you can add the ``--with`` option. For example, to include everything
+needed to work with Jax and PennyLane Datasets, you can run ``poetry install --with jax,data``.
+See the section on Poetry below for more details.
 
 Poetry
 ------
