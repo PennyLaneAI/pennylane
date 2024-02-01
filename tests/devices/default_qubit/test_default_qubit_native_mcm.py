@@ -20,7 +20,10 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import apply_mid_measure, MidMeasureMP
-from pennylane.devices.qubit.simulate import accumulate_native_mcm, parse_native_mid_circuit_measurements
+from pennylane.devices.qubit.simulate import (
+    accumulate_native_mcm,
+    parse_native_mid_circuit_measurements,
+)
 
 
 def validate_counts(shots, results1, results2):
@@ -37,17 +40,16 @@ def validate_counts(shots, results1, results2):
 
 
 def validate_samples(shots, results1, results2):
-    for res in [results1, results2]:
-        if isinstance(shots, Sequence):
-            for s, r1, r2 in zip(shots, results1, results2):
-                validate_samples(s, r1, r2)
-        else:
-            sh1, sh2 = results1.shape[0], results2.shape[0]
-            assert abs(sh1 - sh2) < (abs(sh1 + sh2) // 10)
-            assert results1.ndim == results2.ndim
-            if results2.ndim > 1:
-                assert results1.shape[1] == results2.shape[1]
-            assert abs(np.sum(results1) - np.sum(results2)) < (results2.size // 10)
+    if isinstance(shots, Sequence):
+        for s, r1, r2 in zip(shots, results1, results2):
+            validate_samples(s, r1, r2)
+    else:
+        sh1, sh2 = results1.shape[0], results2.shape[0]
+        assert abs(sh1 - sh2) < (abs(sh1 + sh2) // 10)
+        assert results1.ndim == results2.ndim
+        if results2.ndim > 1:
+            assert results1.shape[1] == results2.shape[1]
+        assert abs(np.sum(results1) - np.sum(results2)) < (results2.size // 10)
 
 
 def validate_expval(shots, results1, results2):
@@ -77,12 +79,8 @@ def test_apply_mid_measure():
 
 
 def test_accumulate_native_mcm():
-    with pytest.raises(
-        TypeError, match="Unsupported measurement of class VarianceMP"
-    ):
-        accumulate_native_mcm(
-            qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None]
-        )
+    with pytest.raises(TypeError, match="Unsupported measurement of class VarianceMP"):
+        accumulate_native_mcm(qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None])
 
 
 @pytest.mark.parametrize(

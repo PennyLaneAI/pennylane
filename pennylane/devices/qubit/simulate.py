@@ -14,7 +14,6 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from collections import Counter
-from functools import reduce
 from typing import Optional, Sequence
 
 from numpy.random import default_rng
@@ -406,9 +405,7 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
                 new_shot_meas[i] = all_shot_meas[i]
             new_shot_meas[i].append(one_shot_meas[i])
         else:
-            raise TypeError(
-                f"Unsupported measurement of class {m.__class__.__name__}."
-            )
+            raise TypeError(f"Unsupported measurement of class {m.__class__.__name__}.")
     return new_shot_meas
 
 
@@ -505,6 +502,7 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
             f"Native mid-circuit measurement mode does not support {circuit_measurement.__class__.__name__} measurements."
         )
     return new_meas
+
 
 def gather_mcm(measurement, samples):
     """Combines, gathers and normalizes several measurements with non-trivial measurement values.

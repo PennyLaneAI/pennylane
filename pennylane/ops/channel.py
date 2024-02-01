@@ -53,6 +53,7 @@ class AmplitudeDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -131,6 +132,7 @@ class GeneralizedAmplitudeDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
@@ -209,6 +211,7 @@ class PhaseDamping(Channel):
         gamma (float): phase damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -294,6 +297,7 @@ class DepolarizingChannel(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -367,6 +371,7 @@ class BitFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -449,6 +454,7 @@ class ResetError(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
@@ -550,6 +556,7 @@ class PauliError(Channel):
         array([[0.        , 0.70710678],
                [0.70710678, 0.        ]])
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -651,6 +658,7 @@ class PhaseFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -701,6 +709,7 @@ class QubitChannel(Channel):
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = AnyWires
     grad_method = None
 
@@ -830,6 +839,7 @@ class ThermalRelaxationError(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 4
     num_wires = 1
     grad_method = "F"
