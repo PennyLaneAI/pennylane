@@ -231,7 +231,7 @@ class QubitDevice(Device):
         """Reset the backend state.
 
         After the reset, the backend should be as if it was just constructed.
-        Most importantly the quantum state is reset to its initial value.
+        Most importantly, the quantum state is reset to its initial value.
         """
         self._samples = None
 
@@ -328,7 +328,7 @@ class QubitDevice(Device):
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
         Returns:
-            tuple: stastics for each shot item from the shot vector
+            tuple: statistics for each shot item from the shot vector
         """
         results = []
         s1 = 0
@@ -611,14 +611,14 @@ class QubitDevice(Device):
         results = []
 
         for m in measurements:
-            # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
+            # TODO: Remove this when all overridden measurements support the `MeasurementProcess` class
             if isinstance(m.mv, list):
                 # MeasurementProcess stores information needed for processing if terminal measurement
                 # uses a list of mid-circuit measurement values
                 obs = m
             else:
                 obs = m.obs or m.mv or m
-            # Check if there is an overriden version of the measurement process
+            # Check if there is an overridden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
                     result = method(tape=circuit)
@@ -859,7 +859,7 @@ class QubitDevice(Device):
 
         Due to the large size of the integer arrays for more than 32 bits,
         memory allocation errors may arise in the states_to_binary method.
-        Hence we constraint the dtype of the array to represent unsigned
+        Hence, we constrained the dtype of the array to represent unsigned
         integers on 32 bits. Due to this constraint, an overflow occurs for 32
         or more wires, therefore this approach is used only for fewer wires.
 
@@ -1160,8 +1160,8 @@ class QubitDevice(Device):
 
     @staticmethod
     def _count_unbinned_samples(indices, batch_size, dim):
-        """Count the occurences of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability."""
+        """Count the occurrences of sampled indices and convert them to relative
+        counts in order to estimate their occurrence probability."""
         if batch_size is None:
             prob = np.zeros(dim, dtype=np.float64)
             basis_states, counts = np.unique(indices, return_counts=True)
@@ -1179,8 +1179,8 @@ class QubitDevice(Device):
 
     @staticmethod
     def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
-        """Count the occurences of bins of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability per bin."""
+        """Count the occurrences of bins of sampled indices and convert them to relative
+        counts in order to estimate their occurrence probability per bin."""
 
         if batch_size is None:
             prob = np.zeros((dim, num_bins), dtype=np.float64)
@@ -1234,7 +1234,7 @@ class QubitDevice(Device):
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
-        states by summing the probabiliites on the non-specified wires.
+        states by summing the probabilities on the non-specified wires.
 
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.
@@ -1369,7 +1369,7 @@ class QubitDevice(Device):
         return np.squeeze(np.var(samples, axis=axis))
 
     def _samples_to_counts(self, samples, mp: CountsMP, num_wires):
-        """Groups the samples into a dictionary showing number of occurences for
+        """Groups the samples into a dictionary showing number of occurrences for
         each possible outcome.
 
         The format of the dictionary depends on mp.return_type, which is set when
@@ -1387,7 +1387,7 @@ class QubitDevice(Device):
             num_wires (int): number of wires the sampled observable was performed on
 
         Returns:
-            dict: dictionary with format ``{'outcome': num_occurences}``, including all
+            dict: dictionary with format ``{'outcome': num_occurrences}``, including all
                 outcomes for the sampled observable
 
         **Example**
@@ -1589,7 +1589,7 @@ class QubitDevice(Device):
                 "Parameter broadcasting is not supported with adjoint differentiation"
             )
 
-        # broadcasted inner product not summing over first dimension of b
+        # broadcast inner product, not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
         # pylint: disable=unnecessary-lambda-assignment
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))

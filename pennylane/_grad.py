@@ -339,7 +339,7 @@ def jacobian(func, argnum=None, method=None, h=None):
     of the QNode output shape (``(8,)``) and the shape of ``x`` (``(2,)``).
     Similarly, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(8, 2, 4)``.
 
-    Instead we may choose the output to contain only one of the two
+    Instead, we may choose the output to contain only one of the two
     entries by providing an iterable as ``argnum``:
 
     >>> jac = qml.jacobian(circuit, argnum=[1])(x, y)
