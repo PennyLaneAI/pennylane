@@ -590,7 +590,7 @@ class DefaultClifford(Device):
             ExpectationMP: self._sample_expectation,
             VarianceMP: self._sample_variance,
             ClassicalShadowMP: self._sample_classical_shadow,
-            ShadowExpvalMP: self._sample_expval_shadow, 
+            ShadowExpvalMP: self._sample_expval_shadow,
         }
 
         results = []
