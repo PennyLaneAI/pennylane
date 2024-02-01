@@ -163,6 +163,16 @@ class Sum(CompositeOp):
         # Since addition is always commutative, we do not need to sort
         return hash(("Sum", frozenset(o.hash for o in self.operands)))
 
+    def __str__(self):
+        """String representation of the PauliSentence."""
+        ops = self.operands
+        middle_str = "\n    + ".join(f"  {str(op)}" if i==0 else f"{str(op)}" for i,op in enumerate(ops))
+        return middle_str
+
+    def __repr__(self):
+        """Terminal representation for PauliSentence"""
+        return f"(\n{str(self)}\n)"
+
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
