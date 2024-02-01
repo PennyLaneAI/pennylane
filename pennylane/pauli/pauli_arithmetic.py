@@ -429,8 +429,6 @@ class PauliWord(dict):
     def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
-            if wire_order in (None, [], Wires([])):
-                return qml.Identity()
             return Identity(wires=wire_order)
 
         factors = [op_map[op](wire) for wire, op in self.items()]
@@ -814,8 +812,6 @@ class PauliSentence(dict):
     def operation(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
-            if wire_order in (None, [], Wires([])):
-                return qml.s_prod(0, Identity())
             return qml.s_prod(0, Identity(wires=wire_order))
 
         summands = []
