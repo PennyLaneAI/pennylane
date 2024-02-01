@@ -1310,10 +1310,13 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals() if not isinstance(observable, MeasurementValue)
-                    # Indexing a MeasurementValue gives the output of the processing function
-                    # for that index as a binary number.
-                    else [observable[i] for i in range(2 ** len(observable.measurements))],
+                    (
+                        observable.eigvals()
+                        if not isinstance(observable, MeasurementValue)
+                        # Indexing a MeasurementValue gives the output of the processing function
+                        # for that index as a binary number.
+                        else [observable[i] for i in range(2 ** len(observable.measurements))]
+                    ),
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1338,10 +1341,13 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals() if not isinstance(observable, MeasurementValue)
-                    # Indexing a MeasurementValue gives the output of the processing function
-                    # for that index as a binary number.
-                    else [observable[i] for i in range(2 ** len(observable.measurements))],
+                    (
+                        observable.eigvals()
+                        if not isinstance(observable, MeasurementValue)
+                        # Indexing a MeasurementValue gives the output of the processing function
+                        # for that index as a binary number.
+                        else [observable[i] for i in range(2 ** len(observable.measurements))]
+                    ),
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:

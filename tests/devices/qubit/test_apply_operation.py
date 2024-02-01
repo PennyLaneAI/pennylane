@@ -786,10 +786,11 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         res = method(op, qml.math.asarray(state, like=ml_framework))
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
-        expanded_mat = [
-            np.kron(np.eye(2**missing_wires), mat[i]) if missing_wires else mat[i]
-            for i in range(3)
-        ]
+        expanded_mat = (
+            [np.kron(np.eye(2**missing_wires), mat[i]) for i in range(3)]
+            if missing_wires
+            else [mat[i] for i in range(3)]
+        )
         expected = [(expanded_mat[i] @ state.flatten()).reshape((2, 2, 2)) for i in range(3)]
 
         assert qml.math.get_interface(res) == ml_framework
@@ -820,10 +821,11 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
-        expanded_mat = [
-            np.kron(np.eye(2**missing_wires), mat[i]) if missing_wires else mat[i]
-            for i in range(3)
-        ]
+        expanded_mat = (
+            [np.kron(np.eye(2**missing_wires), mat[i]) for i in range(3)]
+            if missing_wires
+            else [mat[i] for i in range(3)]
+        )
         expected = [(expanded_mat[i] @ state[i].flatten()).reshape((2, 2, 2)) for i in range(3)]
 
         assert qml.math.get_interface(res) == ml_framework
@@ -1061,6 +1063,8 @@ class TestApplyGroverOperator:
         """Test that apply_operation is correct for GroverOperator for all dispatch branches
         when applying it to a Jax state."""
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
