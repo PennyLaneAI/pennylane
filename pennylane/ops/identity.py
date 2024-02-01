@@ -39,6 +39,7 @@ class Identity(CVObservable, Operation):
     Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
+
     num_params = 0
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
@@ -243,6 +244,7 @@ class GlobalPhase(Operation):
 
 
     """
+
     grad_method = "A"
     num_params = 1
     num_wires = AllWires
