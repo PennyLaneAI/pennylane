@@ -3049,8 +3049,6 @@ def use_new_opmath():
     try:
         enable_new_opmath()
         yield
-    except Exception as e:
-        raise e
     finally:
         if not check_op_math:
             disable_new_opmath()

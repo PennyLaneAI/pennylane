@@ -114,6 +114,7 @@ def test_state_clifford(circuit, tableau):
         qml.purity([1]),
         qml.purity([0, 2]),
         qml.purity([1, 2]),
+        qml.purity([0, 1, 2]),
         qml.vn_entropy([1]),
         qml.vn_entropy([0, 2]),
         qml.vn_entropy([0, 1, 2]),
@@ -154,6 +155,8 @@ def test_meas_qinfo_clifford(meas_op):
         qml.s_prod(3.0, qml.PauliX(0)),
         qml.sum(qml.PauliX(0), qml.s_prod(2.0, qml.PauliY(1))),
         qml.prod(qml.sum(qml.PauliZ(0), qml.PauliY(1)), qml.s_prod(3, qml.PauliX(2))),
+        qml.Hermitian(qml.sum(qml.PauliX(0), qml.PauliY(1)).matrix(), [0, 1]),
+        qml.Projector([1, 0], [0, 1]),
     ],
 )
 def test_meas_expval(shots, ops):

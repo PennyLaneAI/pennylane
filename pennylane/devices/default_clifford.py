@@ -893,7 +893,7 @@ class DefaultClifford(Device):
         """Measure the expectation value with respect to samples from simulator device."""
         # Get the observable for the expectation value measurement
         meas_op = meas.obs
-        if meas_op is None:
+        if meas_op is None:  # pragma: no cover
             meas_op = qml.prod(
                 *[
                     qml.PauliZ(idx)
@@ -912,7 +912,7 @@ class DefaultClifford(Device):
         """Measure the variance with respect to samples from simulator device."""
         # Get the observable for the expectation value measurement
         meas_op = meas.obs
-        if meas_op is None:
+        if meas_op is None:  # pragma: no cover
             return 1 - self._sample_expectation(meas, stim_circuit, shots, seed) ** 2
 
         meas_obs = qml.operation.convert_to_opmath(meas_op)
