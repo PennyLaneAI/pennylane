@@ -41,6 +41,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* A subset of the transform program specified with `qml.draw` and `qml.draw_mpl` with
+  the keyword `level`.
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)

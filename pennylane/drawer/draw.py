@@ -37,7 +37,7 @@ def catalyst_qjit(qnode):
 
 def draw(
     qnode,
-    level="user",
+    level=None,
     wire_order=None,
     show_all_wires=False,
     decimals=2,
@@ -55,15 +55,13 @@ def draw(
             ``None`` will omit parameters from operation labels.
         max_length (int): Maximum string width (columns) when printing the circuit
         show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required. Note that this is ignored if the input is not a QNode.
+        level (None, str, int, slice): An indication of a stage in the transform program.
 
-            - ``gradient``: The QNode will attempt to decompose
-              the internal circuit such that all circuit operations are supported by the gradient
-              method.
-
-            - ``device``: The QNode will attempt to decompose the internal circuit
-              such that all circuit operations are natively supported by the device.
+            * ``None``: use ``expansion_strategy`` instead.
+            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
+            * ``int``: How many transforms to include, starting from the front of the program
+            * ``slice``: a slice to select out components of the transform program.
+        expansion_strategy (str): Deprecated name for the level options of ``"device"`` and ``"gradient"``.
 
 
     Returns:
@@ -181,21 +179,19 @@ def draw(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.gradients.param_shift, shifts=[(0.1,)])
+        @qml.transforms.hamiltonian_expand
         @qml.qnode(qml.device('default.qubit', wires=1))
         def transformed_circuit(x):
             qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0) + qml.PauliX(0))
 
         print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
 
     .. code-block:: none
 
-        0: ──RX(1.10)─┤  <Z>
+        0: ──RX(1.00)─┤  <Z>
 
-        0: ──RX(0.90)─┤  <Z>
+        0: ──RX(1.00)─┤  <X>
 
     The function also accepts quantum functions rather than QNodes. This can be especially
     helpful if you want to visualize only a part of a circuit that may not be convertible into
@@ -213,9 +209,15 @@ def draw(
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
+        if expansion_strategy:
+            resolved_level = expansion_strategy
+        elif level:
+            resolved_level = level
+        else:
+            resolved_level = qnode.expansion_strategy
         return _draw_qnode(
             qnode,
-            level=level,
+            level=resolved_level,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
@@ -248,7 +250,7 @@ def draw(
 
 def _draw_qnode(
     qnode,
-    level="user",
+    level,
     wire_order=None,
     show_all_wires=False,
     decimals=2,
@@ -259,7 +261,7 @@ def _draw_qnode(
     def wrapper(*args, **kwargs):
 
         tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs)
-        _wire_order = wire_order or qnode.device.wires or qnode.tape.wires
+        _wire_order = wire_order or qnode.device.wires or tapes[0].wires
 
         if len(tapes) > 1:
             cache = {"tape_offset": 0, "matrices": []}
@@ -298,7 +300,7 @@ def _draw_qnode(
 
 def draw_mpl(
     qnode,
-    level="user",
+    level=None,
     wire_order=None,
     show_all_wires=False,
     decimals=None,
@@ -330,15 +332,14 @@ def draw_mpl(
         label_options (dict): matplotlib formatting options for the wire labels
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
+        level (None, str, int, slice): An indication of a stage in the transform program.
 
-            - ``gradient``: The QNode will attempt to decompose
-              the internal circuit such that all circuit operations are supported by the gradient
-              method.
+            * ``None``: use ``expansion_strategy`` instead.
+            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
+            * ``int``: How many transforms to include, starting from the front of the program
+            * ``slice``: a slice to select out components of the transform program.
 
-            - ``device``: The QNode will attempt to decompose the internal circuit
-              such that all circuit operations are natively supported by the device.
+        expansion_strategy (str): Deprecated name for the level options of ``"device"`` and ``"gradient"``.
         fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
 
     Returns:
@@ -508,12 +509,17 @@ def draw_mpl(
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
+
         if expansion_strategy:
-            warnings.warn("Please use level instead.", UserWarning)
-            level = expansion_strategy
+            resolved_level = expansion_strategy
+        elif level:
+            resolved_level = level
+        else:
+            resolved_level = qnode.expansion_strategy
+
         return _draw_mpl_qnode(
             qnode,
-            level=level,
+            level=resolved_level,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
