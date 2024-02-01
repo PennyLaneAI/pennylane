@@ -2043,4 +2043,3 @@ class Toffoli(Operation):
     @property
     def is_hermitian(self):
         return True
- 
