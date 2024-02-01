@@ -124,6 +124,7 @@ jobs:
       - name: Configure Poetry
         run: |
           ${{ steps.poetry.outputs.poetry_bin }} config virtualenvs.create "false"
+           ${{ steps.poetry.outputs.poetry_bin }} config virtualenvs.in-project false
           ${{ steps.poetry.outputs.poetry_bin }} --version
           
           ${{ steps.poetry.outputs.poetry_bin }} env info
