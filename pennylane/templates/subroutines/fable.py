@@ -13,8 +13,6 @@
 # limitations under the License.
 """
 This module contains the template for the Fast Approximate BLock Encoding (FABLE) technique. 
-It can synthesize quantum circuits for approximate block-encodings of matrices, which
-the embedding of a matrix in the leading block of a larger unitary matrix.
 """
 import warnings
 import numpy as np
@@ -26,7 +24,7 @@ from pennylane.wires import Wires
 
 class FABLE(Operation):
     r"""Fable(A, tol)
-    Constructs a circuit using the FABLE technique, which can simplify circuits without
+    Constructs a circuit using the FABLE technique<https://arxiv.org/abs/2205.00081>, which can simplify circuits without
     reducing accuracy for matrices of specific structure.
 
     **Details:**
