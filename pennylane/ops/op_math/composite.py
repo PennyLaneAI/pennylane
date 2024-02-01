@@ -52,7 +52,9 @@ class CompositeOp(Operator):
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *operands: Operator, id=None):  # pylint: disable=super-init-not-called
+    def __init__(
+        self, *operands: Operator, id=None, _pauli_rep=None
+    ):  # pylint: disable=super-init-not-called
         self._id = id
         self.queue_idx = None
         self._name = self.__class__.__name__
@@ -65,7 +67,7 @@ class CompositeOp(Operator):
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
-        self._pauli_rep = self._build_pauli_rep()
+        self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
 

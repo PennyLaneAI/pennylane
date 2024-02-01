@@ -25,7 +25,8 @@ from pennylane import math
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, prod, s_prod
+from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, s_prod, Sum
+
 
 I = "I"
 X = "X"
@@ -441,7 +442,8 @@ class PauliWord(dict):
 
         if get_as_tensor:
             return factors[0] if len(factors) == 1 else Tensor(*factors)
-        return factors[0] if len(factors) == 1 else prod(*factors)
+        pauli_rep = PauliSentence({self: 1})
+        return factors[0] if len(factors) == 1 else Prod(*factors, _pauli_rep=pauli_rep)
 
     def hamiltonian(self, wire_order=None):
         """Return :class:`~pennylane.Hamiltonian` representing the PauliWord."""
@@ -825,7 +827,7 @@ class PauliSentence(dict):
         for pw, coeff in self.items():
             pw_op = pw.operation(wire_order=list(wire_order))
             summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
-        return summands[0] if len(summands) == 1 else qml.sum(*summands)
+        return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def hamiltonian(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
