@@ -73,7 +73,7 @@ class FABLE(Operation):
 
     .. note::
     By default it is assumed the matrix is a square matrix, however, for matrices with an arbitrary size,
-    we can add zeros to reach the correct dimension.
+    one can add zeros to reach the correct dimension.
     """
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
