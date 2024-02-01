@@ -48,6 +48,7 @@ class Hadamard(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -192,6 +193,7 @@ class PauliX(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -349,6 +351,7 @@ class PauliY(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -505,6 +508,7 @@ class PauliZ(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -663,6 +667,7 @@ class S(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -774,6 +779,7 @@ class T(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -885,6 +891,7 @@ class SX(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1002,6 +1009,7 @@ class CNOT(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1076,6 +1084,7 @@ class CH(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1180,6 +1189,7 @@ class SWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1399,6 +1409,7 @@ class ISWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1516,6 +1527,7 @@ class SISWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1660,6 +1672,7 @@ class CSWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     is_self_inverse = True
     num_wires = 3
     num_params = 0
@@ -1777,6 +1790,7 @@ class CCZ(Operation):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
     """
+
     num_wires = 3
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1921,6 +1935,7 @@ class Toffoli(Operation):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
     """
+
     num_wires = 3
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -2084,6 +2099,7 @@ class MultiControlledX(Operation):
         unchanged.
 
     """
+
     is_self_inverse = True
     num_wires = AnyWires
     num_params = 0

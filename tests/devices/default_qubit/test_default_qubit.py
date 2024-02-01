@@ -23,6 +23,8 @@ import pennylane as qml
 
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
+np.random.seed(0)
+
 
 def test_name():
     """Tests the name of DefaultQubit."""
@@ -1724,6 +1726,8 @@ class TestPostselection:
         finite shots."""
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
+
+        np.random.seed(42)
 
         dev = qml.device("default.qubit")
         param = qml.math.asarray(param, like=interface)
