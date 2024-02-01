@@ -48,11 +48,11 @@ class FABLE(Operation):
               [ 0.97041007,  0.97041007,  0.99999329,  0.99999329],
               [ 0.82429855,  0.82429855,  0.98175843,  0.98175843],
               [ 0.99675093,  0.99675093,  0.83514837,  0.83514837]])
-    >>> wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
     >>> ancilla = ["ancilla"]
     >>> s = int(np.log2(A.shape[0]))
     >>> wires_i = [f"i{index}" for index in range(s)]
     >>> wires_j = [f"j{index}" for index in range(s)]
+    >>> wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
     >>> dev = qml.device('default.qubit')
     >>> @qml.qnode(dev)
     ... def example_circuit():
