@@ -103,6 +103,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.dot` now returns a `Sum` class even when all the coefficients match.
+
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
 

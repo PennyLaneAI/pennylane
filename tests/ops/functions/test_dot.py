@@ -57,28 +57,22 @@ class TestDotSum:
         for op in result:
             assert isinstance(op, Prod)
 
-    def test_dot_groups_coeffs(self):
-        """Test that the `dot` function groups the coefficients."""
+    def test_dot_does_not_groups_coeffs(self):
+        """Test that the `dot` function does not groups the coefficients."""
         result = qml.dot(coeffs=[4, 4, 4], ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
-        assert isinstance(result, SProd)
-        assert result.scalar == 4
-        assert isinstance(result.base, Sum)
-        assert len(result.base) == 3
-        for op in result.base:
-            assert isinstance(op, qml.PauliX)
+        assert isinstance(result, Sum)
+        assert result[0] == qml.s_prod(4, qml.PauliX(0))
+        assert result[1] == qml.s_prod(4, qml.PauliX(1))
+        assert result[2] == qml.s_prod(4, qml.PauliX(2))
 
-    def test_dot_groups_coeffs_with_different_sign(self):
-        """test that the `dot` function groups coefficients with different signs."""
+    def test_dot_does_not_groups_coeffs_with_different_sign(self):
+        """test that the `dot` function does not group coefficients with different signs."""
         cs = [4, -4, 4]
         result = qml.dot(coeffs=cs, ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
-        assert isinstance(result, SProd)
-        assert result.scalar == 4
-        for op, c in zip(result.base, cs):
-            if c == -4:
-                assert isinstance(op, SProd)
-                assert op.scalar == -1
-            else:
-                assert isinstance(op, qml.PauliX)
+        assert isinstance(result, Sum)
+        assert result[0] == qml.s_prod(4, qml.PauliX(0))
+        assert result[1] == qml.s_prod(-4, qml.PauliX(1))
+        assert result[2] == qml.s_prod(4, qml.PauliX(2))
 
     def test_dot_different_number_of_coeffs_and_ops(self):
         """Test that a ValueError is raised when the number of coefficients and operators does
