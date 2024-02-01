@@ -76,12 +76,12 @@ def test_apply_mid_measure():
     assert np.allclose(state, 0.0)
 
 
-def tests_accumulate_native_mcm():
+def test_accumulate_native_mcm():
     with pytest.raises(
-        TypeError, match="Measurement should be of class SampleMP but is of class CountsMP"
+        TypeError, match="Unsupported measurement of class VarianceMP"
     ):
         accumulate_native_mcm(
-            qml.tape.QuantumScript([], [qml.counts(qml.PauliZ(0))]), [None], [None]
+            qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None]
         )
 
 
@@ -114,8 +114,8 @@ def test_unsupported_measurement():
         return qml.classical_shadow(wires=0)
 
     with pytest.raises(
-        ValueError,
-        match="Native mid-circuit measurement mode does not support ClassicalShadowMP measurements.",
+        TypeError,
+        match="Unsupported measurement of class ClassicalShadowMP",
     ):
         func(*params)
 
