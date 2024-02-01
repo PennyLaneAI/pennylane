@@ -25,17 +25,17 @@ class SimpleError(AlgorithmicError):
         return self.__class__(self.error + other.error)
 
     @staticmethod
-    def get_error(approx_op, other_op):  # get simple error is always 0.5
-        return 0.5
+    def get_error(approx_op, other_op):  # pylint: disable=unused-argument
+        return 0.5  # get simple error is always 0.5
 
 
-class ErrorNoCombine(AlgorithmicError):
+class ErrorNoCombine(AlgorithmicError):  # pylint: disable=too-few-public-methods
     @staticmethod
-    def get_error(approx_op, other_op):  # get simple error is always 0.5
+    def get_error(approx_op, other_op):  # pylint: disable=unused-argument
         return 0.5
 
 
-class ErrorNoGetError(AlgorithmicError):
+class ErrorNoGetError(AlgorithmicError):  # pylint: disable=too-few-public-methods
     def combine(self, other):
         return self.__class__(self.error + other.error)
 
