@@ -72,6 +72,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Ensure the `BlockEncode` operator is JIT-compatible with JAX.
+  [(#5110)](https://github.com/PennyLaneAI/pennylane/pull/5110)
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
@@ -261,6 +264,7 @@ Abhishek Abhishek,
 Utkarsh Azad,
 Astral Cai,
 Isaac De Vlugt,
+David Ittah,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
