@@ -91,6 +91,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
+  [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
+
 * Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
   for large workflows.
   [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
@@ -318,6 +321,7 @@ Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
 Diego Guala,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
