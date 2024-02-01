@@ -92,7 +92,7 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
   
-* `fable`  is added as a template for constructing efficient circuits using FABLE. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
 [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
 <h4>Community contributions 🥳</h4>
