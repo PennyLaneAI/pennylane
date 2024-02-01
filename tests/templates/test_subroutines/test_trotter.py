@@ -297,12 +297,19 @@ class TestInitialization:
         except ValueError:
             assert False  # No error should be raised if the check_hermitian flag is disabled
 
-    def test_error_hamiltonian(self):
-        """Test that an error is raised if the input hamultonian has only 1 term."""
+    @pytest.mark.parametrize(
+        "hamiltonian",
+        (
+            qml.Hamiltonian([1.0], [qml.PauliX(0)]),
+            qml.dot([2.0], [qml.PauliY(0)]),
+        ),
+    )
+    def test_error_hamiltonian(self, hamiltonian):
+        """Test that an error is raised if the input Hamiltonian has only 1 term."""
         with pytest.raises(
             ValueError, match="There should be at least 2 terms in the Hamiltonian."
         ):
-            qml.TrotterProduct(qml.Hamiltonian([1.0], [qml.PauliX(0)]), 1.23, n=2, order=4)
+            qml.TrotterProduct(hamiltonian, 1.23, n=2, order=4)
 
     @pytest.mark.parametrize("order", (-1, 0, 0.5, 3, 7.0))
     def test_error_order(self, order):
