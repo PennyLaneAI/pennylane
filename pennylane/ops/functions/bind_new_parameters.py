@@ -113,8 +113,9 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 
 @bind_new_parameters.register(qml.CY)
 @bind_new_parameters.register(qml.CZ)
+@bind_new_parameters.register(qml.MultiControlledX)
 def bind_new_parameters_copy(
-    op: Union[qml.CY, qml.CZ], params: Sequence[TensorLike]
+    op: Union[qml.CY, qml.CZ, qml.MultiControlledX], params: Sequence[TensorLike]
 ):  # pylint:disable=unused-argument
     return copy.copy(op)
 
