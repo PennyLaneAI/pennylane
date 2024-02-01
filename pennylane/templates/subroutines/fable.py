@@ -33,9 +33,9 @@ class FABLE(Operation):
     * Gradient recipe: None
 
     Args:
-        A (tensor_like): an :math:`(N \times N)` matrix to be encoded
-        tol (float): tolerance
-        id (str or None): String representing the operation (optional)
+        A (tensor_like): an :math:`(N \times N)` matrix to be encoded, where N should be equal to 2^n where n is an integer.
+        tol (float): tolerance - a value that removes rotation gates that have an angle smaller than the value.
+        id (str or None): string representing the operation (optional)
 
     Raises:
         ValueError: if the number of wires doesn't fit the dimensions of the matrix
