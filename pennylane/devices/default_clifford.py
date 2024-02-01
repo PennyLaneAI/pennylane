@@ -125,6 +125,31 @@ def _pl_to_stim(op):
         ) from e
     return stim_op, " ".join(map(str, op.wires))
 
+def _convert_op_to_linear_comb(meas_op):
+    """Convert a PennyLane observable to a linear combination of stim Pauli terms"""
+
+    meas_obs = qml.operation.convert_to_opmath(meas_op)
+    meas_rep = meas_obs.pauli_rep
+    # Use manual decomposition for enabling Hermitian and partial Projector support
+    if isinstance(meas_obs, (qml.Hermitian, BasisStateProjector)):
+        meas_rep = qml.pauli_decompose(meas_obs.matrix(), wire_order=meas_obs.wires, pauli=True)
+
+    # A Pauli decomposition for the observable must exist
+    if meas_rep is None:
+        raise NotImplementedError(
+            f"default.clifford doesn't support expectation value calculation with {type(meas_op)} at the moment."
+        )
+
+    coeffs, ops = meas_rep.hamiltonian(wire_order=meas_obs.wires).terms()
+
+    # Build the Pauli representation for stim
+    paulis = []
+    for op in ops:
+        op_names = op.name if isinstance(op, qml.operation.Tensor) else [op.name]
+        paulis.append(("".join([_GATE_OPERATIONS[name] for name in op_names]), op.wires))
+
+    return coeffs, paulis
+
 
 class DefaultClifford(Device):
     r"""A PennyLane device for fast simulation of Clifford circuits using
@@ -534,38 +559,13 @@ class DefaultClifford(Device):
 
         return meas_results[0] if len(meas_results) == 1 else tuple(meas_results)
 
-    # pylint:disable=too-many-return-statements
-    def _convert_op_to_linear_comb(self, meas_op):
-        """Convert a PennyLane observable to a linear combination of stim Pauli terms"""
-
-        meas_obs = qml.operation.convert_to_opmath(meas_op)
-        meas_rep = meas_obs.pauli_rep
-        # Use manual decomposition for enabling Hermitian and partial Projector support
-        if isinstance(meas_obs, (qml.Hermitian, BasisStateProjector)):
-            meas_rep = qml.pauli_decompose(meas_obs.matrix(), wire_order=meas_obs.wires, pauli=True)
-
-        # A Pauli decomposition for the observable must exist
-        if meas_rep is None:
-            raise NotImplementedError(
-                f"default.clifford doesn't support expectation value calculation with {type(meas_op)} at the moment."
-            )
-
-        coeffs, ops = meas_rep.hamiltonian(wire_order=meas_obs.wires).terms()
-
-        # Build the Pauli representation for stim
-        paulis = []
-        for op in ops:
-            op_names = op.name if isinstance(op, qml.operation.Tensor) else [op.name]
-            paulis.append(("".join([_GATE_OPERATIONS[name] for name in op_names]), op.wires))
-
-        return coeffs, paulis
-
-    def _measure_observable_sample(self, meas_obs, stim_circuit, shots, sample_seed):
+    @staticmethod
+    def _measure_observable_sample(meas_obs, stim_circuit, shots, sample_seed):
         """Compute sample output from a stim circuit for a given Pauli observable"""
         meas_dict = {"X": "MX", "Y": "MY", "Z": "MZ", "_": "M"}
 
         # Get the observable for the expectation value measurement
-        coeffs, paulis = self._convert_op_to_linear_comb(meas_obs)
+        coeffs, paulis = _convert_op_to_linear_comb(meas_obs)
 
         samples = []
         for pauli, wire in paulis:
@@ -688,7 +688,7 @@ class DefaultClifford(Device):
     def _measure_expectation(self, meas, tableau_simulator, **kwargs):
         """Measure the expectation value with respect to the state of simulator device."""
         # Get the observable for the expectation value measurement
-        (coeffs, paulis), _ = self._convert_op_to_linear_comb(meas.obs), kwargs
+        (coeffs, paulis), _ = _convert_op_to_linear_comb(meas.obs), kwargs
 
         expecs = qml.math.zeros_like(coeffs)
         for idx, (pauli, wire) in enumerate(paulis):
