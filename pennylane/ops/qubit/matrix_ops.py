@@ -105,6 +105,7 @@ class QubitUnitary(Operation):
     >>> print(example_circuit())
     0.0
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -264,6 +265,7 @@ class DiagonalQubitUnitary(Operation):
         D (array[complex]): diagonal of unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -519,11 +521,11 @@ class BlockEncode(Operation):
             A = qml.math.reshape(A, [1, 1])
             normalization = qml.math.abs(A)
             subspace = (1, 1, 2 ** len(wires))
-        
-        elif len(shape_a)==1:
+
+        elif len(shape_a) == 1:
             A = qml.math.reshape(A, [1, len(A)])
             normalization = qml.math.max(A)
-            subspace = (1, shape_a[0], 2**len(wires))
+            subspace = (1, shape_a[0], 2 ** len(wires))
 
         else:
             normalization = qml.math.maximum(
