@@ -129,8 +129,9 @@ def ctrl(op, control, control_values=None, work_wires=None):
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
 
     control = qml.wires.Wires(control)
-    control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
-    if control_values is None:
+    if isinstance(control_values, (int, bool)):
+        control_values = [control_values]
+    elif control_values is None:
         control_values = [True] * len(control)
 
     ctrl_op = _try_wrap_in_custom_ctrl_op(
@@ -138,6 +139,13 @@ def ctrl(op, control, control_values=None, work_wires=None):
     )
     if ctrl_op is not None:
         return ctrl_op
+
+    pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
+
+    # Special handling for PauliX-based controlled operations
+    if isinstance(op, pauli_x_based_ctrl_ops):
+        qml.QueuingManager.remove(op)
+        return _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires)
 
     # Flatten nested controlled operations to a multi-controlled operation for better
     # decomposition algorithms. This includes special cases like CRX, CRot, etc.
@@ -196,7 +204,6 @@ def _get_special_ops():
 
     """
 
-    pauli_x_based_ctrl_ops = {qml.PauliX, qml.CNOT, qml.Toffoli, qml.MultiControlledX}
     ops_with_custom_ctrl_ops = {
         (qml.PauliZ, 1): qml.CZ,
         (qml.PauliZ, 2): qml.CCZ,
@@ -210,23 +217,28 @@ def _get_special_ops():
         (qml.Rot, 1): qml.CRot,
         (qml.PhaseShift, 1): qml.ControlledPhaseShift,
     }
-    return pauli_x_based_ctrl_ops, ops_with_custom_ctrl_ops
+    return ops_with_custom_ctrl_ops
+
+
+@functools.lru_cache()
+def _get_pauli_x_based_ops():
+    """Gets a list of pauli-x based operations
+
+    This is placed inside a function to avoid circular imports.
+
+    """
+    return qml.PauliX, qml.CNOT, qml.Toffoli, qml.MultiControlledX
 
 
 def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=None):
     """Wraps a controlled operation in custom ControlledOp, returns None if not applicable."""
 
-    pauli_x_based_ctrl_ops, ops_with_custom_ctrl_ops = _get_special_ops()
+    ops_with_custom_ctrl_ops = _get_special_ops()
     custom_key = (type(op), len(control))
 
     if custom_key in ops_with_custom_ctrl_ops and all(control_values):
         qml.QueuingManager.remove(op)
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
-
-    # PauliX-based controlled operations need special treatment
-    if type(op) in pauli_x_based_ctrl_ops:
-        qml.QueuingManager.remove(op)
-        return _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires)
 
     if isinstance(op, qml.QubitUnitary):
         return qml.ControlledQubitUnitary(
@@ -634,7 +646,7 @@ class Controlled(SymbolicOp):
             return True
         if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
             return True
-        if isinstance(self.base, (qml.PauliX, qml.CNOT, qml.Toffoli, qml.MultiControlledX)):
+        if isinstance(self.base, _get_pauli_x_based_ops()):
             return True
         if _is_single_qubit_special_unitary(self.base):
             return True
@@ -734,7 +746,6 @@ def _is_single_qubit_special_unitary(op):
     return qmlmath.allclose(det, 1)
 
 
-# pylint: disable=protected-access
 def _decompose_pauli_x_based_no_control_values(op: Controlled):
     """Decomposes a PauliX-based operation"""
 
@@ -756,7 +767,8 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
 def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
     """Custom handling for decomposing a controlled operation"""
 
-    pauli_x_based_ctrl_ops, ops_with_custom_ctrl_ops = _get_special_ops()
+    pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
+    ops_with_custom_ctrl_ops = _get_special_ops()
 
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:
@@ -778,7 +790,6 @@ def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
     return None
 
 
-# pylint: disable=protected-access
 def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
     """Decompose without considering control values. Returns None if no decomposition."""
 

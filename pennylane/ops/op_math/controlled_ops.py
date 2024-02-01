@@ -353,7 +353,7 @@ class CZ(ControlledOp):
 
 
 def _check_and_convert_control_values(control_values, control_wires):
-    # TODO: maybe at some point actually deprecate string representations of control values?
+
     if isinstance(control_values, str):
         # Make sure all values are either 0 or 1
         if not set(control_values).issubset({"1", "0"}):
