@@ -934,7 +934,7 @@ class TestPowMethod:
         assert len(pow_ops) == 1
         assert pow_ops[0].__class__ is qml.SX
 
-        sqrt_mat = qml.matrix(op.pow)(n)
+        sqrt_mat = qml.matrix(op.pow, wire_order=[0])(n)
         sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
 
         assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
@@ -945,7 +945,7 @@ class TestPowMethod:
         assert qml.PauliZ(0).pow(n)[0].__class__ is qml.S
 
         op = qml.PauliZ(0)
-        sqrt_mat = qml.matrix(op.pow)(n)
+        sqrt_mat = qml.matrix(op.pow, wire_order=[0])(n)
         sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
 
         assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
@@ -956,7 +956,7 @@ class TestPowMethod:
         assert qml.PauliZ(0).pow(n)[0].__class__ is qml.T
 
         op = qml.PauliZ(0)
-        quad_mat = qml.matrix(op.pow)(n)
+        quad_mat = qml.matrix(op.pow, wire_order=[0])(n)
         quad_mat_pow = qml.math.linalg.matrix_power(quad_mat, 4)
 
         assert qml.math.allclose(quad_mat_pow, qml.matrix(op))
@@ -978,7 +978,7 @@ class TestPowMethod:
 
         assert op.pow(n)[0].__class__ is qml.SISWAP
 
-        sqrt_mat = qml.matrix(op.pow)(n)
+        sqrt_mat = qml.matrix(op.pow, wire_order=[0, 1])(n)
         sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
         assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
 
