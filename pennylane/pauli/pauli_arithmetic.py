@@ -393,7 +393,7 @@ class PauliWord(dict):
     def __repr__(self):
         """Terminal representation for PauliWord"""
         return str(self)
-    
+
     @property
     def pauli_rep(self):
         return PauliSentence({self: 1})
@@ -791,7 +791,7 @@ class PauliSentence(dict):
     def __repr__(self):
         """Terminal representation for PauliSentence"""
         return str(self)
-    
+
     @property
     def pauli_rep(self):
         return self

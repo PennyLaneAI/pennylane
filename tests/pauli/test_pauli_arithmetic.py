@@ -466,7 +466,7 @@ class TestPauliWord:
         """Test that an empty PauliWord is cast to qml.Identity() operation."""
         res = pw4.operation()
         assert res == qml.Identity()
-    
+
     @pytest.mark.parametrize("pw", words)
     def test_pauli_rep(self, pw):
         """Test the (trivial) pauli_rep property"""
@@ -1037,7 +1037,7 @@ class TestPauliSentence:
         id = qml.s_prod(0.0, qml.Identity(wires=["a", "b"]))
 
         assert qml.equal(op, id)
-    
+
     @pytest.mark.parametrize("ps", sentences)
     def test_pauli_rep(self, ps):
         """Test the (trivial) pauli_rep property"""
