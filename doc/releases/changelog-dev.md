@@ -114,7 +114,7 @@
 
 <h3>Improvements 🛠</h3>
 
-<h4>Faster gradients with JVPs and other performance improvements</h4>
+<h4>Faster gradients with VJPs and other performance improvements</h4>
 
 * Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
   is now strictly faster for jax.
