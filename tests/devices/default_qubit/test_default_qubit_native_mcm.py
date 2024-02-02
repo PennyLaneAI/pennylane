@@ -124,8 +124,8 @@ def test_single_mcm_single_measure_mcm(shots, reset, measure_f):
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(op=m0)
 
-    @qml.qnode(dev)
     @qml.defer_measurements
+    @qml.qnode(dev)
     def func2(x, y):
         qml.RX(x, wires=0)
         m0 = qml.measure(0, reset=reset)
@@ -159,8 +159,8 @@ def test_single_mcm_single_measure_obs(shots, reset, measure_f):
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(op=obs)
 
-    @qml.qnode(dev)
     @qml.defer_measurements
+    @qml.qnode(dev)
     def func2(x, y):
         qml.RX(x, wires=0)
         m0 = qml.measure(0, reset=reset)
@@ -195,8 +195,8 @@ def test_single_mcm_multiple_measurements(shots, reset, measure_f):
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(op=obs), measure_f(op=m0)
 
-    @qml.qnode(dev)
     @qml.defer_measurements
+    @qml.qnode(dev)
     def func2(x, y):
         qml.RX(x, wires=0)
         m0 = qml.measure(0, reset=reset)

@@ -1680,16 +1680,16 @@ class TestPostselection:
         dev = qml.device("default.qubit")
         param = qml.math.asarray(param, like=interface)
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_postselect(theta):
             qml.RX(theta, 0)
             qml.CNOT([0, 1])
             qml.measure(0, postselect=1)
             return qml.apply(mp)
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_expected():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -1732,16 +1732,16 @@ class TestPostselection:
         dev = qml.device("default.qubit")
         param = qml.math.asarray(param, like=interface)
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_postselect(theta):
             qml.RX(theta, 0)
             qml.CNOT([0, 1])
             qml.measure(0, postselect=1)
             return qml.apply(mp)
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_expected():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -1785,8 +1785,8 @@ class TestPostselection:
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
 
-            @qml.qnode(dev, interface=interface)
             @qml.defer_measurements
+            @qml.qnode(dev, interface=interface)
             def circ_postselect(theta):
                 qml.RX(theta, 0)
                 qml.CNOT([0, 1])
@@ -1841,8 +1841,8 @@ class TestPostselection:
         # Wires are specified so that the shape for measurements can be determined correctly
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -1885,8 +1885,8 @@ class TestPostselection:
         dev = qml.device("default.qubit")
 
         @jax.jit
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -1922,8 +1922,8 @@ class TestPostselection:
 
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
