@@ -187,7 +187,7 @@
   ([0.5, 0.7, 1.5],
    [X(0), X(1), Y(1) @ Y(0)])
   ```
-  [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+  [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
 
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
