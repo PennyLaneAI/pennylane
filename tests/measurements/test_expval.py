@@ -21,6 +21,30 @@ from pennylane.measurements import Expectation, Shots
 from pennylane.measurements.expval import ExpectationMP
 
 
+def test_expval_identity_nowires_DQ():
+    """Test that attempting to measure qml.Identity() with no wires raises an explicit error in default.qubit"""
+
+    # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
+    @qml.qnode(qml.device("default.qubit"))
+    def qnode():
+        return qml.expval(qml.Identity())
+
+    with pytest.raises(NotImplementedError, match="Expectation values of qml.Identity()"):
+        _ = qnode()
+
+
+def test_expval_identity_nowires_LQ():
+    """Test that attempting to measure qml.Identity() with no wires raises an explicit error in lightning.qubit"""
+
+    # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
+    @qml.qnode(qml.device("lightning.qubit", wires=[0]))
+    def qnode():
+        return qml.expval(qml.Identity())
+
+    with pytest.raises(NotImplementedError, match="Expectation values of qml.Identity()"):
+        _ = qnode()
+
+
 class TestExpval:
     """Tests for the expval function"""
 

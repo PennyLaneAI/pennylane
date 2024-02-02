@@ -54,8 +54,8 @@ class Identity(CVObservable, Operation):
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
-    def __init__(self, *params, wires=None, id=None):
-        super().__init__(*params, wires=wires, id=id)
+    def __init__(self, wires=None, id=None):
+        super().__init__(wires=[] if wires is None else wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
 
@@ -119,6 +119,10 @@ class Identity(CVObservable, Operation):
     @lru_cache()
     def compute_sparse_matrix(n_wires=1):  # pylint: disable=arguments-differ
         return sparse.eye(int(2**n_wires), format="csr")
+
+    def matrix(self, wire_order=None):
+        n_wires = len(wire_order) if wire_order else len(self.wires)
+        return self.compute_matrix(n_wires=n_wires)
 
     @staticmethod
     def _heisenberg_rep(p):

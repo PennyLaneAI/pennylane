@@ -107,8 +107,7 @@ def _(op: ops.Toffoli, drawer, layer, _):
 
 @_add_operation_to_drawer.register
 def _(op: ops.MultiControlledX, drawer, layer, _):
-    control_values = [(i == "1") for i in op.hyperparameters["control_values"]]
-    drawer.CNOT(layer, op.wires, control_values=control_values)
+    drawer.CNOT(layer, op.active_wires, control_values=op.control_values)
 
 
 @_add_operation_to_drawer.register
