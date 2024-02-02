@@ -16,6 +16,7 @@ This module contains the qml.counts measurement.
 """
 import warnings
 from typing import Sequence, Tuple, Optional
+import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -301,17 +302,23 @@ class CountsMP(SampleMeasurement):
 
         if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            samples = qml.math.array(
-                [sample for sample in samples if not qml.math.any(qml.math.isnan(sample))]
-            )
-            samples = qml.math.cast_like(samples, qml.math.int8(0))
-            samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)
+
+            # remove nans
+            mask = qml.math.isnan(samples)
+            nsam = samples.shape[1]
+            if np.any(mask):
+                samples = samples[np.logical_not(mask)]
+
+            # convert to string
+            exp2 = 2 ** np.arange(nsam - 1, -1, -1)
+            samples = samples @ exp2
+            samples = list(map(lambda x: f"{x:064b}"[-nsam:], samples))
+            samples = np.array(samples)
+
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if self.all_outcomes:
                 num_wires = len(self.wires) if len(self.wires) > 0 else shape[-1]
-                outcomes = list(
-                    map(_sample_to_str, qml.QubitDevice.generate_basis_states(num_wires))
-                )
+                outcomes = list(map(lambda x: f"{x:064b}"[-nsam:], range(2**num_wires)))
         elif self.all_outcomes:
             # This also covers statistics for mid-circuit measurements manipulated using
             # arithmetic operators
