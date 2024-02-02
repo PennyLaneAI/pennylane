@@ -214,7 +214,7 @@ class TestInitialization:
     ]
     Hamiltonian_mixed = qml.dot(coeffs_, ops_)
 
-    SUM_TERMS_OP_PAIRS_NONPAULI = (  # all operands have pauli representation
+    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # all operands have pauli representation
         (
             qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))),
             [float(i) for i in range(1, 5)],
@@ -241,7 +241,7 @@ class TestInitialization:
         ),
     )
 
-    @pytest.mark.parametrize("op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_PAULI)
+    @pytest.mark.parametrize("op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_MIXEDPAULI)
     def test_terms_mixed(self, op, coeffs_true, ops_true):
         """Test that Sum.terms() is correct for operators that dont all have a pauli_rep"""
         coeffs, ops1 = op.terms()
