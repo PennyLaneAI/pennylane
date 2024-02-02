@@ -14,7 +14,7 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from collections import Counter
-from typing import Optional
+from typing import Optional, Sequence
 
 from numpy.random import default_rng
 import numpy as np
@@ -330,7 +330,6 @@ def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
     Returns:
         QuantumScript: A copy of the circuit with modified measurements
     """
-    idx_sample = find_measurement_values(circuit)
     new_measurements = []
     for m in circuit.measurements:
         if not has_measurement_values(m):
@@ -338,9 +337,9 @@ def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
                 new_measurements.append(m)
-    return qml.tape.QuantumScript(circuit.operations, new_measurements,
-        shots=1,
-        trainable_params=circuit.trainable_params)
+    return qml.tape.QuantumScript(
+        circuit.operations, new_measurements, shots=1, trainable_params=circuit.trainable_params
+    )
 
 
 def simulate_one_shot_native_mcm(
@@ -388,9 +387,9 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
         tuple(TensorLike): The results of the simulation
     """
     new_shot_meas = [None] * len(circuit.measurements)
-    if not isinstance(all_shot_meas, (list, tuple)):
+    if not isinstance(all_shot_meas, Sequence):
         all_shot_meas = [all_shot_meas]
-    if not isinstance(one_shot_meas, (list, tuple)):
+    if not isinstance(one_shot_meas, Sequence):
         one_shot_meas = [one_shot_meas]
     for i, m in enumerate(circuit.measurements):
         if isinstance(m, CountsMP):
@@ -398,10 +397,10 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
             tmp.update(Counter(one_shot_meas[i]))
             new_shot_meas[i] = tmp
         elif isinstance(m, SampleMP):
-            if not isinstance(all_shot_meas[i], (list, tuple)):
-                new_shot_meas[i] = [all_shot_meas[i]]
-            else:
+            if isinstance(all_shot_meas[i], Sequence):
                 new_shot_meas[i] = all_shot_meas[i]
+            else:
+                new_shot_meas[i] = [all_shot_meas[i]]
             new_shot_meas[i].append(one_shot_meas[i])
         else:
             new_shot_meas[i] = all_shot_meas[i] + one_shot_meas[i]
@@ -530,7 +529,7 @@ def gather_mcm(measurement, mv, samples, counter):
     Returns:
         TensorLike: The combined measurement outcome
     """
-    if isinstance(mv, (list, tuple)):
+    if isinstance(mv, Sequence):
         return np.vstack(tuple(gather_mcm(measurement, m, samples, counter) for m in mv)).T
     if isinstance(measurement, ExpectationMP):
         sha = mv.measurements[0].hash
