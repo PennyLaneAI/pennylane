@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath, _UNSET_BATCH_SIZE
+from pennylane.operation import Operator, _UNSET_BATCH_SIZE
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -52,7 +52,9 @@ class CompositeOp(Operator):
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *operands: Operator, id=None):  # pylint: disable=super-init-not-called
+    def __init__(
+        self, *operands: Operator, id=None, _pauli_rep=None
+    ):  # pylint: disable=super-init-not-called
         self._id = id
         self.queue_idx = None
         self._name = self.__class__.__name__
@@ -60,12 +62,12 @@ class CompositeOp(Operator):
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
 
-        self.operands = tuple(convert_to_opmath(op) for op in operands)
+        self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
-        self._pauli_rep = self._build_pauli_rep()
+        self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
 
@@ -310,9 +312,10 @@ class CompositeOp(Operator):
     def queue(self, context=qml.QueuingManager):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
-        for op in self:
-            context.remove(op)
-        context.append(self)
+        if qml.QueuingManager.recording():
+            for op in self:
+                context.remove(op)
+            context.append(self)
         return self
 
     @classmethod
