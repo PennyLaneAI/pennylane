@@ -143,7 +143,8 @@ def _eigvals_tranform(
     tape: qml.tape.QuantumTape, k=1, which="SA"
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     def processing_fn(res):
-        op_wires = [op.wires for op in res[0].operations]
+        [qs] = res
+        op_wires = [op.wires for op in qs.operations]
         all_wires = qml.wires.Wires.all_wires(op_wires).tolist()
         unique_wires = qml.wires.Wires.unique_wires(op_wires).tolist()
 
@@ -153,14 +154,14 @@ def _eigvals_tranform(
                 "This may be computationally intensive for a large number of wires.",
                 UserWarning,
             )
-            matrix = qml.matrix(res[0])
+            matrix = qml.matrix(qs, wire_order=qs.wires)
             return qml.math.linalg.eigvals(matrix)
 
         # TODO: take into account wire ordering, by reordering eigenvalues
         # as per operator wires/wire ordering, and by inserting implicit identity
         # matrices (eigenvalues [1, 1]) at missing locations.
 
-        ev = [eigvals(op, k=k, which=which) for op in res[0].operations]
+        ev = [eigvals(op, k=k, which=which) for op in qs.operations]
 
         if len(ev) == 1:
             return ev[0]
