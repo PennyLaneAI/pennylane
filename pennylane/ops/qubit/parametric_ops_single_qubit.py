@@ -57,6 +57,7 @@ class RX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -152,6 +153,7 @@ class RY(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -246,6 +248,7 @@ class RZ(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -381,6 +384,7 @@ class PhaseShift(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -555,6 +559,7 @@ class Rot(Operation):
         wires (Any, Wires): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
@@ -650,12 +655,11 @@ class Rot(Operation):
         [RZ(1.2, wires=[0]), RY(2.3, wires=[0]), RZ(3.4, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
             RZ(omega, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         phi, theta, omega = self.parameters
@@ -718,6 +722,7 @@ class U1(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -845,6 +850,7 @@ class U2(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
@@ -920,12 +926,11 @@ class U2(Operation):
 
         """
         pi_half = qml.math.ones_like(delta) * (np.pi / 2)
-        decomp_ops = [
+        return [
             Rot(delta, pi_half, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         phi, delta = self.parameters
@@ -986,6 +991,7 @@ class U3(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
@@ -1076,12 +1082,11 @@ class U3(Operation):
         PhaseShift(2.34, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             Rot(delta, theta, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         theta, phi, delta = self.parameters

@@ -19,10 +19,10 @@ Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
 
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
-# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
-# pylint: disable=too-many-statements, invalid-unary-operand-type, function-redefined
-# pylint: disable=isinstance-second-argument-not-valid-type
+# pylint: disable=import-outside-toplevel,too-many-branches,not-callable,unexpected-keyword-arg
+# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
+# pylint: disable=invalid-unary-operand-type,isinstance-second-argument-not-valid-type
+# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args
 
 import inspect
 import warnings
@@ -323,15 +323,19 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             "Entry with args=(fn=%s, cache=%s, pass_kwargs=%s, return_tuple=%s, expand_fn=%s) called by=%s",
-            fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(fn))
-            else "\n" + inspect.getsource(fn),
+            (
+                fn
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(fn))
+                else "\n" + inspect.getsource(fn)
+            ),
             cache,
             pass_kwargs,
             return_tuple,
-            expand_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
-            else "\n" + inspect.getsource(expand_fn) + "\n",
+            (
+                expand_fn
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
+                else "\n" + inspect.getsource(expand_fn) + "\n"
+            ),
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
@@ -553,9 +557,11 @@ def execute(
             """Entry with args=(tapes=%s, device=%s, gradient_fn=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s, override_shots=%s, expand_fn=%s, max_expansion=%s, device_batch_transform=%s) called by=%s""",
             tapes,
             repr(device),
-            gradient_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(gradient_fn))
-            else "\n" + inspect.getsource(gradient_fn) + "\n",
+            (
+                gradient_fn
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(gradient_fn))
+                else "\n" + inspect.getsource(gradient_fn) + "\n"
+            ),
             interface,
             grad_on_execution,
             gradient_kwargs,
@@ -563,9 +569,11 @@ def execute(
             cachesize,
             max_diff,
             override_shots,
-            expand_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
-            else "\n" + inspect.getsource(expand_fn) + "\n",
+            (
+                expand_fn
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
+                else "\n" + inspect.getsource(expand_fn) + "\n"
+            ),
             max_expansion,
             device_batch_transform,
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),

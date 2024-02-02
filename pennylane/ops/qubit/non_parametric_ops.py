@@ -17,17 +17,15 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
-import warnings
 from copy import copy
 from functools import lru_cache
 
 import numpy as np
 
 from scipy import sparse
-from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable, Operation
+from pennylane.operation import Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
@@ -48,6 +46,7 @@ class Hadamard(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -157,12 +156,11 @@ class Hadamard(Observable, Operation):
         PhaseShift(1.5707963267948966, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi / 2, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
-        return decomp_ops
 
     def _controlled(self, wire):
         return CH(wires=Wires(wire) + self.wires)
@@ -192,6 +190,7 @@ class PauliX(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -199,6 +198,8 @@ class PauliX(Observable, Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
+
+    batch_size = None
 
     _queue_category = "_ops"
 
@@ -309,12 +310,11 @@ class PauliX(Observable, Operation):
         PhaseShift(1.5707963267948966, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         return PauliX(wires=self.wires)
@@ -347,6 +347,7 @@ class PauliY(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -354,6 +355,8 @@ class PauliY(Observable, Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Y"
+
+    batch_size = None
 
     _queue_category = "_ops"
 
@@ -466,12 +469,11 @@ class PauliY(Observable, Operation):
         PhaseShift(1.5707963267948966, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RY(np.pi, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
-        return decomp_ops
 
     def adjoint(self):
         return PauliY(wires=self.wires)
@@ -501,11 +503,14 @@ class PauliZ(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
+
+    batch_size = None
 
     _queue_category = "_ops"
 
@@ -657,11 +662,14 @@ class S(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
+
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -766,11 +774,14 @@ class T(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
+
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -875,6 +886,7 @@ class SX(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -952,13 +964,12 @@ class SX(Operation):
         PhaseShift(1.5707963267948966, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             qml.RZ(np.pi / 2, wires=wires),
             qml.RY(np.pi / 2, wires=wires),
             qml.RZ(-np.pi, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
-        return decomp_ops
 
     def pow(self, z):
         z_mod4 = z % 4
@@ -992,11 +1003,14 @@ class CNOT(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
+
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -1064,11 +1078,14 @@ class CH(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Hadamard"
+
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "H"
@@ -1166,9 +1183,12 @@ class SWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -1214,12 +1234,11 @@ class SWAP(Operation):
         [CNOT(wires=[0, 1]), CNOT(wires=[1, 0]), CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = [
+        return [
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
-        return decomp_ops
 
     def pow(self, z):
         return super().pow(z % 2)
@@ -1259,6 +1278,8 @@ class ECR(Operation):
 
     num_wires = 2
     num_params = 0
+
+    batch_size = None
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1381,9 +1402,12 @@ class ISWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -1460,7 +1484,7 @@ class ISWAP(Operation):
         Hadamard(wires=[1])]
 
         """
-        decomp_ops = [
+        return [
             S(wires=wires[0]),
             S(wires=wires[1]),
             Hadamard(wires=wires[0]),
@@ -1468,7 +1492,6 @@ class ISWAP(Operation):
             CNOT(wires=[wires[1], wires[0]]),
             Hadamard(wires=wires[1]),
         ]
-        return decomp_ops
 
     def pow(self, z):
         z_mod2 = z % 2
@@ -1496,9 +1519,12 @@ class SISWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -1589,7 +1615,7 @@ class SISWAP(Operation):
         SX(wires=[1])]
 
         """
-        decomp_ops = [
+        return [
             SX(wires=wires[0]),
             qml.RZ(np.pi / 2, wires=wires[0]),
             CNOT(wires=[wires[0], wires[1]]),
@@ -1603,7 +1629,6 @@ class SISWAP(Operation):
             SX(wires=wires[0]),
             SX(wires=wires[1]),
         ]
-        return decomp_ops
 
     def pow(self, z):
         z_mod4 = z % 4
@@ -1638,10 +1663,13 @@ class CSWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     is_self_inverse = True
     num_wires = 3
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "SWAP"
@@ -1753,11 +1781,14 @@ class CCZ(Operation):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
     """
+
     num_wires = 3
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
+
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
@@ -1851,7 +1882,7 @@ class CCZ(Operation):
             T(wires=wires[0]),
             qml.adjoint(T(wires=wires[1])),
             CNOT(wires=[wires[0], wires[1]]),
-            Hadamard(wires=[2]),
+            Hadamard(wires=wires[2]),
         ]
 
     def adjoint(self):
@@ -1895,11 +1926,14 @@ class Toffoli(Operation):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
     """
+
     num_wires = 3
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
+
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -2005,331 +2039,6 @@ class Toffoli(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[:2])
-
-    @property
-    def is_hermitian(self):
-        return True
-
-
-class MultiControlledX(Operation):
-    r"""MultiControlledX(control_wires, wires, control_values)
-    Apply a Pauli X gate controlled on an arbitrary computational basis state.
-
-    **Details:**
-
-    * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 0
-    * Gradient recipe: None
-
-    Args:
-        control_wires (Union[Wires, Sequence[int], or int]): Deprecated way to indicate the control wires.
-            Now users should use "wires" to indicate both the control wires and the target wire.
-        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
-            the operation acts on
-        control_values (str): a string of bits representing the state of the control
-            wires to control on (default is the all 1s state)
-        work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
-            the operation into a series of Toffoli gates
-
-
-    .. note::
-
-        If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
-        the operation into :class:`~.Toffoli` and/or :class:`~.CNOT` gates. When controlling on
-        three or more wires, the Toffoli-based decompositions described in Lemmas 7.2 and 7.3 of
-        `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ will be used. These methods
-        require at least one work wire.
-
-        The number of work wires provided determines the decomposition method used and the resulting
-        number of Toffoli gates required. When ``MultiControlledX`` is controlling on :math:`n`
-        wires:
-
-        #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
-           applied using the first :math:`n - 2` work wires.
-        #. If fewer than :math:`n - 2` work wires are provided, a combination of Lemmas 7.3 and 7.2
-           will be applied using only the first work wire.
-
-        These methods present a tradeoff between qubit number and depth. The method in point 1
-        requires fewer Toffoli gates but a greater number of qubits.
-
-        Note that the state of the work wires before and after the decomposition takes place is
-        unchanged.
-
-    """
-    is_self_inverse = True
-    num_wires = AnyWires
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    grad_method = None
-
-    def _flatten(self):
-        hyperparameters = (
-            ("wires", self.wires),
-            ("control_values", self.hyperparameters["control_values"]),
-            ("work_wires", self.hyperparameters["work_wires"]),
-        )
-        return tuple(), hyperparameters
-
-    @classmethod
-    def _unflatten(cls, _, metadata):
-        return cls(**dict(metadata))
-
-    # pylint: disable=too-many-arguments
-    def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
-        if wires is None:
-            raise ValueError("Must specify the wires where the operation acts on")
-        if control_wires is None:
-            if len(wires) > 1:
-                control_wires = Wires(wires[:-1])
-                wires = Wires(wires[-1])
-            else:
-                raise ValueError(
-                    "MultiControlledX: wrong number of wires. "
-                    f"{len(wires)} wire(s) given. Need at least 2."
-                )
-        else:
-            wires = Wires(wires)
-            control_wires = Wires(control_wires)
-
-            warnings.warn(
-                "The control_wires keyword will be removed soon. "
-                "Use wires = (control_wires, target_wire) instead. "
-                "See the documentation for more information.",
-                category=UserWarning,
-            )
-
-            if len(wires) != 1:
-                raise ValueError("MultiControlledX accepts a single target wire.")
-
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
-        total_wires = control_wires + wires
-
-        if Wires.shared_wires([total_wires, work_wires]):
-            raise ValueError("The work wires must be different from the control and target wires")
-
-        if not control_values:
-            control_values = "1" * len(control_wires)
-
-        self.hyperparameters["control_wires"] = control_wires
-        self.hyperparameters["work_wires"] = work_wires
-        self.hyperparameters["control_values"] = control_values
-        self.total_wires = total_wires
-
-        super().__init__(wires=self.total_wires)
-
-    def __repr__(self):
-        return f'MultiControlledX(wires={list(self.total_wires._labels)}, control_values="{self.hyperparameters["control_values"]}")'
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "X"
-
-    # pylint: disable=unused-argument
-    @staticmethod
-    def compute_matrix(
-        control_wires, control_values=None, **kwargs
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.MultiControlledX.matrix`
-
-        Args:
-            control_wires (Any or Iterable[Any]): wires to place controls on
-            control_values (str): string of bits determining the controls
-
-        Returns:
-           tensor_like: matrix representation
-
-        **Example**
-
-        >>> print(qml.MultiControlledX.compute_matrix([0], '1'))
-        [[1. 0. 0. 0.]
-         [0. 1. 0. 0.]
-         [0. 0. 0. 1.]
-         [0. 0. 1. 0.]]
-        >>> print(qml.MultiControlledX.compute_matrix([1], '0'))
-        [[0. 1. 0. 0.]
-         [1. 0. 0. 0.]
-         [0. 0. 1. 0.]
-         [0. 0. 0. 1.]]
-
-        """
-        if control_values is None:
-            control_values = "1" * len(control_wires)
-
-        if isinstance(control_values, str):
-            if len(control_values) != len(control_wires):
-                raise ValueError("Length of control bit string must equal number of control wires.")
-
-            # Make sure all values are either 0 or 1
-            if not set(control_values).issubset({"1", "0"}):
-                raise ValueError("String of control values can contain only '0' or '1'.")
-
-            control_int = int(control_values, 2)
-        else:
-            raise ValueError("Control values must be passed as a string.")
-
-        padding_left = control_int * 2
-        padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
-        cx = block_diag(np.eye(padding_left), PauliX.compute_matrix(), np.eye(padding_right))
-        return cx
-
-    @property
-    def control_wires(self):
-        return self.wires[:~0]
-
-    def adjoint(self):
-        return MultiControlledX(
-            wires=self.wires,
-            control_values=self.hyperparameters["control_values"],
-        )
-
-    def pow(self, z):
-        return super().pow(z % 2)
-
-    @staticmethod
-    def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.MultiControlledX.decomposition`.
-
-        Args:
-            wires (Iterable[Any] or Wires): wires that the operation acts on
-            work_wires (Wires): optional work wires used to decompose
-                the operation into a series of Toffoli gates.
-            control_values (str): a string of bits representing the state of the control
-                wires to control on (default is the all 1s state)
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qml.MultiControlledX.compute_decomposition(wires=[0,1,2,3],control_values="111", work_wires=qml.wires.Wires("aux")))
-        [Toffoli(wires=[2, 'aux', 3]),
-        Toffoli(wires=[0, 1, 'aux']),
-        Toffoli(wires=[2, 'aux', 3]),
-        Toffoli(wires=[0, 1, 'aux'])]
-
-        """
-
-        target_wire = wires[~0]
-        control_wires = wires[:~0]
-
-        if control_values is None:
-            control_values = "1" * len(control_wires)
-
-        if len(control_wires) > 2 and len(work_wires) == 0:
-            raise ValueError(
-                "At least one work wire is required to decompose operation: MultiControlledX"
-            )
-
-        flips1 = [
-            qml.PauliX(control_wires[i]) for i, val in enumerate(control_values) if val == "0"
-        ]
-
-        if len(control_wires) == 1:
-            decomp = [qml.CNOT(wires=[control_wires[0], target_wire])]
-        elif len(control_wires) == 2:
-            decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
-        else:
-            num_work_wires_needed = len(control_wires) - 2
-
-            if len(work_wires) >= num_work_wires_needed:
-                decomp = MultiControlledX._decomposition_with_many_workers(
-                    control_wires, target_wire, work_wires
-                )
-            else:
-                work_wire = work_wires[0]
-                decomp = MultiControlledX._decomposition_with_one_worker(
-                    control_wires, target_wire, work_wire
-                )
-
-        flips2 = [
-            qml.PauliX(control_wires[i]) for i, val in enumerate(control_values) if val == "0"
-        ]
-
-        return flips1 + decomp + flips2
-
-    @staticmethod
-    def _decomposition_with_many_workers(control_wires, target_wire, work_wires):
-        """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
-        https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
-        work wires"""
-        num_work_wires_needed = len(control_wires) - 2
-        work_wires = work_wires[:num_work_wires_needed]
-
-        work_wires_reversed = list(reversed(work_wires))
-        control_wires_reversed = list(reversed(control_wires))
-
-        gates = []
-
-        for i in range(len(work_wires)):
-            ctrl1 = control_wires_reversed[i]
-            ctrl2 = work_wires_reversed[i]
-            t = target_wire if i == 0 else work_wires_reversed[i - 1]
-            gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
-
-        gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
-
-        for i in reversed(range(len(work_wires))):
-            ctrl1 = control_wires_reversed[i]
-            ctrl2 = work_wires_reversed[i]
-            t = target_wire if i == 0 else work_wires_reversed[i - 1]
-            gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
-
-        for i in range(len(work_wires) - 1):
-            ctrl1 = control_wires_reversed[i + 1]
-            ctrl2 = work_wires_reversed[i + 1]
-            t = work_wires_reversed[i]
-            gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
-
-        gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
-
-        for i in reversed(range(len(work_wires) - 1)):
-            ctrl1 = control_wires_reversed[i + 1]
-            ctrl2 = work_wires_reversed[i + 1]
-            t = work_wires_reversed[i]
-            gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
-
-        return gates
-
-    @staticmethod
-    def _decomposition_with_one_worker(control_wires, target_wire, work_wire):
-        """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.3 of
-        https://arxiv.org/abs/quant-ph/9503016, which requires a single work wire"""
-        tot_wires = len(control_wires) + 2
-        partition = int(np.ceil(tot_wires / 2))
-
-        first_part = control_wires[:partition]
-        second_part = control_wires[partition:]
-
-        gates = [
-            MultiControlledX(
-                wires=first_part + work_wire,
-                work_wires=second_part + target_wire,
-            ),
-            MultiControlledX(
-                wires=second_part + work_wire + target_wire,
-                work_wires=first_part,
-            ),
-            MultiControlledX(
-                wires=first_part + work_wire,
-                work_wires=second_part + target_wire,
-            ),
-            MultiControlledX(
-                wires=second_part + work_wire + target_wire,
-                work_wires=first_part,
-            ),
-        ]
-
-        return gates
 
     @property
     def is_hermitian(self):
