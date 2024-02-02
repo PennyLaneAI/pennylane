@@ -78,9 +78,16 @@ def _refresh_compilers():
     )
 
     for entry in entries:
-        # Only need name of the parent module
-        module_name, entry_name = entry.name.split(".")
-        AvailableCompilers.names_entrypoints[module_name][entry_name] = entry
+        try:
+            # First element of split is the compiler name
+            # New convention for entry point.
+            compiler_name, entry_name = entry.name.split(".")
+            AvailableCompilers.names_entrypoints[compiler_name][entry_name] = entry
+        except:
+            # Keep old behaviour.
+            # TODO: Deprecate in 0.35 release
+            compiler_name = entry.module.split(".")[0]
+            AvailableCompilers.names_entrypoints[compiler_name][entry.name] = entry
 
     # Check whether available compilers follow the entry_point interface
     # by validating that all entry points (qjit, context, and ops) are defined.
