@@ -14,6 +14,7 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from collections import Counter
+from functools import singledispatch
 from typing import Optional, Sequence
 
 from numpy.random import default_rng
@@ -510,6 +511,7 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
     return new_meas
 
 
+@singledispatch
 def gather_mcm(measurement, mv, samples, counter):
     """Combines, gathers and normalizes several measurements with non-trivial measurement values.
 
@@ -522,30 +524,42 @@ def gather_mcm(measurement, mv, samples, counter):
     Returns:
         TensorLike: The combined measurement outcome
     """
-    if isinstance(mv, Sequence):
-        return np.vstack(tuple(gather_mcm(measurement, m, samples, counter) for m in mv)).T
-    if isinstance(measurement, ExpectationMP):
-        sha = mv.measurements[0].hash
-        new_samples = np.mean(np.array([dct[sha] for dct in samples]))
-    elif isinstance(measurement, ProbabilityMP):
-        sha = mv.measurements[0].hash
-        p1 = counter[sha] / float(len(samples))
-        new_samples = np.array([1 - p1, p1])
-    elif isinstance(measurement, CountsMP):
-        sha = mv.measurements[0].hash
-        new_samples = {}
-        if len(samples) - counter[sha] > 0:
-            new_samples[0] = len(samples) - counter[sha]
-        if counter[sha] > 0:
-            new_samples[1] = counter[sha]
-    elif isinstance(measurement, SampleMP):
-        sha = mv.measurements[0].hash
-        new_samples = np.array([dct[sha] for dct in samples])
-    elif isinstance(measurement, VarianceMP):
-        sha = mv.measurements[0].hash
-        new_samples = qml.math.var(np.array([dct[sha] for dct in samples]))
-    else:
-        raise ValueError(
-            f"Native mid-circuit measurement mode does not support {measurement.__class__.__name__} measurements."
-        )
+    raise ValueError(
+        f"Native mid-circuit measurement mode does not support {measurement.__class__.__name__} measurements."
+    )
+
+
+@gather_mcm.register
+def _(measurement: CountsMP, mv, samples, counter):
+    sha = mv.measurements[0].hash
+    new_samples = {}
+    if len(samples) - counter[sha] > 0:
+        new_samples[0] = len(samples) - counter[sha]
+    if counter[sha] > 0:
+        new_samples[1] = counter[sha]
     return new_samples
+
+
+@gather_mcm.register
+def _(measurement: ExpectationMP, mv, samples, counter):
+    sha = mv.measurements[0].hash
+    return np.mean(np.array([dct[sha] for dct in samples]))
+
+
+@gather_mcm.register
+def _(measurement: ProbabilityMP, mv, samples, counter):
+    sha = mv.measurements[0].hash
+    p1 = counter[sha] / float(len(samples))
+    return np.array([1 - p1, p1])
+
+
+@gather_mcm.register
+def _(measurement: SampleMP, mv, samples, counter):
+    sha = mv.measurements[0].hash
+    return np.array([dct[sha] for dct in samples])
+
+
+@gather_mcm.register
+def _(measurement: VarianceMP, mv, samples, counter):
+    sha = mv.measurements[0].hash
+    return qml.math.var(np.array([dct[sha] for dct in samples]))
