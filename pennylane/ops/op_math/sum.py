@@ -296,6 +296,22 @@ class Sum(CompositeOp):
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
+        
+        **Example**
+
+        >>> qml.operation.enable_new_opmath()
+        >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
+        >>> op.terms()
+        ([0.5, 0.7, 1.5],
+         [X(0), X(1), Y(1) @ Y(0)])
+
+        Note that this method disentangles nested structures of ``Sum`` instances like so.
+        >>> op = 0.5 * X(0) + (2. * (X(1) + 3. * X(2)))
+        >>> print(op)
+        (0.5*(PauliX(wires=[0]))) + (2.0*((0.5*(PauliX(wires=[1]))) + (3.0*(PauliX(wires=[2])))))
+        >>> print(op.terms())
+        ([0.5, 1.0, 6.0], [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])])
+
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
