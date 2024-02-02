@@ -304,11 +304,8 @@ def simulate_native_mcm(
             results.append(simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface))
         return tuple(results)
     aux_circuit = init_auxiliary_circuit(circuit)
-    all_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
-        aux_circuit, rng, prng_key, debugger, interface
-    )
-    list_mcm_values_dict = [mcm_values_dict]
-    for _ in range(circuit.shots.total_shots - 1):
+    all_shot_meas, list_mcm_values_dict = None, []
+    for _ in range(circuit.shots.total_shots):
         one_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
             aux_circuit, rng, prng_key, debugger, interface
         )
@@ -386,21 +383,24 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
     Returns:
         tuple(TensorLike): The results of the simulation
     """
-    new_shot_meas = [None] * len(circuit.measurements)
-    if not isinstance(all_shot_meas, Sequence):
-        all_shot_meas = [all_shot_meas]
     if not isinstance(one_shot_meas, Sequence):
         one_shot_meas = [one_shot_meas]
+    if all_shot_meas is None:
+        new_shot_meas = one_shot_meas
+        for i, t in enumerate(zip(circuit.measurements, new_shot_meas)):
+            m, s = t
+            if isinstance(m, SampleMP) and isinstance(s, np.ndarray):
+                new_shot_meas[i] = [s]
+        return new_shot_meas
+    new_shot_meas = all_shot_meas
+    if not isinstance(all_shot_meas, Sequence):
+        all_shot_meas = [all_shot_meas]
     for i, m in enumerate(circuit.measurements):
         if isinstance(m, CountsMP):
             tmp = Counter(all_shot_meas[i])
             tmp.update(Counter(one_shot_meas[i]))
             new_shot_meas[i] = tmp
         elif isinstance(m, SampleMP):
-            if isinstance(all_shot_meas[i], Sequence):
-                new_shot_meas[i] = all_shot_meas[i]
-            else:
-                new_shot_meas[i] = [all_shot_meas[i]]
             new_shot_meas[i].append(one_shot_meas[i])
         else:
             new_shot_meas[i] = all_shot_meas[i] + one_shot_meas[i]
