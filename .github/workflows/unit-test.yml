@@ -121,10 +121,15 @@ jobs:
           poetry_version: 1.7.1
           add_poetry_to_path: false
 
+      - name: Setup Python Environment
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+
       - name: Configure Poetry
         run: |
           ${{ steps.poetry.outputs.poetry_bin }} config virtualenvs.create "false"
-          ${{ steps.poetry.outputs.poetry_bin }} --version
+          ${{ steps.poetry.outputs.poetry_bin }} config virtualenvs.in-project "true"
 
       - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
