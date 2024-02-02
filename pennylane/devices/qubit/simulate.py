@@ -295,8 +295,7 @@ def simulate_native_mcm(
     if circuit.shots.has_partitioned_shots:
         results = []
         for s in circuit.shots:
-            aux_circuit = circuit.copy()
-            aux_circuit._shots = qml.measurements.Shots(s)
+            aux_circuit = QuantumScript(circuit.operations, circuit.measurements, shots=s, trainable_params=circuit.trinable_params)
             results.append(simulate(aux_circuit, rng, prng_key, debugger, interface))
         return tuple(results)
     aux_circuit = init_auxiliary_circuit(circuit)
