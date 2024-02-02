@@ -389,11 +389,9 @@ def test_draw_mpl_with_control_in_adjoint():
     def U(wires):
         qml.adjoint(qml.CNOT)(wires=wires)
 
-    dev = qml.device("default.qubit")
-
     @qml.qnode(dev)
     def circuit():
-        qml.ctrl(U, control=0)(wires=[1, 2])
+        qml.ctrl(U, control=0)(wires=["a", 1.23])
         return qml.state()
 
     _, ax = qml.draw_mpl(circuit)()
