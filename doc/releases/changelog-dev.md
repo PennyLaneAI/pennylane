@@ -342,7 +342,7 @@
   [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
 
 * Multi-wire controlled `CNOT` and `PhaseShift` can now be decomposed correctly.
-  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125) 
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/) 
   [(#5148)](https://github.com/PennyLaneAI/pennylane/pull/5148)
 
 <h3>Contributors ✍️</h3>
