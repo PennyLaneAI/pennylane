@@ -89,7 +89,7 @@ class TestConvertersZX:
         else:
             qs = operation
 
-        matrix_qscript = qml.matrix(qs)
+        matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
 
         zx_g = qml.transforms.to_zx(qs)
         matrix_zx = zx_g.to_matrix()
@@ -128,7 +128,7 @@ class TestConvertersZX:
 
         I = qml.math.eye(2 ** len(operation.wires))
 
-        matrix_qscript = qml.matrix(qs)
+        matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
 
         zx_g = qml.transforms.to_zx(qs)
 
@@ -166,7 +166,7 @@ class TestConvertersZX:
 
         I = qml.math.eye(2 ** len(operation.wires))
 
-        matrix_qscript = qml.matrix(qs)
+        matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
 
         zx_g = qml.transforms.to_zx(qs)
 
@@ -199,7 +199,7 @@ class TestConvertersZX:
         I = qml.math.eye(2 ** len(operation.wires))
 
         qs = QuantumScript([operation], [])
-        matrix_qscript = qml.matrix(qs)
+        matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
 
         zx_g = qml.transforms.to_zx(qs)
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
@@ -239,7 +239,7 @@ class TestConvertersZX:
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
-        matrix_qscript = qml.matrix(qs)
+        matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
         matrix_zx = zx_g.to_matrix()
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
@@ -320,7 +320,7 @@ class TestConvertersZX:
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
-        matrix_qscript = qml.matrix(qs)
+        matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
         matrix_zx = zx_g.to_matrix()
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
@@ -363,7 +363,7 @@ class TestConvertersZX:
         operations.append(qml.Hadamard(wires=[1]))
         operations_with_rotations = operations
         qscript_with_rot = QuantumScript(operations_with_rotations, [])
-        matrix_qscript = qml.matrix(qscript_with_rot)
+        matrix_qscript = qml.matrix(qscript_with_rot, wire_order=[0, 1])
 
         matrix_zx = zx_g.to_matrix()
         # Check whether the two matrices are each others conjugate transposes
@@ -403,7 +403,7 @@ class TestConvertersZX:
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
-        matrix_qscript = qml.matrix(qs)
+        matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
         matrix_zx = zx_g.to_matrix()
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))

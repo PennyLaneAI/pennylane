@@ -23,6 +23,7 @@ import pennylane as qml
 
 from pennylane.drawer import tape_mpl
 from pennylane.tape import QuantumScript
+from pennylane.ops.op_math import Controlled
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -533,7 +534,7 @@ class TestControlledGates:
 
         with qml.queuing.AnnotatedQueue() as q_tape:
             # pylint:disable=no-member
-            qubit_unitary = qml.QubitUnitary(qml.matrix(qml.RX)(0, 0), wires=4)
+            qubit_unitary = qml.QubitUnitary(qml.RX.compute_matrix(0), wires=4)
             qml.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
 
         tape = QuantumScript.from_queue(q_tape)
@@ -544,9 +545,9 @@ class TestControlledGates:
         when they are provided as a list of bools."""
 
         with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.ctrl(
-                qml.ctrl(qml.PauliX(wires=4), control=[2, 3], control_values=[1, 0]),
-                control=[0, 1],
+            Controlled(
+                qml.ctrl(qml.PauliY(wires=4), control=[2, 3], control_values=[1, 0]),
+                control_wires=[0, 1],
                 control_values=[1, 0],
             )
 

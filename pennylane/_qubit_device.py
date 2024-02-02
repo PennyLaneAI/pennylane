@@ -726,8 +726,9 @@ class QubitDevice(Device):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
             elif m.return_type is not None:
+                name = obs.name if isinstance(obs, qml.operation.Operator) else type(obs).__name__
                 raise qml.QuantumFunctionError(
-                    f"Unsupported return type specified for observable {obs.name}"
+                    f"Unsupported return type specified for observable {name}"
                 )
             else:
                 result = None
@@ -1481,7 +1482,7 @@ class QubitDevice(Device):
         # translate to wire labels used by device. observable is list when measuring sequence
         # of multiple MeasurementValues
         device_wires = self.map_wires(observable.wires)
-        name = observable.name
+        name = None if no_observable_provided else observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples

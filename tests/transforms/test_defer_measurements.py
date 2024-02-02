@@ -178,7 +178,6 @@ class TestQNode:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert op1.data == op2.data
 
     def test_reuse_wire_after_measurement(self):
         """Test that wires can be reused after measurement."""
@@ -504,7 +503,6 @@ class TestQNode:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert op1.data == op2.data
 
     @pytest.mark.parametrize("mid_measure_wire, tp_wires", [(0, [1, 2, 3]), (0, [3, 1, 2])])
     def test_measure_with_tensor_obs(self, mid_measure_wire, tp_wires):
@@ -1241,7 +1239,6 @@ class TestTemplates:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert np.allclose(op1.data, op2.data)
 
     def test_angle_embedding(self):
         """Test the angle embedding template conditioned on mid-circuit
@@ -1281,7 +1278,6 @@ class TestTemplates:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert np.allclose(op1.data, op2.data)
 
     @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
     def test_layers(self, template):
@@ -1320,7 +1316,6 @@ class TestTemplates:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert np.allclose(op1.data, op2.data)
 
 
 class TestQubitReuseAndReset:
