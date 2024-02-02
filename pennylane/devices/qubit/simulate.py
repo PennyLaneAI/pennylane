@@ -418,7 +418,7 @@ def has_mid_circuit_measurements(
     Returns:
         bool: Whether the circuit contains a MidMeasureMP object
     """
-    return any(isinstance(op, MidMeasureMP) for op in circuit._ops)
+    return any(isinstance(op, MidMeasureMP) for op in circuit.operations)
 
 
 def find_measurement_values(
