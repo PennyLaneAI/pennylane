@@ -83,7 +83,7 @@ def _refresh_compilers():
             # New convention for entry point.
             compiler_name, entry_name = entry.name.split(".")
             AvailableCompilers.names_entrypoints[compiler_name][entry_name] = entry
-        except:
+        except ValueError:
             # Keep old behaviour.
             # TODO: Deprecate in 0.35 release
             compiler_name = entry.module.split(".")[0]
