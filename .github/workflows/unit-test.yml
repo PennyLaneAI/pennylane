@@ -125,6 +125,7 @@ jobs:
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
+          echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
 
       - name: Configure Poetry
         run: |
