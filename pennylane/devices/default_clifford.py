@@ -67,7 +67,7 @@ Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTape_or_Batch = Union[QuantumTape, Sequence[QuantumTape]]
 
 # Updated observable list
-_MEAS_OBSERVABLES = {
+_OBSERVABLES_MAP = {
     "PauliX",
     "PauliY",
     "PauliZ",
@@ -81,7 +81,8 @@ _MEAS_OBSERVABLES = {
 }
 
 # Clifford gates
-_GATE_OPERATIONS = {
+# Error channels
+_OPERATIONS_MAP = {
     "Identity": "I",
     "PauliX": "X",
     "PauliY": "Y",
@@ -102,28 +103,40 @@ _GATE_OPERATIONS = {
     "StatePrep": None,
     "Snapshot": None,
     "Barrier": None,
+    "PauliError": "CORRELATED_ERROR",
+    "BitFlip": "X_ERROR",
+    "PhaseFlip": "Z_ERROR",
+    "DepolarizingChannel": "DEPOLARIZE1",
 }
 
 
 def operation_stopping_condition(op: qml.operation.Operator) -> bool:
     """Specifies whether an operation is accepted by ``DefaultClifford``."""
-    return op.name in _GATE_OPERATIONS
+    return op.name in _OPERATIONS_MAP
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether an observable is accepted by ``DefaultClifford``."""
-    return obs.name in _MEAS_OBSERVABLES
+    return obs.name in _OBSERVABLES_MAP
 
 
 def _pl_to_stim(op):
     """Convert PennyLane operation to a Stim operation"""
     try:
-        stim_op = _GATE_OPERATIONS[op.name]
+        stim_op = _OPERATIONS_MAP[op.name]
+        stim_tg = map(str, op.wires)
     except KeyError as e:
         raise qml.DeviceError(
             f"Operator {op} not supported on default.clifford and does not provide a decomposition."
         ) from e
-    return stim_op, " ".join(map(str, op.wires))
+
+    # Check if the operation is noisy
+    if isinstance(op, qml.operation.Channel):
+        stim_op += f"({op.parameters[-1]})"  # get the probability
+        if op.name == "PauliError":
+            stim_tg = [pauli + wire for pauli, wire in zip(op.parameters[0], stim_tg)]
+
+    return stim_op, " ".join(stim_tg)
 
 
 def _convert_op_to_linear_comb(meas_op):
@@ -147,7 +160,7 @@ def _convert_op_to_linear_comb(meas_op):
     paulis = []
     for op in ops:
         op_names = op.name if isinstance(op, qml.operation.Tensor) else [op.name]
-        paulis.append(("".join([_GATE_OPERATIONS[name] for name in op_names]), op.wires))
+        paulis.append(("".join([_OPERATIONS_MAP[name] for name in op_names]), op.wires))
 
     return coeffs, paulis
 
@@ -540,6 +553,8 @@ class DefaultClifford(Device):
         global_phase_ops = []
         for op in circuit.operations[use_prep_ops:]:
             gate, wires = _pl_to_stim(op)
+            if isinstance(op, qml.operation.Channel) and not circuit.shots:
+                raise ValueError(f"{self.name} supports error channels only with finite shots.")
             if gate is not None:
                 # Note: This is a lot faster than doing `stim_ct.append(gate, wires)`
                 stim_circuit.append_from_stim_program_text(f"{gate} {wires}")
@@ -867,7 +882,7 @@ class DefaultClifford(Device):
         diagonalizing_ops = [] if not meas.obs else meas.obs.diagonalizing_gates()
         for diag_op in diagonalizing_ops:
             # Check if it is Clifford
-            if diag_op.name not in _GATE_OPERATIONS:  # pragma: no cover
+            if diag_op.name not in _OPERATIONS_MAP:  # pragma: no cover
                 raise ValueError(
                     f"Currently, we only support observables whose diagonalizing gates are Clifford, got {diag_op}"
                 )
