@@ -223,7 +223,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
     PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
         (qml.prod(X(0), X(1), X(2)), [1.0], [qml.prod(X(0), X(1), X(2))]),  # trivial product
-        (qml.prod(X(0), X(1), X(2), qml.Identity(0)), [1.0], [qml.prod(X(0), X(1), X(2))]),  # trivial product
+        (
+            qml.prod(X(0), X(1), X(2), qml.Identity(0)),
+            [1.0],
+            [qml.prod(X(0), X(1), X(2))],
+        ),  # trivial product
         (
             qml.prod(X(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
             [2 * 4],
