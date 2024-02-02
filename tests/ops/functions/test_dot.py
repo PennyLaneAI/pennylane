@@ -195,19 +195,19 @@ class TestDotSum:
         ([1, 1, 1], [pw_id, pw_id, pw_id], [op_id, op_id, op_id]),
     )
 
-        # (
-        #     ,
-        #     ,
-        #     PauliSentence({pw1: 1.0, pw2: 2.0, pw3: 3.0, pw_id: 4.0}),
-        # ),
-        # (
-        #     [1.5, 2.5, 3.5, 4.5j],
-        #     [pw1, pw2, pw3, pw_id],
-        #     PauliSentence({pw1: 1.5, pw2: 2.5, pw3: 3.5, pw_id: 4.5j}),
-        # ),
-        # ([1.5, 2.5, 3.5], [pw3, pw2, pw1], PauliSentence({pw3: 1.5, pw2: 2.5, pw1: 3.5})),
-        # ([1, 1, 1], [PauliWord({0:"X"})]*3, PauliSentence({PauliWord({0:"X"}): 3.})),
-        # ([1, 1, 1], [PauliWord({})]*3, PauliSentence({PauliWord({}): 3.})),
+    # (
+    #     ,
+    #     ,
+    #     PauliSentence({pw1: 1.0, pw2: 2.0, pw3: 3.0, pw_id: 4.0}),
+    # ),
+    # (
+    #     [1.5, 2.5, 3.5, 4.5j],
+    #     [pw1, pw2, pw3, pw_id],
+    #     PauliSentence({pw1: 1.5, pw2: 2.5, pw3: 3.5, pw_id: 4.5j}),
+    # ),
+    # ([1.5, 2.5, 3.5], [pw3, pw2, pw1], PauliSentence({pw3: 1.5, pw2: 2.5, pw1: 3.5})),
+    # ([1, 1, 1], [PauliWord({0:"X"})]*3, PauliSentence({PauliWord({0:"X"}): 3.})),
+    # ([1, 1, 1], [PauliWord({})]*3, PauliSentence({PauliWord({}): 3.})),
 
     @pytest.mark.parametrize("coeff, words, ops", data_just_words_pauli_false)
     def test_dot_with_just_words_pauli_false(self, coeff, words, ops):
@@ -411,8 +411,8 @@ class TestDotPauliSentence:
             PauliSentence({pw1: 1.5, pw2: 2.5, pw3: 3.5, pw_id: 4.5j}),
         ),
         ([1.5, 2.5, 3.5], [pw3, pw2, pw1], PauliSentence({pw3: 1.5, pw2: 2.5, pw1: 3.5})),
-        ([1, 1, 1], [PauliWord({0:"X"})]*3, PauliSentence({PauliWord({0:"X"}): 3.})),
-        ([1, 1, 1], [PauliWord({})]*3, PauliSentence({PauliWord({}): 3.})),
+        ([1, 1, 1], [PauliWord({0: "X"})] * 3, PauliSentence({PauliWord({0: "X"}): 3.0})),
+        ([1, 1, 1], [PauliWord({})] * 3, PauliSentence({PauliWord({}): 3.0})),
     )
 
     @pytest.mark.parametrize("coeff, ops, res", data_just_words)
