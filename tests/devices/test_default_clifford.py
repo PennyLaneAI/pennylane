@@ -17,6 +17,7 @@ This module contains the tests for the clifford simulator based on stim
 import os
 import pytest
 import numpy as np
+import scipy as sp
 import pennylane as qml
 
 from pennylane.devices.default_clifford import _pl_to_stim
@@ -636,6 +637,39 @@ def test_meas_error_noisy():
         match="default.clifford supports error channels only with finite shots.",
     ):
         circuit_fn()
+
+
+@pytest.mark.parametrize(
+    "channel_op",
+    [
+        qml.PauliError("YZ", 0.2, wires=[0, 1]),
+        qml.PauliError("YZ", 0.3, wires=[1, 3]),
+        qml.BitFlip(0.1, wires=[0]),
+        qml.BitFlip(0.5, wires=[2]),
+        qml.PhaseFlip(0.3, wires=[1]),
+        qml.PhaseFlip(0.5, wires=[3]),
+        qml.DepolarizingChannel(0.2, wires=[0]),
+        qml.DepolarizingChannel(0.75, wires=[2]),
+    ],
+)
+def test_meas_noisy_distribution(channel_op):
+    """Test error is raised when noisy circuit are executed on Clifford device analytically."""
+
+    dev_c = qml.device("default.clifford", shots=10000, wires=4)
+    dev_q = qml.device("default.mixed", shots=10000, wires=4)
+
+    def circuit():
+        qml.Hadamard(wires=[0])
+        for idx in range(3):
+            qml.CNOT(wires=[idx, idx + 1])
+        qml.apply(channel_op)
+        return qml.probs()
+
+    qnode_clfrd = qml.QNode(circuit, dev_c)
+    qnode_qubit = qml.QNode(circuit, dev_q)
+
+    kl_d = np.ma.masked_invalid(sp.special.rel_entr(qnode_clfrd(), qnode_qubit()))
+    assert qml.math.allclose(np.abs(kl_d.sum()), 0.0, atol=1e-2)
 
 
 def test_fail_import_stim(monkeypatch):
