@@ -64,7 +64,7 @@ class Identity(CVObservable, Operation):
 
     def __repr__(self):
         """String representation."""
-        if len(self.wires)==0:
+        if len(self.wires) == 0:
             return "I()"
         wire = self.wires[0]
         if isinstance(wire, str):
