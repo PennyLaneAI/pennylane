@@ -106,10 +106,6 @@ def dot(
 
         # Else, transform all ops to pauli sentences
         return _dot_with_ops_and_paulis(coeffs, ops)
-    
-    # Try to still do Pauli route if it is possible
-    if all(op.pauli_rep for op in ops):
-        return _dot_with_ops_and_paulis(coeffs, ops).operation()
 
     # Convert possible PauliWord and PauliSentence instances to operation
     ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
