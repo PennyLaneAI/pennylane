@@ -103,6 +103,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
+  [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
+
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
 
