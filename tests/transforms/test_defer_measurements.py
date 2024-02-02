@@ -284,8 +284,8 @@ class TestQNode:
         on a mid-circuit measurement"""
         dev = DefaultQubit()
 
-        @qml.defer_measurements
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ1(phi):
             qml.RX(phi, wires=0)
             # Postselecting on |1> on wire 0 means that the probability of measuring
@@ -324,8 +324,8 @@ class TestQNode:
         mp2 = MidMeasureMP(wires=2, reset=True, postselect=1, id=2)
         mv2 = MeasurementValue([mp2], lambda v: v)
 
-        @qml.defer_measurements
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ1(phi, theta):
             qml.RX(phi, 0)
             qml.apply(mp0)
@@ -402,8 +402,8 @@ class TestQNode:
         when the measured wire is reused."""
         dev = DefaultQubit()
 
-        @qml.defer_measurements
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ1(x):
             qml.RX(x, 0)
             m0 = qml.measure(0)
@@ -1189,7 +1189,6 @@ class TestExpressionConditionals:
             expr2 = (3 * m_1 + 2) * (4 * expr1 + 2)
             m_2 = qml.measure(2)
             expr3 = expr2 / (m_2 + 3)
-            print(expr3)
             qml.cond(expr3 <= 6, qml.RX)(rads, wires=3)
             return qml.probs(wires=3)
 
@@ -1217,8 +1216,8 @@ class TestTemplates:
             qml.ctrl(template, control=0)(basis_state, wires=range(1, 5))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
-        @qml.defer_measurements
         @qml.qnode(dev)
+        @qml.defer_measurements
         def qnode2():
             qml.Hadamard(0)
             m_0 = qml.measure(0)
@@ -1253,8 +1252,8 @@ class TestTemplates:
             qml.ctrl(template, control=0)(features=feature_vector, wires=range(1, 5), rotation="Z")
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
-        @qml.defer_measurements
         @qml.qnode(dev)
+        @qml.defer_measurements
         def qnode2():
             qml.Hadamard(0)
             m_0 = qml.measure(0)
@@ -1291,8 +1290,8 @@ class TestTemplates:
             qml.ctrl(template, control=0)(parameters, wires=range(1, 3))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2))
 
-        @qml.defer_measurements
         @qml.qnode(dev)
+        @qml.defer_measurements
         def qnode2(parameters):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
@@ -1325,8 +1324,8 @@ class TestQubitReuseAndReset:
         on the same wire."""
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.defer_measurements
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ(x, y):
             qml.RX(x, 0)
             qml.measure(0)
@@ -1359,8 +1358,8 @@ class TestQubitReuseAndReset:
             qml.CRX(x, [0, 1])
             return qml.expval(qml.PauliZ(1))
 
-        @qml.defer_measurements
         @qml.qnode(dev)
+        @qml.defer_measurements
         def qnode2(x):
             qml.Hadamard(0)
             m0 = qml.measure(0, reset=True)
