@@ -25,7 +25,7 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -94,6 +94,7 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
     """
+    ops = tuple(convert_to_opmath(op) for op in ops)
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
             return ops[0]
@@ -350,9 +351,30 @@ class Prod(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
-        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            return reduce(lambda a, b: a @ b, operand_pauli_reps)
-        return None
+        if any(op.pauli_rep is None for op in self.operands):
+            return None
+        paulis = {"PauliX", "PauliY", "PauliZ"}
+
+        single_word = {}
+        still_single_word = True
+
+        ind = 0
+        for ind, op in enumerate(self):
+            if op.name == "Identity":
+                continue
+            if op.name in paulis and op.wires[0] not in single_word:
+                single_word[op.wires[0]] = op.name[-1]
+            else:
+                still_single_word = False
+                break
+        ps = qml.pauli.PauliSentence({qml.pauli.PauliWord(single_word): 1.0})
+        if still_single_word:
+            return ps
+
+        for op in self[ind:]:
+            ps = ps @ op.pauli_rep
+
+        return ps
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.
