@@ -40,7 +40,7 @@ interfaces = [
 
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
-
+array_funcs = [lambda x: x, np.array, pnp.array, jnp.array, torch.tensor, tf.Variable, tf.constant]
 
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
@@ -844,26 +844,30 @@ class TestReduceMatrices:
 class TestBatchedPartialTrace:
     """Unit tests for the batched_partial_trace function."""
 
+    @pytest.mark.parametrize("interface_name, array_fn", interfaces)
+    @pytest.mark.parametrize("array_funcs", array_funcs)
     def test_single_density_matrix(self):
         """Test partial trace on a single density matrix."""
         # Define a 2-qubit density matrix
-        rho = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        rho = array_funcs(np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]))
+        
         # Expected result after tracing out the second qubit
-        expected = np.array([[1, 0], [0, 0]])
+        expected = array_funcs(np.array([[1, 0], [0, 0]]))
 
         # Perform the partial trace
         result = qml.math.quantum.batched_partial_trace(rho, [0])
         assert np.allclose(result, expected)
 
+    @pytest.mark.parametrize("array_funcs", array_funcs)
     def test_batched_density_matrices(self):
         """Test partial trace on a batch of density matrices."""
         # Define a batch of 2-qubit density matrices
-        rho = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-                        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
+        rho = array_funcs(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
         
-
+        rho = array_funcs(rho)
         # Expected result after tracing out the first qubit for each matrix
-        expected = np.array([[[1, 0], [0, 0]], [[1, 0], [0, 0]]])
+        expected = array_funcs(np.array([[[1, 0], [0, 0]], [[1, 0], [0, 0]]]))
 
         # Perform the partial trace
         result = qml.math.quantum.batched_partial_trace(rho, [1])
