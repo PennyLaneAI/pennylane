@@ -26,7 +26,8 @@ from pennylane import math
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, prod, s_prod
+from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+
 
 I = "I"
 X = "X"
@@ -65,6 +66,11 @@ anticom_map = {
     Y: {I: 0, X: 1, Y: 0, Z: 1},
     Z: {I: 0, X: 1, Y: 1, Z: 0},
 }
+
+
+@lru_cache
+def _make_operation(op, wire):
+    return op_map[op](wire)
 
 
 @lru_cache
@@ -504,11 +510,12 @@ class PauliWord(dict):
         if len(self) == 0:
             return Identity(wires=wire_order)
 
-        factors = [op_map[op](wire) for wire, op in self.items()]
+        factors = [_make_operation(op, wire) for wire, op in self.items()]
 
         if get_as_tensor:
             return factors[0] if len(factors) == 1 else Tensor(*factors)
-        return factors[0] if len(factors) == 1 else prod(*factors)
+        pauli_rep = PauliSentence({self: 1})
+        return factors[0] if len(factors) == 1 else Prod(*factors, _pauli_rep=pauli_rep)
 
     def hamiltonian(self, wire_order=None):
         """Return :class:`~pennylane.Hamiltonian` representing the PauliWord."""
@@ -517,7 +524,7 @@ class PauliWord(dict):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
-        obs = [op_map[op](wire) for wire, op in self.items()]
+        obs = [_make_operation(op, wire) for wire, op in self.items()]
         return Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
 
     def map_wires(self, wire_map: dict) -> "PauliWord":
@@ -965,8 +972,9 @@ class PauliSentence(dict):
         wire_order = wire_order or self.wires
         for pw, coeff in self.items():
             pw_op = pw.operation(wire_order=list(wire_order))
-            summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
-        return summands[0] if len(summands) == 1 else qml.sum(*summands)
+            rep = PauliSentence({pw: coeff})
+            summands.append(pw_op if coeff == 1 else SProd(coeff, pw_op, _pauli_rep=rep))
+        return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def hamiltonian(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
