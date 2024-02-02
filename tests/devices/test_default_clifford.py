@@ -502,6 +502,12 @@ def test_debugger():
     assert qml.math.allclose(result[0], 1.0)
     assert qml.math.allclose(result[1], 0.0)
 
+    dev2 = qml.device("default.clifford", wires=1)
+    result = dev2.simulate(qs, debugger=debugger)
+    assert qml.math.allclose(
+        debugger.snapshots[0], qml.math.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+    )
+
     dev = qml.device("default.clifford", tableau=False)
 
     @qml.qnode(dev)
