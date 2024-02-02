@@ -102,7 +102,7 @@
   def subroutine():
       qml.Hadamard(wires=[0])
       qml.CNOT(wires=[0, 1])
-      qml.PauliX(wires=[1])
+      qml.X(1)
 
   dev = qml.device('default.qubit', wires=3)
 

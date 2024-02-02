@@ -538,14 +538,14 @@
 
   ```pycon
   >>> print({op1, op2})
-  {PauliX(wires=[0]), PauliX(wires=[0])}
+  {X(0), X(0)}
   ```
 
   New behaviour:
 
   ```pycon
   >>> print({op1, op2})
-  {PauliX(wires=[0])}
+  {X(0)}
   ```
 
 * The old return type and associated functions `qml.enable_return` and `qml.disable_return` have been removed.

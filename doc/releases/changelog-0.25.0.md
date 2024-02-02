@@ -221,14 +221,14 @@
     >>> ops_to_sum = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)] 
     >>> summed_ops = qml.op_sum(*ops_to_sum)
     >>> summed_ops
-    PauliX(wires=[0]) + PauliY(wires=[1]) + PauliZ(wires=[0])
+    X(0) + Y(1) + Z(0)
     >>> qml.matrix(summed_ops)
     array([[ 1.+0.j,  0.-1.j,  1.+0.j,  0.+0.j],
            [ 0.+1.j,  1.+0.j,  0.+0.j,  1.+0.j],
            [ 1.+0.j,  0.+0.j, -1.+0.j,  0.-1.j],
            [ 0.+0.j,  1.+0.j,  0.+1.j, -1.+0.j]])
     >>> summed_ops.terms()
-    ([1.0, 1.0, 1.0], (PauliX(wires=[0]), PauliY(wires=[1]), PauliZ(wires=[0])))
+    ([1.0, 1.0, 1.0], (X(0), Y(1), Z(0)))
     ```
 
   - Multiplying any number of operators via `qml.prod` results in a "product" operator, 
@@ -238,7 +238,7 @@
     >>> theta = 1.23
     >>> prod_op = qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
     >>> prod_op
-    PauliZ(wires=[0]) @ RX(1.23, wires=[1]) 
+    Z(0) @ RX(1.23, wires=[1]) 
     >>> qml.eigvals(prod_op)
     [-1.39373197 -0.23981492  0.23981492  1.39373197]
     ```
@@ -249,12 +249,12 @@
     ```pycon
     >>> sprod_op = qml.s_prod(2.0, qml.PauliX(0))
     >>> sprod_op
-    2.0*(PauliX(wires=[0]))
+    2.0*(X(0))
     >>> sprod_op.matrix()
     array([[ 0., 2.],
            [ 2., 0.]])
     >>> sprod_op.terms()
-    ([2.0], [PauliX(wires=[0])])
+    ([2.0], [X(0)])
     ```
 
   Each of these new functionalities can be used within QNodes as operators or observables, 

@@ -428,14 +428,14 @@ def from_zx(graph, decompose_phases=True):
     You can check that the operations are similar but some were decomposed in the process.
 
     >>> pennylane_tape.operations
-    [PauliZ(wires=[0]),
+    [Z(0),
      T(wires=[0]),
      RX(0.1, wires=[1]),
-     PauliZ(wires=[0]),
+     Z(0),
      Adjoint(T(wires=[0])),
-     PauliZ(wires=[1]),
+     Z(1),
      RZ(0.3, wires=[0]),
-     PauliX(wires=[0]),
+     X(0),
      CNOT(wires=[1, 0]),
      CNOT(wires=[0, 1]),
      CNOT(wires=[1, 0]),

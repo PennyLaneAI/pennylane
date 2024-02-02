@@ -140,8 +140,8 @@ class BasisEmbedding(Operation):
 
         >>> features = torch.tensor([1, 0, 1])
         >>> qml.BasisEmbedding.compute_decomposition(features, wires=["a", "b", "c"])
-        [PauliX(wires=['a']),
-         PauliX(wires=['c'])]
+        [X('a'),
+         X('c')]
         """
         if not qml.math.is_abstract(basis_state):
             ops_list = []

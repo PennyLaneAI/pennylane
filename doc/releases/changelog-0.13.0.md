@@ -147,7 +147,7 @@
   @qml.qnode(dev)
   def circuit():
       qml.SX(wires=[0])
-      return qml.expval(qml.PauliZ(wires=[0]))
+      return qml.expval(qml.Z(0))
   ```
 
 * Two new hardware-efficient particle-conserving templates have been implemented

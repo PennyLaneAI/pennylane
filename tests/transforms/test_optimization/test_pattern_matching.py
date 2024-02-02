@@ -231,9 +231,9 @@ class TestPatternMatchingOptimization:
             qml.Toffoli(wires=[0, 2, 4])
             qml.CZ(wires=[0, 2])
             qml.RY(0.1, wires=[1])
-            qml.PauliZ(wires=[0])
+            qml.Z(0)
             qml.CNOT(wires=[0, 2])
-            qml.PauliZ(wires=[0])
+            qml.Z(0)
             qml.CNOT(wires=[1, 4])
             qml.PauliY(wires=1)
             qml.PauliZ(wires=0)
@@ -494,13 +494,13 @@ class TestPatternMatchingOptimization:
 
         template_cnot = qml.tape.QuantumScript.from_queue(q_template_cnot)
         with qml.queuing.AnnotatedQueue() as q_template_x:
-            qml.PauliX(wires=[0])
-            qml.PauliX(wires=[0])
+            qml.X(0)
+            qml.X(0)
 
         template_x = qml.tape.QuantumScript.from_queue(q_template_x)
         with qml.queuing.AnnotatedQueue() as q_template_z:
-            qml.PauliZ(wires=[0])
-            qml.PauliZ(wires=[0])
+            qml.Z(0)
+            qml.Z(0)
 
         template_z = qml.tape.QuantumScript.from_queue(q_template_z)
         dev = qml.device("default.qubit", wires=5)
@@ -993,7 +993,7 @@ class TestPatternMatching:
             qml.CNOT(wires=[1, 0])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=[0])
+            qml.X(0)
 
         pattern = qml.tape.QuantumScript.from_queue(q_pattern)
         circuit_dag = commutation_dag(circuit)()

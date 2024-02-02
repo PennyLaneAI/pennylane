@@ -685,7 +685,7 @@ class TestTensorExpval:
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
 
-        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
+        obs = qml.Hermitian(A, wires=[0]) @ qml.I(1)
 
         dev.apply(
             [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
@@ -841,7 +841,7 @@ class TestTensorVar:
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
 
-        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
+        obs = qml.Hermitian(A, wires=[0]) @ qml.I(1)
 
         dev.apply(
             [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],

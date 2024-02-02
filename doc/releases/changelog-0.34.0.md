@@ -312,7 +312,7 @@
   def circuit():
 
     # Initial state
-    qml.PauliX(wires=[0])
+    qml.X(0)
 
     # Iterative QPE
     measurements = qml.iterative_qpe(qml.RZ(2., wires=[0]), ancilla=[1], iters=3)

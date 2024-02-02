@@ -112,7 +112,7 @@ An instance of the :class:`~.MeasurementProcess` class specifies the measured ob
 which are themselves operators.
 
 >>> m.obs
-PauliZ(wires=['a'])
+Z('a')
 
 Furthermore, it specifies a "return type" which defines the kind of measurement performed,
 such as expectation, variance, probability, state, or sample.
@@ -154,7 +154,7 @@ to the tape's ``measurement`` property.
  RY(Array(0.2, dtype=float32), wires=['a'])]
 
 >>> tape.measurements
-[expval(PauliZ(wires=['b']))]
+[expval(Z('b'))]
 
 These two "queues" are used by devices to get information on the circuit they
 have to run.

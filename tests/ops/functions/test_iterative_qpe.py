@@ -33,7 +33,7 @@ class TestIQPE:
         @qml.qnode(dev)
         def circuit_iterative():
             # Initial state
-            qml.PauliX(wires=[0])
+            qml.X(0)
 
             # Iterative QPE
             measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
@@ -47,7 +47,7 @@ class TestIQPE:
         @qml.qnode(dev)
         def circuit_qpe():
             # Initial state
-            qml.PauliX(wires=[0])
+            qml.X(0)
 
             # Iterative QPE
             qml.QuantumPhaseEstimation(qml.RZ(phi, wires=[0]), estimation_wires=[1, 2, 3])
@@ -193,7 +193,7 @@ class TestIQPE:
         @qml.qnode(dev)
         def circuit_qpe():
             # Initial state
-            qml.PauliX(wires=[0])
+            qml.X(0)
 
             # Iterative QPE
             qml.QuantumPhaseEstimation(qml.RZ(phi, wires=[0]), estimation_wires=[1, 2, 3])
@@ -203,7 +203,7 @@ class TestIQPE:
         @qml.qnode(dev)
         def circuit_iterative():
             # Initial state
-            qml.PauliX(wires=[0])
+            qml.X(0)
 
             # Iterative QPE
             measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
@@ -221,7 +221,7 @@ class TestIQPE:
         @qml.qnode(dev)
         def circuit_qpe():
             # Initial state
-            qml.PauliX(wires=[0])
+            qml.X(0)
 
             # Iterative QPE
             qml.QuantumPhaseEstimation(qml.RZ(phi, wires=[0]), estimation_wires=[1, 2, 3])
@@ -232,7 +232,7 @@ class TestIQPE:
         @qml.qnode(dev)
         def circuit_iterative():
             # Initial state
-            qml.PauliX(wires=[0])
+            qml.X(0)
 
             # Iterative QPE
             measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)

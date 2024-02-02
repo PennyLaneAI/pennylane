@@ -450,10 +450,10 @@
     ```pycon
     >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
     >>> op
-    (RX(0.54, wires=[0]) + PauliX(wires=[1])) + (PauliZ(wires=[2]) @ RY(1.23, wires=[3]))
+    (RX(0.54, wires=[0]) + X(1)) + (Z(2) @ RY(1.23, wires=[3]))
     >>> wire_map = {0: 10, 1: 11, 2: 12, 3: 13}
     >>> qml.map_wires(op, wire_map)
-    (RX(0.54, wires=[10]) + PauliX(wires=[11])) + (PauliZ(wires=[12]) @ RY(1.23, wires=[13]))
+    (RX(0.54, wires=[10]) + X(11)) + (Z(12) @ RY(1.23, wires=[13]))
     ```
 
     A `map_wires` method has also been added to operators, which returns a copy

@@ -348,7 +348,7 @@
       qml.RY(0.543, wires=0)
       qml.CNOT(wires=[0, 'a'])
       qml.RX(0.133, wires='a')
-      qml.expval(qml.PauliZ(wires=[0]))
+      qml.expval(qml.Z(0))
   ```
 
   Given a `QuantumTape` object the underlying quantum circuit can be iterated
@@ -361,7 +361,7 @@
   RY(0.543, wires=[0])
   CNOT(wires=[0, 'a'])
   RX(0.133, wires=['a'])
-  expval(PauliZ(wires=[0]))
+  expval(Z(0))
   ```
 
   Indexing into the circuit is also allowed via `tape[i]`:
@@ -380,7 +380,7 @@
    RY(0.543, wires=[0]),
    CNOT(wires=[0, 'a']),
    RX(0.133, wires=['a']),
-   expval(PauliZ(wires=[0]))]
+   expval(Z(0))]
   ```
 
 * Added the `QuantumTape.shape` method and `QuantumTape.numeric_type`

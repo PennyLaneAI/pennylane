@@ -61,7 +61,7 @@
   >>> from pennylane.grouping import pauli_group
   >>> pauli_group_1_qubit = list(pauli_group(1))
   >>> pauli_group_1_qubit
-  [Identity(wires=[0]), PauliZ(wires=[0]), PauliX(wires=[0]), PauliY(wires=[0])]
+  [I(0), Z(0), X(0), Y(0)]
   ```
 
   We can multiply together its members at the level of Pauli words
@@ -73,11 +73,11 @@
   >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
   >>> pg = list(pauli_group(3, wire_map=wire_map))
   >>> pg[3]
-  PauliZ(wires=['b']) @ PauliZ(wires=['c'])
+  Z('b') @ Z('c')
   >>> pg[55]
-  PauliY(wires=['a']) @ PauliY(wires=['b']) @ PauliZ(wires=['c'])
+  Y('a') @ Y('b') @ Z('c')
   >>> pauli_mult(pg[3], pg[55], wire_map=wire_map)
-  PauliY(wires=['a']) @ PauliX(wires=['b'])
+  Y('a') @ X('b')
   ```
 
   Functions for conversion of Pauli observables to strings (and back),
@@ -88,7 +88,7 @@
   >>> pauli_word_to_string(pg[55], wire_map=wire_map)
   'YYZ'
   >>> string_to_pauli_word('ZXY', wire_map=wire_map)
-  PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
+  Z('a') @ X('b') @ Y('c')
   ```
 
   Calculation of the matrix representation for arbitrary Paulis and wire maps is now

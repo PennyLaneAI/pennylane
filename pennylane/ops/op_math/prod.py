@@ -80,7 +80,7 @@ def prod(*ops, id=None, lazy=True):
 
     >>> prod_op = prod(qml.PauliX(0), qml.PauliZ(0))
     >>> prod_op
-    PauliX(wires=[0]) @ PauliZ(wires=[0])
+    X(0) @ Z(0)
     >>> prod_op.matrix()
     array([[ 0, -1],
            [ 1,  0]])
@@ -140,12 +140,12 @@ class Prod(CompositeOp):
 
     >>> prop_op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=0))
     >>> prop_op
-    PauliX(wires=[0]) @ PauliZ(wires=[0])
+    X(0) @ Z(0)
     >>> qml.matrix(prop_op)
     array([[ 0,  -1],
            [ 1,   0]])
     >>> prop_op.terms()
-    ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+    ([1.0], [X(0) @ Z(0)])
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
@@ -155,7 +155,7 @@ class Prod(CompositeOp):
 
     >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
     >>> op.decomposition()
-    [PauliZ(wires=[1]), PauliX(wires=[0])]
+    [Z(1), X(0)]
 
     .. details::
         :title: Usage Details

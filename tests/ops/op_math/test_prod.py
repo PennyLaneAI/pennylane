@@ -1124,7 +1124,7 @@ class TestSimplify:
         """Test that grouping works with product of two sums"""
         prod_op = qml.prod(qml.S(0) + qml.T(1), qml.S(0) + qml.T(1))
         final_op = qml.sum(
-            qml.PauliZ(wires=[0]),
+            qml.Z(0),
             2 * qml.prod(qml.S(wires=[0]), qml.T(wires=[1])),
             qml.S(wires=[1]),
         )

@@ -108,8 +108,8 @@ class BasisStatePreparation(Operation):
         **Example**
 
         >>> qml.BasisStatePreparation.compute_decomposition(basis_state=[1, 1], wires=["a", "b"])
-        [PauliX(wires=['a']),
-        PauliX(wires=['b'])]
+        [X('a'),
+        X('b')]
         """
         if len(qml.math.shape(basis_state)) > 1:
             raise ValueError(

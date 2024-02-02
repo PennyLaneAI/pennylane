@@ -152,7 +152,7 @@ def adjoint(fn, lazy=True):
         wrapper class.
 
         >>> qml.adjoint(qml.PauliZ(0), lazy=False)
-        PauliZ(wires=[0])
+        Z(0)
         >>> qml.adjoint(qml.RX, lazy=False)(1.0, wires=0)
         RX(-1.0, wires=[0])
         >>> qml.adjoint(qml.S, lazy=False)(0)
@@ -220,7 +220,7 @@ class Adjoint(SymbolicOp):
     array([[1.-0.j, 0.-0.j],
        [0.-0.j, 0.-1.j]])
     >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
-    (PauliX(wires=[0]), 0.5)
+    (X(0), 0.5)
     >>> Adjoint(qml.RX(1.234, wires=0)).data
     (1.234,)
 
@@ -248,7 +248,7 @@ class Adjoint(SymbolicOp):
         >>> isinstance(op, qml.operation.Operation)
         False
         >>> Adjoint(qml.PauliX(0)) @ qml.PauliY(1)
-        Adjoint(PauliX)(wires=[0]) @ PauliY(wires=[1])
+        Adjoint(PauliX)(wires=[0]) @ Y(1)
 
     """
 

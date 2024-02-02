@@ -479,7 +479,7 @@ When `decomposition()` is called, a list of new operators equal to this one rais
   measured.
 
 * It is now possible to add `Observable` objects to the integer `0`, for example
-  `qml.PauliX(wires=[0]) + 0`.
+  `qml.X(0) + 0`.
   [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
 
 * Wires can now be passed as the final argument to an `Operator`, instead of requiring the wires to

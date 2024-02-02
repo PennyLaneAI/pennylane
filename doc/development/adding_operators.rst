@@ -72,7 +72,7 @@ The basic components of operators are the following:
 
      >>> op = qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
      >>> op.terms()
-     ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
+     ((1.0, 2.0), [X(0), Z(0)])
 
    * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
      and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
@@ -217,7 +217,7 @@ The new gate can now be created as follows:
 >>> op
 FlipAndRotate(0.1, wires=['q3', 'q1'])
 >>> op.decomposition()
-[PauliX(wires=['q1']), RX(0.1, wires=['q3'])]
+[X('q1'), RX(0.1, wires=['q3'])]
 >>> op.adjoint()
 FlipAndRotate(-0.1, wires=['q3', 'q1'])
 

@@ -280,7 +280,7 @@ def decompose(
     [CNOT(wires=[0, 1]),
     RX(1.2, wires=[0]),
     CNOT(wires=[0, 1]),
-    expval(PauliZ(wires=[0]))]
+    expval(Z(0))]
 
     If an operator cannot be decomposed into a supported operation, an error is raised:
 
@@ -412,7 +412,7 @@ def validate_measurements(
     ...     return isinstance(m, qml.measurements.CountsMP)
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
-    DeviceError: Measurement expval(PauliZ(wires=[0])) not accepted for analytic simulation on device.
+    DeviceError: Measurement expval(Z(0)) not accepted for analytic simulation on device.
     >>> tape = qml.tape.QuantumScript([], [qml.sample()], shots=10)
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
     DeviceError: Measurement sample(wires=[]) not accepted with finite shots on device

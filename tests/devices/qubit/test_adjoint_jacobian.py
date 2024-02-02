@@ -575,7 +575,7 @@ class TestAdjointVJP:
         x = np.array(0.654)
         y = np.array(1.221)
 
-        obs = [qml.expval(qml.PauliZ(wires=[0]))]
+        obs = [qml.expval(qml.Z(0))]
         qs = QuantumScript([qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0])
 
         actual = adjoint_vjp(qs, cotangents)
@@ -611,9 +611,9 @@ class TestAdjointVJP:
         y = np.array(1.221)
 
         obs = [
-            qml.expval(qml.PauliZ(wires=[0])),
-            qml.expval(qml.PauliY(wires=[1])),
-            qml.expval(qml.PauliX(wires=[0])),
+            qml.expval(qml.Z(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.X(0)),
         ]
         qs = QuantumScript([qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0])
 
@@ -635,7 +635,7 @@ class TestAdjointVJP:
         x = np.array(0.654)
         y = np.array(1.221)
 
-        obs = [qml.expval(qml.PauliZ(wires=[0]))]
+        obs = [qml.expval(qml.Z(0))]
         qs = QuantumScript(
             [qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0, 1]
         )
@@ -673,9 +673,9 @@ class TestAdjointVJP:
         y = np.array(1.221)
 
         obs = [
-            qml.expval(qml.PauliZ(wires=[0])),
-            qml.expval(qml.PauliY(wires=[1])),
-            qml.expval(qml.PauliX(wires=[0])),
+            qml.expval(qml.Z(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.X(0)),
         ]
         qs = QuantumScript(
             [qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0, 1]
@@ -702,9 +702,9 @@ class TestAdjointVJP:
         y = np.array(1.221)
 
         obs = [
-            qml.expval(qml.PauliZ(wires=[0])),
-            qml.expval(qml.PauliY(wires=[1])),
-            qml.expval(qml.PauliX(wires=[0])),
+            qml.expval(qml.Z(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.X(0)),
         ]
         qs = QuantumScript(
             [qml.RY(x, wires=[0]), qml.RX(y, wires=[1])], obs, trainable_params=[0, 1]

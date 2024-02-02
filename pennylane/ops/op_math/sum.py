@@ -61,7 +61,7 @@ def sum(*summands, id=None, lazy=True):
 
     >>> summed_op = qml.sum(qml.PauliX(0), qml.PauliZ(0))
     >>> summed_op
-    PauliX(wires=[0]) + PauliZ(wires=[0])
+    X(0) + Z(0)
     >>> summed_op.matrix()
     array([[ 1,  1],
            [ 1, -1]])
@@ -109,12 +109,12 @@ class Sum(CompositeOp):
 
     >>> summed_op = Sum(qml.PauliX(0), qml.PauliZ(0))
     >>> summed_op
-    PauliX(wires=[0]) + PauliZ(wires=[0])
+    X(0) + Z(0)
     >>> qml.matrix(summed_op)
     array([[ 1,  1],
            [ 1, -1]])
     >>> summed_op.terms()
-    ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
+    ([1.0, 1.0], (X(0), Z(0)))
 
     .. details::
         :title: Usage Details

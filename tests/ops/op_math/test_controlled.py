@@ -1791,9 +1791,9 @@ class TestCtrl:
     @pytest.mark.parametrize(
         "op, ctrl_wires, ctrl_values, expected_op",
         [
-            (qml.PauliX(wires=[0]), [1], [1], qml.CNOT([1, 0])),
+            (qml.X(0), [1], [1], qml.CNOT([1, 0])),
             (
-                qml.PauliX(wires=[2]),
+                qml.X(2),
                 [0, 1],
                 [1, 1],
                 qml.Toffoli(wires=[0, 1, 2]),
@@ -1805,13 +1805,13 @@ class TestCtrl:
                 qml.Toffoli(wires=[0, 1, 2]),
             ),
             (
-                qml.PauliX(wires=[0]),
+                qml.X(0),
                 [1],
                 [0],
                 qml.MultiControlledX(wires=[1, 0], control_values=[0], work_wires=["aux"]),
             ),
             (
-                qml.PauliX(wires=[2]),
+                qml.X(2),
                 [0, 1],
                 [1, 0],
                 qml.MultiControlledX(wires=[0, 1, 2], control_values=[1, 0], work_wires=["aux"]),
@@ -1823,7 +1823,7 @@ class TestCtrl:
                 qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1], work_wires=["aux"]),
             ),
             (
-                qml.PauliX(wires=[3]),
+                qml.X(3),
                 [0, 1, 2],
                 [1, 1, 1],
                 qml.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")),

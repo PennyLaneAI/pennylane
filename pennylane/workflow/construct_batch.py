@@ -256,8 +256,8 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         RX(1.23, wires=[0]),
         RX(-1.23, wires=[0]),
         SWAP(wires=[0, 1]),
-        PauliX(wires=[0]),
-        PauliX(wires=[0]),
+        X(0),
+        X(0),
         expval(  (1) [X0]
         + (1) [Y0])]
 
@@ -280,8 +280,8 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         >>> batch[0].circuit
         [RY(tensor(1., requires_grad=True), wires=[1]),
         RX(tensor(2., requires_grad=True), wires=[0]),
-        PauliX(wires=[0]),
-        PauliX(wires=[0]),
+        X(0),
+        X(0),
         expval(  (1) [X0]
         + (1) [Y0])]
 

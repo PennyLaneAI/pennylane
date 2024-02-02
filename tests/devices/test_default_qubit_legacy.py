@@ -950,14 +950,14 @@ class TestSample:
         dev.shots = 10
         dev._wires_measured = {0}
         dev._samples = dev.generate_samples()
-        s1 = dev.sample(qml.PauliZ(wires=[0]))
+        s1 = dev.sample(qml.Z(0))
         assert np.array_equal(s1.shape, (10,))
 
         dev.reset()
         dev.shots = 12
         dev._wires_measured = {1}
         dev._samples = dev.generate_samples()
-        s2 = dev.sample(qml.PauliZ(wires=[1]))
+        s2 = dev.sample(qml.Z(1))
         assert np.array_equal(s2.shape, (12,))
 
         dev.reset()
@@ -1399,7 +1399,7 @@ class TestTensorExpval:
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
 
-        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
+        obs = qml.Hermitian(A, wires=[0]) @ qml.I(1)
 
         dev.apply(
             [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],

@@ -193,7 +193,7 @@ def test_kernel(binary_matrix, result):
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
             ],
             4,
-            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qml.X(1), qml.X(2), qml.X(3)],
         ),
     ],
 )
@@ -446,7 +446,7 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
             ],
-            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qml.X(1), qml.X(2), qml.X(3)],
             (1, -1, -1),
             2,
             4,
@@ -457,7 +457,7 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
             ],
-            [qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qml.X(2), qml.X(3)],
             (-1, -1),
             2,
             6,
@@ -470,31 +470,31 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
                 qml.Hamiltonian(
                     [1.0],
                     [
-                        qml.PauliZ(wires=[0])
-                        @ qml.PauliZ(wires=[2])
-                        @ qml.PauliZ(wires=[4])
-                        @ qml.PauliZ(wires=[6])
-                        @ qml.PauliZ(wires=[8])
-                        @ qml.PauliZ(wires=[10])
+                        qml.Z(0)
+                        @ qml.Z(2)
+                        @ qml.Z(4)
+                        @ qml.Z(6)
+                        @ qml.Z(8)
+                        @ qml.Z(10)
                     ],
                 ),
                 qml.Hamiltonian(
                     [1.0],
                     [
-                        qml.PauliZ(wires=[1])
-                        @ qml.PauliZ(wires=[3])
-                        @ qml.PauliZ(wires=[5])
-                        @ qml.PauliZ(wires=[6])
-                        @ qml.PauliZ(wires=[8])
-                        @ qml.PauliZ(wires=[11])
+                        qml.Z(1)
+                        @ qml.Z(3)
+                        @ qml.Z(5)
+                        @ qml.Z(6)
+                        @ qml.Z(8)
+                        @ qml.Z(11)
                     ],
                 ),
             ],
             [
-                qml.PauliX(wires=[7]),
-                qml.PauliX(wires=[9]),
-                qml.PauliX(wires=[0]),
-                qml.PauliX(wires=[1]),
+                qml.X(7),
+                qml.X(9),
+                qml.X(0),
+                qml.X(1),
             ],
             (1, 1, 1, 1),
             4,
@@ -630,7 +630,7 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
             ],
-            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qml.X(1), qml.X(2), qml.X(3)],
             (1, -1, -1),
             (0, 1),
         ),
@@ -645,7 +645,7 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3)]),
             ],
-            [qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qml.X(2), qml.X(3)],
             (-1, -1),
             (2, 1),
         ),
@@ -660,7 +660,7 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
             ],
-            [qml.PauliX(wires=[4]), qml.PauliX(wires=[5])],
+            [qml.X(4), qml.X(5)],
             (-1, -1),
             (4, 4),
         ),
@@ -769,18 +769,18 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
 @pytest.mark.parametrize(
     ("operation", "op_gen"),
     [
-        (qml.PauliX(1), qml.Hamiltonian((np.pi / 2,), [qml.PauliX(wires=[1])])),
-        (qml.PauliY(2), qml.Hamiltonian((np.pi / 2,), [qml.PauliY(wires=[2])])),
-        (qml.PauliZ(3), qml.Hamiltonian((np.pi / 2,), [qml.PauliZ(wires=[3])])),
+        (qml.PauliX(1), qml.Hamiltonian((np.pi / 2,), [qml.X(1)])),
+        (qml.PauliY(2), qml.Hamiltonian((np.pi / 2,), [qml.Y(2)])),
+        (qml.PauliZ(3), qml.Hamiltonian((np.pi / 2,), [qml.Z(3)])),
         (
             qml.OrbitalRotation(np.pi, wires=[0, 1, 2, 3]),
             qml.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
-                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
-                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
+                    qml.X(0) @ qml.Z(1) @ qml.Y(2),
+                    qml.Y(0) @ qml.Z(1) @ qml.X(2),
+                    qml.X(1) @ qml.Z(2) @ qml.Y(3),
+                    qml.Y(1) @ qml.Z(2) @ qml.X(3),
                 ],
             ),
         ),
@@ -789,11 +789,11 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
             qml.Hamiltonian(
                 (0.5, -0.25, -0.25, -0.25, -0.25),
                 [
-                    qml.Identity(wires=[0]) @ qml.Identity(wires=[1]),
-                    qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]),
-                    qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]),
-                    qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]),
+                    qml.I(0) @ qml.I(1),
+                    qml.I(0) @ qml.Z(1),
+                    qml.Z(0) @ qml.I(1),
+                    qml.X(0) @ qml.X(1),
+                    qml.Y(0) @ qml.Y(1),
                 ],
             ),
         ),
@@ -906,7 +906,7 @@ def test_taper_ops_opmath_error():
     ("operation", "op_wires", "op_gen"),
     [
         (qml.RZ, [3], None),
-        (qml.RY, [2], qml.Hamiltonian([-0.5], [qml.PauliY(wires=[2])])),
+        (qml.RY, [2], qml.Hamiltonian([-0.5], [qml.Y(2)])),
         (qml.SingleExcitation, [0, 2], None),
         (
             qml.OrbitalRotation,
@@ -914,10 +914,10 @@ def test_taper_ops_opmath_error():
             lambda wires: qml.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
-                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
-                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
+                    qml.X(0) @ qml.Z(1) @ qml.Y(2),
+                    qml.Y(0) @ qml.Z(1) @ qml.X(2),
+                    qml.X(1) @ qml.Z(2) @ qml.Y(3),
+                    qml.Y(1) @ qml.Z(2) @ qml.X(3),
                 ],
             ),
         ),
@@ -1039,10 +1039,10 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
             lambda: qml.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[2]),
-                    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[2]),
-                    qml.PauliX(wires=[1]) @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[1]) @ qml.PauliX(wires=[3]),
+                    qml.X(0) @ qml.Y(2),
+                    qml.Y(0) @ qml.X(2),
+                    qml.X(1) @ qml.Y(3),
+                    qml.Y(1) @ qml.X(3),
                 ],
             ),
             "Generator function provided with 'op_gen' should have 'wires' as its only required keyword argument.",

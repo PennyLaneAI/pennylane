@@ -155,7 +155,7 @@ class Select(Operation):
         >>> op.decomposition()
         [MultiControlledX(wires=[0, 1, 2], control_values="00"),
          MultiControlledX(wires=[0, 1, 3], control_values="01"),
-         Controlled(PauliY(wires=[2]), control_wires=[0, 1], control_values=[True, False]),
+         Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
         return self.compute_decomposition(self.ops, control=self.control)
@@ -189,7 +189,7 @@ class Select(Operation):
         >>> qml.Select.compute_decomposition(ops, control=[0,1])
         [MultiControlledX(wires=[0, 1, 2], control_values="00"),
          MultiControlledX(wires=[0, 1, 3], control_values="01"),
-         Controlled(PauliY(wires=[2]), control_wires=[0, 1], control_values=[True, False]),
+         Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
         states = list(itertools.product([0, 1], repeat=len(control)))

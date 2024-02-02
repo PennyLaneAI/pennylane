@@ -114,7 +114,7 @@ class QuantumScript:
     RY(0.543, wires=[0]),
     CNOT(wires=[0, 'a']),
     RX(0.133, wires=['a']),
-    expval(PauliZ(wires=[0]))]
+    expval(Z(0))]
     >>> qscript.operations
     [BasisState(array([1, 1]), wires=[0, "a"]),
     RX(0.432, wires=[0]),
@@ -122,7 +122,7 @@ class QuantumScript:
     CNOT(wires=[0, 'a']),
     RX(0.133, wires=['a'])]
     >>> qscript.measurements
-    [expval(PauliZ(wires=[0]))]
+    [expval(Z(0))]
 
     Iterating over the quantum script can be done by:
 
@@ -133,7 +133,7 @@ class QuantumScript:
     RY(0.543, wires=[0])
     CNOT(wires=[0, 'a'])
     RX(0.133, wires=['a'])
-    expval(PauliZ(wires=[0]))'
+    expval(Z(0))'
 
     Quantum scripts also support indexing and length determination:
 
@@ -163,7 +163,7 @@ class QuantumScript:
 
     >>> qscript = QuantumScript((qml.PauliX(i) for i in range(3)))
     >>> qscript.circuit
-    [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])]
+    [X(0), X(1), X(2)]
 
     """
 
@@ -290,7 +290,7 @@ class QuantumScript:
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.observables
-        [expval(PauliZ(wires=[0]))]
+        [expval(Z(0))]
         """
         # TODO: modify this property once devices
         # have been refactored to accept and understand recieving
@@ -317,7 +317,7 @@ class QuantumScript:
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.measurements
-        [expval(PauliZ(wires=[0]))]
+        [expval(Z(0))]
         """
         return self._measurements
 
@@ -901,8 +901,8 @@ class QuantumScript:
 
         >>> new_qscript = qscript.expand(depth=2)
         >>> new_qscript.operations
-        [PauliX(wires=[0]),
-        PauliX(wires=['a']),
+        [X(0),
+        X('a'),
         RZ(0.543, wires=[0]),
         RY(0.1, wires=[0]),
         RZ(0.4, wires=[0]),
@@ -1149,13 +1149,13 @@ class QuantumScript:
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX("a")], [qml.expval(qml.PauliZ("b"))])
         >>> circuit.map_to_standard_wires().circuit
-        [PauliX(wires=[0]), expval(PauliZ(wires=[1]))]
+        [X(0), expval(Z(1))]
 
         If any measured wires are not in any operations, they will be mapped last:
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX(1)], [qml.probs(wires=[0, 1])])
         >>> circuit.map_to_standard_wires().circuit
-        [PauliX(wires=[0]), probs(wires=[1, 0])]
+        [X(0), probs(wires=[1, 0])]
 
         If no wire-mapping is needed, then the returned circuit *is* the inputted circuit:
 

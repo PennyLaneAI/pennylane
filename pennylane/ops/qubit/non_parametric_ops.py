@@ -452,7 +452,7 @@ class PauliY(Observable, Operation):
         **Example**
 
         >>> print(qml.PauliY.compute_diagonalizing_gates(wires=[0]))
-        [PauliZ(wires=[0]), S(wires=[0]), Hadamard(wires=[0])]
+        [Z(0), S(wires=[0]), Hadamard(wires=[0])]
         """
         return [
             PauliZ(wires=wires),
@@ -1370,7 +1370,7 @@ class ECR(Operation):
            >>> print(qml.ECR.compute_decomposition((0,1)))
 
 
-        [PauliZ(wires=[0]),
+        [Z(0),
          CNOT(wires=[0, 1]),
          SX(wires=[1]),
          RX(1.5707963267948966, wires=[0]),

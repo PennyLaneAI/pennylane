@@ -1218,7 +1218,7 @@ class TestExpval:
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = qml.device("default.qubit.tf", wires=2)
 
-        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
+        obs = qml.Hermitian(A, wires=[0]) @ qml.I(1)
 
         dev.apply(
             [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
@@ -1267,7 +1267,7 @@ class TestVar:
 
         with qml.queuing.AnnotatedQueue() as q:
             _ = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
-            _ = [qml.var(qml.PauliZ(wires=[0]))]
+            _ = [qml.var(qml.Z(0))]
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)

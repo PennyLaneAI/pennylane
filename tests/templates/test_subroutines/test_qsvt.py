@@ -130,9 +130,9 @@ class TestQSVT:
                 [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
                 [
                     qml.RZ(0.1, wires=[0]),
-                    qml.PauliZ(wires=[0]),
+                    qml.Z(0),
                     qml.RY(0.2, wires=[0]),
-                    qml.adjoint(qml.PauliZ(wires=[0])),
+                    qml.adjoint(qml.Z(0)),
                     qml.RZ(0.3, wires=[1]),
                 ],
             ),
@@ -152,7 +152,7 @@ class TestQSVT:
         lst_projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
         results = [
             qml.PCPhase(0.2, dim=1, wires=[0]),
-            qml.PauliX(wires=[0]),
+            qml.X(0),
             qml.PCPhase(0.3, dim=1, wires=[0]),
         ]
 

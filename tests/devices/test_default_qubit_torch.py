@@ -1312,7 +1312,7 @@ class TestExpval:
         )
         A = A.to(device=torch_device)
 
-        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
+        obs = qml.Hermitian(A, wires=[0]) @ qml.I(1)
 
         dev.apply(
             [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
@@ -1388,7 +1388,7 @@ class TestVar:
         # test correct variance for <Z> of a rotated state
         with qml.queuing.AnnotatedQueue() as q:
             _ = [qml.RX(theta, wires=0), qml.RY(phi, wires=0)]
-            _ = [qml.var(qml.PauliZ(wires=[0]))]
+            _ = [qml.var(qml.Z(0))]
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)

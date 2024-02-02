@@ -88,7 +88,7 @@ def circuit_measure_multiple_with_max_twice():
     return (
         qml.expval(qml.PauliZ(wires=0)),
         qml.probs(wires=[0, 1, 2]),
-        qml.var(qml.PauliZ(wires=[1]) @ qml.PauliZ([2])),
+        qml.var(qml.Z(1) @ qml.PauliZ([2])),
     )
 
 
@@ -195,7 +195,7 @@ class TestCircuitGraph:
             qml.RY(0.35, wires=[1]),
             qml.RX(0.43, wires=[0]),
             qml.CNOT(wires=[0, 1]),
-            qml.PauliX(wires=[1]),
+            qml.X(1),
             qml.CNOT(wires=[2, 0]),
         ]
 

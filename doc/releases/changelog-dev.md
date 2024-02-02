@@ -20,7 +20,7 @@
   @qml.qnode(dev)
   def circuit():
       qml.CNOT(wires=[0, 1])
-      qml.PauliX(wires=[1])
+      qml.X(1)
       qml.ISWAP(wires=[0, 1])
       qml.Hadamard(wires=[0])
       return qml.state()
@@ -47,7 +47,7 @@
 
   ```pycon
   >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
-  2j*(PauliZ(wires=[0]))
+  2j*(Z(0))
   ```
 
   We can return a `PauliSentence` instance by setting `pauli=True`.
@@ -96,8 +96,8 @@
 
    ```pycon
    >>> print(qubit_ham)
-   (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
-   ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
+   (-0.25j*(Y(0))) + ((-0.25+0j)*(X(0) @ Z(1))) +
+   ((0.25+0j)*(X(0))) + (0.25j*(Y(0) @ Z(1)))
    ```
 
 

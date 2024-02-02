@@ -109,7 +109,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(wires=[0])
+            qml.X(0)
             qml.BasisRotation(
                 wires=range(2),
                 unitary_matrix=weights,
