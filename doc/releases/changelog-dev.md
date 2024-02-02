@@ -220,6 +220,14 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Change the entry point convention for Catalyst.
+  [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
+  The [documentation](https://packaging.python.org/en/latest/specifications/entry-points/#data-model) states that:
+  "Within a distribution, entry point names should be unique."
+  To specify entry points for multiple compilers, the entry point name has been changed from:
+  `qjit = importable.module:object.attr` to `compilername.qjit = importable.module:object.attr`
+  This allows multiple qjit entry points to be defined per distribution.
+
 * Make PennyLane code compatible with the latest version of `black`.
   [(#5112)](https://github.com/PennyLaneAI/pennylane/pull/5112)
   [(#5119)](https://github.com/PennyLaneAI/pennylane/pull/5119)
@@ -404,6 +412,7 @@ Xiaoran Li,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Pablo Antonio Moreno Casares,
+Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
