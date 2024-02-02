@@ -891,6 +891,15 @@ class TestProperties:
         ),
     )
 
+    def test_pauli_rep_order(self):
+        """Lightning qubit tests are relying on the specific order of the pauli rep keys.
+        If the order of pauli word keys is changed, lightning tests must be changed as well.
+        """
+        op = qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
+        pw = list(op.pauli_rep.keys())[0]
+        assert list(pw.keys()) == [1, 0, 2]
+        assert list(pw.values()) == ["Y", "X", "Z"]
+
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
         """Test that the pauli rep gives the expected result."""
