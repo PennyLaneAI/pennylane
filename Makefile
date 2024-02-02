@@ -95,5 +95,5 @@ lock:
 	@poetry export -f requirements.txt -o doc/requirements.txt --without-hashes --without-urls --with doc,torch,jax,qchem,data
 	@echo "Hacking in un-poetic changes to doc/requirements.txt:"
 	@cat doc/.extra-requirements.txt >> doc/requirements.txt
-	@sed -i '' 's/torch==2\.1\.0/torch==1.9.0/g' doc/requirements.txt
-	@sed -i '' 's/ml-dtypes==0\.3\.2/ml-dtypes==0.2.0/g' doc/requirements.txt
+	@grep "torch==2.2.0" doc/requirements.txt > /dev/null && sed -i '' 's/torch==2\.2\.0/torch==1.9.0/g' doc/requirements.txt
+	@grep "ml-dtypes==0.3.2" doc/requirements.txt > /dev/null && sed -i '' 's/ml-dtypes==0\.3\.2/ml-dtypes==0.2.0/g' doc/requirements.txt

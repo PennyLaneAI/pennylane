@@ -127,8 +127,8 @@ jaxlib = "^0.4.14"
 
 [tool.poetry.group.torch.dependencies]
 torch = [
-    { version = "2.1.0", source = "PyPI", platform = "darwin" },
-    { version = "2.1.0+cpu", source = "pytorch-cpu", platform = "!=darwin" },
+    { version = "2.2.0", source = "PyPI", platform = "darwin" },
+    { version = "2.2.0+cpu", source = "pytorch-cpu", platform = "!=darwin" },
 ]
 
 [tool.poetry.group.external.dependencies]
