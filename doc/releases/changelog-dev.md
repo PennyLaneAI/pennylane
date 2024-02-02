@@ -190,6 +190,9 @@
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
+* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+  [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
+
 <h3>Breaking changes 💔</h3>
 
 * Make PennyLane code compatible with the latest version of `black`.
@@ -361,6 +364,7 @@ Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
+Eugenio Gigante,
 Diego Guala,
 Soran Jahangiri,
 Korbinian Kottmann,
