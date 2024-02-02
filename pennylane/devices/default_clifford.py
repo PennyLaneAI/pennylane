@@ -917,10 +917,15 @@ class DefaultClifford(Device):
                 if not expectation:
                     prob_res[tgt_index] /= 2.0
                 else:
-                    nope_idx = np.where(
-                        np.squeeze(np.all(tgt_states[:, :idx] == tgt_state[:idx], axis=-1))
-                        & tgt_states[:, idx] != outcome
-                    )[0] if idx else np.where(tgt_states[:, idx] != outcome)[0]
+                    nope_idx = (
+                        np.where(
+                            np.squeeze(np.all(tgt_states[:, :idx] == tgt_state[:idx], axis=-1))
+                            & tgt_states[:, idx]
+                            != outcome
+                        )[0]
+                        if idx
+                        else np.where(tgt_states[:, idx] != outcome)[0]
+                    )
                     nope_idx = np.setdiff1d(nope_idx, visited_probs)
                     prob_res[nope_idx] = 0.0
                     visited_probs.extend(tgt_integs[nope_idx])
