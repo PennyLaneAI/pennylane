@@ -169,7 +169,7 @@ class DefaultClifford(Device):
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
         target_states (array[int]):  Target basis state(s) for which analytical probabilities should be computed with
             :func:`qml.probs <pennylane.probs>`. By default, if no wires are provided, probabilities are computed
-            for the complete computational space up to ``24`` qubits.
+            for the complete computational space up to ``20`` qubits.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
@@ -260,7 +260,7 @@ class DefaultClifford(Device):
 
         As the ``default.clifford`` device supports executing quantum circuits with a large number of qubits,
         we restrict the ability to compute the ``analytical`` probabilities for `all` computational basis
-        states at once to maintain computational efficiency when system size scales beyond ``24`` qubits.
+        states at once to maintain computational efficiency when system size scales beyond ``20`` qubits.
         Instead, one can sepcify the target basis state(s), i.e., subset `basis state(s)` of interest,
         either during the initialization of device via the ``target_states`` keyword argument,
         or at any other stage before executing the circuit by setting the ``probability_target``
@@ -271,29 +271,31 @@ class DefaultClifford(Device):
             import pennylane as qml
             import numpy as np
 
-            basis_states = np.array([[0, 0], [1, 0]])
+            # target states - |0000> and |1111>
+            basis_states = np.array([[0, 0, 0, 0], [1, 1, 1, 1]])
             dev = qml.device("default.clifford", target_states = basis_states)
 
         After doing this, one can simply use the :func:`qml.probs <pennylane.probs>` with its usual arguments
-        and probabilities for the specified target states would be computed and returned.
+        and probabilities for the specified target states would be computed and returned. We test this for a
+        circuit that prepares the `n`-qubit Greenberger-Horne-Zeilinger state (GHZ state) state. This means
+        that the probabilities for the basis states $|0\rangle^{\otimes n}$ and $|1\rangle^{\otimes n}$
+        should be :math:`0.5`. 
 
         .. code-block:: python
 
-            wires = np.random.randint(3, size=(10000, 3))
-
+            num_wires = 4
             @qml.qnode(dev)
             def circuit():
-                for w in wires:
-                    qml.PauliX(w[0])
-                    qml.PauliY(w[1])
-                    qml.PauliZ(w[2])
-                return qml.probs(op = qml.PauliX(0) @ qml.PauliY(1))
+                qml.Hadamard(wires=[0])
+                for idx in range(num_wires):
+                    qml.CNOT(wires=[idx, idx+1])
+                return qml.probs()
 
         >>> circuit()
-        tensor([0.25, 0.25], requires_grad=True)
-        >>> dev.probability_target = np.array([1, 1])
+        tensor([0.5, 0.5], requires_grad=True)
+        >>> dev.probability_target = np.array([[0, 1, 0, 1], [1, 0, 1, 0]])
         >>> circuit()
-        tensor([0.25], requires_grad=True)
+        tensor([0.0, 0.0], requires_grad=True)
 
         .. note::
 
@@ -847,19 +849,19 @@ class DefaultClifford(Device):
         mobs_wires = meas.obs.wires if meas.obs else meas.wires
         meas_wires = mobs_wires if mobs_wires else circuit.wires
 
-        if len(meas_wires) > 24 and self._prob_states is None and self._tableau:
+        if len(meas_wires) > 20 and self._prob_states is None and self._tableau:
             raise ValueError(
                 "In order to maintain computational efficiency, \
                 with ``tableau=True``, the clifford device supports \
                 returning probability only for selected target \
-                computational basis states made of more than 24 qubits. \
+                computational basis states made of more than 20 qubits. \
                 Please use the `probability_target` property to set them."
             )
 
         if self._prob_states is None:
             num_wires = len(meas_wires)
             basis_vec = np.arange(2**num_wires)[:, np.newaxis]
-            self._prob_states = (((basis_vec & (1 << np.arange(num_wires)))) > 0).astype(int)
+            self._prob_states = (((basis_vec & (1 << np.arange(num_wires)[::-1]))) > 0).astype(int)
 
         # TODO: We might be able to skip the inverse done below
         # (as the distribution should be independent of inverse)
@@ -896,20 +898,39 @@ class DefaultClifford(Device):
         else:
             meas_wires = meas_wires[: tgt_states.shape[1]]
 
-        # Iterate over the measured qubits and post-select possible outcome
-        # This should now scaled as O(M * N), where N is the number of measured qubits,
-        # and M is the cost of peeking and postselection of each qubit in computational basis.
-        prob_res = np.ones(tgt_states.shape[0])
-        for wire in meas_wires:
-            expectation = circuit_simulator.peek_z(wire)
-            # (Eig --> Res) | -1 --> 1 | 1 --> 0 | 0 --> 0 / 1 |
-            outcome = int(0.5 * (1 - expectation))
-            if not expectation:
-                prob_res /= 2.0
-            else:
-                prob_res[np.where(outcome != tgt_states[:, wire])[0]] = 0.0
-            circuit_simulator.postselect_z(wire, desired_value=outcome)
+        # Maintain a representaiton of basis states to build a visit-array
+        tgt_integs = np.array([int("".join(map(str, tgt_state)), 2) for tgt_state in tgt_states])
 
+        # Iterate over the required basis states and for each of them compute the probability
+        # If an impossible branch occur keep a note of it via a visit-array
+        # Worst case complexity O(B * M * N), where N is #measured_qubits and B is basis states.
+        visited_probs = []
+        prob_res = np.ones(tgt_states.shape[0])
+        for tgt_index, (tgt_integ, tgt_state) in enumerate(zip(tgt_integs, tgt_states)):
+            if tgt_integ in visited_probs:
+                continue
+            prob_sim = circuit_simulator.copy()
+            for idx, wire in enumerate(meas_wires):
+                expectation = prob_sim.peek_z(wire)
+                # (Eig --> Res) | -1 --> 1 | 1 --> 0 | 0 --> 0 / 1 |
+                outcome = int(0.5 * (1 - expectation))
+                if not expectation:
+                    prob_res[tgt_index] /= 2.0
+                else:
+                    nope_idx = np.where(
+                        np.squeeze(np.all(tgt_states[:, :idx] == tgt_state[:idx], axis=-1))
+                        & tgt_states[:, idx] != outcome
+                    )[0] if idx else np.where(tgt_states[:, idx] != outcome)[0]
+                    nope_idx = np.setdiff1d(nope_idx, visited_probs)
+                    prob_res[nope_idx] = 0.0
+                    visited_probs.extend(tgt_integs[nope_idx])
+
+                    if tgt_state[idx] != outcome:
+                        prob_res[tgt_index] = 0.0
+                        break
+
+                prob_sim.postselect_z(wire, desired_value=tgt_state[idx])
+            visited_probs.append(tgt_integ)
         return prob_res
 
     def _sample_expectation(self, meas, stim_circuit, shots, seed):
