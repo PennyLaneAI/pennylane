@@ -348,6 +348,9 @@
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/) 
   [(#5148)](https://github.com/PennyLaneAI/pennylane/pull/5148)
 
+* `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
+  [(#5149)](https://github.com/PennyLaneAI/pennylane/pull/5149)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
