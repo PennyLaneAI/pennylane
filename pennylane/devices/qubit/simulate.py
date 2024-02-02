@@ -108,7 +108,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
     return state, shots
 
 
-def get_final_state(circuit, debugger=None, interface=None):
+def get_final_state(circuit, debugger=None, interface=None, initial_state=None):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -124,13 +124,19 @@ def get_final_state(circuit, debugger=None, interface=None):
             whether the state has a batch dimension.
 
     """
-    circuit = circuit.map_to_standard_wires()
+    if initial_state is None:
+        circuit = circuit.map_to_standard_wires()
 
     prep = None
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
+    if initial_state is None:
+        state = create_initial_state(
+            sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface]
+        )
+    else:
+        state = initial_state
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -155,15 +161,18 @@ def get_final_state(circuit, debugger=None, interface=None):
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or (op.batch_size is not None)
 
-    for _ in range(len(circuit.wires) - len(circuit.op_wires)):
-        # if any measured wires are not operated on, we pad the state with zeros.
-        # We know they belong at the end because the circuit is in standard wire-order
-        state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
+    if initial_state is None:
+        for _ in range(len(circuit.wires) - len(circuit.op_wires)):
+            # if any measured wires are not operated on, we pad the state with zeros.
+            # We know they belong at the end because the circuit is in standard wire-order
+            state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
 
     return state, is_state_batched, measurement_values
 
 
-def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
+def measure_final_state(
+    circuit, state, is_state_batched, rng=None, prng_key=None, initial_state=None
+) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
@@ -184,8 +193,8 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     Returns:
         Tuple[TensorLike]: The measurement results
     """
-
-    circuit = circuit.map_to_standard_wires()
+    if initial_state is None:
+        circuit = circuit.map_to_standard_wires()
 
     if not circuit.shots:
         # analytic case
@@ -257,13 +266,128 @@ def simulate(
 
     """
     if circuit.shots and has_mid_circuit_measurements(circuit):
-        return simulate_native_mcm(
+        return simulate_tree_mcm(
             circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
         )
     state, is_state_batched, _ = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+
+
+# pylint: disable=too-many-arguments
+def simulate_tree_mcm(
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+    initial_state=None,
+) -> Result:
+    """Simulate a single quantum script with native mid-circuit measurements.
+
+    Args:
+        circuit (QuantumTape): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
+        debugger (_Debugger): The debugger to use
+        interface (str): The machine learning interface to create the initial state with
+        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the pre-rotated state. Used to pass the state between forward passes and vjp calculations.
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+    """
+
+    def circuit_up_to_first_mcm(circuit):
+        import copy
+
+        if not has_mid_circuit_measurements(circuit):
+            return circuit, None
+        circuit_base = copy.deepcopy(circuit)
+        for i, op in enumerate(circuit.operations):
+            if isinstance(op, MidMeasureMP):
+                break
+        circuit_base._ops = circuit_base._ops[0:i]
+        circuit_base._measurements = [
+            qml.counts(wires=op.wires) if op.obs is None else qml.sample(op=op.obs)
+        ]
+        circuit_next = copy.deepcopy(circuit)
+        circuit_next._ops = circuit_next._ops[i + 1 :]
+
+        return circuit_base, circuit_next
+
+    circuit_base, circuit_next = circuit_up_to_first_mcm(circuit)
+    state, is_state_batched, _ = get_final_state(
+        circuit_base, debugger=debugger, interface=interface, initial_state=initial_state
+    )
+    measurements = measure_final_state(
+        circuit_base,
+        state,
+        is_state_batched,
+        rng=rng,
+        prng_key=prng_key,
+        initial_state=initial_state,
+    )
+
+    if circuit_next is None:
+        return measurements
+
+    counts = measurements
+
+    def branch_state(state, wire, branch):
+        import copy
+
+        axis = wire.toarray()[0]
+        slices = [slice(None)] * state.ndim
+        slices[axis] = int(not branch)
+        state = copy.deepcopy(state)
+        state[tuple(slices)] = 0.0
+        state_norm = np.linalg.norm(state)
+        if state_norm < 1.0e-15:  # pragma: no cover
+            return None
+        return state / state_norm
+
+    def branch_measurement(circuit_base, circuit_next, counts, state, branch):
+        wire = circuit_base._measurements[0].wires
+        new_state = branch_state(state, wire, int(branch))
+        if new_state is None:
+            return None
+        circuit_next._shots = qml.measurements.Shots(int(counts[branch]))
+        return simulate_tree_mcm(
+            circuit_next,
+            rng=rng,
+            prng_key=prng_key,
+            debugger=debugger,
+            interface=interface,
+            initial_state=new_state,
+        )
+
+    measurements = [
+        branch_measurement(circuit_base, circuit_next, counts, state, branch)
+        for branch in counts.keys()
+    ]
+    measurements = dict(
+        (
+            (branch, (count, value))
+            for branch, count, value in zip(counts.keys(), counts.values(), measurements)
+        )
+    )
+
+    def combine_measurements(measurements):
+        import functools
+
+        cum_value = 0
+        total_counts = 0
+        for v in measurements.values():
+            cum_value += v[0] * v[1]
+            total_counts += v[0]
+        return cum_value / total_counts
+
+    return combine_measurements(measurements)
 
 
 # pylint: disable=too-many-arguments
