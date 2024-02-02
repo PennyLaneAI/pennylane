@@ -332,7 +332,7 @@ def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
     """
     new_measurements = []
     for m in circuit.measurements:
-        if not has_measurement_values(m):
+        if not m.mv:
             if isinstance(m, VarianceMP) and m.mv is None:
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
@@ -421,18 +421,6 @@ def has_mid_circuit_measurements(
     return any(isinstance(op, MidMeasureMP) for op in circuit._ops)
 
 
-def has_measurement_values(measurement):
-    """Returns True if a measurement has a non-trivial measurement value and False otherwise.
-
-    Args:
-        measurement (MeasurementProcess): A QuantumScript
-
-    Returns:
-        bool: Whether the measurement contains a non-trivial measurement value
-    """
-    return measurement.mv is not None
-
-
 def find_measurement_values(
     circuit: qml.tape.QuantumScript,
 ):
@@ -444,7 +432,7 @@ def find_measurement_values(
     Returns:
         List[int]: Indices of measurements with a non-trivial measurement value.
     """
-    return [i for i, m in enumerate(circuit.measurements) if has_measurement_values(m)]
+    return [i for i, m in enumerate(circuit.measurements) if m.mv]
 
 
 def find_not_measurement_values(
@@ -458,7 +446,7 @@ def find_not_measurement_values(
     Returns:
         List[int]: Indices of measurements with a trivial measurement value.
     """
-    return [i for i, m in enumerate(circuit.measurements) if not has_measurement_values(m)]
+    return [i for i, m in enumerate(circuit.measurements) if not m.mv]
 
 
 def parse_native_mid_circuit_measurements(
