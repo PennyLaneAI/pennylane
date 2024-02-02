@@ -43,7 +43,8 @@ def custom_measurement_process(device, spy):
             new_res = [new_res]
         for old, new in zip(old_res, new_res):
             assert old.keys() == new.keys()
-            assert qml.math.allequal(list(old.values()), list(new.values()))
+            for key, val in new.items():
+                assert old[key] == val
 
 
 class TestCountsIntegration:
