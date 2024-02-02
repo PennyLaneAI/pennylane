@@ -1702,9 +1702,6 @@ class TestCtrl:
 
         ctrl_wires = ctrl_wires + ["a", "b", "c"]
 
-        if isinstance(op, qml.PhaseShift):
-            # TODO: remove this special case once ControlledGlobalPhase is implemented.
-            pytest.skip("PhaseShift has its temporary custom logic.")
         if isinstance(op, qml.QubitUnitary):
             pytest.skip("ControlledQubitUnitary can accept any number of control wires.")
         elif isinstance(op, Controlled):
@@ -1741,10 +1738,6 @@ class TestCtrl:
 
         if isinstance(ctrl_op, qml.ControlledQubitUnitary):
             pytest.skip("ControlledQubitUnitary has its own logic")
-
-        if isinstance(ctrl_op, qml.ControlledPhaseShift):
-            # TODO: remove this special case once ControlledGlobalPhase is implemented
-            pytest.skip("ControlledPhaseShift has its own logic")
 
         expected_base = op.base if isinstance(op, Controlled) else op
         base_ctrl_wires = (
@@ -1859,25 +1852,6 @@ class TestCtrl:
             control=[3],
         )
         expected = qml.MultiControlledX(wires=[3, 2, 1, 0], control_values=[1, 0, 1])
-        assert op == expected
-
-    def test_controlled_phase_shift_special_logic(self):
-        """Tests special logic for PhaseShift"""
-
-        # TODO: remove this special case once ControlledGlobalPhase is implemented.
-        # Tests special logic that wraps the phase shift in a controlled version.
-        op1 = qml.ctrl(qml.PhaseShift(0.123, wires=2), control=[0, 1])
-        expected = Controlled(qml.ControlledPhaseShift(0.123, wires=[1, 2]), control_wires=[0])
-        assert op1 == expected
-
-        op2 = qml.ctrl(qml.ControlledPhaseShift(0.123, wires=[1, 2]), control=[0])
-        assert op2 == expected
-
-        # Tests that special logic is not triggered when the control value is False.
-        op = qml.ctrl(qml.PhaseShift(0.123, wires=2), control=[0, 1], control_values=[True, False])
-        expected = Controlled(
-            qml.PhaseShift(0.123, wires=[2]), control_wires=[0, 1], control_values=[True, False]
-        )
         assert op == expected
 
 
@@ -2009,7 +1983,7 @@ class TestTapeExpansionWithControlled:
 
         tape = QuantumScript.from_queue(q_tape)
         assert tape.expand(depth=1).circuit == [
-            Controlled(qml.ControlledPhaseShift(np.pi / 2, wires=[7, 0]), control_wires=[3])
+            Controlled(qml.PhaseShift(np.pi / 2, wires=[0]), control_wires=[3, 7])
         ]
 
         assert tape.expand(depth=2).circuit == [
@@ -2110,7 +2084,7 @@ class TestTapeExpansionWithControlled:
             for i, j in enumerate(ctrl_val):
                 if not bool(j):
                     exp_op.append(qml.PauliX(ctrl_wires[i]))
-            exp_op.append(Controlled(qml.ControlledPhaseShift(pnp.pi / 2, [7, 0]), 3))
+            exp_op.append(Controlled(qml.PhaseShift(pnp.pi / 2, [0]), [3, 7]))
             for i, j in enumerate(ctrl_val):
                 if not bool(j):
                     exp_op.append(qml.PauliX(ctrl_wires[i]))
