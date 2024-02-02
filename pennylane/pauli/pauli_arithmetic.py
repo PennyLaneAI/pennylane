@@ -396,6 +396,7 @@ class PauliWord(dict):
 
     @property
     def pauli_rep(self):
+        """Trivial pauli representation"""
         return PauliSentence({self: 1})
 
     @property
@@ -794,6 +795,7 @@ class PauliSentence(dict):
 
     @property
     def pauli_rep(self):
+        """Trivial pauli representation"""
         return self
 
     @property
