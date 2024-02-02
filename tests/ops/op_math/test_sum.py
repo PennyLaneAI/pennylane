@@ -197,7 +197,7 @@ class TestInitialization:
         coeffs, ops1 = op.terms()
         assert coeffs == coeffs_true
         assert ops1 == ops_true
-    
+
     coeffs_ = [1.0, 1.0, 1.0, 3.0, 4.0, 4.0, 5.0]
     h6 = qml.sum(
         qml.s_prod(2.0, qml.prod(qml.Hadamard(0), qml.PauliZ(10))),
@@ -213,7 +213,7 @@ class TestInitialization:
         h6,
     ]
     Hamiltonian_mixed = qml.dot(coeffs_, ops_)
-    
+
     SUM_TERMS_OP_PAIRS_NONPAULI = (  # all operands have pauli representation
         (
             qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))),
