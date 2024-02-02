@@ -26,11 +26,6 @@ from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def _sample_to_str(sample):
-    """Converts a bit-array to a string. For example, ``[0, 1]`` would become '01'."""
-    return "".join(map(str, sample))
-
-
 def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
@@ -305,16 +300,16 @@ class CountsMP(SampleMeasurement):
 
             # remove nans
             mask = qml.math.isnan(samples)
-            nsam = shape[-1]
+            num_wires = shape[-1]
             if np.any(mask):
                 mask = np.logical_not(np.any(mask, axis=tuple(range(1, samples.ndim))))
                 samples = samples[mask, ...]
 
             # convert to string
             def convert(x):
-                return f"{x:064b}"[-nsam:]
+                return f"{x:064b}"[-num_wires:]
 
-            exp2 = 2 ** np.arange(nsam - 1, -1, -1)
+            exp2 = 2 ** np.arange(num_wires - 1, -1, -1)
             samples = np.einsum("...i,i", samples, exp2)
             new_shape = samples.shape
             samples = qml.math.cast_like(samples, qml.math.int8(0))
