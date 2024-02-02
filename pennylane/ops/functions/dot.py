@@ -98,6 +98,7 @@ def dot(
     if any(callable(c) for c in coeffs):
         return ParametrizedHamiltonian(coeffs, ops)
 
+    # User-specified Pauli route
     if pauli:
         if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
             # Use pauli arithmetic when ops are just PauliWord and PauliSentence instances
@@ -105,9 +106,13 @@ def dot(
 
         # Else, transform all ops to pauli sentences
         return _dot_with_ops_and_paulis(coeffs, ops)
+    
+    # Try to still do Pauli route if it is possible
+    if all(op.pauli_rep for op in ops):
+        return _dot_with_ops_and_paulis(coeffs, ops).operation()
 
-    if any(isinstance(op, (PauliWord, PauliSentence)) for op in ops):
-        ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
+    # Convert possible PauliWord and PauliSentence instances to operation
+    ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
     # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
     ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
