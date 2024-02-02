@@ -109,6 +109,7 @@ from .controlled_ops import (
     CRZ,
     CY,
     CZ,
+    MultiControlledX,
 )
 from .decompositions import one_qubit_decomposition, two_qubit_decomposition, sk_decomposition
 from .evolution import Evolution
@@ -124,6 +125,7 @@ controlled_qubit_ops = {
     "ControlledQubitUnitary",
     "CY",
     "CZ",
+    "MultiControlledX",
     "CRX",
     "CRY",
     "CRZ",
