@@ -142,5 +142,4 @@ def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
 
 def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[Union[PauliWord, PauliSentence]]):
     """Faster computation of dot when all ops are PauliSentences or PauliWords"""
-    summands = [c * op for c, op in zip(coeffs, ops)]
-    return sum(summands[1:], start=summands[0])
+    return sum((c * op for c, op in zip(coeffs[1:], ops[1:])), start=coeffs[0] * ops[0])
