@@ -22,6 +22,11 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:.*batch_transform.*:pennylane.PennyLaneDeprecationWarning"
+)
+
+
 class TestBatchTransform:
     """Unit tests for the batch_transform class"""
 
@@ -31,13 +36,9 @@ class TestBatchTransform:
         def func(op):
             return op
 
-        with pytest.warns(
-            UserWarning, match="Use of `batch_transform` to create a custom transform is deprecated"
-        ):
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of `batch_transform`"):
             _ = qml.batch_transform(func)
 
-    @staticmethod
-    @qml.batch_transform
     def my_transform(tape, a, b):
         """Generates two tapes, one with all RX replaced with RY,
         and the other with all RX replaced with RZ."""
@@ -46,7 +47,7 @@ class TestBatchTransform:
         q_tape2 = qml.queuing.AnnotatedQueue()
 
         # loop through all operations on the input tape
-        for op in tape:
+        for op in tape.operations:
             if op.name == "RX":
                 wires = op.wires
                 param = op.parameters[0]
@@ -60,6 +61,10 @@ class TestBatchTransform:
                 for t in [q_tape1, q_tape2]:
                     with t:
                         qml.apply(op)
+        for mp in tape.measurements:
+            for t in [q_tape1, q_tape2]:
+                with t:
+                    qml.apply(mp)
 
         tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
         tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
@@ -68,6 +73,9 @@ class TestBatchTransform:
             return qml.math.sum(qml.math.stack(results))
 
         return [tape1, tape2], processing_fn
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of `batch_transform`"):
+        my_transform = staticmethod(qml.batch_transform(my_transform))
 
     @staticmethod
     def phaseshift_expand(tape):
@@ -536,8 +544,6 @@ class TestBatchTransform:
 class TestBatchTransformGradients:
     """Tests for the batch_transform decorator differentiability"""
 
-    @staticmethod
-    @qml.batch_transform
     def my_transform(tape, weights):
         """Generates two tapes, one with all RX replaced with RY,
         and the other with all RX replaced with RZ."""
@@ -546,7 +552,7 @@ class TestBatchTransformGradients:
         q_tape2 = qml.queuing.AnnotatedQueue()
 
         # loop through all operations on the input tape
-        for op in tape:
+        for op in tape.operations:
             if op.name == "RX":
                 wires = op.wires
                 param = op.parameters[0]
@@ -560,6 +566,10 @@ class TestBatchTransformGradients:
                 for t in [q_tape1, q_tape2]:
                     with t:
                         qml.apply(op)
+        for mp in tape.measurements:
+            for t in [q_tape1, q_tape2]:
+                with t:
+                    qml.apply(mp)
 
         tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
         tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
@@ -568,6 +578,9 @@ class TestBatchTransformGradients:
             return qml.math.sum(qml.math.stack(results))
 
         return [tape1, tape2], processing_fn
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of `batch_transform`"):
+        my_transform = staticmethod(qml.batch_transform(my_transform))
 
     @staticmethod
     def circuit(x):
