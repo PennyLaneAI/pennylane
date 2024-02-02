@@ -258,7 +258,7 @@ def clifford(generators, paulixops):
     for i, t in enumerate(generators):
         cliff.append(pauli_sentence(1 / 2**0.5 * (paulixops[i] + t)))
 
-    u = functools.reduce(lambda p, q: p * q, cliff)
+    u = functools.reduce(lambda p, q: p @ q, cliff)
 
     return u.operation() if active_new_opmath() else u.hamiltonian()
 
@@ -296,7 +296,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
 
     ts_ps = qml.pauli.PauliSentence()
     for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
-        ts_ps += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
+        ts_ps += ps_u @ ps @ ps_u  # helps restrict the peak memory usage for u @ h @ u
 
     wireset = ps_u.wires + ps_h.wires
     wiremap = dict(zip(list(wireset.toset()), range(len(wireset) + 1)))
@@ -485,7 +485,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
             ps = qml.jordan_wigner(qml.FermiC(idx), ps=True)
         else:
             ps = PauliSentence({PauliWord({idx: "I"}): 1.0})
-        ferm_ps *= ps
+        ferm_ps @= ps
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)
