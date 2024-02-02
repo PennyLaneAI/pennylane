@@ -98,10 +98,8 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
 
 def _is_controlled(op):
     """Checks whether an operation is a controlled operation."""
-    # TODO: remove the second half once they all inherit from Controlled [sc-37951]
-    return isinstance(op, Controlled) or isinstance(
-        op, (qml.CCZ, qml.CSWAP, qml.CH, qml.CNOT, qml.Toffoli)
-    )
+    # TODO: remove the other ones once they all inherit from Controlled [sc-37951]
+    return isinstance(op, (Controlled, qml.CCZ, qml.CSWAP, qml.CH, qml.CNOT, qml.Toffoli))
 
 
 def unwrap_controls(op):
