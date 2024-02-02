@@ -981,7 +981,7 @@ class TestSimplify:
         """Test the simplify method with a product of sums."""
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
         final_op = qml.sum(
-            Prod(qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.PauliX(1), qml.PauliX(0)),
             qml.PauliX(0) @ qml.RX(1, 1),
             qml.PauliX(1) @ qml.RX(1, 0),
             qml.RX(1, 0) @ qml.RX(1, 1),
