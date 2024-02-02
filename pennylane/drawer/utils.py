@@ -101,7 +101,7 @@ def _is_controlled(op):
     if isinstance(op, Controlled):
         return True
     # TODO: remove the following once they all inherit from Controlled [sc-37951]
-    if isinstance(op, (qml.CCZ, qml.CSWAP, qml.CH, qml.CNOT, qml.Toffoli, qml.IntegerComparator)):
+    if isinstance(op, (qml.CCZ, qml.CSWAP, qml.CH, qml.CNOT, qml.Toffoli)):
         return True
     return False
 
