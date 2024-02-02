@@ -15,7 +15,6 @@
 This module contains the qml.counts measurement.
 """
 import warnings
-from collections import Counter
 from typing import Sequence, Tuple, Optional
 import numpy as np
 
@@ -300,11 +299,9 @@ class CountsMP(SampleMeasurement):
         # if an observable was provided, batched samples will have shape (batch_size, shots)
         batched_ndims = 2
         shape = qml.math.shape(samples)
-        do_sort = False
 
         if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            do_sort = True
 
             # remove nans
             mask = qml.math.isnan(samples)
@@ -339,14 +336,13 @@ class CountsMP(SampleMeasurement):
             samples = samples[None]
 
         # generate empty outcome dict, populate values with state counts
-        base_dict = Counter(dict((k, qml.math.int64(0)) for k in outcomes))
+        base_dict = {k: qml.math.int64(0) for k in outcomes}
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
-        results = [Counter(batch) for batch in samples]
+        results = [qml.math.unique(batch, return_counts=True) for batch in samples]
 
         for result, outcome_dict in zip(results, outcome_dicts):
-            outcome_dict.update(result)
-        if do_sort:
-            outcome_dicts = [dict(sorted(dct.items())) for dct in outcome_dicts]
-        else:
-            outcome_dicts = [dict(dct.items()) for dct in outcome_dicts]
+            states, _counts = result
+            for state, count in zip(qml.math.unwrap(states), _counts):
+                outcome_dict[state] = count
+
         return outcome_dicts if batched else outcome_dicts[0]
