@@ -301,7 +301,7 @@ def simulate_native_mcm(
                 shots=s,
                 trainable_params=circuit.trainable_params,
             )
-            results.append(simulate(aux_circuit, rng, prng_key, debugger, interface))
+            results.append(simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface))
         return tuple(results)
     aux_circuit = init_auxiliary_circuit(circuit)
     all_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
