@@ -447,7 +447,7 @@ class Prod(CompositeOp):
 
     def terms(self):
         r"""
-        Return coefficients and operators of ``Sum`` instance.
+        Return coefficients and operators of ``Prod`` instance.
 
         ** Example **
 

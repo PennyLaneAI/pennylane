@@ -175,12 +175,17 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         for f1, f2 in zip(prod_op.operands, prod_term_ops[0].operands):
             assert qml.equal(f1, f2)
 
-    PROD_TERMS_OP_PAIRS_NOPAULI = (  # not ll operands have pauli representation
+    PROD_TERMS_OP_PAIRS_MIXED = (  # not all operands have pauli representation
         (
             qml.prod(qml.Hadamard(0), X(1), X(2)),
             [1.0],
             [qml.prod(qml.Hadamard(0), X(1), X(2))],
         ),  # trivial product
+        (
+            qml.prod(qml.Hadamard(0), X(1), qml.Identity(2)),
+            [1.0],
+            [qml.prod(qml.Hadamard(0), X(1))],
+        ),
         (
             qml.prod(qml.Hadamard(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
             [2 * 4],
@@ -209,7 +214,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         ),  # contrived example
     )
 
-    @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_NOPAULI)
+    @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_MIXED)
     def test_terms_no_pauli_rep(self, op, coeffs_true, ops_true):
         """Test that Prod.terms() is correct for operators that dont all have a pauli_rep"""
         coeffs, ops1 = op.terms()
@@ -218,6 +223,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
     PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
         (qml.prod(X(0), X(1), X(2)), [1.0], [qml.prod(X(0), X(1), X(2))]),  # trivial product
+        (qml.prod(X(0), X(1), X(2), qml.Identity(0)), [1.0], [qml.prod(X(0), X(1), X(2))]),  # trivial product
         (
             qml.prod(X(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
             [2 * 4],
