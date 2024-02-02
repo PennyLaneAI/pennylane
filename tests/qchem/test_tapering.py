@@ -469,25 +469,11 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
                 qml.Hamiltonian([1.0], [qml.PauliZ(8) @ qml.PauliZ(9)]),
                 qml.Hamiltonian(
                     [1.0],
-                    [
-                        qml.Z(0)
-                        @ qml.Z(2)
-                        @ qml.Z(4)
-                        @ qml.Z(6)
-                        @ qml.Z(8)
-                        @ qml.Z(10)
-                    ],
+                    [qml.Z(0) @ qml.Z(2) @ qml.Z(4) @ qml.Z(6) @ qml.Z(8) @ qml.Z(10)],
                 ),
                 qml.Hamiltonian(
                     [1.0],
-                    [
-                        qml.Z(1)
-                        @ qml.Z(3)
-                        @ qml.Z(5)
-                        @ qml.Z(6)
-                        @ qml.Z(8)
-                        @ qml.Z(11)
-                    ],
+                    [qml.Z(1) @ qml.Z(3) @ qml.Z(5) @ qml.Z(6) @ qml.Z(8) @ qml.Z(11)],
                 ),
             ],
             [

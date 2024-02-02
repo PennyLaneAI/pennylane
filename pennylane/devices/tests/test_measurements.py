@@ -930,9 +930,7 @@ class TestTensorSample:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(
-                qml.Z(0) @ qml.Hadamard(wires=[1]) @ qml.Y(2)
-            )
+            return qml.sample(qml.Z(0) @ qml.Hadamard(wires=[1]) @ qml.Y(2))
 
         res = circuit()
 

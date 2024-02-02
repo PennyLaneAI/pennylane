@@ -937,9 +937,7 @@ class TestFragmentGraph:
         correct nodes and edges. Focuses on the case where fragmentation results in two fragments
         that are disconnected from the final measurements.
         """
-        tape = qml.tape.QuantumScript(
-            multi_cut_tape.operations, [qml.expval(qml.Z(0))]
-        )
+        tape = qml.tape.QuantumScript(multi_cut_tape.operations, [qml.expval(qml.Z(0))])
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, _ = qcut.fragment_graph(g)

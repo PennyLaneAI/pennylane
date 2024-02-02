@@ -99,26 +99,10 @@ ops_h3p.append(
         qml.X(0) @ qml.Z(1) @ qml.X(2),
         qml.Y(1) @ qml.Z(2) @ qml.Y(3),
         qml.X(1) @ qml.Z(2) @ qml.X(3),
-        qml.Y(0)
-        @ qml.Z(1)
-        @ qml.Z(2)
-        @ qml.Z(3)
-        @ qml.Y(4),
-        qml.X(0)
-        @ qml.Z(1)
-        @ qml.Z(2)
-        @ qml.Z(3)
-        @ qml.X(4),
-        qml.Y(1)
-        @ qml.Z(2)
-        @ qml.Z(3)
-        @ qml.Z(4)
-        @ qml.Y(5),
-        qml.X(1)
-        @ qml.Z(2)
-        @ qml.Z(3)
-        @ qml.Z(4)
-        @ qml.X(5),
+        qml.Y(0) @ qml.Z(1) @ qml.Z(2) @ qml.Z(3) @ qml.Y(4),
+        qml.X(0) @ qml.Z(1) @ qml.Z(2) @ qml.Z(3) @ qml.X(4),
+        qml.Y(1) @ qml.Z(2) @ qml.Z(3) @ qml.Z(4) @ qml.Y(5),
+        qml.X(1) @ qml.Z(2) @ qml.Z(3) @ qml.Z(4) @ qml.X(5),
         qml.Z(2),
         qml.Z(3),
         qml.Y(2) @ qml.Z(3) @ qml.Y(4),
@@ -137,26 +121,10 @@ ops_h3p.append(
         qml.X(0) @ qml.Z(1) @ qml.X(2),
         qml.Y(1) @ qml.Z(2) @ qml.Y(3),
         qml.X(1) @ qml.Z(2) @ qml.X(3),
-        qml.Y(0)
-        @ qml.Z(1)
-        @ qml.Z(2)
-        @ qml.Z(3)
-        @ qml.Y(4),
-        qml.X(0)
-        @ qml.Z(1)
-        @ qml.Z(2)
-        @ qml.Z(3)
-        @ qml.X(4),
-        qml.Y(1)
-        @ qml.Z(2)
-        @ qml.Z(3)
-        @ qml.Z(4)
-        @ qml.Y(5),
-        qml.X(1)
-        @ qml.Z(2)
-        @ qml.Z(3)
-        @ qml.Z(4)
-        @ qml.X(5),
+        qml.Y(0) @ qml.Z(1) @ qml.Z(2) @ qml.Z(3) @ qml.Y(4),
+        qml.X(0) @ qml.Z(1) @ qml.Z(2) @ qml.Z(3) @ qml.X(4),
+        qml.Y(1) @ qml.Z(2) @ qml.Z(3) @ qml.Z(4) @ qml.Y(5),
+        qml.X(1) @ qml.Z(2) @ qml.Z(3) @ qml.Z(4) @ qml.X(5),
         qml.Z(2),
         qml.Z(3),
         qml.Y(2) @ qml.Z(3) @ qml.Y(4),
