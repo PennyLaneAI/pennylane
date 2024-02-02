@@ -446,8 +446,15 @@ class Prod(CompositeOp):
         return op_list
 
     def terms(self):
-        r"""
-        Return coefficients and operators of ``Prod`` instance.
+        r"""Representation of the operator as a linear combination of other operators.
+
+        .. math:: O = \sum_i c_i O_i
+
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
 
         ** Example **
 
