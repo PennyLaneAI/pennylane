@@ -279,7 +279,7 @@ class DefaultClifford(Device):
         and probabilities for the specified target states would be computed and returned. We test this for a
         circuit that prepares the `n`-qubit Greenberger-Horne-Zeilinger state (GHZ state) state. This means
         that the probabilities for the basis states $|0\rangle^{\otimes n}$ and $|1\rangle^{\otimes n}$
-        should be :math:`0.5`. 
+        should be :math:`0.5`.
 
         .. code-block:: python
 
