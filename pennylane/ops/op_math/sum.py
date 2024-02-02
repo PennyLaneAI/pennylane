@@ -173,8 +173,10 @@ class Sum(CompositeOp):
         # post-processing the flat str() representation
         # We have to do it like this due to the possible
         # nesting of Sums, e.g. X(0) + X(1) + X(2) is a sum(sum(X(0), X(1)), X(2))
-        main_string = str(self).replace(" + ", "\n  + ")
-        return f"(\n    {main_string}\n)"
+        if len(main_string :=str(self))>100:
+            main_string = main_string.replace(" + ", "\n  + ")
+            return f"(\n    {main_string}\n)"
+        return main_string
 
     @property
     def is_hermitian(self):
