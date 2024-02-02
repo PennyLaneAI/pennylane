@@ -366,7 +366,7 @@ class TestMinEntropy:
         params = np.tensor(params)
 
         gradient = qml.grad(qml.math.min_entropy)(params, wires, base, check_state)
-        assert qml.math.allclose(gradient, 0.0)
+        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
 
     @pytest.mark.torch
     @pytest.mark.parametrize("params", parameters)
@@ -382,7 +382,7 @@ class TestMinEntropy:
         min_entropy.backward()
         gradient = params.grad
 
-        assert qml.math.allclose(gradient, 0.0)
+        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
 
     @pytest.mark.tf
     @pytest.mark.parametrize("params", parameters)
@@ -399,7 +399,7 @@ class TestMinEntropy:
 
         gradient = tape.gradient(min_entropy, params)
 
-        assert qml.math.allclose(gradient, 0.0)
+        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
@@ -425,7 +425,7 @@ class TestMinEntropy:
         else:
             gradient = min_entropy_grad(params, wires, base, check_state)
 
-        assert qml.math.allclose(gradient, 0.0)
+        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
 
 
 class TestEntropyBroadcasting:
