@@ -103,6 +103,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
+  [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
+
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
 
