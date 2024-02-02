@@ -389,7 +389,7 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
     """
     new_shot_meas = [None] * len(circuit.measurements)
     if not isinstance(all_shot_meas, (list, tuple)):
-        return accumulate_native_mcm(circuit, [all_shot_meas], one_shot_meas)
+        all_shot_meas = [all_shot_meas]
     if not isinstance(one_shot_meas, (list, tuple)):
         return accumulate_native_mcm(circuit, all_shot_meas, [one_shot_meas])
     for i, m in enumerate(circuit.measurements):
