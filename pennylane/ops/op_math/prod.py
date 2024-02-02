@@ -455,8 +455,8 @@ class Prod(CompositeOp):
         >>> op = X(0) @ (0.5 * X(1) + X(2))
         >>> op.terms()
         ([0.5, 1.0],
-         [PauliX(wires=[1]) @ PauliX(wires=[0]),
-          PauliX(wires=[2]) @ PauliX(wires=[0])])
+         [X(1) @ X(0),
+          X(2) @ X(0)])
 
         """
         # try using pauli_rep:
