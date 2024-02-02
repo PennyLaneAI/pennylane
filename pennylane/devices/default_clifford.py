@@ -160,7 +160,7 @@ class DefaultClifford(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+            (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
@@ -519,6 +519,8 @@ class DefaultClifford(Device):
         # Build a stim circuit, tableau and simulator
         stim_circuit = stim.Circuit()
         tableau_simulator = stim.TableauSimulator()
+        if self.wires is not None:
+            tableau_simulator.set_num_qubits(len(self.wires))
 
         # Account for state preparation operation
         prep = None
@@ -553,6 +555,8 @@ class DefaultClifford(Device):
                             )
                         # Build a temporary simulator for obtaining state
                         snap_sim = stim.TableauSimulator()
+                        if self.wires is not None:
+                            snap_sim.set_num_qubits(len(self.wires))
                         snap_sim.do_circuit(stim_circuit)
                         state = self._measure_state(meas, snap_sim, circuit=circuit)
                         # Add to the debugger snapshot
@@ -695,7 +699,7 @@ class DefaultClifford(Device):
             # following is faster than using np.eye(length=1, size, index)
             state = qml.math.zeros(2 ** len(wires), dtype=complex)
             state[0] = 1.0 + 0.0j
-        return state * qml.matrix(global_phase)
+        return state * qml.matrix(global_phase)[0][0]
 
     @staticmethod
     def _measure_expectation(meas, tableau_simulator, **kwargs):

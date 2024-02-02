@@ -93,6 +93,8 @@ def test_state_clifford(circuit, tableau):
     else:
         assert qml.math.allclose(circuit_tableau, qnode_clfrd())
 
+    dev_c = qml.device("default.clifford", tableau=tableau, wires=1)
+
     @qml.qnode(dev_c)
     def circuit_empty():
         return qml.state()
@@ -100,7 +102,7 @@ def test_state_clifford(circuit, tableau):
     # Tableau for the circuit define above
     circuit_tableau = np.array([[1, 0, 0], [0, 1, 0]])
     if not tableau:
-        assert qml.math.allclose(circuit_empty(), qml.math.array([1.0, 0.0, 0.0, 0.0]))
+        assert qml.math.allclose(circuit_empty(), qml.math.array([1.0, 0.0]))
     else:
         assert qml.math.allclose(circuit_empty(), circuit_tableau)
 
