@@ -840,7 +840,7 @@ class DefaultClifford(Device):
             basis_states if len(qml.math.shape(basis_states)) > 1 else [basis_states]
         )
 
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, too-many-statements
     def _measure_probability(self, meas, tableau_simulator, **kwargs):
         """Measure the probability of each computational basis state."""
         circuit, _ = kwargs.get("circuit"), tableau_simulator
