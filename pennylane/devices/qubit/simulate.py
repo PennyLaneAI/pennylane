@@ -330,15 +330,17 @@ def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
     Returns:
         QuantumScript: A copy of the circuit with modified measurements
     """
-    aux_circuit = circuit.copy()
-    aux_circuit._shots = qml.measurements.Shots(1)
     idx_sample = find_measurement_values(circuit)
-    for i in reversed(idx_sample):
-        aux_circuit._measurements.pop(i)
-    for i, m in enumerate(circuit.measurements):
-        if isinstance(m, VarianceMP) and m.mv is None:
-            aux_circuit._measurements[i] = SampleMP(obs=m.obs)
-    return aux_circuit
+    new_measurements = []
+    for m in circuit.measurements:
+        if not has_measurement_values(m):
+            if isinstance(m, VarianceMP) and m.mv is None:
+                new_measurements.append(SampleMP(obs=m.obs))
+            else:
+                new_measurements.append(m)
+    return qml.tape.QuantumScript(circuit.operations, new_measurements,
+        shots=1,
+        trainable_params=circuit.trainable_params)
 
 
 def simulate_one_shot_native_mcm(
