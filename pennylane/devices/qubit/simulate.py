@@ -32,7 +32,7 @@ from pennylane.ops import Conditional
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
-from .apply_operation import apply_operation, apply_mid_measure
+from .apply_operation import apply_operation
 from .measure import measure
 from .sampling import measure_with_samples
 
@@ -108,7 +108,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
     return state, shots
 
 
-def get_final_state(circuit, debugger=None, interface=None):
+def get_final_state(circuit, debugger=None, interface=None, mid_measurements=None):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -118,6 +118,7 @@ def get_final_state(circuit, debugger=None, interface=None):
         circuit (.QuantumScript): The single circuit to simulate
         debugger (._Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
@@ -134,16 +135,19 @@ def get_final_state(circuit, debugger=None, interface=None):
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
-    measurement_values = {}
     for op in circuit.operations[bool(prep) :]:
         if isinstance(op, Conditional):
             meas_id = op.meas_val.measurements[0].hash
-            if not measurement_values[meas_id]:
+            if not mid_measurements[meas_id]:
                 continue
             op = op.then_op
         if isinstance(op, MidMeasureMP):
-            state, measurement_values[op.hash] = apply_mid_measure(
-                op, state, is_state_batched=is_state_batched, debugger=debugger
+            state = apply_operation(
+                op,
+                state,
+                is_state_batched=is_state_batched,
+                debugger=debugger,
+                mid_measurements=mid_measurements,
             )
         else:
             state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
@@ -161,7 +165,7 @@ def get_final_state(circuit, debugger=None, interface=None):
         # We know they belong at the end because the circuit is in standard wire-order
         state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
 
-    return state, is_state_batched, measurement_values
+    return state, is_state_batched
 
 
 def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
@@ -261,7 +265,7 @@ def simulate(
         return simulate_native_mcm(
             circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
         )
-    state, is_state_batched, _ = get_final_state(circuit, debugger=debugger, interface=interface)
+    state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
@@ -363,8 +367,9 @@ def simulate_one_shot_native_mcm(
         tuple(TensorLike): The results of the simulation
         dict: The mid-circuit measurement results of the simulation
     """
-    state, is_state_batched, mcm_dict = get_final_state(
-        circuit, debugger=debugger, interface=interface
+    mcm_dict = {}
+    state, is_state_batched = get_final_state(
+        circuit, debugger=debugger, interface=interface, mid_measurements=mcm_dict
     )
     return (
         measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),

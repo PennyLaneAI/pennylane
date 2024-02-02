@@ -1365,7 +1365,7 @@ class TestExecution:
         assert np.allclose(res[0], np.cos(x), atol=tol, rtol=0)
 
         assert isinstance(res[1], np.ndarray)
-        final_state, _, _ = qml.devices.qubit.get_final_state(tape)
+        final_state, _ = qml.devices.qubit.get_final_state(tape)
         assert np.allclose(res[1], np.abs(final_state.flatten()) ** 2, atol=tol, rtol=0)
 
     def test_single_mode_sample(self):

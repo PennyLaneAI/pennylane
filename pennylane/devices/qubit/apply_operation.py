@@ -58,28 +58,6 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-def apply_mid_measure(op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None):
-    """Applies a native mid-circuit measurement."""
-    if is_state_batched:
-        raise ValueError("MidMeasureMP cannot be applied to batched states.")
-    wire = op.wires
-    probs = qml.devices.qubit.measure(qml.probs(wire), state)
-    sample = np.random.binomial(1, probs[1])
-    axis = wire.toarray()[0]
-    slices = [slice(None)] * state.ndim
-    slices[axis] = int(not sample)
-    state[tuple(slices)] = 0.0
-    state_norm = np.linalg.norm(state)
-    if state_norm < 1.0e-15:
-        raise ValueError("Cannot normalize projected state.")
-    state = state / state_norm
-    if op.reset and sample == 1:
-        state = apply_operation(
-            qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
-        )
-    return state, sample
-
-
 def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
     """Apply ``Operator`` to ``state`` using ``einsum``. This is more efficent at lower qubit
     numbers.
@@ -230,6 +208,32 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
     ) or (op.batch_size and is_state_batched):
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+
+@apply_operation.register
+def apply_mid_measure(
+    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
+    """Applies a native mid-circuit measurement."""
+    if is_state_batched:
+        raise ValueError("MidMeasureMP cannot be applied to batched states.")
+    wire = op.wires
+    probs = qml.devices.qubit.measure(qml.probs(wire), state)
+    sample = np.random.binomial(1, probs[1])
+    mid_measurements[op.hash] = sample
+    axis = wire.toarray()[0]
+    slices = [slice(None)] * state.ndim
+    slices[axis] = int(not sample)
+    state[tuple(slices)] = 0.0
+    state_norm = np.linalg.norm(state)
+    if state_norm < 1.0e-15:
+        raise ValueError("Cannot normalize projected state.")
+    state = state / state_norm
+    if op.reset and sample == 1:
+        state = apply_operation(
+            qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
+        )
+    return state
 
 
 @apply_operation.register
