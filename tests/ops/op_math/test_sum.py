@@ -221,6 +221,16 @@ class TestInitialization:
             [qml.Hadamard(i) for i in range(1, 5)],
         ),
         (
+            qml.sum(qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))), 0. * qml.Identity(0)),
+            [float(i) for i in range(1, 5)],
+            [qml.Hadamard(i) for i in range(1, 5)],
+        ),
+        (
+            qml.sum(qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))), qml.Identity(0)),
+            [float(i) for i in range(1, 5)] + [1.],
+            [qml.Hadamard(i) for i in range(1, 5)] + [qml.Identity(0)],
+        ),
+        (
             qml.sum(*(qml.s_prod(i, qml.prod(X(i), qml.Hadamard(i + 1))) for i in range(1, 5))),
             [float(i) for i in range(1, 5)],
             [qml.prod(X(i), qml.Hadamard(i + 1)) for i in range(1, 5)],
