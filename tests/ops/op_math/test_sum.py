@@ -235,7 +235,7 @@ class TestInitialization:
                 Y(0),
                 qml.prod(Y(1), Y(0)),
                 qml.prod(Y(3), Y(2)),
-                qml.prod(Z(10), X(0)),
+                qml.prod(Z(10), qml.Hadamard(0)),
                 qml.prod(Z(11), X(1)),
             ],
         ),
