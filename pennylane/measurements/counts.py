@@ -305,20 +305,27 @@ class CountsMP(SampleMeasurement):
 
             # remove nans
             mask = qml.math.isnan(samples)
-            nsam = samples.shape[1]
+            nsam = shape[-1]
             if np.any(mask):
-                samples = samples[np.logical_not(mask)]
+                mask = np.logical_not(np.any(mask, axis=tuple(range(1, samples.ndim))))
+                samples = samples[mask, ...]
 
             # convert to string
+            def convert(x):
+                return f"{x:064b}"[-nsam:]
+
             exp2 = 2 ** np.arange(nsam - 1, -1, -1)
-            samples = samples @ exp2
-            samples = list(map(lambda x: f"{x:064b}"[-nsam:], samples))
-            samples = np.array(samples)
+            samples = np.einsum("...i,i", samples, exp2)
+            new_shape = samples.shape
+            samples = qml.math.cast_like(samples, qml.math.int8(0))
+            samples = list(map(convert, samples.ravel()))
+            samples = np.array(samples).reshape(new_shape)
 
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if self.all_outcomes:
                 num_wires = len(self.wires) if len(self.wires) > 0 else shape[-1]
-                outcomes = list(map(lambda x: f"{x:064b}"[-nsam:], range(2**num_wires)))
+                outcomes = list(map(convert, range(2**num_wires)))
+
         elif self.all_outcomes:
             # This also covers statistics for mid-circuit measurements manipulated using
             # arithmetic operators
