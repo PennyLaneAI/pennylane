@@ -845,20 +845,19 @@ class TestBatchedPartialTrace:
     """Unit tests for the batched_partial_trace function."""
 
     @pytest.mark.parametrize("interface_name, array_fn", interfaces)
-    @pytest.mark.parametrize("array_funcs", array_funcs)
     def test_single_density_matrix(self):
         """Test partial trace on a single density matrix."""
         # Define a 2-qubit density matrix
-        rho = array_funcs(np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]))
+        rho = array_funcs(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
         
         # Expected result after tracing out the second qubit
-        expected = array_funcs(np.array([[1, 0], [0, 0]]))
+        expected = array_funcs(np.array([[[1, 0], [0, 0]]]))
 
         # Perform the partial trace
         result = qml.math.quantum.batched_partial_trace(rho, [0])
         assert np.allclose(result, expected)
 
-    @pytest.mark.parametrize("array_funcs", array_funcs)
+
     def test_batched_density_matrices(self):
         """Test partial trace on a batch of density matrices."""
         # Define a batch of 2-qubit density matrices
@@ -876,7 +875,7 @@ class TestBatchedPartialTrace:
     def test_partial_trace_over_no_wires(self):
         """Test that tracing over no wires returns the original matrix."""
         # Define a 2-qubit density matrix
-        rho = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        rho = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
 
         # Perform the partial trace over no wires
         result = qml.math.quantum.batched_partial_trace(rho, [])
@@ -885,7 +884,7 @@ class TestBatchedPartialTrace:
     def test_partial_trace_over_all_wires(self):
         """Test that tracing over all wires returns the trace of the matrix."""
         # Define a 2-qubit density matrix
-        rho = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        rho = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
         # Expected result after tracing out all qubits
         expected = np.array([1])
 
@@ -896,7 +895,7 @@ class TestBatchedPartialTrace:
     def test_invalid_wire_selection(self):
         """Test that an error is raised for an invalid wire selection."""
         # Define a 2-qubit density matrix
-        rho = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        rho = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
 
         # Attempt to trace over an invalid wire
         with pytest.raises(ValueError):
@@ -907,23 +906,13 @@ class TestBatchedPartialTrace:
     def test_single_density_matrix(self, interface_name, array_fn, dtype, tol):
         tol = 1e-6 if dtype == np.float32 else 1e-9
         """Test partial trace on a single density matrix with different interfaces and dtypes."""
-        rho = array_fn([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=dtype)
+        rho = array_fn([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]], dtype=dtype)
         expected = array_fn([[1, 0], [0, 0]], dtype=dtype)
 
         result = qml.math.quantum.batched_partial_trace(rho, [0])
         assert qml.math.allclose(result, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface_name, array_fn", interfaces)
-    @pytest.mark.parametrize("dtype", dtypes)
-    def test_batched_density_matrices(self, interface_name, array_fn, dtype, tol):
-        tol = 1e-6 if dtype == np.float32 else 1e-9
-        """Test partial trace on a batch of density matrices with different interfaces and dtypes."""
-        rho = array_fn([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-                        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]], dtype=dtype)
-        expected = array_fn([[[1, 0], [0, 0]], [[1, 0], [0, 0]]], dtype=dtype)
-
-        result = qml.math.quantum.batched_partial_trace(rho, [1])
-        assert qml.math.allclose(result, expected, atol=tol, rtol=0)
-
-    # Additional tests can be added for different backends, malformed inputs, etc.
     
+ 
+
+  

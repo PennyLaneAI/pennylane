@@ -247,7 +247,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
-def batched_partial_trace(density_matrix, indices):
+def batched_partial_trace(density_matrix, indices, c_dtype="complex128"):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
@@ -281,6 +281,8 @@ def batched_partial_trace(density_matrix, indices):
     """
     # Autograd does not support same indices sum in backprop, and tensorflow
     # has a limit of 8 dimensions if same indices are used
+    density_matrix = cast(density_matrix, dtype=c_dtype)
+    
     if get_interface(density_matrix) in ["autograd", "tensorflow"]:
         return _batched_partial_trace_nonrep_indices(density_matrix, indices)
 
