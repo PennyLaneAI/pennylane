@@ -32,7 +32,7 @@ from pennylane.typing import TensorLike
 
 from .utils import (
     get_einsum_mapping,
-    resquare_state,
+    reshape_state_as_matrix,
     get_num_wires,
     get_new_state_einsum_indices,
     QUDIT_DIM,
@@ -42,50 +42,51 @@ from .apply_operation import apply_operation
 alphabet_array = math.asarray(list(alphabet))
 
 
-def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = False):
-    r"""Applies an observable to a density matrix rho, giving obs@state
-
+def _map_indices_apply_operation(
+    state_indices, row_indices, new_row_indices, **kwargs
+):  # pylint: disable=unused-argument
+    """Map indices to wires
     Args:
-        obs (Operator): Operator to apply to the quantum state
-        state (array[complex]): Input quantum state
-        is_state_batched (bool): Boolean representing whether the state is batched or not
+        state_indices (str): Indices that are summed.
+        row_indices (str): Indices that must be replaced with sums.
+        new_row_indices (str): Tensor indices of the state.
+        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`.
 
     Returns:
-        TensorLike: the result of obs@state
+        String of einsum indices to complete einsum calculations.
+    """
+    op_1_indices = f"{new_row_indices}{row_indices}"
+
+    new_state_indices = get_new_state_einsum_indices(
+        old_indices=row_indices,
+        new_indices=new_row_indices,
+        state_indices=state_indices,
+    )
+
+    return f"{op_1_indices},...{state_indices}->...{new_state_indices}"
+
+
+def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = False):
+    r"""Applies an observable to a density matrix rho, giving obs@state.
+
+    Args:
+        obs (Operator): Operator to apply to the quantum state.
+        state (array[complex]): Input quantum state.
+        is_state_batched (bool): Boolean representing whether the state is batched or not.
+
+    Returns:
+        TensorLike: the result of obs@state.
     """
 
-    def map_indices(
-        state_indices, row_indices, new_row_indices, **kwargs
-    ):  # pylint: disable=unused-argument
-        """Map indices to wires
-        Args:
-            state_indices (str): Indices that are summed
-            row_indices (str): Indices that must be replaced with sums
-            new_row_indices (str): Tensor indices of the state
-            **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
-
-        Returns:
-            String of einsum indices to complete einsum calculations
-        """
-        op_1_indices = f"{new_row_indices}{row_indices}"
-
-        new_state_indices = get_new_state_einsum_indices(
-            old_indices=row_indices,
-            new_indices=new_row_indices,
-            state_indices=state_indices,
-        )
-
-        return f"{op_1_indices},...{state_indices}->...{new_state_indices}"
-
     num_ch_wires = len(obs.wires)
-    einsum_indices = get_einsum_mapping(obs, state, map_indices, is_state_batched)
+    einsum_indices = get_einsum_mapping(obs, state, _map_indices_apply_operation, is_state_batched)
     obs_mat = obs.matrix()
     obs_shape = [QUDIT_DIM] * num_ch_wires * 2
     obs_mat = math.cast(math.reshape(obs_mat, obs_shape), complex)
     return math.einsum(einsum_indices, obs_mat, state)
 
 
-def trace_method(
+def calculate_expval(
     measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
     """Measure the expectation value of an observable by finding the trace of obs@rho.
@@ -96,7 +97,7 @@ def trace_method(
         is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        TensorLike: the result of the measurement
+        TensorLike: the result of the measurement.
     """
     obs = measurementprocess.obs
     rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
@@ -109,62 +110,30 @@ def trace_method(
     return math.real(trace)
 
 
-def reduce_density_matrix(  # TODO: ask if I should have state diagonalization gates?
+def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagonalization gates?
     measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
     """Get the state or reduced density matrix.
 
     Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state
-        state (TensorLike): state to apply the measurement to
-        is_state_batched (bool): whether the state is batched or not
+        measurementprocess (StateMeasurement): measurement to apply to the state.
+        state (TensorLike): state to apply the measurement to.
+        is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        TensorLike: the resulting resquared density_matrix
+        TensorLike: the resulting resquared density_matrix.
     """
     wires = measurementprocess.wires
     if not wires:
-        return resquare_state(state, get_num_wires(state, is_state_batched))
+        return reshape_state_as_matrix(state, get_num_wires(state, is_state_batched))
 
     num_state_wires = get_num_wires(state, is_state_batched)
-    wires_to_trace = [x + is_state_batched for x in range(num_state_wires) if x not in wires]
+    state_wire_indices = alphabet[:num_state_wires] * 2
+    final_state_wire_indices = alphabet[wires] * 2
 
-    for i, wire_to_trace in enumerate(wires_to_trace):
-        axis1 = wire_to_trace - i
-        axis2 = axis1 + num_state_wires - i
+    state = math.einsum(f"...{state_wire_indices}->...{final_state_wire_indices}")
 
-        print(axis1, axis2)
-
-        state = math.trace(state, axis1=axis1, axis2=axis2)
-
-    return resquare_state(state, len(wires))
-
-
-def _get_probs(state, num_wires, is_state_batched: bool = False):
-    """Finds the probabilities of measuring states in the computational basis
-
-    Args:
-        state (array[complex]): Input quantum state
-        num_wires (int): The number of wires the state represents
-        is_state_batched (bool): Boolean representing whether the state is batched or not
-
-    Returns:
-        Tensorlike: Vector representing probability of each state
-    """
-    # get the final shape
-    final_shape = (
-        (state.shape[0], QUDIT_DIM**num_wires) if is_state_batched else (QUDIT_DIM**num_wires,)
-    )
-
-    # probs are diagonal elements
-    # using einsum since diagonal function axis selection parameter names
-    # are not consistent across interfaces
-    indices = alphabet[:num_wires]
-    probs = math.einsum(f"...{indices * 2}->...{indices}", state)
-    # take the real part so probabilities are not shown as complex numbers
-    # also reshape to flat
-    probs = math.reshape(math.real(probs), final_shape)
-    return math.where(probs < 0, -probs, probs)
+    return reshape_state_as_matrix(state, len(wires))
 
 
 def calculate_probability(
@@ -173,18 +142,33 @@ def calculate_probability(
     """Find the probability of measuring states.
 
     Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state
-        state (TensorLike): state to apply the measurement to
-        is_state_batched (bool): whether the state is batched or not
+        measurementprocess (StateMeasurement): measurement to apply to the state.
+        state (TensorLike): state to apply the measurement to.
+        is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        TensorLike: the result of the measurement
+        TensorLike: the result of the measurement.
     """
     for op in measurementprocess.diagonalizing_gates():
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     num_state_wires = get_num_wires(state, is_state_batched)
-    probs = _get_probs(state, num_state_wires, is_state_batched)
+    # get the final shape
+    final_shape = (
+        (state.shape[0], QUDIT_DIM**num_state_wires)
+        if is_state_batched
+        else (QUDIT_DIM**num_state_wires,)
+    )
+
+    # probs are diagonal elements
+    # using einsum since diagonal function axis selection parameter names
+    # are not consistent across interfaces
+    indices = alphabet[:num_state_wires]
+    probs = math.einsum(f"...{indices * 2}->...{indices}", state)
+    # take the real part so probabilities are not shown as complex numbers
+    # also reshape to flat
+    probs = math.reshape(math.real(probs), final_shape)
+    probs = math.where(probs < 0, -probs, probs)
 
     if mp_wires := measurementprocess.wires:
         expanded_shape = [QUDIT_DIM] * num_state_wires
@@ -210,12 +194,12 @@ def calculate_variance(
     """Find variance of observable.
 
     Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state
-        state (TensorLike): state to apply the measurement to
-        is_state_batched (bool): whether the state is batched or not
+        measurementprocess (StateMeasurement): measurement to apply to the state.
+        state (TensorLike): state to apply the measurement to.
+        is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        TensorLike: the result of the measurement
+        TensorLike: the result of the measurement.
     """
     probs = calculate_probability(measurementprocess, state, is_state_batched)
     eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
@@ -231,26 +215,24 @@ def get_measurement_function(
     """Get the appropriate method for performing a measurement.
 
     Args:
-        measurementprocess (MeasurementProcess): measurement process to apply to the state
-        state (TensorLike): the state to measure
-        is_state_batched (bool): whether the state is batched or not
+        measurementprocess (MeasurementProcess): measurement process to apply to the state.
+        state (TensorLike): the state to measure.
+        is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        Callable: function that returns the measurement result
+        Callable: function that returns the measurement result.
     """
     if isinstance(measurementprocess, StateMeasurement):
         if isinstance(measurementprocess, ExpectationMP):
             # TODO add faster methods
             # TODO add support for sparce Hamiltonians
-            if isinstance(measurementprocess.obs, Hamiltonian):
-                return sum_of_terms_method
-            if isinstance(measurementprocess.obs, Sum):
+            if isinstance(measurementprocess.obs, (Hamiltonian, Sum)):
                 return sum_of_terms_method
             if measurementprocess.obs.has_matrix:
-                return trace_method
+                return calculate_expval
         if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
             if isinstance(measurementprocess, StateMP):
-                return reduce_density_matrix
+                return calculate_reduced_density_matrix
             if isinstance(measurementprocess, ProbabilityMP):
                 return calculate_probability
             if isinstance(measurementprocess, VarianceMP):
@@ -265,19 +247,19 @@ def measure(
     """Apply a measurement process to a state.
 
     Args:
-        measurementprocess (MeasurementProcess): measurement process to apply to the state
-        state (TensorLike): the state to measure
-        is_state_batched (bool): whether the state is batched or not
+        measurementprocess (MeasurementProcess): measurement process to apply to the state.
+        state (TensorLike): the state to measure.
+        is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        Tensorlike: the result of the measurement
+        Tensorlike: the result of the measurement.
     """
     return get_measurement_function(measurementprocess, state)(
         measurementprocess, state, is_state_batched
     )
 
 
-def sum_of_terms_method(
+def calculate_expval_sum_of_terms(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,

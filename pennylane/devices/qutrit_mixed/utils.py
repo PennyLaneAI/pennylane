@@ -69,12 +69,11 @@ def get_einsum_mapping(
     )
 
 
-def resquare_state(state, num_wires):
-    """
-    Given a non-flat, potentially batched state, flatten it to a square matrix.
+def reshape_state_as_matrix(state, num_wires):
+    """Given a non-flat, potentially batched state, flatten it to square matrix or matrices if batched.
 
     Args:
-        state (TensorLike): A state that needs flattening
+        state (TensorLike): A state that needs to be reshaped to a square matrix or matrices if batched
         num_wires (int): The number of wires the state represents
 
     Returns:
