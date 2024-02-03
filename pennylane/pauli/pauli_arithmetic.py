@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
+# pylint:disable=protected-access
 import warnings
 from copy import copy
 from functools import reduce, lru_cache
@@ -25,7 +26,8 @@ from pennylane import math
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, prod, s_prod
+from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+
 
 I = "I"
 X = "X"
@@ -57,6 +59,18 @@ mat_map = {
     Y: matY,
     Z: matZ,
 }
+
+anticom_map = {
+    I: {I: 0, X: 0, Y: 0, Z: 0},
+    X: {I: 0, X: 0, Y: 1, Z: 1},
+    Y: {I: 0, X: 1, Y: 0, Z: 1},
+    Z: {I: 0, X: 1, Y: 1, Z: 0},
+}
+
+
+@lru_cache
+def _make_operation(op, wire):
+    return op_map[op](wire)
 
 
 @lru_cache
@@ -312,6 +326,71 @@ class PauliWord(dict):
             f"PauliWord can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
         )
 
+    def commutes_with(self, other):
+        """Fast check if two PauliWords commute with each other"""
+        wires = set(self) & set(other)
+        if not wires:
+            return True
+        anticom_count = sum(anticom_map[self[wire]][other[wire]] for wire in wires)
+        return (anticom_count % 2) == 0
+
+    def _commutator(self, other):
+        """comm between two PauliWords, returns tuple (new_word, coeff) for faster arithmetic"""
+        # This may be helpful to developers that need a more lightweight comm between pauli words
+        # without creating PauliSentence classes
+
+        if self.commutes_with(other):
+            return PauliWord({}), 0.0
+        new_word, coeff = self._matmul(other)
+        return new_word, 2 * coeff
+
+    def commutator(self, other):
+        """
+        Compute commutator between a ``PauliWord`` :math:`P` and other operator :math:`O`
+
+        .. math:: [P, O] = P O - O P
+
+        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`,
+        this method is faster than computing ``P @ O - O @ P``. It is what is being used
+        in :func:`~commutator` when setting ``pauli=True``.
+
+        Args:
+            other (Union[Operator, PauliWord, PauliSentence]): Second operator
+
+        Returns:
+            ~PauliSentence: The commutator result in form of a :class:`~PauliSentence` instances.
+
+        **Examples**
+
+        You can compute commutators between :class:`~PauliWord` instances.
+
+        >>> pw = PauliWord({0:"X"})
+        >>> pw.commutator(PauliWord({0:"Y"}))
+        2j * Z(0)
+
+        You can also compute the commutator with other operator types if they have a Pauli representation.
+
+        >>> pw.commutator(qml.PauliY(0))
+        2j * Z(0)
+        """
+        if isinstance(other, PauliWord):
+            new_word, coeff = self._commutator(other)
+            if coeff == 0:
+                return PauliSentence({})
+            return PauliSentence({new_word: coeff})
+
+        if isinstance(other, qml.operation.Operator):
+            op_self = PauliSentence({self: 1.0})
+            return op_self.commutator(other)
+
+        if isinstance(other, PauliSentence):
+            # for infix method, this would be handled by __ror__
+            return -1.0 * other.commutator(self)
+
+        raise NotImplementedError(
+            f"Cannot compute natively a commutator between PauliWord and {other} of type {type(other)}"
+        )
+
     def __str__(self):
         """String representation of a PauliWord."""
         if len(self) == 0:
@@ -429,15 +508,14 @@ class PauliWord(dict):
     def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
-            if wire_order in (None, [], Wires([])):
-                raise ValueError("Can't get the operation for an empty PauliWord.")
             return Identity(wires=wire_order)
 
-        factors = [op_map[op](wire) for wire, op in self.items()]
+        factors = [_make_operation(op, wire) for wire, op in self.items()]
 
         if get_as_tensor:
             return factors[0] if len(factors) == 1 else Tensor(*factors)
-        return factors[0] if len(factors) == 1 else prod(*factors)
+        pauli_rep = PauliSentence({self: 1})
+        return factors[0] if len(factors) == 1 else Prod(*factors, _pauli_rep=pauli_rep)
 
     def hamiltonian(self, wire_order=None):
         """Return :class:`~pennylane.Hamiltonian` representing the PauliWord."""
@@ -446,7 +524,7 @@ class PauliWord(dict):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
-        obs = [op_map[op](wire) for wire, op in self.items()]
+        obs = [_make_operation(op, wire) for wire, op in self.items()]
         return Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
 
     def map_wires(self, wire_map: dict) -> "PauliWord":
@@ -483,6 +561,24 @@ class PauliSentence(dict):
     + -1.5 * X(1) @ Z(2)
     + 1 * I
     + 1.0 * Z(3)
+
+    Note that while the empty :class:`~PauliWord` ``PauliWord({})`` respresents the identity, the empty ``PauliSentence`` represents 0
+
+    >>> PauliSentence({})
+    0 * I
+
+    We can compute commutators using the `PauliSentence.commutator()` method
+
+    >>> op1 = PauliWord({0:"X", 1:"X"})
+    >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+    >>> op1.commutator(op2)
+    2j * Z(0) @ X(1)
+    + 2j * X(0) @ Z(1)
+
+    Or, alternatively, use :func:`~commutator`.
+    >>> qml.commutator(op1, op2, pauli=True)
+
+    Note that we need to specify ``pauli=True`` as :func:`~.commutator` returns PennyLane operators by default.
 
     """
 
@@ -633,6 +729,63 @@ class PauliSentence(dict):
             f"PauliSentence can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}"
         )
 
+    def commutator(self, other):
+        """
+        Compute commutator between a ``PauliSentence`` :math:`P` and other operator :math:`O`
+
+        .. math:: [P, O] = P O - O P
+
+        When the other operator is a :class:`~PauliWord` or :class:`~PauliSentence`,
+        this method is faster than computing ``P @ O - O @ P``. It is what is being used
+        in :func:`~commutator` when setting ``pauli=True``.
+
+        Args:
+            other (Union[Operator, PauliWord, PauliSentence]): Second operator
+
+        Returns:
+            ~PauliSentence: The commutator result in form of a :class:`~PauliSentence` instances.
+
+        **Examples**
+
+        You can compute commutators between :class:`~PauliSentence` instances.
+
+        >>> pw1 = PauliWord({0:"X"})
+        >>> pw2 = PauliWord({1:"X"})
+        >>> ps1 = PauliSentence({pw1: 1., pw2: 2.})
+        >>> ps2 = PauliSentence({pw1: 0.5j, pw2: 1j})
+        >>> ps1.commutator(ps2)
+        0 * I
+
+        You can also compute the commutator with other operator types if they have a Pauli representation.
+
+        >>> ps1.commutator(qml.PauliY(0))
+        2j * Z(0)"""
+        final_ps = PauliSentence()
+
+        if isinstance(other, PauliWord):
+            for pw1 in self:
+                comm_pw, coeff = pw1._commutator(other)
+                if len(comm_pw) != 0:
+                    final_ps[comm_pw] += coeff * self[pw1]
+
+            return final_ps
+
+        if not isinstance(other, PauliSentence):
+            if other.pauli_rep is None:
+                raise NotImplementedError(
+                    f"Cannot compute a native commutator of a Pauli word or sentence with the operator {other} of type {type(other)}."
+                    f"You can try to use qml.commutator(op1, op2, pauli=False) instead."
+                )
+            other = qml.pauli.pauli_sentence(other)
+
+        for pw1 in self:
+            for pw2 in other:
+                comm_pw, coeff = pw1._commutator(pw2)
+                if len(comm_pw) != 0:
+                    final_ps[comm_pw] += coeff * self[pw1] * other[pw2]
+
+        return final_ps
+
     def __str__(self):
         """String representation of the PauliSentence."""
         if len(self) == 0:
@@ -646,7 +799,7 @@ class PauliSentence(dict):
     @property
     def wires(self):
         """Track wires of the PauliSentence."""
-        return Wires(set().union(*(pw.wires for pw in self.keys())))
+        return Wires.all_wires((pw.wires for pw in self.keys()))
 
     def to_mat(self, wire_order=None, format="dense", buffer_size=None):
         """Returns the matrix representation.
@@ -769,7 +922,6 @@ class PauliSentence(dict):
             mv += vector[:, entries] * data.reshape(1, -1)
         return mv.reshape(vector.shape)
 
-    # pylint: disable=protected-access
     def _get_same_structure_csr(self, pauli_words, wire_order):
         """Returns the CSR indices and data for Pauli words with the same sparse structure."""
         indices = pauli_words[0]._get_csr_indices(wire_order)
@@ -814,16 +966,15 @@ class PauliSentence(dict):
     def operation(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
-            if wire_order in (None, [], Wires([])):
-                raise ValueError("Can't get the operation for an empty PauliSentence.")
             return qml.s_prod(0, Identity(wires=wire_order))
 
         summands = []
         wire_order = wire_order or self.wires
         for pw, coeff in self.items():
             pw_op = pw.operation(wire_order=list(wire_order))
-            summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
-        return summands[0] if len(summands) == 1 else qml.sum(*summands)
+            rep = PauliSentence({pw: coeff})
+            summands.append(pw_op if coeff == 1 else SProd(coeff, pw_op, _pauli_rep=rep))
+        return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def hamiltonian(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
