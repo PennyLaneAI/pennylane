@@ -30,13 +30,6 @@ torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-# Define a list of interfaces and their corresponding array creation functions
-interfaces = [
-    ("autograd", autograd.numpy.array),
-    ("tensorflow", tf.Variable),
-    ("torch", torch.tensor),
-    ("jax", jnp.array),
-]
 
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
@@ -843,70 +836,74 @@ class TestReduceMatrices:
 
 class TestBatchedPartialTrace:
     """Unit tests for the batched_partial_trace function."""
-
-    @pytest.mark.parametrize("interface_name, array_fn", interfaces)
-    def test_single_density_matrix(self):
+    
+    @pytest.mark.parametrize("array_func", array_funcs)
+    def test_single_density_matrix(self, array_func):
         """Test partial trace on a single density matrix."""
         # Define a 2-qubit density matrix
-        rho = array_funcs(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
+        rho = array_func(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
         
         # Expected result after tracing out the second qubit
-        expected = array_funcs(np.array([[[1, 0], [0, 0]]]))
+        expected = array_func(np.array([[[1, 0], [0, 0]]]))
 
         # Perform the partial trace
         result = qml.math.quantum.batched_partial_trace(rho, [0])
         assert np.allclose(result, expected)
 
-    def test_batched_density_matrices(self):
+    @pytest.mark.parametrize("array_func", array_funcs)
+    def test_batched_density_matrices(self, array_func):
         """Test partial trace on a batch of density matrices."""
         # Define a batch of 2-qubit density matrices
-        rho = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-                        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
+        rho = array_func(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
         
         # rho = array_funcs(rho)
         # Expected result after tracing out the first qubit for each matrix
-        expected = np.array([[[1, 0], [0, 0]], [[1, 0], [0, 0]]])
+        expected = array_func(np.array([[[1, 0], [0, 0]], [[1, 0], [0, 0]]]))
 
         # Perform the partial trace
         result = qml.math.quantum.batched_partial_trace(rho, [1])
         assert np.allclose(result, expected)
 
-    def test_partial_trace_over_no_wires(self):
+    @pytest.mark.parametrize("array_func", array_funcs)
+    def test_partial_trace_over_no_wires(self, array_func):
         """Test that tracing over no wires returns the original matrix."""
         # Define a 2-qubit density matrix
-        rho = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
+        rho = array_func(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
 
         # Perform the partial trace over no wires
         result = qml.math.quantum.batched_partial_trace(rho, [])
         assert np.allclose(result, rho)
 
-    def test_partial_trace_over_all_wires(self):
+    @pytest.mark.parametrize("array_func", array_funcs)
+    def test_partial_trace_over_all_wires(self, array_func):
         """Test that tracing over all wires returns the trace of the matrix."""
         # Define a 2-qubit density matrix
-        rho = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
+        rho = array_func(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
         # Expected result after tracing out all qubits
-        expected = np.array([1])
+        expected = array_func(np.array([1]))
 
         # Perform the partial trace over all wires
         result = qml.math.quantum.batched_partial_trace(rho, [0, 1])
         assert np.allclose(result, expected)
 
-    def test_invalid_wire_selection(self):
+    @pytest.mark.parametrize("array_func", array_funcs)
+    def test_invalid_wire_selection(self, array_func):
         """Test that an error is raised for an invalid wire selection."""
         # Define a 2-qubit density matrix
-        rho = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
+        rho = array_func(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
 
         # Attempt to trace over an invalid wire
         with pytest.raises(IndexError, match="list assignment index out of range"):
             qml.math.quantum.batched_partial_trace(rho, [2])
     
-
+    @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("dtype", dtypes)
-    def test_single_density_matrix(self, dtype, tol):
+    def test_single_density_matrix(self, array_func, dtype, tol):
         tol = 1e-6 if dtype == np.float32 else 1e-9
         """Test partial trace on a single density matrix with different interfaces and dtypes."""
-        rho = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
-        expected = np.array([[[1, 0], [0, 0]]])
+        rho = array_func(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
+        expected = array_func(np.array([[[1, 0], [0, 0]]]))
 
         result = qml.math.quantum.batched_partial_trace(rho, [0])
         assert qml.math.allclose(result, expected, atol=tol, rtol=0)
