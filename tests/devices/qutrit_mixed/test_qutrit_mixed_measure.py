@@ -266,6 +266,46 @@ class TestMeasurements:
         assert np.allclose(res, expected)
 
 
+@pytest.mark.parametrize(
+    "obs",
+    [
+        qml.Hamiltonian([-0.5, 2], [qml.GellMann(0, 5), qml.GellMann(0, 3)]),
+        qml.Hermitian(
+            -0.5 * qml.GellMann(0, 5).matrix() + 2 * qml.GellMann(0, 3).matrix(), wires=0
+        ),
+    ],
+)
+class TestExpValAnalytical:
+    def test_expval_pure_state(self, obs):
+        """Test that measurements work on pure states as expected from analytical calculation."""
+        # Create TRX[0,2](0.246)TRX[0,1](0.246)|0> state
+        state_vector = np.array([np.cos**2(0.123), -1j * np.sin(0.123), -1j * np.sin(0.246) / 2])
+        state = np.outer(state_vector, np.conj(state_vector))
+        res = measure(qml.expval(obs), state)
+
+        expected = 0.5 * (np.sin(0.246) * np.cos(0.123) ** 2) + 2 * (
+            np.cos(0.123) ** 4 - np.sin(0.123) ** 2
+        )
+        assert np.allclose(res, expected)
+
+    def test_expval_mixed_state(self, obs):
+        """Test that measurements work on mixed states as expected from analytical calculation."""
+        # Create TRX[0,1](0.246)|0> state mixed with TRX[0,2](0.246)|0>
+        state_vector_one = np.array([np.cos(0.123), -1j * np.sin(0.123), 0])
+        state_one = np.outer(state_vector_one, np.conj(state_vector_one))
+
+        state_vector_two = np.array([np.cos(0.123), 0, -1j * np.sin(0.123)])
+        state_two = np.outer(state_vector_two, np.conj(state_vector_two))
+
+        state = (0.33 * state_one) + (0.67 * state_two)
+
+        res = measure(qml.expval(obs), state)
+        expected_pure_state_one = 2 * np.cos(0.246)
+        expected_pure_state_two = 0.5 * np.sin(0.246) + 2 * np.cos(0.123) ** 2
+        expected = (0.33 * expected_pure_state_one) + (0.67 * expected_pure_state_two)
+        assert np.allclose(res, expected)
+
+
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
 
