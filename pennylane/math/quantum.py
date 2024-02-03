@@ -247,11 +247,11 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
-def batched_partial_trace(density_matrix, indices, c_dtype="complex128"):
+def batched_partial_trace(matrix, indices, c_dtype="complex128"):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
-        density_matrix (tensor_like): 3D density matrix tensor. This tensor should be of size
+        matrix (tensor_like): 3D density matrix tensor. This tensor should be of size
             ``(batch_dim, 2**N, 2**N)``, for some integer number of wires``N``.
         indices (list(int)): List of indices to be traced.
 
@@ -281,17 +281,17 @@ def batched_partial_trace(density_matrix, indices, c_dtype="complex128"):
     """
     # Autograd does not support same indices sum in backprop, and tensorflow
     # has a limit of 8 dimensions if same indices are used
-    density_matrix = cast(density_matrix, dtype=c_dtype)
+    matrix = cast(matrix, dtype=c_dtype)
     
-    if get_interface(density_matrix) in ["autograd", "tensorflow"]:
-        return _batched_partial_trace_nonrep_indices(density_matrix, indices)
+    if get_interface(matrix) in ["autograd", "tensorflow"]:
+        return _batched_partial_trace_nonrep_indices(matrix, indices)
 
     # Dimension and reshape
-    batch_dim, dim = density_matrix.shape[:2]
+    batch_dim, dim = matrix.shape[:2]
     num_indices = int(np.log2(dim))
     rho_dim = 2 * num_indices
 
-    density_matrix = np.reshape(density_matrix, [batch_dim] + [2] * 2 * num_indices)
+    matrix = np.reshape(matrix, [batch_dim] + [2] * 2 * num_indices)
     indices = np.sort(indices)
 
     # For loop over wires
@@ -305,11 +305,11 @@ def batched_partial_trace(density_matrix, indices, c_dtype="complex128"):
         state_indices = "".join(state_indices)
 
         einsum_indices = f"a{state_indices}"
-        density_matrix = einsum(einsum_indices, density_matrix)
+        matrix = einsum(einsum_indices, matrix)
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        density_matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
+        matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
     )
     return reduced_density_matrix
 
