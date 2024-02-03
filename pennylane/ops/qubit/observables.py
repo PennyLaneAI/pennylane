@@ -446,6 +446,8 @@ class BasisStateProjector(Projector, Operation):
         else:
             state_array = qml.math.asarray(state)
 
+        super().__init__(state, wires=wires, id=id)
+
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
