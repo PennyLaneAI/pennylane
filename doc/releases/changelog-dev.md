@@ -191,8 +191,12 @@
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
+* The function `batched_partial_trace` has been refactored to be public-facing for computing the partial trace of matrices other than density matrices.
+
+
 * The module `pennylane/math/quantum.py` has now support for the min-entropy.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -364,6 +368,7 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Trenten Babcock,
 Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
