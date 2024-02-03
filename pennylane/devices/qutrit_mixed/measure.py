@@ -168,7 +168,7 @@ def calculate_probability(
     # take the real part so probabilities are not shown as complex numbers
     # also reshape to flat
     probs = math.reshape(math.real(probs), final_shape)
-    probs = math.where(probs < 0, -probs, probs)
+    probs = math.clip(probs, 0, None)
 
     if mp_wires := measurementprocess.wires:
         expanded_shape = [QUDIT_DIM] * num_state_wires
