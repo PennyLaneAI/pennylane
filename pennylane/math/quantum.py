@@ -314,23 +314,23 @@ def batched_partial_trace(matrix, indices, c_dtype="complex128"):
     return reduced_density_matrix
 
 
-def _batched_partial_trace_nonrep_indices(density_matrix, indices):
+def _batched_partial_trace_nonrep_indices(matrix, indices):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.
     """
     # Dimension and reshape
-    batch_dim, dim = density_matrix.shape[:2]
+    batch_dim, dim = matrix.shape[:2]
     num_indices = int(np.log2(dim))
     rho_dim = 2 * num_indices
-    density_matrix = np.reshape(density_matrix, [batch_dim] + [2] * 2 * num_indices)
+    matrix = np.reshape(matrix, [batch_dim] + [2] * 2 * num_indices)
 
-    kraus = cast(np.eye(2), density_matrix.dtype)
+    kraus = cast(np.eye(2), matrix.dtype)
 
     kraus = np.reshape(kraus, (2, 1, 2))
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
 
-    kraus = convert_like(kraus, density_matrix)
-    kraus_dagger = convert_like(kraus_dagger, density_matrix)
+    kraus = convert_like(kraus, matrix)
+    kraus_dagger = convert_like(kraus_dagger, matrix)
     # For loop over wires
     for target_wire in indices:
         # Tensor indices of density matrix
@@ -362,11 +362,11 @@ def _batched_partial_trace_nonrep_indices(density_matrix, indices):
             f"{kraus_index}{new_row_indices}{row_indices}, a{state_indices},"
             f"{kraus_index}{col_indices}{new_col_indices}->a{new_state_indices}"
         )
-        density_matrix = einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
+        matrix = einsum(einsum_indices, kraus, matrix, kraus_dagger)
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        density_matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
+        matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
     )
     return reduced_density_matrix
 
