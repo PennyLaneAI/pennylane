@@ -285,6 +285,7 @@ class FermiSentence(dict):
     1.2 * a⁺(0) a(1)
     + 3.1 * a⁺(1) a(2)
     """
+
     # override the arithmetic dunder methods for numpy arrays so that the
     # methods defined on this class are used instead
     # (i.e. ensure `np.array + FermiSentence` uses `FermiSentence.__radd__` instead of `np.array.__add__`)

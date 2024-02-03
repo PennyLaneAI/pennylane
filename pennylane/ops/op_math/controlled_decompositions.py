@@ -199,15 +199,15 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         decomp.extend(
             [
                 qml.RY(theta / 2, wires=target_wire),
-                qml.MultiControlledX(wires=control_wires + target_wire),
+                qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires),
                 qml.RY(-theta / 2, wires=target_wire),
             ]
         )
     else:
-        decomp.append(qml.MultiControlledX(wires=control_wires + target_wire))
+        decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
     if not qml.math.isclose(-(phi + omega) / 2, 0.0, atol=1e-6, rtol=0):
         decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
-    decomp.append(qml.MultiControlledX(wires=control_wires + target_wire))
+    decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
     if not qml.math.isclose((omega - phi) / 2, 0.0, atol=1e-8, rtol=0):
         decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
 
@@ -256,9 +256,9 @@ def _ctrl_decomp_bisect_od(
 
     def component():
         return [
-            qml.MultiControlledX(wires=control_k1 + target_wire, work_wires=control_k2),
+            qml.ctrl(qml.PauliX(wires=target_wire), control=control_k1, work_wires=control_k2),
             qml.QubitUnitary(a, target_wire),
-            qml.MultiControlledX(wires=control_k2 + target_wire, work_wires=control_k1),
+            qml.ctrl(qml.PauliX(wires=target_wire), control=control_k2, work_wires=control_k1),
             qml.adjoint(qml.QubitUnitary(a, target_wire)),
         ]
 
@@ -350,9 +350,9 @@ def _ctrl_decomp_bisect_general(
 
     component = [
         qml.QubitUnitary(c2t, target_wire),
-        qml.MultiControlledX(wires=control_k2 + target_wire, work_wires=control_k1),
+        qml.ctrl(qml.PauliX(wires=target_wire), control=control_k2, work_wires=control_k1),
         qml.adjoint(qml.QubitUnitary(c1, target_wire)),
-        qml.MultiControlledX(wires=control_k1 + target_wire, work_wires=control_k2),
+        qml.ctrl(qml.PauliX(wires=target_wire), control=control_k1, work_wires=control_k2),
     ]
 
     od_decomp = _ctrl_decomp_bisect_od(d, target_wire, control_wires)
@@ -439,3 +439,76 @@ def ctrl_decomp_bisect(
         return _ctrl_decomp_bisect_md(target_matrix, target_wire, control_wires)
     # General algorithm - 20n+O(1) CNOTs
     return _ctrl_decomp_bisect_general(target_matrix, target_wire, control_wires)
+
+
+def decompose_mcx(control_wires, target_wire, work_wires):
+    """Decomposes the multi-controlled PauliX gate"""
+
+    num_work_wires_needed = len(control_wires) - 2
+
+    if len(work_wires) >= num_work_wires_needed:
+        return _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
+
+    return _decompose_mcx_with_one_worker(control_wires, target_wire, work_wires[0])
+
+
+def _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires):
+    """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
+    https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
+    work wires"""
+    num_work_wires_needed = len(control_wires) - 2
+    work_wires = work_wires[:num_work_wires_needed]
+
+    work_wires_reversed = list(reversed(work_wires))
+    control_wires_reversed = list(reversed(control_wires))
+
+    gates = []
+
+    for i in range(len(work_wires)):
+        ctrl1 = control_wires_reversed[i]
+        ctrl2 = work_wires_reversed[i]
+        t = target_wire if i == 0 else work_wires_reversed[i - 1]
+        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
+
+    gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
+
+    for i in reversed(range(len(work_wires))):
+        ctrl1 = control_wires_reversed[i]
+        ctrl2 = work_wires_reversed[i]
+        t = target_wire if i == 0 else work_wires_reversed[i - 1]
+        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
+
+    for i in range(len(work_wires) - 1):
+        ctrl1 = control_wires_reversed[i + 1]
+        ctrl2 = work_wires_reversed[i + 1]
+        t = work_wires_reversed[i]
+        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
+
+    gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
+
+    for i in reversed(range(len(work_wires) - 1)):
+        ctrl1 = control_wires_reversed[i + 1]
+        ctrl2 = work_wires_reversed[i + 1]
+        t = work_wires_reversed[i]
+        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
+
+    return gates
+
+
+def _decompose_mcx_with_one_worker(control_wires, target_wire, work_wire):
+    """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.3 of
+    https://arxiv.org/abs/quant-ph/9503016, which requires a single work wire"""
+    tot_wires = len(control_wires) + 2
+    partition = int(np.ceil(tot_wires / 2))
+
+    first_part = control_wires[:partition]
+    second_part = control_wires[partition:]
+
+    gates = [
+        qml.ctrl(qml.PauliX(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qml.ctrl(qml.PauliX(target_wire), control=second_part + work_wire, work_wires=first_part),
+        qml.ctrl(qml.PauliX(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qml.ctrl(qml.PauliX(target_wire), control=second_part + work_wire, work_wires=first_part),
+    ]
+
+    return gates

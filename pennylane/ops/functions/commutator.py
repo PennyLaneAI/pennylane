@@ -65,6 +65,15 @@ def commutator(op1, op2, pauli=False):
     >>> qml.commutator(op1, op2, pauli=True)
     (2j*(PauliX(wires=[1]) @ PauliZ(wires=[0]))) + (2j*(PauliZ(wires=[1]) @ PauliX(wires=[0])))
 
+
+    It is also worth highlighting that computing commutators with Paulis is typically faster.
+    So whenever all input operators have a pauli representation, we recommend using `pauli=True`.
+    The result can then still be transformed into a PennyLane operator.
+
+    >>> res = qml.commutator(qml.PauliX(0), qml.PauliY(0), pauli=True)
+    >>> res.operation()
+
+
     .. details::
         :title: Usage Details
 
@@ -97,7 +106,7 @@ def commutator(op1, op2, pauli=False):
             op1 = qml.pauli.pauli_sentence(op1)
         if not isinstance(op2, PauliSentence):
             op2 = qml.pauli.pauli_sentence(op2)
-        return op1 @ op2 - op2 @ op1
+        return op1.commutator(op2)
 
     with qml.QueuingManager.stop_recording():
         if isinstance(op1, (PauliWord, PauliSentence)):
