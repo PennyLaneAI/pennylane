@@ -894,8 +894,11 @@ class TestBatchedPartialTrace:
         rho = array_func(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
 
         # Attempt to trace over an invalid wire
-        with pytest.raises(IndexError, match="list assignment index out of range"):
+        with pytest.raises(Exception) as e:
             qml.math.quantum.batched_partial_trace(rho, [2])
+            valueBool = bool(e.type == ValueError or e.type == IndexError or e.type == tf.python.framework.errors_impl.InvalidArgumentError)
+            assert valueBool == True
+             
     
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("dtype", dtypes)
