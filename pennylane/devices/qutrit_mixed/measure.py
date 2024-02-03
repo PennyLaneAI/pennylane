@@ -227,7 +227,7 @@ def get_measurement_function(
             # TODO add faster methods
             # TODO add support for sparce Hamiltonians
             if isinstance(measurementprocess.obs, (Hamiltonian, Sum)):
-                return sum_of_terms_method
+                return calculate_expval_sum_of_terms
             if measurementprocess.obs.has_matrix:
                 return calculate_expval
         if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
