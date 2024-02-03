@@ -58,10 +58,13 @@ def get_expval(op, state):
     return np.trace(op_mult_state)
 
 
+@pytest.mark.parametrize(
+    "mp", [qml.sample(), qml.counts(), qml.sample(wires=0), qml.counts(wires=0)]
+)
 class TestCurrentlyUnsupportedCases:
     # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self, two_qutrit_state):
-        """Test sample-only measurements raise a notimplementedError."""
+        """Test sample-only measurements raise a NotImplementedError."""
         with pytest.raises(NotImplementedError):
             _ = measure(qml.sample(wires=0), two_qutrit_state)
 
