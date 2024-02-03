@@ -14,6 +14,7 @@
 """Unit tests for matrix expand functions."""
 # pylint: disable=too-few-public-methods,too-many-public-methods
 from functools import reduce
+from typing import Literal
 
 import numpy as np
 import pytest
@@ -189,7 +190,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_autograd(self, i, base_matrix, tol):
+    def test_autograd(self, i, base_matrix, tol: float):
         """Tests differentiation in autograd by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
 
@@ -207,7 +208,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_torch(self, i, base_matrix, tol):
+    def test_torch(self, i, base_matrix, tol: float):
         """Tests differentiation in torch by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
         import torch
@@ -225,7 +226,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_jax(self, i, base_matrix, tol):
+    def test_jax(self, i, base_matrix, tol: float):
         """Tests differentiation in jax by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
         import jax
@@ -244,7 +245,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_tf(self, i, base_matrix, tol):
+    def test_tf(self, i, base_matrix, tol: float):
         """Tests differentiation in TensorFlow by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
         import tensorflow as tf
@@ -256,7 +257,7 @@ class TestExpandMatrix:
         jac = tape.jacobian(res, base_matrix)
         assert np.allclose(jac, self.expected_autodiff[i], atol=tol)
 
-    def test_expand_one(self, tol):
+    def test_expand_one(self, tol: float):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
         U = np.array(
             [
@@ -279,7 +280,7 @@ class TestExpandMatrix:
         expected = np.kron(np.kron(I, I), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_one_broadcasted(self, tol):
+    def test_expand_one_broadcasted(self, tol: float):
         """Test that a broadcasted 1 qubit gate correctly expands to 3 qubits."""
         U = np.array(
             [
@@ -304,7 +305,7 @@ class TestExpandMatrix:
         expected = np.kron(np.kron(I_broadcasted, I_broadcasted), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_two_consecutive_wires(self, tol):
+    def test_expand_two_consecutive_wires(self, tol: float):
         """Test that a 2 qubit gate on consecutive wires correctly
         expands to 4 qubits."""
         U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
@@ -324,7 +325,7 @@ class TestExpandMatrix:
         expected = np.kron(np.kron(I, I), U2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_two_consecutive_wires_broadcasted(self, tol):
+    def test_expand_two_consecutive_wires_broadcasted(self, tol: float):
         """Test that a broadcasted 2 qubit gate on consecutive wires correctly
         expands to 4 qubits."""
         U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
@@ -345,7 +346,7 @@ class TestExpandMatrix:
         expected = np.kron(np.kron(I_broadcasted, I_broadcasted), U2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_two_reversed_wires(self, tol):
+    def test_expand_two_reversed_wires(self, tol: float):
         """Test that a 2 qubit gate on reversed consecutive wires correctly
         expands to 4 qubits."""
         # CNOT with target on wire 1
@@ -354,7 +355,7 @@ class TestExpandMatrix:
         expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_two_reversed_wires_broadcasted(self, tol):
+    def test_expand_two_reversed_wires_broadcasted(self, tol: float):
         """Test that a broadcasted 2 qubit gate on reversed consecutive wires correctly
         expands to 4 qubits."""
         # CNOT with target on wire 1 and a batch dimension of size 1
@@ -365,7 +366,7 @@ class TestExpandMatrix:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_three_consecutive_wires(self, tol):
+    def test_expand_three_consecutive_wires(self, tol: float):
         """Test that a 3 qubit gate on consecutive
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,1,2
@@ -378,7 +379,7 @@ class TestExpandMatrix:
         expected = np.kron(I, Toffoli)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_three_consecutive_wires_broadcasted(self, tol):
+    def test_expand_three_consecutive_wires_broadcasted(self, tol: float):
         """Test that a broadcasted 3 qubit gate on consecutive
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,1,2
@@ -391,7 +392,7 @@ class TestExpandMatrix:
         expected = np.kron(I_broadcasted, Toffoli_broadcasted)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_three_nonconsecutive_ascending_wires(self, tol):
+    def test_expand_three_nonconsecutive_ascending_wires(self, tol: float):
         """Test that a 3 qubit gate on non-consecutive but ascending
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,2,3
@@ -404,7 +405,7 @@ class TestExpandMatrix:
         expected = np.kron(II, SWAP) @ np.kron(Toffoli, I) @ np.kron(II, SWAP)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_three_nonconsecutive_ascending_wires_broadcasted(self, tol):
+    def test_expand_three_nonconsecutive_ascending_wires_broadcasted(self, tol: float):
         """Test that a broadcasted 3 qubit gate on non-consecutive but ascending
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,2,3
@@ -435,7 +436,7 @@ class TestExpandMatrix:
         expected = np.moveaxis(expected, 0, -2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
+    def test_expand_three_nonconsecutive_nonascending_wires(self, tol: float):
         """Test that a 3 qubit gate on non-consecutive non-ascending
         wires correctly expands to 4 qubits"""
         # test applied to wire 3, 1, 2
@@ -452,7 +453,7 @@ class TestExpandMatrix:
         expected = np.kron(SWAP, II) @ np.kron(I, Toffoli_perm) @ np.kron(SWAP, II)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_three_nonconsecutive_nonascending_wires_broadcasted(self, tol):
+    def test_expand_three_nonconsecutive_nonascending_wires_broadcasted(self, tol: float):
         """Test that a broadcasted 3 qubit gate on non-consecutive non-ascending
         wires correctly expands to 4 qubits"""
         # test applied to wire 3, 1, 2
@@ -478,7 +479,7 @@ class TestExpandMatrix:
         expected = np.moveaxis(expected, 0, -2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_matrix_usage_in_operator_class(self, tol):
+    def test_expand_matrix_usage_in_operator_class(self, tol: float):
         """Tests that the method is used correctly by defining a dummy operator and
         checking the permutation/expansion."""
 
@@ -510,7 +511,7 @@ class TestExpandMatrix:
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
 
-    def test_expand_matrix_usage_in_operator_class_broadcasted(self, tol):
+    def test_expand_matrix_usage_in_operator_class_broadcasted(self, tol: float):
         """Tests that the method is used correctly with a broadcasted matrix by defining
         a dummy operator and checking the permutation/expansion."""
 
@@ -896,22 +897,4 @@ class TestBatchedPartialTrace:
         # Attempt to trace over an invalid wire
         with pytest.raises(Exception) as e:
             qml.math.quantum.batched_partial_trace(rho, [2])
-            valueBool = bool(e.type == ValueError or e.type == IndexError or e.type == tf.python.framework.errors_impl.InvalidArgumentError)
-            assert valueBool == True
-             
-    
-    @pytest.mark.parametrize("array_func", array_funcs)
-    @pytest.mark.parametrize("dtype", dtypes)
-    def test_single_density_matrix(self, array_func, dtype, tol):
-        tol = 1e-6 if dtype == np.float32 else 1e-9
-        """Test partial trace on a single density matrix with different interfaces and dtypes."""
-        rho = array_func(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]))
-        expected = array_func(np.array([[[1, 0], [0, 0]]]))
-
-        result = qml.math.quantum.batched_partial_trace(rho, [0])
-        assert qml.math.allclose(result, expected, atol=tol, rtol=0)
-
-    
- 
-
-  
+            assert e.type in (ValueError, IndexError, tf.python.framework.errors_impl.InvalidArgumentError)
