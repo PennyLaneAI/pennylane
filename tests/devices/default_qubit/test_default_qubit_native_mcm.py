@@ -126,13 +126,7 @@ def test_single_mcm_single_measure_mcm(shots, reset, measure_f):
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(op=m0)
 
-    @qml.defer_measurements
-    @qml.qnode(dev)
-    def func2(x, y):
-        qml.RX(x, wires=0)
-        m0 = qml.measure(0, reset=reset)
-        qml.cond(m0, qml.RY)(y, wires=1)
-        return measure_f(op=m0)
+    func2 = qml.defer_measurements(func1)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
