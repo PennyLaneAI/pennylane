@@ -115,6 +115,7 @@
 
 * Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
+  [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
@@ -199,6 +200,9 @@
 
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
+* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+  [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
 <h3>Breaking changes 💔</h3>
 
@@ -361,6 +365,9 @@
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/) 
   [(#5148)](https://github.com/PennyLaneAI/pennylane/pull/5148)
 
+* `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
+  [(#5149)](https://github.com/PennyLaneAI/pennylane/pull/5149)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -371,6 +378,7 @@ Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
+Eugenio Gigante,
 Diego Guala,
 Soran Jahangiri,
 Korbinian Kottmann,
