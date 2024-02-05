@@ -21,7 +21,7 @@ from typing import List
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
@@ -66,6 +66,7 @@ def sum(*summands, id=None, lazy=True):
     array([[ 1,  1],
            [ 1, -1]])
     """
+    summands = tuple(convert_to_opmath(op) for op in summands)
     if lazy:
         return Sum(*summands, id=id)
 
