@@ -4,39 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* A new `default.clifford` device enables efficient simulation of large-scale Clifford circuits
-  defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
-  [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
+<h4>Native mid-circuit measurements on default qubit 💡</h4>
 
-  Given a circuit with only Clifford gates, one can use this device to obtain the usual range
-  of PennyLane [measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html)
-  as well as the state represented in the Tableau form of
-  [Aaronson & Gottesman (2004)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328):
-
-  ```python
-  import pennylane as qml
-
-  dev = qml.device("default.clifford", tableau=True)
-  @qml.qnode(dev)
-  def circuit():
-      qml.CNOT(wires=[0, 1])
-      qml.PauliX(wires=[1])
-      qml.ISWAP(wires=[0, 1])
-      qml.Hadamard(wires=[0])
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> circuit()
-  array([[0, 1, 1, 0, 0],
-         [1, 0, 1, 1, 1],
-         [0, 0, 0, 1, 0],
-         [1, 0, 0, 1, 1]])
-  ```
-
-* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
-  is now strictly faster for jax.
-  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
+<h4>Work easily and efficiently with Pauli operators 🔧</h4>
 
 * New `qml.commutator` function that allows to compute commutators between
   `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
@@ -80,8 +50,91 @@
   + 2j * X(0) @ Z(1)
   ```
 
+* Upgrade Pauli arithmetic:
+  You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
+  You can now intuitively add together
+  `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
+  For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
+  sentence `ps1 = PauliSentence({pw1: 3.})`.
+  You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each other. For example `ps1 - pw1 - 1`.
+  Overall, you can now intuitively construct `PauliSentence` operators like `0.5 * pw1 - 1.5 * ps1 + 2`.
+  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+  [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
+  [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
+  [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
 
-<h4>Parity Mapping</h4>
+* `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
+  [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
+
+* Composite operations (eg. those made with `qml.prod` and `qml.sum`) and `SProd` operations convert `Hamiltonian` and
+  `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
+  incompatible operator types.
+  [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
+  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
+
+* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
+  [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
+
+<h4>Easy to inspect transforms 🔎</h4>
+
+<h4>New Clifford and noisy qutrit devices 🦾</h4>
+
+* A new `default.clifford` device enables efficient simulation of large-scale Clifford circuits
+  defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
+  [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
+
+  Given a circuit with only Clifford gates, one can use this device to obtain the usual range
+  of PennyLane [measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html)
+  as well as the state represented in the Tableau form of
+  [Aaronson & Gottesman (2004)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328):
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.clifford", tableau=True)
+  @qml.qnode(dev)
+  def circuit():
+      qml.CNOT(wires=[0, 1])
+      qml.PauliX(wires=[1])
+      qml.ISWAP(wires=[0, 1])
+      qml.Hadamard(wires=[0])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([[0, 1, 1, 0, 0],
+         [1, 0, 1, 1, 1],
+         [0, 0, 0, 1, 0],
+         [1, 0, 0, 1, 1]])
+  ```
+
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
+<h3>Improvements 🛠</h3>
+
+<h4>Faster gradients with VJPs and other performance improvements</h4>
+
+* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
+  is now strictly faster for jax.
+  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
+
+* `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
+  for `tf.Function` and Tensorflow Autograph.
+  [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
+
+* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
+  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
+
+* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
+  for large workflows.
+  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
+
+* Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
+  [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
+
+<h4>Community contributions 🥳</h4>
 
 * `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
    [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
@@ -100,8 +153,16 @@
    ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
    ```
 
+* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
+  [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
-<h3>Improvements 🛠</h3>
+* Improve efficiency of matrix calculation when operator is symmetric over wires
+   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
+
+* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+  [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
+
+<h4>Other improvements</h4>
 
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
@@ -113,50 +174,11 @@
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
 
-* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
-  for large workflows.
-  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
-
-* `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
-  for `tf.Function` and Tensorflow Autograph.
-  [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
-
-* Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
-  [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
-
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
-* Upgrade Pauli arithmetic:
-  You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
-  You can now intuitively add together
-  `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
-  For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
-  sentence `ps1 = PauliSentence({pw1: 3.})`.
-  You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each other. For example `ps1 - pw1 - 1`.
-  Overall, you can now intuitively construct `PauliSentence` operators like `0.5 * pw1 - 1.5 * ps1 + 2`.
-  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
-  [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
-  [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
-  [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
-
-* `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
-  [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
-
-* Improve efficiency of matrix calculation when operator is symmetric over wires
-   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
-
-* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
-  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
-
 * A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
-
-* Composite operations (eg. those made with `qml.prod` and `qml.sum`) and `SProd` operations convert `Hamiltonian` and
-  `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
-  incompatible operator types.
-  [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
-  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
 
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
@@ -179,23 +201,9 @@
   `MultiControlledX` depending on the number of control wires and control values.
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
 
-* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
-  [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
-
 * Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
-
-<h4>Community contributions 🥳</h4>
-
-* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
-  [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
-
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
-
-* The module `pennylane/math/quantum.py` has now support for the min-entropy.
-  [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
 <h3>Breaking changes 💔</h3>
 
