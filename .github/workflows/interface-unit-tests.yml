@@ -166,6 +166,7 @@ jobs:
       install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
+      requirements_file: torch.txt
 
 
   autograd-tests:
@@ -232,6 +233,7 @@ jobs:
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 3 --group ${{ matrix.group }} --durations-path='.github/workflows/tf_tests_durations.json'
       additional_pip_packages: pytest-split
+      requirements_file: tf.txt
 
 
   jax-tests:
@@ -267,6 +269,7 @@ jobs:
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/jax_tests_durations.json'
       additional_pip_packages: pytest-split
+      requirements_file: jax.txt
 
 
   core-tests:
@@ -303,6 +306,7 @@ jobs:
       pytest_markers: core and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
       additional_pip_packages: pytest-split
+      requirements_file: core.txt
 
 
   all-interfaces-tests:
@@ -337,6 +341,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
+      requirements_file: all_interfaces.txt
 
 
   external-libraries-tests:
@@ -370,7 +375,8 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
-      additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst matplotlib stim
+      additional_pip_packages: pyzx pennylane-catalyst matplotlib stim
+      requirements_file: external.txt
 
 
   qcut-tests:

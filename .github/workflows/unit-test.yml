@@ -89,6 +89,11 @@ on:
         required: false
         type: string
         default: ''
+      requirements_file:
+        description: File name to store stable version of requirements for a test group
+        required: false
+        type: string
+        default: ''
 
 jobs:
   test:
@@ -243,3 +248,7 @@ jobs:
         with:
           name: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks
           path: ${{ github.workspace }}/benchmark_results
+
+      - name: Commit stable dependency changes
+        if: github.event_name == 'pull_request' && inputs.requirements_file != ''
+        run: pip freeze
