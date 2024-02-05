@@ -171,9 +171,9 @@
   X(0)
   >>> qml.PauliX('a')
   X('a')
-  >>> 0.5 * X(0) # no unnecessary bracket
+  >>> 0.5 * X(0)
   0.5 * X(0)
-  >>> 0.5 * (X(0) + Y(1)) # keeps necessary bracket
+  >>> 0.5 * (X(0) + Y(1))
   0.5 * (X(0) + Y(1))
   ```
   [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
