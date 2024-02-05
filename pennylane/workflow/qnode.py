@@ -20,7 +20,7 @@ import functools
 import inspect
 import warnings
 from collections.abc import Sequence
-from typing import Union
+from typing import Union, Optional
 import logging
 
 import pennylane as qml
@@ -62,23 +62,25 @@ def _get_device_shots(device) -> Shots:
     return device.shots
 
 
-def _make_execution_config(circuit: "QNode") -> "qml.devices.ExecutionConfig":
-    if circuit.gradient_fn is None:
-        _gradient_method = None
-    elif isinstance(circuit.diff_method, str):
-        _gradient_method = circuit.diff_method
+def _make_execution_config(
+    circuit: Optional["QNode"], diff_method
+) -> "qml.devices.ExecutionConfig":
+    if diff_method is None or isinstance(diff_method, str):
+        _gradient_method = diff_method
     else:
         _gradient_method = "gradient-transform"
-    grad_on_execution = circuit.execute_kwargs.get("grad_on_execution")
-    if circuit.interface == "jax":
+    grad_on_execution = getattr(circuit, "execute_kwargs", {}).get("grad_on_execution")
+    if getattr(circuit, "interface", "") == "jax":
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
     return qml.devices.ExecutionConfig(
-        interface=circuit.interface,
+        interface=getattr(circuit, "interface", None),
         gradient_method=_gradient_method,
         grad_on_execution=grad_on_execution,
-        use_device_jacobian_product=circuit.execute_kwargs["device_vjp"],
+        use_device_jacobian_product=getattr(circuit, "execute_kwargs", {"device_vjp": False})[
+            "device_vjp"
+        ],
     )
 
 
@@ -646,6 +648,13 @@ class QNode:
         if diff_method == "hadamard":
             return qml.gradients.hadamard_grad, {}, device
 
+        config = _make_execution_config(None, diff_method)
+        print(config)
+        print(device.supports_derivatives(config))
+        if device.supports_derivatives(config):
+            print("here?")
+            return diff_method, {}, device
+
         if isinstance(diff_method, str):
             raise qml.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
@@ -742,6 +751,9 @@ class QNode:
         if isinstance(device, qml.devices.Device):
             config = qml.devices.ExecutionConfig(gradient_method="backprop", interface=interface)
             if device.supports_derivatives(config):
+                print("supports bakcprop?")
+                print(device, config)
+                print(device.supports_derivatives(config))
                 return "backprop", {}, device
             raise qml.QuantumFunctionError(
                 f"Device {device.name} does not support backprop with {config}"
@@ -965,6 +977,7 @@ class QNode:
             self.interface = "auto"
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
+
         override_shots = False
         old_interface = self.interface
 
@@ -1008,9 +1021,12 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         config = None
+        diff_method = self.gradient_fn
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
-            config = _make_execution_config(self)
+            config = _make_execution_config(self, self.diff_method)
+            if self.device.supports_derivatives(config, self._tape):
+                diff_method = self.diff_method
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:
@@ -1041,11 +1057,6 @@ class QNode:
                 full_transform_program._set_all_argnums(
                     self, args, kwargs, argnums
                 )  # pylint: disable=protected-access
-
-        diff_method = self.gradient_fn
-        if self.diff_method == "best" and isinstance(self.device, qml.devices.Device):
-            if self.device.supports_derivatives(config, self._tape):
-                diff_method = "best"
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
