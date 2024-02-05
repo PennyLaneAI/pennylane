@@ -218,9 +218,7 @@ class DefaultQubitTorch(DefaultQubitLegacy):
                 ),
             )
 
-        ops_and_obs = circuit.operations + circuit.observables
-
-        par_torch_device = self._get_parameter_torch_device(ops_and_obs)
+        par_torch_device = self._get_parameter_torch_device(circuit.operations)
 
         if not self._torch_device_specified:
             self._torch_device = par_torch_device

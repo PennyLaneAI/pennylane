@@ -63,6 +63,7 @@ class QFT(Operation):
 
         circuit_qft(np.array([1.0, 0.0, 0.0], requires_grad=False))
     """
+
     num_wires = AnyWires
     grad_method = None
 

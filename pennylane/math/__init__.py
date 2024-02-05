@@ -77,6 +77,7 @@ from .quantum import (
     sqrt_matrix,
     vn_entropy,
     max_entropy,
+    min_entropy,
     trace_distance,
 )
 from .fidelity import fidelity, fidelity_statevector
@@ -163,6 +164,7 @@ __all__ = [
     "iscomplex",
     "marginal_prob",
     "max_entropy",
+    "min_entropy",
     "multi_dispatch",
     "mutual_info",
     "ones_like",

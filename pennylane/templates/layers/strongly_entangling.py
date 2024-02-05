@@ -129,6 +129,7 @@ class StronglyEntanglingLayers(Operation):
             weights = np.random.random(size=shape)
 
     """
+
     num_wires = AnyWires
     grad_method = None
 

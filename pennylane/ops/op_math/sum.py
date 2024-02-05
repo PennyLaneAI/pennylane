@@ -19,11 +19,9 @@ import itertools
 from copy import copy
 from typing import List
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
@@ -68,6 +66,7 @@ def sum(*summands, id=None, lazy=True):
     array([[ 1,  1],
            [ 1, -1]])
     """
+    summands = tuple(convert_to_opmath(op) for op in summands)
     if lazy:
         return Sum(*summands, id=id)
 
@@ -330,7 +329,7 @@ class Sum(CompositeOp):
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return np.min(wires), len(wires), str(op)
+            return sorted(list(map(str, wires)))[0], len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 
