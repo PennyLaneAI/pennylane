@@ -41,6 +41,7 @@
 * New `qml.commutator` function that allows to compute commutators between
   `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
   [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+  [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
 
   Basic usage with PennyLane operators.
 
@@ -69,6 +70,16 @@
   + 2j * X(0) @ Z(1)
   ```
 
+  We can also compute commutators with Pauli operators natively with the `PauliSentence.commutator` method.
+
+  ```pycon
+  >>> op1 = PauliWord({0:"X", 1:"X"})
+  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
+  >>> op1.commutator(op2)
+  2j * Z(0) @ X(1)
+  + 2j * X(0) @ Z(1)
+  ```
+
 
 <h4>Parity Mapping</h4>
 
@@ -89,7 +100,15 @@
    ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
    ```
 
+
 <h3>Improvements 🛠</h3>
+
+* Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
+  [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
+  [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
+
+* The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
+  [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
 
 * Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
   for large workflows.
@@ -150,6 +169,20 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+* `qml.ctrl` called on operators with custom controlled versions will return instances
+  of the custom class, and it will also flatten nested controlled operators to a single
+  multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
+  calling `qml.ctrl` will always resolve to the best option in `CNOT`, `Toffoli`, or
+  `MultiControlledX` depending on the number of control wires and control values.
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
+
+* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
+  [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
+
+* Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
+  are being raised unexpectedly.
+  [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
+
 <h4>Community contributions 🥳</h4>
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
@@ -157,6 +190,9 @@
 
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
+* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+  [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
 <h3>Breaking changes 💔</h3>
 
@@ -185,7 +221,12 @@
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
-* The decomposition of an operator created with calling `qml.ctrl` on a parametric operator (specifically `RX`, `RY`, `RZ`, `Rot`, `PhaseShift`) with a single control wire will now be the full decomposition instead of a single controlled gate. For example:
+* Controlled operators with a custom controlled version decomposes like how their
+  controlled counterpart decomposes, as opposed to decomposing into their controlled version.   
+  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
+  
+  For example:
   ```
   >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
   [
@@ -197,7 +238,6 @@
     RZ(-1.5707963267948966, wires=[1])
   ]
   ```
-  [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
 
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` have been removed. Users should now
   validate these properties manually.
@@ -228,6 +268,7 @@
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
   [(#5071)](https://github.com/PennyLaneAI/pennylane/pull/5071)
   [(#5076)](https://github.com/PennyLaneAI/pennylane/pull/5076)
+  [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
 * Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
   ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
@@ -268,6 +309,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
+  [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
+
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
   `Operator.hash` now depends on the memory location, `id`, of a Jax tracer instead of its string representation.
   [(#3917)](https://github.com/PennyLaneAI/pennylane/pull/3917)
@@ -307,6 +351,13 @@
   operators to the left, as is standard in quantum chemistry). 
   [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
 
+* Multi-wire controlled `CNOT` and `PhaseShift` can now be decomposed correctly.
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/) 
+  [(#5148)](https://github.com/PennyLaneAI/pennylane/pull/5148)
+
+* `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
+  [(#5149)](https://github.com/PennyLaneAI/pennylane/pull/5149)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -317,7 +368,9 @@ Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
+Eugenio Gigante,
 Diego Guala,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,

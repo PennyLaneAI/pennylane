@@ -581,7 +581,7 @@ class TestDiagonalQubitUnitary:
         with qml.queuing.AnnotatedQueue() as q:
             op._controlled(control=0)
         tape = qml.tape.QuantumScript.from_queue(q)
-        mat = qml.matrix(tape)
+        mat = qml.matrix(tape, wire_order=[0, 1, 2, 3])
         assert qml.math.allclose(
             mat, qml.math.diag(qml.math.append(qml.math.ones(8, dtype=complex), D))
         )
@@ -595,7 +595,7 @@ class TestDiagonalQubitUnitary:
         with qml.queuing.AnnotatedQueue() as q:
             op._controlled(control=0)
         tape = qml.tape.QuantumScript.from_queue(q)
-        mat = qml.matrix(tape)
+        mat = qml.matrix(tape, wire_order=[0, 1, 2])
         expected = np.array(
             [np.diag([1, 1, 1, 1, 1j, 1, -1j, 1]), np.diag([1, 1, 1, 1, 1, -1, 1j, -1])]
         )
@@ -874,7 +874,7 @@ class TestBlockEncode:
     )
     def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
         """Test that BlockEncode outputs the correct matrix."""
-        assert np.allclose(qml.matrix(qml.BlockEncode)(input_matrix, wires), output_matrix)
+        assert np.allclose(qml.matrix(qml.BlockEncode(input_matrix, wires)), output_matrix)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),

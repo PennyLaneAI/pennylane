@@ -311,7 +311,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
                         qml.Identity(p)
                         - qml.PauliZ(p)
                         - qml.PauliZ(q)
-                        + qml.pauli.pauli_mult_with_phase(qml.PauliZ(p), qml.PauliZ(q))[0]
+                        + (qml.Identity(p) if p == q else (qml.PauliZ(p) @ qml.PauliZ(q)))
                     )
                 )
         ops_l.append(ops_l_)
