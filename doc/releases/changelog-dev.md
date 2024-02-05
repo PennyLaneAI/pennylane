@@ -191,6 +191,7 @@
     + 0.7 * (X(1) @ X(2))
     + 0.8 * (X(2) @ X(3))
   )
+  ```
   [(#5138)](https://github.com/PennyLaneAI/pennylane/pull/5138)
 
 * `qml.ctrl` called on operators with custom controlled versions will return instances
