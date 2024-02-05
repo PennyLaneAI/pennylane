@@ -307,7 +307,7 @@ class CountsMP(SampleMeasurement):
 
             # convert to string
             def convert(x):
-                return f"{x:064b}"[-num_wires:]
+                return f"{x:0{num_wires}b}"
 
             exp2 = 2 ** np.arange(num_wires - 1, -1, -1)
             samples = np.einsum("...i,i", samples, exp2)
