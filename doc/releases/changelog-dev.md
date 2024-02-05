@@ -134,6 +134,7 @@
 * Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
+
 <h4>Community contributions 🥳</h4>
 
 * `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
@@ -161,6 +162,13 @@
 
 * The module `pennylane/math/quantum.py` has now support for the min-entropy.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
+
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
+* A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
+  [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
+
 
 <h4>Other improvements</h4>
 
@@ -201,21 +209,6 @@
 * Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
-
-
-<h4>Community contributions 🥳</h4>
-
-* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
-  [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
-
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
-
-* A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
-  [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
-
-* The module `pennylane/math/quantum.py` has now support for the min-entropy.
-  [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
 
 <h3>Breaking changes 💔</h3>
