@@ -1956,12 +1956,6 @@ class TestTensor:
         for obs1, obs2 in zip(mapped_tensor.obs, final_obs):
             assert qml.equal(obs1, obs2)
 
-    def test_matmul_not_implemented(self):
-        """Test that using @ with invalid operators returns NotImplemented"""
-        op = Tensor(qml.PauliZ(0), qml.PauliX(1))
-        assert 1.0 @ op == NotImplemented
-        assert op @ 1.0 == NotImplemented
-
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),

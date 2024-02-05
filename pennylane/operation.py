@@ -2052,7 +2052,16 @@ class Tensor(Observable):
         self.obs: List[Observable] = []
         self._args = args
         self._batch_size = None
+        self._pauli_rep = None
         self.queue(init=True)
+
+        wires = [op.wires for op in self.obs]
+        if len(wires) != len(set(wires)):
+            warnings.warn(
+                "Tensor object acts on overlapping wires; in some PennyLane functions this will "
+                "lead to undefined behaviour",
+                UserWarning,
+            )
 
         # Queue before updating pauli_rep because self.queue updates self.obs
         if all(prs := [o.pauli_rep for o in self.obs]):
@@ -2095,7 +2104,6 @@ class Tensor(Observable):
 
     def queue(self, context=QueuingManager, init=False):  # pylint: disable=arguments-differ
         constituents = self._args if init else self.obs
-
         for o in constituents:
             if init:
                 if isinstance(o, Tensor):
@@ -2106,14 +2114,6 @@ class Tensor(Observable):
                     raise ValueError("Can only perform tensor products between observables.")
 
             context.remove(o)
-
-        wires = [op.wires for op in self.obs]
-        if len(wires) != len(set(wires)):
-            warnings.warn(
-                "Tensor object acts on overlapping wires; in some PennyLane functions this will "
-                "lead to undefined behaviour",
-                UserWarning,
-            )
 
         context.append(self)
         return self
