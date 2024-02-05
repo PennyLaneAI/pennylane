@@ -876,8 +876,8 @@ def svd(tensor, like=None, **kwargs):
     For a matrix A, the singular value decomposition consist of three matrices U, S and Vh, such that:
 
     .. math::
-    
-        A = U \cdot Diag(S) \cdot Vh
+
+        A = U . Diag(S) . Vh
 
     Returns:
         S, U, V: full decomposition (if compute_uv is True or None)
