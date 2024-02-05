@@ -2017,12 +2017,6 @@ class TestTensor:
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = op @ 1.0
 
-    def test_matmul_not_implemented(self):
-        """Test that using @ with invalid operators returns NotImplemented"""
-        op = Tensor(qml.PauliZ(0), qml.PauliX(1))
-        assert 1.0 @ op == NotImplemented
-        assert op @ 1.0 == NotImplemented
-
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
