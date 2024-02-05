@@ -105,6 +105,7 @@
 
 * Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
+  [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
@@ -200,6 +201,9 @@
 
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
+* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+  [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
 <h3>Breaking changes 💔</h3>
 
@@ -316,6 +320,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
+  [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
+
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
   `Operator.hash` now depends on the memory location, `id`, of a Jax tracer instead of its string representation.
   [(#3917)](https://github.com/PennyLaneAI/pennylane/pull/3917)
@@ -355,6 +362,13 @@
   operators to the left, as is standard in quantum chemistry). 
   [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
 
+* Multi-wire controlled `CNOT` and `PhaseShift` can now be decomposed correctly.
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/) 
+  [(#5148)](https://github.com/PennyLaneAI/pennylane/pull/5148)
+
+* `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
+  [(#5149)](https://github.com/PennyLaneAI/pennylane/pull/5149)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -365,6 +379,7 @@ Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
+Eugenio Gigante,
 Diego Guala,
 Soran Jahangiri,
 Korbinian Kottmann,
