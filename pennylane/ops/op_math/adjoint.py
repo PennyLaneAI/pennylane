@@ -248,7 +248,7 @@ class Adjoint(SymbolicOp):
         >>> isinstance(op, qml.operation.Operation)
         False
         >>> Adjoint(qml.PauliX(0)) @ qml.PauliY(1)
-        Adjoint(PauliX)(wires=[0]) @ Y(1)
+        (Adjoint(X(0))) @ Y(1)
 
     """
 
