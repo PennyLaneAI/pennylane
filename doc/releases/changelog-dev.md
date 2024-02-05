@@ -159,7 +159,14 @@
 * Improve efficiency of matrix calculation when operator is symmetric over wires
    [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
+* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+  [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
+
 <h4>Other improvements</h4>
+
+* Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
+  [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
+  [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
@@ -190,6 +197,10 @@
   calling `qml.ctrl` will always resolve to the best option in `CNOT`, `Toffoli`, or
   `MultiControlledX` depending on the number of control wires and control values.
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
+
+* Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
+  are being raised unexpectedly.
+  [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
 <h3>Breaking changes 💔</h3>
 
@@ -265,6 +276,7 @@
   [(#5047)](https://github.com/PennyLaneAI/pennylane/pull/5047)
   [(#5071)](https://github.com/PennyLaneAI/pennylane/pull/5071)
   [(#5076)](https://github.com/PennyLaneAI/pennylane/pull/5076)
+  [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
 * Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
   ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
@@ -305,6 +317,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
+  [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
+
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
   `Operator.hash` now depends on the memory location, `id`, of a Jax tracer instead of its string representation.
   [(#3917)](https://github.com/PennyLaneAI/pennylane/pull/3917)
@@ -344,6 +359,13 @@
   operators to the left, as is standard in quantum chemistry). 
   [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
 
+* Multi-wire controlled `CNOT` and `PhaseShift` can now be decomposed correctly.
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/) 
+  [(#5148)](https://github.com/PennyLaneAI/pennylane/pull/5148)
+
+* `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
+  [(#5149)](https://github.com/PennyLaneAI/pennylane/pull/5149)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -354,6 +376,7 @@ Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
+Eugenio Gigante,
 Diego Guala,
 Soran Jahangiri,
 Korbinian Kottmann,

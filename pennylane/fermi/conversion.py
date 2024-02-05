@@ -105,7 +105,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
             (_, wire), sign = item
 
             z_string = dict(zip(range(wire), ["Z"] * wire))
-            qubit_operator *= PauliSentence(
+            qubit_operator @= PauliSentence(
                 {
                     PauliWord({**z_string, **{wire: "X"}}): 0.5,
                     PauliWord({**z_string, **{wire: "Y"}}): coeffs[sign],
@@ -249,7 +249,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
         )
         pw2 = PauliWord({**{wire: "Y"}, **x_string})
 
-        qubit_operator *= PauliSentence({pw1: 0.5, pw2: coeffs[sign]})
+        qubit_operator @= PauliSentence({pw1: 0.5, pw2: coeffs[sign]})
 
     for pw in qubit_operator:
         if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:

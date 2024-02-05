@@ -19,6 +19,7 @@ from typing import Sequence, Callable
 from collections import OrderedDict
 import numpy as np
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.op_transforms import OperationTransformError
 from pennylane.transforms import transform
@@ -253,7 +254,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
         Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
     """
     # If it is a simple operation just transform it to a tape
-    if not isinstance(tape, qml.operation.Operator):
+    if not isinstance(tape, Operator):
         if not isinstance(tape, (qml.tape.QuantumScript, qml.QNode)) and not callable(tape):
             raise OperationTransformError(
                 "Input is not an Operator, tape, QNode, or quantum function"
@@ -323,7 +324,7 @@ def _to_zx_transform(
             q_mapper.set_qubit(i, i)
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
-        stop_crit = qml.BooleanFn(lambda obj: obj.name in gate_types)
+        stop_crit = qml.BooleanFn(lambda obj: isinstance(obj, Operator) and obj.name in gate_types)
         mapped_tape = qml.tape.tape.expand_tape(
             mapped_tape, depth=10, stop_at=stop_crit, expand_measurements=expand_measurements
         )
