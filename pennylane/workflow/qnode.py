@@ -65,8 +65,8 @@ def _get_device_shots(device) -> Shots:
 def _make_execution_config(circuit: "QNode") -> "qml.devices.ExecutionConfig":
     if circuit.gradient_fn is None:
         _gradient_method = None
-    elif isinstance(circuit.gradient_fn, str):
-        _gradient_method = circuit.gradient_fn
+    elif isinstance(circuit.diff_method, str):
+        _gradient_method = circuit.diff_method
     else:
         _gradient_method = "gradient-transform"
     grad_on_execution = circuit.execute_kwargs.get("grad_on_execution")
@@ -1042,11 +1042,16 @@ class QNode:
                     self, args, kwargs, argnums
                 )  # pylint: disable=protected-access
 
+        diff_method = self.gradient_fn
+        if self.diff_method == "best" and isinstance(self.device, qml.devices.Device):
+            if self.device.supports_derivatives(config, self._tape):
+                diff_method = "best"
+
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
-            gradient_fn=self.gradient_fn,
+            gradient_fn=diff_method,
             interface=self.interface,
             transform_program=full_transform_program,
             config=config,

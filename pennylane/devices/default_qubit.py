@@ -400,10 +400,13 @@ class DefaultQubit(Device):
         # backpropagation currently supported for all supported circuits
         # will later need to add logic if backprop requested with finite shots
         # do once device accepts finite shots
+        print(execution_config.gradient_method)
+        print(execution_config.device_options)
+        print(not getattr(circuit, "shots", False))
         if (
-            execution_config.gradient_method == "backprop"
+            execution_config.gradient_method in {"backprop", "best"}
             and execution_config.device_options.get("max_workers", self._max_workers) is None
-            and execution_config.interface is not None
+            and not getattr(circuit, "shots", False)
         ):
             return True
 

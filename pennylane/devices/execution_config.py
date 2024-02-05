@@ -20,16 +20,6 @@ from typing import Optional
 from pennylane.workflow import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
 
-SUPPORTED_GRADIENT_METHODS = [
-    "best",
-    "parameter-shift",
-    "backprop",
-    "finite-diff",
-    "device",
-    "adjoint",
-    "gradient-transform",
-]
-
 
 # pylint: disable=too-many-instance-attributes
 @dataclass
@@ -92,14 +82,6 @@ class ExecutionConfig:
         if self.grad_on_execution not in {True, False, None}:
             raise ValueError(
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
-            )
-
-        if (
-            self.gradient_method is not None
-            and self.gradient_method not in SUPPORTED_GRADIENT_METHODS
-        ):
-            raise ValueError(
-                f"gradient_method must be in {SUPPORTED_GRADIENT_METHODS}, got {self.gradient_method} instead."
             )
 
         if self.device_options is None:
