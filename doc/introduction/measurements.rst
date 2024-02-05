@@ -208,7 +208,7 @@ a tuple is returned to provide differentiability for the outputs of QNodes.
     def circuit():
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0,1])
-        qml.PauliX(wires=1)
+        qml.X(1)
         return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.counts()
 
 >>> circuit()

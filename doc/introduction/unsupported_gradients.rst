@@ -26,7 +26,7 @@ An exception is raised if this configuration is used:
         @qml.qnode(dev, diff_method='device')
         def circuit(x):
             qml.RX(x[0], wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(wires=0))
 
         x = np.array([0.1], requires_grad=True)
         print(qml.grad(circuit)(x))
@@ -59,7 +59,7 @@ Currently an exception is raised if this invalid configuration is used:
         @qml.qnode(dev, diff_method='backprop')
         def circuit(x):
             qml.RX(x[0], wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(wires=0))
 
         x = np.array([0.1], requires_grad=True)
         print(qml.grad(circuit)(x))
@@ -81,7 +81,7 @@ Changing to ``shots=None`` allows computing the analytic gradient:
         @qml.qnode(dev, diff_method='backprop')
         def circuit(x):
             qml.RX(x[0], wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(wires=0))
 
         x = np.array([0.1], requires_grad=True)
         print(qml.grad(circuit)(x))
@@ -108,7 +108,7 @@ In particular, the following code works as expected:
         @qml.qnode(dev, diff_method='adjoint')
         def circuit(x):
             qml.RX(x[0], wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(wires=0))
 
         x = np.array([0.1], requires_grad=True)
         print(qml.grad(circuit)(x))
@@ -149,7 +149,7 @@ has ``shots>0``, an error is raised:
         @qml.qnode(dev, diff_method='adjoint')
         def circuit(x):
             qml.RX(x[0], wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(wires=0))
 
         x = np.array([0.1], requires_grad=True)
         print(qml.grad(circuit)(x))
