@@ -138,7 +138,7 @@ def _convert_op_to_linear_comb(meas_op):
     # A Pauli decomposition for the observable must exist
     if meas_rep is None:
         raise NotImplementedError(
-            f"default.clifford doesn't support expectation value calculation with {type(meas_op)} at the moment."
+            f"default.clifford doesn't support expectation value calculation with {type(meas_op).__name__} at the moment."
         )
 
     coeffs, ops = meas_rep.hamiltonian(wire_order=meas_obs.wires).terms()
@@ -277,8 +277,8 @@ class DefaultClifford(Device):
 
         After doing this, one can simply use the :func:`qml.probs <pennylane.probs>` with its usual arguments
         and probabilities for the specified target states would be computed and returned. We test this for a
-        circuit that prepares the `n`-qubit Greenberger-Horne-Zeilinger state (GHZ state) state. This means
-        that the probabilities for the basis states $|0\rangle^{\otimes n}$ and $|1\rangle^{\otimes n}$
+        circuit that prepares the ``n``-qubit Greenberger-Horne-Zeilinger state (GHZ state) state. This means
+        that the probabilities for the basis states :math:`|0\rangle^{\otimes n}` and :math:`|1\rangle^{\otimes n}`
         should be :math:`0.5`.
 
         .. code-block:: python
@@ -403,9 +403,7 @@ class DefaultClifford(Device):
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
-        This device:
-
-        * Currently does not intrinsically support parameter broadcasting
+        This device currently does not intrinsically support parameter broadcasting.
 
         """
         config = self._setup_execution_config(execution_config)
@@ -672,15 +670,15 @@ class DefaultClifford(Device):
         return results
 
     @staticmethod
-    def _measure_density_matrix(meas, tableau_simulator, **kwargs):
+    def _measure_density_matrix(meas, tableau_simulator, **_):
         """Measure the density matrix from the state of simulator device."""
-        wires, _ = list(meas.wires), kwargs
+        wires = list(meas.wires)
         state_vector = qml.math.array(tableau_simulator.state_vector(endian="big"))
         return qml.math.reduce_dm(qml.math.einsum("i, j->ij", state_vector, state_vector), wires)
 
-    def _measure_state(self, meas, tableau_simulator, **kwargs):  # circuit, global_phase):
+    def _measure_state(self, _, tableau_simulator, **kwargs):
         """Measure the state of the simualtor device."""
-        wires, _ = kwargs.get("circuit").wires, meas
+        wires = kwargs.get("circuit").wires
         global_phase = kwargs.get("global_phase", qml.GlobalPhase(0.0))
         if self._tableau:
             # Stack according to Sec. III, arXiv:0406196 (2008)
@@ -704,10 +702,10 @@ class DefaultClifford(Device):
         return state * qml.matrix(global_phase)[0][0]
 
     @staticmethod
-    def _measure_expectation(meas, tableau_simulator, **kwargs):
+    def _measure_expectation(meas, tableau_simulator, **_):
         """Measure the expectation value with respect to the state of simulator device."""
         # Get the observable for the expectation value measurement
-        (coeffs, paulis), _ = _convert_op_to_linear_comb(meas.obs), kwargs
+        coeffs, paulis = _convert_op_to_linear_comb(meas.obs)
 
         expecs = qml.math.zeros_like(coeffs)
         for idx, (pauli, wire) in enumerate(paulis):
@@ -719,9 +717,9 @@ class DefaultClifford(Device):
 
         return qml.math.dot(coeffs, expecs)
 
-    def _measure_variance(self, meas, tableau_simulator, **kwargs):
+    def _measure_variance(self, meas, tableau_simulator, **_):
         """Measure the variance with respect to the state of simulator device."""
-        meas_obs, _ = qml.operation.convert_to_opmath(meas.obs), kwargs
+        meas_obs = qml.operation.convert_to_opmath(meas.obs)
         meas_obs1 = meas_obs.simplify()
         meas_obs2 = (meas_obs1**2).simplify()
 
@@ -841,9 +839,9 @@ class DefaultClifford(Device):
         )
 
     # pylint: disable=too-many-branches, too-many-statements
-    def _measure_probability(self, meas, tableau_simulator, **kwargs):
+    def _measure_probability(self, meas, _, **kwargs):
         """Measure the probability of each computational basis state."""
-        circuit, _ = kwargs.get("circuit"), tableau_simulator
+        circuit = kwargs.get("circuit")
 
         # Obtain the measurement wires for getting the basis states
         mobs_wires = meas.obs.wires if meas.obs else meas.wires
@@ -942,14 +940,7 @@ class DefaultClifford(Device):
         """Measure the expectation value with respect to samples from simulator device."""
         # Get the observable for the expectation value measurement
         meas_op = meas.obs
-        if meas_op is None:  # pragma: no cover
-            meas_op = qml.prod(
-                *[
-                    qml.PauliZ(idx)
-                    for idx in (meas.wires if meas.wires else range(stim_circuit.num_qubits))
-                ]
-            )
-        samples, coeffs = self._measure_observable_sample(meas.obs, stim_circuit, shots, seed)
+        samples, coeffs = self._measure_observable_sample(meas_op, stim_circuit, shots, seed)
         expecs = [
             qml.math.mean(qml.math.power([-1] * shots, qml.math.sum(sample, axis=1)))
             for sample in samples
@@ -961,9 +952,6 @@ class DefaultClifford(Device):
         """Measure the variance with respect to samples from simulator device."""
         # Get the observable for the expectation value measurement
         meas_op = meas.obs
-        if meas_op is None:  # pragma: no cover
-            return 1 - self._sample_expectation(meas, stim_circuit, shots, seed) ** 2
-
         meas_obs = qml.operation.convert_to_opmath(meas_op)
         meas_obs1 = meas_obs.simplify()
         meas_obs2 = (meas_obs1**2).simplify()
