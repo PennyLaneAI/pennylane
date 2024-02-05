@@ -138,7 +138,7 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
         if isinstance(op, Conditional):
-            meas_id = op.meas_val.measurements[0].hash
+            meas_id = op.meas_val.measurements[0].id
             if not mid_measurements[meas_id]:
                 continue
             op = op.then_op
@@ -530,7 +530,7 @@ def gather_mcm(measurement, mv, samples, counter):  # pylint: disable=unused-arg
 
 @gather_mcm.register
 def _(measurement: CountsMP, mv, samples, counter):  # pylint: disable=unused-argument
-    sha = mv.measurements[0].hash
+    sha = mv.measurements[0].id
     new_samples = {}
     if len(samples) - counter[sha] > 0:
         new_samples[0] = len(samples) - counter[sha]
@@ -541,24 +541,24 @@ def _(measurement: CountsMP, mv, samples, counter):  # pylint: disable=unused-ar
 
 @gather_mcm.register
 def _(measurement: ExpectationMP, mv, samples, counter):  # pylint: disable=unused-argument
-    sha = mv.measurements[0].hash
+    sha = mv.measurements[0].id
     return np.mean(np.array([dct[sha] for dct in samples]))
 
 
 @gather_mcm.register
 def _(measurement: ProbabilityMP, mv, samples, counter):  # pylint: disable=unused-argument
-    sha = mv.measurements[0].hash
+    sha = mv.measurements[0].id
     p1 = counter[sha] / float(len(samples))
     return np.array([1 - p1, p1])
 
 
 @gather_mcm.register
 def _(measurement: SampleMP, mv, samples, counter):  # pylint: disable=unused-argument
-    sha = mv.measurements[0].hash
+    sha = mv.measurements[0].id
     return np.array([dct[sha] for dct in samples])
 
 
 @gather_mcm.register
 def _(measurement: VarianceMP, mv, samples, counter):  # pylint: disable=unused-argument
-    sha = mv.measurements[0].hash
+    sha = mv.measurements[0].id
     return qml.math.var(np.array([dct[sha] for dct in samples]))

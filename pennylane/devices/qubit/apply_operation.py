@@ -220,7 +220,7 @@ def apply_mid_measure(
     wire = op.wires
     probs = qml.devices.qubit.measure(qml.probs(wire), state)
     sample = np.random.binomial(1, probs[1])
-    mid_measurements[op.hash] = sample
+    mid_measurements[op.id] = sample
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)
     slices[axis] = int(not sample)
