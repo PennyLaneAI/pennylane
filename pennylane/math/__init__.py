@@ -55,6 +55,7 @@ from .multi_dispatch import (
     matmul,
     multi_dispatch,
     norm,
+    svd,
     ones_like,
     scatter,
     scatter_element_add,

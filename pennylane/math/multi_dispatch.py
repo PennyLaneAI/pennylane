@@ -869,6 +869,30 @@ def norm(tensor, like=None, **kwargs):
 
     return norm(tensor, **kwargs)
 
+@multi_dispatch()
+def svd(tensor, like=None, **kwargs):
+    """Compute the singular value decomposition of a tensor in each interface."""
+    if like == "jax":
+        from jax.numpy.linalg import svd
+
+    elif like == "tensorflow":
+        from tensorflow.linalg import svd
+
+    elif like == "torch":
+        # Torch is deprecating torch.svd() in favor of torch.linalg.svd().
+        # The new UI is slightly different and breaks the logic for the multi dispatching.
+        # This small workaround restores the compute_uv control argument.
+        if kwargs.get("compute_uv", False) is False:
+            from torch.linalg import svdvals as svd
+        else:
+            from torch.linalg import svd
+        if kwargs.get("compute_uv", None) is not None:
+            kwargs.pop("compute_uv")
+    else:
+        from numpy.linalg import svd
+
+    return svd(tensor, **kwargs)
+
 
 def _flat_autograd_norm(tensor, **kwargs):  # pylint: disable=unused-argument
     """Helper function for computing the norm of an autograd tensor when the order or axes are not
