@@ -26,13 +26,13 @@ class GroverOperator(Operation):
     .. math::
 
         G = 2 |s \rangle \langle s | - I
-        = H^{\bigotimes n} \left( 2 |0\rangle \langle 0| - I \right) H^{\bigotimes n}
+        = H^{\otimes n} \left( 2 |0\rangle \langle 0| - I \right) H^{\otimes n}
 
     where :math:`n` is the number of wires, and :math:`|s\rangle` is the uniform superposition:
 
     .. math::
 
-        |s\rangle = H^{\bigotimes n} |0\rangle =  \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n-1} | i \rangle.
+        |s\rangle = H^{\otimes n} |0\rangle =  \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n-1} | i \rangle.
 
     For this template, the operator is implemented with a layer of Hadamards, a layer of :math:`X`,
     followed by a multi-controlled :math:`Z` gate, then another layer of :math:`X` and Hadamards.
