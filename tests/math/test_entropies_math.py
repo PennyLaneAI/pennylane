@@ -295,6 +295,7 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("jit", [False, True])
     def test_max_entropy_grad_jax(self, params, wires, base, check_state, jit):
         """Test `max_entropy` differentiability with jax."""
+
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
 
@@ -310,6 +311,121 @@ class TestMaxEntropy:
             gradient = max_entropy_grad(params, wires, base, check_state)
 
         assert qml.math.allclose(gradient, 0.0)
+
+
+class TestMinEntropy:
+    """Test for computing the minimum entropy of a given state."""
+
+    single_wires_list = [
+        [0],
+        [1],
+    ]
+
+    base = [2, np.exp(1), 10]
+
+    check_state = [True, False]
+
+    density_matrices = [
+        ([[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]], False),
+        ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], True),
+    ]
+
+    @pytest.mark.parametrize("density_matrix,pure", density_matrices)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_density_matrices_min_entropy(
+        self, density_matrix, pure, wires, base, check_state, interface
+    ):
+        """Test minimum entropy for different density matrices."""
+        if interface:
+            density_matrix = qml.math.asarray(density_matrix, like=interface)
+
+        entropy = qml.math.min_entropy(density_matrix, wires, base, check_state)
+
+        if pure:
+            expected_min_entropy = 0
+        else:
+            expected_min_entropy = np.log(2) / np.log(base)
+
+        assert qml.math.allclose(entropy, expected_min_entropy)
+
+    parameters = [
+        [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
+    ]
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("params", parameters)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_min_entropy_grad(self, params, wires, base, check_state):
+        """Test `min_entropy` differentiability with autograd."""
+
+        params = np.tensor(params)
+
+        gradient = qml.grad(qml.math.min_entropy)(params, wires, base, check_state)
+        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("params", parameters)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_min_entropy_grad_torch(self, params, wires, base, check_state):
+        """Test `min_entropy` differentiability with torch interface."""
+
+        params = torch.tensor(params, requires_grad=True)
+
+        min_entropy = qml.math.min_entropy(params, wires, base, check_state)
+        min_entropy.backward()
+        gradient = params.grad
+
+        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("params", parameters)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_min_entropy_grad_tf(self, params, wires, base, check_state):
+        """Test `min_entropy` differentiability with tensorflow interface."""
+
+        params = tf.Variable(params)
+
+        with tf.GradientTape() as tape:
+            min_entropy = qml.math.min_entropy(params, wires, base, check_state)
+
+        gradient = tape.gradient(min_entropy, params)
+
+        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("params", parameters)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("jit", [False, True])
+    def test_min_entropy_grad_jax(self, params, wires, base, check_state, jit):
+        """Test `min_entropy` differentiability with jax."""
+
+        jnp = jax.numpy
+
+        jax.config.update("jax_enable_x64", True)  # Enabling complex128 datatypes for jax
+
+        params = jnp.array(params)
+
+        min_entropy_grad = jax.grad(qml.math.min_entropy)
+
+        if jit:
+            gradient = jax.jit(min_entropy_grad, static_argnums=[1, 2, 3])(
+                params, tuple(wires), base, check_state
+            )
+        else:
+            gradient = min_entropy_grad(params, wires, base, check_state)
+
+        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
 
 
 class TestEntropyBroadcasting:

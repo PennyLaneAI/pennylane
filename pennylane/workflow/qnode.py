@@ -62,6 +62,26 @@ def _get_device_shots(device) -> Shots:
     return device.shots
 
 
+def _make_execution_config(circuit: "QNode") -> "qml.devices.ExecutionConfig":
+    if circuit.gradient_fn is None:
+        _gradient_method = None
+    elif isinstance(circuit.gradient_fn, str):
+        _gradient_method = circuit.gradient_fn
+    else:
+        _gradient_method = "gradient-transform"
+    grad_on_execution = circuit.execute_kwargs.get("grad_on_execution")
+    if circuit.interface == "jax":
+        grad_on_execution = False
+    elif grad_on_execution == "best":
+        grad_on_execution = None
+    return qml.devices.ExecutionConfig(
+        interface=circuit.interface,
+        gradient_method=_gradient_method,
+        grad_on_execution=grad_on_execution,
+        use_device_jacobian_product=circuit.execute_kwargs["device_vjp"],
+    )
+
+
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
 
@@ -404,9 +424,11 @@ class QNode:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
-                func
-                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(func))
-                else "\n" + inspect.getsource(func),
+                (
+                    func
+                    if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(func))
+                    else "\n" + inspect.getsource(func)
+                ),
                 repr(device),
                 interface,
                 diff_method,
@@ -988,24 +1010,7 @@ class QNode:
         config = None
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
-            if self.gradient_fn is None:
-                _gradient_method = None
-            elif isinstance(self.gradient_fn, str):
-                _gradient_method = self.gradient_fn
-            else:
-                _gradient_method = "gradient-transform"
-            grad_on_execution = self.execute_kwargs.get("grad_on_execution")
-            if self.interface == "jax":
-                grad_on_execution = False
-            elif grad_on_execution == "best":
-                grad_on_execution = None
-
-            config = qml.devices.ExecutionConfig(
-                interface=self.interface,
-                gradient_method=_gradient_method,
-                grad_on_execution=grad_on_execution,
-                use_device_jacobian_product=self.execute_kwargs["device_vjp"],
-            )
+            config = _make_execution_config(self)
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:

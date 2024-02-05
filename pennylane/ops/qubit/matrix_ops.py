@@ -105,6 +105,7 @@ class QubitUnitary(Operation):
     >>> print(example_circuit())
     0.0
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -264,6 +265,7 @@ class DiagonalQubitUnitary(Operation):
         D (array[complex]): diagonal of unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 

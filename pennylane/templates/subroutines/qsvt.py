@@ -131,9 +131,7 @@ def qsvt(A, angles, wires, convention=None):
 
         if global_phase:
             with qml.QueuingManager.stop_recording():
-                global_phase_op = qml.exp(
-                    qml.Identity(wires=wires), 0.5j * np.pi * (4 - global_phase)
-                )
+                global_phase_op = qml.GlobalPhase(-0.5 * np.pi * (4 - global_phase), wires=wires)
 
     for idx, phi in enumerate(angles):
         dim = c if idx % 2 else r
