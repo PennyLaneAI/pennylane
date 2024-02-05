@@ -159,22 +159,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         op4 = qml.prod(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
         assert op3.hash != op4.hash
 
-    @pytest.mark.skip
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_terms(self, ops_lst):
-        """Test that terms are initialized correctly."""
-        prod_op = prod(*ops_lst)
-        coeff, prod_term_ops = prod_op.terms()  # not a fan of this behaviour
-
-        assert coeff == [1.0]
-        assert len(prod_term_ops) == 1
-        assert prod_op.id == prod_term_ops[0].id
-        assert prod_op.data == prod_term_ops[0].data
-        assert prod_op.wires == prod_term_ops[0].wires
-
-        for f1, f2 in zip(prod_op.operands, prod_term_ops[0].operands):
-            assert qml.equal(f1, f2)
-
     PROD_TERMS_OP_PAIRS_MIXED = (  # not all operands have pauli representation
         (
             qml.prod(qml.Hadamard(0), X(1), X(2)),

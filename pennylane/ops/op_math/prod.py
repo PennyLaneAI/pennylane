@@ -351,30 +351,9 @@ class Prod(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
-        if any(op.pauli_rep is None for op in self.operands):
-            return None
-        paulis = {"PauliX", "PauliY", "PauliZ"}
-
-        single_word = {}
-        still_single_word = True
-
-        ind = 0
-        for ind, op in enumerate(self):
-            if op.name == "Identity":
-                continue
-            if op.name in paulis and op.wires[0] not in single_word:
-                single_word[op.wires[0]] = op.name[-1]
-            else:
-                still_single_word = False
-                break
-        ps = qml.pauli.PauliSentence({qml.pauli.PauliWord(single_word): 1.0})
-        if still_single_word:
-            return ps
-
-        for op in self[ind:]:
-            ps = ps @ op.pauli_rep
-
-        return ps
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+            return reduce(lambda a, b: a @ b, operand_pauli_reps)
+        return None
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.
