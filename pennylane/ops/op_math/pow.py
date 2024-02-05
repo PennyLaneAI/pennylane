@@ -82,7 +82,7 @@ def pow(base, z=1, lazy=True, id=None):
     >>> qml.pow(qml.PauliX(0), 0.1, lazy=False)
     X(0)**0.1
     >>> qml.pow(qml.PauliX(0), 2, lazy=False)
-    Identity(wires=[0])
+    I(0)
 
     Lazy behavior can also be accessed via ``op ** z``.
 

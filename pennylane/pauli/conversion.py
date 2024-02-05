@@ -70,15 +70,15 @@ def _generalized_pauli_decompose(
        -1. +0.j  , -0.5+0.j  ,  1. -0.j  ,  0. -0.25j, -0.5+0.j  ,
        -0.5+0.j  ,  0. +0.25j])
     >>> obs
-    [Identity(wires=[0]) @ Identity(wires=[1]),
-    Identity(wires=[0]) @ X(1),
-    Identity(wires=[0]) @ Y(1),
-    Identity(wires=[0]) @ Z(1),
-    X(0) @ Identity(wires=[1]),
+    [I(0) @ I(1),
+    I(0) @ X(1),
+    I(0) @ Y(1),
+    I(0) @ Z(1),
+    X(0) @ I(1),
     X(0) @ X(1),
     X(0) @ Z(1),
     Y(0) @ Y(1),
-    Z(0) @ Identity(wires=[1]),
+    Z(0) @ I(1),
     Z(0) @ X(1),
     Z(0) @ Y(1),
     Z(0) @ Z(1)]
@@ -87,15 +87,15 @@ def _generalized_pauli_decompose(
 
     >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A, wire_order=['a', 'b'])
     >>> obs
-    [Identity(wires=['a']) @ Identity(wires=['b']),
-    Identity(wires=['a']) @ X('b'),
-    Identity(wires=['a']) @ Y('b'),
-    Identity(wires=['a']) @ Z('b'),
-    X('a') @ Identity(wires=['b']),
+    [I('a') @ I('b'),
+    I('a') @ X('b'),
+    I('a') @ Y('b'),
+    I('a') @ Z('b'),
+    X('a') @ I('b'),
     X('a') @ X('b'),
     X('a') @ Z('b'),
     Y('a') @ Y('b'),
-    Z('a') @ Identity(wires=['b']),
+    Z('a') @ I('b'),
     Z('a') @ X('b'),
     Z('a') @ Y('b'),
     Z('a') @ Z('b')]
@@ -111,7 +111,7 @@ def _generalized_pauli_decompose(
         >>> coeffs
         ([-1. +0.j , -1. +0.5j, -0.5-1.j , -1. +0.j ])
         >>> obs
-        [Identity(wires=[0]), X(0), Y(0), Z(0)]
+        [I(0), X(0), Y(0), Z(0)]
 
         We can also use the method within a differentiable workflow and obtain gradients:
 

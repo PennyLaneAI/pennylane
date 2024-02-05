@@ -290,7 +290,7 @@ def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None):
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> dipole_moment(mol)(*args)[2].ops
-    [Identity(wires=[0]),
+    [I(0),
      Z(0),
      Y(0) @ Z(1) @ Y(2),
      X(0) @ Z(1) @ X(2),

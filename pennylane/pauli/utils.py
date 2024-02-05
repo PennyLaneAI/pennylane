@@ -889,7 +889,7 @@ def pauli_group(n_qubits, wire_map=None):
     >>> for p in pauli_group(n_qubits):
     ...     print(p)
     ...
-    Identity(wires=[0])
+    I(0)
     Z(2)
     Z(1)
     Z(1) @ Z(2)
@@ -908,7 +908,7 @@ def pauli_group(n_qubits, wire_map=None):
     >>> for p in pauli_group(n_qubits, wire_map=wire_map):
     ...     print(p)
     ...
-    Identity(wires=['a'])
+    I('a')
     Z('c')
     Z('b')
     Z('b') @ Z('c')
