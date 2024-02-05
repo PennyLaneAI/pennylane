@@ -358,6 +358,9 @@
 * `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
   [(#5149)](https://github.com/PennyLaneAI/pennylane/pull/5149)
 
+* `default.mixed` no longer throws `ValueError` when applying a state vector that is not of type `complex128`.
+  [(#5155)](https://github.com/PennyLaneAI/pennylane/pull/5155)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
