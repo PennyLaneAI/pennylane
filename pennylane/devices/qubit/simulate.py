@@ -360,16 +360,14 @@ def simulate_tree_mcm(
         )
     )
 
-    final_measurements = combine_measurements(circuit, measurements)
-    if isinstance(circuit.measurements[0], VarianceMP):
-        final_measurements = qml.math.var(final_measurements)
-    return final_measurements
+    return combine_measurements(circuit, measurements)
 
 
 def circuit_up_to_first_mcm(circuit):
     """Returns two circuits: one that runs up-to the next mid-circuit measurement and one that runs beyond it."""
     if not has_mid_circuit_measurements(circuit):
         return circuit, None
+
     # find next MidMeasureMP
     def find_next_mcm(circuit):
         for i, op in enumerate(circuit.operations):
@@ -407,7 +405,25 @@ def circuit_up_to_first_mcm(circuit):
 
 def combine_measurements(circuit, measurements):
     """Returns combined measurement values of various types."""
-    return combine_measurements_core(circuit.measurements[0], measurements)
+    keys = list(measurements.keys())
+    if isinstance(measurements[keys[0]][1], Sequence):
+        d0s = [(measurements[keys[0]][0], m) for m in measurements[keys[0]][1]]
+        d1s = [(measurements[keys[1]][0], m) for m in measurements[keys[1]][1]]
+        new_measurements = [{keys[0]: m0, keys[1]: m1} for m0, m1 in zip(d0s, d1s)]
+    else:
+        new_measurements = [measurements]
+    final_measurements = [
+        combine_measurements_core(circ_meas, meas)
+        for circ_meas, meas in zip(circuit.measurements, new_measurements)
+    ]
+    for i, m in enumerate(final_measurements):
+        if isinstance(circuit.measurements[i], VarianceMP):
+            final_measurements[i] = qml.math.var(m)
+    return (
+        final_measurements
+        if isinstance(measurements[keys[0]][1], Sequence)
+        else final_measurements[0]
+    )
 
 
 @singledispatch
