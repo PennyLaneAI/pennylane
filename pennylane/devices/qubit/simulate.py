@@ -406,16 +406,19 @@ def circuit_up_to_first_mcm(circuit):
 def combine_measurements(circuit, measurements):
     """Returns combined measurement values of various types."""
     keys = list(measurements.keys())
+    # convert dict-of-lists to list-of-dicts
     if isinstance(measurements[keys[0]][1], Sequence):
         d0s = [(measurements[keys[0]][0], m) for m in measurements[keys[0]][1]]
         d1s = [(measurements[keys[1]][0], m) for m in measurements[keys[1]][1]]
         new_measurements = [{keys[0]: m0, keys[1]: m1} for m0, m1 in zip(d0s, d1s)]
     else:
         new_measurements = [measurements]
+    # loop over measurements
     final_measurements = [
         combine_measurements_core(circ_meas, meas)
         for circ_meas, meas in zip(circuit.measurements, new_measurements)
     ]
+    # special treatment of var
     for i, m in enumerate(final_measurements):
         if isinstance(circuit.measurements[i], VarianceMP):
             final_measurements[i] = qml.math.var(m)
