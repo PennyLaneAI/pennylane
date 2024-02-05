@@ -371,11 +371,11 @@ class SingleExcitationMinus(Operation):
         **Example:**
 
         >>> qml.SingleExcitationMinus.compute_decomposition(1.23, wires=(0,1))
-        [PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        [X(0),
+        X(1),
         ControlledPhaseShift(-0.615, wires=[1, 0]),
-        PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        X(0),
+        X(1),
         ControlledPhaseShift(-0.615, wires=[0, 1]),
         CNOT(wires=[0, 1]),
         CRY(1.23, wires=[1, 0]),
@@ -501,11 +501,11 @@ class SingleExcitationPlus(Operation):
         **Example:**
 
         >>> qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
-        [PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        [X(0),
+        X(1),
         ControlledPhaseShift(0.615, wires=[1, 0]),
-        PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        X(0),
+        X(1),
         ControlledPhaseShift(0.615, wires=[0, 1]),
         CNOT(wires=[0, 1]),
         CRY(1.23, wires=[1, 0]),

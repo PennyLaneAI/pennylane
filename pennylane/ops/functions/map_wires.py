@@ -70,10 +70,10 @@ def map_wires(
 
     >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
     >>> op
-    (RX(0.54, wires=[0]) + PauliX(wires=[1])) + (PauliZ(wires=[2]) @ RY(1.23, wires=[3]))
+    (RX(0.54, wires=[0]) + X(1)) + (Z(2) @ RY(1.23, wires=[3]))
     >>> wire_map = {0: 3, 1: 2, 2: 1, 3: 0}
     >>> qml.map_wires(op, wire_map)
-    (RX(0.54, wires=[3]) + PauliX(wires=[2])) + (PauliZ(wires=[1]) @ RY(1.23, wires=[0]))
+    (RX(0.54, wires=[3]) + X(2)) + (Z(1) @ RY(1.23, wires=[0]))
 
     Moreover, ``qml.map_wires`` can be used to change the wires of QNodes or quantum functions:
 
@@ -87,7 +87,7 @@ def map_wires(
     >>> mapped_circuit()
     tensor([0.92885434, 0.07114566], requires_grad=True)
     >>> list(mapped_circuit.tape)
-    [((RX(0.54, wires=[3]) @ PauliX(wires=[2])) @ PauliZ(wires=[1])) @ RY(1.23, wires=[0]), probs(wires=[3])]
+    [((RX(0.54, wires=[3]) @ X(2)) @ Z(1)) @ RY(1.23, wires=[0]), probs(wires=[3])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
         if QueuingManager.recording():

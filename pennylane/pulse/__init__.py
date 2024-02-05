@@ -134,13 +134,13 @@ The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`
 parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
 >>> H1
-  (2*(PauliX(wires=[0]) @ PauliX(wires=[1])))
-+ (<lambda>(params_0, t)*(PauliY(wires=[0]) @ PauliY(wires=[1])))
-+ (<lambda>(params_1, t)*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
+  (2*(X(0) @ X(1)))
++ (<lambda>(params_0, t)*(Y(0) @ Y(1)))
++ (<lambda>(params_1, t)*(Z(0) @ Z(1)))
 
 >>> params = [1.2, [2.3, 3.4]]  # f1 takes a single parameter, f2 takes 2
 >>> H1(params, t=0.5)
-(2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+(2*(X(0) @ X(1))) + ((-0.2876553535461426*(Y(0) @ Y(1))) + (1.5179612636566162*(Z(0) @ Z(1))))
 
 
 When passing parameters, ensure that the order of the coefficient functions and the order of

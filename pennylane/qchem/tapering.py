@@ -200,7 +200,7 @@ def paulix_ops(generators, num_qubits):  # pylint: disable=protected-access
     ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
     ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
     >>> paulix_ops(generators, 4)
-    [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])]
+    [X(1), X(2), X(3)]
     """
     ops_generator = functools.reduce(
         lambda a, b: list(a) + list(b), [pauli_sentence(g) for g in generators]
@@ -701,7 +701,7 @@ def taper_operation(
         ...                                     [0.+0.j, 0.-1.j, 0.+0.j, 0.+0.j],
         ...                                     [0.-1.j, 0.+0.j, 0.+0.j, 0.+0.j]]), wires=[0, 2])
         >>> op_gen = qml.Hamiltonian([-0.5 * np.pi],
-        ...                          [qml.PauliX(wires=[0]) @ qml.PauliX(wires=[2])])
+        ...                          [qml.X(0) @ qml.X(2)])
         >>> qchem.taper_operation(op_fun, generators, paulixops, paulix_sector,
         ...                       wire_order=H.wires, op_gen=op_gen)
         [Exp(1.5707963267948957j PauliX)]

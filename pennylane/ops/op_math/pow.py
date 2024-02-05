@@ -76,11 +76,11 @@ def pow(base, z=1, lazy=True, id=None):
     **Example**
 
     >>> qml.pow(qml.PauliX(0), 0.5)
-    PauliX(wires=[0])**0.5
+    X(0)**0.5
     >>> qml.pow(qml.PauliX(0), 0.5, lazy=False)
     SX(wires=[0])
     >>> qml.pow(qml.PauliX(0), 0.1, lazy=False)
-    PauliX(wires=[0])**0.1
+    X(0)**0.1
     >>> qml.pow(qml.PauliX(0), 2, lazy=False)
     Identity(wires=[0])
 

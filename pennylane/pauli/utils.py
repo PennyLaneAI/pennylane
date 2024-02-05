@@ -342,13 +342,13 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     components, i.e., the ``i`` and ``N+i`` components specify the Pauli operation on wire ``i``,
 
     >>> binary_to_pauli([0,1,1,0,1,0])
-    Tensor(PauliY(wires=[1]), PauliX(wires=[2]))
+    Tensor(Y(1), X(2))
 
     An arbitrary labelling can be assigned by using ``wire_map``:
 
     >>> wire_map = {'a': 0, 'b': 1, 'c': 2}
     >>> binary_to_pauli([0,1,1,0,1,0], wire_map=wire_map)
-    Tensor(PauliY(wires=['b']), PauliX(wires=['c']))
+    Tensor(Y('b'), X('c'))
 
     Note that the values of ``wire_map``, if specified, must be ``0,1,..., N``,
     where ``N`` is the dimension of the vector divided by two, i.e.,
@@ -512,7 +512,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
 
     >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
     >>> string_to_pauli_word('XIY', wire_map=wire_map)
-    PauliX(wires=['a']) @ PauliY(wires=['c'])
+    X('a') @ Y('c')
     """
     character_map = {"I": Identity, "X": PauliX, "Y": PauliY, "Z": PauliZ}
 
@@ -890,10 +890,10 @@ def pauli_group(n_qubits, wire_map=None):
     ...     print(p)
     ...
     Identity(wires=[0])
-    PauliZ(wires=[2])
-    PauliZ(wires=[1])
-    PauliZ(wires=[1]) @ PauliZ(wires=[2])
-    PauliZ(wires=[0])
+    Z(2)
+    Z(1)
+    Z(1) @ Z(2)
+    Z(0)
 
     The full Pauli group can then be obtained like so:
 
@@ -909,10 +909,10 @@ def pauli_group(n_qubits, wire_map=None):
     ...     print(p)
     ...
     Identity(wires=['a'])
-    PauliZ(wires=['c'])
-    PauliZ(wires=['b'])
-    PauliZ(wires=['b']) @ PauliZ(wires=['c'])
-    PauliZ(wires=['a'])
+    Z('c')
+    Z('b')
+    Z('b') @ Z('c')
+    Z('a')
 
     """
     # Cover the case where n_qubits may be passed as a float
@@ -965,7 +965,7 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
     >>> product = pauli_mult(pauli_1, pauli_2)
     >>> print(product)
-    PauliZ(wires=[0])
+    Z(0)
     """
 
     warn(
@@ -1036,7 +1036,7 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
     >>> product, phase = pauli_mult_with_phase(pauli_1, pauli_2)
     >>> product
-    PauliZ(wires=[0])
+    Z(0)
     >>> phase
     1j
     """
@@ -1225,7 +1225,7 @@ def diagonalize_pauli_word(pauli_word):
     **Example**
 
     >>> diagonalize_pauli_word(qml.PauliX('a') @ qml.PauliY('b') @ qml.PauliZ('c'))
-    PauliZ(wires=['a']) @ PauliZ(wires=['b']) @ PauliZ(wires=['c'])
+    Z('a') @ Z('b') @ Z('c')
     """
 
     if not is_pauli_word(pauli_word):
@@ -1280,9 +1280,9 @@ def diagonalize_qwc_pauli_words(
                      qml.PauliZ(1) @ qml.PauliY(3)]
     >>> diagonalize_qwc_pauli_words(qwc_group)
     ([RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
-     [PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-      PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-      PauliZ(wires=[1]) @ PauliZ(wires=[3])])
+     [Z(0) @ Z(1),
+      Z(0) @ Z(3),
+      Z(1) @ Z(3)])
     """
 
     if not are_pauli_words_qwc(qwc_grouping):
@@ -1350,12 +1350,12 @@ def diagonalize_qwc_groupings(qwc_groupings):
       RY(-1.5707963267948966, wires=[2]),
       RY(-1.5707963267948966, wires=[1])]]
     >>> diag_groupings
-    [[PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-     PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-     PauliZ(wires=[1]) @ PauliZ(wires=[3])],
-    [PauliZ(wires=[0]),
-     PauliZ(wires=[0]) @ PauliZ(wires=[2]),
-     PauliZ(wires=[1]) @ PauliZ(wires=[3])]]
+    [[Z(0) @ Z(1),
+     Z(0) @ Z(3),
+     Z(1) @ Z(3)],
+    [Z(0),
+     Z(0) @ Z(2),
+     Z(1) @ Z(3)]]
     """
 
     post_rotations = []
@@ -1523,9 +1523,9 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
     **Example**
 
     >>> wire_map = {'a':0, 'b':1, 'c':2, 'd':3}
-    >>> terms = [qml.PauliZ(wires=['a']) @ qml.PauliX(wires=['b']),
-    ...          qml.PauliZ(wires=['a']) @ qml.PauliY(wires=['c']),
-    ...          qml.PauliX(wires=['a']) @ qml.PauliY(wires=['d'])]
+    >>> terms = [qml.Z('a') @ qml.X('b'),
+    ...          qml.Z('a') @ qml.Y('c'),
+    ...          qml.X('a') @ qml.Y('d')]
     >>> _binary_matrix(terms, 4, wire_map=wire_map)
     array([[1, 0, 0, 0, 0, 1, 0, 0],
            [1, 0, 1, 0, 0, 0, 1, 0],

@@ -147,12 +147,12 @@ def generator(op: qml.operation.Operator, format="prefactor"):
 
     >>> op = qml.CRX(0.6, wires=[0, 1])
     >>> qml.generator(op)
-    (Projector([1], wires=[0]) @ PauliX(wires=[1]), -0.5)
+    (Projector([1], wires=[0]) @ X(1), -0.5)
 
     It can also be used in a functional form:
 
     >>> qml.generator(qml.CRX)(0.6, wires=[0, 1])
-    (Projector([1], wires=[0]) @ PauliX(wires=[1]), -0.5)
+    (Projector([1], wires=[0]) @ X(1), -0.5)
 
     By default, ``generator`` will return the generator in the format of ``(obs, prefactor)``,
     corresponding to :math:`G=p \hat{O}`, where the observable :math:`\hat{O}` will
@@ -163,13 +163,13 @@ def generator(op: qml.operation.Operator, format="prefactor"):
 
     >>> op = qml.RX(0.2, wires=0)
     >>> qml.generator(op, format="prefactor")  # output will always be (obs, prefactor)
-    (PauliX(wires=[0]), -0.5)
+    (X(0), -0.5)
     >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian
     <Hamiltonian: terms=1, wires=[0]>
     >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])
     >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`
-    -0.5*(PauliX(wires=[0]))
+    -0.5 * X(0)
     """
 
     def processing_fn(*args, **kwargs):

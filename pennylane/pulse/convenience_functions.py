@@ -48,10 +48,10 @@ def constant(scalar, time):
 
     >>> params = [5]
     >>> H(params, t=8)
-    5*(PauliX(wires=[0]))
+    5 * X(0)
 
     >>> H(params, t=5)
-    5*(PauliX(wires=[0]))
+    5 * X(0)
 
     We can differentiate the parametrized Hamiltonian with respect to the constant parameter:
 
@@ -136,10 +136,10 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
     The resulting Hamiltonian will be non-zero only inside the window.
 
     >>> H([[1, 3]], t=2)  # inside the window
-    5.0*(PauliX(wires=[0]))
+    5.0 * X(0)
 
     >>> H([[1, 3]], t=0.5 )  # outside the window
-    0.0*(PauliX(wires=[0]))
+    0.0 * X(0)
 
     It is also possible to define multiple windows for the same function:
 
@@ -160,10 +160,10 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
 
     >>> params = [None]  # the parameter value won't be used!
     >>> H(params, t=8)
-    0.0*(PauliX(wires=[0]))
+    0.0 * X(0)
 
     >>> H(params, t=5)
-    10.0*(PauliX(wires=[0]))
+    10.0 * X(0)
     """
     if not has_jax:
         raise ImportError(
@@ -268,16 +268,16 @@ def pwc(timespan):
     interval ``t=2`` to ``t=7``. The time ``t`` is then used to select one of the array values based on this distribution.
 
     >>> H(params=[[11, 12, 13, 14, 15]], t=2.3)
-    11.0*(PauliX(wires=[0]))
+    11.0 * X(0)
 
     >>> H(params=[[11, 12, 13, 14, 15]], t=2.5) # different time, same bin, same result
-    11.0*(PauliX(wires=[0]))
+    11.0 * X(0)
 
     >>> H(params=[[11, 12, 13, 14, 15]], t=3.1) # next bin
-    12.0*(PauliX(wires=[0]))
+    12.0 * X(0)
 
     >>> H(params=[[11, 12, 13, 14, 15]], t=8) # outside the window returns 0
-    0.0*(PauliX(wires=[0]))
+    0.0 * X(0)
 
     """
     if not has_jax:

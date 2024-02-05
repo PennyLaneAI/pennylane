@@ -71,34 +71,34 @@ def _generalized_pauli_decompose(
        -0.5+0.j  ,  0. +0.25j])
     >>> obs
     [Identity(wires=[0]) @ Identity(wires=[1]),
-    Identity(wires=[0]) @ PauliX(wires=[1]),
-    Identity(wires=[0]) @ PauliY(wires=[1]),
-    Identity(wires=[0]) @ PauliZ(wires=[1]),
-    PauliX(wires=[0]) @ Identity(wires=[1]),
-    PauliX(wires=[0]) @ PauliX(wires=[1]),
-    PauliX(wires=[0]) @ PauliZ(wires=[1]),
-    PauliY(wires=[0]) @ PauliY(wires=[1]),
-    PauliZ(wires=[0]) @ Identity(wires=[1]),
-    PauliZ(wires=[0]) @ PauliX(wires=[1]),
-    PauliZ(wires=[0]) @ PauliY(wires=[1]),
-    PauliZ(wires=[0]) @ PauliZ(wires=[1])]
+    Identity(wires=[0]) @ X(1),
+    Identity(wires=[0]) @ Y(1),
+    Identity(wires=[0]) @ Z(1),
+    X(0) @ Identity(wires=[1]),
+    X(0) @ X(1),
+    X(0) @ Z(1),
+    Y(0) @ Y(1),
+    Z(0) @ Identity(wires=[1]),
+    Z(0) @ X(1),
+    Z(0) @ Y(1),
+    Z(0) @ Z(1)]
 
     We can also set custom wires using the ``wire_order`` argument:
 
     >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A, wire_order=['a', 'b'])
     >>> obs
     [Identity(wires=['a']) @ Identity(wires=['b']),
-    Identity(wires=['a']) @ PauliX(wires=['b']),
-    Identity(wires=['a']) @ PauliY(wires=['b']),
-    Identity(wires=['a']) @ PauliZ(wires=['b']),
-    PauliX(wires=['a']) @ Identity(wires=['b']),
-    PauliX(wires=['a']) @ PauliX(wires=['b']),
-    PauliX(wires=['a']) @ PauliZ(wires=['b']),
-    PauliY(wires=['a']) @ PauliY(wires=['b']),
-    PauliZ(wires=['a']) @ Identity(wires=['b']),
-    PauliZ(wires=['a']) @ PauliX(wires=['b']),
-    PauliZ(wires=['a']) @ PauliY(wires=['b']),
-    PauliZ(wires=['a']) @ PauliZ(wires=['b'])]
+    Identity(wires=['a']) @ X('b'),
+    Identity(wires=['a']) @ Y('b'),
+    Identity(wires=['a']) @ Z('b'),
+    X('a') @ Identity(wires=['b']),
+    X('a') @ X('b'),
+    X('a') @ Z('b'),
+    Y('a') @ Y('b'),
+    Z('a') @ Identity(wires=['b']),
+    Z('a') @ X('b'),
+    Z('a') @ Y('b'),
+    Z('a') @ Z('b')]
 
     .. details::
         :title: Advanced Usage Details
@@ -111,7 +111,7 @@ def _generalized_pauli_decompose(
         >>> coeffs
         ([-1. +0.j , -1. +0.5j, -0.5-1.j , -1. +0.j ])
         >>> obs
-        [Identity(wires=[0]), PauliX(wires=[0]), PauliY(wires=[0]), PauliZ(wires=[0])]
+        [Identity(wires=[0]), X(0), Y(0), Z(0)]
 
         We can also use the method within a differentiable workflow and obtain gradients:
 
