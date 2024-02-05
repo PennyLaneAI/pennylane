@@ -522,12 +522,11 @@ class BlockEncode(Operation):
             normalization = qml.math.abs(A)
             subspace = (1, 1, 2 ** len(wires))
 
-        elif len(shape_a) == 1:
-            A = qml.math.reshape(A, [1, len(A)])
-            normalization = qml.math.max(A)
-            subspace = (1, shape_a[0], 2 ** len(wires))
-
         else:
+            if len(shape_a) == 1:
+                A = qml.math.reshape(A, [1, len(A)])
+                shape_a = qml.math.shape(A)
+
             normalization = qml.math.maximum(
                 norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
                 norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
