@@ -386,7 +386,7 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
     Returns:
         tuple(TensorLike): The results of the simulation
     """
-    if not isinstance(one_shot_meas, Sequence):
+    if len(circuit.measurements) == 1:
         one_shot_meas = [one_shot_meas]
     if all_shot_meas is None:
         new_shot_meas = one_shot_meas
