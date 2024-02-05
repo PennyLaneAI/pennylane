@@ -673,7 +673,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
 def _are_pauli_words_qwc_pauli_rep(lst_pauli_words):
     """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
-    qubit-wise commuting. This private method is used for oeprators that have a valid pauli
+    qubit-wise commuting. This private method is used for operators that have a valid pauli
     representation"""
     basis = {}
     for op in lst_pauli_words:  # iterate over the list of observables
