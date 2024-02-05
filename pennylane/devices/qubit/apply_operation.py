@@ -222,7 +222,7 @@ def apply_mid_measure(
     sample = np.random.binomial(1, probs[1])
     mid_measurements[op.hash] = sample
     axis = wire.toarray()[0]
-    slices = [slice(None)] * state.ndim
+    slices = [slice(None)] * qml.math.ndim(state)
     slices[axis] = int(not sample)
     state[tuple(slices)] = 0.0
     state_norm = np.linalg.norm(state)
