@@ -2242,9 +2242,7 @@ class Tensor(Observable):
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
-            self.obs[:0] = [other]
-            QueuingManager.remove(other)
-            return self
+            return Tensor(other, self)
 
         return NotImplemented
 
