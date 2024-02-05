@@ -127,11 +127,21 @@ def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagon
     if not wires:
         return reshape_state_as_matrix(state, get_num_wires(state, is_state_batched))
 
+    num_obs_wires = len(wires)
     num_state_wires = get_num_wires(state, is_state_batched)
-    state_wire_indices = alphabet[:num_state_wires] * 2
-    final_state_wire_indices = alphabet[wires] * 2
+    state_wire_indices_list = list(alphabet[:num_state_wires] * 2)
+    final_state_wire_indices_list = [""] * (2 * num_obs_wires)
 
-    state = math.einsum(f"...{state_wire_indices}->...{final_state_wire_indices}")
+    for i, wire in enumerate(wires):
+        col_index = wire + num_state_wires
+        state_wire_indices_list[col_index] = alphabet[col_index]
+        final_state_wire_indices_list[i] = alphabet[wire]
+        final_state_wire_indices_list[i + num_obs_wires] = alphabet[col_index]
+
+    state_wire_indices = "".join(state_wire_indices_list)
+    final_state_wire_indices = "".join(final_state_wire_indices_list)
+
+    state = math.einsum(f"...{state_wire_indices}->...{final_state_wire_indices}", state)
 
     return reshape_state_as_matrix(state, len(wires))
 

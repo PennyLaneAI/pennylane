@@ -63,10 +63,10 @@ def get_expval(op, state):
 )
 class TestCurrentlyUnsupportedCases:
     # pylint: disable=too-few-public-methods
-    def test_sample_based_observable(self, two_qutrit_state):
+    def test_sample_based_observable(self, mp, two_qutrit_state):
         """Test sample-only measurements raise a NotImplementedError."""
         with pytest.raises(NotImplementedError):
-            _ = measure(qml.sample(wires=0), two_qutrit_state)
+            _ = measure(mp, two_qutrit_state)
 
 
 class TestMeasurementDispatch:
@@ -279,7 +279,7 @@ class TestExpValAnalytical:
     def test_expval_pure_state(self, obs):
         """Test that measurements work on pure states as expected from analytical calculation."""
         # Create TRX[0,2](0.246)TRX[0,1](0.246)|0> state
-        state_vector = np.array([np.cos**2(0.123), -1j * np.sin(0.123), -1j * np.sin(0.246) / 2])
+        state_vector = np.array([np.cos(0.123) ** 2, -1j * np.sin(0.123), -1j * np.sin(0.246) / 2])
         state = np.outer(state_vector, np.conj(state_vector))
         res = measure(qml.expval(obs), state)
 
