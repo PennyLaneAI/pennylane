@@ -135,7 +135,7 @@ def find_and_place_cuts(
             qml.RX(0.5, wires="a"),
             qml.RY(0.6, wires="b"),
         ]
-        measurements = [qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))]
+        measurements = [qml.expval(qml.X(0) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape.text(tape))
@@ -479,7 +479,7 @@ def place_wire_cuts(
             qml.RY(0.543, wires="a"),
             qml.CNOT(wires=[0, "a"]),
         ]
-        measurements = [qml.expval(qml.PauliZ(wires=[0]))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape_text(tape))

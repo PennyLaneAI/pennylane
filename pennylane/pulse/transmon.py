@@ -333,7 +333,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     :math:`2 \pi A \exp(0) \sin(\pi/2 + 0)\sigma^y = 2 \pi \sigma^y`.
 
     >>> H(params, t)
-    6.283185307179586*(PauliY(wires=[0]))
+    6.283185307179586*(Y(0))
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all

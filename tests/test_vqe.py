@@ -100,21 +100,21 @@ big_hamiltonian_coeffs = np.array(
 )
 
 big_hamiltonian_ops = [
-    qml.Identity(wires=[0]),
-    qml.PauliZ(wires=[0]),
-    qml.PauliZ(wires=[1]),
-    qml.PauliZ(wires=[2]),
-    qml.PauliZ(wires=[3]),
-    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliY(wires=[3]),
-    qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliX(wires=[3]),
-    qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliY(wires=[3]),
-    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliX(wires=[3]),
-    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+    qml.I(0),
+    qml.Z(0),
+    qml.Z(1),
+    qml.Z(2),
+    qml.Z(3),
+    qml.Z(0) @ qml.Z(1),
+    qml.Y(0) @ qml.X(1) @ qml.X(2) @ qml.Y(3),
+    qml.Y(0) @ qml.Y(1) @ qml.X(2) @ qml.X(3),
+    qml.X(0) @ qml.X(1) @ qml.Y(2) @ qml.Y(3),
+    qml.X(0) @ qml.Y(1) @ qml.Y(2) @ qml.X(3),
+    qml.Z(0) @ qml.Z(2),
+    qml.Z(0) @ qml.Z(3),
+    qml.Z(1) @ qml.Z(2),
+    qml.Z(1) @ qml.Z(3),
+    qml.Z(2) @ qml.Z(3),
 ]
 
 big_hamiltonian = qml.Hamiltonian(big_hamiltonian_coeffs, big_hamiltonian_ops)
@@ -442,14 +442,14 @@ class TestVQE:
 
         dev = qml.device("default.qubit", wires=5)
         obs = [
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
-            qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
-            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
+            qml.Z(2) @ qml.Z(4),  # <---- These two terms
+            qml.Z(4) @ qml.Z(2),  # <---- are equal
+            qml.Z(1),
+            qml.Z(2),
+            qml.Z(1) @ qml.Z(2),
+            qml.Z(2) @ qml.Z(0),
+            qml.Z(3) @ qml.Z(1),
+            qml.Z(4) @ qml.Z(3),
         ]
 
         coefs = (np.random.rand(len(obs)) - 0.5) * 2
@@ -498,14 +498,14 @@ class TestVQE:
 
         dev = qml.device("default.qubit", wires=5)
         obs = [
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
-            qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
-            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
+            qml.Z(2) @ qml.Z(4),  # <---- These two terms
+            qml.Z(4) @ qml.Z(2),  # <---- are equal
+            qml.Z(1),
+            qml.Z(2),
+            qml.Z(1) @ qml.Z(2),
+            qml.Z(2) @ qml.Z(0),
+            qml.Z(3) @ qml.Z(1),
+            qml.Z(4) @ qml.Z(3),
         ]
 
         coefs = (np.random.rand(len(obs)) - 0.5) * 2
@@ -555,14 +555,14 @@ class TestVQE:
 
         dev = qml.device("default.qubit", wires=5)
         obs = [
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
-            qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
-            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
+            qml.Z(2) @ qml.Z(4),  # <---- These two terms
+            qml.Z(4) @ qml.Z(2),  # <---- are equal
+            qml.Z(1),
+            qml.Z(2),
+            qml.Z(1) @ qml.Z(2),
+            qml.Z(2) @ qml.Z(0),
+            qml.Z(3) @ qml.Z(1),
+            qml.Z(4) @ qml.Z(3),
         ]
 
         coefs = (np.random.rand(len(obs)) - 0.5) * 2

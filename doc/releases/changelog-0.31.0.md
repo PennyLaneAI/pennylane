@@ -78,7 +78,7 @@
 
   ```pycon
   >>> qml.jordan_wigner(sentence)
-  ((0.4725+0j)*(Identity(wires=[0]))) + ((-0.4725+0j)*(PauliZ(wires=[3]))) + ((-0.3+0j)*(PauliZ(wires=[0]))) + ((0.3+0j)*(PauliZ(wires=[0]) @ PauliZ(wires=[3])))
+  ((0.4725+0j)*(I(0))) + ((-0.4725+0j)*(Z(3))) + ((-0.3+0j)*(Z(0))) + ((0.3+0j)*(Z(0) @ Z(3)))
   ```
 
   Learn how to create fermionic Hamiltonians describing some simple chemical systems by checking
@@ -234,9 +234,9 @@
   >>> coeffs = [2., f1, f2]
   >>> observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
   >>> qml.dot(coeffs, observables)
-    (2.0*(PauliX(wires=[0])))
-  + (f1(params_0, t)*(PauliY(wires=[0])))
-  + (f2(params_1, t)*(PauliZ(wires=[0])))
+    (2.0*(X(0)))
+  + (f1(params_0, t)*(Y(0)))
+  + (f2(params_1, t)*(Z(0)))
   ```
 
 * The quantum information module now supports [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
@@ -309,7 +309,7 @@
   [RX(tensor(10.84535137, requires_grad=True), wires=[0]),
    RY(tensor(1.39749741, requires_grad=True), wires=[0]),
    RX(tensor(0.45246584, requires_grad=True), wires=[0]),
-   (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+   (0.38469215914523336-0.9230449299422961j)*(I(0))]
   ```
 
 * The `has_unitary_generator` attribute in `qml.ops.qubit.attributes` no longer contains operators

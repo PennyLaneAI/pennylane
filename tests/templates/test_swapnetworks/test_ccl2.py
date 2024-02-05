@@ -201,8 +201,8 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(wires=[0])
-            qml.PauliX(wires=[2])
+            qml.X(0)
+            qml.X(2)
             qml.templates.TwoLocalSwapNetwork(wires, acquaintances, weights, fermionic, shift)
             return qml.state()
 

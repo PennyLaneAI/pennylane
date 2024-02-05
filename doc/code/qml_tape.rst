@@ -44,7 +44,7 @@ The ``QuantumTape`` also carries around the unprocessed queue in addition to the
 to a larger memory footprint.
 
 >>> tape.items()
-((PauliX(wires=[0]), {}), (expval(PauliZ(wires=[0])), {}))
+((X(0), {}), (expval(Z(0)), {}))
 
 To capture a quantum function, we instead recommend queuing a quantum function into an :class:`~.AnnotatedQueue`,
 and then processing that into a ``QuantumScript``.

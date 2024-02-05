@@ -38,7 +38,7 @@ np.random.seed(42)
 
 # gates for which device support is tested
 ops = {
-    "Identity": qml.Identity(wires=[0]),
+    "Identity": qml.I(0),
     "Snapshot": qml.Snapshot("label"),
     "BasisState": qml.BasisState(np.array([0]), wires=[0]),
     "BlockEncode": qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
@@ -55,9 +55,9 @@ ops = {
     "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "MultiRZ": qml.MultiRZ(0, wires=[0]),
-    "PauliX": qml.PauliX(wires=[0]),
-    "PauliY": qml.PauliY(wires=[0]),
-    "PauliZ": qml.PauliZ(wires=[0]),
+    "PauliX": qml.X(0),
+    "PauliY": qml.Y(0),
+    "PauliZ": qml.Z(0),
     "X": qml.X(wires=[0]),
     "Y": qml.Y(wires=[0]),
     "Z": qml.Z(wires=[0]),

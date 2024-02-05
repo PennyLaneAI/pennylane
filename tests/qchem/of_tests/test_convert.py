@@ -594,9 +594,9 @@ def test_identities_pennylane_to_openfermion():
     """
     coeffs = [2.5, -0.5, -1.0]
     obs_list = [
-        qml.Identity(wires=[0]) @ qml.Identity(wires=[1]),
-        qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1]),
-        qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]),
+        qml.I(0) @ qml.I(1),
+        qml.I(0) @ qml.Z(1),
+        qml.Z(0) @ qml.I(1),
     ]
 
     op_str = str(qml.qchem.convert._pennylane_to_openfermion(coeffs, obs_list))
@@ -612,7 +612,7 @@ def test_singlewire_pennylane_to_openfermion():
     single-wire case.
     """
     coeffs = np.array([0.5])
-    obs_list = [qml.PauliZ(wires=[0])]
+    obs_list = [qml.Z(0)]
 
     op_str = str(qml.qchem.convert._pennylane_to_openfermion(coeffs, obs_list))
 

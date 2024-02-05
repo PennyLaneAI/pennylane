@@ -121,7 +121,7 @@ class TestMeasurementTransformations:
             [PauliX(0) @ PauliY(1), PauliX(0) @ PauliZ(2)],
             (
                 [RY(-np.pi / 2, wires=[0]), RX(np.pi / 2, wires=[1])],
-                [PauliZ(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[0]) @ PauliZ(wires=[2])],
+                [Z(0) @ Z(1), Z(0) @ Z(2)],
             ),
         ),
         (
@@ -129,10 +129,10 @@ class TestMeasurementTransformations:
             (
                 [RY(-np.pi / 2, wires=[2]), RX(np.pi / 2, wires=[1])],
                 [
-                    PauliZ(wires=[2]),
-                    PauliZ(wires=[1]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-                    PauliZ(wires=[2]) @ PauliZ(wires=[1]),
+                    Z(2),
+                    Z(1),
+                    Z(0) @ Z(1),
+                    Z(2) @ Z(1),
                 ],
             ),
         ),
@@ -151,7 +151,7 @@ class TestMeasurementTransformations:
             [PauliX(0), PauliX(1) @ PauliX(0)],
             (
                 [RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
-                [PauliZ(wires=[0]), PauliZ(wires=[1]) @ PauliZ(wires=[0])],
+                [Z(0), Z(1) @ Z(0)],
             ),
         ),
     ]

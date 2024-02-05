@@ -22,9 +22,9 @@ from pennylane import layer
 
 
 def ConstantCircuit():
-    qml.PauliX(wires=[0])
+    qml.X(0)
     qml.Hadamard(wires=[0])
-    qml.PauliY(wires=[1])
+    qml.Y(1)
 
 
 def StaticCircuit(wires, var):

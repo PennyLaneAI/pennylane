@@ -72,7 +72,7 @@ def layer(template, depth, *args, **kwargs):
             def subroutine():
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=[1])
+                qml.X(1)
 
         and then pass it into the ``qml.layer`` function. In this instance, we repeat ``subroutine`` three times:
 

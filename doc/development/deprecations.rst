@@ -28,10 +28,10 @@ Pending deprecations
 
   >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
   >>> op
-  -1j*(PauliY(wires=[0]))
+  -1j*(Y(0))
   >>> [phase], [base] = op.terms()
   >>> phase, base
-  (-1j, PauliY(wires=[0]))
+  (-1j, Y(0))
 
   - Deprecated in v0.35
   - Will be removed in v0.36
@@ -198,14 +198,14 @@ Completed deprecation cycles
   >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
   True
   >>> {qml.PauliZ(0), qml.PauliZ(0)}
-  {PauliZ(wires=[0])}
+  {Z(0)}
 
   Meanwhile, the previous behaviour is shown below:
 
   >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
   False
   >>> {qml.PauliZ(0), qml.PauliZ(0)}
-  {PauliZ(wires=[0]), PauliZ(wires=[0])}
+  {Z(0), Z(0)}
 
   - Added in v0.32
   - Behaviour changed in v0.33
@@ -433,13 +433,13 @@ Completed deprecation cycles
   Instead, use:
 
   >>> qml.adjoint(qml.PauliX(0))
-  Adjoint(PauliX(wires=[0]))
+  Adjoint(X(0))
   >>> qml.pow(qml.PauliX(0), -1)
-  PauliX(wires=[0])**-1
+  X(0)**-1
   >>> qml.pow(qml.PauliX(0), -1, lazy=False)
-  PauliX(wires=[0])
+  X(0)
   >>> qml.PauliX(0) ** -1
-  PauliX(wires=[0])**-1
+  X(0)**-1
 
 * The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
   use ``qml.pauli_decompose()``.

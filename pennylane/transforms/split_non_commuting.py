@@ -129,7 +129,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         Now ``tapes`` is a list of two tapes, each for one of the non-commuting terms:
 
         >>> [t.observables for t in tapes]
-        [[expval(PauliZ(wires=[0]))], [expval(PauliY(wires=[0]))]]
+        [[expval(Z(0))], [expval(Y(0))]]
 
         The processing function becomes important when creating the commuting groups as the order
         of the inputs has been modified:
@@ -150,10 +150,10 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         makes sure that the final output is of the same shape and ordering:
 
         >>> processing_fn([t.measurements for t in tapes])
-        (expval(PauliZ(wires=[0]) @ PauliZ(wires=[1])),
-        expval(PauliX(wires=[0]) @ PauliX(wires=[1])),
-        expval(PauliZ(wires=[0])),
-        expval(PauliX(wires=[0])))
+        (expval(Z(0) @ Z(1)),
+        expval(X(0) @ X(1)),
+        expval(Z(0)),
+        expval(X(0)))
 
         Measurements that accept both observables and ``wires`` so that e.g. ``qml.counts``,
         ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
@@ -174,7 +174,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         This results in two tapes, each with commuting measurements:
 
         >>> [t.measurements for t in tapes]
-        [[expval(PauliX(wires=[0])), probs(wires=[1])], [probs(wires=[0, 1])]]
+        [[expval(X(0)), probs(wires=[1])], [probs(wires=[0, 1])]]
     """
 
     # Construct a list of observables to group based on the measurements in the tape

@@ -31,7 +31,7 @@ def circuit_1():
     """Circuit 1 with Clifford gates."""
     qml.GlobalPhase(np.pi)
     qml.CNOT(wires=[0, 1])
-    qml.PauliX(wires=[1])
+    qml.X(1)
     qml.Barrier()
     qml.ISWAP(wires=[0, 1])
     qml.Hadamard(wires=[0])
@@ -378,7 +378,7 @@ def test_clifford_error(check):
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=[0])
-        qml.PauliX(wires=[0])
+        qml.X(0)
         qml.RX(1.0, wires=[0])
         return qml.state()
 

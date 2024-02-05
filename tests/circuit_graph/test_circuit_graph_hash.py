@@ -51,7 +51,7 @@ class TestCircuitGraphHash:
     returntype1 = qml.expval
     returntype2 = qml.var
 
-    observable1 = qml.PauliZ(wires=[0])
+    observable1 = qml.Z(0)
     observable2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
     observable3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
 

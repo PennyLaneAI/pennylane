@@ -145,7 +145,7 @@ class DefaultClifford(Device):
         @qml.qnode(dev)
         def circuit():
             qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=[1])
+            qml.X(1)
             qml.ISWAP(wires=[0, 1])
             qml.Hadamard(wires=[0])
             return qml.state()

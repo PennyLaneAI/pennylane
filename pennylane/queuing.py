@@ -84,7 +84,7 @@ If we construct an operator inside the recording context, we can see it is added
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     op = qml.PauliX(0)
 >>> q.queue
-[PauliX(wires=[0])]
+[X(0)]
 
 If an operator is constructed outside of the context, we can manually add it to the queue by
 calling the :meth:`~.Operator.queue` method. The :meth:`~.Operator.queue` method is automatically
@@ -94,7 +94,7 @@ called upon initialization, but it can also be manually called at a later time.
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     op.queue()
 >>> q.queue
-[PauliX(wires=[0])]
+[X(0)]
 
 An object can only exist up to *once* in the queue, so calling queue multiple times will
 not do anything.
@@ -104,7 +104,7 @@ not do anything.
 ...     op.queue()
 ...     op.queue()
 >>> q.queue
-[PauliX(wires=[0])]
+[X(0)]
 
 The :func:`~.apply` method allows a single object to be queued multiple times in a circuit.
 The function queues a copy of the original object if it already in the queue.
@@ -114,7 +114,7 @@ The function queues a copy of the original object if it already in the queue.
 ...     qml.apply(op)
 ...     qml.apply(op)
 >>> q.queue
-[PauliX(wires=[0]), PauliX(wires=[0])]
+[X(0), X(0)]
 >>> q.queue[0] is q.queue[1]
 False
 
@@ -127,8 +127,8 @@ Only the operators that will end up in the circuit will remain.
 ...     print(q.queue)
 ...     pow_op = base ** 1.5
 ...     print(q.queue)
-[PauliX(wires=[0])]
-[PauliX(wires=[0])**1.5]
+[X(0)]
+[X(0)**1.5]
 
 Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations
 and measurements in the final circuit. This step eliminates any object that has an owner.
@@ -140,9 +140,9 @@ and measurements in the final circuit. This step eliminates any object that has 
 ...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 >>> ops, measurements = qml.queuing.process_queue(q)
 >>> ops
-[StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), PauliX(wires=[0])**1.5]
+[StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), X(0)**1.5]
 >>> measurements
-[expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
+[expval(Z(0) @ X(1))]
 
 These lists can be used to construct a :class:`~.QuantumScript`:
 
@@ -528,9 +528,9 @@ def apply(op, context=QueuingManager):
                 qml.CNOT(wires=[0, 1])
 
         >>> tape1.operations
-        [Hadamard(wires=[1]), <QuantumTape: wires=[0], params=1>, PauliX(wires=[0]), CNOT(wires=[0, 1])]
+        [Hadamard(wires=[1]), <QuantumTape: wires=[0], params=1>, X(0), CNOT(wires=[0, 1])]
         >>> tape2.operations
-        [PauliX(wires=[0]), RZ(0.2, wires=[0])]
+        [X(0), RZ(0.2, wires=[0])]
     """
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")

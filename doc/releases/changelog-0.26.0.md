@@ -180,7 +180,7 @@
   RX(4.867258771281655, wires=[0])
   >>> op2 = qml.RX(4 * np.pi, wires=0)
   >>> qml.simplify(op2)
-  Identity(wires=[0])
+  I(0)
   ```
   
   All of these simplification features can be applied directly to quantum functions, QNodes, and tapes via decorating with `@qml.simplify`, as well:
@@ -414,7 +414,7 @@
   >>> len(op)
   3
   >>> op[1]
-  PauliY(wires=[1])
+  Y(1)
   >>> [o.name for o in op]
   ['PauliX', 'PauliY', 'PauliZ']
   ```
@@ -437,13 +437,13 @@
 
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
-  Adjoint(PauliX(wires=[0]))
+  Adjoint(X(0))
   >>> qml.pow(qml.PauliX(0), -1)
-  PauliX(wires=[0])**-1
+  X(0)**-1
   >>> qml.pow(qml.PauliX(0), -1, lazy=False)
-  PauliX(wires=[0])
+  X(0)
   >>> qml.PauliX(0) ** -1
-  PauliX(wires=[0])**-1
+  X(0)**-1
   ```
 
   `qml.adjoint` takes the conjugate transpose of an operator, while `qml.pow(op, -1)` indicates matrix

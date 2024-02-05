@@ -35,12 +35,12 @@ pytestmark = pytest.mark.skip_unsupported
 
 # observables for which device support is tested
 obs = {
-    "Identity": qml.Identity(wires=[0]),
+    "Identity": qml.I(0),
     "Hadamard": qml.Hadamard(wires=[0]),
     "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
-    "PauliX": qml.PauliX(wires=[0]),
-    "PauliY": qml.PauliY(wires=[0]),
-    "PauliZ": qml.PauliZ(wires=[0]),
+    "PauliX": qml.X(0),
+    "PauliY": qml.Y(0),
+    "PauliZ": qml.Z(0),
     "X": qml.X(wires=[0]),
     "Y": qml.Y(wires=[0]),
     "Z": qml.Z(wires=[0]),
@@ -588,7 +588,7 @@ class TestTensorExpval:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=[0]) @ qml.Projector(state, wires=[1, 2]))
+            return qml.expval(qml.Z(0) @ qml.Projector(state, wires=[1, 2]))
 
         basis_state, state_vector = [0, 0], [1, 0, 0, 0]
         expected = (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
@@ -887,7 +887,7 @@ class TestTensorSample:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.PauliX(wires=[0]) @ qml.PauliY(wires=[2]))
+            return qml.sample(qml.X(0) @ qml.Y(2))
 
         res = circuit()
 
@@ -930,9 +930,7 @@ class TestTensorSample:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(
-                qml.PauliZ(wires=[0]) @ qml.Hadamard(wires=[1]) @ qml.PauliY(wires=[2])
-            )
+            return qml.sample(qml.Z(0) @ qml.Hadamard(wires=[1]) @ qml.Y(2))
 
         res = circuit()
 
@@ -985,7 +983,7 @@ class TestTensorSample:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.PauliZ(wires=[0]) @ qml.Hermitian(A_, wires=[1, 2]))
+            return qml.sample(qml.Z(0) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -1069,7 +1067,7 @@ class TestTensorSample:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.PauliZ(wires=[0]) @ qml.Projector(state, wires=[1, 2]))
+            return qml.sample(qml.Z(0) @ qml.Projector(state, wires=[1, 2]))
 
         res_basis = circuit([0, 0]).flatten()
         res_state = circuit([1, 0, 0, 0]).flatten()
@@ -1320,7 +1318,7 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.var(qml.PauliX(wires=[0]) @ qml.PauliY(wires=[2]))
+            return qml.var(qml.X(0) @ qml.Y(2))
 
         res = circuit()
 
@@ -1351,7 +1349,7 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.var(qml.PauliZ(wires=[0]) @ qml.Hadamard(wires=[1]) @ qml.PauliY(wires=[2]))
+            return qml.var(qml.Z(0) @ qml.Hadamard(wires=[1]) @ qml.Y(2))
 
         res = circuit()
 
@@ -1460,7 +1458,7 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.var(qml.PauliZ(wires=[0]) @ qml.Hermitian(A_, wires=[1, 2]))
+            return qml.var(qml.Z(0) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -1522,7 +1520,7 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.var(qml.PauliZ(wires=[0]) @ qml.Projector(basis_state, wires=[1, 2]))
+            return qml.var(qml.Z(0) @ qml.Projector(basis_state, wires=[1, 2]))
 
         res_basis = circuit([0, 0])
         res_state = circuit([1, 0, 0, 0])

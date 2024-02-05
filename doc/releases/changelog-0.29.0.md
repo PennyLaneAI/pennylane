@@ -41,7 +41,7 @@
   >>> p1 = jnp.array(1.2)
   >>> p2 = jnp.array([2.3, 3.4])
   >>> H((p1, p2), t=0.5)
-  (2*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))) + ((-0.2876553231625218*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + (1.517961235535459*(PauliY(wires=[0]) @ PauliY(wires=[1]))))
+  (2*(Z(0) @ Z(1))) + ((-0.2876553231625218*(X(0) @ X(1))) + (1.517961235535459*(Y(0) @ Y(1))))
   ```
 
   The time-dependent Hamiltonian can be used within a circuit with `qml.evolve`:
@@ -510,7 +510,7 @@
   >>> coeffs = np.array([1.1, 2.2])
   >>> ops = [qml.PauliX(0), qml.PauliY(0)]
   >>> qml.dot(coeffs, ops)
-  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+  (1.1*(X(0))) + (2.2*(Y(0)))
   >>> qml.dot(coeffs, ops, pauli=True)
   1.1 * X(0) + 2.2 * Y(0)
   ```
@@ -599,7 +599,7 @@
 
   ```pycon
   >>> qml.dot(coeffs=[2, 2, 2], ops=[qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)])
-  2*(PauliX(wires=[0]) + PauliY(wires=[1]) + PauliZ(wires=[2]))
+  2*(X(0) + Y(1) + Z(2))
   ```
 
 * `qml.generator` now supports operators with `Sum` and `Prod` generators.

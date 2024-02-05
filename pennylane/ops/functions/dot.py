@@ -49,7 +49,7 @@ def dot(
     >>> coeffs = np.array([1.1, 2.2])
     >>> ops = [qml.PauliX(0), qml.PauliY(0)]
     >>> qml.dot(coeffs, ops)
-    (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+    (1.1*(X(0))) + (2.2*(Y(0)))
     >>> qml.dot(coeffs, ops, pauli=True)
     1.1 * X(0)
     + 2.2 * Y(0)
@@ -59,7 +59,7 @@ def dot(
     specialized representation can be converted to an operator:
 
     >>> qml.dot([1, 2], [qml.PauliX(0), qml.PauliX(0)], pauli=True).operation()
-    3.0*(PauliX(wires=[0]))
+    3.0*(X(0))
 
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
     than using ``pauli=False``, but it only works for pauli words
@@ -71,8 +71,8 @@ def dot(
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
     >>> ops = [qml.PauliX(0), qml.PauliY(0)]
     >>> qml.dot(coeffs, ops)
-      (<lambda>(params_0, t)*(PauliX(wires=[0])))
-    + (<lambda>(params_1, t)*(PauliY(wires=[0])))
+      (<lambda>(params_0, t)*(X(0)))
+    + (<lambda>(params_1, t)*(Y(0)))
     """
 
     if len(coeffs) != len(ops):
