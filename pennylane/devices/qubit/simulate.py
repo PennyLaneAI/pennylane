@@ -149,7 +149,7 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
                 is_state_batched=is_state_batched,
                 debugger=debugger,
                 mid_measurements=mid_measurements,
-            )
+            )  # pylint: disable=unexpected-keyword-arg
         else:
             state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
         # Handle postselection on mid-circuit measurements
@@ -335,7 +335,7 @@ def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
     new_measurements = []
     for m in circuit.measurements:
         if not m.mv:
-            if isinstance(m, VarianceMP) and m.mv is None:
+            if isinstance(m, VarianceMP):
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
                 new_measurements.append(m)
@@ -512,7 +512,7 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
 
 
 @singledispatch
-def gather_mcm(measurement, mv, samples, counter):
+def gather_mcm(measurement, mv, samples, counter):  # pylint: disable=unused-argument
     """Combines, gathers and normalizes several measurements with non-trivial measurement values.
 
     Args:
@@ -530,7 +530,7 @@ def gather_mcm(measurement, mv, samples, counter):
 
 
 @gather_mcm.register
-def _(measurement: CountsMP, mv, samples, counter):
+def _(measurement: CountsMP, mv, samples, counter):  # pylint: disable=unused-argument
     sha = mv.measurements[0].hash
     new_samples = {}
     if len(samples) - counter[sha] > 0:
@@ -541,25 +541,25 @@ def _(measurement: CountsMP, mv, samples, counter):
 
 
 @gather_mcm.register
-def _(measurement: ExpectationMP, mv, samples, counter):
+def _(measurement: ExpectationMP, mv, samples, counter):  # pylint: disable=unused-argument
     sha = mv.measurements[0].hash
     return np.mean(np.array([dct[sha] for dct in samples]))
 
 
 @gather_mcm.register
-def _(measurement: ProbabilityMP, mv, samples, counter):
+def _(measurement: ProbabilityMP, mv, samples, counter):  # pylint: disable=unused-argument
     sha = mv.measurements[0].hash
     p1 = counter[sha] / float(len(samples))
     return np.array([1 - p1, p1])
 
 
 @gather_mcm.register
-def _(measurement: SampleMP, mv, samples, counter):
+def _(measurement: SampleMP, mv, samples, counter):  # pylint: disable=unused-argument
     sha = mv.measurements[0].hash
     return np.array([dct[sha] for dct in samples])
 
 
 @gather_mcm.register
-def _(measurement: VarianceMP, mv, samples, counter):
+def _(measurement: VarianceMP, mv, samples, counter):  # pylint: disable=unused-argument
     sha = mv.measurements[0].hash
     return qml.math.var(np.array([dct[sha] for dct in samples]))
