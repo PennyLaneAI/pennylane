@@ -183,7 +183,7 @@
   [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
 
 * String representations of `Sum` objects now break into multiple lines
-  whenever the output is larger than 60 characters.
+  whenever the output is larger than 50 characters.
   ```
   >>> 0.5 * (X(0) @ X(1)) + 0.7 * (X(1) @ X(2)) + 0.8 * (X(2) @ X(3))
   (
