@@ -141,11 +141,7 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     """Performs a check if two Pauli words have the same ``wires`` and ``name`` attributes.
 
     This is a convenience function that checks if two given :class:`~.Tensor` or :class:`~.Prod`
-    instances specify the same Pauli word. This function only checks if both :class:`~.Tensor`
-    or :class:`~.Prod` instances have the same wires and name attributes, and hence won't perform
-    any simplification to identify if the two Pauli words are algebraically equivalent. For
-    instance, this function will not identify that ``PauliX(0) @ PauliX(0) = Identity(0)``, or
-    ``PauliX(0) @ Identity(1) = PauliX(0)``, or ``Identity(0) = Identity(1)``, etc.
+    instances specify the same Pauli word.
 
     Args:
         pauli_1 (Union[Identity, PauliX, PauliY, PauliZ, Tensor, Prod, SProd]): the first Pauli word
@@ -156,8 +152,8 @@ def are_identical_pauli_words(pauli_1, pauli_2):
 
     Raises:
         TypeError: if ``pauli_1`` or ``pauli_2`` are not :class:`~.Identity`, :class:`~.PauliX`,
-        :class:`~.PauliY`, :class:`~.PauliZ`, :class:`~.Tensor`, :class:`~.SProd`, or
-        :class:`~.Prod` instances
+            :class:`~.PauliY`, :class:`~.PauliZ`, :class:`~.Tensor`, :class:`~.SProd`, or
+            :class:`~.Prod` instances
 
     **Example**
 
@@ -303,7 +299,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
         Note that if a zero vector is input, then the resulting Pauli word will be
         an :class:`~.Identity` instance. If new operator arithmetic is enabled via
         :func:`~.pennylane.operation.enable_new_opmath`, a :class:`~.Prod` will be
-        returned, else a `:class:`~.Tensor` will be returned.
+        returned, else a :class:`~.Tensor` will be returned.
 
     Raises:
         TypeError: if length of binary vector is not even, or if vector does not have strictly
@@ -678,29 +674,6 @@ def _are_pauli_words_qwc_pauli_rep(lst_pauli_words):
     basis = {}
     for op in lst_pauli_words:  # iterate over the list of observables
         pw = next(iter(op.pauli_rep))
-
-        for wire, pauli_type in pw.items():  # iterate over wires of the observable,
-            if pauli_type != "I":
-                if wire in basis and pauli_type != basis[wire]:
-                    # Only non-identity paulis are in basis, so if pauli_type doesn't match
-                    # it is guaranteed to not commute
-                    return False
-
-                basis[wire] = pauli_type
-
-    return True  # if we get through all ops, then they are qwc!
-
-
-def are_pauli_words_qwc(lst_pauli_words):
-    """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
-    qubit-wise commuting. This private method is used for operators that have a valid pauli
-    representation"""
-    basis = {}
-    for op in lst_pauli_words:  # iterate over the list of observables
-        if len(pr := op.pauli_rep) > 1:
-            return False
-
-        pw = next(iter(pr))
 
         for wire, pauli_type in pw.items():  # iterate over wires of the observable,
             if pauli_type != "I":
