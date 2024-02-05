@@ -142,16 +142,13 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
             if not mid_measurements[meas_id]:
                 continue
             op = op.then_op
-        if isinstance(op, MidMeasureMP):
-            state = apply_operation(  # pylint: disable=unexpected-keyword-arg
-                op,
-                state,
-                is_state_batched=is_state_batched,
-                debugger=debugger,
-                mid_measurements=mid_measurements,
-            )
-        else:
-            state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
+        state = apply_operation(
+            op,
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+            mid_measurements=mid_measurements if isinstance(op, MidMeasureMP) else None,
+        )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             state, circuit._shots = _postselection_postprocess(

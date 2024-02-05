@@ -150,7 +150,11 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
 
 @singledispatch
 def apply_operation(
-    op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None
+    op: qml.operation.Operator,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    mid_measurements=None,
 ):
     """Apply and operator to a given state.
 
@@ -159,6 +163,7 @@ def apply_operation(
         state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
+        mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
 
     Returns:
         ndarray: output state
@@ -237,26 +242,34 @@ def apply_mid_measure(
 
 
 @apply_operation.register
-def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None):
+def apply_identity(
+    op: qml.Identity, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
     """Applies a :class:`~.Identity` operation by just returning the input state."""
     return state
 
 
 @apply_operation.register
-def apply_global_phase(op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None):
+def apply_global_phase(
+    op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
     """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
     return qml.math.exp(-1j * qml.math.cast(op.data[0], complex)) * state
 
 
 @apply_operation.register
-def apply_paulix(op: qml.PauliX, state, is_state_batched: bool = False, debugger=None):
+def apply_paulix(
+    op: qml.PauliX, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
     axis = op.wires[0] + is_state_batched
     return math.roll(state, 1, axis)
 
 
 @apply_operation.register
-def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False, debugger=None):
+def apply_pauliz(
+    op: qml.PauliZ, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
     """Apply pauliz to state."""
 
     axis = op.wires[0] + is_state_batched
@@ -274,7 +287,9 @@ def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False, debugger
 
 
 @apply_operation.register
-def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=None):
+def apply_cnot(
+    op: qml.CNOT, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
     """Apply cnot gate to state."""
     target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + is_state_batched
     control_axes = op.wires[0] + is_state_batched
@@ -292,7 +307,11 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
 
 @apply_operation.register
 def apply_multicontrolledx(
-    op: qml.MultiControlledX, state, is_state_batched: bool = False, debugger=None
+    op: qml.MultiControlledX,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    mid_measurements=None,
 ):
     r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
     for 8 operation wires or less. Otherwise, apply a custom kernel based on
@@ -341,7 +360,13 @@ def apply_multicontrolledx(
 
 
 @apply_operation.register
-def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, debugger=None):
+def apply_grover(
+    op: qml.GroverOperator,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    mid_measurements=None,
+):
     """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
     wires) or via standard matrix based methods (else)."""
     if len(op.wires) < 9:
@@ -383,7 +408,9 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
 
 
 @apply_operation.register
-def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
+def apply_snapshot(
+    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
     """Take a snapshot of the state"""
     if debugger is not None and debugger.active:
         measurement = op.hyperparameters["measurement"]
@@ -402,7 +429,11 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
 # pylint:disable = no-value-for-parameter, import-outside-toplevel
 @apply_operation.register
 def apply_parametrized_evolution(
-    op: qml.pulse.ParametrizedEvolution, state, is_state_batched: bool = False, debugger=None
+    op: qml.pulse.ParametrizedEvolution,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    mid_measurements=None,
 ):
     """Apply ParametrizedEvolution by evolving the state rather than the operator matrix
     if we are operating on more than half of the subsystem"""
