@@ -270,7 +270,7 @@ class TestMeasurements:
     "obs",
     [
         qml.Hamiltonian([-0.5, 2], [qml.GellMann(0, 5), qml.GellMann(0, 3)]),
-        qml.Hermitian(
+        qml.THermitian(
             -0.5 * qml.GellMann(0, 5).matrix() + 2 * qml.GellMann(0, 3).matrix(), wires=0
         ),
     ],
