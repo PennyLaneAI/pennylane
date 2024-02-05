@@ -36,7 +36,7 @@ def commutator(op1, op2, pauli=False):
     You can compute commutators between operators in PennyLane.
 
     >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
-    2j*(Z(0))
+    2j * Z(0)
 
     >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
     >>> op2 = qml.PauliY(0) @ qml.PauliY(1)
@@ -62,8 +62,8 @@ def commutator(op1, op2, pauli=False):
     Note that when ``pauli=False``, even if Pauli operators are used
     as inputs, ``qml.commutator`` returns Operators.
 
-    >>> qml.commutator(op1, op2, pauli=True)
-    (2j*(X(1) @ Z(0))) + (2j*(Z(1) @ X(0)))
+    >>> qml.commutator(op1, op2, pauli=False)
+    2j * (Z(0) @ X(1)) + 2j * (X(0) @ Z(1))
 
 
     It is also worth highlighting that computing commutators with Paulis is typically faster.
