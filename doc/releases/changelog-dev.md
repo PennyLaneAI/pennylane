@@ -80,6 +80,17 @@
   + 2j * X(0) @ Z(1)
   ```
 
+* `expectation_value` was added to `math` to calculate the expectation value of a matrix for pure states.
+  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
+
+  ```pycon
+  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
+  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
+  >>> qml.math.expectation_value(operator_matrix, state_vector)
+  tensor(-2.23711432e-17+0.j, requires_grad=True)
+  ```
+
+
 
 <h4>Parity Mapping</h4>
 
