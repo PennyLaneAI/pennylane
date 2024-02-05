@@ -720,9 +720,9 @@ def _compute_mutual_info(
 
 
 def expectation_value(operator_matrix, state_vector, check_state=False, check_operator=False):
-    r"""Compute the expectation value of an operator concerning a pure state.
+    r"""Compute the expectation value of an operator with respect to a pure state.
 
-    The expectation value of an operator :math:`A` for a pure state given by a state vector :math:`\ket{\psi}`
+    The expectation value of an operator :math:`A` for a pure state is given by a state vector :math:`\ket{\psi}`
     is defined as
 
     .. math::
@@ -741,11 +741,11 @@ def expectation_value(operator_matrix, state_vector, check_state=False, check_op
     **Example**
 
     The expectation value for any operator can obtained by passing their matrix representation as an argument.
-    For example, for a 2 qubit state, we can compute the expectation value of the operator :math: `Z \otimes I` as
+    For example, for a 2 qubit state, we can compute the expectation value of the operator :math:`Z \otimes I` as
 
 
     >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
-    >>> operator_matrix = qml.PauliZ(0).matrix(wire_order=[0,1])
+    >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
     >>> qml.math.expectation_value(operator_matrix, state_vector)
     tensor(-2.23711432e-17+0.j, requires_grad=True)
 
