@@ -869,14 +869,29 @@ def norm(tensor, like=None, **kwargs):
 
     return norm(tensor, **kwargs)
 
+
 @multi_dispatch()
 def svd(tensor, like=None, **kwargs):
-    """Compute the singular value decomposition of a tensor in each interface."""
-    if like == "jax":
-        from jax.numpy.linalg import svd
+    """Compute the singular value decomposition of a tensor in each interface.
+    For a matrix A, the singular value decomposition consist of three matrices U, S and Vh, such that:
 
-    elif like == "tensorflow":
-        from tensorflow.linalg import svd
+    .. math::
+        A = U \cdot Diag(S) \cdot Vh
+
+    Returns:
+        S, U, V: full decomposition (if compute_uv is True or None)
+        S: only the singular values (if compute_uv is False)
+
+    """
+    if like == "tensorflow":
+        from tensorflow.linalg import svd, adjoint
+
+        # Tensorflow results need some pos-processing to keep it similar to other frameworks
+        S, U, V = svd(tensor, **kwargs)
+        return U, S, adjoint(V)
+
+    elif like == "jax":
+        from jax.numpy.linalg import svd
 
     elif like == "torch":
         # Torch is deprecating torch.svd() in favor of torch.linalg.svd().
@@ -888,6 +903,7 @@ def svd(tensor, like=None, **kwargs):
             from torch.linalg import svd
         if kwargs.get("compute_uv", None) is not None:
             kwargs.pop("compute_uv")
+
     else:
         from numpy.linalg import svd
 
