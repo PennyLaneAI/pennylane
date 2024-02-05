@@ -178,7 +178,10 @@ def calculate_probability(
     # take the real part so probabilities are not shown as complex numbers
     # also reshape to flat
     probs = math.reshape(math.real(probs), final_shape)
-    probs = math.clip(probs, 0, None)
+
+    # if a probability is very small it may round to negative, undesirable.
+    # math.clip with None bounds breaks with tensorflow, using this instead:
+    probs = math.where(probs < 0, -probs, probs)
 
     if mp_wires := measurementprocess.wires:
         expanded_shape = [QUDIT_DIM] * num_state_wires
