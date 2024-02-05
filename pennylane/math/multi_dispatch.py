@@ -876,6 +876,7 @@ def svd(tensor, like=None, **kwargs):
     For a matrix A, the singular value decomposition consist of three matrices U, S and Vh, such that:
 
     .. math::
+    
         A = U \cdot Diag(S) \cdot Vh
 
     Returns:
@@ -890,7 +891,7 @@ def svd(tensor, like=None, **kwargs):
         S, U, V = svd(tensor, **kwargs)
         return U, S, adjoint(V)
 
-    elif like == "jax":
+    if like == "jax":
         from jax.numpy.linalg import svd
 
     elif like == "torch":
