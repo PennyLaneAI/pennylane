@@ -245,26 +245,6 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
             op, control_wires=control, control_values=control_values, work_wires=work_wires
         )
 
-    # A controlled ControlledPhaseShift should not be compressed to a multi controlled
-    # PhaseShift because the decomposition of PhaseShift contains a GlobalPhase that we
-    # do not have a controlled version of.
-    # TODO: remove this special case when we support ControlledGlobalPhase (sc-44933)
-    if isinstance(op, qml.ControlledPhaseShift):
-        return Controlled(
-            op, control_wires=control, control_values=control_values, work_wires=work_wires
-        )
-    # Similarly, compress the bottom levels of a multi-controlled PhaseShift to a
-    # ControlledPhaseShift if possible to avoid dealing with a controlled GlobalPhase
-    # during decomposition. This should also be removed in the future.
-    if isinstance(op, qml.PhaseShift) and control_values[-1]:
-        op = qml.ControlledPhaseShift(*op.data, wires=control[-1:] + op.wires)
-        return Controlled(
-            op,
-            control_wires=control[:-1],
-            control_values=control_values[:-1],
-            work_wires=work_wires,
-        )
-
     return None
 
 
@@ -774,11 +754,21 @@ def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
     if custom_key in ops_with_custom_ctrl_ops:
         custom_op_cls = ops_with_custom_ctrl_ops[custom_key]
         return custom_op_cls.compute_decomposition(*op.data, op.active_wires)
-    if type(op.base) in pauli_x_based_ctrl_ops:
+    if isinstance(op.base, pauli_x_based_ctrl_ops):
         # has some special case handling of its own for further decomposition
         return _decompose_pauli_x_based_no_control_values(op)
 
-    # TODO: will be removed in the second part of the controlled rework
+    # A multi-wire controlled PhaseShift should be decomposed first using the decomposition
+    # of ControlledPhaseShift. This is because the decomposition of PhaseShift contains a
+    # GlobalPhase that we do not have a handling for.
+    # TODO: remove this special case when we support ControlledGlobalPhase [sc-44933]
+    if isinstance(op.base, qml.PhaseShift):
+        base_decomp = qml.ControlledPhaseShift.compute_decomposition(*op.data, op.wires[-2:])
+        return [
+            ctrl(new_op, op.control_wires[:-1], work_wires=op.work_wires) for new_op in base_decomp
+        ]
+
+    # TODO: will be removed in the second part of the controlled rework [sc-37951]
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
         result = op.base._controlled(op.control_wires[0])  # pylint: disable=protected-access
         # disallow decomposing to itself

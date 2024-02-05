@@ -217,7 +217,7 @@ class TestConstruction:
             qml.prod(qml.PauliX(0), qml.PauliZ(1)),
             qml.operation.Tensor(qml.PauliX(2), qml.PauliZ(3)),
         ]
-        op = ValidOp(*operands)
+        op = qml.sum(*operands)
         assert isinstance(op[0], Sum)
         assert isinstance(op[0][1], SProd)
         assert isinstance(op[0][1].base, Prod)
