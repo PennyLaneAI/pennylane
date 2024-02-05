@@ -173,7 +173,6 @@ class TestMatrixParameters:
         expected2 = (
             "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
             "1: ─╰|Ψ⟩────────┤         \n"
-            "\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
         assert draw(matrices_circuit)() == expected2
@@ -860,25 +859,115 @@ def test_nested_tapes():
     assert draw(circ)() == expected
 
 
-@pytest.mark.parametrize(
-    "device",
-    [qml.device("default.qubit.legacy", wires=2), qml.devices.DefaultQubit(wires=2)],
-)
-def test_expansion_strategy(device):
-    """Test expansion strategy keyword modifies tape expansion."""
+@qml.transforms.merge_rotations
+@qml.transforms.cancel_inverses
+@qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+def circuittransforms(weights, order):
+    qml.RandomLayers(weights, wires=(0, 1))
+    qml.Permute(order, wires=(0, 1, 2))
+    qml.PauliX(0)
+    qml.PauliX(0)
+    qml.RX(0.1, wires=0)
+    qml.RX(-0.1, wires=0)
+    return qml.expval(qml.PauliX(0))
 
-    H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
 
-    @qml.qnode(device)
-    def circ(t):
-        qml.ApproxTimeEvolution(H, t, 2)
-        return qml.probs(wires=0)
+class TestLevelExpansionStrategy:
+    @pytest.mark.parametrize(
+        "device",
+        [qml.device("default.qubit.legacy", wires=2), qml.devices.DefaultQubit(wires=2)],
+    )
+    def test_expansion_strategy(self, device):
+        """Test expansion strategy keyword modifies tape expansion."""
 
-    expected_gradient = "0: ─╭ApproxTimeEvolution─┤  Probs\n1: ─╰ApproxTimeEvolution─┤       "
-    assert draw(circ, expansion_strategy="gradient", decimals=None)(0.5) == expected_gradient
+        H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
 
-    expected_device = "0: ──RX─╭RXX──RX─╭RXX─┤  Probs\n1: ──RZ─╰RXX──RZ─╰RXX─┤       "
-    assert draw(circ, expansion_strategy="device", decimals=None)(0.5) == expected_device
+        @qml.qnode(device)
+        def circ(t):
+            qml.ApproxTimeEvolution(H, t, 2)
+            return qml.probs(wires=0)
+
+        expected_gradient = "0: ─╭ApproxTimeEvolution─┤  Probs\n1: ─╰ApproxTimeEvolution─┤       "
+        assert draw(circ, expansion_strategy="gradient", decimals=None)(0.5) == expected_gradient
+
+        expected_device = "0: ──RX─╭RXX──RX─╭RXX─┤  Probs\n1: ──RZ─╰RXX──RZ─╰RXX─┤       "
+        assert draw(circ, expansion_strategy="device", decimals=None)(0.5) == expected_device
+
+    @pytest.mark.parametrize("level", (0, "top"))
+    def test_draw_at_level0(self, level):
+        """Test level 0/ top"""
+        order = [2, 1, 0]
+        weights = np.array([[1.0, 20]])
+
+        out = qml.draw(circuittransforms, level=level, show_matrices=False)(weights, order)
+
+        expected = (
+            "0: ─╭RandomLayers(M0)─╭Permute──X──X──RX(0.10)──RX(-0.10)─┤  <X>\n"
+            "1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤     \n"
+            "2: ───────────────────╰Permute────────────────────────────┤     "
+        )
+        assert out == expected
+
+    def test_draw_at_level_1(self):
+        """Test that at level one the first transform has been applied, cancelling inverses."""
+
+        order = [2, 1, 0]
+        weights = np.array([[1.0, 20]])
+
+        out = qml.draw(circuittransforms, level=1, show_matrices=False)(weights, order)
+
+        expected = (
+            "0: ─╭RandomLayers(M0)─╭Permute──RX(0.10)──RX(-0.10)─┤  <X>\n"
+            "1: ─╰RandomLayers(M0)─├Permute──────────────────────┤     \n"
+            "2: ───────────────────╰Permute──────────────────────┤     "
+        )
+        assert out == expected
+
+    @pytest.mark.parametrize("level", (2, "user"))
+    def test_draw_at_level_2(self, level):
+        """Test that draw at 2 or user selects out the first two transforms."""
+        order = [2, 1, 0]
+        weights = np.array([[1.0, 20]])
+
+        out = qml.draw(circuittransforms, level=level, show_matrices=False)(weights, order)
+
+        expected = (
+            "0: ─╭RandomLayers(M0)─╭Permute─┤  <X>\n"
+            "1: ─╰RandomLayers(M0)─├Permute─┤     \n"
+            "2: ───────────────────╰Permute─┤     "
+        )
+        assert out == expected
+
+    @pytest.mark.parametrize("level", (3, "gradient"))
+    def test_draw_at_gradient_level(self, level):
+        """Test draw with gradient preprocessing applied."""
+
+        order = [2, 1, 0]
+        weights = qml.numpy.array([[1.0, 20]])
+
+        out = qml.draw(circuittransforms, level=level, show_matrices=False)(weights, order)
+
+        expected = (
+            "0: ──RY(1.00)──╭Permute─┤  <X>\n"
+            "1: ──RX(20.00)─├Permute─┤     \n"
+            "2: ────────────╰Permute─┤     "
+        )
+        assert out == expected
+
+    @pytest.mark.parametrize("level", (8, "device"))
+    def test_draw_at_device_level(self, level):
+        """Test at the device level all templates are fully decomposed."""
+        order = [2, 1, 0]
+        weights = qml.numpy.array([[1.0, 20]])
+
+        out = qml.draw(circuittransforms, level=level, show_matrices=False)(weights, order)
+
+        expected = (
+            "0: ──RY(1.00)──╭SWAP─┤  <X>\n"
+            "1: ──RX(20.00)─│─────┤     \n"
+            "2: ────────────╰SWAP─┤     "
+        )
+        assert out == expected
 
 
 def test_draw_with_qfunc():

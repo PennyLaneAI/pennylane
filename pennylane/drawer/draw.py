@@ -211,7 +211,7 @@ def draw(
     if hasattr(qnode, "construct"):
         if expansion_strategy:
             resolved_level = expansion_strategy
-        elif level:
+        elif level is not None:
             resolved_level = level
         else:
             resolved_level = qnode.expansion_strategy
@@ -263,7 +263,6 @@ def _draw_qnode(
         tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs)
         _wire_order = wire_order or qnode.device.wires or tapes[0].wires
 
-        print(tapes)
         if len(tapes) > 1:
             print("using multiple route")
             cache = {"tape_offset": 0, "matrices": []}
@@ -514,7 +513,7 @@ def draw_mpl(
 
         if expansion_strategy:
             resolved_level = expansion_strategy
-        elif level:
+        elif level is not None:
             resolved_level = level
         else:
             resolved_level = qnode.expansion_strategy

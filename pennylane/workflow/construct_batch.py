@@ -186,7 +186,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         processed_level = slice(0, processed_level)
 
     sub_program = full_transform_program[processed_level]
-    if level == "user" and qnode.transform_program.has_final_transform:
+    if level in {"user", "gradient"} and qnode.transform_program.has_final_transform:
         sub_program.push_back(qnode.transform_program[-1])
 
     return sub_program
