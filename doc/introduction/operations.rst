@@ -110,7 +110,7 @@ quantum functions, QNodes or tapes:
 
 >>> def circuit(theta):
 ...     qml.RX(theta, wires=1)
-...     qml.PauliZ(wires=0)
+...     qml.Z(wires=0)
 >>> qml.matrix(circuit)(np.pi / 4)
 array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
 [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],

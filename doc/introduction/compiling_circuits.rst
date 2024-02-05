@@ -153,7 +153,7 @@ For example, take the following decorated quantum function:
         qml.RX(y, wires=2)
         qml.Y(wires=2)
         qml.CZ(wires=[1, 2])
-        return qml.expval(qml.PauliZ(wires=0))
+        return qml.expval(qml.Z(wires=0))
 
 The default behaviour of :func:`~.pennylane.compile` applies a sequence of three
 transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylane.transforms.cancel_inverses`,
@@ -191,7 +191,7 @@ controlled gates and cancel adjacent inverses, we could do:
         qml.RX(y, wires=2)
         qml.Y(wires=2)
         qml.CZ(wires=[1, 2])
-        return qml.expval(qml.PauliZ(wires=0))
+        return qml.expval(qml.Z(wires=0))
 
 >>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
 0: ──H──RX(0.40)──RX(0.20)────────────────────────────┤  <Z>
