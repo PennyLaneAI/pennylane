@@ -307,6 +307,9 @@
 * A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
+* A warning about two mathematically equivalent hamiltonians undergoing different time evolutions added to `qml.ApproxTimeEvolution`.
+  [(#5092)](https://github.com/PennyLaneAI/pennylane/pull/5137)
+
 <h3>Bug fixes 🐛</h3>
 
 * The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.

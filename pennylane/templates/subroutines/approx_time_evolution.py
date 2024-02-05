@@ -63,8 +63,8 @@ class ApproxTimeEvolution(Operation):
 
     .. warning::
 
-	Two mathematically equivalent :class:`~.Hamiltonian` objects may undergo different time evolutions
-	due to the order in which the observables are stored.
+        Two mathematically equivalent :class:`~.Hamiltonian` objects may undergo different time evolutions
+        due to the order in which the observables are stored.
 
     .. note::
 
