@@ -278,7 +278,7 @@ def simulate(
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, dangerous-default-value
 def simulate_tree_mcm(
     circuit: qml.tape.QuantumScript,
     rng=None,
@@ -286,6 +286,7 @@ def simulate_tree_mcm(
     debugger=None,
     interface=None,
     initial_state=None,
+    mcm_counts={},
 ) -> Result:
     """Simulate a single quantum script with native mid-circuit measurements.
 
@@ -304,8 +305,7 @@ def simulate_tree_mcm(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
-
-    circuit_base, circuit_next = circuit_up_to_first_mcm(circuit)
+    circuit_base, circuit_next, op = circuit_up_to_first_mcm(circuit)
     state, is_state_batched, _ = get_final_state(
         circuit_base, debugger=debugger, interface=interface, initial_state=initial_state
     )
@@ -322,19 +322,28 @@ def simulate_tree_mcm(
         return measurements
 
     counts = measurements
+    mcm_tmp = mcm_counts[op.id] if op.id in mcm_counts else None
+    mcm_tmp = Counter(mcm_tmp)
+    mcm_tmp.update(counts)
+    if op.id in mcm_counts:
+        mcm_counts[op.id].update(dict(mcm_tmp))
+    else:
+        mcm_counts[op.id] = dict(mcm_tmp)
 
-    def branch_state(state, wire, branch):
-        axis = wire.toarray()[0]
-        slices = [slice(None)] * state.ndim
-        slices[axis] = int(not branch)
-        state = copy.deepcopy(state)
-        state[tuple(slices)] = 0.0
-        state_norm = np.linalg.norm(state)
-        if state_norm < 1.0e-15:  # pragma: no cover
-            return None
-        return state / state_norm
+    def branch_measurement(circuit_base, circuit_next, counts, state, branch, mcm_counts):
+        """Returns the results of both branches executing ``circuit_next``."""
 
-    def branch_measurement(circuit_base, circuit_next, counts, state, branch):
+        def branch_state(state, wire, branch):
+            axis = wire.toarray()[0]
+            slices = [slice(None)] * state.ndim
+            slices[axis] = int(not branch)
+            state = copy.deepcopy(state)
+            state[tuple(slices)] = 0.0
+            state_norm = np.linalg.norm(state)
+            if state_norm < 1.0e-15:  # pragma: no cover
+                return None
+            return state / state_norm
+
         wire = circuit_base._measurements[0].wires
         new_state = branch_state(state, wire, int(branch))
         if new_state is None:
@@ -347,10 +356,11 @@ def simulate_tree_mcm(
             debugger=debugger,
             interface=interface,
             initial_state=new_state,
+            mcm_counts=mcm_counts,
         )
 
     measurements = [
-        branch_measurement(circuit_base, circuit_next, counts, state, branch)
+        branch_measurement(circuit_base, circuit_next, counts, state, branch, mcm_counts)
         for branch in counts.keys()
     ]
     measurements = dict(
@@ -359,14 +369,13 @@ def simulate_tree_mcm(
             for branch, count, value in zip(counts.keys(), counts.values(), measurements)
         )
     )
-
-    return combine_measurements(circuit, measurements)
+    return combine_measurements(circuit, measurements, mcm_counts)
 
 
 def circuit_up_to_first_mcm(circuit):
     """Returns two circuits: one that runs up-to the next mid-circuit measurement and one that runs beyond it."""
     if not has_mid_circuit_measurements(circuit):
-        return circuit, None
+        return circuit, None, None
 
     # find next MidMeasureMP
     def find_next_mcm(circuit):
@@ -379,7 +388,7 @@ def circuit_up_to_first_mcm(circuit):
     # run circuit until next MidMeasureMP and sample
     circuit_base = qml.tape.QuantumScript(
         circuit.operations,
-        [qml.counts(wires=op.wires) if op.obs is None else qml.sample(op=op.obs)],
+        [qml.counts(wires=op.wires) if op.obs is None else qml.counts(op=op.obs)],
         shots=circuit.shots,
         trainable_params=circuit.trainable_params,
     )
@@ -400,10 +409,10 @@ def circuit_up_to_first_mcm(circuit):
     )
     circuit_next._ops = circuit_next._ops[i + 1 :]
 
-    return circuit_base, circuit_next
+    return circuit_base, circuit_next, op
 
 
-def combine_measurements(circuit, measurements):
+def combine_measurements(circuit, measurements, mcm_counts):
     """Returns combined measurement values of various types."""
     keys = list(measurements.keys())
     # convert dict-of-lists to list-of-dicts
@@ -414,19 +423,54 @@ def combine_measurements(circuit, measurements):
     else:
         new_measurements = [measurements]
     # loop over measurements
-    final_measurements = [
-        combine_measurements_core(circ_meas, meas)
-        for circ_meas, meas in zip(circuit.measurements, new_measurements)
-    ]
+    final_measurements = []
+    for circ_meas in circuit.measurements:
+        if circ_meas.mv:
+            comb_meas = combine_mid_measure_core(circ_meas, mcm_counts)
+        else:
+            comb_meas = combine_measurements_core(circ_meas, new_measurements.pop(0))
+        final_measurements.append(comb_meas)
     # special treatment of var
-    for i, m in enumerate(final_measurements):
-        if isinstance(circuit.measurements[i], VarianceMP):
+    for i, (c, m) in enumerate(zip(circuit.measurements, final_measurements)):
+        if not c.mv and isinstance(circuit.measurements[i], VarianceMP):
             final_measurements[i] = qml.math.var(m)
-    return (
-        final_measurements
-        if isinstance(measurements[keys[0]][1], Sequence)
-        else final_measurements[0]
-    )
+    return final_measurements[0] if len(final_measurements) == 1 else tuple(final_measurements)
+
+
+# pylint: disable=no-else-return
+def combine_mid_measure_core(original_measurement, all_counts):
+    """Returns a transformed MCM."""
+    counts = all_counts[original_measurement.mv.measurements[0].id]
+    if isinstance(original_measurement, CountsMP):
+        return counts
+    elif isinstance(original_measurement, ExpectationMP):
+        cum_value = 0
+        total_counts = 0
+        for k, v in counts.items():
+            cum_value += int(k) * v
+            total_counts += v
+        return cum_value / total_counts
+    elif isinstance(original_measurement, ProbabilityMP):
+        probs = np.empty((2))
+        total_counts = 0
+        for k, v in counts.items():
+            probs[int(k)] = v
+            total_counts += v
+        return probs / total_counts
+    elif isinstance(original_measurement, SampleMP):
+        total_counts = sum(counts.values())
+        samples = np.zeros((total_counts))
+        samples[-counts["1"] :] = 1
+        return samples
+    elif isinstance(original_measurement, VarianceMP):
+        expval = combine_mid_measure_core(qml.expval(op=original_measurement.mv), all_counts)
+        cum_value = 0
+        total_counts = 0
+        for k, v in counts.items():
+            cum_value += v * (float(k) - expval) ** 2
+            total_counts += v
+        return cum_value / total_counts
+    raise TypeError(f"Invalid measurement type {type(original_measurement)}")
 
 
 @singledispatch
