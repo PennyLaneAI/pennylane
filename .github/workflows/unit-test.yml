@@ -191,6 +191,7 @@ jobs:
           PYTEST_BENCHMARKS_ARGS: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
         run: |
+          echo "strategy IDX: ${{ strategy.job-index }}"
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
           else
@@ -251,4 +252,6 @@ jobs:
 
       - name: Commit stable dependency changes
         if: github.event_name == 'pull_request' && inputs.requirements_file != '' && strategy.job-index == 0
-        run: pip freeze | grep -v "file:///"
+        run: |
+          echo "strategy IDX: ${{ strategy.job-index }}"
+          pip freeze | grep -v "file:///"
