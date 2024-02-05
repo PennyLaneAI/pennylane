@@ -73,6 +73,8 @@ STRING_REPR = (
     (qml.PauliY(0), "Y(0)"),
     (qml.PauliZ(0), "Z(0)"),
     (qml.Identity("a"), "I('a')"),
+    (qml.Identity(10), "I(10)"),
+    (qml.Identity(), "I()"),
     (qml.PauliX("a"), "X('a')"),
     (qml.PauliY("a"), "Y('a')"),
     (qml.PauliZ("a"), "Z('a')"),
@@ -80,10 +82,11 @@ STRING_REPR = (
 
 
 @pytest.mark.parametrize("wire", [0, "a", "a"])
-def test_alias_XYZ(wire):
+def test_alias_XYZI(wire):
     assert qml.PauliX(wire) == qml.X(wire)
     assert qml.PauliY(wire) == qml.Y(wire)
     assert qml.PauliZ(wire) == qml.Z(wire)
+    assert qml.Identity(wire) == qml.Identity(wire)
 
 
 class TestOperations:
