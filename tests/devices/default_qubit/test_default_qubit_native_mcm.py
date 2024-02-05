@@ -49,6 +49,7 @@ def validate_samples(shots, results1, results2):
 def validate_expval(shots, results1, results2):
     if shots is None:
         assert np.allclose(results1, results2)
+        return
     assert np.allclose(results1, results2, atol=0, rtol=0.3)
 
 
