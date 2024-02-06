@@ -1002,7 +1002,7 @@ class TestObservableConstruction:
         """Test the string representation of an observable with and without a return type."""
 
         m = qml.expval(qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"]))
-        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
+        expected = "expval(Z('a') @ Z('b'))"
         assert str(m) == expected
 
         m = qml.probs(wires=["a"])
@@ -1010,15 +1010,15 @@ class TestObservableConstruction:
         assert str(m) == expected
 
         m = qml.probs(op=qml.PauliZ(wires=["a"]))
-        expected = "probs(PauliZ(wires=['a']))"
+        expected = "probs(Z('a'))"
         assert str(m) == expected
 
         m = qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"])
-        expected = "PauliZ(wires=['a']) @ PauliZ(wires=['b'])"
+        expected = "Z('a') @ Z('b')"
         assert str(m) == expected
 
         m = qml.PauliZ(wires=["a"])
-        expected = "PauliZ(wires=['a'])"
+        expected = "Z('a')"
         assert str(m) == expected
 
     def test_id(self):

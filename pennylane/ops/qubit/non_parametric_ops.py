@@ -199,6 +199,8 @@ class PauliX(Observable, Operation):
 
     basis = "X"
 
+    batch_size = None
+
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
@@ -207,6 +209,13 @@ class PauliX(Observable, Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
+
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"X('{wire}')"
+        return f"X({wire})"
 
     @staticmethod
     @lru_cache()
@@ -331,6 +340,9 @@ class PauliX(Observable, Operation):
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
+X = PauliX
+
+
 class PauliY(Observable, Operation):
     r"""PauliY(wires)
     The Pauli Y operator
@@ -354,11 +366,20 @@ class PauliY(Observable, Operation):
 
     basis = "Y"
 
+    batch_size = None
+
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
+
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"Y('{wire}')"
+        return f"Y({wire})"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
@@ -485,6 +506,9 @@ class PauliY(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
+Y = PauliY
+
+
 class PauliZ(Observable, Operation):
     r"""PauliZ(wires)
     The Pauli Z operator
@@ -506,11 +530,20 @@ class PauliZ(Observable, Operation):
 
     basis = "Z"
 
+    batch_size = None
+
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
+
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"Z('{wire}')"
+        return f"Z({wire})"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
@@ -639,6 +672,9 @@ class PauliZ(Observable, Operation):
         return [np.pi, 0.0, 0.0]
 
 
+Z = PauliZ
+
+
 class S(Operation):
     r"""S(wires)
     The single-qubit phase gate
@@ -662,6 +698,8 @@ class S(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
+
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -772,6 +810,8 @@ class T(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
+
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -1000,6 +1040,8 @@ class CNOT(Operation):
 
     basis = "X"
 
+    batch_size = None
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
@@ -1072,6 +1114,8 @@ class CH(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Hadamard"
+
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "H"
@@ -1174,6 +1218,8 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    batch_size = None
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1262,6 +1308,8 @@ class ECR(Operation):
 
     num_wires = 2
     num_params = 0
+
+    batch_size = None
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1389,6 +1437,8 @@ class ISWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    batch_size = None
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1503,6 +1553,8 @@ class SISWAP(Operation):
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    batch_size = None
 
     @staticmethod
     @lru_cache()
@@ -1647,6 +1699,8 @@ class CSWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    batch_size = None
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "SWAP"
 
@@ -1763,6 +1817,8 @@ class CCZ(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
+
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
@@ -1906,6 +1962,8 @@ class Toffoli(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
+
+    batch_size = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
