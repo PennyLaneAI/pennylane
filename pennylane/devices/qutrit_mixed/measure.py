@@ -109,8 +109,8 @@ def calculate_expval(
     rho_mult_obs_reshaped = reshape_state_as_matrix(rho_mult_obs, num_wires)
     if is_state_batched:
         return math.real(math.stack([math.sum(math.diagonal(dm)) for dm in rho_mult_obs_reshaped]))
-    else:
-        return math.real(math.sum(math.diagonal(rho_mult_obs_reshaped)))
+
+    return math.real(math.sum(math.diagonal(rho_mult_obs_reshaped)))
 
 
 def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagonalization gates?
@@ -166,12 +166,6 @@ def calculate_probability(
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     num_state_wires = get_num_wires(state, is_state_batched)
-    # get the final shape
-    final_shape = (
-        (state.shape[0], QUDIT_DIM**num_state_wires)
-        if is_state_batched
-        else (QUDIT_DIM**num_state_wires,)
-    )
 
     # probs are diagonal elements
     # stacking list since diagonal function axis selection parameter names
