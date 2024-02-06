@@ -15,6 +15,7 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+import warnings
 import itertools
 from copy import copy
 from typing import List
@@ -330,6 +331,18 @@ class Sum(CompositeOp):
                 coeffs.append(1.0)
                 ops.append(factor)
         return coeffs, ops
+
+    @property
+    def coeffs(self):
+        warnings.warn("op.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.", qml.PennyLaneDeprecationWarning)
+        coeffs, _ = self.terms()
+        return coeffs
+
+    @property
+    def ops(self):
+        warnings.warn("op.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.", qml.PennyLaneDeprecationWarning)
+        _, ops = self.terms()
+        return ops
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
