@@ -76,40 +76,38 @@ class TestMeasurementDispatch:
         """Test that the correct internal function is used for a measurement process with no observables."""
         # Test a case where state_measurement_process is used
         mp1 = qml.state()
-        assert get_measurement_function(mp1, state=1) is calculate_reduced_density_matrix
+        assert get_measurement_function(mp1) is calculate_reduced_density_matrix
 
     def test_prod_calculate_expval_method(self):
         """Test that the expectation value of a product uses the trace method."""
         prod = qml.prod(*(qml.GellMann(i, 1) for i in range(8)))
-        assert get_measurement_function(qml.expval(prod), state=1) is calculate_expval
+        assert get_measurement_function(qml.expval(prod)) is calculate_expval
 
     def test_hermitian_calculate_expval_method(self):
         """Test that the expectation value of a hermitian uses the calculate expval method."""
         mp = qml.expval(qml.THermitian(np.eye(3), wires=0))
-        assert get_measurement_function(mp, state=1) is calculate_expval
+        assert get_measurement_function(mp) is calculate_expval
 
     def test_hamiltonian_sum_of_terms(self):
         """Check that the sum of terms method is used when Hamiltonian."""
         H = qml.Hamiltonian([2], [qml.GellMann(0, 1)])
-        state = qml.numpy.zeros((3, 3))
-        assert get_measurement_function(qml.expval(H), state) is calculate_expval_sum_of_terms
+        assert get_measurement_function(qml.expval(H)) is calculate_expval_sum_of_terms
 
     def test_sum_sum_of_terms(self):
         """Check that the sum of terms method is used when sum of terms"""
         S = qml.prod(*(qml.GellMann(i, 1) for i in range(8))) + qml.prod(
             *(qml.GellMann(i, 2) for i in range(8))
         )
-        state = qml.numpy.zeros((3, 3))
-        assert get_measurement_function(qml.expval(S), state) is calculate_expval_sum_of_terms
+        assert get_measurement_function(qml.expval(S)) is calculate_expval_sum_of_terms
 
     def test_probs_compute_probabilities(self):
         """Check that compute probabilities method is used when probs"""
-        assert get_measurement_function(qml.probs(), state=1) is calculate_probability
+        assert get_measurement_function(qml.probs()) is calculate_probability
 
     def test_var_compute_variance(self):
         """Check that the compute variance method is used when variance"""
         obs = qml.GellMann(0, 1)
-        assert get_measurement_function(qml.var(obs), state=1) is calculate_variance
+        assert get_measurement_function(qml.var(obs)) is calculate_variance
 
 
 @pytest.mark.parametrize(

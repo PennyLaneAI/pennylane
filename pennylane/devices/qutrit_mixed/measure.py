@@ -263,16 +263,13 @@ def measure(
     Returns:
         Tensorlike: the result of the measurement.
     """
-    return get_measurement_function(measurementprocess, state)(
-        measurementprocess, state, is_state_batched
-    )
+    return get_measurement_function(measurementprocess)(measurementprocess, state, is_state_batched)
 
 
 def calculate_expval_sum_of_terms(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
-    measure_func=measure,
 ) -> TensorLike:
     """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
@@ -281,7 +278,6 @@ def calculate_expval_sum_of_terms(
         measurementprocess (ExpectationMP): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
-        measure_func (function): measure function to use.
 
     Returns:
         TensorLike: the result of the measurement.
@@ -290,11 +286,11 @@ def calculate_expval_sum_of_terms(
         # Recursively call measure on each term, so that the best measurement method can
         # be used for each term
         return sum(
-            measure_func(ExpectationMP(term), state, is_state_batched=is_state_batched)
+            measure(ExpectationMP(term), state, is_state_batched=is_state_batched)
             for term in measurementprocess.obs
         )
     # else hamiltonian
     return sum(
-        c * measure_func(ExpectationMP(t), state, is_state_batched=is_state_batched)
+        c * measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
         for c, t in zip(*measurementprocess.obs.terms())
     )
