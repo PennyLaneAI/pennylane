@@ -47,9 +47,10 @@ class TestAlgorithmicError:
         """Test error is raised if the method is not defined."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
 
-            class ErrorNoCombine(AlgorithmicError):
-                def __init__(self, *args, **kwargs):
-                    super().__init__(*args, **kwargs)
+            class ErrorNoCombine(AlgorithmicError):  # pylint: disable=too-few-public-methods
+                @staticmethod
+                def get_error(approx_op, other_op):  # pylint: disable=unused-argument
+                    return 0.5  # get simple error is always 0.5
 
             _ = ErrorNoCombine(1.23)
 
