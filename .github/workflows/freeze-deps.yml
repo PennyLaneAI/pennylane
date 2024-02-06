@@ -1,0 +1,27 @@
+name: Freeze stable dependencies
+on:
+  pull_request:
+
+jobs:
+  all-dependencies:
+    name: Freeze stable dependencies with PyTorch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: ${{ inputs.checkout_fetch_depth }}
+          repository: PennyLaneAI/pennylane
+
+      - name: Install dependencies
+        uses: ./.github/workflows/install-deps.yml
+        with:
+          install_jax: true
+          install_tensorflow: true
+          install_pytorch: true
+          install_pennylane_lightning_master: true
+
+      - name: Freeze requirements
+        run: pip freeze
