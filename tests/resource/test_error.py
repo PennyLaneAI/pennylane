@@ -83,7 +83,7 @@ class TestAlgorithmicError:
 
 
 class TestErrorOperation:  # pylint: disable=too-few-public-methods
-    """Test the abstract error operation class."""
+    """Test the base ErrorOperation class."""
 
     def test_error_method(self):
         """Test that error method works as expected"""
@@ -97,7 +97,7 @@ class TestErrorOperation:  # pylint: disable=too-few-public-methods
         assert no_error_op.error == 3
 
     def test_no_error_method(self):
-        """Test error is raised if the method is not defined."""
+        """Test error is raised if the error method is not defined."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
 
             class NoErrorOp(ErrorOperation):  # pylint: disable=too-few-public-methods
