@@ -3040,20 +3040,6 @@ def convert_to_opmath(op):
     return op
 
 
-@contextmanager
-def use_new_opmath():
-    r"""Allows to use the new arithmetic operator dunders within a
-    temporary context using the `with` statement."""
-
-    check_op_math = active_new_opmath()
-    try:
-        enable_new_opmath()
-        yield
-    finally:
-        if not check_op_math:
-            disable_new_opmath()
-
-
 def __getattr__(name):
     """To facilitate StatePrep rename"""
     if name == "StatePrep":
