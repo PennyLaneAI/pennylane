@@ -263,9 +263,8 @@ def test_meas_probs(tableau, shots, ops):
 
 def test_meas_probs_large():
     """Test if probabilities are returned in the clifford device with target basis states"""
-    basis_states = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
-    dev_c1 = qml.device("default.clifford", seed=24)
-    dev_c2 = qml.device("default.clifford", seed=24, prob_states=basis_states)
+
+    dev_c = qml.device("default.clifford", seed=24)
 
     def circuit_fn():
         for wire in range(30):
@@ -274,14 +273,11 @@ def test_meas_probs_large():
             qml.PauliZ(wire)
         return qml.probs(wires=range(25))
 
-    qnode_clfrd1 = qml.QNode(circuit_fn, dev_c1)
-    qnode_clfrd2 = qml.QNode(circuit_fn, dev_c2)
-
     with pytest.raises(
         ValueError,
         match="In order to maintain computational efficiency,",
     ):
-        qnode_clfrd1()
+        qml.QNode(circuit_fn, dev_c)()
 
     def circuit_fn1():
         for wire in range(30):
@@ -290,8 +286,7 @@ def test_meas_probs_large():
             qml.PauliZ(wire)
         return qml.probs(wires=range(1))
 
-    qnode_clfrd3 = qml.QNode(circuit_fn1, dev_c2)
-    assert qnode_clfrd3().shape == (2,)
+    assert qml.QNode(circuit_fn1, dev_c)().shape == (2,)
 
     def circuit_fn2(state):
         for wire in range(30):
@@ -300,9 +295,11 @@ def test_meas_probs_large():
             qml.PauliZ(wire)
         return qml.expval(qml.Projector(state, wires=[0, 1]))
 
-    qnode_clfrd4 = qml.QNode(circuit_fn2, dev_c1)
-    probs1 = [qnode_clfrd4(state) for state in basis_states]
-    probs2 = qnode_clfrd2()
+    qnode_clfrd = qml.QNode(circuit_fn2, dev_c)
+
+    basis_states = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
+    probs1 = [qnode_clfrd(state) for state in basis_states]
+    probs2 = [1.0, 0.0, 0.0, 0.0]
     assert qml.math.allclose(probs1, probs2)
 
 

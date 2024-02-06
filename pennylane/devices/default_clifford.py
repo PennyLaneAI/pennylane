@@ -167,9 +167,6 @@ class DefaultClifford(Device):
         tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
             When ``True``, the device returns the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
-        prob_states (array[int]):  Target basis state(s) for which analytical probabilities should be computed with
-            :func:`qml.probs <pennylane.probs>`. By default, if no wires are provided, probabilities are computed
-            for the complete computational space up to ``20`` qubits.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
@@ -261,27 +258,20 @@ class DefaultClifford(Device):
         As the ``default.clifford`` device supports executing quantum circuits with a large number of qubits,
         we restrict the ability to compute the ``analytical`` probabilities for `all` computational basis
         states at once to maintain computational efficiency when system size scales beyond ``20`` qubits.
-        Instead, one can sepcify the target basis state(s), i.e., subset `basis state(s)` of interest,
-        either during the initialization of device via the ``prob_states`` keyword argument.
+
+        As long as number of qubits are below this limit, one can simply use the :func:`qml.probs <pennylane.probs>`
+        with its usual arguments and probabilities for the specified target states would be computed and returned.
+        We test this for a circuit that prepares the ``n``-qubit Greenberger-Horne-Zeilinger state (GHZ state) state.
+        This means that the probabilities for the basis states :math:`|0\rangle^{\otimes n}` and
+        :math:`|1\rangle^{\otimes n}` should be :math:`0.5`, and for :math:`0.0` for the rest.
 
         .. code-block:: python
 
             import pennylane as qml
             import numpy as np
-
-            # target states - |0000> and |1111>
-            basis_states = np.array([[0, 0, 0, 0], [1, 1, 1, 1]])
             dev = qml.device("default.clifford", target_states = basis_states)
 
-        After doing this, one can simply use the :func:`qml.probs <pennylane.probs>` with its usual arguments
-        and probabilities for the specified target states would be computed and returned. We test this for a
-        circuit that prepares the ``n``-qubit Greenberger-Horne-Zeilinger state (GHZ state) state. This means
-        that the probabilities for the basis states :math:`|0\rangle^{\otimes n}` and :math:`|1\rangle^{\otimes n}`
-        should be :math:`0.5`.
-
-        .. code-block:: python
-
-            num_wires = 4
+            num_wires = 3
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(wires=[0])
@@ -290,10 +280,10 @@ class DefaultClifford(Device):
                 return qml.probs()
 
         >>> circuit()
-        tensor([0.5, 0.5], requires_grad=True)
+        tensor([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5], requires_grad=True)
 
-        One can also use :mod:`qml.expval <pennylane.expval>` compute the expectation value of a single target
-        ``basis state`` with the :mod:`qml.Projector <pennylane.Projector>`.
+        Once above the limit, one can use :mod:`qml.expval <pennylane.expval>` compute the expectation value of a
+        single target ``basis state`` with the :mod:`qml.Projector <pennylane.Projector>`.
 
         .. code-block:: python
 
@@ -305,10 +295,12 @@ class DefaultClifford(Device):
                     qml.CNOT(wires=[idx, idx+1])
                 return qml.expval(qml.Projector(state, wires=range(num_wires)))
 
-        >>> basis_states = np.array([[0, 1, 0, 1], [1, 0, 1, 0]])
+        >>> basis_states = np.array([[0, 0, 0, 0], [0, 1, 0, 1], [1, 0, 1, 0]])
         >>> circuit(basis_states[0])
-        tensor(0.0, requires_grad=True)
+        tensor(0.5, requires_grad=True)
         >>> circuit(basis_states[1])
+        tensor(0.0, requires_grad=True)
+        >>> circuit(basis_states[2])
         tensor(0.0, requires_grad=True)
 
         .. note::
@@ -352,7 +344,6 @@ class DefaultClifford(Device):
         shots=None,
         check_clifford=True,
         tableau=True,
-        prob_states=None,
         seed="global",
         max_workers=None,
     ) -> None:
@@ -367,14 +358,6 @@ class DefaultClifford(Device):
         self._check_clifford = check_clifford
 
         self._tableau = tableau
-
-        self._prob_states = None
-        if prob_states is not None:
-            self._prob_states = qml.math.stack(
-                prob_states
-                if len(qml.math.shape(prob_states)) > 1
-                else qml.math.array([prob_states])
-            )
 
         self._seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         self._rng = np.random.default_rng(self._seed)
@@ -856,8 +839,6 @@ class DefaultClifford(Device):
 
         # Set the target states
         tgt_states = kwargs.get("prob_states", None)
-        if tgt_states is None:
-            tgt_states = self._prob_states
 
         # Obtain the measurement wires for getting the basis states
         mobs_wires = meas.obs.wires if meas.obs else meas.wires
@@ -899,14 +880,14 @@ class DefaultClifford(Device):
             state = self._measure_state(meas, circuit_simulator, circuit=circuit)
             return meas.process_state(state, wire_order=circuit.wires)
 
-        if len(meas_wires) < tgt_states.shape[1]:
-            tgt_states = []
-            for state in self._prob_states:
-                if list(state[meas_wires]) not in tgt_states:
-                    tgt_states.append(list(state[meas_wires]))
-            tgt_states = np.array(tgt_states)
-        else:
+        if len(meas_wires) >= tgt_states.shape[1]:
             meas_wires = meas_wires[: tgt_states.shape[1]]
+        else:  # pragma: no cover
+            cgc_states = []
+            for state in tgt_states:
+                if list(state[meas_wires]) not in cgc_states:
+                    cgc_states.append(list(state[meas_wires]))
+            tgt_states = np.array(cgc_states)
 
         # Maintain a representaiton of basis states to build a visit-array
         tgt_integs = np.array([int("".join(map(str, tgt_state)), 2) for tgt_state in tgt_states])
