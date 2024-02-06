@@ -14,6 +14,7 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
+# pylint: disable=eval-used
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
