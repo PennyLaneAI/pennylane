@@ -287,6 +287,7 @@ def simulate_tree_mcm(
     interface=None,
     initial_state=None,
     mcm_counts={},
+    mcm_samples={},
 ) -> Result:
     """Simulate a single quantum script with native mid-circuit measurements.
 
@@ -321,7 +322,16 @@ def simulate_tree_mcm(
     if circuit_next is None:
         return measurements
 
-    counts = measurements
+    samples = measurements
+    if op.id in mcm_samples:
+        mcm_samples[op.id] = np.concatenate((mcm_samples[op.id], samples))
+    else:
+        mcm_samples[op.id] = samples
+
+    meas = circuit_base.measurements[0]
+    counts = CountsMP(wires=meas.wires).process_samples(
+        samples.reshape((-1, 1)), wire_order=meas.wires
+    )
     mcm_tmp = mcm_counts[op.id] if op.id in mcm_counts else None
     mcm_tmp = Counter(mcm_tmp)
     mcm_tmp.update(counts)
@@ -330,7 +340,9 @@ def simulate_tree_mcm(
     else:
         mcm_counts[op.id] = dict(mcm_tmp)
 
-    def branch_measurement(circuit_base, circuit_next, counts, state, branch, mcm_counts):
+    def branch_measurement(
+        circuit_base, circuit_next, counts, state, branch, mcm_counts, mcm_samples
+    ):
         """Returns the results of both branches executing ``circuit_next``."""
 
         def branch_state(state, wire, branch):
@@ -357,10 +369,13 @@ def simulate_tree_mcm(
             interface=interface,
             initial_state=new_state,
             mcm_counts=mcm_counts,
+            mcm_samples=mcm_samples,
         )
 
     measurements = [
-        branch_measurement(circuit_base, circuit_next, counts, state, branch, mcm_counts)
+        branch_measurement(
+            circuit_base, circuit_next, counts, state, branch, mcm_counts, mcm_samples
+        )
         for branch in counts.keys()
     ]
     measurements = dict(
@@ -369,7 +384,7 @@ def simulate_tree_mcm(
             for branch, count, value in zip(counts.keys(), counts.values(), measurements)
         )
     )
-    return combine_measurements(circuit, measurements, mcm_counts)
+    return combine_measurements(circuit, measurements, mcm_samples)
 
 
 def circuit_up_to_first_mcm(circuit):
@@ -388,7 +403,7 @@ def circuit_up_to_first_mcm(circuit):
     # run circuit until next MidMeasureMP and sample
     circuit_base = qml.tape.QuantumScript(
         circuit.operations,
-        [qml.counts(wires=op.wires) if op.obs is None else qml.counts(op=op.obs)],
+        [qml.sample(wires=op.wires) if op.obs is None else qml.sample(op=op.obs)],
         shots=circuit.shots,
         trainable_params=circuit.trainable_params,
     )
@@ -412,7 +427,7 @@ def circuit_up_to_first_mcm(circuit):
     return circuit_base, circuit_next, op
 
 
-def combine_measurements(circuit, measurements, mcm_counts):
+def combine_measurements(circuit, measurements, mcm_samples):
     """Returns combined measurement values of various types."""
     keys = list(measurements.keys())
     # convert dict-of-lists to list-of-dicts
@@ -426,7 +441,7 @@ def combine_measurements(circuit, measurements, mcm_counts):
     final_measurements = []
     for circ_meas in circuit.measurements:
         if circ_meas.mv:
-            comb_meas = combine_mid_measure_core(circ_meas, mcm_counts)
+            comb_meas = gather_mcm(circ_meas, mcm_samples)
         else:
             comb_meas = combine_measurements_core(circ_meas, new_measurements.pop(0))
         final_measurements.append(comb_meas)
@@ -770,13 +785,19 @@ def gather_mcm(measurement, samples):
     mv = measurement.mv
     if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
         wires = qml.wires.Wires(range(len(mv)))
-        mcm_samples = list(
-            np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1)) for m in mv
-        )
+        if isinstance(samples, Sequence):
+            mcm_samples = list(
+                np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1)) for m in mv
+            )
+        else:
+            mcm_samples = list(m.concretize(samples).reshape((-1, 1)) for m in mv)
         mcm_samples = np.concatenate(mcm_samples, axis=1)
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
+    if isinstance(samples, Sequence):
+        mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
+    else:
+        mcm_samples = mv.concretize(samples).reshape((-1, 1))
     use_as_is = len(mv.measurements) == 1
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement
