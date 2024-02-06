@@ -14,4 +14,4 @@
 """A module containing functionality for (dynamical) Lie algebra"""
 
 
-from .lie_closure import VSpace
+# from .lie_closure import VSpace

@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.dla import VSpace
+from pennylane.dla.lie_closure import VSpace
 from pennylane.pauli import PauliWord, PauliSentence
 
 ops1 = [
