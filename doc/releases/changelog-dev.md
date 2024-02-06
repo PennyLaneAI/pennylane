@@ -241,6 +241,9 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs` have been added for feature parity with `qml.Hamiltonian` but will be deprecated in the future.
+  [(#)]()
+
 <h3>Breaking changes 💔</h3>
 
 * Make PennyLane code compatible with the latest version of `black`.
@@ -330,6 +333,9 @@
   `pauli` module have been deprecated, as they are no longer used anywhere and the same
   functionality can be achieved using newer features in the `pauli` module.
   [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
+
+* `op.ops` and `op.coeffs` will be deprecated in the future.
+  [(#)]()
 
 <h3>Documentation 📝</h3>
 
