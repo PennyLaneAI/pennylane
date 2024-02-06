@@ -133,7 +133,7 @@ class TestDecomposition:
         ([1 / 2, 0, 1j / 2, 1j / np.sqrt(2)], [0, 1], [1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]),
     ])
     # fmt: on
-    def test_state_preparation(self, tol, state_vector, wires, target_state):
+    def test_state_preparation(self, state_vector, wires, target_state):
         """Tests that the template produces correct states."""
 
         @qml.qnode(qml.device("default.qubit", wires=3))
