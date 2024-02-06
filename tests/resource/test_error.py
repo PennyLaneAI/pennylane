@@ -27,7 +27,6 @@ class SimpleError(AlgorithmicError):
     @staticmethod
     def get_error(approx_op, other_op):  # pylint: disable=unused-argument
         return 0.5  # get simple error is always 0.5
-        return 0.5
 
 
 class ErrorNoGetError(AlgorithmicError):  # pylint: disable=too-few-public-methods
