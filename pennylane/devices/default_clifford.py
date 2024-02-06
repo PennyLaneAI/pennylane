@@ -359,8 +359,8 @@ class DefaultClifford(Device):
 
         self._tableau = tableau
 
-        self._seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        self._rng = np.random.default_rng(self._seed)
+        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        self._rng = np.random.default_rng(seed)
         self._debugger = None
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
@@ -599,7 +599,7 @@ class DefaultClifford(Device):
         """Given a circuit, compute samples and return the statistical measurement results."""
         # Compute samples via circuits from tableau
         num_shots = circuit.shots.total_shots
-        sample_seed = seed if isinstance(seed, int) else self._seed
+        sample_seed = seed if isinstance(seed, int) else self._rng.integers(2**31 - 1, size=1)[0]
 
         # maps measurement type to the desired analytic measurement method
         measurement_map = {
