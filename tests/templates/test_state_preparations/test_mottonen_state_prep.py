@@ -133,29 +133,16 @@ class TestDecomposition:
         ([1 / 2, 0, 1j / 2, 1j / np.sqrt(2)], [0, 1], [1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]),
     ])
     # fmt: on
-    def test_state_preparation_fidelity(self, tol, state_vector, wires, target_state):
-        """Tests that the template produces correct states with high fidelity."""
+    def test_state_preparation(self, tol, state_vector, wires, target_state):
+        """Tests that the template produces correct states."""
 
         @qml.qnode(qml.device("default.qubit", wires=3))
         def circuit():
             qml.MottonenStatePreparation(state_vector, wires)
-            return (
-                qml.expval(qml.PauliZ(0)),
-                qml.expval(qml.PauliZ(1)),
-                qml.expval(qml.PauliZ(2)),
-                qml.state(),
-            )
+            return qml.state()
 
-        results = circuit()
+        state = circuit()
 
-        state = results[-1].ravel()
-        fidelity = abs(np.vdot(state, target_state)) ** 2
-
-        # We test for fidelity here, because the vector themselves will hardly match
-        # due to state preparation only being correct up to a global phase
-        assert np.isclose(fidelity, 1, atol=tol, rtol=0)
-
-        # ...but now we have a global phase! it is perfectly identical.
         assert np.allclose(state, target_state)
 
     # fmt: off
