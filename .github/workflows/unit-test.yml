@@ -196,6 +196,9 @@ jobs:
         if: steps.continue.outputs.confirm == 'true'
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
+          COV_CORE_SOURCE: pennylane
+          COV_CORE_CONFIG: .coveragerc
+          COV_CORE_DATAFILE: .coverage.eager
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 

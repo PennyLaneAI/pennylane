@@ -688,6 +688,7 @@ class Operator(abc.ABC):
         one of them (in other words, without the leading underscore) for the first time will
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
+
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     def __init_subclass__(cls, **_):
@@ -1042,6 +1043,7 @@ class Operator(abc.ABC):
 
     def __init__(self, *params, wires=None, id=None):
         # pylint: disable=too-many-branches
+
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
@@ -1076,7 +1078,10 @@ class Operator(abc.ABC):
         # check that the number of wires given corresponds to required number
         if self.num_wires in {AllWires, AnyWires}:
             if (
-                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase))
+                not isinstance(
+                    self,
+                    (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase, qml.Identity),
+                )
                 and len(qml.wires.Wires(wires)) == 0
             ):
                 raise ValueError(
@@ -1814,6 +1819,7 @@ class Channel(Operation, abc.ABC):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
 
     @staticmethod
@@ -2805,6 +2811,7 @@ class CVObservable(CV, Observable):
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
 
@@ -3030,7 +3037,9 @@ def convert_to_opmath(op):
         Operator: An operator using the new arithmetic operations, if relevant
     """
     if isinstance(op, qml.Hamiltonian):
-        return qml.dot(*op.terms())
+        c, ops = op.terms()
+        ops = tuple(convert_to_opmath(o) for o in ops)
+        return qml.dot(c, ops)
     if isinstance(op, Tensor):
         return qml.prod(*op.obs)
     return op

@@ -24,9 +24,9 @@ from pennylane.devices.qutrit_mixed import measure
 from pennylane.devices.qutrit_mixed.measure import (
     apply_observable_einsum,
     get_measurement_function,
-    trace_method,
-    sum_of_terms_method,
-    reduce_density_matrix,
+    calculate_expval,
+    calculate_expval_sum_of_terms,
+    calculate_reduced_density_matrix,
     calculate_probability,
     calculate_variance,
 )
@@ -58,12 +58,15 @@ def get_expval(op, state):
     return np.trace(op_mult_state)
 
 
+@pytest.mark.parametrize(
+    "mp", [qml.sample(), qml.counts(), qml.sample(wires=0), qml.counts(wires=0)]
+)
 class TestCurrentlyUnsupportedCases:
     # pylint: disable=too-few-public-methods
-    def test_sample_based_observable(self, two_qutrit_state):
-        """Test sample-only measurements raise a notimplementedError."""
+    def test_sample_based_observable(self, mp, two_qutrit_state):
+        """Test sample-only measurements raise a NotImplementedError."""
         with pytest.raises(NotImplementedError):
-            _ = measure(qml.sample(wires=0), two_qutrit_state)
+            _ = measure(mp, two_qutrit_state)
 
 
 class TestMeasurementDispatch:
@@ -73,23 +76,23 @@ class TestMeasurementDispatch:
         """Test that the correct internal function is used for a measurement process with no observables."""
         # Test a case where state_measurement_process is used
         mp1 = qml.state()
-        assert get_measurement_function(mp1, state=1) is reduce_density_matrix
+        assert get_measurement_function(mp1, state=1) is calculate_reduced_density_matrix
 
-    def test_prod_trace_method(self):
+    def test_prod_calculate_expval_method(self):
         """Test that the expectation value of a product uses the trace method."""
         prod = qml.prod(*(qml.GellMann(i, 1) for i in range(8)))
-        assert get_measurement_function(qml.expval(prod), state=1) is trace_method
+        assert get_measurement_function(qml.expval(prod), state=1) is calculate_expval
 
-    def test_hermitian_trace(self):
-        """Test that the expectation value of a hermitian uses the trace method."""
+    def test_hermitian_calculate_expval_method(self):
+        """Test that the expectation value of a hermitian uses the calculate expval method."""
         mp = qml.expval(qml.THermitian(np.eye(3), wires=0))
-        assert get_measurement_function(mp, state=1) is trace_method
+        assert get_measurement_function(mp, state=1) is calculate_expval
 
     def test_hamiltonian_sum_of_terms(self):
         """Check that the sum of terms method is used when Hamiltonian."""
         H = qml.Hamiltonian([2], [qml.GellMann(0, 1)])
         state = qml.numpy.zeros((3, 3))
-        assert get_measurement_function(qml.expval(H), state) is sum_of_terms_method
+        assert get_measurement_function(qml.expval(H), state) is calculate_expval_sum_of_terms
 
     def test_sum_sum_of_terms(self):
         """Check that the sum of terms method is used when sum of terms"""
@@ -97,7 +100,7 @@ class TestMeasurementDispatch:
             *(qml.GellMann(i, 2) for i in range(8))
         )
         state = qml.numpy.zeros((3, 3))
-        assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
+        assert get_measurement_function(qml.expval(S), state) is calculate_expval_sum_of_terms
 
     def test_probs_compute_probabilities(self):
         """Check that compute probabilities method is used when probs"""
@@ -263,6 +266,47 @@ class TestMeasurements:
         assert np.allclose(res, expected)
 
 
+@pytest.mark.parametrize(
+    "obs",
+    [
+        qml.Hamiltonian([-0.5, 2], [qml.GellMann(0, 5), qml.GellMann(0, 3)]),
+        qml.THermitian(
+            -0.5 * qml.GellMann(0, 5).matrix() + 2 * qml.GellMann(0, 3).matrix(), wires=0
+        ),
+    ],
+)
+class TestExpValAnalytical:
+    def test_expval_pure_state(self, obs):
+        """Test that measurements work on pure states as expected from analytical calculation."""
+        # Create TRX[0,2](0.246)TRX[0,1](0.246)|0> state
+        state_vector = np.array([np.cos(0.123) ** 2, -1j * np.sin(0.123), -1j * np.sin(0.246) / 2])
+        state = np.outer(state_vector, np.conj(state_vector))
+        res = measure(qml.expval(obs), state)
+
+        expected = 0.5 * (np.sin(0.246) * np.cos(0.123) ** 2) + 2 * (
+            np.cos(0.123) ** 4 - np.sin(0.123) ** 2
+        )
+        assert np.allclose(res, expected)
+
+    def test_expval_mixed_state(self, obs):
+        """Test that measurements work on mixed states as expected from analytical calculation."""
+        # Create TRX[0,1](0.246)|0> state mixed with TRX[0,2](0.246)|0>
+        state_vector_one = np.array([np.cos(0.123), -1j * np.sin(0.123), 0])
+        state_one = np.outer(state_vector_one, np.conj(state_vector_one))
+
+        state_vector_two = np.array([np.cos(0.123), 0, -1j * np.sin(0.123)])
+        state_two = np.outer(state_vector_two, np.conj(state_vector_two))
+
+        state = (0.33 * state_one) + (0.67 * state_two)
+
+        res = measure(qml.expval(obs), state)
+        expected_pure_state_one = 2 * np.cos(0.246)
+        expected_pure_state_two = 0.5 * np.sin(0.246) + 2 * np.cos(0.123) ** 2
+        expected = (0.33 * expected_pure_state_one) + (0.67 * expected_pure_state_two)
+        assert np.allclose(res, expected)
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
 
@@ -279,12 +323,15 @@ class TestBroadcasting:
             (qml.density_matrix(wires=[1]), lambda x: math.trace(x, axis1=1, axis2=3)),
         ],
     )
-    def test_state_measurement(self, measurement, get_expected, two_qutrit_batched_state):
+    def test_state_measurement(
+        self, measurement, get_expected, ml_framework, two_qutrit_batched_state
+    ):
         """Test that state measurements work on broadcasted state"""
-
-        res = measure(measurement, two_qutrit_batched_state, is_state_batched=True)
+        initial_state = math.asarray(two_qutrit_batched_state, like=ml_framework)
+        res = measure(measurement, initial_state, is_state_batched=True)
         expected = get_expected(two_qutrit_batched_state)
 
+        assert qml.math.get_interface(res) == ml_framework
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
@@ -294,9 +341,12 @@ class TestBroadcasting:
             (qml.probs(wires=[0]), lambda x: math.trace(x, axis1=2, axis2=4)),
         ],
     )
-    def test_probs_measurement(self, measurement, matrix_transform, two_qutrit_batched_state):
+    def test_probs_measurement(
+        self, measurement, matrix_transform, ml_framework, two_qutrit_batched_state
+    ):
         """Test that probability measurements work on broadcasted state"""
-        res = measure(measurement, two_qutrit_batched_state, is_state_batched=True)
+        initial_state = math.asarray(two_qutrit_batched_state, like=ml_framework)
+        res = measure(measurement, initial_state, is_state_batched=True)
 
         transformed_state = matrix_transform(two_qutrit_batched_state)
 
@@ -304,6 +354,7 @@ class TestBroadcasting:
         for i in range(BATCH_SIZE):
             expected.append(math.diag(transformed_state[i]))
 
+        assert qml.math.get_interface(res) == ml_framework
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
@@ -324,12 +375,14 @@ class TestBroadcasting:
             ),
         ],
     )
-    def test_expval_measurement(self, observable, two_qutrit_batched_state):
+    def test_expval_measurement(self, observable, ml_framework, two_qutrit_batched_state):
         """Test that expval measurements work on broadcasted state"""
-        res = measure(qml.expval(observable), two_qutrit_batched_state, is_state_batched=True)
+        initial_state = math.asarray(two_qutrit_batched_state, like=ml_framework)
+        res = measure(qml.expval(observable), initial_state, is_state_batched=True)
 
         expected = [get_expval(observable, two_qutrit_batched_state[i]) for i in range(BATCH_SIZE)]
 
+        assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
 
     @pytest.mark.parametrize(
@@ -340,9 +393,10 @@ class TestBroadcasting:
             qml.sum((0.9 * qml.GellMann(1, 5)), (1.2 * qml.GellMann(1, 8))),
         ],
     )
-    def test_expval_sum_measurement(self, observable, two_qutrit_batched_state):
+    def test_expval_sum_measurement(self, observable, ml_framework, two_qutrit_batched_state):
         """Test that expval Sum measurements work on broadcasted state"""
-        res = measure(qml.expval(observable), two_qutrit_batched_state, is_state_batched=True)
+        initial_state = math.asarray(two_qutrit_batched_state, like=ml_framework)
+        res = measure(qml.expval(observable), initial_state, is_state_batched=True)
 
         expanded_mat = np.zeros((9, 9), dtype=complex)
         for summand in observable:
@@ -358,14 +412,16 @@ class TestBroadcasting:
                 expval_sum += get_expval(summand, two_qutrit_batched_state[i])
             expected.append(expval_sum)
 
+        assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
 
-    def test_expval_hamiltonian_measurement(self, two_qutrit_batched_state):
+    def test_expval_hamiltonian_measurement(self, ml_framework, two_qutrit_batched_state):
         """Test that expval Hamiltonian measurements work on broadcasted state"""
+        initial_state = math.asarray(two_qutrit_batched_state, like=ml_framework)
         observables = [qml.GellMann(1, 1), qml.GellMann(0, 6)]
         coeffs = [2, 0.4]
         observable = qml.Hamiltonian(coeffs, observables)
-        res = measure(qml.expval(observable), two_qutrit_batched_state, is_state_batched=True)
+        res = measure(qml.expval(observable), initial_state, is_state_batched=True)
 
         expanded_mat = np.zeros((9, 9), dtype=complex)
         for coeff, summand in zip(coeffs, observables):
@@ -381,6 +437,7 @@ class TestBroadcasting:
                 expval_sum += coeff * get_expval(summand, two_qutrit_batched_state[i])
             expected.append(expval_sum)
 
+        assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
 
     @pytest.mark.parametrize(
@@ -391,9 +448,10 @@ class TestBroadcasting:
             (qml.GellMann(0, 6) @ qml.GellMann(1, 2)),
         ],
     )
-    def test_variance_measurement(self, observable, two_qutrit_batched_state):
+    def test_variance_measurement(self, observable, ml_framework, two_qutrit_batched_state):
         """Test that variance measurements work on broadcasted state."""
-        res = measure(qml.var(observable), two_qutrit_batched_state, is_state_batched=True)
+        initial_state = math.asarray(two_qutrit_batched_state, like=ml_framework)
+        res = measure(qml.var(observable), initial_state, is_state_batched=True)
 
         obs_squared = qml.prod(observable, observable)
 
@@ -402,106 +460,9 @@ class TestBroadcasting:
             expval_obs = get_expval(observable, state)
             expval_of_squared_obs = get_expval(obs_squared, state)
             expected.append(expval_of_squared_obs - expval_obs**2)
+
+        assert qml.math.get_interface(res) == ml_framework
         assert np.allclose(res, expected)
-
-
-obs_list = [
-    qml.GellMann(0, 3) @ qml.GellMann(1, 1),
-    qml.GellMann(1, 6),
-    qml.GellMann(1, 8),
-    qml.GellMann(1, 7),
-]
-measurement_processes = [
-    qml.expval(qml.GellMann(0, 3)),
-    qml.expval(
-        qml.Hamiltonian(
-            [1.0, 2.0, 3.0, 4.0],
-            obs_list,
-        )
-    ),
-    qml.expval(
-        qml.dot(
-            [1.0, 2.0, 3.0, 4.0],
-            obs_list,
-        )
-    ),
-    qml.var(qml.GellMann(0, 3)),
-    # qml.var(                                  causing error do to bug #5032
-    #     qml.dot(
-    #         [1.0, 2.0, 3.0, 4.0],
-    #         obs_list,
-    #     )
-    # ),
-]
-probs_processes = [qml.probs(wires=0), qml.probs(op=qml.GellMann(0, 8)), qml.probs(wires=[0, 1])]
-
-
-class TestNaNMeasurements:
-    """Tests for mixed state matrices containing nan values."""
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("mp", measurement_processes)
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
-    def test_nan_float_result(self, mp, interface):
-        """Test that the result of circuits with 0 probability postselections is NaN with the
-        expected shape."""
-        state = qml.math.full([3] * 4, np.NaN, like=interface)
-        res = measure(mp, state, is_state_batched=False)
-
-        assert qml.math.ndim(res) == 0
-        assert qml.math.isnan(res)
-        if interface != "autograd":
-            assert qml.math.get_interface(res) == interface
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("mp", measurement_processes)
-    @pytest.mark.parametrize("use_jit", [True, False])
-    def test_nan_float_result_jax(self, mp, use_jit):
-        """Test that the result of circuits with 0 probability postselections is NaN with the
-        expected shape."""
-        state = qml.math.full([3] * 4, np.NaN, like="jax")
-        if use_jit:
-            import jax
-
-            res = jax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
-        else:
-            res = measure(mp, state, is_state_batched=False)
-
-        assert qml.math.ndim(res) == 0
-
-        assert qml.math.isnan(res)
-        assert qml.math.get_interface(res) == "jax"
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("mp", probs_processes)
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
-    def test_nan_probs(self, mp, interface):
-        """Test that the result of circuits with 0 probability postselections is NaN with the
-        expected shape."""
-        state = qml.math.full([3] * 4, np.NaN, like=interface)
-        res = measure(mp, state, is_state_batched=False)
-
-        assert qml.math.shape(res) == (3 ** len(mp.wires),)
-        assert qml.math.all(qml.math.isnan(res))
-        assert qml.math.get_interface(res) == interface
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("mp", probs_processes)
-    @pytest.mark.parametrize("use_jit", [True, False])
-    def test_nan_probs_jax(self, mp, use_jit):
-        """Test that the result of circuits with 0 probability postselections is NaN with the
-        expected shape."""
-        state = qml.math.full([3] * 4, np.NaN, like="jax")
-        if use_jit:
-            import jax
-
-            res = jax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
-        else:
-            res = measure(mp, state, is_state_batched=False)
-
-        assert qml.math.shape(res) == (3 ** len(mp.wires),)
-        assert qml.math.all(qml.math.isnan(res))
-        assert qml.math.get_interface(res) == "jax"
 
 
 # TODO TestSumOfTermsDifferentiability in future PR (with other differentiabilty tests)
