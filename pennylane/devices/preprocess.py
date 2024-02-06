@@ -480,9 +480,7 @@ def validate_channels(
     if channel is not None:
         raise DeviceError(f"Channel {repr(channel)} not supported on {name}")
 
-    use_channels = (
-        support_type == "both" or ["analytical", "sampling"][bool(tape.shots)] == support_type
-    )
+    use_channels = support_type in ("both", ["analytical", "sampling"][bool(tape.shots)])
     if channel_ops and not use_channels:
         raise DeviceError(
             f"Channel not supported on {name} with{'' if tape.shots else 'out'} finite shots."
