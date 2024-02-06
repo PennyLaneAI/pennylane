@@ -1,4 +1,8 @@
 name: Install Dependencies
+description: |
+  This workflow installs Python, PennyLane and all its dependencies. If a
+  requirements file is provided, it will upload the results of pip freeze
+  as well.
 inputs:
   python_version:
     description: The version of Python to use in order to run unit tests
