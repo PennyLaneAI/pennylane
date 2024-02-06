@@ -39,21 +39,13 @@ jobs:
           path: .github/stable/
           merge-multiple: true
 
-      - name: debug
-        run: |
-          pwd
-          ls -rlt
-          ls -rlt .github/stable/
-
       - name: Determine if changes have been made
         id: changed
         run: |
           echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Stage changes
-        # if: steps.changed.outputs.has_changes == '1'
+        if: steps.changed.outputs.has_changes == '1'
         run: |
-          echo ${{ steps.changed.outputs.has_changes }}
-          echo ${{ steps.changed.outputs.has_changes == '1' }}
           git status
           git diff
