@@ -684,13 +684,13 @@ class TestPauliGroup:
         [
             (PauliZ(0), PauliY(0), -1j),
             (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), -1),
+            (PauliZ(0), PauliZ(0), 1),
+            (PauliZ(0), PauliZ(1), 1),
         ],
     )
     def test_deprecated_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, expected_phase):
         """Test that pauli_mult_with_phase is deprecated."""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="`pauli_mult_with_phase` is deprecated"
-        ):
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="pauli_mult"):
             _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2)
         assert obtained_phase == expected_phase
 
