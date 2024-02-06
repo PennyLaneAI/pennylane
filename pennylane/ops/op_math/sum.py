@@ -334,13 +334,19 @@ class Sum(CompositeOp):
 
     @property
     def coeffs(self):
-        warnings.warn("op.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.", qml.PennyLaneDeprecationWarning)
+        warnings.warn(
+            "op.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
         coeffs, _ = self.terms()
         return coeffs
 
     @property
     def ops(self):
-        warnings.warn("op.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.", qml.PennyLaneDeprecationWarning)
+        warnings.warn(
+            "op.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
         _, ops = self.terms()
         return ops
 
