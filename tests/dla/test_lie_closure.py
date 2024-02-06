@@ -33,7 +33,16 @@ ops1 = [
     ),
 ]
 
-ops1plusY10 = ops1[:-1] + [PauliSentence({PauliWord({10: "Y"}): 1.0})]
+ops2 = [
+    PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
+    PauliSentence(
+        {
+            PauliWord({0: "X", 1: "X"}): 1.0,
+        }
+    )
+]
+
+ops2plusY10 = ops2 + [PauliSentence({PauliWord({10: "Y"}): 1.0})]
 
 
 class TestVSpace:
@@ -50,14 +59,27 @@ class TestVSpace:
         assert len(vspace.pw_to_idx) == 2
 
     ADD_LINEAR_INDEPENDENT = (
-        (ops1[:-1], PauliWord({10: "Y"}), ops1plusY10),
-        (ops1[:-1], PauliSentence({PauliWord({10: "Y"}): 1.0}), ops1plusY10),
-        (ops1[:-1], qml.PauliY(10), ops1plusY10),
+        (ops2, PauliWord({10: "Y"}), ops2plusY10),
+        (ops2, PauliSentence({PauliWord({10: "Y"}): 1.0}), ops2plusY10),
+        (ops2, qml.PauliY(10), ops2plusY10),
     )
 
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
     def test_add_lin_independent(self, ops, op, true_new_basis):
         """Test that adding new (linearly independent) operators works as expected"""
+        vspace = VSpace(ops)
+        new_basis = vspace.add(op)
+        assert new_basis == true_new_basis
+    
+    ADD_LINEAR_DEPENDENT = (
+        (ops2, PauliWord({0: "Y", 1: "Y"}), ops2),
+        (ops2, PauliSentence({PauliWord({0: "Y", 1: "Y"}): 1.0}), ops2),
+        (ops2, qml.PauliY(0) @ qml.PauliY(1), ops2),
+    )
+
+    @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_DEPENDENT)
+    def test_add_lin_dependent(self, ops, op, true_new_basis):
+        """Test that adding linearly dependent operators works as expected"""
         vspace = VSpace(ops)
         new_basis = vspace.add(op)
         assert new_basis == true_new_basis
