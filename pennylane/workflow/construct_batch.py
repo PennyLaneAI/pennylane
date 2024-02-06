@@ -51,6 +51,17 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
     return qml.transform(wrapped_expand_fn)
 
 
+def conditional_defer_measurements(tape, device=None):
+    """Applies the defer measurements transform if the device does not support mid circuit measurements."""
+    expand_mid_measure = isinstance(device, qml.Device) and not device.capabilities().get(
+        "supports_mid_measure", False
+    )
+    if expand_mid_measure:
+        # Assume that tapes are not split if old device is used since postselection is not supported.
+        return qml.defer_measurements(tape, device=device)
+    return (tape,), null_postprocessing
+
+
 def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformProgram":
     program = qml.transforms.core.TransformProgram(qnode.transform_program)
     if getattr(qnode.gradient_fn, "expand_transform", False):
@@ -61,6 +72,7 @@ def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformP
     if isinstance(qnode.device, qml.devices.Device):
         config = _make_execution_config(qnode)
         return program + qnode.device.preprocess(config)[0]
+    program.add_transform(qml.transform(conditional_defer_measurements), device=qnode.device)
     program.add_transform(qml.transform(qnode.device.batch_transform))
     program.add_transform(expand_fn_transform(qnode.device.expand_fn))
     return program
@@ -186,7 +198,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         processed_level = slice(0, processed_level)
 
     sub_program = full_transform_program[processed_level]
-    if level in {"user", "gradient"} and qnode.transform_program.has_final_transform:
+    if str(level) in {"user", "gradient"} and qnode.transform_program.has_final_transform:
         sub_program.push_back(qnode.transform_program[-1])
 
     return sub_program

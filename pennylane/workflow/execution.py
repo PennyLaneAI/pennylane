@@ -658,7 +658,6 @@ def execute(
     #### Executing the configured setup #####
 
     if isinstance(device, qml.devices.Device):
-        print(transform_program)
         if not device_batch_transform:
             warnings.warn(
                 "device batch transforms cannot be turned off with the new device interface.",

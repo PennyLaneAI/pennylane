@@ -18,7 +18,6 @@ from functools import partial
 import pytest
 import pennylane as qml
 from pennylane.transforms.core import transform, TransformError, TransformContainer
-from pennylane.transforms.core.transform_dispatcher import TransformDispatcher
 
 dev = qml.device("default.qubit", wires=2)
 
@@ -632,29 +631,3 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
                 tape = tape.copy()
                 tape._ops.pop(index)  # pylint:disable=protected-access
                 return [tape], lambda x: x
-
-
-def test_expand_fn_transform():
-    """Tests the expand_fn_transform."""
-
-    def my_expand_fn(tape):
-        """my docstring."""
-        return qml.tape.QuantumScript(
-            tape.operations + [qml.PauliX(0)], tape.measurements, tape.shots
-        )
-
-    t = qml.transforms.core.expand_fn_transform(my_expand_fn)
-
-    assert isinstance(t, TransformDispatcher)
-    tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=50)
-
-    batch, fn = t(tape)
-    assert len(batch) == 1
-    expected = qml.tape.QuantumScript(
-        [qml.S(0), qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=50
-    )
-    assert qml.equal(batch[0], expected)
-    assert fn(("a",)) == "a"
-
-    assert repr(t) == "<transform: my_expand_fn>"
-    assert t.__doc__ == "my docstring."
