@@ -302,7 +302,12 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         else:
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))
 
-        initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        if isinstance(qnode, QNode):
+            initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        else:
+            # fallback for torch layer and keras layer
+            qnode.construct(args, kwargs)
+            initial_tape = qnode.tape
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
         return program((initial_tape,))
