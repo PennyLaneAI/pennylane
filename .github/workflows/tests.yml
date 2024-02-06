@@ -9,6 +9,9 @@ concurrency:
   group: unit-tests-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DEPS_BRANCH: stable_deps_${{ github.sha }}
+
 jobs:
   tests:
     uses: ./.github/workflows/interface-unit-tests.yml
@@ -45,7 +48,26 @@ jobs:
           echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Stage changes
-        if: steps.changed.outputs.has_changes == '1'
+        if: steps.changed.outputs.has_changes != '0'
         run: |
-          git status
-          git diff
+          git fetch
+          git checkout master
+          git checkout -b "${{ env.DEPS_BRANCH }}"
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git commit -m "Update changed dependencies"
+          git push --set-upstream origin "${{ env.DEPS_BRANCH }}"
+
+      # Create PR to master
+      - name: Create pull request
+        if: steps.changed.outputs.has_changes != '0'
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: "${{ env.DEPS_BRANCH }}"
+          destination_branch: "master"
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
+          pr_title: "Update stable dependency files"
+          pr_body: "Automatic update of stable requirement files to snapshot valid python environments."
+          pr_allow_empty: false
+          pr_draft: false
+          pr_reviewer: "timmysilv"
