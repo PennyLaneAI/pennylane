@@ -194,6 +194,19 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+* String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
+  ```
+  >>> qml.PauliX(0)
+  X(0)
+  >>> qml.PauliX('a')
+  X('a')
+  >>> 0.5 * X(0)
+  0.5 * X(0)
+  >>> 0.5 * (X(0) + Y(1))
+  0.5 * (X(0) + Y(1))
+  ```
+  [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
+
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
@@ -368,6 +381,9 @@
 
 * `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
   [(#5149)](https://github.com/PennyLaneAI/pennylane/pull/5149)
+
+* `default.mixed` no longer throws `ValueError` when applying a state vector that is not of type `complex128` when used with tensorflow.
+  [(#5155)](https://github.com/PennyLaneAI/pennylane/pull/5155)
 
 <h3>Contributors ✍️</h3>
 
