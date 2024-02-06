@@ -210,7 +210,6 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
-
 <h3>Breaking changes 💔</h3>
 
 * Make PennyLane code compatible with the latest version of `black`.
