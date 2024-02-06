@@ -167,6 +167,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
       requirements_file: torch.txt
+      job_index: ${{ strategy.job-index }}
 
 
   autograd-tests:
@@ -234,6 +235,7 @@ jobs:
       pytest_additional_args: --splits 3 --group ${{ matrix.group }} --durations-path='.github/workflows/tf_tests_durations.json'
       additional_pip_packages: pytest-split
       requirements_file: tf.txt
+      job_index: ${{ strategy.job-index }}
 
 
   jax-tests:
@@ -270,6 +272,7 @@ jobs:
       pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/jax_tests_durations.json'
       additional_pip_packages: pytest-split
       requirements_file: jax.txt
+      job_index: ${{ strategy.job-index }}
 
 
   core-tests:
@@ -293,7 +296,7 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'core-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: core-tests-${{ strategy.job-index }} (${{ matrix.group }}, ${{ matrix.python-version }})
+      job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -306,7 +309,8 @@ jobs:
       pytest_markers: core and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
       additional_pip_packages: pytest-split
-      requirements_file: core_${{ strategy.job-index }}.txt
+      requirements_file: core.txt
+      job_index: ${{ strategy.job-index }}
 
 
   all-interfaces-tests:
@@ -342,6 +346,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
       requirements_file: all_interfaces.txt
+      job_index: ${{ strategy.job-index }}
 
 
   external-libraries-tests:
@@ -377,6 +382,7 @@ jobs:
       pytest_markers: external
       additional_pip_packages: pyzx pennylane-catalyst matplotlib stim
       requirements_file: external.txt
+      job_index: ${{ strategy.job-index }}
 
 
   qcut-tests:

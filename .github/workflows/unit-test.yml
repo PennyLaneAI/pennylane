@@ -250,5 +250,11 @@ jobs:
           path: ${{ github.workspace }}/benchmark_results
 
       - name: Commit stable dependency changes
-        if: github.event_name == 'pull_request' && inputs.requirements_file != ''
-        run: pip freeze | grep -v "file:///"
+        if: github.event_name == 'pull_request' && inputs.requirements_file != '' && inputs.job_index == 0
+        env:
+          JOB_NAME: ${{ github.job }}
+        run: |
+          echo "strategy: ${{ strategy.job-index }}"
+          echo "inputs: ${{ inputs.job_index }}"
+          echo "file name: $(echo $JOB_NAME | sed 's/-tests.*//').txt"
+          pip freeze | grep -v "file:///"
