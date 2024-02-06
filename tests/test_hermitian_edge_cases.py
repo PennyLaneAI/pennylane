@@ -20,6 +20,8 @@ import numpy as np
 
 import pennylane as qml
 
+np.random.seed(0)
+
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
@@ -89,7 +91,7 @@ class TestEdgeHermitian:
     @pytest.mark.parametrize("w1, w2", list(itertools.permutations(range(4), 2)))
     def test_hermitian_two_wires_permuted(self, w1, w2, shots, theta):
         """Test that an hermitian expectation with various wires permuted works"""
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4, shots=shots, seed=123545)
         theta = 0.543
 
         A = np.array(
