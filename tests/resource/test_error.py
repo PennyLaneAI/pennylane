@@ -46,13 +46,13 @@ class TestAlgorithmicError:
 
     def test_combine_not_implemented(self):
         """Test NotImplementedError is raised if the method is not defined."""
-        
+
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-            
+
             class ErrorNoCombine(AlgorithmicError):
                 def __init__(self, *args, **kwargs):
                     super().__init__(*args, **kwargs)
-            
+
             _ = ErrorNoCombine(1.23)
 
     @pytest.mark.parametrize("err1", [1.23, 0.45, -6])
