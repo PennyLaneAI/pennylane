@@ -32,6 +32,8 @@ ops1 = [
     }),
 ]
 
+ops1plusY10 = ops1[:-1] + [PauliSentence({PauliWord({10:"Y"}) : 1.})]
+
 class TestVSpace:
     """Unit and integration tests for VSpace class"""
 
@@ -46,12 +48,12 @@ class TestVSpace:
         assert len(vspace.pw_to_idx) == 2
     
     ADD_LINEAR_INDEPENDENT = (
-        (ops1[:-1], PauliWord({10:"Y"}), ops1[:-1].append(PauliSentence({PauliWord({10:"Y"}) : 1.}))),
-        (ops1[:-1], PauliSentence({PauliWord({10:"Y"})}), ops1[:-1].append(PauliSentence({PauliWord({10:"Y"}) : 1.}))),
-        (ops1[:-1], qml.Y(10), ops1[:-1].append(PauliSentence({PauliWord({10:"Y"}) : 1.}))),
+        (ops1[:-1], PauliWord({10:"Y"}), ops1plusY10),
+        (ops1[:-1], PauliSentence({PauliWord({10:"Y"}): 1.}), ops1plusY10),
+        (ops1[:-1], qml.PauliY(10), ops1plusY10),
     )
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
-    def test_add_independent(self, ops, op, true_new_basis):
+    def test_add_lin_independent(self, ops, op, true_new_basis):
         """Test that adding new (linearly independent) operators works as expected"""
         vspace = VSpace(ops)
         new_basis = vspace.add(op)

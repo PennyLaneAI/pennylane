@@ -21,7 +21,7 @@ import numpy as np
 
 import pennylane as qml
 
-# from pennylane.operation import Operator
+from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 
@@ -146,7 +146,7 @@ class VSpace:
     def add(self, other):
         """Adding a list of PauliSentences if they are linearly independent"""
         basis = self.basis
-        if isinstance(other, (PauliWord, PauliSentence)):
+        if isinstance(other, (PauliWord, PauliSentence, Operator)):
             other = [other]
 
         other = [
