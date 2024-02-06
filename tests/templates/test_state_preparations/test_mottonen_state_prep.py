@@ -152,8 +152,11 @@ class TestDecomposition:
         fidelity = abs(np.vdot(state, target_state)) ** 2
 
         # We test for fidelity here, because the vector themselves will hardly match
-        # due to imperfect state preparation
+        # due to state preparation only being correct up to a global phase
         assert np.isclose(fidelity, 1, atol=tol, rtol=0)
+
+        # ...but now we have a global phase! it is perfectly identical.
+        assert np.allclose(state, target_state)
 
     # fmt: off
     @pytest.mark.parametrize("state_vector,wires,target_state", [
@@ -484,33 +487,19 @@ class TestCasting:
         assert np.allclose(res.detach().numpy(), expected, atol=1e-6, rtol=0)
 
 
-class TestIntegration:
-    """QNode tests that ensure the general correctness of the operation."""
+@pytest.mark.parametrize("adj_base_op", [qml.StatePrep, qml.MottonenStatePreparation])
+def test_adjoint_brings_back_to_zero(adj_base_op):
+    """Test that a StatePrep then its adjoint returns the device to the zero state."""
 
-    def test_prepared_state_includes_phase(self):
-        """Test that the prepared state is exact, with the correct phase."""
-        state = [0, 1j]
+    @qml.qnode(qml.device("default.qubit", wires=3))
+    def circuit(state):
+        qml.StatePrep(state, wires=[0, 1, 2])
+        qml.adjoint(adj_base_op(state, wires=[0, 1, 2]))
+        return qml.state()
 
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.MottonenStatePreparation(state, 0)
-            return qml.state()
-
-        assert qml.math.allclose(circuit(), state)
-
-    @pytest.mark.parametrize("adj_base_op", [qml.StatePrep, qml.MottonenStatePreparation])
-    def test_adjoint_brings_back_to_zero(self, adj_base_op):
-        """Test that a StatePrep then its adjoint returns the device to the zero state."""
-
-        @qml.qnode(qml.device("default.qubit", wires=3))
-        def circuit(state):
-            qml.StatePrep(state, wires=[0, 1, 2])
-            qml.adjoint(adj_base_op(state, wires=[0, 1, 2]))
-            return qml.state()
-
-        state = np.array([-0.5, 0.2, 0.3, 0.9, 0.5, 0.2, 0.3, 0.9])
-        state = state / np.linalg.norm(state)
-        actual = circuit(state)
-        expected = np.zeros(8)
-        expected[0] = 1.0
-        assert qml.math.allclose(actual, expected)
+    state = np.array([-0.5, 0.2, 0.3, 0.9, 0.5, 0.2, 0.3, 0.9])
+    state = state / np.linalg.norm(state)
+    actual = circuit(state)
+    expected = np.zeros(8)
+    expected[0] = 1.0
+    assert qml.math.allclose(actual, expected)
