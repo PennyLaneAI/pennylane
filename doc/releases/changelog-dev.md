@@ -191,6 +191,19 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+* String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
+  ```
+  >>> qml.PauliX(0)
+  X(0)
+  >>> qml.PauliX('a')
+  X('a')
+  >>> 0.5 * X(0)
+  0.5 * X(0)
+  >>> 0.5 * (X(0) + Y(1))
+  0.5 * (X(0) + Y(1))
+  ```
+  [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
+
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,

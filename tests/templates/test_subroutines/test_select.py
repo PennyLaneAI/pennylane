@@ -37,7 +37,7 @@ def test_repr():
     control = [1]
 
     op = qml.Select(ops, control)
-    assert repr(op) == "Select(ops=(PauliX(wires=[0]), PauliY(wires=[0])), control=<Wires = [1]>)"
+    assert repr(op) == "Select(ops=(X(0), Y(0)), control=<Wires = [1]>)"
 
 
 class TestSelect:
