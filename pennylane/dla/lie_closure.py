@@ -35,6 +35,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 #     """
 #     return None
 
+
 class VSpace:
     """
     Class representing the linearly independent basis of a vector space.
