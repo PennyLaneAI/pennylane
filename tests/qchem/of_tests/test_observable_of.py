@@ -180,3 +180,14 @@ def test_import_of(monkeypatch):
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
             qml.qchem.openfermion_obs._import_of()
+
+
+def test_import_pyscf(monkeypatch):
+    """Test if an ImportError is raised by _import_pyscf function."""
+    # pylint: disable=protected-access
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "pyscf", None)
+
+        with pytest.raises(ImportError, match="This feature requires pyscf"):
+            qml.qchem.openfermion_obs._import_pyscf()
