@@ -106,8 +106,11 @@ def calculate_expval(
     # are not consistent across interfaces, they don't exist for torch
 
     num_wires = get_num_wires(state, is_state_batched)
-    trace = math.einsum(f"...{alphabet[:num_wires]*2}", rho_mult_obs)
-    return math.real(trace)
+    rho_mult_obs_reshaped = reshape_state_as_matrix(rho_mult_obs, num_wires)
+    if is_state_batched:
+        return math.real(math.stack([math.sum(math.diagonal(dm)) for dm in rho_mult_obs_reshaped]))
+    else:
+        return math.real(math.sum(math.diagonal(rho_mult_obs_reshaped)))
 
 
 def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagonalization gates?
@@ -171,13 +174,13 @@ def calculate_probability(
     )
 
     # probs are diagonal elements
-    # using einsum since diagonal function axis selection parameter names
+    # stacking list since diagonal function axis selection parameter names
     # are not consistent across interfaces
-    indices = alphabet[:num_state_wires]
-    probs = math.einsum(f"...{indices * 2}->...{indices}", state)
-    # take the real part so probabilities are not shown as complex numbers
-    # also reshape to flat
-    probs = math.reshape(math.real(probs), final_shape)
+    reshaped_state = reshape_state_as_matrix(state, num_state_wires)
+    if is_state_batched:
+        probs = math.real(math.stack([math.diagonal(dm) for dm in reshaped_state]))
+    else:
+        probs = math.real(math.diagonal(reshaped_state))
 
     # if a probability is very small it may round to negative, undesirable.
     # math.clip with None bounds breaks with tensorflow, using this instead:
