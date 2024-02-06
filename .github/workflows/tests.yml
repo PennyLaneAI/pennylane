@@ -55,6 +55,7 @@ jobs:
           git checkout -b "${{ env.DEPS_BRANCH }}"
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
+          git add .github/stable/
           git commit -m "Update changed dependencies"
           git push --set-upstream origin "${{ env.DEPS_BRANCH }}"
 
