@@ -52,6 +52,7 @@ from .preprocess import (
     decompose,
     validate_observables,
     validate_measurements,
+    validate_channels,
     validate_multiprocessing_workers,
     validate_device_wires,
     validate_adjoint_trainable_params,
@@ -80,8 +81,7 @@ _OBSERVABLES_MAP = {
     "Prod",
 }
 
-# Clifford gates
-# Error channels
+# Clifford gates and error channels
 _OPERATIONS_MAP = {
     "Identity": "I",
     "PauliX": "X",
@@ -431,6 +431,9 @@ class DefaultClifford(Device):
                 decompose, stopping_condition=operation_stopping_condition, name=self.name
             )
         transform_program.add_transform(
+            validate_channels, operation_stopping_condition, support_type="sampling", name=self.name
+        )
+        transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
         transform_program.add_transform(
@@ -553,8 +556,6 @@ class DefaultClifford(Device):
         global_phase_ops = []
         for op in circuit.operations[use_prep_ops:]:
             gate, wires = _pl_to_stim(op)
-            if isinstance(op, qml.operation.Channel) and not circuit.shots:
-                raise ValueError(f"{self.name} supports error channels only with finite shots.")
             if gate is not None:
                 # Note: This is a lot faster than doing `stim_ct.append(gate, wires)`
                 stim_circuit.append_from_stim_program_text(f"{gate} {wires}")

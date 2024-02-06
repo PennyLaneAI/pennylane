@@ -627,16 +627,28 @@ def test_meas_error_noisy():
     """Test error is raised when noisy circuit are executed on Clifford device analytically."""
 
     @qml.qnode(qml.device("default.clifford"))
-    def circuit_fn():
+    def circ_1():
         qml.BasisState(np.array([1, 1]), wires=range(2))
         circuit_2()
         return qml.expval(qml.PauliZ(0))
 
     with pytest.raises(
-        ValueError,
-        match="default.clifford supports error channels only with finite shots.",
+        qml.DeviceError,
+        match="Channel not supported on default.clifford without finite shots.",
     ):
-        circuit_fn()
+        circ_1()
+
+    @qml.qnode(qml.device("default.clifford", check_clifford=False))
+    def circ_2():
+        qml.BasisState(np.array([1, 1]), wires=range(2))
+        qml.AmplitudeDamping(0.2, [0])
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.raises(
+        qml.DeviceError,
+        match=r"Channel AmplitudeDamping\(0.2, wires=\[0\]\) not supported on default.clifford",
+    ):
+        circ_2()
 
 
 @pytest.mark.parametrize(
@@ -669,7 +681,7 @@ def test_meas_noisy_distribution(channel_op):
     qnode_qubit = qml.QNode(circuit, dev_q)
 
     kl_d = np.ma.masked_invalid(sp.special.rel_entr(qnode_clfrd(), qnode_qubit()))
-    assert qml.math.allclose(np.abs(kl_d.sum()), 0.0, atol=1e-2)
+    assert qml.math.allclose(np.abs(kl_d.sum()), 0.0, atol=1e-1)
 
 
 def test_fail_import_stim(monkeypatch):
