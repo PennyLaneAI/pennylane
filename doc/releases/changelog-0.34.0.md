@@ -381,9 +381,7 @@
 * The function `qml.draw_mpl` now accept a keyword argument `fig` to specify the output figure window.
   [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
 
-* `qml.equal` now supports the comparison of `QuantumScript` and `BasisRotation` objects.
-  [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
-  [(#4919)](https://github.com/PennyLaneAI/pennylane/pull/4919)
+<h4>Better support for batching</h4>
 
 * `qml.AmplitudeEmbedding` now supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)

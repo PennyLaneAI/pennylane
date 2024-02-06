@@ -65,9 +65,14 @@ def expval(*args, **kwargs) -> "ExpectationMP":
     else:
         arg_name, obj = list(kwargs.items())[0]
 
-    if isinstance(obj, Operator) and arg_name in [None, "op"]:
-        if not obj.is_hermitian:
-            warnings.warn(f"{obj.name} might not be hermitian.")
+    if isinstance(op, qml.Identity) and len(op.wires) == 0:
+        # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
+        raise NotImplementedError(
+            "Expectation values of qml.Identity() without wires are currently not allowed."
+        )
+
+    if not op.is_hermitian:
+        warnings.warn(f"{op.name} might not be hermitian.")
 
         return ExpectationMP(obs=obj)
 

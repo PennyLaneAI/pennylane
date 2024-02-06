@@ -390,6 +390,7 @@ class SpecialUnitary(Operation):
         the number of qubits to which we can apply a ``SpecialUnitary`` gate in practice.
 
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 

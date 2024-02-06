@@ -496,7 +496,7 @@ def einsum(indices, *operands, like=None, optimize=None):
             subscript labels. An implicit (classical Einstein summation) calculation is
             performed unless the explicit indicator ‘->’ is included as well as subscript
             labels of the precise output form.
-        operands (tuple[tensor_like]): The tensors for the operation.
+        *operands (tuple[tensor_like]): The tensors for the operation.
 
     Returns:
         tensor_like: The calculation based on the Einstein summation convention.
@@ -963,9 +963,11 @@ def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
         trace = jax.interpreters.ad.JVPTrace(main, 0)
 
     args_jvp = [
-        jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-        if i in argnums
-        else arg
+        (
+            jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+            if i in argnums
+            else arg
+        )
         for i, arg in enumerate(args)
     ]
 

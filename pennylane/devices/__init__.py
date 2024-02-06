@@ -34,6 +34,7 @@ to verify and test quantum gradient computations.
     default_gaussian
     default_mixed
     default_qutrit
+    default_clifford
     tests
 
 Next generation devices
@@ -68,7 +69,7 @@ method for devices.
     validate_measurements
     validate_device_wires
     validate_multiprocessing_workers
-    warn_about_trainable_observables
+    validate_adjoint_trainable_params
     no_sampling
 
 Other transforms that may be relevant to device preprocessing include:
@@ -101,4 +102,5 @@ from .default_qubit import DefaultQubit
 from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
+from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit

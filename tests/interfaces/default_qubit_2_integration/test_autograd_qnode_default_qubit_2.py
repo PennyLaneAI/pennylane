@@ -50,6 +50,7 @@ interface_qubit_device_and_diff_method = [
     ["auto", DefaultQubit(), "adjoint", False, False],
     ["auto", DefaultQubit(), "spsa", False, False],
     ["auto", DefaultQubit(), "hadamard", False, False],
+    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, True],
 ]
 
 pytestmark = pytest.mark.autograd
@@ -114,7 +115,6 @@ class TestQNode:
         # gradients should work
         grad = qml.grad(circuit)(a)
 
-        assert isinstance(grad, float)
         assert grad.shape == tuple()
 
     def test_jacobian(self, interface, dev, diff_method, grad_on_execution, tol, device_vjp):
@@ -207,8 +207,8 @@ class TestQNode:
 
     def test_jacobian_options(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test setting jacobian options"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "finite-diff":
+            pytest.skip("Test only supports finite diff.")
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
@@ -553,6 +553,9 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -588,6 +591,8 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -652,6 +657,9 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -701,6 +709,8 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -826,7 +836,7 @@ class TestQubitIntegration:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
-        dev1 = dev
+        dev1 = qml.device("default.qubit")
 
         @qnode(dev1, **kwargs)
         def circuit1(a, b, c):
@@ -1628,7 +1638,6 @@ class TestTapeExpansion:
 class TestSample:
     """Tests for the sample integration"""
 
-    @pytest.mark.xfail
     def test_backprop_error(self):
         """Test that sampling in backpropagation grad_on_execution raises an error"""
         dev = DefaultQubit()

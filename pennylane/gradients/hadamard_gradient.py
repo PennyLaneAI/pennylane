@@ -30,8 +30,8 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_tape_batching,
     assert_no_variance,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
+    choose_trainable_params,
+    find_and_validate_gradient_methods,
     _no_trainable_grad,
 )
 
@@ -66,29 +66,30 @@ def hadamard_grad(
     aux_wire=None,
     device_wires=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a circuit to compute the Hadamard test gradient of all gates with respect to their inputs.
+    r"""Transform a circuit to compute the Hadamard test gradient of all gates
+    with respect to their inputs.
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
-        aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
-            a suitable wire is inferred from the wires used in the original circuit and ``device_wires``.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
+        aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests.
+            If ``None`` (the default), a suitable wire is inferred from the wires used in
+            the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
-            gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
-            is ``None``.
+            gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire`` is ``None``.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
-        structure of measurements in the original circuit.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        Executing this circuit will provide the Jacobian in the form of a tensor, a tuple, or a
+        nested tuple depending upon the nesting structure of measurements in the original circuit.
 
-    For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
-    :math:`N` parameters :math:`\mathbf{p}`,
-    consider the expectation value of an observable :math:`O`:
+    For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with :math:`N` parameters
+    :math:`\mathbf{p}`, consider the expectation value of an observable :math:`O`:
 
     .. math::
 
@@ -127,9 +128,10 @@ def hadamard_grad(
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
-        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
-        of the QNode decorator, and differentiating with your preferred machine learning framework.
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
+        objects. However, for performance reasons, we recommend providing the gradient transform
+        as the ``diff_method`` argument of the QNode decorator, and differentiating with your
+        preferred machine learning framework.
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> @qml.qnode(dev)
@@ -161,8 +163,19 @@ def hadamard_grad(
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
 
-        The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
+        Note that ``argnum`` refers to the index of a parameter within the list of trainable
+        parameters. For example, if we have:
+
+        >>> tape = qml.tape.QuantumScript(
+        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
+        ...     [qml.expval(qml.PauliZ(0))],
+        ...     trainable_params = [1, 2]
+        ... )
+        >>> qml.gradients.hadamard_grad(tape, argnum=1)
+
+        The code above will differentiate the third parameter rather than the second.
+
+        The output tapes can then be evaluated and post-processed to retrieve the gradient:
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
@@ -230,14 +243,13 @@ def hadamard_grad(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hadamard_grad)
+    trainable_params = choose_trainable_params(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     # Validate or get default for aux_wire
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
@@ -263,13 +275,13 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         for idx, m in enumerate(tape.measurements)
         if isinstance(m, qml.measurements.ProbabilityMP)
     ]
-    for id_argnum, _ in enumerate(tape.trainable_params):
-        if id_argnum not in argnums:
+    for trainable_param_idx, _ in enumerate(tape.trainable_params):
+        if trainable_param_idx not in argnums:
             # parameter has zero gradient
             gradient_data.append(0)
             continue
 
-        trainable_op, idx, p_idx = tape.get_operation(id_argnum)
+        trainable_op, idx, p_idx = tape.get_operation(trainable_param_idx)
 
         ops_to_trainable_op = tape.operations[: idx + 1]
         ops_after_trainable_op = tape.operations[idx + 1 :]

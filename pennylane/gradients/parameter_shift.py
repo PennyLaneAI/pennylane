@@ -39,8 +39,8 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_tape_batching,
     assert_multimeasure_not_broadcasted,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
+    choose_trainable_params,
+    find_and_validate_gradient_methods,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -340,7 +340,8 @@ def expval_param_shift(
             tape (.QuantumTape): quantum tape to differentiate
             argnum (int or list[int] or None): Trainable parameter indices to differentiate
                 with respect to. If not provided, the derivatives with respect to all
-                trainable indices are returned.
+                trainable indices are returned. Note that the indices are with respect to
+            the list of trainable parameters.
             shifts (list[tuple[int or float]]): List containing tuples of shift values.
                 If provided, one tuple of shifts should be given per trainable parameter
                 and the tuple should match the number of frequencies for that parameter.
@@ -968,6 +969,18 @@ def param_shift(
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
 
+        Note that ``argnum`` refers to the index of a parameter within the list of trainable
+        parameters. For example, if we have:
+
+        >>> tape = qml.tape.QuantumScript(
+        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
+        ...     [qml.expval(qml.PauliZ(0))],
+        ...     trainable_params = [1, 2]
+        ... )
+        >>> qml.gradients.param_shift(tape, argnum=1)
+
+        The code above will differentiate the third parameter rather than the second.
+
         The output tapes can then be evaluated and post-processed to retrieve
         the gradient:
 
@@ -1050,16 +1063,16 @@ def param_shift(
         return _no_trainable_grad(tape)
 
     method = "analytic" if fallback_fn is None else "best"
-    diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=param_shift)
 
-    if all(g == "0" for g in diff_methods):
+    trainable_params = choose_trainable_params(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, method, trainable_params)
+
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
     # If there are unsupported operations, call the fallback gradient function
-    unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    unsupported_params = {idx for idx, g in diff_methods.items() if g == "F"}
+    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
     gradient_tapes = []
 
     if unsupported_params:
@@ -1070,11 +1083,7 @@ def param_shift(
         gradient_tapes.extend(g_tapes)
         fallback_len = len(g_tapes)
 
-        # remove finite difference parameters from the method map
-        method_map = {t_idx: dm for t_idx, dm in method_map.items() if dm != "F"}
-
     # Generate parameter-shift gradient tapes
-
     if gradient_recipes is None:
         gradient_recipes = [None] * len(argnum)
 

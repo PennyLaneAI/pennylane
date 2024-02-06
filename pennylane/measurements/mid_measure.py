@@ -274,6 +274,16 @@ class MidMeasureMP(MeasurementProcess):
 
         return hash(fingerprint)
 
+    @property
+    def data(self):
+        """The data of the measurement. Needed to match the Operator API."""
+        return []
+
+    @property
+    def name(self):
+        """The name of the measurement. Needed to match the Operator API."""
+        return "MidMeasureMP"
+
 
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.

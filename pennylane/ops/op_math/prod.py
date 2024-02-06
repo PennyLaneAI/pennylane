@@ -25,7 +25,7 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -94,6 +94,7 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
     """
+    ops = tuple(convert_to_opmath(op) for op in ops)
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
             return ops[0]
@@ -354,7 +355,7 @@ class Prod(CompositeOp):
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            return reduce(lambda a, b: a * b, operand_pauli_reps)
+            return reduce(lambda a, b: a @ b, operand_pauli_reps)
         return None
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:

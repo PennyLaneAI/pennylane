@@ -83,9 +83,11 @@ class TestDecomposition:
 
         # number of gates
         assert len(queue) == sum(
-            2 * len(i)
-            if acquaintances is not None and acquaintances([0, 1], [0, 1], 0.0)
-            else len(i)
+            (
+                2 * len(i)
+                if acquaintances is not None and acquaintances([0, 1], [0, 1], 0.0)
+                else len(i)
+            )
             for i in qubit_pairs
         )
 

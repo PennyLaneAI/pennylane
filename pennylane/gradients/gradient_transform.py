@@ -114,70 +114,94 @@ def assert_no_tape_batching(tape, transform_name):
         )
 
 
-def _gradient_analysis(tape, use_graph=True, grad_fn=None):
-    """Update the parameter information dictionary of the tape with
-    gradient information of each parameter.
+def choose_trainable_params(tape, argnum=None):
+    """Returns a list of trainable parameter indices in the tape.
+
+    Chooses the subset of trainable parameters to compute the Jacobian for. The function
+    returns a list of indices with respect to the list of trainable parameters. If argnum
+    is not provided, all trainable parameters are considered.
+
+    Args:
+        tape (`~.QuantumScript`): the tape to analyze
+        argnum (int, list(int), None): Indices for trainable parameters(s)
+            to compute the Jacobian for.
+
+    Returns:
+        list: list of the trainable parameter indices
+
     """
+
+    if argnum is None:
+        return [idx for idx, _ in enumerate(tape.trainable_params)]
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+
+    if len(argnum) == 0:
+        warnings.warn(
+            "No trainable parameters were specified for computing the Jacobian.",
+            UserWarning,
+        )
+
+    return argnum
+
+
+def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=True):
+    """Gets the gradient method of a parameter. If use_graph=True, analyze the
+    circuit graph to find if the parameter has zero gradient.
+
+    Args:
+        tape (`~.QuantumScript`): the tape to analyze
+        param_index (int): the index of the parameter to analyze
+        use_graph (bool): whether to use the circuit graph to find if
+            a parameter has zero gradient
+
+    """
+
     # pylint:disable=protected-access
-    if grad_fn is not None:
-        if getattr(tape, "_gradient_fn", None) is grad_fn:
-            # gradient analysis has already been performed on this tape
-            return
+    par_info = tape._par_info[param_index]
 
-        tape._gradient_fn = grad_fn
+    if use_graph:
+        op_or_mp = tape[par_info["op_idx"]]
+        if not any(tape.graph.has_path(op_or_mp, mp) for mp in tape.measurements):
+            # there is no influence of this operation on any of the observables
+            return "0"
 
-    for idx, info in enumerate(tape._par_info):
-        if idx not in tape.trainable_params:
-            # non-trainable parameters do not require a grad_method
-            info["grad_method"] = None
-        else:
-            par_info = tape._par_info[idx]
-            op = par_info["op"]
-
-            if not qml.operation.has_grad_method(op):
-                # no differentiation method is registered for this operation
-                info["grad_method"] = None
-
-            elif (tape._graph is not None) or use_graph:
-                # if `op` is an observable, we want the associated MP that's in the graph
-                op_or_mp = tape[par_info["op_idx"]]
-                if not any(tape.graph.has_path(op_or_mp, mp) for mp in tape.measurements):
-                    # there is no influence of this operation on any of the observables
-                    info["grad_method"] = "0"
-                    continue
-
-            info["grad_method"] = op.grad_method
+    return par_info["op"].grad_method
 
 
-def _grad_method_validation(method, tape):
-    """Validates if the gradient method requested is supported by the trainable
-    parameters of a tape, and returns the allowed parameter gradient methods."""
-    diff_methods = {
-        idx: info["grad_method"]
-        for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access
-        if idx in tape.trainable_params
+def _find_gradient_methods(tape, trainable_param_indices, use_graph=True):
+    """Returns a dictionary with gradient information of each trainable parameter."""
+
+    return {
+        idx: _try_zero_grad_from_graph_or_get_grad_method(
+            tape, tape.trainable_params[idx], use_graph
+        )
+        for idx in trainable_param_indices
     }
 
+
+def _validate_gradient_methods(tape, method, diff_methods):
+    """Validates if the gradient method requested is supported by the trainable
+    parameters of a tape, and returns the allowed parameter gradient methods."""
+
     # check and raise an error if any parameters are non-differentiable
-    if nondiff_params := {idx for idx, g in diff_methods.items() if g is None}:
+    nondiff_params = [tape.trainable_params[idx] for idx, m in diff_methods.items() if m is None]
+    if nondiff_params:
         raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
 
-    numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
-
-    # If explicitly using analytic mode, ensure that all parameters
-    # support analytic differentiation.
+    # If explicitly using analytic mode, ensure that all
+    # parameters support analytic differentiation.
+    numeric_params = [tape.trainable_params[idx] for idx, m in diff_methods.items() if m == "F"]
     if method == "analytic" and numeric_params:
         raise ValueError(
             f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
         )
 
-    return tuple(diff_methods.values())
 
-
-def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None, overwrite=True):
-    """Update the parameter information dictionary of the tape with gradient information of
-    each parameter. Then validates if the gradient method requested is supported by the trainable
-    parameters of a tape, and returns the allowed parameter gradient methods.
+def find_and_validate_gradient_methods(tape, method, trainable_param_indices, use_graph=True):
+    """Returns a dictionary of gradient methods for each trainable parameter after
+    validating if the gradient method requested is supported by the trainable parameters
 
     Parameter gradient methods include:
 
@@ -189,69 +213,26 @@ def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None,
     In addition, the operator might define its own grad method
     via :attr:`.Operator.grad_method`.
 
-    .. note::
-
-        Note that this function modifies the input tape in-place.
-
     Args:
-        tape (.QuantumTape): the quantum tape to analyze
-        method (str): the overall Jacobian differentiation method
-        use_graph (bool): whether to use a directed-acyclic graph to determine
-            if the parameter has a gradient of 0
-        grad_fn (None or callable): The gradient transform performing the analysis.
-            This is an optional argument; if provided, and the tape has already
-            been analyzed for the gradient information by the same gradient transform,
-            the cached gradient analysis will be used.
-        overwrite (bool): Whether to overwrite existing parameter gradient methods during the
-            first part of the function.
+        tape (`~.QuantumScript`): the tape to analyze
+        method (str): the gradient method to use
+        trainable_param_indices (list[int]): the indices of the trainable parameters
+            to compute the Jacobian for
+        use_graph (bool): whether to use the circuit graph to find if
+            a parameter has zero gradient
+
+    Returns:
+        dict: dictionary of the gradient methods for each trainable parameter
 
     Raises:
         ValueError: If there exist non-differentiable trainable parameters on the tape.
         ValueError: If the Jacobian method is ``"analytic"`` but there exist some trainable
             parameters on the tape that only support numeric differentiation.
 
-    Returns:
-        tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
     """
-    if overwrite or "grad_method" not in tape._par_info[0]:  # pylint: disable=protected-access
-        _gradient_analysis(tape, use_graph=use_graph, grad_fn=grad_fn)
-    return _grad_method_validation(method, tape)
-
-
-def choose_grad_methods(diff_methods, argnum):
-    """Chooses the trainable parameters to use for computing the Jacobian
-    by returning a map of their indices and differentiation methods.
-
-    When there are fewer parameters specified than the total number of
-    trainable parameters, the Jacobian is estimated by using the parameters
-    specified using the ``argnum`` keyword argument.
-
-    Args:
-        diff_methods (list): the ordered list of differentiation methods
-            for each parameter
-        argnum (int, list(int), None): Indices for argument(s) with respect
-            to which to compute the Jacobian.
-
-    Returns:
-        dict: map of the trainable parameter indices and
-        differentiation methods
-    """
-    if argnum is None:
-        return dict(enumerate(diff_methods))
-
-    if isinstance(argnum, int):
-        argnum = [argnum]
-
-    num_params = len(argnum)
-
-    if num_params == 0:
-        warnings.warn(
-            "No trainable parameters were specified for computing the Jacobian.",
-            UserWarning,
-        )
-        return {}
-
-    return {idx: diff_methods[idx] for idx in argnum}
+    diff_methods = _find_gradient_methods(tape, trainable_param_indices, use_graph=use_graph)
+    _validate_gradient_methods(tape, method, diff_methods)
+    return diff_methods
 
 
 def _all_zero_grad(tape):

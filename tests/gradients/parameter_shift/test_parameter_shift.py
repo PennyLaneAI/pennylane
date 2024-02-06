@@ -645,9 +645,11 @@ class TestParamShift:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         gradient_recipes = tuple(
-            [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
-            if i in ops_with_custom_recipe
-            else None
+            (
+                [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
+                if i in ops_with_custom_recipe
+                else None
+            )
             for i in range(2)
         )
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
@@ -3390,9 +3392,7 @@ class TestHamiltonianExpvalGradients:
         # assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         # assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
-    # TODO: Torch support for param-shift
     @pytest.mark.torch
-    @pytest.mark.xfail
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
     def test_torch(self, dev_name, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
@@ -3415,14 +3415,16 @@ class TestHamiltonianExpvalGradients:
         expected = self.cost_fn_expected(
             weights.detach().numpy(), coeffs1.detach().numpy(), coeffs2.detach().numpy()
         )
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        res = tuple(tuple(_r.detach() for _r in r) for r in res)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        pytest.xfail("does not work with new return system")
         # second derivative wrt to Hamiltonian coefficients should be zero
-        hess = torch.autograd.functional.jacobian(
-            lambda *args: self.cost_fn(*args, dev, broadcast), (weights, coeffs1, coeffs2)
-        )
-        assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-        assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
+        # hess = torch.autograd.functional.jacobian(
+        #     lambda *args: self.cost_fn(*args, dev, broadcast), (weights, coeffs1, coeffs2)
+        # )
+        # assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
+        # assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
