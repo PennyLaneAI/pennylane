@@ -269,7 +269,7 @@ class DefaultClifford(Device):
 
             import pennylane as qml
             import numpy as np
-            dev = qml.device("default.clifford", target_states = basis_states)
+            dev = qml.device("default.clifford")
 
             num_wires = 3
             @qml.qnode(dev)
