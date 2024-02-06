@@ -112,4 +112,4 @@ from .first_quantization import FirstQuantization
 from .second_quantization import DoubleFactorization
 from .measurement import estimate_error, estimate_shots
 from .specs import specs
-from .error import AlgorithmicError
+from .error import AlgorithmicError, ErrorOperation
