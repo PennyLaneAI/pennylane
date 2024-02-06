@@ -275,7 +275,7 @@ def calculate_expval_sum_of_terms(
     is_state_batched: bool = False,
     measure_func=measure,
 ) -> TensorLike:
-    """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
+    """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
 
     Args:
