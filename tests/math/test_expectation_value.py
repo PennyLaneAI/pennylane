@@ -73,6 +73,14 @@ class TestExpectationValueMath:
     state_wrong_amp = [
         ([[1, 0], [0, 1]], [0.5, 0]),
         ([[1, 0], [0, 1]], [26, 70]),
+        (
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]],
+            [1, 2, 0, 0],
+        ),
+        (
+            [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]],
+            [1, 1, 1, 1],
+        ),
     ]
 
     @pytest.mark.parametrize("ops,state_vectors", state_wrong_amp)
@@ -84,6 +92,11 @@ class TestExpectationValueMath:
     state_wrong_shape = [
         ([[1, 0], [0, 1]], [0, 1, 0]),
         ([[1, 0], [0, 1]], [0, 0, 0, 0, 1]),
+        (
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]],
+            [1, 0, 0, 0, 0],
+        ),
+        ([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], [1, 0]),
     ]
 
     @pytest.mark.parametrize("ops,state_vectors", state_wrong_shape)
