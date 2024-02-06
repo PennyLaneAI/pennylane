@@ -39,29 +39,24 @@ ops2 = [
         {
             PauliWord({0: "X", 1: "X"}): 1.0,
         }
-    )
+    ),
 ]
 
 ops2plusY10 = ops2 + [PauliSentence({PauliWord({10: "Y"}): 1.0})]
 
-M1 = np.array([
-    [1., 0, 0.5, 0.5, 1.],
-    [1., 0.5, 0, 1., 0.],
-    [1., 0.5, 1., 2., 4.]
-])
-M2 = np.array([
-    [1., 0, 0.5, 0.5, 1.],
-    [1., 0.5, 0, 0., 0.],
-    [1., 0.5, 1., 2., 4.]
-])
+M1 = np.array([[1.0, 0, 0.5, 0.5, 1.0], [1.0, 0.5, 0, 1.0, 0.0], [1.0, 0.5, 1.0, 2.0, 4.0]])
+M2 = np.array([[1.0, 0, 0.5, 0.5, 1.0], [1.0, 0.5, 0, 0.0, 0.0], [1.0, 0.5, 1.0, 2.0, 4.0]])
 COL_PROPTO_LAST = (
     (M1, False),
     (M2, True),
 )
+
+
 @pytest.mark.parametrize("M, res", COL_PROPTO_LAST)
 def test_is_any_col_propto_last(M, res):
     """Test utility function _is_any_col_propto_last that checks whether any column of the input is proportional to the last column"""
     assert _is_any_col_propto_last(M) == res
+
 
 class TestVSpace:
     """Unit and integration tests for VSpace class"""
@@ -88,7 +83,7 @@ class TestVSpace:
         vspace = VSpace(ops)
         new_basis = vspace.add(op)
         assert new_basis == true_new_basis
-    
+
     ADD_LINEAR_DEPENDENT = (
         (ops2, PauliWord({0: "Y", 1: "Y"}), ops2),
         (ops2, PauliSentence({PauliWord({0: "Y", 1: "Y"}): 1.0}), ops2),

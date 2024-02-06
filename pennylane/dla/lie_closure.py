@@ -35,6 +35,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 #     """
 #     return None
 
+
 def _are_proportional(ps1, ps2):
     """Check if two pauli sentences are proportional to each other"""
 
@@ -224,7 +225,7 @@ class VSpace:
         # Add new PauliSentence entries to matrix
         for pw, value in pauli_sentence.items():
             M[pw_to_idx[pw], rank] = value
-        
+
         # Check if new vector is proportional to any of the previous vectors
         # This is significantly cheaper than computing the rank and should be done first
         if _is_any_col_propto_last(M):
@@ -261,7 +262,7 @@ def _is_any_col_propto_last(inM):
             [1., 1., 0., 0.],
             [2., 2., 3., 6.]
         ])
-    
+
     >>> _any_col_propto(M1)
     False
     >>> _any_col_propto(M2)
@@ -270,9 +271,8 @@ def _is_any_col_propto_last(inM):
     """
     M = inM.copy()
 
-    nonzero_mask = np.nonzero(M[:, 0]) # target vector is the last column
+    nonzero_mask = np.nonzero(M[:, 0])  # target vector is the last column
     norms_of_columns = np.linalg.norm(M, axis=0)[np.newaxis, :]
-
 
     # process nonzero part of the matrix
     nonzero_part = M[nonzero_mask]
@@ -284,6 +284,6 @@ def _is_any_col_propto_last(inM):
     # fill the original matrix with the nonzero elements
     # note that if a candidate vector has nonzero part where target vector is zero, this part is unaltered
     M[nonzero_mask] = nonzero_part
-    
+
     # check if any column matches the last column completely
     return np.any(np.all(M[:, :-1].T == M[:, -1], axis=1))
