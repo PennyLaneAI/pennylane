@@ -334,7 +334,7 @@ class Sum(CompositeOp):
 
     @property
     def coeffs(self):
-        """``coeffs`` in ``coeffs, ops = op.terms()``"""
+        r"""``coeffs`` in ``coeffs, ops = op.terms()``"""
         warnings.warn(
             "op.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
@@ -344,7 +344,7 @@ class Sum(CompositeOp):
 
     @property
     def ops(self):
-        """``ops`` in ``coeffs, ops = op.terms()``"""
+        r"""``ops`` in ``coeffs, ops = op.terms()``"""
         warnings.warn(
             "op.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
