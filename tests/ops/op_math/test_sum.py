@@ -196,6 +196,22 @@ class TestInitialization:
         """Test the string representation of Sum instances"""
         assert repr(op) == repr_true
 
+    qml.operation.enable_new_opmath()
+    SUM_REPR_EVAL = (
+        X(0) + Y(1) + Z(2),
+        0.5 * X(0) + 3.5 * Y(1) + 10 * Z(2),
+        X(0) @ X(1) + Y(1) @ Y(2) + Z(2),
+        0.5 * (X(0) @ X(1) @ X(2)) + 1000 * (Y(1) @ X(0) @ X(1)) + 1000000000 * Z(2),
+    )
+    qml.operation.disable_new_opmath()
+
+    @pytest.mark.parametrize("op", SUM_REPR_EVAL)
+    def test_eval_sum(self, op):
+        """Test that string representations of Sum can be evaluated and yield the same operator"""
+        qml.operation.enable_new_opmath()
+        assert eval(repr(op)) == op
+        qml.operation.disable_new_opmath()
+
 
 class TestMatrix:
     """Test matrix-related methods."""
