@@ -1024,9 +1024,6 @@ def molecular_hamiltonian(
 def _active_space_integrals(core_constant, one, two, core=None, active=None):
     r"""Return active space integrals in the molecular orbital basis."""
 
-    if core is None and active is None:
-        return core_constant, one, two
-
     for i in core:
         core_constant = core_constant + 2 * one[i][i]
         for j in core:
@@ -1089,8 +1086,9 @@ def _pyscf_integrals(
     core_constant = np.array([molhf.energy_nuc()])
     two_mo = np.swapaxes(two_mo, 1, 3)
 
-    core_constant, one_mo, two_mo = _active_space_integrals(
-        core_constant, one_mo, two_mo, core, active
-    )
+    if core and active:
+        core_constant, one_mo, two_mo = _active_space_integrals(
+            core_constant, one_mo, two_mo, core, active
+        )
 
     return core_constant, one_mo, two_mo
