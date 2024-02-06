@@ -220,7 +220,6 @@ def calculate_variance(
 # pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess,
-    state: TensorLike,  # pylint: disable=unused-argument
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
