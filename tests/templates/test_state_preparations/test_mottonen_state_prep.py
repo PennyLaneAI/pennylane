@@ -312,6 +312,15 @@ class TestDecomposition:
         with pytest.raises(ValueError, match="Broadcasting with MottonenStatePreparation"):
             _ = qml.MottonenStatePreparation.compute_decomposition(state, qml.wires.Wires([0, 1]))
 
+    def test_decomposition_includes_global_phase(self):
+        """Test that the decomposition includes the correct global phase."""
+        state = np.array([-0.5, 0.2, 0.3, 0.9, 0.5, 0.2, 0.3, 0.9])
+        state = state / np.linalg.norm(state)
+        decomp = qml.MottonenStatePreparation(state, [0, 1, 2]).decomposition()
+        gphase = decomp[-1]
+        assert isinstance(gphase, qml.GlobalPhase)
+        assert qml.math.allclose(gphase.data[0], qml.math.mean(-1 * qml.math.angle(state)))
+
 
 class TestInputs:
     """Test inputs and pre-processing."""
@@ -473,3 +482,35 @@ class TestCasting:
         inputs = inputs / torch.linalg.norm(inputs)
         res = circuit(inputs)
         assert np.allclose(res.detach().numpy(), expected, atol=1e-6, rtol=0)
+
+
+class TestIntegration:
+    """QNode tests that ensure the general correctness of the operation."""
+
+    def test_prepared_state_includes_phase(self):
+        """Test that the prepared state is exact, with the correct phase."""
+        state = [0, 1j]
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.MottonenStatePreparation(state, 0)
+            return qml.state()
+
+        assert qml.math.allclose(circuit(), state)
+
+    @pytest.mark.parametrize("adj_base_op", [qml.StatePrep, qml.MottonenStatePreparation])
+    def test_adjoint_brings_back_to_zero(self, adj_base_op):
+        """Test that a StatePrep then its adjoint returns the device to the zero state."""
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circuit(state):
+            qml.StatePrep(state, wires=[0, 1, 2])
+            qml.adjoint(adj_base_op(state, wires=[0, 1, 2]))
+            return qml.state()
+
+        state = np.array([-0.5, 0.2, 0.3, 0.9, 0.5, 0.2, 0.3, 0.9])
+        state = state / np.linalg.norm(state)
+        actual = circuit(state)
+        expected = np.zeros(8)
+        expected[0] = 1.0
+        assert qml.math.allclose(actual, expected)
