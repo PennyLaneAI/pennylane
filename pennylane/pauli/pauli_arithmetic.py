@@ -401,11 +401,6 @@ class PauliWord(dict):
         return str(self)
 
     @property
-    def pauli_rep(self):
-        """Trivial pauli representation"""
-        return PauliSentence({self: 1})
-
-    @property
     def wires(self):
         """Track wires in a PauliWord."""
         return Wires(self)
@@ -799,11 +794,6 @@ class PauliSentence(dict):
     def __repr__(self):
         """Terminal representation for PauliSentence"""
         return str(self)
-
-    @property
-    def pauli_rep(self):
-        """Trivial pauli representation"""
-        return self
 
     @property
     def wires(self):
