@@ -248,7 +248,6 @@ import itertools
 import warnings
 from enum import IntEnum
 from typing import List
-from contextlib import contextmanager
 
 import numpy as np
 from numpy.linalg import multi_dot
