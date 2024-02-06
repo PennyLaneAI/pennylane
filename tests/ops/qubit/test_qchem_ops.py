@@ -199,7 +199,7 @@ class TestSingleExcitation:
         assert pow_ops[0].__class__ is qml.SingleExcitation
 
         mat = qml.matrix(op)
-        pow_mat = qml.matrix(op.pow)(n)
+        pow_mat = qml.matrix(op.pow, wire_order=op.wires)(n)
 
         mat_then_pow = fractional_matrix_power(mat, n)
         assert qml.math.allclose(pow_mat, mat_then_pow)
@@ -408,7 +408,7 @@ class TestDoubleExcitation:
         assert pow_ops[0].__class__ is qml.DoubleExcitation
 
         mat = qml.matrix(op)
-        pow_mat = qml.matrix(op.pow)(n)
+        pow_mat = qml.matrix(op.pow, wire_order=op.wires)(n)
 
         mat_then_pow = fractional_matrix_power(mat, n)
         assert qml.math.allclose(pow_mat, mat_then_pow)
@@ -1065,7 +1065,7 @@ class TestFermionicSWAP:
         assert pow_ops[0].__class__ is qml.FermionicSWAP
 
         mat = qml.matrix(op)
-        pow_mat = qml.matrix(op.pow)(n)
+        pow_mat = qml.matrix(op.pow, wire_order=op.wires)(n)
 
         mat_then_pow = fractional_matrix_power(mat, n)
         assert qml.math.allclose(pow_mat, mat_then_pow)
