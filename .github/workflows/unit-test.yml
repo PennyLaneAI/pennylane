@@ -212,9 +212,3 @@ jobs:
         with:
           name: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks
           path: ${{ github.workspace }}/benchmark_results
-
-      - name: Commit stable dependency changes
-        if: github.event_name == 'pull_request' && inputs.requirements_file != ''
-        run: |
-          echo "file name: ${{ inputs.requirements_file }}"
-          pip freeze | grep -v "file:///"

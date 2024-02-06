@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
-        uses: action/download-artifact@v3
+        uses: actions/download-artifact@v3
         with:
           pattern: frozen-*
           path: $GITHUB_WORKSPACE/.github/stable/
