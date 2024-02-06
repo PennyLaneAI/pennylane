@@ -14,12 +14,12 @@
 """
 Stores classes and logic to define and track algorithmic error in a quantum workflow.
 """
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from pennylane.operation import Operation
 
 
-class AlgorithmicError:
+class AlgorithmicError(ABC):
     """Abstract base class representing different types of mathematical errors."""
 
     def __init__(self, error: float):
@@ -28,7 +28,7 @@ class AlgorithmicError:
     @abstractmethod
     def combine(self, other):
         """A method to combine two errors of the same type.
-        (eg. additive, square additive, multiplicative, etc.)
+        (e.g., additive, square additive, multiplicative, etc.)
 
         Args:
             other (AlgorithmicError): The other instance of error being combined.
@@ -40,8 +40,7 @@ class AlgorithmicError:
 
     @staticmethod
     def get_error(approximate_op, exact_op, **kwargs):
-        """A method to allow users to compute this type of error
-        between two operators.
+        """A method to allow users to compute this type of error between two operators.
 
         Args:
             approximate_op (.Operator): The approximate operator.
