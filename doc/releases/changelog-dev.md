@@ -134,7 +134,6 @@
 * Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
-
 <h4>Community contributions 🥳</h4>
 
 * `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
