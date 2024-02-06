@@ -29,15 +29,19 @@ jobs:
     needs: tests
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           pattern: frozen-*
-          path: $GITHUB_WORKSPACE/.github/stable/
+          path: .github/stable/
 
       - name: Determine if changes have been made
         id: changed
         run: |
+          pwd
           git diff --quiet
           echo "has_changes=$?" >> $GITHUB_OUTPUT
 
