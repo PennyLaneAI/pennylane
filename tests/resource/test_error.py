@@ -27,7 +27,6 @@ class SimpleError(AlgorithmicError):
     @staticmethod
     def get_error(approx_op, other_op):  # pylint: disable=unused-argument
         return 0.5  # get simple error is always 0.5
-        return 0.5
 
 
 class ErrorNoGetError(AlgorithmicError):  # pylint: disable=too-few-public-methods
@@ -45,8 +44,7 @@ class TestAlgorithmicError:
         assert ErrorObj.error == error
 
     def test_combine_not_implemented(self):
-        """Test NotImplementedError is raised if the method is not defined."""
-
+        """Test error is raised if the method is not defined."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
 
             class ErrorNoCombine(AlgorithmicError):
@@ -87,7 +85,7 @@ class TestErrorOperation:  # pylint: disable=too-few-public-methods
     """Test the abstract error operation class."""
 
     def test_error_method(self):
-        """Test that a NotImplemented error is raised if no error method is provided."""
+        """Test that error method works as expected"""
 
         class SimpleErrorOperation(ErrorOperation):  # pylint: disable=too-few-public-methods
             @property
@@ -96,3 +94,13 @@ class TestErrorOperation:  # pylint: disable=too-few-public-methods
 
         no_error_op = SimpleErrorOperation(wires=[1, 2, 3])
         assert no_error_op.error == 3
+
+    def test_no_error_method(self):
+        """Test error is raised if the method is not defined."""
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+
+            class NoErrorOp(ErrorOperation):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+
+            _ = NoErrorOp(wires=[1, 2, 3])
