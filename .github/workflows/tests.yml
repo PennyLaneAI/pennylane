@@ -39,7 +39,11 @@ jobs:
           path: .github/stable/
           merge-multiple: true
 
-      - run: ls -rlt .github/stable/
+      - name: debug
+        run: |
+          pwd
+          ls -rlt
+          ls -rlt .github/stable/
 
       - name: Determine if changes have been made
         id: changed

@@ -107,7 +107,7 @@ runs:
 
     - name: Upload frozen requirements
       if: inputs.requirements_file != ''
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: frozen-${{ inputs.requirements_file }}
         path: ${{ inputs.requirements_file }}
