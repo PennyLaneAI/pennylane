@@ -52,10 +52,10 @@ from .preprocess import (
     decompose,
     validate_observables,
     validate_measurements,
-    validate_channels,
     validate_multiprocessing_workers,
     validate_device_wires,
     validate_adjoint_trainable_params,
+    null_postprocessing,
 )
 
 has_stim = True
@@ -118,6 +118,52 @@ def operation_stopping_condition(op: qml.operation.Operator) -> bool:
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether an observable is accepted by ``DefaultClifford``."""
     return obs.name in _OBSERVABLES_MAP
+
+
+@qml.transform
+def _validate_channels(
+    tape,
+    stopping_condition,
+    support_type: str = "both",
+    name: str = "device",
+):
+    """Validates the channels for a circuit.
+
+    Args:
+        tape (QuantumTape or QNode or Callable): a quantum circuit.
+        stopping_condition (callable): a function that specifies whether or not an channel is accepted.
+        support_type (str): type of measurement support exists for channels - "sampling", "analytical", or "both".
+        name (str): the name of the device to use in error messages.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+
+        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+
+    Raises:
+        DeviceError: if an channel is not supported
+
+    **Example:**
+
+    >>> def accepted_channel(obj):
+    ...    return obj.name in {"PauliError", "BitFlip", "PhaseFlip"}
+    >>> tape = qml.tape.QuantumScript([qml.DepolarizingChannel(0.1, 0)], [qml.expval(qml.PauliZ(0))])
+    >>> validate_channels(tape, accepted_observable)
+    DeviceError: Channel DepolarizingChannel(0.1, wires=[0]) not supported on device
+
+    """
+    channel_ops = [op for op in tape.operations if isinstance(op, qml.operation.Channel)]
+    channel = next((channel for channel in channel_ops if not stopping_condition(channel)), None)
+    if channel is not None:
+        raise qml.DeviceError(f"Channel {repr(channel)} not supported on {name}")
+
+    use_channels = support_type in ("both", ["analytical", "sampling"][bool(tape.shots)])
+    if channel_ops and not use_channels:
+        raise qml.DeviceError(
+            f"Channel not supported on {name} with{'' if tape.shots else 'out'} finite shots."
+        )
+
+    return (tape,), null_postprocessing
 
 
 def _pl_to_stim(op):
@@ -431,7 +477,10 @@ class DefaultClifford(Device):
                 decompose, stopping_condition=operation_stopping_condition, name=self.name
             )
         transform_program.add_transform(
-            validate_channels, operation_stopping_condition, support_type="sampling", name=self.name
+            _validate_channels,
+            operation_stopping_condition,
+            support_type="sampling",
+            name=self.name,
         )
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
