@@ -135,7 +135,7 @@ jobs:
 
       - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
-        uses: ./.github/workflows/install-deps.yml
+        uses: ./.github/workflows/install_deps
         with:
           python_version: inputs.python_version
           install_pytorch: inputs.install_pytorch
@@ -143,6 +143,7 @@ jobs:
           install_jax: inputs.install_jax
           additional_pip_packages: inputs.additional_pip_packages
           install_pennylane_lightning_master: inputs.install_pennylane_lightning_master
+          requirements_file: inputs.requirements_file
 
       - name: Set PyTest Args
         if: steps.continue.outputs.confirm == 'true'
@@ -213,11 +214,7 @@ jobs:
           path: ${{ github.workspace }}/benchmark_results
 
       - name: Commit stable dependency changes
-        if: github.event_name == 'pull_request' && inputs.requirements_file != '' && inputs.job_index == 0
-        env:
-          JOB_NAME: ${{ github.job }}
+        if: github.event_name == 'pull_request' && inputs.requirements_file != ''
         run: |
-          echo "strategy: ${{ strategy.job-index }}"
-          echo "inputs: ${{ inputs.job_index }}"
-          echo "file name: $(echo $JOB_NAME | sed 's/-tests.*//').txt"
+          echo "file name: ${{ inputs.requirements_file }}"
           pip freeze | grep -v "file:///"
