@@ -47,7 +47,7 @@ def _import_pyscf():
         import pyscf
     except ImportError as Error:
         raise ImportError(
-            "This feature requires pyscf. " "It can be installed with: pip install pyscf."
+            "This feature requires pyscf. It can be installed with: pip install pyscf."
         ) from Error
 
     return pyscf
