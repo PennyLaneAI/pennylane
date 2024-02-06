@@ -1032,9 +1032,7 @@ def _active_space_integrals(core_constant, one, two, core=None, active=None):
     for p in active:
         for q in active:
             for i in core:
-                o = qml.math.zeros(one.shape)
-                o[p, q] = 1.0
-                one = one + (2 * two[i][p][q][i] - two[i][p][i][q]) * o
+                one = one + (2 * two[i][p][q][i] - two[i][p][i][q])
 
     one = one[qml.math.ix_(active, active)]
     two = two[qml.math.ix_(active, active, active, active)]
