@@ -30,8 +30,8 @@ def get_einsum_mapping(
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
-        is_state_batched (bool): Boolean representing whether the state is batched or not
         map_indices (function): Maps the calculated indices to an einsum indices string
+        is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
         str: Indices mapping that defines the einsum
@@ -69,34 +69,11 @@ def get_einsum_mapping(
     )
 
 
-def get_probs(state, num_wires, is_state_batched: bool = False):
-    """Finds the probabilities of measuring states in the computational basis
+def reshape_state_as_matrix(state, num_wires):
+    """Given a non-flat, potentially batched state, flatten it to square matrix or matrices if batched.
 
     Args:
-        state (array[complex]): Input quantum state
-        num_wires (int): The number of wires the state represents
-        is_state_batched (bool): Boolean representing whether the state is batched or not
-
-    Returns:
-        Tensorlike: Vector representing probability of each state
-    """
-    # convert rho from tensor to matrix
-    rho = resquare_state(state, num_wires)
-
-    # probs are diagonal elements
-    probs = math.diagonal(rho, axis1=int(is_state_batched), axis2=int(1 + is_state_batched))
-
-    # take the real part so probabilities are not shown as complex numbers
-    probs = math.real(probs)
-    return math.where(probs < 0, -probs, probs)
-
-
-def resquare_state(state, num_wires):
-    """
-    Given a non-flat, potentially batched state, flatten it to a square matrix.
-
-    Args:
-        state (TensorLike): A state that needs flattening
+        state (TensorLike): A state that needs to be reshaped to a square matrix or matrices if batched
         num_wires (int): The number of wires the state represents
 
     Returns:

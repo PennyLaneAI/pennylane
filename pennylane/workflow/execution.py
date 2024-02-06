@@ -19,10 +19,10 @@ Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
 
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
-# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
-# pylint: disable=too-many-statements, invalid-unary-operand-type, function-redefined
-# pylint: disable=isinstance-second-argument-not-valid-type
+# pylint: disable=import-outside-toplevel,too-many-branches,not-callable,unexpected-keyword-arg
+# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
+# pylint: disable=invalid-unary-operand-type,isinstance-second-argument-not-valid-type
+# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args
 
 import inspect
 import warnings
@@ -37,14 +37,29 @@ from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
-from .jacobian_products import TransformJacobianProducts, DeviceDerivatives, DeviceJacobianProducts
+from .jacobian_products import (
+    TransformJacobianProducts,
+    DeviceDerivatives,
+    DeviceJacobianProducts,
+    LightningVJPs,
+)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.Device"]
 
-jpc_interfaces = {"autograd", "numpy", "torch", "pytorch", "jax", "jax-python", "jax-jit"}
+jpc_interfaces = {
+    "autograd",
+    "numpy",
+    "torch",
+    "pytorch",
+    "jax",
+    "jax-python",
+    "jax-jit",
+    "tf",
+    "tensorflow",
+}
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -95,8 +110,14 @@ def _adjoint_jacobian_expansion(
     return tapes
 
 
+def _use_tensorflow_autograph():
+    import tensorflow as tf
+
+    return not tf.executing_eagerly()
+
+
 def _get_ml_boundary_execute(
-    interface: str, grad_on_execution: bool, device_vjp: bool = False
+    interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
     """Imports and returns the function that binds derivatives of the required ml framework.
 
@@ -117,15 +138,15 @@ def _get_ml_boundary_execute(
             from .interfaces.autograd import autograd_execute as ml_boundary
 
         elif mapped_interface == "tf":
-            import tensorflow as tf
-
-            if not tf.executing_eagerly() or "autograph" in interface:
+            if "autograph" in interface:
                 from .interfaces.tensorflow_autograph import execute as ml_boundary
 
                 ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
 
             else:
-                from .interfaces.tensorflow import execute as ml_boundary
+                from .interfaces.tensorflow import tf_execute as full_ml_boundary
+
+                ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
 
         elif mapped_interface == "torch":
             from .interfaces.torch import execute as ml_boundary
@@ -137,7 +158,7 @@ def _get_ml_boundary_execute(
                 from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
         else:  # interface in {"jax", "jax-python", "JAX"}:
             if device_vjp:
-                from .interfaces.jax import jax_vjp_execute as ml_boundary
+                from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
                 from .interfaces.jax import jax_jvp_execute as ml_boundary
 
@@ -302,15 +323,19 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             "Entry with args=(fn=%s, cache=%s, pass_kwargs=%s, return_tuple=%s, expand_fn=%s) called by=%s",
-            fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(fn))
-            else "\n" + inspect.getsource(fn),
+            (
+                fn
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(fn))
+                else "\n" + inspect.getsource(fn)
+            ),
             cache,
             pass_kwargs,
             return_tuple,
-            expand_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
-            else "\n" + inspect.getsource(expand_fn) + "\n",
+            (
+                expand_fn
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
+                else "\n" + inspect.getsource(expand_fn) + "\n"
+            ),
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
@@ -532,9 +557,11 @@ def execute(
             """Entry with args=(tapes=%s, device=%s, gradient_fn=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s, override_shots=%s, expand_fn=%s, max_expansion=%s, device_batch_transform=%s) called by=%s""",
             tapes,
             repr(device),
-            gradient_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(gradient_fn))
-            else "\n" + inspect.getsource(gradient_fn) + "\n",
+            (
+                gradient_fn
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(gradient_fn))
+                else "\n" + inspect.getsource(gradient_fn) + "\n"
+            ),
             interface,
             grad_on_execution,
             gradient_kwargs,
@@ -542,9 +569,11 @@ def execute(
             cachesize,
             max_diff,
             override_shots,
-            expand_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
-            else "\n" + inspect.getsource(expand_fn) + "\n",
+            (
+                expand_fn
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
+                else "\n" + inspect.getsource(expand_fn) + "\n"
+            ),
             max_expansion,
             device_batch_transform,
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
@@ -557,6 +586,8 @@ def execute(
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
+    if INTERFACE_MAP.get(interface, "") == "tf" and _use_tensorflow_autograph():
+        interface = "tf-autograph"
     if interface == "jax":
         try:  # pragma: no-cover
             from .interfaces.jax import get_jax_interface_name
@@ -571,7 +602,11 @@ def execute(
         if interface in {"jax", "jax-jit"}:
             grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
-    if device_vjp and isinstance(device, qml.Device):
+    if (
+        device_vjp
+        and isinstance(device, qml.Device)
+        and "lightning" not in getattr(device, "short_name", "")
+    ):
         raise qml.QuantumFunctionError(
             "device provided jacobian products are not compatible with the old device interface."
         )
@@ -649,7 +684,18 @@ def execute(
 
     _grad_on_execution = False
 
-    if config.use_device_jacobian_product and interface in jpc_interfaces:
+    if (
+        device_vjp
+        and "lightning" in getattr(device, "short_name", "")
+        and interface in jpc_interfaces
+    ):
+        if INTERFACE_MAP[interface] == "jax" and "use_device_state" in gradient_kwargs:
+            gradient_kwargs["use_device_state"] = False
+        tapes = [expand_fn(t) for t in tapes]
+        tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
+        jpc = LightningVJPs(device, gradient_kwargs=gradient_kwargs)
+
+    elif config.use_device_jacobian_product and interface in jpc_interfaces:
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
@@ -781,9 +827,17 @@ def execute(
         jpc = TransformJacobianProducts(
             execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian
         )
-        for _ in range(1, max_diff):
-            ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
-            execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc, device=device)
+        for i in range(1, max_diff):
+            differentiable = i > 1
+            ml_boundary_execute = _get_ml_boundary_execute(
+                interface, _grad_on_execution, differentiable=differentiable
+            )
+            execute_fn = partial(
+                ml_boundary_execute,
+                execute_fn=execute_fn,
+                jpc=jpc,
+                device=device,
+            )
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
             if interface == "jax-jit":
@@ -799,7 +853,10 @@ def execute(
             tape.trainable_params = qml.math.get_trainable_indices(params)
 
     ml_boundary_execute = _get_ml_boundary_execute(
-        interface, _grad_on_execution, config.use_device_jacobian_product
+        interface,
+        _grad_on_execution,
+        config.use_device_jacobian_product,
+        differentiable=max_diff > 1,
     )
 
     if interface in jpc_interfaces:

@@ -23,6 +23,8 @@ import pennylane as qml
 
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
+np.random.seed(0)
+
 
 def test_name():
     """Tests the name of DefaultQubit."""
@@ -1717,13 +1719,13 @@ class TestPostselection:
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
     @pytest.mark.parametrize("shots", [50000, (50000, 50000)])
-    def test_postselection_valid_finite_shots(
-        self, param, mp, shots, interface, use_jit, tol_stochastic
-    ):
+    def test_postselection_valid_finite_shots(self, param, mp, shots, interface, use_jit):
         """Test that the results of a circuit with postselection is expected with
         finite shots."""
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
+
+        np.random.seed(42)
 
         dev = qml.device("default.qubit")
         param = qml.math.asarray(param, like=interface)
@@ -1750,13 +1752,13 @@ class TestPostselection:
         expected = circ_expected(shots=shots)
 
         if not isinstance(shots, tuple):
-            assert qml.math.allclose(res, expected, atol=tol_stochastic, rtol=0)
+            assert qml.math.allclose(res, expected, atol=0.1, rtol=0)
             assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
         else:
             assert isinstance(res, tuple)
             for r, e in zip(res, expected):
-                assert qml.math.allclose(r, e, atol=tol_stochastic, rtol=0)
+                assert qml.math.allclose(r, e, atol=0.1, rtol=0)
                 assert qml.math.get_interface(r) == qml.math.get_interface(e)
 
     @pytest.mark.parametrize(

@@ -387,16 +387,20 @@ def classproperty(func):
 
 
 def _process_data(op):
+    def _mod_and_round(x, mod_val):
+        if mod_val is None:
+            return x
+        return qml.math.round(qml.math.real(x) % mod_val, 10)
+
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
+        mod_val = 2 * np.pi
+    else:
+        mod_val = None
 
-    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
-
-    return str(op.data)
+    return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 class Operator(abc.ABC):
@@ -684,6 +688,7 @@ class Operator(abc.ABC):
         one of them (in other words, without the leading underscore) for the first time will
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
+
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     def __init_subclass__(cls, **_):
@@ -785,7 +790,14 @@ class Operator(abc.ABC):
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
-        if wire_order is None or self.wires == Wires(wire_order):
+        if (
+            wire_order is None
+            or self.wires == Wires(wire_order)
+            or (
+                self.name in qml.ops.qubit.attributes.symmetric_over_all_wires
+                and set(self.wires) == set(wire_order)
+            )
+        ):
             return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
@@ -1031,6 +1043,7 @@ class Operator(abc.ABC):
 
     def __init__(self, *params, wires=None, id=None):
         # pylint: disable=too-many-branches
+
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
@@ -1065,7 +1078,10 @@ class Operator(abc.ABC):
         # check that the number of wires given corresponds to required number
         if self.num_wires in {AllWires, AnyWires}:
             if (
-                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase))
+                not isinstance(
+                    self,
+                    (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase, qml.Identity),
+                )
                 and len(qml.wires.Wires(wires)) == 0
             ):
                 raise ValueError(
@@ -1096,7 +1112,22 @@ class Operator(abc.ABC):
         self._batch_size = None
         params = self.data
 
-        ndims = tuple(qml.math.ndim(p) for p in params)
+        try:
+            ndims = tuple(qml.math.ndim(p) for p in params)
+        except ValueError as e:
+            # TODO:[dwierichs] When using tf.function with an input_signature that contains
+            # an unknown-shaped input, ndim() will not be able to determine the number of
+            # dimensions because they are not specified yet. Failing example: Let `fun` be
+            # a single-parameter QNode.
+            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
+            # There might be a way to support batching nonetheless, which remains to be
+            # investigated. For now, the batch_size is left to be `None` when instantiating
+            # an operation with abstract parameters that make `qml.math.ndim` fail.
+            if any(qml.math.is_abstract(p) for p in params):
+                self._batch_size = None
+                self._ndim_params = (0,) * len(params)
+                return
+            raise e  # pragma: no cover
 
         if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
@@ -1142,19 +1173,18 @@ class Operator(abc.ABC):
 
         Args:
             subspace (tuple[int]): Subspace to check for correctness
+
+        .. warning::
+
+            ``Operator.validate_subspace(subspace)`` has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed from the Operator class in an upcoming release.
         """
-        if not hasattr(subspace, "__iter__") or len(subspace) != 2:
-            raise ValueError(
-                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
-            )
 
-        if not all(s in {0, 1, 2} for s in subspace):
-            raise ValueError("Elements of the subspace must be 0, 1, or 2.")
+        warnings.warn(
+            "Operator.validate_subspace(subspace) has been relocated to the qml.ops.qutrit.parametric_ops module and will be removed from the Operator class in an upcoming release.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
-        if subspace[0] == subspace[1]:
-            raise ValueError("Elements of subspace list must be unique.")
-
-        return tuple(sorted(subspace))
+        return qml.ops.qutrit.validate_subspace(subspace)
 
     @property
     def num_params(self):
@@ -1789,6 +1819,7 @@ class Channel(Operation, abc.ABC):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
 
     @staticmethod
@@ -2780,6 +2811,7 @@ class CVObservable(CV, Observable):
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
 
@@ -3005,7 +3037,9 @@ def convert_to_opmath(op):
         Operator: An operator using the new arithmetic operations, if relevant
     """
     if isinstance(op, qml.Hamiltonian):
-        return qml.dot(*op.terms())
+        c, ops = op.terms()
+        ops = tuple(convert_to_opmath(o) for o in ops)
+        return qml.dot(c, ops)
     if isinstance(op, Tensor):
         return qml.prod(*op.obs)
     return op

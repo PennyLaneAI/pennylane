@@ -22,8 +22,29 @@ from pennylane import numpy as np
 from pennylane.operation import Channel
 from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
 
-
 alphabet_array = np.array(list(alphabet))
+
+
+def _map_indices_apply_channel(**kwargs):
+    """Map indices to einsum string
+    Args:
+        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
+
+    Returns:
+        String of einsum indices to complete einsum calculations
+    """
+    op_1_indices = f"{kwargs['kraus_index']}{kwargs['new_row_indices']}{kwargs['row_indices']}"
+    op_2_indices = f"{kwargs['kraus_index']}{kwargs['col_indices']}{kwargs['new_col_indices']}"
+
+    new_state_indices = get_new_state_einsum_indices(
+        old_indices=kwargs["col_indices"] + kwargs["row_indices"],
+        new_indices=kwargs["new_col_indices"] + kwargs["new_row_indices"],
+        state_indices=kwargs["state_indices"],
+    )
+    # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
+    return (
+        f"...{op_1_indices},...{kwargs['state_indices']},...{op_2_indices}->...{new_state_indices}"
+    )
 
 
 def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
@@ -38,38 +59,19 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     Returns:
         array[complex]: output_state
     """
-
-    def map_indices(**kwargs):
-        """map indices to wires
-        Args:
-            **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
-
-        Returns:
-            String of einsum indices to complete einsum calculations
-
-        """
-        op_1_indices = f"{kwargs['kraus_index']}{kwargs['new_row_indices']}{kwargs['row_indices']}"
-        op_2_indices = f"{kwargs['kraus_index']}{kwargs['col_indices']}{kwargs['new_col_indices']}"
-
-        new_state_indices = get_new_state_einsum_indices(
-            old_indices=kwargs["col_indices"] + kwargs["row_indices"],
-            new_indices=kwargs["new_col_indices"] + kwargs["new_row_indices"],
-            state_indices=kwargs["state_indices"],
-        )
-        # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
-        return f"...{op_1_indices},...{kwargs['state_indices']},...{op_2_indices}->...{new_state_indices}"
-
-    einsum_indices = get_einsum_mapping(op, state, map_indices, is_state_batched)
+    einsum_indices = get_einsum_mapping(op, state, _map_indices_apply_channel, is_state_batched)
 
     num_ch_wires = len(op.wires)
-    kraus = _get_kraus(op)
+
+    # This could be pulled into separate function if tensordot is added
+    if isinstance(op, Channel):
+        kraus = op.kraus_matrices()
+    else:
+        kraus = [op.matrix()]
 
     # Shape kraus operators
     kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_ch_wires * 2
-    # Compute K^T, will be list of lists if broadcasting
-    kraus_transpose = []
     if not isinstance(op, Channel):
-        # TODO Channels broadcasting doesn't seem to be implemented for qubits, should they be for qutrit?
         mat = op.matrix()
         dim = QUDIT_DIM**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
@@ -78,13 +80,9 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
             kraus_shape = [batch_size] + kraus_shape
             if op.batch_size is None:
                 op._batch_size = batch_size  # pylint:disable=protected-access
-            for op_mats in kraus:
-                kraus_transpose.append([math.transpose(k) for k in op_mats])
-    if not kraus_transpose:
-        kraus_transpose = [math.transpose(k) for k in kraus]
 
     kraus = math.stack(kraus)
-    kraus_transpose = math.stack(kraus_transpose)
+    kraus_transpose = math.stack(math.moveaxis(kraus, source=-1, destination=-2))
     # Torch throws error if math.conj is used before stack
     kraus_dagger = math.conj(kraus_transpose)
 
@@ -98,7 +96,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
 def apply_operation(
     op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None
 ):
-    """Apply and operator to a given state.
+    """Apply an operation to a given state.
 
     Args:
         op (Operator): The operation to apply to ``state``
@@ -169,10 +167,10 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
             # TODO replace with: measure once added
             raise NotImplementedError  # TODO
         if is_state_batched:
-            dim = int(np.sqrt(math.size(state[0])))
+            dim = int(math.sqrt(math.size(state[0])))
             flat_shape = [math.shape(state)[0], dim, dim]
         else:
-            dim = int(np.sqrt(math.size(state)))
+            dim = int(math.sqrt(math.size(state)))
             flat_shape = [dim, dim]
 
         snapshot = math.reshape(state, flat_shape)
@@ -184,18 +182,3 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
 
 
 # TODO add special case speedups
-
-
-def _get_kraus(operation):  # pylint: disable=no-self-use
-    """Return the Kraus operators representing the operation.
-
-    Args:
-        operation (.Operation): a PennyLane operation
-
-    Returns:
-        list[array[complex]]: Returns a list of 2D matrices representing the Kraus operators. If
-        the operation is unitary, returns a single Kraus operator.
-    """
-    if isinstance(operation, Channel):
-        return operation.kraus_matrices()
-    return [operation.matrix()]

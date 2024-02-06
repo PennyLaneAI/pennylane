@@ -258,7 +258,7 @@ def clifford(generators, paulixops):
     for i, t in enumerate(generators):
         cliff.append(pauli_sentence(1 / 2**0.5 * (paulixops[i] + t)))
 
-    u = functools.reduce(lambda p, q: p * q, cliff)
+    u = functools.reduce(lambda p, q: p @ q, cliff)
 
     return u.operation() if active_new_opmath() else u.hamiltonian()
 
@@ -296,10 +296,10 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
 
     ts_ps = qml.pauli.PauliSentence()
     for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
-        ts_ps += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
+        ts_ps += ps_u @ ps @ ps_u  # helps restrict the peak memory usage for u @ h @ u
 
     wireset = ps_u.wires + ps_h.wires
-    wiremap = dict(zip(wireset, range(len(wireset) + 1)))
+    wiremap = dict(zip(list(wireset.toset()), range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulixops]
 
     o = []
@@ -435,7 +435,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
     perm = []
     for tau in generators:
-        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires])
+        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires.toset()])
         coeff = -1 if np.logical_xor.reduce(np.logical_and(symmstr, hf_str)) else 1
         perm.append(coeff)
 
@@ -485,7 +485,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
             ps = qml.jordan_wigner(qml.FermiC(idx), ps=True)
         else:
             ps = PauliSentence({PauliWord({idx: "I"}): 1.0})
-        ferm_ps *= ps
+        ferm_ps @= ps
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)

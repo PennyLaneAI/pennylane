@@ -558,12 +558,8 @@ class TestDefaultGaussianDevice:
         r = 0.4523
         dev.apply("SqueezedState", wires=Wires([0]), par=[r, 0])
         mean = dev.expval("FockStateProjector", Wires([0]), [np.array([2 * n])])
-        expected = (
-            np.abs(
-                np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
-            )
-            ** 2
-        )
+        base = np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
+        expected = np.abs(base) ** 2
         assert mean == pytest.approx(expected, abs=tol)
 
     def test_variance_displaced_thermal_mean_photon(self, tol):
@@ -615,12 +611,8 @@ class TestDefaultGaussianDevice:
         r = 0.4523
         dev.apply("SqueezedState", wires=Wires([0]), par=[r, 0])
         var = dev.var("FockStateProjector", Wires([0]), [np.array([2 * n])])
-        mean = (
-            np.abs(
-                np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
-            )
-            ** 2
-        )
+        base = np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
+        mean = np.abs(base) ** 2
         assert var == pytest.approx(mean * (1 - mean), abs=tol)
 
     def test_reduced_state(self, gaussian_dev, tol):
