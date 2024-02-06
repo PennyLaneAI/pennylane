@@ -27,11 +27,6 @@ class SimpleError(AlgorithmicError):
     @staticmethod
     def get_error(approx_op, other_op):  # pylint: disable=unused-argument
         return 0.5  # get simple error is always 0.5
-
-
-class ErrorNoCombine(AlgorithmicError):  # pylint: disable=too-few-public-methods
-    @staticmethod
-    def get_error(approx_op, other_op):  # pylint: disable=unused-argument
         return 0.5
 
 
@@ -51,11 +46,14 @@ class TestAlgorithmicError:
 
     def test_combine_not_implemented(self):
         """Test NotImplementedError is raised if the method is not defined."""
-        ErrorObj1 = ErrorNoCombine(1.23)
-        ErrorObj2 = ErrorNoCombine(0.45)
-
-        with pytest.raises(NotImplementedError):
-            _ = ErrorObj1.combine(ErrorObj2)
+        
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            
+            class ErrorNoCombine(AlgorithmicError):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+            
+            _ = ErrorNoCombine(1.23)
 
     @pytest.mark.parametrize("err1", [1.23, 0.45, -6])
     @pytest.mark.parametrize("err2", [1.23, 0.45, -6])

@@ -14,10 +14,10 @@
 """
 Stores classes and logic to define and track algorithmic error in a quantum workflow.
 """
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 
-class AlgorithmicError:
+class AlgorithmicError(ABC):
     """Abstract base class representing different types of mathematical errors."""
 
     def __init__(self, error: float):
