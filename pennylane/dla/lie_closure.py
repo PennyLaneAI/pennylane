@@ -35,6 +35,9 @@ from pennylane.pauli import PauliSentence, PauliWord
 #     """
 #     return None
 
+def _are_proportional(ps1, ps2):
+    """Check if two pauli sentences are proportional to each other"""
+
 
 class VSpace:
     """
@@ -221,10 +224,12 @@ class VSpace:
         # Add new PauliSentence entries to matrix
         for pw, value in pauli_sentence.items():
             M[pw_to_idx[pw], rank] = value
-
-        # Sparse alternative
-        # sing_value = svds(M, k=1, which="SM", return_singular_vectors=False)
-        # if np.allclose(sing_value, 0.):
+        
+        # Check if new vector is proportional to any of the previous vectors
+        # This is significantly cheaper than computing the rank and should be done first
+        if _is_any_col_propto_last(M):
+            M = M[:num_pw, :rank]
+            return M, pw_to_idx, rank, num_pw, False
 
         new_rank = np.linalg.matrix_rank(M)
         # Manual singular value alternative, probably slower than ``matrix_rank``
@@ -239,3 +244,46 @@ class VSpace:
 
     def __repr__(self):
         return str(self.basis)
+
+
+def _is_any_col_propto_last(inM):
+    """Given a 2D matrix M, check if any column is proportional to the last column
+    **Example**
+
+    .. code-block::python3
+        M1 = np.array([
+            [0., 1., 2., 4.],
+            [1., 1., 1., 0.],
+            [2., 2., 3., 6.]
+        ])
+        M2 = np.array([
+            [0., 1., 2., 4.],
+            [1., 1., 0., 0.],
+            [2., 2., 3., 6.]
+        ])
+    
+    >>> _any_col_propto(M1)
+    False
+    >>> _any_col_propto(M2)
+    True
+
+    """
+    M = inM.copy()
+
+    nonzero_mask = np.nonzero(M[:, 0]) # target vector is the last column
+    norms_of_columns = np.linalg.norm(M, axis=0)[np.newaxis, :]
+
+
+    # process nonzero part of the matrix
+    nonzero_part = M[nonzero_mask]
+
+    # divide each column by its norm
+    # If we decide to maintain a normalization in M, this is not needed anymore
+    nonzero_part = nonzero_part / norms_of_columns
+
+    # fill the original matrix with the nonzero elements
+    # note that if a candidate vector has nonzero part where target vector is zero, this part is unaltered
+    M[nonzero_mask] = nonzero_part
+    
+    # check if any column matches the last column completely
+    return np.any(np.all(M[:, :-1].T == M[:, -1], axis=1))
