@@ -31,6 +31,22 @@ ml_frameworks_list = [
 ]
 
 subspaces = [(0, 1), (0, 2), (1, 2)]
+krause_matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+
+class CustomChannel(Channel):
+    num_params = 1
+    num_wires = 1
+
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
+
+    @staticmethod
+    def compute_kraus_matrices(p):
+        K0 = (math.sqrt(1 - p) * math.cast_like(np.eye(3), p)).astype(complex)
+        K1 = (
+                math.sqrt(p) * math.cast_like(krause_matrix, p)
+        ).astype(complex)
+        return [K0, K1]
 
 
 def test_custom_operator_with_matrix(one_qutrit_state):
@@ -439,92 +455,84 @@ class TestTRXCalcGrad:
 class TestChannelCalcGrad:
     """Tests the application and differentiation of a Channel in the different interfaces."""
 
-    phi = 0.325
+    p = 0.325
 
-    def compare_expected_result(self, phi, state, new_state, subspace, g):
-        trx = qml.TRX.compute_matrix(phi, subspace)
-        trx_adj = qml.TRX.compute_matrix(-phi, subspace)
+    def compare_expected_result(self, p, state, new_state, g):
+        krause_matrix_two_qutrits = np.kron(krause_matrix, np.eye(3))
+        krause_matrix_two_qutrits_adj = krause_matrix_two_qutrits.transpose()
+        state_krause_applied = krause_matrix_two_qutrits @ state @ krause_matrix_two_qutrits_adj
 
-        expected_state = np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3))
+        expected_state = (1-p) * state + (p * state_krause_applied)
         assert qml.math.allclose(new_state, expected_state)
 
-        if subspace[0] == 0:
-            gell_mann_index = 1 if subspace[1] == 1 else 4
-        else:
-            gell_mann_index = 6
-        gell_mann_matrix = qml.GellMann.compute_matrix(gell_mann_index)
-        trx_derivative = -1j * gell_mann_matrix * trx
-        trx_adj_derivative = 1j * gell_mann_matrix * trx_adj
-
-        expected_derivative_state = (np.kron(trx_derivative, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3))) + (np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj_derivative, np.eye(3)))
+        expected_derivative_state = state_krause_applied - state
         expected_derivative = np.diagonal(expected_derivative_state)
         assert qml.math.allclose(g, expected_derivative)
 
     @pytest.mark.autograd
-    def test_trx_grad_autograd(self, two_qutrit_state, subspace):
+    def test_trx_grad_autograd(self, two_qutrit_state):
         """Test that the application of a trx gate is differentiable with autograd."""
 
         state = qml.numpy.array(two_qutrit_state)
 
-        def f(phi):
-            op = qml.TRX(phi, wires=0)
-            new_state = apply_operation(op, state)
+        def f(p):
+            channel = CustomChannel(p, wires=0)
+            new_state = apply_operation(channel, state)
             return measure(qml.probs(), new_state)
 
-        phi = qml.numpy.array(self.phi + 0j, requires_grad=True)
+        p = qml.numpy.array(self.p + 0j, requires_grad=True)
 
-        probs = f(phi)
-        g = qml.jacobian(lambda x: qml.math.real(f(x)))(phi)
-        self.compare_expected_result(phi, state, probs, subspace, g)
+        probs = f(p)
+        g = qml.jacobian(lambda x: qml.math.real(f(x)))(p)
+        self.compare_expected_result(p, state, probs, g)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_trx_grad_jax(self, use_jit, two_qutrit_state, subspace):
+    def test_trx_grad_jax(self, use_jit, two_qutrit_state):
         """Test that the application of a trx gate is differentiable with jax."""
 
         import jax
 
         state = jax.numpy.array(two_qutrit_state)
 
-        def f(phi):
-            op = qml.TRX(phi, wires=0)
+        def f(p):
+            op = qml.TRX(p, wires=0)
             new_state = apply_operation(op, state)
             return measure(qml.probs(), new_state)
 
         if use_jit:
             f = jax.jit(f)
 
-        phi = self.phi
+        p = self.p
 
-        probs = f(phi)
-        g = jax.jacobian(f, holomorphic=True)(phi + 0j)
-        self.compare_expected_result(phi, state, probs, subspace, g)
+        probs = f(p)
+        g = jax.jacobian(f, holomorphic=True)(p + 0j)
+        self.compare_expected_result(p, state, probs, g)
 
     @pytest.mark.torch
-    def test_trx_grad_torch(self, two_qutrit_state, subspace):
+    def test_trx_grad_torch(self, two_qutrit_state):
         """Tests the application and differentiation of a trx gate with torch."""
 
         import torch
 
         state = torch.tensor(two_qutrit_state)
 
-        def f(phi):
-            op = qml.TRX(phi, wires=0)
+        def f(p):
+            op = qml.TRX(p, wires=0)
             new_state = apply_operation(op, state)
             return measure(qml.probs(), new_state)
 
-        phi = torch.tensor(self.phi, requires_grad=True)
+        p = torch.tensor(self.p, requires_grad=True)
 
-        probs = f(phi)
+        probs = f(p)
         # forward-mode needed with complex results.
         # See bug: https://github.com/pytorch/pytorch/issues/94397
-        g = torch.autograd.functional.jacobian(f, phi + 0j, strategy="forward-mode", vectorize=True)
+        g = torch.autograd.functional.jacobian(f, p + 0j, strategy="forward-mode", vectorize=True)
 
         self.compare_expected_result(
-            phi.detach().numpy(),
+            p.detach().numpy(),
             state.detach().numpy(),
             probs.detach().numpy(),
-            subspace,
             g.detach().numpy(),
         )
 
@@ -534,18 +542,18 @@ class TestChannelCalcGrad:
         import tensorflow as tf
 
         state = tf.Variable(two_qutrit_state)
-        phi = tf.Variable(0.8589 + 0j)  # TODO, what should this value be
+        p = tf.Variable(0.8589 + 0j)  # TODO, what should this value be
 
         with tf.GradientTape() as grad_tape:
-            op = qml.TRX(phi, wires=0)
+            op = qml.TRX(p, wires=0)
             new_state = apply_operation(op, state)
             probs = measure(qml.probs(), new_state)
 
-        grads = grad_tape.jacobian(probs, [phi])
+        grads = grad_tape.jacobian(probs, [p])
         # tf takes gradient with respect to conj(z), so we need to conj the gradient
         phi_grad = tf.math.conj(grads[0])
 
-        self.compare_expected_result(phi, state, new_state, subspace, phi_grad)
+        self.compare_expected_result(p, state, new_state, phi_grad)
 
 
 # TODO: move to other file when measurements PR is done
