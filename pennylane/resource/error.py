@@ -26,7 +26,7 @@ class AlgorithmicError:
     @abstractmethod
     def combine(self, other):
         """A method to combine two errors of the same type.
-        (eg. additive, square additive, multiplicative, etc.)
+        (e.g., additive, square additive, multiplicative, etc.)
 
         Args:
             other (AlgorithmicError): The other instance of error being combined.

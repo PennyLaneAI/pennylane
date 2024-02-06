@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Test base AlgorithmicError class and its associated methods
+Test base AlgorithmicError class and its associated methods.
 """
 import pytest
 
@@ -41,7 +41,7 @@ class ErrorNoGetError(AlgorithmicError):  # pylint: disable=too-few-public-metho
 
 
 class TestAlgorithmicError:
-    """Test the methods and attributes of the Resource class"""
+    """Test the methods and attributes of the AlgorithmicError class"""
 
     @pytest.mark.parametrize("error", [1.23, 0.45, -6])
     def test_error_attribute(self, error):
