@@ -103,6 +103,11 @@ runs:
     - name: Freeze dependencies
       shell: bash
       if: inputs.requirements_file != ''
-      run: |
-        echo "file name: ${{ inputs.requirements_file }}"
-        pip freeze | grep -v "file:///"
+      run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
+
+    - name: Upload frozen requirements
+      if: inputs.requirements_file != ''
+      uses: actions/upload-artifact@v3
+      with:
+        name: frozen-${{ inputs.requirements_file }}
+        path: ${{ inputs.requirements_file }}

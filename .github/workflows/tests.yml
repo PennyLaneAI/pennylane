@@ -24,3 +24,25 @@ jobs:
           && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
           || false
          }}
+
+  upload-stable-deps:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: action/download-artifact@v3
+        with:
+          pattern: frozen-*
+          path: $GITHUB_WORKSPACE/.github/stable/
+
+      - name: Determine if changes have been made
+        id: changed
+        run: |
+          git diff --quiet
+          echo "has_changes=$?" >> $GITHUB_OUTPUT
+
+      - name: Stage changes
+        if: steps.changed.outputs.has_changes == '1'
+        run: |
+          git status
+          git diff
