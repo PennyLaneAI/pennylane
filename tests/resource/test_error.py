@@ -44,7 +44,7 @@ class TestAlgorithmicError:
         assert ErrorObj.error == error
 
     def test_combine_not_implemented(self):
-        """Test error is raised if the method is not defined."""
+        """Test can't instantiate Error if the combine method is not defined."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
 
             class ErrorNoCombine(AlgorithmicError):  # pylint: disable=too-few-public-methods
