@@ -167,7 +167,7 @@ class DefaultClifford(Device):
         tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
             When ``True``, the device returns the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
-        target_states (array[int]):  Target basis state(s) for which analytical probabilities should be computed with
+        prob_states (array[int]):  Target basis state(s) for which analytical probabilities should be computed with
             :func:`qml.probs <pennylane.probs>`. By default, if no wires are provided, probabilities are computed
             for the complete computational space up to ``20`` qubits.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
@@ -262,9 +262,7 @@ class DefaultClifford(Device):
         we restrict the ability to compute the ``analytical`` probabilities for `all` computational basis
         states at once to maintain computational efficiency when system size scales beyond ``20`` qubits.
         Instead, one can sepcify the target basis state(s), i.e., subset `basis state(s)` of interest,
-        either during the initialization of device via the ``target_states`` keyword argument,
-        or at any other stage before executing the circuit by setting the ``probability_target``
-        property of the device.
+        either during the initialization of device via the ``prob_states`` keyword argument.
 
         .. code-block:: python
 
@@ -293,9 +291,25 @@ class DefaultClifford(Device):
 
         >>> circuit()
         tensor([0.5, 0.5], requires_grad=True)
-        >>> dev.probability_target = np.array([[0, 1, 0, 1], [1, 0, 1, 0]])
-        >>> circuit()
-        tensor([0.0, 0.0], requires_grad=True)
+
+        One can also use :mod:`qml.expval <pennylane.expval>` compute the expectation value of a single target
+        ``basis state`` with the :mod:`qml.Projector <pennylane.Projector>`.
+
+        .. code-block:: python
+
+            num_wires = 4
+            @qml.qnode(dev)
+            def circuit(state):
+                qml.Hadamard(wires=[0])
+                for idx in range(num_wires):
+                    qml.CNOT(wires=[idx, idx+1])
+                return qml.expval(qml.Projector(state, wires=range(num_wires)))
+
+        >>> basis_states = np.array([[0, 1, 0, 1], [1, 0, 1, 0]])
+        >>> circuit(basis_states[0])
+        tensor(0.0, requires_grad=True)
+        >>> circuit(basis_states[1])
+        tensor(0.0, requires_grad=True)
 
         .. note::
 
@@ -338,7 +352,7 @@ class DefaultClifford(Device):
         shots=None,
         check_clifford=True,
         tableau=True,
-        target_states=None,
+        prob_states=None,
         seed="global",
         max_workers=None,
     ) -> None:
@@ -355,8 +369,12 @@ class DefaultClifford(Device):
         self._tableau = tableau
 
         self._prob_states = None
-        if target_states is not None:
-            self.probability_target = target_states
+        if prob_states is not None:
+            self._prob_states = qml.math.stack(
+                prob_states
+                if len(qml.math.shape(prob_states)) > 1
+                else qml.math.array([prob_states])
+            )
 
         self._seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         self._rng = np.random.default_rng(self._seed)
@@ -580,7 +598,6 @@ class DefaultClifford(Device):
         """Compute sample output from a stim circuit for a given Pauli observable"""
         meas_dict = {"X": "MX", "Y": "MY", "Z": "MZ", "_": "M"}
 
-        # Get the observable for the expectation value measurement
         coeffs, paulis = _convert_op_to_linear_comb(meas_obs)
 
         samples = []
@@ -641,7 +658,7 @@ class DefaultClifford(Device):
         measurement_map = {
             DensityMatrixMP: self._measure_density_matrix,
             StateMP: self._measure_state,  # kwargs -> circuit, global_phase
-            ExpectationMP: self._measure_expectation,
+            ExpectationMP: self._measure_expectation,  # kwargs -> circuit, stim_circuit
             VarianceMP: self._measure_variance,
             VnEntropyMP: self._measure_vn_entropy,  # kwargs -> circuit
             MutualInfoMP: self._measure_mutual_info,  # kwargs -> circuit
@@ -701,11 +718,17 @@ class DefaultClifford(Device):
             state[0] = 1.0 + 0.0j
         return state * qml.matrix(global_phase)[0][0]
 
-    @staticmethod
-    def _measure_expectation(meas, tableau_simulator, **_):
+    def _measure_expectation(self, meas, tableau_simulator, **kwargs):
         """Measure the expectation value with respect to the state of simulator device."""
+        meas_obs = meas.obs
+        if isinstance(meas_obs, BasisStateProjector):
+            kwargs["prob_states"] = qml.math.array([meas_obs.data[0]])
+            return self._measure_probability(
+                qml.probs(wires=meas_obs.wires), tableau_simulator, **kwargs
+            ).squeeze()
+
         # Get the observable for the expectation value measurement
-        coeffs, paulis = _convert_op_to_linear_comb(meas.obs)
+        coeffs, paulis = _convert_op_to_linear_comb(meas_obs)
 
         expecs = qml.math.zeros_like(coeffs)
         for idx, (pauli, wire) in enumerate(paulis):
@@ -826,28 +849,21 @@ class DefaultClifford(Device):
 
         return entropy / qml.math.log(log_base)
 
-    @property
-    def probability_target(self):
-        """Get the target computational basis states for computing outcome probability."""
-        return self._prob_states
-
-    @probability_target.setter
-    def probability_target(self, basis_states):
-        """Set the target computational basis states for computing outcome probability."""
-        self._prob_states = qml.math.stack(
-            basis_states if len(qml.math.shape(basis_states)) > 1 else [basis_states]
-        )
-
     # pylint: disable=too-many-branches, too-many-statements
     def _measure_probability(self, meas, _, **kwargs):
         """Measure the probability of each computational basis state."""
         circuit = kwargs.get("circuit")
 
+        # Set the target states
+        tgt_states = kwargs.get("prob_states", None)
+        if tgt_states is None:
+            tgt_states = self._prob_states
+
         # Obtain the measurement wires for getting the basis states
         mobs_wires = meas.obs.wires if meas.obs else meas.wires
         meas_wires = mobs_wires if mobs_wires else circuit.wires
 
-        if len(meas_wires) > 20 and self._prob_states is None and self._tableau:
+        if len(meas_wires) > 20 and tgt_states is None and self._tableau:
             raise ValueError(
                 "In order to maintain computational efficiency, \
                 with ``tableau=True``, the clifford device supports \
@@ -856,10 +872,10 @@ class DefaultClifford(Device):
                 Please use the `probability_target` property to set them."
             )
 
-        if self._prob_states is None:
+        if tgt_states is None:
             num_wires = len(meas_wires)
             basis_vec = np.arange(2**num_wires)[:, np.newaxis]
-            self._prob_states = (((basis_vec & (1 << np.arange(num_wires)[::-1]))) > 0).astype(int)
+            tgt_states = (((basis_vec & (1 << np.arange(num_wires)[::-1]))) > 0).astype(int)
 
         # TODO: We might be able to skip the inverse done below
         # (as the distribution should be independent of inverse)
@@ -882,10 +898,6 @@ class DefaultClifford(Device):
         if not self._tableau:
             state = self._measure_state(meas, circuit_simulator, circuit=circuit)
             return meas.process_state(state, wire_order=circuit.wires)
-
-        tgt_states = self._prob_states
-        if not tgt_states.shape[1]:
-            raise ValueError("Cannot set an empty list of target states.")
 
         if len(meas_wires) < tgt_states.shape[1]:
             tgt_states = []
@@ -940,6 +952,14 @@ class DefaultClifford(Device):
         """Measure the expectation value with respect to samples from simulator device."""
         # Get the observable for the expectation value measurement
         meas_op = meas.obs
+        if isinstance(meas_op, BasisStateProjector):
+            stim_circ = stim_circuit.copy()
+            stim_circ.append_from_stim_program_text("M " + " ".join(map(str, meas_op.wires)))
+            sampler = stim_circ.compile_sampler(seed=seed)
+            samples = qml.math.array(sampler.sample(shots=shots), dtype=int)
+            matches = np.where((samples == meas_op.data[0]).all(axis=1))[0]
+            return len(matches) / shots
+
         samples, coeffs = self._measure_observable_sample(meas_op, stim_circuit, shots, seed)
         expecs = [
             qml.math.mean(qml.math.power([-1] * shots, qml.math.sum(sample, axis=1)))

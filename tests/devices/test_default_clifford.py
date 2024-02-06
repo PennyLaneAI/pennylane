@@ -252,17 +252,6 @@ def test_meas_probs(tableau, shots, ops):
     qnode_clfrd = qml.QNode(circuit_fn, dev_c)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
-    if tableau and shots is None:
-        with pytest.raises(
-            ValueError,
-            match="Cannot set an empty list of target states.",
-        ):
-            dev_c.probability_target = []
-            qnode_clfrd()
-
-        dev_c.probability_target = [[0, 0], [1, 0], [0, 1], [1, 1]]
-        assert dev_c.probability_target is not None
-
     gotten_probs, target_probs = qnode_clfrd(), qnode_qubit()
     if gotten_probs.shape[-1] != target_probs.shape[-1]:
         target_probs = qml.math.sum(target_probs.reshape((2,) * len(ops.wires)), axis=-1).reshape(
@@ -276,7 +265,7 @@ def test_meas_probs_large():
     """Test if probabilities are returned in the clifford device with target basis states"""
     basis_states = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
     dev_c1 = qml.device("default.clifford", seed=24)
-    dev_c2 = qml.device("default.clifford", seed=24, target_states=basis_states)
+    dev_c2 = qml.device("default.clifford", seed=24, prob_states=basis_states)
 
     def circuit_fn():
         for wire in range(30):
@@ -294,8 +283,26 @@ def test_meas_probs_large():
     ):
         qnode_clfrd1()
 
-    dev_c1.probability_target = basis_states
-    probs1, probs2 = qnode_clfrd1(), qnode_clfrd2()
+    def circuit_fn1():
+        for wire in range(30):
+            qml.PauliX(wire)
+            qml.PauliY(wire)
+            qml.PauliZ(wire)
+        return qml.probs(wires=range(1))
+
+    qnode_clfrd3 = qml.QNode(circuit_fn1, dev_c2)
+    assert qnode_clfrd3().shape == (2,)
+
+    def circuit_fn2(state):
+        for wire in range(30):
+            qml.PauliX(wire)
+            qml.PauliY(wire)
+            qml.PauliZ(wire)
+        return qml.expval(qml.Projector(state, wires=[0, 1]))
+
+    qnode_clfrd4 = qml.QNode(circuit_fn2, dev_c1)
+    probs1 = [qnode_clfrd4(state) for state in basis_states]
+    probs2 = qnode_clfrd2()
     assert qml.math.allclose(probs1, probs2)
 
 
