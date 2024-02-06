@@ -37,6 +37,9 @@ jobs:
         with:
           pattern: frozen-*
           path: .github/stable/
+          merge-multiple: true
+
+      - run: ls -rlt .github/stable/
 
       - name: Determine if changes have been made
         id: changed
