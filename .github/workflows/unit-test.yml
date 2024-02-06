@@ -137,13 +137,13 @@ jobs:
         if: steps.continue.outputs.confirm == 'true'
         uses: ./.github/workflows/install_deps
         with:
-          python_version: inputs.python_version
-          install_pytorch: inputs.install_pytorch
-          install_tensorflow: inputs.install_tensorflow
-          install_jax: inputs.install_jax
-          additional_pip_packages: inputs.additional_pip_packages
-          install_pennylane_lightning_master: inputs.install_pennylane_lightning_master
-          requirements_file: inputs.requirements_file
+          python_version: ${{ inputs.python_version }}
+          install_pytorch: ${{ inputs.install_pytorch }}
+          install_tensorflow: ${{ inputs.install_tensorflow }}
+          install_jax: ${{ inputs.install_jax }}
+          additional_pip_packages: ${{ inputs.additional_pip_packages }}
+          install_pennylane_lightning_master: ${{ inputs.install_pennylane_lightning_master }}
+          requirements_file: ${{ inputs.requirements_file }}
 
       - name: Set PyTest Args
         if: steps.continue.outputs.confirm == 'true'
