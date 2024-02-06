@@ -35,11 +35,6 @@ from pennylane.pauli import PauliSentence, PauliWord
 #     """
 #     return None
 
-
-def _are_proportional(ps1, ps2):
-    """Check if two pauli sentences are proportional to each other"""
-
-
 class VSpace:
     """
     Class representing the linearly independent basis of a vector space.

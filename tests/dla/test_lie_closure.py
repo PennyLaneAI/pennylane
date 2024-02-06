@@ -28,7 +28,7 @@ ops1 = [
     ),
     PauliSentence(
         {
-            PauliWord({0: "Y", 1: "Y"}): 1.0,
+            PauliWord({0: "Y", 1: "Y"}): 2.0,
         }
     ),
 ]
