@@ -250,5 +250,5 @@ jobs:
           path: ${{ github.workspace }}/benchmark_results
 
       - name: Commit stable dependency changes
-        if: github.event_name == 'pull_request' && inputs.requirements_file != '' && strategy.job-index == 0
+        if: github.event_name == 'pull_request' && inputs.requirements_file != ''
         run: pip freeze | grep -v "file:///"
