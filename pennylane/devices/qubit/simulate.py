@@ -29,7 +29,6 @@ from pennylane.measurements import (
     SampleMP,
     VarianceMP,
 )
-from pennylane.ops import Conditional
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
@@ -137,10 +136,6 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
-        if isinstance(op, Conditional):
-            if not mid_measurements[op.meas_val.measurements[0]]:
-                continue
-            op = op.then_op
         state = apply_operation(
             op,
             state,

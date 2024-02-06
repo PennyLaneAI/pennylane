@@ -22,6 +22,7 @@ import pennylane as qml
 
 from pennylane import math
 from pennylane.measurements import MidMeasureMP
+from pennylane.ops import Conditional
 
 SQRT2INV = 1 / math.sqrt(2)
 
@@ -212,6 +213,33 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
     ) or (op.batch_size and is_state_batched):
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+
+@apply_operation.register
+def apply_conditional(
+    op: Conditional, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
+    """Applies a conditional operation.
+
+    Args:
+        op (Operator): The operation to apply to ``state``
+        state (TensorLike): The starting state.
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+        debugger (_Debugger): The debugger to use
+        mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+
+    Returns:
+        ndarray: output state
+    """
+    if mid_measurements[op.meas_val.measurements[0]]:
+        return apply_operation(
+            op.then_op,
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+            mid_measurements=mid_measurements,
+        )
+    return state
 
 
 @apply_operation.register
