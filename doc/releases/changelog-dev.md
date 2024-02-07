@@ -336,6 +336,9 @@
 * The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
   [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
 
+* Fixes a queuing bug when using `qml.prod` with a qfunc that queues a single operator.
+  [(#5170)](https://github.com/PennyLaneAI/pennylane/pull/5170)
+
 * The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
 
