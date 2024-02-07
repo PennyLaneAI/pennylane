@@ -401,7 +401,7 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
         elif isinstance(m, SampleMP):
             new_shot_meas[i].append(one_shot_meas[i])
         else:
-            raise TypeError(f"Unsupported measurement of {type(m)}.")
+            raise TypeError(f"Unsupported measurement of {type(m).__name__}.")
     return new_shot_meas
 
 
