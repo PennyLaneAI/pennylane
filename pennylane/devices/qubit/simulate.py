@@ -15,7 +15,7 @@
 # pylint: disable=protected-access
 from collections import Counter
 from functools import singledispatch
-from typing import Optional, Sequence
+from typing import Optional
 
 from numpy.random import default_rng
 import numpy as np
