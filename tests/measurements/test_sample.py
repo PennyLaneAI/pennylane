@@ -178,8 +178,9 @@ class TestSample:
     def test_observable_is_composite_measurement_value(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a composite measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", shots=shots)
 
+        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -201,8 +202,9 @@ class TestSample:
     def test_observable_is_measurement_value_list(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a measurement value list."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", shots=shots)
 
+        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)

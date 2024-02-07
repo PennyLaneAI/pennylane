@@ -77,7 +77,7 @@ def reshape_state_as_matrix(state, num_wires):
         num_wires (int): The number of wires the state represents
 
     Returns:
-        Tensorlike: A squared state, with an extra batch dimension if necessary
+        Tensorlike: A reshaped, square state, with an extra batch dimension if necessary
     """
     dim = QUDIT_DIM**num_wires
     batch_size = math.get_batch_size(state, ((QUDIT_DIM,) * (num_wires * 2)), dim**2)
@@ -89,7 +89,7 @@ def get_num_wires(state, is_state_batched: bool = False):
     """Finds the number of wires associated with a state
 
     Args:
-        state (TensorLike): A state that needs flattening
+        state (TensorLike): A device compatible state that may or may not be batched
         is_state_batched (int): Boolean representing whether the state is batched or not
 
     Returns:

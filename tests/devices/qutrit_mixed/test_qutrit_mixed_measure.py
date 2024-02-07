@@ -58,6 +58,14 @@ def get_expval(op, state):
     return np.trace(op_mult_state)
 
 
+def test_probs_with_negative_on_diagonal():
+    """Test that if there is a negative on diagonal it is clipped to 0"""
+    state = np.array([[1 - 1e-4 + 0j, 0, 0], [0, -1e-4, 0], [0, 0, 1e-4]])
+    probs = measure(qml.probs(), state)
+    expected_probs = np.array([1 - 1e-4, 0, 1e-4])
+    assert np.allclose(probs, expected_probs)
+
+
 @pytest.mark.parametrize(
     "mp", [qml.sample(), qml.counts(), qml.sample(wires=0), qml.counts(wires=0)]
 )
@@ -79,7 +87,7 @@ class TestMeasurementDispatch:
         assert get_measurement_function(mp1) is calculate_reduced_density_matrix
 
     def test_prod_calculate_expval_method(self):
-        """Test that the expectation value of a product uses the trace method."""
+        """Test that the expectation value of a product uses the calculate expval method."""
         prod = qml.prod(*(qml.GellMann(i, 1) for i in range(8)))
         assert get_measurement_function(qml.expval(prod)) is calculate_expval
 
@@ -121,7 +129,7 @@ class TestMeasurementDispatch:
 )
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestApplyObservableEinsum:
-    """Tests that observables are applied correctly for trace method."""
+    """Tests that observables are applied correctly for calculate expval method."""
 
     num_qutrits = 3
     dims = (3**num_qutrits, 3**num_qutrits)
@@ -210,7 +218,7 @@ class TestMeasurements:
         ],
     )
     def test_hermitian_expval(self, observable, two_qutrit_state):
-        """Test that measurements of ternary hermitian work correctly."""
+        """Test that measurements of qutrit hermitian work correctly."""
         res = measure(qml.expval(observable), two_qutrit_state)
         expected = get_expval(observable, two_qutrit_state)
 
