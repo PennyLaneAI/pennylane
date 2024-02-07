@@ -28,7 +28,7 @@ __plugin_devices = (
 plugin_converters = {entry.name: entry for entry in __plugin_devices}
 
 
-def load(quantum_circuit_object, format: str):
+def load(quantum_circuit_object, format: str, **load_kwargs):
     """Load external quantum assembly and quantum circuits from supported frameworks
     into PennyLane templates.
 
@@ -58,6 +58,13 @@ def load(quantum_circuit_object, format: str):
         quantum_circuit_object: the quantum circuit that will be converted
             to a PennyLane template
         format (str): the format of the quantum circuit object to convert from
+        **load_kwargs: keyword argument to pass when converting the quantum circuit
+            using the plugin
+
+    Keyword Args:
+        measurements (list[MeasurementProcess]): the list of PennyLane measurements that
+        overrides the terminal measurements that may be present in the imput circuit.
+        Currently, only supported for Qiskit's `QuantumCircuit <https://docs.pennylane.ai/projects/qiskit>`_.
 
     Returns:
         function: the PennyLane template created from the quantum circuit
@@ -69,7 +76,7 @@ def load(quantum_circuit_object, format: str):
         plugin_converter = plugin_converters[format].load()
 
         # calls the load function of the converter on the quantum circuit object
-        return plugin_converter(quantum_circuit_object)
+        return plugin_converter(quantum_circuit_object, **(load_kwargs or {}))
 
     raise ValueError(
         "Converter does not exist. Make sure the required plugin is installed "
@@ -77,7 +84,7 @@ def load(quantum_circuit_object, format: str):
     )
 
 
-def from_qiskit(quantum_circuit):
+def from_qiskit(quantum_circuit, measurements=None):
     """Loads Qiskit QuantumCircuit objects by using the converter in the
     PennyLane-Qiskit plugin.
 
@@ -104,7 +111,7 @@ def from_qiskit(quantum_circuit):
         function: the PennyLane template created based on the QuantumCircuit
         object
     """
-    return load(quantum_circuit, format="qiskit")
+    return load(quantum_circuit, format="qiskit", measurements=measurements)
 
 
 def from_qasm(quantum_circuit: str):
