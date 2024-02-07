@@ -726,6 +726,20 @@ class TestMatrix:
         assert np.allclose(qml.GlobalPhase.compute_matrix(phi), expected, atol=tol, rtol=0)
         assert np.allclose(qml.GlobalPhase(phi).matrix(wire_order=[0]), expected, atol=tol, rtol=0)
 
+    def test_identity(self, tol):
+        """Test Identity matrix is correct with no wires"""
+
+        # test Identity().compute_matrix()
+        assert np.allclose(qml.Identity().compute_matrix(1), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(qml.Identity().compute_matrix(2), np.identity(4), atol=tol, rtol=0)
+
+        # test Identity().matrix()
+        assert np.allclose(qml.Identity().matrix(), np.identity(1), atol=tol, rtol=0)
+        assert np.allclose(qml.Identity().matrix(wire_order=[0]), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.Identity().matrix(wire_order=[0, "a"]), np.identity(4), atol=tol, rtol=0
+        )
+
     def test_rx(self, tol):
         """Test x rotation is correct"""
 
