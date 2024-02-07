@@ -539,7 +539,7 @@ class PauliSentence(dict):
     .. note::
 
         An empty :class:`~.PauliSentence` will be treated as the additive
-        identity (i.e 0 * Identity on all wires).
+        identity (i.e ``0 * Identity()``).
 
     **Examples**
 
