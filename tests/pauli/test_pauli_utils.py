@@ -956,6 +956,16 @@ class TestMeasurementTransformations:
 
         assert pytest.raises(ValueError, diagonalize_qwc_pauli_words, not_qwc_grouping)
 
+    def test_diagonalize_qwc_pauli_words_catch_invalid_type(self):
+        """Test for ValueError raise when diagonalize_qwc_pauli_words is given a list
+        containing invalid operator types."""
+        invalid_ops = [qml.PauliX(0), qml.Hamiltonian([1.0], [qml.PauliZ(1)])]
+
+        with pytest.raises(
+            ValueError, match="This function only supports Tensor products of pauli ops"
+        ):
+            _ = diagonalize_qwc_pauli_words(invalid_ops)
+
 
 class TestObservableHF:
     @pytest.mark.parametrize(
