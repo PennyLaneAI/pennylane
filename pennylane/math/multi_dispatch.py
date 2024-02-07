@@ -870,7 +870,7 @@ def norm(tensor, like=None, **kwargs):
     return norm(tensor, **kwargs)
 
 
-@multi_dispatch()
+@multi_dispatch(argnum=[0])
 def svd(tensor, like=None, **kwargs):
     """Compute the singular value decomposition of a tensor in each interface.
     For a matrix A, the singular value decomposition consist of three matrices U, S and Vh, such that:
@@ -887,9 +887,11 @@ def svd(tensor, like=None, **kwargs):
     if like == "tensorflow":
         from tensorflow.linalg import svd, adjoint
 
-        # Tensorflow results need some pos-processing to keep it similar to other frameworks
-        S, U, V = svd(tensor, **kwargs)
-        return U, S, adjoint(V)
+        # Tensorflow results need some pos-processing to keep it similar to other frameworks.
+        if kwargs.get("compute_uv", True):
+            S, U, V = svd(tensor, **kwargs)
+            return U, S, adjoint(V)
+        return svd(tensor, **kwargs)
 
     if like == "jax":
         from jax.numpy.linalg import svd
@@ -898,7 +900,7 @@ def svd(tensor, like=None, **kwargs):
         # Torch is deprecating torch.svd() in favor of torch.linalg.svd().
         # The new UI is slightly different and breaks the logic for the multi dispatching.
         # This small workaround restores the compute_uv control argument.
-        if kwargs.get("compute_uv", False) is False:
+        if kwargs.get("compute_uv", True) is False:
             from torch.linalg import svdvals as svd
         else:
             from torch.linalg import svd
