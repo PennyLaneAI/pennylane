@@ -275,6 +275,16 @@ class MidMeasureMP(MeasurementProcess):
 
         return hash(fingerprint)
 
+    @property
+    def data(self):
+        """The data of the measurement. Needed to match the Operator API."""
+        return []
+
+    @property
+    def name(self):
+        """The name of the measurement. Needed to match the Operator API."""
+        return "MidMeasureMP"
+
 
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
@@ -392,7 +402,7 @@ class MeasurementValue(Generic[T]):
 
     def concretize(self, measurements: dict):
         """Returns a concrete value from a dictionary of hashes with concrete values."""
-        values = tuple(measurements[meas.hash] for meas in self.measurements)
+        values = tuple(measurements[meas] for meas in self.measurements)
         return self.processing_fn(*values)
 
     def _merge(self, other: "MeasurementValue"):

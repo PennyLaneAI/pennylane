@@ -951,16 +951,16 @@ class TestIntegration:
         assert np.allclose(r1, r2)
         assert spy.call_count == 0
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def cry_qnode_deferred(x):
             """QNode where we apply a controlled Y-rotation."""
             qml.BasisStatePreparation(basis_state, wires=[0, 1])
             qml.CRY(x, wires=[0, 1])
             return qml.sample(qml.PauliZ(1))
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def conditional_ry_qnode_deferred(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""

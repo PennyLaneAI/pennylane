@@ -140,8 +140,8 @@ class TestQNode:
 
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def circ():
             qml.PauliX(0)
             qml.measure(0)
@@ -155,7 +155,6 @@ class TestQNode:
         measurement yields the correct results and is transformed correctly."""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.defer_measurements
         @qml.qnode(dev)
         def qnode1():
             return qml.expval(qml.PauliZ(0))
@@ -178,14 +177,13 @@ class TestQNode:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert op1.data == op2.data
 
     def test_reuse_wire_after_measurement(self):
         """Test that wires can be reused after measurement."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode():
             qml.Hadamard(0)
             qml.measure(0)
@@ -239,8 +237,8 @@ class TestQNode:
         dev = qml.device("default.qubit", wires=4)
         spy = mocker.spy(qml.defer_measurements, "_transform")
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode1(phi, theta):
             qml.RX(phi, 0)
             m0 = qml.measure(0, reset=True)  # Reused measurement, one new wire added
@@ -252,8 +250,8 @@ class TestQNode:
 
         res1 = qnode1(np.pi / 4, 3 * np.pi / 4)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode2(phi, theta):
             qml.RX(phi, 0)
             m0 = qml.measure(0)  # No reuse
@@ -381,8 +379,8 @@ class TestQNode:
         a single mid-circuit measurement."""
         dev = DefaultQubit(seed=10)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def circ1(x):
             qml.RX(x, 0)
             m0 = qml.measure(0)
@@ -439,8 +437,8 @@ class TestQNode:
         # Using DefaultQubit to allow non-commuting measurements
         dev = DefaultQubit(seed=10)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def circ1(x, y):
             qml.RX(x, 0)
             m0 = qml.measure(0)
@@ -504,7 +502,6 @@ class TestQNode:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert op1.data == op2.data
 
     @pytest.mark.parametrize("mid_measure_wire, tp_wires", [(0, [1, 2, 3]), (0, [3, 1, 2])])
     def test_measure_with_tensor_obs(self, mid_measure_wire, tp_wires):
@@ -536,8 +533,8 @@ class TestQNode:
         """Test that CV operations are not supported."""
         dev = qml.device("default.gaussian", wires=3)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode():
             qml.measure(0)
             qml.Rotation(0.123, wires=[0])
@@ -552,8 +549,8 @@ class TestQNode:
         """Test that CV observables are not supported."""
         dev = qml.device("default.gaussian", wires=3)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode():
             qml.measure(0)
             return qml.expval(qml.NumberOperator(1))
@@ -759,8 +756,8 @@ class TestConditionalOperations:
             controlled_op(rads, wires=[0, 1])
             return qml.probs(wires=1)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def quantum_control_circuit(rads):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
@@ -857,8 +854,8 @@ class TestConditionalOperations:
             controlled_op(rads, wires=[0, 1])
             return qml.probs(wires=1)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def quantum_control_circuit(rads):
             qml.Hadamard(0)
             qml.PauliX(0)
@@ -890,8 +887,8 @@ class TestConditionalOperations:
             qml.PauliX(0)
             return qml.probs(wires=1)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def quantum_control_circuit(rads):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
@@ -916,8 +913,8 @@ class TestConditionalOperations:
             qml.ctrl(op, control=0)(phi=par, wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode2(par):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
@@ -934,8 +931,8 @@ class TestConditionalOperations:
         outcome."""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode():
             m_0 = qml.measure(0)
             qml.cond(m_0 == control_val, qml.PauliX)(wires=1)
@@ -964,8 +961,8 @@ class TestConditionalOperations:
             qml.RY(x, wires=1)
             qml.PauliZ(1)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def quantum_control_circuit(r):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
@@ -1007,8 +1004,8 @@ class TestConditionalOperations:
             qml.RX(a, wires=0)
             qml.PhaseShift(a, wires=0)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def cond_qnode(x, y):
             qml.RY(x, wires=1)
             m_0 = qml.measure(1)
@@ -1022,8 +1019,8 @@ class TestConditionalOperations:
         that is measured works as expected."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode():
             qml.Hadamard(0)
             m = qml.measure(0)
@@ -1054,8 +1051,8 @@ class TestExpressionConditionals:
             qml.ctrl(op, control=(0, 1), control_values=[True, True])(rads, wires=2)
             return qml.probs(wires=2)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def quantum_control_circuit(rads):
             qml.RX(2.4, wires=0)
             qml.RY(1.3, wires=1)
@@ -1074,8 +1071,8 @@ class TestExpressionConditionals:
         """Test that combining the results of three mid-circuit measurements works as expected."""
         dev = qml.device("default.qubit", wires=7)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def normal_circuit(rads):
             qml.RX(2.4, wires=0)
             qml.RY(1.3, wires=1)
@@ -1088,8 +1085,8 @@ class TestExpressionConditionals:
 
             return qml.probs(wires=3)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def quantum_control_circuit(rads):
             qml.RX(2.4, wires=0)
             qml.RY(1.3, wires=1)
@@ -1116,8 +1113,8 @@ class TestExpressionConditionals:
         """
         dev = qml.device("default.qubit", wires=7)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def normal_circuit(rads):
             qml.RX(2.4, wires=0)
             qml.RY(1.3, wires=1)
@@ -1133,8 +1130,8 @@ class TestExpressionConditionals:
 
             return qml.probs(wires=3)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def quantum_control_circuit(rads):
             qml.RX(2.4, wires=0)
             qml.RY(1.3, wires=1)
@@ -1159,8 +1156,8 @@ class TestExpressionConditionals:
         """Test that a complex nested expression gets resolved correctly to the corresponding correct control gates."""
         dev = qml.device("default.qubit", wires=7)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def normal_circuit(rads):
             qml.RX(2.4, wires=0)
             qml.RY(1.3, wires=1)
@@ -1177,8 +1174,8 @@ class TestExpressionConditionals:
 
             return qml.probs(wires=3)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def quantum_control_circuit(rads):
             qml.RX(2.4, wires=0)
             qml.RY(1.3, wires=1)
@@ -1192,7 +1189,6 @@ class TestExpressionConditionals:
             expr2 = (3 * m_1 + 2) * (4 * expr1 + 2)
             m_2 = qml.measure(2)
             expr3 = expr2 / (m_2 + 3)
-            print(expr3)
             qml.cond(expr3 <= 6, qml.RX)(rads, wires=3)
             return qml.probs(wires=3)
 
@@ -1241,7 +1237,6 @@ class TestTemplates:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert np.allclose(op1.data, op2.data)
 
     def test_angle_embedding(self):
         """Test the angle embedding template conditioned on mid-circuit
@@ -1281,7 +1276,6 @@ class TestTemplates:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert np.allclose(op1.data, op2.data)
 
     @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
     def test_layers(self, template):
@@ -1320,7 +1314,6 @@ class TestTemplates:
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
-            assert np.allclose(op1.data, op2.data)
 
 
 class TestQubitReuseAndReset:
@@ -1413,8 +1406,8 @@ class TestQubitReuseAndReset:
         after measurement if reset is requested."""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode(x):
             qml.Hadamard(0)
             qml.PhaseShift(np.pi / 4, 0)

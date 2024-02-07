@@ -465,10 +465,11 @@ class TestSimplify:
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
         pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
-        final_op = ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3)
+        final_op = qml.CH([1, 0], id=3)
         simplified_op = pow_op.simplify()
 
-        assert isinstance(simplified_op, ControlledOp)
+        # TODO: uncomment this check when all controlled operations inherit from ControlledOp
+        # assert isinstance(simplified_op, ControlledOp)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -488,7 +489,7 @@ class TestMiscMethods:
 
     def test_repr(self):
         op = Pow(qml.PauliX(0), 2.5)
-        assert repr(op) == "PauliX(wires=[0])**2.5"
+        assert repr(op) == "X(0)**2.5"
 
         base = qml.RX(1, 0) + qml.S(1)
         op = Pow(base, 2.5)

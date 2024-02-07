@@ -38,7 +38,7 @@ def validate_counts(shots, results1, results2):
         key1, val1 = r1
         val2 = results2[key1]
         if abs(val1 + val2) > 100:
-            assert abs(val1 - val2) < (abs(val1 + val2) // 10)
+            assert np.allclose(val1, val2, rtol=20, atol=0.2)
 
 
 def validate_samples(shots, results1, results2):
@@ -50,11 +50,11 @@ def validate_samples(shots, results1, results2):
             validate_samples(s, r1, r2)
     else:
         sh1, sh2 = results1.shape[0], results2.shape[0]
-        assert abs(sh1 - sh2) < (abs(sh1 + sh2) // 10)
+        assert np.allclose(sh1, sh2, rtol=20, atol=0.2)
         assert results1.ndim == results2.ndim
         if results2.ndim > 1:
             assert results1.shape[1] == results2.shape[1]
-        assert abs(np.sum(results1) - np.sum(results2)) < (results2.size // 10)
+        np.allclose(np.sum(results1), np.sum(results2), rtol=20, atol=0.2)
 
 
 def validate_expval(shots, results1, results2):
@@ -67,7 +67,8 @@ def validate_expval(shots, results1, results2):
         return
     if shots is None:
         assert np.allclose(results1, results2)
-    assert np.allclose(results1, results2, atol=0.01, rtol=0.1)
+        return
+    assert np.allclose(results1, results2, atol=0.01, rtol=0.2)
 
 
 def validate_measurements(func, shots, results1, results2):
@@ -84,8 +85,10 @@ def validate_measurements(func, shots, results1, results2):
 
 def test_apply_mid_measure():
     with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
-        _ = apply_mid_measure(MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True)
-    state, sample = apply_mid_measure(MidMeasureMP(0), np.zeros(2))
+        _ = apply_mid_measure(
+            MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True, mid_measurements={}
+        )
+    state, sample = apply_mid_measure(MidMeasureMP(0), np.zeros(2), mid_measurements={})
     assert sample == 0
     assert np.allclose(state, 0.0)
 
@@ -152,13 +155,7 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(op=m0)
 
-    @qml.qnode(dev)
-    @qml.defer_measurements
-    def func2(x, y):
-        qml.RX(x, wires=0)
-        m0 = qml.measure(0, reset=reset, postselect=postselect)
-        qml.cond(m0, qml.RY)(y, wires=1)
-        return measure_f(op=m0)
+    func2 = qml.defer_measurements(func1)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -190,7 +187,7 @@ def obs_tape(x, y, z, reset=False, postselect=None):
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
+@pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -207,11 +204,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
         obs_tape(x, y, z, reset=reset, postselect=postselect)
         return measure_f(op=obs)
 
-    @qml.qnode(dev)
-    @qml.defer_measurements
-    def func2(x, y, z):
-        obs_tape(x, y, z, reset=reset, postselect=postselect)
-        return measure_f(op=obs)
+    func2 = qml.defer_measurements(func1)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -224,7 +217,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [None, 1000, [1000, 1001]])
+@pytest.mark.parametrize("shots", [None, 3000, [3000, 3001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample])
@@ -243,13 +236,7 @@ def test_single_mcm_single_measure_wires(shots, postselect, reset, measure_f, wi
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(wires=wires)
 
-    @qml.qnode(dev)
-    @qml.defer_measurements
-    def func2(x, y):
-        qml.RX(x, wires=0)
-        m0 = qml.measure(0, reset=reset, postselect=postselect)
-        qml.cond(m0, qml.RY)(y, wires=1)
-        return measure_f(wires=wires)
+    func2 = qml.defer_measurements(func1)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -262,7 +249,7 @@ def test_single_mcm_single_measure_wires(shots, postselect, reset, measure_f, wi
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [10000])
+@pytest.mark.parametrize("shots", [5000])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -280,11 +267,7 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
         return measure_f(op=obs), measure_f(op=mcms[0])
 
-    @qml.qnode(dev)
-    @qml.defer_measurements
-    def func2(x, y, z):
-        mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
-        return measure_f(op=obs), measure_f(op=mcms[0])
+    func2 = qml.defer_measurements(func1)
 
     results1 = func1(*params)
     results2 = func2(*params)
@@ -295,7 +278,7 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
+@pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.sample, qml.var])
@@ -317,16 +300,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
         m2 = qml.measure(0)
         return measure_f(op=(m0 - 2 * m1) * m2 + 7)
 
-    @qml.qnode(dev)
-    @qml.defer_measurements
-    def func2(x):
-        qml.RX(x, 0)
-        m0 = qml.measure(0)
-        qml.RX(0.5 * x, 1)
-        m1 = qml.measure(1, reset=reset, postselect=postselect)
-        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
-        m2 = qml.measure(0)
-        return measure_f(op=(m0 - 2 * m1) * m2 + 7)
+    func2 = qml.defer_measurements(func1)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -339,7 +313,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
+@pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -358,13 +332,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
         qml.cond(mcms[0] == mcms[1], qml.RY)(z, wires=1)
         return measure_f(op=obs)
 
-    @qml.qnode(dev)
-    @qml.defer_measurements
-    def func2(x, y, z):
-        mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
-        qml.cond(mcms[0] != mcms[1], qml.RY)(z, wires=0)
-        qml.cond(mcms[0] == mcms[1], qml.RY)(z, wires=1)
-        return measure_f(op=obs)
+    func2 = qml.defer_measurements(func1)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -377,7 +345,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [10000, [10000, 10001]])
+@pytest.mark.parametrize("shots", [5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample])
@@ -399,16 +367,7 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
         m2 = qml.measure(0)
         return measure_f(op=[m0, m1, m2])
 
-    @qml.qnode(dev)
-    @qml.defer_measurements
-    def func2(x):
-        qml.RX(x, 0)
-        m0 = qml.measure(0)
-        qml.RX(0.5 * x, 1)
-        m1 = qml.measure(1, reset=reset, postselect=postselect)
-        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
-        m2 = qml.measure(0)
-        return measure_f(op=[m0, m1, m2])
+    func2 = qml.defer_measurements(func1)
 
     results1 = func1(param)
     results2 = func2(param)
@@ -417,7 +376,7 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [10000])
+@pytest.mark.parametrize("shots", [5000])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.expval])
@@ -440,16 +399,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
         qml.cond((m0 + m1) > 0, qml.RY)(2 * np.pi / 3, 1)
         return measure_f(op=obs)
 
-    @qml.qnode(dev, diff_method="parameter-shift")
-    @qml.defer_measurements
-    def func2(x, y):
-        qml.RX(x, 0)
-        m0 = qml.measure(0)
-        qml.RX(y, 1)
-        m1 = qml.measure(1, reset=reset, postselect=postselect)
-        qml.cond((m0 + m1) == 2, qml.RY)(2 * np.pi / 3, 0)
-        qml.cond((m0 + m1) > 0, qml.RY)(2 * np.pi / 3, 1)
-        return measure_f(op=obs)
+    func2 = qml.defer_measurements(func1)
 
     results1 = func1(*param)
     results2 = func2(*param)

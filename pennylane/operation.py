@@ -1043,6 +1043,7 @@ class Operator(abc.ABC):
 
     def __init__(self, *params, wires=None, id=None):
         # pylint: disable=too-many-branches
+
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
@@ -1077,7 +1078,10 @@ class Operator(abc.ABC):
         # check that the number of wires given corresponds to required number
         if self.num_wires in {AllWires, AnyWires}:
             if (
-                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase))
+                not isinstance(
+                    self,
+                    (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase, qml.Identity),
+                )
                 and len(qml.wires.Wires(wires)) == 0
             ):
                 raise ValueError(
@@ -3033,7 +3037,9 @@ def convert_to_opmath(op):
         Operator: An operator using the new arithmetic operations, if relevant
     """
     if isinstance(op, qml.Hamiltonian):
-        return qml.dot(*op.terms())
+        c, ops = op.terms()
+        ops = tuple(convert_to_opmath(o) for o in ops)
+        return qml.dot(c, ops)
     if isinstance(op, Tensor):
         return qml.prod(*op.obs)
     return op

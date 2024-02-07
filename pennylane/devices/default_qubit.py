@@ -460,10 +460,9 @@ class DefaultQubit(Device):
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(mid_circuit_measurements, device=self)
-        stop_cond = stopping_condition if not self.shots else stopping_condition_shots
         transform_program.add_transform(
             decompose,
-            stopping_condition=stop_cond,
+            stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
@@ -922,21 +921,21 @@ class DefaultQubit(Device):
 
 
 def _adjoint_jac_wrapper(c, rng=None, prng_key=None, debugger=None):
-    state, is_state_batched, _ = get_final_state(c, debugger=debugger)
+    state, is_state_batched = get_final_state(c, debugger=debugger)
     jac = adjoint_jacobian(c, state=state)
     res = measure_final_state(c, state, is_state_batched, rng=rng, prng_key=prng_key)
     return res, jac
 
 
 def _adjoint_jvp_wrapper(c, t, rng=None, prng_key=None, debugger=None):
-    state, is_state_batched, _ = get_final_state(c, debugger=debugger)
+    state, is_state_batched = get_final_state(c, debugger=debugger)
     jvp = adjoint_jvp(c, t, state=state)
     res = measure_final_state(c, state, is_state_batched, rng=rng, prng_key=prng_key)
     return res, jvp
 
 
 def _adjoint_vjp_wrapper(c, t, rng=None, prng_key=None, debugger=None):
-    state, is_state_batched, _ = get_final_state(c, debugger=debugger)
+    state, is_state_batched = get_final_state(c, debugger=debugger)
     vjp = adjoint_vjp(c, t, state=state)
     res = measure_final_state(c, state, is_state_batched, rng=rng, prng_key=prng_key)
     return res, vjp
