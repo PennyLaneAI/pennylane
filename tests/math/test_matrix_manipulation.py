@@ -23,11 +23,6 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import numpy as pnp
 
-# Import interfaces
-tf = pytest.importorskip("tensorflow")
-torch = pytest.importorskip("torch")
-jax = pytest.importorskip("jax")
-
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
 
@@ -210,7 +205,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_torch(self, i, base_matrix, tol):
+    def test_torch(self, i, base_matrix, tol, torch):
         """Tests differentiation in torch by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
 
@@ -227,7 +222,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_jax(self, i, base_matrix, tol):
+    def test_jax(self, i, base_matrix, tol, jax):
         """Tests differentiation in jax by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
 
@@ -245,7 +240,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_tf(self, i, base_matrix, tol):
+    def test_tf(self, i, base_matrix, tol, tf):
         """Tests differentiation in TensorFlow by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
 
