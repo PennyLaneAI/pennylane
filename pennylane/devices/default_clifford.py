@@ -141,13 +141,11 @@ def _convert_op_to_linear_comb(meas_op):
             f"default.clifford doesn't support expectation value calculation with {type(meas_op).__name__} at the moment."
         )
 
-    coeffs, ops = meas_rep.hamiltonian(wire_order=meas_obs.wires).terms()
-
-    # Build the Pauli representation for stim
-    paulis = []
-    for op in ops:
-        op_names = op.name if isinstance(op, qml.operation.Tensor) else [op.name]
-        paulis.append(("".join([_GATE_OPERATIONS[name] for name in op_names]), op.wires))
+    coeffs = np.array(list(meas_rep.values()))
+    paulis = [
+        ("".join(pw.values()), list(pw.keys())) if pw.values() else ("I", meas_obs.wires[:1])
+        for pw in meas_rep
+    ]
 
     return coeffs, paulis
 
@@ -256,8 +254,10 @@ class DefaultClifford(Device):
         :href: clifford-probabilities
 
         As the ``default.clifford`` device supports executing quantum circuits with a large number of qubits,
-        we restrict the ability to compute the ``analytical`` probabilities for `all` computational basis
-        states at once to maintain computational efficiency when system size scales beyond ``20`` qubits.
+        the ability to compute the ``analytical`` probabilities for ``all`` computational basis states at
+        once becomes computationally expensive and challenging as the system size increases. While we don't
+        manually restrict users from doing so for any circuit, one can expect the underlying computation
+        to reach its limit with ``20-24`` qubits on a typical consumer grade machine.
 
         As long as number of qubits are below this limit, one can simply use the :func:`qml.probs <pennylane.probs>`
         with its usual arguments and probabilities for the specified target states would be computed and returned.
@@ -282,8 +282,8 @@ class DefaultClifford(Device):
         >>> circuit()
         tensor([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5], requires_grad=True)
 
-        Once above the limit, one can use :mod:`qml.expval <pennylane.expval>` compute the expectation value of a
-        single target ``basis state`` with the :mod:`qml.Projector <pennylane.Projector>`.
+        Once above the limit, one can use :mod:`qml.expval <pennylane.expval>` compute the expectation value
+        of a single target ``basis state`` with the :mod:`qml.Projector <pennylane.Projector>`.
 
         .. code-block:: python
 
@@ -302,12 +302,6 @@ class DefaultClifford(Device):
         tensor(0.0, requires_grad=True)
         >>> circuit(basis_states[2])
         tensor(0.0, requires_grad=True)
-
-        .. note::
-
-            If there's a mismatch in the number of ``wires`` for the provided target state(s) and
-            the observable, then the `marginal` probabilities will be returned for the computational
-            basis states for the subspace built using the minimum number of wires among the two.
 
     .. details::
         :title: Tracking
@@ -844,15 +838,8 @@ class DefaultClifford(Device):
         mobs_wires = meas.obs.wires if meas.obs else meas.wires
         meas_wires = mobs_wires if mobs_wires else circuit.wires
 
-        if len(meas_wires) > 20 and tgt_states is None and self._tableau:
-            raise ValueError(
-                "In order to maintain computational efficiency, \
-                with ``tableau=True``, the clifford device supports \
-                returning probability only for selected target \
-                computational basis states made of more than 20 qubits. \
-                Please use the `probability_target` property to set them."
-            )
-
+        # Build the complete computational basis,
+        # this will be expensive for larger circuits (> 24 qubits onwards)
         if tgt_states is None:
             num_wires = len(meas_wires)
             basis_vec = np.arange(2**num_wires)[:, np.newaxis]

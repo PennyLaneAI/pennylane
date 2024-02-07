@@ -266,19 +266,6 @@ def test_meas_probs_large():
 
     dev_c = qml.device("default.clifford", seed=24)
 
-    def circuit_fn():
-        for wire in range(30):
-            qml.PauliX(wire)
-            qml.PauliY(wire)
-            qml.PauliZ(wire)
-        return qml.probs(wires=range(25))
-
-    with pytest.raises(
-        ValueError,
-        match="In order to maintain computational efficiency,",
-    ):
-        qml.QNode(circuit_fn, dev_c)()
-
     def circuit_fn1():
         for wire in range(30):
             qml.PauliX(wire)
