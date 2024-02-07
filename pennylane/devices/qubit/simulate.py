@@ -14,8 +14,7 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from collections import Counter
-from functools import singledispatch
-from typing import Optional
+from typing import Optional, Sequence
 
 from numpy.random import default_rng
 import numpy as np
