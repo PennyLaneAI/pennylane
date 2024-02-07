@@ -63,8 +63,8 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
 
     Keyword Args:
         measurements (list[MeasurementProcess]): the list of PennyLane measurements that
-        overrides the terminal measurements that may be present in the imput circuit.
-        Currently, only supported for Qiskit's `QuantumCircuit <https://docs.pennylane.ai/projects/qiskit>`_.
+            overrides the terminal measurements that may be present in the imput circuit.
+            Currently, only supported for Qiskit's `QuantumCircuit <https://docs.pennylane.ai/projects/qiskit>`_.
 
     Returns:
         function: the PennyLane template created from the quantum circuit
