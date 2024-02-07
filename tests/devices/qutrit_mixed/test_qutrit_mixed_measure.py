@@ -58,6 +58,14 @@ def get_expval(op, state):
     return np.trace(op_mult_state)
 
 
+def test_probs_with_negative_on_diagonal():
+    """Test that if there is a negative on diagonal it is clipped to 0"""
+    state = np.array([[1 - 1e-4 + 0j, 0, 0], [0, -1e-4, 0], [0, 0, 1e-4]])
+    probs = measure(qml.probs(), state)
+    expected_probs = np.array([1 - 1e-4, 0, 1e-4])
+    assert np.allclose(probs, expected_probs)
+
+
 @pytest.mark.parametrize(
     "mp", [qml.sample(), qml.counts(), qml.sample(wires=0), qml.counts(wires=0)]
 )
