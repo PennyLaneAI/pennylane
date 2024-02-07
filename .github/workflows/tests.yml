@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEPS_BRANCH: stable_deps_${{ github.sha }}
+  DEPS_BRANCH: bot/stable-deps-update
 
 jobs:
   tests:
@@ -34,6 +34,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-tags: true
+          sparse-checkout: .github
+
+      - name: Prepare local repo
+        run: |
+          if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
+            git checkout "${{ env.DEPS_BRANCH }}"
+            git rebase master
+          else
+            git checkout master
+            git checkout -b "${{ env.DEPS_BRANCH }}"
+          fi
+          rm -f .github/stable/*.txt
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -50,9 +64,6 @@ jobs:
       - name: Stage changes
         if: steps.changed.outputs.has_changes != '0'
         run: |
-          git fetch
-          git checkout master
-          git checkout -b "${{ env.DEPS_BRANCH }}"
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git add .github/stable/
