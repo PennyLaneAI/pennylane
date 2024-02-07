@@ -483,7 +483,7 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
         new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
     else:
         raise ValueError(
-            f"Native mid-circuit measurement mode does not support {type(circuit_measurement)} measurements."
+            f"Native mid-circuit measurement mode does not support {type(circuit_measurement).__name__} measurements."
         )
     return new_meas
 
