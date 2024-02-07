@@ -6,6 +6,16 @@
 
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
+* The `default.qubit` device treats mid-circuit measurements natively when operating in
+  shots-mode (i.e. `shots is not None`). Previously, circuits with mid-circuit measurements
+  would be decomposed using the `@qml.defer_measurements` transform (which is still a valid
+  decorator), requiring one extra wire for each mid-circuit measurement. The new
+  behavior is to evaluate the circuit `shots` times, "collapsing" the circuit state
+  stochastically along the way. While this is oftentimes slower, it requires much less
+  memory for circuits with several mid-circuit measurements, or circuits which have already
+  several wires.
+  [(#5088)](https://github.com/PennyLaneAI/pennylane/pull/5088)
+
 <h4>Work easily and efficiently with Pauli operators 🔧</h4>
 
 * New `qml.commutator` function that allows to compute commutators between
@@ -171,6 +181,12 @@
 
 <h4>Other improvements</h4>
 
+* `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
+  [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
+
+* Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
+  [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
+
 * Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
@@ -197,6 +213,19 @@
 * CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
+
+* String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
+  ```
+  >>> qml.PauliX(0)
+  X(0)
+  >>> qml.PauliX('a')
+  X('a')
+  >>> 0.5 * X(0)
+  0.5 * X(0)
+  >>> 0.5 * (X(0) + Y(1))
+  0.5 * (X(0) + Y(1))
+  ```
+  [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
 
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
@@ -324,6 +353,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a queuing bug when using `qml.prod` with a qfunc that queues a single operator.
+  [(#5170)](https://github.com/PennyLaneAI/pennylane/pull/5170)
+
 * The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
 
@@ -372,6 +404,9 @@
 
 * `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
   [(#5149)](https://github.com/PennyLaneAI/pennylane/pull/5149)
+
+* `default.mixed` no longer throws `ValueError` when applying a state vector that is not of type `complex128` when used with tensorflow.
+  [(#5155)](https://github.com/PennyLaneAI/pennylane/pull/5155)
 
 <h3>Contributors ✍️</h3>
 

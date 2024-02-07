@@ -127,7 +127,7 @@ class TestInitialization:
         coeffs = [2.0, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
         H = ParametrizedHamiltonian(coeffs, ops)
-        expected = "(2.0*(PauliX(wires=[0])))+(f1(params_0,t)*(PauliY(wires=[0])))+(f2(params_1,t)*(PauliZ(wires=[0])))"
+        expected = "(2.0*(X(0)))+(f1(params_0,t)*(Y(0)))+(f2(params_1,t)*(Z(0)))"
 
         assert repr(H).replace("\n", "").replace(" ", "") == expected
 
@@ -147,7 +147,9 @@ class TestInitialization:
         coeffs = [2.0, f1, f2, f3(0.5)]
         observables = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0), qml.PauliX(0)]
         H = ParametrizedHamiltonian(coeffs, observables)
-        expected = "(2.0*(PauliX(wires=[0])))+(f1(params_0,t)*(PauliY(wires=[0])))+(f2(params_1,t)*(PauliZ(wires=[0])))+(f3(params_2,t)*(PauliX(wires=[0])))"
+        expected = (
+            "(2.0*(X(0)))+(f1(params_0,t)*(Y(0)))+(f2(params_1,t)*(Z(0)))+(f3(params_2,t)*(X(0)))"
+        )
         assert repr(H).replace("\n", "").replace(" ", "") == expected
 
     def test_wire_attribute(self):
@@ -229,7 +231,7 @@ class TestCall:
         H = ParametrizedHamiltonian(coeffs, obs)
 
         assert isinstance(H([2], 4), qml.ops.Sum)
-        assert repr(H([2], t=4)) == "(2*(GellMann2(wires=[0]))) + (10*(GellMann1(wires=[0])))"
+        assert repr(H([2], t=4)) == "(2 * GellMann2(wires=[0])) + (10 * GellMann1(wires=[0]))"
         assert np.all(
             qml.matrix(H([2], 4))
             == np.array(
