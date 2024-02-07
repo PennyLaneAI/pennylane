@@ -251,6 +251,21 @@ class TestGroupingUtils:
         qwc = are_pauli_words_qwc(obs_lst)
         assert qwc == expected_qwc
 
+    @pytest.mark.parametrize(
+        "ops",
+        (
+            [qml.PauliX(0), qml.sum(qml.PauliX(2), qml.PauliZ(1))],
+            [qml.sum(qml.prod(qml.PauliX(0), qml.PauliY(1)), 2 * qml.PauliZ(0))],
+            [qml.sum(qml.PauliY(0), qml.PauliX(1), qml.PauliZ(2))],
+            [qml.prod(qml.sum(qml.PauliX(0), qml.PauliY(1)), 2 * qml.PauliZ(0)), qml.PauliZ(0)],
+        ),
+    )
+    def test_are_pauli_words_qwc_sum_false(self, ops):
+        """Test that using operators with pauli rep containing more than one term with
+        are_pauli_words_qwc always returns False."""
+
+        assert are_pauli_words_qwc(ops) is False
+
     def test_is_qwc_not_equal_lengths(self):
         """Tests ValueError is raised when input Pauli vectors are not of equal length."""
 

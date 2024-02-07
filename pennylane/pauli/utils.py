@@ -673,7 +673,10 @@ def _are_pauli_words_qwc_pauli_rep(lst_pauli_words):
     representation"""
     basis = {}
     for op in lst_pauli_words:  # iterate over the list of observables
-        pw = next(iter(op.pauli_rep))
+        if len(pr := op.pauli_rep) > 1:
+            return False
+
+        pw = next(iter(pr))
 
         for wire, pauli_type in pw.items():  # iterate over wires of the observable,
             if pauli_type != "I":
@@ -698,7 +701,8 @@ def are_pauli_words_qwc(lst_pauli_words):
         lst_pauli_words (list[Observable]): List of observables (assumed to be valid Pauli words).
 
     Returns:
-        (bool): True if they are all qubit-wise commuting, false otherwise.
+        (bool): True if they are all qubit-wise commuting, false otherwise. If any of the provided
+        observables are not valid Pauli words, false is returned.
     """
     if all(op.pauli_rep is not None for op in lst_pauli_words):
         return _are_pauli_words_qwc_pauli_rep(lst_pauli_words)
