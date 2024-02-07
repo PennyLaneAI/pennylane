@@ -419,7 +419,7 @@ def simulate_tree_mcm(
     for branch in counts.keys():
         if op.postselect is not None and branch != op.postselect:
             mcm_counts[branch] = 0
-            mcm_samples[op] = mcm_samples[op][mcm_samples[op] != branch]
+            truncate_samples(op, branch, mcm_active, mcm_samples)
             continue
         mcm_active[op] = branch
         measurements.append(
@@ -444,7 +444,7 @@ def simulate_tree_mcm(
 
 
 def update_samples(op, samples, mcm_active, mcm_samples):
-    """Updates the mid-measurement sample dictionaries given a MidMeasureMP and samples."""
+    """Updates the mid-measurement sample dictionary given a MidMeasureMP and samples."""
     if mcm_active:
         shape = next(iter(mcm_samples.values())).shape
         mask = np.ones(shape, dtype=bool)
@@ -457,6 +457,17 @@ def update_samples(op, samples, mcm_active, mcm_samples):
         mcm_samples[op][mask] = samples
     else:
         mcm_samples[op] = samples
+
+
+def truncate_samples(op, branch, mcm_active, mcm_samples):
+    """Removes samples from mid-measurement sample dictionary given a MidMeasureMP and branch."""
+    mask = mcm_samples[op] == branch
+    for k, v in mcm_active.items():
+        if k == op:
+            break
+        mask = np.logical_and(mask, mcm_samples[k] == v)
+    for k in mcm_samples.keys():
+        mcm_samples[k] = mcm_samples[k][np.logical_not(mask)]
 
 
 def circuit_up_to_first_mcm(circuit):

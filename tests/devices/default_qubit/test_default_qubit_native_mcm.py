@@ -134,7 +134,7 @@ def test_unsupported_measurement():
 
 @flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
-@pytest.mark.parametrize("postselect", [None])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
