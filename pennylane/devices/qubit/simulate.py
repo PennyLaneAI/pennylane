@@ -451,7 +451,7 @@ def parse_native_mid_circuit_measurements(
     for i, m in enumerate(circuit.measurements):
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise ValueError(
-                f"Native mid-circuit measurement mode does not support {type(m)} measurements."
+                f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
         if i in idx_sample:
             normalized_meas[i] = gather_mcm(m, mcm_shot_meas)
