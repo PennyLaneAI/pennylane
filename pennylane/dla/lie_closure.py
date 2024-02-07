@@ -166,7 +166,7 @@ class VSpace:
 
         # List all linearly independent ``PauliSentence`` objects. The first element
         # always is independent, and the initial rank will be 1, correspondingly.
-        self.basis = [generators[0]]
+        self._basis = [generators[0]]
         rank = 1
 
         # Sparse alternative
@@ -182,11 +182,17 @@ class VSpace:
 
         # Add the values of all other PauliSentence objects from the input to the sparse array,
         # but only if they are linearly independent from the previous objects.
-        self.basis = self.add(generators[1:])
+        self._basis = self.add(generators[1:])
+
+    @property
+    def basis(self):
+        return self._basis
+
+    def __len__(self):
+        return len(self.basis)
 
     def add(self, other):
         """Adding a list of PauliSentences if they are linearly independent"""
-        basis = self.basis
         if isinstance(other, (PauliWord, PauliSentence, Operator)):
             other = [other]
 
@@ -196,16 +202,13 @@ class VSpace:
         ]
 
         for ps in other:
+            # TODO: potential speed-up by adding list of ops all at once, i.e. computing the rank only once and not for every added term. Might be more specialized to lie_closure
             self.M, self.pw_to_idx, self.rank, self.num_pw, added = self._add_if_independent(
                 self.M, ps, self.pw_to_idx, self.rank, self.num_pw
             )
             if added:
-                basis.append(ps)
-        return basis
-
-    def extend(self, other):
-        """In-place method to extend the VSpace"""
-        self.basis = self.add(other)
+                self._basis.append(ps)
+        return self._basis
 
     @staticmethod
     def _add_if_independent(M, pauli_sentence, pw_to_idx, rank, num_pw):
