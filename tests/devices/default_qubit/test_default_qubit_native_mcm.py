@@ -34,8 +34,7 @@ def validate_counts(shots, results1, results2):
         for r1, r2 in zip(results1, results2):
             validate_counts(shots, r1, r2)
         return
-    for r1 in results1.items():
-        key1, val1 = r1
+    for key1, val1 in results1.items():
         val2 = results2[key1]
         if abs(val1 + val2) > 100:
             assert np.allclose(val1, val2, rtol=20, atol=0.2)
