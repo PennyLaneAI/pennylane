@@ -6,6 +6,16 @@
 
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
+* The `default.qubit` device treats mid-circuit measurements natively when operating in
+  shots-mode (i.e. `shots is not None`). Previously, circuits with mid-circuit measurements
+  would be decomposed using the `@qml.defer_measurements` transform (which is still a valid
+  decorator), requiring one extra wire for each mid-circuit measurement. The new
+  behavior is to evaluate the circuit `shots` times, "collapsing" the circuit state
+  stochastically along the way. While this is oftentimes slower, it requires much less
+  memory for circuits with several mid-circuit measurements, or circuits which have already
+  several wires.
+  [(#5088)](https://github.com/PennyLaneAI/pennylane/pull/5088)
+
 <h4>Work easily and efficiently with Pauli operators 🔧</h4>
 
 * New `qml.commutator` function that allows to compute commutators between
@@ -356,6 +366,9 @@
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a queuing bug when using `qml.prod` with a qfunc that queues a single operator.
+  [(#5170)](https://github.com/PennyLaneAI/pennylane/pull/5170)
 
 * The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)

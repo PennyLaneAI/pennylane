@@ -342,6 +342,19 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert qml.equal(prod_op, expected)
         assert prod_op.wires == Wires([1, 0])
 
+    def test_qfunc_single_operator(self):
+        """Test prod initialization with qfunc that queues a single operator."""
+
+        def qfunc():
+            qml.S(0)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            out = prod(qfunc)()
+
+        assert len(q) == 1
+        assert q.queue[0] == qml.S(0)
+        assert out == qml.S(0)
+
     def test_qfunc_init_accepts_args_kwargs(self):
         """Tests that prod preserves args when wrapping qfuncs."""
 
