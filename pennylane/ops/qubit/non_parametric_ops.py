@@ -210,6 +210,13 @@ class PauliX(Observable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"X('{wire}')"
+        return f"X({wire})"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -333,6 +340,9 @@ class PauliX(Observable, Operation):
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
+X = PauliX
+
+
 class PauliY(Observable, Operation):
     r"""PauliY(wires)
     The Pauli Y operator
@@ -363,6 +373,13 @@ class PauliY(Observable, Operation):
     def __init__(self, *params, wires=None, id=None):
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
+
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"Y('{wire}')"
+        return f"Y({wire})"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
@@ -489,6 +506,9 @@ class PauliY(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
+Y = PauliY
+
+
 class PauliZ(Observable, Operation):
     r"""PauliZ(wires)
     The Pauli Z operator
@@ -517,6 +537,13 @@ class PauliZ(Observable, Operation):
     def __init__(self, *params, wires=None, id=None):
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
+
+    def __repr__(self):
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"Z('{wire}')"
+        return f"Z({wire})"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
@@ -643,6 +670,9 @@ class PauliZ(Observable, Operation):
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
         return [np.pi, 0.0, 0.0]
+
+
+Z = PauliZ
 
 
 class S(Operation):

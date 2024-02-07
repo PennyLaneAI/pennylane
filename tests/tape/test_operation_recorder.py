@@ -26,8 +26,8 @@ class TestOperationRecorder:
         expected_output = (
             "Operations\n"
             + "==========\n"
-            + "PauliY(wires=[0])\n"
-            + "PauliY(wires=[1])\n"
+            + "Y(0)\n"
+            + "Y(1)\n"
             + "RZ(0.4, wires=[0])\n"
             + "RZ(0.4, wires=[1])\n"
             + "CNOT(wires=[0, 1])\n"
@@ -99,8 +99,8 @@ class TestOperationRecorder:
             + "\n"
             + "Observables\n"
             + "===========\n"
-            + "PauliZ(wires=[0])\n"
-            + "PauliX(wires=[1])\n"
+            + "Z(0)\n"
+            + "X(1)\n"
         )
 
         def template(x):

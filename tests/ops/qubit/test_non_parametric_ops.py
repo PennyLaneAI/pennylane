@@ -67,6 +67,27 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.CCZ, CCZ),
 ]
 
+STRING_REPR = (
+    (qml.Identity(0), "I(0)"),
+    (qml.PauliX(0), "X(0)"),
+    (qml.PauliY(0), "Y(0)"),
+    (qml.PauliZ(0), "Z(0)"),
+    (qml.Identity("a"), "I('a')"),
+    (qml.Identity(10), "I(10)"),
+    (qml.Identity(), "I()"),
+    (qml.PauliX("a"), "X('a')"),
+    (qml.PauliY("a"), "Y('a')"),
+    (qml.PauliZ("a"), "Z('a')"),
+)
+
+
+@pytest.mark.parametrize("wire", [0, "a", "a"])
+def test_alias_XYZI(wire):
+    assert qml.PauliX(wire) == qml.X(wire)
+    assert qml.PauliY(wire) == qml.Y(wire)
+    assert qml.PauliZ(wire) == qml.Z(wire)
+    assert qml.Identity(wire) == qml.Identity(wire)
+
 
 class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
@@ -84,6 +105,11 @@ class TestOperations:
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op, str_repr", STRING_REPR)
+    def test_string_repr(self, op, str_repr):
+        """Test explicit string representations that overwrite the Operator default"""
+        assert repr(op) == str_repr
 
 
 class TestDecompositions:

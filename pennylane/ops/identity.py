@@ -62,6 +62,15 @@ class Identity(CVObservable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
 
+    def __repr__(self):
+        """String representation."""
+        if len(self.wires) == 0:
+            return "I()"
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"I('{wire}')"
+        return f"I({wire})"
+
     @staticmethod
     def compute_eigvals(n_wires=1):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
@@ -181,6 +190,9 @@ class Identity(CVObservable, Operation):
 
     def pow(self, _):
         return [Identity(wires=self.wires)]
+
+
+I = Identity
 
 
 class GlobalPhase(Operation):
