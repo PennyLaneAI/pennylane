@@ -220,13 +220,23 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Change the entry point convention for Catalyst.
+* The entry point convention registering compilers with PennyLane has changed.
   [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
-  The [documentation](https://packaging.python.org/en/latest/specifications/entry-points/#data-model) states that:
-  "Within a distribution, entry point names should be unique."
-  To specify entry points for multiple compilers, the entry point name has been changed from:
-  `qjit = importable.module:object.attr` to `compilername.qjit = importable.module:object.attr`
-  This allows multiple qjit entry points to be defined per distribution.
+
+  To allow for packages to register multiple compilers with PennyLane,
+  the `entry_points` convention under the designated group name
+  `pennylane.compilers` has been modified.
+  
+  Previously, compilers would register `qjit` (JIT decorator),
+  `ops` (compiler-specific operations), and `context` (for tracing and
+  program capture).
+  
+  Now, compilers must register `compiler_name.qjit`, `compiler_name.ops`,
+  and `compiler_name.context`, where `compiler_name` is replaced
+  by the name of the provided compiler.
+  
+  For more information, please see the
+  [documentation on adding compilers](https://docs.pennylane.ai/en/stable/code/qml_compiler.html#adding-a-compiler).
 
 * Make PennyLane code compatible with the latest version of `black`.
   [(#5112)](https://github.com/PennyLaneAI/pennylane/pull/5112)

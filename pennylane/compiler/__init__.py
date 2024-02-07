@@ -196,7 +196,7 @@ This interface exposes the ``entry_points``
 metadata under the designated group name ``pennylane.compilers``, including the
 following entry points:
 
-- ``f"{compiler}.context"``: Path to the compilation evaluation context manager.
+- ``compiler_name.context"``: Path to the compilation evaluation context manager.
   This context manager should have the method ``context.is_tracing()``,
   which returns ``True`` if called within a program that is being traced
   or captured.
@@ -224,7 +224,7 @@ For example:
     def function(x, y):
         ...
 
-    @qml.qjit(compiler="your-compiler-here")
+    @qml.qjit(compiler="compiler_name")
     def function(x, y):
         ...
 
