@@ -110,7 +110,9 @@ def _postselection_postprocess(state, is_state_batched, shots):
     return state, shots
 
 
-def get_final_state(circuit, debugger=None, interface=None, initial_state=None):
+def get_final_state(
+    circuit, debugger=None, interface=None, initial_state=None, mid_measurements=None
+):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -142,7 +144,7 @@ def get_final_state(circuit, debugger=None, interface=None, initial_state=None):
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
-    measurement_values = {}
+    measurement_values = mid_measurements if mid_measurements is not None else {}
     for op in circuit.operations[bool(prep) :]:
         if isinstance(op, Conditional):
             if not op.meas_val.concretize(measurement_values):
@@ -286,6 +288,7 @@ def simulate_tree_mcm(
     debugger=None,
     interface=None,
     initial_state=None,
+    mcm_active={},
     mcm_counts={},
     mcm_samples={},
 ) -> Result:
@@ -306,9 +309,39 @@ def simulate_tree_mcm(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
+
+    #########################
+    # shot vector treatment #
+    #########################
+    if circuit.shots.has_partitioned_shots:
+        results = []
+        for s in circuit.shots:
+            aux_circuit = circuit.copy()
+            aux_circuit._shots = qml.measurements.Shots(s)
+            results.append(
+                simulate_tree_mcm(
+                    aux_circuit,
+                    rng,
+                    prng_key,
+                    debugger,
+                    interface,
+                    mcm_active={},
+                    mcm_counts={},
+                    mcm_samples={},
+                )
+            )
+        return tuple(results)
+
+    #######################
+    # main implementation #
+    #######################
     circuit_base, circuit_next, op = circuit_up_to_first_mcm(circuit)
     state, is_state_batched, _ = get_final_state(
-        circuit_base, debugger=debugger, interface=interface, initial_state=initial_state
+        circuit_base,
+        debugger=debugger,
+        interface=interface,
+        initial_state=initial_state,
+        mid_measurements=mcm_active,
     )
     measurements = measure_final_state(
         circuit_base,
@@ -323,25 +356,26 @@ def simulate_tree_mcm(
         return measurements
 
     samples = measurements
-    if op.id in mcm_samples:
-        mcm_samples[op.id] = np.concatenate((mcm_samples[op.id], samples))
+    if op in mcm_samples:
+        mcm_samples[op] = np.concatenate((mcm_samples[op], samples))
     else:
-        mcm_samples[op.id] = samples
+        mcm_samples[op] = samples
 
     meas = circuit_base.measurements[0]
     counts = CountsMP(wires=meas.wires).process_samples(
         samples.reshape((-1, 1)), wire_order=meas.wires
     )
-    mcm_tmp = mcm_counts[op.id] if op.id in mcm_counts else None
+    counts = dict((int(x), int(y)) for x, y in counts.items())
+    mcm_tmp = mcm_counts[op] if op in mcm_counts else None
     mcm_tmp = Counter(mcm_tmp)
     mcm_tmp.update(counts)
-    if op.id in mcm_counts:
-        mcm_counts[op.id].update(dict(mcm_tmp))
+    if op in mcm_counts:
+        mcm_counts[op].update(dict(mcm_tmp))
     else:
-        mcm_counts[op.id] = dict(mcm_tmp)
+        mcm_counts[op] = dict(mcm_tmp)
 
     def branch_measurement(
-        circuit_base, circuit_next, counts, state, branch, mcm_counts, mcm_samples
+        circuit_base, circuit_next, counts, state, branch, mcm_active, mcm_counts, mcm_samples
     ):
         """Returns the results of both branches executing ``circuit_next``."""
 
@@ -354,13 +388,16 @@ def simulate_tree_mcm(
             state_norm = np.linalg.norm(state)
             if state_norm < 1.0e-15:  # pragma: no cover
                 return None
-            return state / state_norm
+            state = state / state_norm
+            if op.reset and branch == 1:
+                state = apply_operation(qml.PauliX(wire), state)
+            return state
 
         wire = circuit_base._measurements[0].wires
-        new_state = branch_state(state, wire, int(branch))
+        new_state = branch_state(state, wire, branch)
         if new_state is None:
             return None
-        circuit_next._shots = qml.measurements.Shots(int(counts[branch]))
+        circuit_next._shots = qml.measurements.Shots(counts[branch])
         return simulate_tree_mcm(
             circuit_next,
             rng=rng,
@@ -368,16 +405,30 @@ def simulate_tree_mcm(
             debugger=debugger,
             interface=interface,
             initial_state=new_state,
+            mcm_active=mcm_active,
             mcm_counts=mcm_counts,
             mcm_samples=mcm_samples,
         )
 
-    measurements = [
-        branch_measurement(
-            circuit_base, circuit_next, counts, state, branch, mcm_counts, mcm_samples
+    measurements = []
+    for branch in counts.keys():
+        if op.postselect is not None and branch != op.postselect:
+            mcm_counts[branch] = 0
+            mcm_samples[op] = mcm_samples[op][mcm_samples[op] != branch]
+            continue
+        mcm_active[op] = branch
+        measurements.append(
+            branch_measurement(
+                circuit_base,
+                circuit_next,
+                counts,
+                state,
+                branch,
+                mcm_active=mcm_active,
+                mcm_counts=mcm_counts,
+                mcm_samples=mcm_samples,
+            )
         )
-        for branch in counts.keys()
-    ]
     measurements = dict(
         (
             (branch, (count, value))
@@ -432,9 +483,11 @@ def combine_measurements(circuit, measurements, mcm_samples):
     keys = list(measurements.keys())
     # convert dict-of-lists to list-of-dicts
     if isinstance(measurements[keys[0]][1], Sequence):
-        d0s = [(measurements[keys[0]][0], m) for m in measurements[keys[0]][1]]
-        d1s = [(measurements[keys[1]][0], m) for m in measurements[keys[1]][1]]
-        new_measurements = [{keys[0]: m0, keys[1]: m1} for m0, m1 in zip(d0s, d1s)]
+        ds = [
+            [(measurements[keys[i]][0], m) for m in measurements[keys[i]][1]]
+            for i in range(len(measurements))
+        ]
+        new_measurements = [{keys[0]: m0, keys[1]: m1} for m0, m1 in zip(*ds)]
     else:
         new_measurements = [measurements]
     # loop over measurements
@@ -455,7 +508,7 @@ def combine_measurements(circuit, measurements, mcm_samples):
 # pylint: disable=no-else-return
 def combine_mid_measure_core(original_measurement, all_counts):
     """Returns a transformed MCM."""
-    counts = all_counts[original_measurement.mv.measurements[0].id]
+    counts = all_counts[original_measurement.mv.measurements[0]]
     if isinstance(original_measurement, CountsMP):
         return counts
     elif isinstance(original_measurement, ExpectationMP):
@@ -485,20 +538,21 @@ def combine_mid_measure_core(original_measurement, all_counts):
             cum_value += v * (float(k) - expval) ** 2
             total_counts += v
         return cum_value / total_counts
-    raise TypeError(f"Invalid measurement type {type(original_measurement)}")
+    raise TypeError(f"Unsupported measurement of {type(original_measurement)}")
 
 
 @singledispatch
 def combine_measurements_core(original_measurement, measures):
     """Returns the combined measurement value of a given type."""
-    raise TypeError(f"Invalid measurement type {type(original_measurement)}")
+    raise TypeError(f"Unsupported measurement of {type(original_measurement)}")
 
 
 @combine_measurements_core.register
 def _(original_measurement: CountsMP, measures):
     keys = list(measures.keys())
-    new_counts = Counter(measures[keys[0]][1])
-    new_counts.update(measures[keys[1]][1])
+    new_counts = Counter()
+    for k in keys:
+        new_counts.update(measures[k][1])
     return dict(new_counts)
 
 

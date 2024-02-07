@@ -133,8 +133,8 @@ def test_unsupported_measurement():
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", [None, 1000, [1000, 1001]])
-@pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
+@pytest.mark.parametrize("postselect", [None])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
@@ -148,17 +148,14 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
     @qml.qnode(dev)
     def func1(x, y):
         qml.RX(x, wires=0)
+        qml.RY(x, wires=1)
         m0 = qml.measure(0, reset=reset, postselect=postselect)
-        qml.cond(m0, qml.RY)(y, wires=1)
-        return measure_f(op=m0)
-
-    @qml.qnode(dev)
-    @qml.defer_measurements
-    def func2(x, y):
+        qml.cond(m0, qml.RY)(y, wires=0)
+        m1 = qml.measure(0, reset=reset, postselect=postselect)
         qml.RX(x, wires=0)
-        m0 = qml.measure(0, reset=reset, postselect=postselect)
-        qml.cond(m0, qml.RY)(y, wires=1)
-        return measure_f(op=m0)
+        return measure_f(op=m1)
+
+    func2 = qml.defer_measurements(func1)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return

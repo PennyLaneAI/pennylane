@@ -392,7 +392,7 @@ class MeasurementValue(Generic[T]):
 
     def concretize(self, measurements: dict):
         """Returns a concrete value from a dictionary of hashes with concrete values."""
-        values = tuple(measurements[meas.id] for meas in self.measurements)
+        values = tuple(measurements[meas] for meas in self.measurements)
         return self.processing_fn(*values)
 
     def _merge(self, other: "MeasurementValue"):
