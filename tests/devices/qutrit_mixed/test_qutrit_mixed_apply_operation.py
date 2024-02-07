@@ -20,7 +20,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Channel
-from pennylane.devices.qutrit_mixed import apply_operation, measure
+from pennylane.devices.qutrit_mixed import apply_operation, measure, create_initial_state
 
 ml_frameworks_list = [
     "numpy",
@@ -570,22 +570,25 @@ class TestSumOfTermsDifferentiability:
 
     @staticmethod
     def f(scale, coeffs, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
-        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
+        ops = [qml.TRX(offset + scale * i, wires=i) for i in range(n_wires)]
 
         if convert_to_hamiltonian:
             H = qml.Hamiltonian(
                 coeffs,
                 [
-                    qml.operation.Tensor(*(qml.PauliZ(i) for i in range(n_wires))),
-                    qml.operation.Tensor(*(qml.PauliY(i) for i in range(n_wires))),
+                    qml.operation.Tensor(*(qml.GellMann(i, 3) for i in range(n_wires))),
+                    qml.operation.Tensor(*(qml.GellMann(i, 5) for i in range(n_wires))),
                 ],
             )
         else:
-            t1 = qml.s_prod(coeffs[0], qml.prod(*(qml.PauliZ(i) for i in range(n_wires))))
-            t2 = qml.s_prod(coeffs[1], qml.prod(*(qml.PauliY(i) for i in range(n_wires))))
+            t1 = qml.s_prod(coeffs[0], qml.prod(*(qml.GellMann(i, 3) for i in range(n_wires))))
+            t2 = qml.s_prod(coeffs[1], qml.prod(*(qml.GellMann(i, 5) for i in range(n_wires))))
             H = t1 + t2
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
-        return  # TODO simulate(qs)
+
+        state = create_initial_state(range(n_wires))
+        for op in ops:
+            apply_operation(op)
+        return measure(qml.expval(H), state)
 
     @staticmethod
     def expected(scale, coeffs, n_wires=10, offset=0.1, like="numpy"):
