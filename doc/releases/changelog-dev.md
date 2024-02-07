@@ -218,6 +218,12 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
+
+<h4>Community contributions 🥳</h4>
+
+* The function `partial_trace` has been refactored to be public-facing for computing the partial trace of matrices other than density matrices.
+  [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
+
 <h3>Breaking changes 💔</h3>
 
 * Make PennyLane code compatible with the latest version of `black`.
@@ -391,6 +397,7 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Trenten Babcock,
 Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
