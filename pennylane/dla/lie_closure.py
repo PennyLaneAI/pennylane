@@ -142,11 +142,11 @@ class VSpace:
         # Add the values of all other PauliSentence objects from the input to the sparse array,
         # but only if they are linearly independent from the previous objects.
         self._basis = self.add(generators[1:])
-    
+
     @property
     def basis(self):
         return self._basis
-    
+
     def __len__(self):
         return len(self.basis)
 

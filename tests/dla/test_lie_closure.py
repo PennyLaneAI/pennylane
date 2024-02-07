@@ -98,7 +98,7 @@ class TestVSpace:
         vspace = VSpace(ops)
         new_basis = vspace.add(op)
         assert new_basis == true_new_basis
-    
+
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
     def test_len(self, ops, op, true_new_basis):
         """Test the length of the VSpace instance with inplace and non-inplace addition to the basis"""
@@ -111,6 +111,3 @@ class TestVSpace:
         assert len_after_adding != len_before_adding
         assert len_after_adding == len(true_new_basis)
         assert len_before_adding == len_basis_before_adding
-
-
-
