@@ -41,6 +41,8 @@ jobs:
       - name: Prepare local repo
         run: |
           git fetch
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
           if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
             git checkout "${{ env.DEPS_BRANCH }}"
             git rebase origin/master
@@ -65,8 +67,6 @@ jobs:
       - name: Stage changes
         if: steps.changed.outputs.has_changes != '0'
         run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "<>"
           git add .github/stable/
           git commit -m "Update changed dependencies"
           git push -f --set-upstream origin "${{ env.DEPS_BRANCH }}"
