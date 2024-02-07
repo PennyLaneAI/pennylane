@@ -389,8 +389,6 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
                 new_shot_meas[i] = [s]
         return new_shot_meas
     new_shot_meas = all_shot_meas
-    if not isinstance(all_shot_meas, Sequence):
-        all_shot_meas = [all_shot_meas]
     for i, m in enumerate(circuit.measurements):
         if isinstance(m, CountsMP):
             tmp = Counter(all_shot_meas[i])
