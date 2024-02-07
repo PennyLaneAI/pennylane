@@ -201,18 +201,18 @@ following entry points:
   which returns ``True`` if called within a program that is being traced
   or captured.
 
-- ``f"{compiler}.ops"``: Path to the compiler operations module. This operations module
+- ``compiler_name.ops``: Path to the compiler operations module. This operations module
   may contain compiler specific versions of PennyLane operations,
   for example :func:`~.cond`, :func:`~.measure`, and :func:`~.adjoint`.
   Within a JIT context, PennyLane operations may dispatch to these functions.
 
-- ``f"{compiler}.qjit"``: Path to the JIT decorator provided by the compiler.
+- ``compiler_name.qjit``: Path to the JIT decorator provided by the compiler.
   This decorator should have the signature ``qjit(fn, *args, **kwargs)``,
   where ``fn`` is the function to be compiled.
 
-The entry point's names should be preppended with the name of the compiler.
+where ``compiler_name`` should be replaced with the name of the compiler.
 For example, for Catalyst, we define the entry points ``catalyst.context``,
-``catalyst.ops``, and ``catalyst.qjit``. This allows the catalyst package to define
+``catalyst.ops`` and ``catalyst.qjit``. This allows the catalyst package to define
 multiple compilers.
 
 The name of the compiler can then be used by the user to denote which compiler should be used.
