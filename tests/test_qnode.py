@@ -949,7 +949,29 @@ class TestIntegration:
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        assert spy.call_count == 2  # once per device preprocessing
+        assert spy.call_count == 0
+
+        @qml.defer_measurements
+        @qml.qnode(dev)
+        def cry_qnode_deferred(x):
+            """QNode where we apply a controlled Y-rotation."""
+            qml.BasisStatePreparation(basis_state, wires=[0, 1])
+            qml.CRY(x, wires=[0, 1])
+            return qml.sample(qml.PauliZ(1))
+
+        @qml.defer_measurements
+        @qml.qnode(dev)
+        def conditional_ry_qnode_deferred(x):
+            """QNode where the defer measurements transform is applied by
+            default under the hood."""
+            qml.BasisStatePreparation(basis_state, wires=[0, 1])
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.RY)(x, wires=1)
+            return qml.sample(qml.PauliZ(1))
+
+        r1 = cry_qnode_deferred(first_par)
+        r2 = conditional_ry_qnode_deferred(first_par)
+        assert np.allclose(r1, r2)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])

@@ -107,6 +107,10 @@ def prod(*ops, id=None, lazy=True):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
+            if len(qs.operations) == 1:
+                if qml.QueuingManager.recording():
+                    qml.apply(qs[0])
+                return qs[0]
             return prod(*qs.operations[::-1], id=id, lazy=lazy)
 
         return wrapper
