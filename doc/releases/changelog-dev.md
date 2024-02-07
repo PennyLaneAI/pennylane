@@ -333,6 +333,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a queuing bug when taking the `prod` of a qfunc that queues a single operator.
+
 * The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
 
