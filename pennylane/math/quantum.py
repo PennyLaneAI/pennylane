@@ -23,7 +23,13 @@ from numpy import float64
 import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
+from .multi_dispatch import (
+    diag,
+    dot,
+    scatter_element_add,
+    einsum,
+    get_interface,
+)
 from .utils import is_abstract, allclose, cast, convert_like, cast_like
 from .matrix_manipulation import _permute_dense_matrix
 
@@ -307,7 +313,8 @@ def _batched_partial_trace(density_matrix, indices):
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        density_matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
+        density_matrix,
+        (batch_dim, 2**number_wires_sub, 2**number_wires_sub),
     )
     return reduced_density_matrix
 
@@ -364,7 +371,8 @@ def _batched_partial_trace_nonrep_indices(density_matrix, indices):
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        density_matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
+        density_matrix,
+        (batch_dim, 2**number_wires_sub, 2**number_wires_sub),
     )
     return reduced_density_matrix
 
@@ -449,7 +457,10 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
         [ABC[i + 1] for i in sorted(indices)] + [ABC[num_wires + i + 1] for i in sorted(indices)]
     )
     density_matrix = einsum(
-        f"a{indices1},a{indices2}->a{target}", state, np.conj(state), optimize="greedy"
+        f"a{indices1},a{indices2}->a{target}",
+        state,
+        np.conj(state),
+        optimize="greedy",
     )
 
     # Return the reduced density matrix by using numpy tensor product
@@ -491,7 +502,10 @@ def dm_from_state_vector(state, check_state=False, c_dtype="complex128"):
     """
     num_wires = int(np.log2(np.shape(state)[-1]))
     return reduce_statevector(
-        state, indices=list(range(num_wires)), check_state=check_state, c_dtype=c_dtype
+        state,
+        indices=list(range(num_wires)),
+        check_state=check_state,
+        c_dtype=c_dtype,
     )
 
 
@@ -640,7 +654,14 @@ def _compute_vn_entropy(density_matrix, base=None):
 
 
 # pylint: disable=too-many-arguments
-def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
+def mutual_info(
+    state,
+    indices0,
+    indices1,
+    base=None,
+    check_state=False,
+    c_dtype="complex128",
+):
     r"""Compute the mutual information between two subsystems given a state:
 
     .. math::
@@ -696,24 +717,46 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
         raise ValueError("Subsystems for computing mutual information must not overlap.")
 
     return _compute_mutual_info(
-        state, indices0, indices1, base=base, check_state=check_state, c_dtype=c_dtype
+        state,
+        indices0,
+        indices1,
+        base=base,
+        check_state=check_state,
+        c_dtype=c_dtype,
     )
 
 
 # pylint: disable=too-many-arguments
 def _compute_mutual_info(
-    state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
+    state,
+    indices0,
+    indices1,
+    base=None,
+    check_state=False,
+    c_dtype="complex128",
 ):
     """Compute the mutual information between the subsystems."""
     all_indices = sorted([*indices0, *indices1])
     vn_entropy_1 = vn_entropy(
-        state, indices=indices0, base=base, check_state=check_state, c_dtype=c_dtype
+        state,
+        indices=indices0,
+        base=base,
+        check_state=check_state,
+        c_dtype=c_dtype,
     )
     vn_entropy_2 = vn_entropy(
-        state, indices=indices1, base=base, check_state=check_state, c_dtype=c_dtype
+        state,
+        indices=indices1,
+        base=base,
+        check_state=check_state,
+        c_dtype=c_dtype,
     )
     vn_entropy_12 = vn_entropy(
-        state, indices=all_indices, base=base, check_state=check_state, c_dtype=c_dtype
+        state,
+        indices=all_indices,
+        base=base,
+        check_state=check_state,
+        c_dtype=c_dtype,
     )
 
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
@@ -722,11 +765,14 @@ def _compute_mutual_info(
 def expectation_value(operator_matrix, state_vector, check_state=False, check_operator=False):
     r"""Compute the expectation value of an operator with respect to a pure state.
 
-    The expectation value of an operator :math:`A` for a pure state is given by a state vector :math:`\ket{\psi}`
-    is defined as
+    The expectation value is the probabilistic expected result of an experiment.
+    Given a pure state, i.e., a state which can be represented as a single
+    vector :math:`\ket{\psi}` in the Hilbert space, the expectation value of an
+    operator :math:`A` can computed as
 
     .. math::
         \langle A \rangle_\psi = \bra{\psi} A \ket{\psi}
+
 
     Args:
         operator_matrix (tensor_like):  operator matrix with shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
@@ -752,9 +798,14 @@ def expectation_value(operator_matrix, state_vector, check_state=False, check_op
     .. seealso:: :func:`pennylane.math.fidelity`
 
     """
+    if isinstance(state_vector, (list, tuple, int, float, complex)):
+        state_vector = np.asarray(state_vector)
 
     if check_state:
         _check_state_vector(state_vector)
+
+    if isinstance(operator_matrix, (list, tuple, int, float, complex)):
+        operator_matrix = np.asarray(operator_matrix)
 
     if check_operator:
         conj_trans = np.transpose(np.conj(operator_matrix))
@@ -839,7 +890,10 @@ def _compute_relative_entropy(rho, sigma, base=None):
     # the matrix of inner products between eigenvectors of rho and eigenvectors
     # of sigma; this is a doubly stochastic matrix
     rel = qml.math.einsum(
-        f"{indices_rho},{indices_sig}->{target}", np.conj(u_rho), u_sig, optimize="greedy"
+        f"{indices_rho},{indices_sig}->{target}",
+        np.conj(u_rho),
+        u_sig,
+        optimize="greedy",
     )
     rel = np.abs(rel) ** 2
 
