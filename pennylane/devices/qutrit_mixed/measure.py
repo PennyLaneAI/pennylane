@@ -40,9 +40,7 @@ from .utils import (
 from .apply_operation import apply_operation
 
 
-def _map_indices_apply_operation(
-    state_indices, row_indices, new_row_indices, **kwargs
-):  # pylint: disable=unused-argument
+def _map_indices_apply_operation(**kwargs):
     """Map indices to wires.
 
     Args:
