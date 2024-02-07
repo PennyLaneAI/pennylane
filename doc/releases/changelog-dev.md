@@ -242,7 +242,7 @@
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
 * `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs` have been added for feature parity with `qml.Hamiltonian` but will be deprecated in the future.
-  [(#)]()
+  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
 
 <h3>Breaking changes 💔</h3>
 
@@ -335,7 +335,7 @@
   [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
 
 * `op.ops` and `op.coeffs` will be deprecated in the future.
-  [(#)]()
+  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
 
 <h3>Documentation 📝</h3>
 
