@@ -106,6 +106,8 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     Args:
         quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in qiskit
+        measurements (list[MeasurementProcess]): the list of PennyLane measurements that
+            overrides the terminal measurements that may be present in the imput circuit.
 
     Returns:
         function: the PennyLane template created based on the QuantumCircuit
