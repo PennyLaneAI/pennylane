@@ -515,9 +515,7 @@ class TestValidation:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="SparseHamiltonian observable must be"
-            " used with the parameter-shift differentiation method",
+            qml.QuantumFunctionError, match="backprop cannot differentiate a qml.SparseHamiltonian."
         ):
             qml.grad(circuit, argnum=0)([0.5])
 

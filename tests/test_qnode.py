@@ -134,14 +134,17 @@ class TestValidation:
         assert not diff_options
 
     # pylint: disable=protected-access
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("device_string", ("default.qubit", "default.qubit.autograd"))
-    def test_validate_backprop_finite_shots(self, device_string):
+    def test_validate_backprop_finite_shots(self):
         """Test that a device with finite shots cannot be used with backpropagation."""
-        dev = qml.device(device_string, wires=1, shots=100)
+        dev = qml.device("default.qubit", wires=1, shots=100)
 
-        with pytest.raises(qml.QuantumFunctionError, match=r"Backpropagation is only supported"):
+        with pytest.raises(qml.QuantumFunctionError, match=r"does not support backprop"):
             QNode._validate_backprop_method(dev, "autograd")
+
+        dev2 = qml.device("default.qubit")
+        tape = qml.tape.QuantumScript([], [], shots=100)
+        with pytest.raises(qml.QuantumFunctionError, match=r"does not support backprop"):
+            QNode._validate_backprop_method(dev2, "autograd", tape=tape)
 
     # pylint: disable=protected-access
     @pytest.mark.autograd
@@ -211,7 +214,8 @@ class TestValidation:
 
         # no interface - fall back on parameter-shift
         dev2 = qml.device("default.qubit", wires=1)
-        res2 = QNode.get_best_method(dev2, None)
+        tape = qml.tape.QuantumScript([], [], shots=50)
+        res2 = QNode.get_best_method(dev2, None, tape=tape)
         assert res2 == (qml.gradients.param_shift, {}, dev2)
 
     # pylint: disable=protected-access
@@ -241,22 +245,13 @@ class TestValidation:
         diff method."""
         dev = qml.device("default.qubit", wires=1)
 
-        mock_best = mocker.patch("pennylane.QNode.get_best_method")
-        mock_best.return_value = ("best", {}, dev)
-
-        mock_backprop = mocker.patch("pennylane.QNode._validate_backprop_method")
-        mock_backprop.return_value = ("backprop", {}, dev)
-
-        mock_device = mocker.patch("pennylane.QNode._validate_device_method")
-        mock_device.return_value = ("device", {}, dev)
-
         qn = QNode(dummyfunc, dev, diff_method="best")
         assert qn.diff_method == "best"
         assert qn.gradient_fn is None
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="best")
         assert qn.diff_method == "best"
-        assert qn.gradient_fn == "best"
+        assert qn.gradient_fn == "backprop"
 
         qn = QNode(dummyfunc, dev, diff_method="backprop")
         assert qn.diff_method == "backprop"
@@ -265,13 +260,13 @@ class TestValidation:
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="backprop")
         assert qn.diff_method == "backprop"
         assert qn.gradient_fn == "backprop"
-        mock_backprop.assert_called_once()
 
-        qn = QNode(dummyfunc, dev, diff_method="device")
+        dev2 = CustomDeviceWithDiffMethod()
+        qn = QNode(dummyfunc, dev2, diff_method="device")
         assert qn.diff_method == "device"
         assert qn.gradient_fn == "device"
 
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="device")
+        qn = QNode(dummyfunc, dev2, interface="autograd", diff_method="device")
         assert qn.diff_method == "device"
         assert qn.gradient_fn == "device"
 
@@ -299,7 +294,6 @@ class TestValidation:
         assert qn.diff_method == "parameter-shift"
         assert qn.gradient_fn is qml.gradients.param_shift
         # check that get_best_method was only ever called once
-        mock_best.assert_called_once()
 
     @pytest.mark.autograd
     def test_gradient_transform(self, mocker):
@@ -348,17 +342,27 @@ class TestValidation:
         """Tests that a DeviceError is raised with the adjoint differentiation method
         when the device has finite shots"""
 
-        dev = qml.device("default.qubit", wires=1, shots=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @qnode(dev, diff_method="adjoint")
         def circ():
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            qml._device.DeviceError,
-            match="Finite shots are not supported with adjoint",
+            qml.QuantumFunctionError,
+            match="does not support adjoint with requested circuit",
         ):
-            circ()
+            circ(shots=1)
+
+        dev2 = qml.device("default.qubit", shots=5)
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="does not support adjoint with requested circuit",
+        ):
+
+            @qnode(dev2, diff_method="adjoint")
+            def circ2():
+                return qml.expval(qml.PauliZ(0))
 
     @pytest.mark.autograd
     def test_sparse_diffmethod_error(self):
@@ -372,9 +376,7 @@ class TestValidation:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="SparseHamiltonian observable must be"
-            " used with the parameter-shift differentiation method",
+            qml.QuantumFunctionError, match="does not support backprop with requested circuit"
         ):
             qml.grad(circuit, argnum=0)([0.5])
 
@@ -945,11 +947,31 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        assert spy.call_count == 2  # once per device preprocessing
+
+        @qml.defer_measurements
+        @qml.qnode(dev)
+        def cry_qnode_deferred(x):
+            """QNode where we apply a controlled Y-rotation."""
+            qml.BasisStatePreparation(basis_state, wires=[0, 1])
+            qml.CRY(x, wires=[0, 1])
+            return qml.sample(qml.PauliZ(1))
+
+        @qml.defer_measurements
+        @qml.qnode(dev)
+        def conditional_ry_qnode_deferred(x):
+            """QNode where the defer measurements transform is applied by
+            default under the hood."""
+            qml.BasisStatePreparation(basis_state, wires=[0, 1])
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.RY)(x, wires=1)
+            return qml.sample(qml.PauliZ(1))
+
+        r1 = cry_qnode_deferred(first_par)
+        r2 = conditional_ry_qnode_deferred(first_par)
+        assert np.allclose(r1, r2)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
@@ -1542,10 +1564,14 @@ class TestNewDeviceIntegration:
 
     def test_get_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
-        with pytest.raises(ValueError, match=r"The CustomDevice device does not support."):
+        with pytest.raises(
+            qml.QuantumFunctionError, match=r"Device CustomDevice does not support adjoint"
+        ):
             QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
 
-        with pytest.raises(ValueError, match=r"The CustomDevice device does not support."):
+        with pytest.raises(
+            qml.QuantumFunctionError, match=r"Device CustomDevice does not support adjoint"
+        ):
             QNode._validate_adjoint_method(self.dev)
 
     def test_error_for_backprop_with_custom_device(self):

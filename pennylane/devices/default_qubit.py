@@ -358,6 +358,11 @@ class DefaultQubit(Device):
     subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
     """
 
+    _device_options = ("max_workers", "rng", "prng_key")
+    """
+    tuple of string names for all the device options.
+    """
+
     # pylint:disable = too-many-arguments
     def __init__(
         self,
@@ -397,34 +402,34 @@ class DefaultQubit(Device):
         """
         if execution_config is None:
             return True
-        # backpropagation currently supported for all supported circuits
-        # will later need to add logic if backprop requested with finite shots
-        # do once device accepts finite shots
-        print("circuit shots: ", getattr(circuit, "shots", None))
+
         if (
             execution_config.gradient_method in {"backprop", "best"}
             and execution_config.device_options.get("max_workers", self._max_workers) is None
-            and not getattr(circuit, "shots", False)
-        ):
-            return True
-
-        if (
-            execution_config.gradient_method == "adjoint"
-            and execution_config.use_device_gradient is not False
+            and not (self.shots if circuit is None else circuit.shots)
         ):
             if circuit is None:
                 return True
+            return not circuit.shots and not any(
+                isinstance(m.obs, qml.SparseHamiltonian) for m in circuit.measurements
+            )
 
-            prog = TransformProgram()
-            _add_adjoint_transforms(prog)
+        if execution_config.gradient_method == "adjoint":
+            return self._supports_adjoint(circuit=circuit)
+        return False
 
-            try:
-                prog((circuit,))
-            except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
-                return False
+    def _supports_adjoint(self, circuit):
+        if circuit is None:
             return True
 
-        return False
+        prog = TransformProgram()
+        _add_adjoint_transforms(prog)
+
+        try:
+            prog((circuit,))
+        except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
+            return False
+        return True
 
     def preprocess(
         self,
@@ -504,12 +509,9 @@ class DefaultQubit(Device):
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
-        if "max_workers" not in updated_values["device_options"]:
-            updated_values["device_options"]["max_workers"] = self._max_workers
-        if "rng" not in updated_values["device_options"]:
-            updated_values["device_options"]["rng"] = self._rng
-        if "prng_key" not in updated_values["device_options"]:
-            updated_values["device_options"]["prng_key"] = self._prng_key
+        for option in self._device_options:
+            if option not in updated_values["device_options"]:
+                updated_values["device_options"][option] = getattr(self, f"_{option}")
         return replace(execution_config, **updated_values)
 
     def execute(
