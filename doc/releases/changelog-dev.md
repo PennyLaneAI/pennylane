@@ -346,6 +346,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
+  [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
+
 * Fixes a queuing bug when using `qml.prod` with a qfunc that queues a single operator.
   [(#5170)](https://github.com/PennyLaneAI/pennylane/pull/5170)
 
