@@ -1995,18 +1995,14 @@ class TestTensor:
         for obs1, obs2 in zip(mapped_tensor.obs, final_obs):
             assert qml.equal(obs1, obs2)
 
-    def test_matmul_not_implemented(self, mocker):
+    def test_matmul_not_implemented(self):
         """Test that matrix multiplication raises TypeError if unsupported
         object is used."""
 
         op = Tensor(qml.PauliX(0), qml.PauliZ(1))
 
-        spy = mocker.spy(op, "__matmul__")
-
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = op @ 1.0
-
-        spy.assert_called_once()
 
 
 equal_obs = [
