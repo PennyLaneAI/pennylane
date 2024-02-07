@@ -78,7 +78,7 @@ from .quantum import (
     max_entropy,
     min_entropy,
     trace_distance,
-    partial_trace
+    partial_trace,
 )
 from .fidelity import fidelity, fidelity_statevector
 from .utils import (
