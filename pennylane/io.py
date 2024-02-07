@@ -29,7 +29,7 @@ plugin_converters = {entry.name: entry for entry in __plugin_devices}
 
 
 def load(quantum_circuit_object, format: str, **load_kwargs):
-    """Load external quantum assembly and quantum circuits from supported frameworks
+    r"""Load external quantum assembly and quantum circuits from supported frameworks
     into PennyLane templates.
 
     .. note::
