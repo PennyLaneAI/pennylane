@@ -43,7 +43,7 @@ jobs:
           git fetch
           if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
             git checkout "${{ env.DEPS_BRANCH }}"
-            git rebase master
+            git rebase origin/master
           else
             git checkout master
             git checkout -b "${{ env.DEPS_BRANCH }}"
