@@ -45,7 +45,8 @@ alphabet_array = math.asarray(list(alphabet))
 def _map_indices_apply_operation(
     state_indices, row_indices, new_row_indices, **kwargs
 ):  # pylint: disable=unused-argument
-    """Map indices to wires
+    """Map indices to wires.
+    
     Args:
         state_indices (str): Indices that are summed.
         row_indices (str): Indices that must be replaced with sums.
