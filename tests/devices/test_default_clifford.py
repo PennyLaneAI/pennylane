@@ -638,7 +638,7 @@ def test_meas_error_noisy():
     ):
         circ_1()
 
-    @qml.qnode(qml.device("default.clifford", check_clifford=False))
+    @qml.qnode(qml.device("default.clifford"))
     def circ_2():
         qml.BasisState(np.array([1, 1]), wires=range(2))
         qml.AmplitudeDamping(0.2, [0])
@@ -646,7 +646,7 @@ def test_meas_error_noisy():
 
     with pytest.raises(
         qml.DeviceError,
-        match=r"Channel AmplitudeDamping\(0.2, wires=\[0\]\) not supported on default.clifford",
+        match=r"Operator AmplitudeDamping\(0.2, wires=\[0\]\) not supported on default.clifford",
     ):
         circ_2()
 

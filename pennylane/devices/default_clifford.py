@@ -121,12 +121,10 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 
 @qml.transform
-def _validate_channels(tape, stopping_condition, name="device"):
+def _validate_channels(tape, name="device"):
     """Validates the channels for a circuit."""
     for op in tape.operations:
         if isinstance(op, qml.operation.Channel):
-            if not stopping_condition(op):
-                raise qml.DeviceError(f"Channel {repr(op)} not supported on {name}")
             if not tape.shots:
                 raise qml.DeviceError(f"Channel not supported on {name} without finite shots.")
 
@@ -443,9 +441,7 @@ class DefaultClifford(Device):
             transform_program.add_transform(
                 decompose, stopping_condition=operation_stopping_condition, name=self.name
             )
-        transform_program.add_transform(
-            _validate_channels, stopping_condition=operation_stopping_condition, name=self.name
-        )
+            transform_program.add_transform(_validate_channels, name=self.name)
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
