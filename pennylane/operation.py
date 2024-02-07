@@ -2539,7 +2539,9 @@ class Tensor(Observable):
         new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
         new_op._eigvals_cache = self._eigvals_cache
         new_op._batch_size = self._batch_size
-        new_op._pauli_rep = self._pauli_rep.map_wires(wire_map)
+        new_op._pauli_rep = (
+            self._pauli_rep.map_wires(wire_map) if self.pauli_rep is not None else None
+        )
         return new_op
 
 
