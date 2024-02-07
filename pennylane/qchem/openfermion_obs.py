@@ -1021,25 +1021,6 @@ def molecular_hamiltonian(
     return h_pl, len(h_pl.wires)
 
 
-def _active_space_integrals(core_constant, one, two, core=None, active=None):
-    r"""Return active space integrals in the molecular orbital basis."""
-
-    for i in core:
-        core_constant = core_constant + 2 * one[i][i]
-        for j in core:
-            core_constant = core_constant + 2 * two[i][j][j][i] - two[i][j][i][j]
-
-    for p in active:
-        for q in active:
-            for i in core:
-                one = one + (2 * two[i][p][q][i] - two[i][p][i][q])
-
-    one = one[qml.math.ix_(active, active)]
-    two = two[qml.math.ix_(active, active, active, active)]
-
-    return core_constant, one, two
-
-
 def _pyscf_integrals(
     symbols,
     coordinates,
@@ -1085,8 +1066,18 @@ def _pyscf_integrals(
     two_mo = np.swapaxes(two_mo, 1, 3)
 
     if core and active:
-        core_constant, one_mo, two_mo = _active_space_integrals(
-            core_constant, one_mo, two_mo, core, active
-        )
+
+        for i in core:
+            core_constant = core_constant + 2 * one_mo[i][i]
+            for j in core:
+                core_constant = core_constant + 2 * two_mo[i][j][j][i] - two_mo[i][j][i][j]
+
+        for p in active:
+            for q in active:
+                for i in core:
+                    one_mo = one_mo + (2 * two_mo[i][p][q][i] - two_mo[i][p][i][q])
+
+        one_mo = one_mo[qml.math.ix_(active, active)]
+        two_mo = two_mo[qml.math.ix_(active, active, active, active)]
 
     return core_constant, one_mo, two_mo
