@@ -95,7 +95,7 @@ def test_apply_mid_measure():
 
 def test_accumulate_native_mcm():
     with pytest.raises(
-        TypeError, match=f"Unsupported measurement of {type(qml.var(qml.PauliZ(0)))}"
+        TypeError, match=f"Unsupported measurement of {type(qml.var(qml.PauliZ(0))).__name__}"
     ):
         accumulate_native_mcm(qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None])
 
@@ -130,7 +130,7 @@ def test_unsupported_measurement():
 
     with pytest.raises(
         TypeError,
-        match=f"Unsupported measurement of {type(qml.classical_shadow(wires=0))}",
+        match=f"Unsupported measurement of {type(qml.classical_shadow(wires=0)).__name__}",
     ):
         func(*params)
 
