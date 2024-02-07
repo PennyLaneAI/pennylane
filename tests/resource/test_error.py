@@ -105,4 +105,3 @@ class TestErrorOperation:  # pylint: disable=too-few-public-methods
 
             _ = NoErrorOp(wires=[1, 2, 3])
 
-        assert False
