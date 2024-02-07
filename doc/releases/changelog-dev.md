@@ -333,6 +333,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
+  [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
+
 * The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
 
