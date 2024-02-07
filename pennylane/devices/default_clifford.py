@@ -123,10 +123,8 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 @qml.transform
 def _validate_channels(tape, name="device"):
     """Validates the channels for a circuit."""
-    for op in tape.operations:
-        if isinstance(op, qml.operation.Channel):
-            if not tape.shots:
-                raise qml.DeviceError(f"Channel not supported on {name} without finite shots.")
+    if not tape.shots and any(isinstance(op, qml.operation.Channel) for op in tape.operations):
+        raise qml.DeviceError(f"Channel not supported on {name} without finite shots.")
 
     return (tape,), null_postprocessing
 
