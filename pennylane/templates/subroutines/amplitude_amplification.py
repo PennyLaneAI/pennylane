@@ -85,12 +85,16 @@ class AmplitudeAmplification(Operation):
         else:
             self.reflection_wires = reflection_wires
 
-        self.gamma = 0.99
+        self.gamma = 0.95
 
         self.queue()
 
         if fixed_point and aux_wire is None:
             raise ValueError(f"aux_wire must be specified if fixed_point == True.")
+
+        if fixed_point and iters % 2 != 0:
+            raise ValueError(f"Number of iterations must be even if fixed_point == True.")
+
 
         if fixed_point and len(U.wires + qml.wires.Wires(aux_wire)) == len(U.wires):
             raise ValueError(f"aux_wire must be different from the wires of U.")
@@ -105,6 +109,7 @@ class AmplitudeAmplification(Operation):
 
         if self.fixed_point:
             alphas, betas = self.get_fixed_point_angles()
+
             for iter in range(self.n_iterations // 2):
                 ops.append(qml.Hadamard(wires=self.aux_wire))
                 ops.append(qml.ctrl(self.O, control=self.aux_wire))
@@ -114,8 +119,7 @@ class AmplitudeAmplification(Operation):
                 ops.append(qml.ctrl(self.O, control=self.aux_wire))
                 ops.append(qml.Hadamard(wires=self.aux_wire))
 
-                ops.append(qml.Reflection(self.U, alphas[iter], reflection_wires=self.reflection_wires))
-
+                ops.append(qml.Reflection(self.U, -alphas[iter], reflection_wires=self.reflection_wires))
         else:
             for _ in range(self.n_iterations):
                 ops.append(self.O)
