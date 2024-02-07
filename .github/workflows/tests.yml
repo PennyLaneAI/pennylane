@@ -81,7 +81,7 @@ jobs:
           destination_branch: "master"
           github_token: "${{ secrets.GITHUB_TOKEN }}"
           pr_title: "Update stable dependency files"
-          pr_body: "Automatic update of stable requirement files to snapshot valid python environments."
+          pr_body: "Automatic update of stable requirement files to snapshot valid python environments. Please push an empty commit using `git commit --allow-empty -m 'trigger ci'` as bots are not able to trigger CI on their own."
           pr_allow_empty: false
           pr_draft: false
           pr_reviewer: "timmysilv"
