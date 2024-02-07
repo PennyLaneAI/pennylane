@@ -25,12 +25,12 @@ on:
         description: The version of PyTorch to install for any job that requires PyTorch
         required: false
         type: string
-        default: 2.1.0
+        default: 2.2.0
       pytest_coverage_flags:
         description: PyTest Coverage flags to pass to all jobs
         required: false
         type: string
-        default: --cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native
+        default: --cov=pennylane --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
       run_lightened_ci:
         description: |
           Indicate if a lightened version of the CI should be run instead of the entire suite.
