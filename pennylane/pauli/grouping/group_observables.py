@@ -237,10 +237,11 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     if temp_opmath:
         qml.operation.enable_new_opmath()
 
-    partitioned_paulis = pauli_grouping.colour_pauli_graph()
-
-    if temp_opmath:
-        qml.operation.disable_new_opmath()
+    try:
+        partitioned_paulis = pauli_grouping.colour_pauli_graph()
+    finally:
+        if temp_opmath:
+            qml.operation.disable_new_opmath()
 
     if coefficients is None:
         return partitioned_paulis
