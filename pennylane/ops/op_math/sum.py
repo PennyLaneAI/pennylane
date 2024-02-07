@@ -158,6 +158,7 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
+    _grouping_cache = {}
 
     @property
     def hash(self):
@@ -217,6 +218,30 @@ class Sum(CompositeOp):
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+
+    def compute_groupings(self, grouping_type="qwc", method="rlf"):
+        """doc"""
+        pr = self.pauli_rep
+
+        if _hash := self.hash in Sum._grouping_cache:
+            pw_groups = Sum._grouping_cache[self.hash]
+
+            op_groups = [[pw.operation() for pw in group] for group in pw_groups]
+            coeff_groups = [[pr[pw] for pw in group] for group in pw_groups]
+
+        else:
+            if not pr:
+                raise ValueError("Can't compute groupings for Sums containing non-Pauli operators.")
+
+            coeffs, ops = self.terms()
+            op_groups, coeff_groups = qml.pauli.group_observables(
+                ops, coeffs, grouping_type=grouping_type, method=method
+            )
+
+            pw_groups = [[next(iter(op.pauli_rep)) for op in group] for group in op_groups]
+            Sum._grouping_cache[_hash] = pw_groups
+
+        return op_groups, coeff_groups
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
