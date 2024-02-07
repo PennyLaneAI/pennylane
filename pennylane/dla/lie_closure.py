@@ -15,7 +15,7 @@
 
 from functools import reduce
 
-# from typing import Union, Iterable
+from typing import Union, Iterable
 from copy import copy
 import numpy as np
 
@@ -25,15 +25,56 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 
-# def lie_closure(
-#     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
-#     return_intermediate: bool = False,
-# ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
-#     r"""
-#     Perform the lie closure of a set of operators.
+def lie_closure(
+    generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
+    max_iterations: int = 1e4,
+) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
+    r"""Compute the Lie closure over commutation of a set of generators
 
-#     """
-#     return None
+    The Lie closure of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}` is computed by 
+    taking all possible nested commutators until no new (i.e. linearly independent) operator is produced.
+
+    Args:
+        generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
+            Lie closure.
+        max_iterations (int): maximum depth of nested commutators to consider.
+
+    Returns:
+        list[`~.PauliSentence`]: a basis of ``PauliSentence`` instances that is closed under
+        commutators (Lie closure).
+    """
+
+    vspace = VSpace(generators)
+
+    epoch = 0
+    old_length = len(vspace)
+    new_length = len(vspace)
+
+    while new_length > old_length or epoch > max_iterations:
+        for idx1 in range(new_length - 1):
+            ps1 = vspace.basis[idx1]
+            for idx2 in range(max([idx1 + 1, old_length]), new_length):
+                ps2 = vspace.basis[idx2]
+                com = ps1.commutator(ps2)
+                vspace.add(com)
+
+                # old code I am not sure is necessary anymore
+                # com.simplify()
+                # if len(com) == 0:
+                #     continue
+                # # The commutator is taken per pair of PauliWords, which collect purely imaginary
+                # # coefficients. We will only consider the (real-valued) imaginary part here.
+                # for pw, val in com.items():
+                #     com[pw] = val.imag
+                # Add commutator to sparse array if it is linearly independent
+                
+
+        # Updated number of linearly independent PauliSentences from previous and current step
+        old_length = new_length
+        new_length = len(vspace.basis)
+        epoch += 1
+
+    return vspace.basis
 
 
 class VSpace:
