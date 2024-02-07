@@ -28,6 +28,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 def lie_closure(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
     max_iterations: int = 1e4,
+    verbose: int = 0,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the Lie closure over commutation of a set of generators
 
@@ -47,15 +48,26 @@ def lie_closure(
     vspace = VSpace(generators)
 
     epoch = 0
-    old_length = len(vspace)
+    old_length = 0 # dummy value
     new_length = len(vspace)
+    print(old_length)
+    print(new_length)
+    print(new_length > old_length)
+    print(epoch > max_iterations)
 
     while new_length > old_length or epoch > max_iterations:
+        if verbose > 0:
+            print(f"epoch {epoch+1} of lie_closure")
         for idx1 in range(new_length - 1):
             ps1 = vspace.basis[idx1]
             for idx2 in range(max([idx1 + 1, old_length]), new_length):
                 ps2 = vspace.basis[idx2]
                 com = ps1.commutator(ps2)
+
+                # result is always purely imaginary
+                # TODO potentially renormalize?
+                for pw, val in com.items():
+                    com[pw] = val.imag
                 vspace.add(com)
 
                 # old code I am not sure is necessary anymore
@@ -71,7 +83,8 @@ def lie_closure(
 
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
-        new_length = len(vspace.basis)
+        new_length = len(vspace)
+        print(vspace.M)
         epoch += 1
 
     return vspace.basis
