@@ -69,7 +69,7 @@ jobs:
           git config user.email "<>"
           git add .github/stable/
           git commit -m "Update changed dependencies"
-          git push --set-upstream origin "${{ env.DEPS_BRANCH }}"
+          git push -f --set-upstream origin "${{ env.DEPS_BRANCH }}"
 
       # Create PR to master
       - name: Create pull request
