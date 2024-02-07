@@ -162,16 +162,14 @@ def _convert_op_to_linear_comb(meas_op):
     # A Pauli decomposition for the observable must exist
     if meas_rep is None:
         raise NotImplementedError(
-            f"default.clifford doesn't support expectation value calculation with {type(meas_op)} at the moment."
+            f"default.clifford doesn't support expectation value calculation with {type(meas_op).__name__} at the moment."
         )
 
-    coeffs, ops = meas_rep.hamiltonian(wire_order=meas_obs.wires).terms()
-
-    # Build the Pauli representation for stim
-    paulis = []
-    for op in ops:
-        op_names = op.name if isinstance(op, qml.operation.Tensor) else [op.name]
-        paulis.append(("".join([_OPERATIONS_MAP[name] for name in op_names]), op.wires))
+    coeffs = np.array(list(meas_rep.values()))
+    paulis = [
+        ("".join(pw.values()), list(pw.keys())) if pw.values() else ("I", meas_obs.wires[:1])
+        for pw in meas_rep
+    ]
 
     return coeffs, paulis
 
@@ -191,9 +189,6 @@ class DefaultClifford(Device):
         tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
             When ``True``, the device returns the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
-        target_states (array[int]):  Target basis state(s) for which analytical probabilities should be computed with
-            :func:`qml.probs <pennylane.probs>`. By default, if no wires are provided, probabilities are computed
-            for the complete computational space up to ``24`` qubits.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
@@ -283,47 +278,54 @@ class DefaultClifford(Device):
         :href: clifford-probabilities
 
         As the ``default.clifford`` device supports executing quantum circuits with a large number of qubits,
-        we restrict the ability to compute the ``analytical`` probabilities for `all` computational basis
-        states at once to maintain computational efficiency when system size scales beyond ``24`` qubits.
-        Instead, one can sepcify the target basis state(s), i.e., subset `basis state(s)` of interest,
-        either during the initialization of device via the ``target_states`` keyword argument,
-        or at any other stage before executing the circuit by setting the ``probability_target``
-        property of the device.
+        the ability to compute the ``analytical`` probabilities for ``all`` computational basis states at
+        once becomes computationally expensive and challenging as the system size increases. While we don't
+        manually restrict users from doing so for any circuit, one can expect the underlying computation
+        to reach its limit with ``20-24`` qubits on a typical consumer grade machine.
+
+        As long as number of qubits are below this limit, one can simply use the :func:`qml.probs <pennylane.probs>`
+        with its usual arguments and probabilities for the specified target states would be computed and returned.
+        We test this for a circuit that prepares the ``n``-qubit Greenberger-Horne-Zeilinger state (GHZ state) state.
+        This means that the probabilities for the basis states :math:`|0\rangle^{\otimes n}` and
+        :math:`|1\rangle^{\otimes n}` should be :math:`0.5`, and for :math:`0.0` for the rest.
 
         .. code-block:: python
 
             import pennylane as qml
             import numpy as np
+            dev = qml.device("default.clifford")
 
-            basis_states = np.array([[0, 0], [1, 0]])
-            dev = qml.device("default.clifford", target_states = basis_states)
+            num_wires = 3
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(wires=[0])
+                for idx in range(num_wires):
+                    qml.CNOT(wires=[idx, idx+1])
+                return qml.probs()
 
-        After doing this, one can simply use the :func:`qml.probs <pennylane.probs>` with its usual arguments
-        and probabilities for the specified target states would be computed and returned.
+        >>> circuit()
+        tensor([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5], requires_grad=True)
+
+        Once above the limit, one can use :mod:`qml.expval <pennylane.expval>` compute the expectation value
+        of a single target ``basis state`` with the :mod:`qml.Projector <pennylane.Projector>`.
 
         .. code-block:: python
 
-            wires = np.random.randint(3, size=(10000, 3))
-
+            num_wires = 4
             @qml.qnode(dev)
-            def circuit():
-                for w in wires:
-                    qml.PauliX(w[0])
-                    qml.PauliY(w[1])
-                    qml.PauliZ(w[2])
-                return qml.probs(op = qml.PauliX(0) @ qml.PauliY(1))
+            def circuit(state):
+                qml.Hadamard(wires=[0])
+                for idx in range(num_wires):
+                    qml.CNOT(wires=[idx, idx+1])
+                return qml.expval(qml.Projector(state, wires=range(num_wires)))
 
-        >>> circuit()
-        tensor([0.25, 0.25], requires_grad=True)
-        >>> dev.probability_target = np.array([1, 1])
-        >>> circuit()
-        tensor([0.25], requires_grad=True)
-
-        .. note::
-
-            If there's a mismatch in the number of ``wires`` for the provided target state(s) and
-            the observable, then the `marginal` probabilities will be returned for the computational
-            basis states for the subspace built using the minimum number of wires among the two.
+        >>> basis_states = np.array([[0, 0, 0, 0], [0, 1, 0, 1], [1, 0, 1, 0]])
+        >>> circuit(basis_states[0])
+        tensor(0.5, requires_grad=True)
+        >>> circuit(basis_states[1])
+        tensor(0.0, requires_grad=True)
+        >>> circuit(basis_states[2])
+        tensor(0.0, requires_grad=True)
 
     .. details::
         :title: Tracking
@@ -360,7 +362,6 @@ class DefaultClifford(Device):
         shots=None,
         check_clifford=True,
         tableau=True,
-        target_states=None,
         seed="global",
         max_workers=None,
     ) -> None:
@@ -376,12 +377,8 @@ class DefaultClifford(Device):
 
         self._tableau = tableau
 
-        self._prob_states = None
-        if target_states is not None:
-            self.probability_target = target_states
-
-        self._seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        self._rng = np.random.default_rng(self._seed)
+        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        self._rng = np.random.default_rng(seed)
         self._debugger = None
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
@@ -425,9 +422,7 @@ class DefaultClifford(Device):
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
-        This device:
-
-        * Currently does not intrinsically support parameter broadcasting
+        This device currently does not intrinsically support parameter broadcasting.
 
         """
         config = self._setup_execution_config(execution_config)
@@ -605,7 +600,6 @@ class DefaultClifford(Device):
         """Compute sample output from a stim circuit for a given Pauli observable"""
         meas_dict = {"X": "MX", "Y": "MY", "Z": "MZ", "_": "M"}
 
-        # Get the observable for the expectation value measurement
         coeffs, paulis = _convert_op_to_linear_comb(meas_obs)
 
         samples = []
@@ -624,7 +618,7 @@ class DefaultClifford(Device):
         """Given a circuit, compute samples and return the statistical measurement results."""
         # Compute samples via circuits from tableau
         num_shots = circuit.shots.total_shots
-        sample_seed = seed if isinstance(seed, int) else self._seed
+        sample_seed = seed if isinstance(seed, int) else self._rng.integers(2**31 - 1, size=1)[0]
 
         # maps measurement type to the desired analytic measurement method
         measurement_map = {
@@ -666,7 +660,7 @@ class DefaultClifford(Device):
         measurement_map = {
             DensityMatrixMP: self._measure_density_matrix,
             StateMP: self._measure_state,  # kwargs -> circuit, global_phase
-            ExpectationMP: self._measure_expectation,
+            ExpectationMP: self._measure_expectation,  # kwargs -> circuit, stim_circuit
             VarianceMP: self._measure_variance,
             VnEntropyMP: self._measure_vn_entropy,  # kwargs -> circuit
             MutualInfoMP: self._measure_mutual_info,  # kwargs -> circuit
@@ -695,15 +689,15 @@ class DefaultClifford(Device):
         return results
 
     @staticmethod
-    def _measure_density_matrix(meas, tableau_simulator, **kwargs):
+    def _measure_density_matrix(meas, tableau_simulator, **_):
         """Measure the density matrix from the state of simulator device."""
-        wires, _ = list(meas.wires), kwargs
+        wires = list(meas.wires)
         state_vector = qml.math.array(tableau_simulator.state_vector(endian="big"))
         return qml.math.reduce_dm(qml.math.einsum("i, j->ij", state_vector, state_vector), wires)
 
-    def _measure_state(self, meas, tableau_simulator, **kwargs):  # circuit, global_phase):
+    def _measure_state(self, _, tableau_simulator, **kwargs):
         """Measure the state of the simualtor device."""
-        wires, _ = kwargs.get("circuit").wires, meas
+        wires = kwargs.get("circuit").wires
         global_phase = kwargs.get("global_phase", qml.GlobalPhase(0.0))
         if self._tableau:
             # Stack according to Sec. III, arXiv:0406196 (2008)
@@ -726,11 +720,17 @@ class DefaultClifford(Device):
             state[0] = 1.0 + 0.0j
         return state * qml.matrix(global_phase)[0][0]
 
-    @staticmethod
-    def _measure_expectation(meas, tableau_simulator, **kwargs):
+    def _measure_expectation(self, meas, tableau_simulator, **kwargs):
         """Measure the expectation value with respect to the state of simulator device."""
+        meas_obs = meas.obs
+        if isinstance(meas_obs, BasisStateProjector):
+            kwargs["prob_states"] = qml.math.array([meas_obs.data[0]])
+            return self._measure_probability(
+                qml.probs(wires=meas_obs.wires), tableau_simulator, **kwargs
+            ).squeeze()
+
         # Get the observable for the expectation value measurement
-        (coeffs, paulis), _ = _convert_op_to_linear_comb(meas.obs), kwargs
+        coeffs, paulis = _convert_op_to_linear_comb(meas_obs)
 
         expecs = qml.math.zeros_like(coeffs)
         for idx, (pauli, wire) in enumerate(paulis):
@@ -742,9 +742,9 @@ class DefaultClifford(Device):
 
         return qml.math.dot(coeffs, expecs)
 
-    def _measure_variance(self, meas, tableau_simulator, **kwargs):
+    def _measure_variance(self, meas, tableau_simulator, **_):
         """Measure the variance with respect to the state of simulator device."""
-        meas_obs, _ = qml.operation.convert_to_opmath(meas.obs), kwargs
+        meas_obs = qml.operation.convert_to_opmath(meas.obs)
         meas_obs1 = meas_obs.simplify()
         meas_obs2 = (meas_obs1**2).simplify()
 
@@ -851,40 +851,24 @@ class DefaultClifford(Device):
 
         return entropy / qml.math.log(log_base)
 
-    @property
-    def probability_target(self):
-        """Get the target computational basis states for computing outcome probability."""
-        return self._prob_states
-
-    @probability_target.setter
-    def probability_target(self, basis_states):
-        """Set the target computational basis states for computing outcome probability."""
-        self._prob_states = qml.math.stack(
-            basis_states if len(qml.math.shape(basis_states)) > 1 else [basis_states]
-        )
-
-    # pylint: disable=too-many-branches
-    def _measure_probability(self, meas, tableau_simulator, **kwargs):
+    # pylint: disable=too-many-branches, too-many-statements
+    def _measure_probability(self, meas, _, **kwargs):
         """Measure the probability of each computational basis state."""
-        circuit, _ = kwargs.get("circuit"), tableau_simulator
+        circuit = kwargs.get("circuit")
+
+        # Set the target states
+        tgt_states = kwargs.get("prob_states", None)
 
         # Obtain the measurement wires for getting the basis states
         mobs_wires = meas.obs.wires if meas.obs else meas.wires
         meas_wires = mobs_wires if mobs_wires else circuit.wires
 
-        if len(meas_wires) > 24 and self._prob_states is None and self._tableau:
-            raise ValueError(
-                "In order to maintain computational efficiency, \
-                with ``tableau=True``, the clifford device supports \
-                returning probability only for selected target \
-                computational basis states made of more than 24 qubits. \
-                Please use the `probability_target` property to set them."
-            )
-
-        if self._prob_states is None:
+        # Build the complete computational basis,
+        # this will be expensive for larger circuits (> 24 qubits onwards)
+        if tgt_states is None:
             num_wires = len(meas_wires)
             basis_vec = np.arange(2**num_wires)[:, np.newaxis]
-            self._prob_states = (((basis_vec & (1 << np.arange(num_wires)))) > 0).astype(int)
+            tgt_states = (((basis_vec & (1 << np.arange(num_wires)[::-1]))) > 0).astype(int)
 
         # TODO: We might be able to skip the inverse done below
         # (as the distribution should be independent of inverse)
@@ -908,47 +892,68 @@ class DefaultClifford(Device):
             state = self._measure_state(meas, circuit_simulator, circuit=circuit)
             return meas.process_state(state, wire_order=circuit.wires)
 
-        tgt_states = self._prob_states
-        if not tgt_states.shape[1]:
-            raise ValueError("Cannot set an empty list of target states.")
-
-        if len(meas_wires) < tgt_states.shape[1]:
-            tgt_states = []
-            for state in self._prob_states:
-                if list(state[meas_wires]) not in tgt_states:
-                    tgt_states.append(list(state[meas_wires]))
-            tgt_states = np.array(tgt_states)
-        else:
+        if len(meas_wires) >= tgt_states.shape[1]:
             meas_wires = meas_wires[: tgt_states.shape[1]]
+        else:  # pragma: no cover
+            cgc_states = []
+            for state in tgt_states:
+                if list(state[meas_wires]) not in cgc_states:
+                    cgc_states.append(list(state[meas_wires]))
+            tgt_states = np.array(cgc_states)
 
-        # Iterate over the measured qubits and post-select possible outcome
-        # This should now scaled as O(M * N), where N is the number of measured qubits,
-        # and M is the cost of peeking and postselection of each qubit in computational basis.
+        # Maintain a representaiton of basis states to build a visit-array
+        tgt_integs = np.array([int("".join(map(str, tgt_state)), 2) for tgt_state in tgt_states])
+
+        # Iterate over the required basis states and for each of them compute the probability
+        # If an impossible branch occur keep a note of it via a visit-array
+        # Worst case complexity O(B * M * N), where N is #measured_qubits and B is basis states.
+        visited_probs = []
         prob_res = np.ones(tgt_states.shape[0])
-        for wire in meas_wires:
-            expectation = circuit_simulator.peek_z(wire)
-            # (Eig --> Res) | -1 --> 1 | 1 --> 0 | 0 --> 0 / 1 |
-            outcome = int(0.5 * (1 - expectation))
-            if not expectation:
-                prob_res /= 2.0
-            else:
-                prob_res[np.where(outcome != tgt_states[:, wire])[0]] = 0.0
-            circuit_simulator.postselect_z(wire, desired_value=outcome)
+        for tgt_index, (tgt_integ, tgt_state) in enumerate(zip(tgt_integs, tgt_states)):
+            if tgt_integ in visited_probs:
+                continue
+            prob_sim = circuit_simulator.copy()
+            for idx, wire in enumerate(meas_wires):
+                expectation = prob_sim.peek_z(wire)
+                # (Eig --> Res) | -1 --> 1 | 1 --> 0 | 0 --> 0 / 1 |
+                outcome = int(0.5 * (1 - expectation))
+                if not expectation:
+                    prob_res[tgt_index] /= 2.0
+                else:
+                    nope_idx = (
+                        np.where(
+                            np.squeeze(np.all(tgt_states[:, :idx] == tgt_state[:idx], axis=-1))
+                            & tgt_states[:, idx]
+                            != outcome
+                        )[0]
+                        if idx
+                        else np.where(tgt_states[:, idx] != outcome)[0]
+                    )
+                    nope_idx = np.setdiff1d(nope_idx, visited_probs)
+                    prob_res[nope_idx] = 0.0
+                    visited_probs.extend(tgt_integs[nope_idx])
 
+                    if tgt_state[idx] != outcome:
+                        prob_res[tgt_index] = 0.0
+                        break
+
+                prob_sim.postselect_z(wire, desired_value=tgt_state[idx])
+            visited_probs.append(tgt_integ)
         return prob_res
 
     def _sample_expectation(self, meas, stim_circuit, shots, seed):
         """Measure the expectation value with respect to samples from simulator device."""
         # Get the observable for the expectation value measurement
         meas_op = meas.obs
-        if meas_op is None:  # pragma: no cover
-            meas_op = qml.prod(
-                *[
-                    qml.PauliZ(idx)
-                    for idx in (meas.wires if meas.wires else range(stim_circuit.num_qubits))
-                ]
-            )
-        samples, coeffs = self._measure_observable_sample(meas.obs, stim_circuit, shots, seed)
+        if isinstance(meas_op, BasisStateProjector):
+            stim_circ = stim_circuit.copy()
+            stim_circ.append_from_stim_program_text("M " + " ".join(map(str, meas_op.wires)))
+            sampler = stim_circ.compile_sampler(seed=seed)
+            samples = qml.math.array(sampler.sample(shots=shots), dtype=int)
+            matches = np.where((samples == meas_op.data[0]).all(axis=1))[0]
+            return len(matches) / shots
+
+        samples, coeffs = self._measure_observable_sample(meas_op, stim_circuit, shots, seed)
         expecs = [
             qml.math.mean(qml.math.power([-1] * shots, qml.math.sum(sample, axis=1)))
             for sample in samples
@@ -960,9 +965,6 @@ class DefaultClifford(Device):
         """Measure the variance with respect to samples from simulator device."""
         # Get the observable for the expectation value measurement
         meas_op = meas.obs
-        if meas_op is None:  # pragma: no cover
-            return 1 - self._sample_expectation(meas, stim_circuit, shots, seed) ** 2
-
         meas_obs = qml.operation.convert_to_opmath(meas_op)
         meas_obs1 = meas_obs.simplify()
         meas_obs2 = (meas_obs1**2).simplify()
