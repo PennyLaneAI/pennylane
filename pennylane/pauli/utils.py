@@ -673,7 +673,10 @@ def _are_pauli_words_qwc_pauli_rep(lst_pauli_words):
     representation"""
     basis = {}
     for op in lst_pauli_words:  # iterate over the list of observables
-        pw = next(iter(op.pauli_rep))
+        if len(pr := op.pauli_rep) > 1:
+            return False
+
+        pw = next(iter(pr))
 
         for wire, pauli_type in pw.items():  # iterate over wires of the observable,
             if pauli_type != "I":
