@@ -185,6 +185,9 @@
 
 <h4>Other improvements</h4>
 
+* Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
+  [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
+
 * Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
@@ -350,6 +353,9 @@
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a queuing bug when using `qml.prod` with a qfunc that queues a single operator.
+  [(#5170)](https://github.com/PennyLaneAI/pennylane/pull/5170)
 
 * The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
