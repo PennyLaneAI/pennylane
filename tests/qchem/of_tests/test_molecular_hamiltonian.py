@@ -443,21 +443,11 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir, op_arithmetic
 
 
 @pytest.mark.parametrize(
-    (
-        "symbols",
-        "geometry",
-        "active_electrons",
-        "active_orbitals",
-        "core_ref",
-        "one_ref",
-        "two_ref",
-    ),
+    ("symbols", "geometry", "core_ref", "one_ref", "two_ref"),
     [
         (
             ["H", "H"],
             np.array([0.0, 0.0, 0.0, 0.0, 0.0, 2.0]),
-            None,
-            None,
             np.array([0.5]),
             np.array([[-1.08269537e00, 1.88626892e-13], [1.88848936e-13, -6.04947784e-01]]),
             np.array(
@@ -476,16 +466,10 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir, op_arithmetic
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_pyscf_integrals(
-    symbols, geometry, active_electrons, active_orbitals, core_ref, one_ref, two_ref
-):
+def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
     r"""Test that _pyscf_integrals returns correct integrals."""
 
-    core, one, two = qchem.openfermion_obs._pyscf_integrals(
-        symbols, geometry, active_electrons=active_electrons, active_orbitals=active_orbitals
-    )
-
-    print(repr((two, two_ref)))
+    core, one, two = qchem.openfermion_obs._pyscf_integrals(symbols, geometry)
 
     assert np.allclose(core, core_ref)
     assert np.allclose(one, one_ref)
