@@ -50,10 +50,6 @@ def lie_closure(
     epoch = 0
     old_length = 0  # dummy value
     new_length = len(vspace)
-    # print(old_length)
-    # print(new_length)
-    # print(new_length > old_length)
-    # print(epoch > max_iterations)
 
     while new_length > old_length or epoch > max_iterations:
         if verbose > 0:
@@ -63,7 +59,7 @@ def lie_closure(
             for idx2 in range(max([idx1 + 1, old_length]), new_length):
                 ps2 = vspace.basis[idx2]
                 com = ps1.commutator(ps2)
-                if len(com) == 0:  # operators commute
+                if len(com) == 0:  # skip because operators commute
                     continue
 
                 # result is always purely imaginary
@@ -72,20 +68,9 @@ def lie_closure(
                     com[pw] = val.imag / 2
                 vspace.add(com)
 
-                # old code I am not sure is necessary anymore
-                # com.simplify()
-                # if len(com) == 0:
-                #     continue
-                # # The commutator is taken per pair of PauliWords, which collect purely imaginary
-                # # coefficients. We will only consider the (real-valued) imaginary part here.
-                # for pw, val in com.items():
-                #     com[pw] = val.imag
-                # Add commutator to sparse array if it is linearly independent
-
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
         new_length = len(vspace)
-        # print(vspace.M)
         epoch += 1
 
     return vspace.basis
@@ -334,13 +319,11 @@ def _is_any_col_propto_last(inM):
 
     # divide each column by its norm
     # If we decide to maintain a normalization in M, this is not needed anymore
-    # print(nonzero_part, normalize_columns)
     nonzero_part = nonzero_part / normalize_columns
 
     # fill the original matrix with the nonzero elements
     # note that if a candidate vector has nonzero part where target vector is zero, this part is unaltered
     M[nonzero_mask] = nonzero_part
-    print(M)
 
     # check if any column matches the last column completely
     # OR the negative of it
