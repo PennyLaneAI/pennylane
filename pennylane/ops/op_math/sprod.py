@@ -159,7 +159,9 @@ class SProd(ScalarSymbolicOp):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"{self.scalar}*({self.base})"
+        if isinstance(self.base, qml.ops.CompositeOp):
+            return f"{self.scalar} * ({self.base})"
+        return f"{self.scalar} * {self.base}"
 
     def label(self, decimals=None, base_label=None, cache=None):
         """The label produced for the SProd op."""
