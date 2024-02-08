@@ -15,6 +15,7 @@
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
 import copy
+from dataclasses import replace
 
 from functools import partial
 from typing import Callable, Tuple
@@ -1597,6 +1598,40 @@ class TestNewDeviceIntegration:
         assert gradient_fn == "device"
         assert not kwargs
         assert new_dev is dev
+
+    def test_device_with_custom_diff_method_name(self):
+        class CustomDeviceWithDiffMethod(qml.devices.DefaultQubit):
+            def supports_derivatives(self, config, circuit):
+                return config.gradient_method == "hello"
+
+            def _setup_execution_config(self, execution_config=qml.devices.DefaultExecutionConfig):
+                if execution_config.gradient_method in {"best", "hello"}:
+                    return replace(
+                        execution_config, gradient_method="hello", use_device_gradient=True
+                    )
+                return execution_config
+
+            def compute_derivatives(self, circuits, execution_config):
+                if self.tracker.active:
+                    self.tracker.update(derivative_config=execution_config)
+                    self.tracker.record()
+                return super().compute_derivatives(circuits, execution_config)
+
+        dev = CustomDeviceWithDiffMethod()
+
+        @qml.qnode(dev, diff_method="hello")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit.diff_method == "hello"
+        assert circuit.gradient_fn == "hello"
+
+        with dev.tracker:
+            qml.grad(circuit)(qml.numpy.array(0.5))
+
+        assert dev.tracker.history["derivative_config"][0].gradient_method == "hello"
+        assert dev.tracker.history["derivative_batches"] == [1]
 
     def test_shots_integration(self):
         """Test that shots provided at call time are passed through the workflow."""
