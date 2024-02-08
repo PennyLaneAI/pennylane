@@ -176,6 +176,9 @@
 
 <h4>Other improvements</h4>
 
+* `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
+  [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
+
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
@@ -344,6 +347,9 @@
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
+  [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
 
 * Fixes a queuing bug when using `qml.prod` with a qfunc that queues a single operator.
   [(#5170)](https://github.com/PennyLaneAI/pennylane/pull/5170)
