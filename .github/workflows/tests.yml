@@ -31,7 +31,6 @@ jobs:
   upload-stable-deps:
     needs: tests
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -81,7 +80,13 @@ jobs:
           destination_branch: "master"
           github_token: "${{ secrets.GITHUB_TOKEN }}"
           pr_title: "Update stable dependency files"
-          pr_body: "Automatic update of stable requirement files to snapshot valid python environments. Please push an empty commit using `git commit --allow-empty -m 'trigger ci'` as bots are not able to trigger CI on their own."
+          pr_body: |
+            Automatic update of stable requirement files to snapshot valid python environments.
+            Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
+
+            ```
+            git commit --allow-empty -m 'trigger ci'
+            ```
           pr_allow_empty: false
           pr_draft: false
           pr_reviewer: "timmysilv"
