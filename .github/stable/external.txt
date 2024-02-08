@@ -31,7 +31,7 @@ debugpy==1.8.0
 decorator==5.1.1
 defusedxml==0.7.1
 distlib==0.3.8
-ecos==2.0.12
+ecos==2.0.13
 exceptiongroup==1.2.0
 execnet==2.0.2
 executing==2.0.1
@@ -56,7 +56,7 @@ idna==3.6
 importlib-metadata==7.0.1
 importlib-resources==6.1.1
 iniconfig==2.0.0
-ipykernel==6.29.1
+ipykernel==6.29.2
 ipython==8.18.1
 ipython-genutils==0.2.0
 ipywidgets==7.8.1
@@ -90,7 +90,7 @@ mistune==3.0.2
 ml-dtypes==0.2.0
 mypy-extensions==1.0.0
 nbclient==0.9.0
-nbconvert==7.15.0
+nbconvert==7.16.0
 nbformat==5.9.2
 nest-asyncio==1.6.0
 networkx==3.2.1
