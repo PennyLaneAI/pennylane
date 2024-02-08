@@ -14,9 +14,6 @@
 """Unit tests for matrix expand functions."""
 # pylint: disable=too-few-public-methods,too-many-public-methods
 from functools import reduce
-import torch
-import jax
-import tensorflow as tf
 import numpy as np
 import pytest
 from gate_data import CNOT, II, SWAP, I, Toffoli
@@ -25,6 +22,10 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import numpy as pnp
 
+tf = pytest.importorskip("tensorflow", minversion="2.1")
+torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
