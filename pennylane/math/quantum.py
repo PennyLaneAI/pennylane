@@ -299,7 +299,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
         batch_dim, dim = matrix.shape[:2]
 
     if get_interface(matrix) in ["autograd", "tensorflow"]:
-        return _batched_partial_trace_nonrep_indices(matrix, indices)
+        return _batched_partial_trace_nonrep_indices(matrix, indices, batch_dim, dim)
 
     # Dimension and reshape
     num_indices = int(np.log2(dim))
@@ -328,16 +328,10 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     return reduced_density_matrix
 
 
-def _batched_partial_trace_nonrep_indices(matrix, indices):
+def _batched_partial_trace_nonrep_indices(matrix, indices, batch_dim, dim):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.
     """
-    # Dimension and reshape
-    if qml.math.ndim(matrix) == 2:
-        batch_dim = 1
-        dim = len(matrix)
-    else:
-        batch_dim, dim = matrix.shape[:2]
 
     num_indices = int(np.log2(dim))
     rho_dim = 2 * num_indices
