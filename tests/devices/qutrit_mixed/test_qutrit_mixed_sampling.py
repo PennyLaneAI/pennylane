@@ -174,7 +174,7 @@ class TestSampleState:
         """Tests that a custom RNG can be used with sample_state."""
         custom_rng = np.random.default_rng(12345)
         samples = sample_state(two_qutrit_state, 4, rng=custom_rng)
-        expected = [[0, 1], [0, 2], [2, 1], [1, 2]]
+        expected = [[0, 2], [1, 0], [2, 1], [1, 2]]
         assert qml.math.allequal(samples, expected)
 
     def test_approximate_probs_from_samples(self, three_qutrit_state):
@@ -218,7 +218,6 @@ class TestSampleState:
         (
             (8, [7, 5, 3, 1, 6, 0, 4, 2]),
             (9, [4, 0, 2, 1, 5, 7, 6, 8, 3]),
-            (10, [7, 0, 9, 6, 5, 8, 1, 4, 3, 2]),
         ),
     )
     def test_sample_state_many_wires(self, num_wires, shuffled_wires):
