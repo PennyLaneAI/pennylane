@@ -325,7 +325,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     reduced_density_matrix = np.reshape(
         matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
     )
-    return reduced_density_matrix if batch_dim > 1 else reduced_density_matrix[0]
+    return reduced_density_matrix
 
 
 def _batched_partial_trace_nonrep_indices(matrix, indices):
