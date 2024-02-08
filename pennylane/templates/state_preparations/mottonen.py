@@ -381,4 +381,7 @@ class MottonenStatePreparation(Operation):
                         _apply_uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
                     )
 
+            global_phase = qml.math.sum(-1 * qml.math.angle(state_vector) / len(state_vector))
+            op_list.extend([qml.GlobalPhase(global_phase, wires=wires)])
+
         return op_list
