@@ -165,7 +165,10 @@
 
 <h3>Improvements 🛠</h3>
 
-* The `default.qubit` device handles post-selection, measurement value lists and composite measurements when executing mid-circuit measurements natively.
+* The `default.qubit` device now supports mid-circuit measurements without using the deferred measurement
+  principle when using finite shots. The native execution mode comprises all features supported with `qml.defer_measurements`, including
+  classical control, collecting statistics, and post-selection. This PR notably introduces support for
+  post-selection, measurement value lists, and composite measurements.
   [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
