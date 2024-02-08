@@ -403,7 +403,7 @@ def simulate_tree_mcm(
             mcm_samples=mcm_samples,
         )
 
-    counts = samples_to_counts(samples, circuit_base.measurements[0].wires)
+    counts = samples_to_counts(samples)
     measurements = []
     for branch in counts.keys():
         if op.postselect is not None and branch != op.postselect:
@@ -430,13 +430,13 @@ def simulate_tree_mcm(
     return combine_measurements(circuit, measurements, mcm_samples)
 
 
-def samples_to_counts(samples, wires):
+def samples_to_counts(samples):
     """Converts samples to counts.
 
     This function forces integer keys and values which are required by ``simulate_tree_mcm``.
     """
-    counts = CountsMP(wires=wires).process_samples(samples.reshape((-1, 1)), wire_order=wires)
-    return dict((int(x), int(y)) for x, y in counts.items())
+    counts = qml.math.unique(samples, return_counts=True)
+    return dict((int(x), int(y)) for x, y in zip(*counts))
 
 
 def prep_initial_state(circuit_base, interface, initial_state):
