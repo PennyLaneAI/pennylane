@@ -385,6 +385,9 @@
 * `default.mixed` no longer throws `ValueError` when applying a state vector that is not of type `complex128` when used with tensorflow.
   [(#5155)](https://github.com/PennyLaneAI/pennylane/pull/5155)
 
+* `ctrl_decomp_zyz` no longer raises a `TypeError` if the rotation parameters are of type `torch.Tensor`
+  [(#5183)](https://github.com/PennyLaneAI/pennylane/pull/5183)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
