@@ -530,14 +530,17 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
+        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
+
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
+        assert cost_fn.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
@@ -1647,7 +1650,9 @@ class TestSample:
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        with pytest.raises(qml.QuantumFunctionError, match="only supported when shots=None"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="does not support backprop with requested"
+        ):
             circuit(shots=10)
 
     def test_sample_dimension(self):

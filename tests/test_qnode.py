@@ -127,24 +127,8 @@ class TestValidation:
         tape works as expected"""
         dev = qml.device("default.qubit", wires=1)
 
-        method, diff_options, device = QNode._validate_backprop_method(dev, "auto")
-
-        assert method == "backprop"
-        assert device is dev
-        assert not diff_options
-
-    # pylint: disable=protected-access
-    def test_validate_backprop_finite_shots(self):
-        """Test that a device with finite shots cannot be used with backpropagation."""
-        dev = qml.device("default.qubit", wires=1, shots=100)
-
-        with pytest.raises(qml.QuantumFunctionError, match=r"does not support backprop"):
-            QNode._validate_backprop_method(dev, "autograd")
-
-        dev2 = qml.device("default.qubit")
-        tape = qml.tape.QuantumScript([], [], shots=100)
-        with pytest.raises(qml.QuantumFunctionError, match=r"does not support backprop"):
-            QNode._validate_backprop_method(dev2, "autograd", tape=tape)
+        with pytest.raises(ValueError):
+            QNode._validate_backprop_method(dev, "auto")
 
     # pylint: disable=protected-access
     @pytest.mark.autograd
@@ -240,14 +224,14 @@ class TestValidation:
         assert res == (qml.gradients.finite_diff, {}, dev)
 
     # pylint: disable=protected-access
-    def test_diff_method(self, mocker):
+    def test_diff_method(self):
         """Test that a user-supplied diff method correctly returns the right
         diff method."""
         dev = qml.device("default.qubit", wires=1)
 
         qn = QNode(dummyfunc, dev, diff_method="best")
         assert qn.diff_method == "best"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn == "backprop"
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="best")
         assert qn.diff_method == "best"
@@ -255,7 +239,7 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="backprop")
         assert qn.diff_method == "backprop"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn == "backprop"
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="backprop")
         assert qn.diff_method == "backprop"
@@ -1557,10 +1541,8 @@ class TestNewDeviceIntegration:
         assert len(kwargs) == 0
         assert new_dev is dev
 
-        gradient_fn, kwargs, new_dev = QNode._validate_adjoint_method(dev)
-        assert gradient_fn == "adjoint"
-        assert len(kwargs) == 0
-        assert new_dev is dev
+        with pytest.raises(ValueError):
+            QNode._validate_adjoint_method(dev)
 
     def test_get_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
@@ -1569,22 +1551,12 @@ class TestNewDeviceIntegration:
         ):
             QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match=r"Device CustomDevice does not support adjoint"
-        ):
-            QNode._validate_adjoint_method(self.dev)
-
     def test_error_for_backprop_with_custom_device(self):
         """Test that an error is raised when backprop is requested for a device that does not support it."""
         with pytest.raises(
             qml.QuantumFunctionError, match=r"Device CustomDevice does not support backprop"
         ):
             QNode.get_gradient_fn(self.dev, "autograd", "backprop")
-
-        with pytest.raises(
-            qml.QuantumFunctionError, match=r"Device CustomDevice does not support backprop"
-        ):
-            QNode._validate_backprop_method(self.dev, "autograd")
 
     def test_custom_device_that_supports_backprop(self):
         """Test that a custom device and designate that it supports backprop derivatives."""
@@ -1600,7 +1572,9 @@ class TestNewDeviceIntegration:
                 return execution_config.gradient_method == "backprop"
 
         dev = BackpropDevice()
-        gradient_fn, kwargs, new_dev = QNode._validate_backprop_method(dev, "torch")
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
+            dev, interface="autograd", diff_method="backprop"
+        )
         assert gradient_fn == "backprop"
         assert not kwargs
         assert new_dev is dev
@@ -1620,11 +1594,6 @@ class TestNewDeviceIntegration:
 
         dev = DerivativeDevice()
         gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "tf", "device")
-        assert gradient_fn == "device"
-        assert not kwargs
-        assert new_dev is dev
-
-        gradient_fn, kwargs, new_dev = QNode._validate_device_method(dev)
         assert gradient_fn == "device"
         assert not kwargs
         assert new_dev is dev

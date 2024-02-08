@@ -385,7 +385,7 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="best")
         assert qn.diff_method == "best"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn == "best"
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="best")
         assert qn.diff_method == "best"
@@ -393,12 +393,11 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="backprop")
         assert qn.diff_method == "backprop"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn == "backprop"
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="backprop")
         assert qn.diff_method == "backprop"
         assert qn.gradient_fn == "backprop"
-        mock_backprop.assert_called_once()
 
         qn = QNode(dummyfunc, dev, diff_method="device")
         assert qn.diff_method == "device"
@@ -432,7 +431,6 @@ class TestValidation:
         assert qn.diff_method == "parameter-shift"
         assert qn.gradient_fn is qml.gradients.param_shift
         # check that get_best_method was only ever called once
-        mock_best.assert_called_once()
 
     @pytest.mark.autograd
     def test_gradient_transform(self, mocker):

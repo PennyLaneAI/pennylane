@@ -377,7 +377,7 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit.legacy", wires=1)
+        dev = qml.device("default.qubit.autograd", wires=1)
         dev = self.my_transform(dev, a, b)
 
         @qml.qnode(dev, interface="autograd")
@@ -408,7 +408,7 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit.legacy", wires=1)
+        dev = qml.device("default.qubit.autograd", wires=1)
         dev = self.my_transform(a, b)(dev)  # pylint: disable=no-value-for-parameter
 
         @qml.qnode(dev, interface="autograd")

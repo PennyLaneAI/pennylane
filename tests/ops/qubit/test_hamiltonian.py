@@ -2069,7 +2069,7 @@ class TestHamiltonianDifferentiation:
 
         grad_fn = qml.grad(circuit)
         with pytest.raises(
-            qml.DeviceError,
-            match="not supported on adjoint",
+            qml.QuantumFunctionError,
+            match="does not support adjoint with requested circuit.",
         ):
             grad_fn(coeffs, param)

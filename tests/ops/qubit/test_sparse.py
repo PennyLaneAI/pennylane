@@ -198,8 +198,7 @@ class TestSparse:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="SparseHamiltonian observable must be"
-            " used with the parameter-shift differentiation method",
+            match="does not support backprop with requested circuit.",
         ):
             qml.grad(circuit, argnum=0)([0.5])
 
