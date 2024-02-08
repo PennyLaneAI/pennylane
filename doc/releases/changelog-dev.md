@@ -232,8 +232,6 @@
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
 
-<h4>Community contributions 🥳</h4>
-
 * The function `partial_trace` has been refactored to be public-facing for computing the partial trace of matrices other than density matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
 
