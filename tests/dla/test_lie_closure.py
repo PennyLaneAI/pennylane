@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane.dla import lie_closure
 from pennylane.dla.lie_closure import VSpace, _is_any_col_propto_last
 from pennylane.pauli import PauliWord, PauliSentence
 
@@ -145,3 +146,25 @@ class TestLieClosure:
     def test_is_any_col_propto_last(self, M, res):
         """Test utility function _is_any_col_propto_last that checks whether any column of the input is proportional to the last column"""
         assert _is_any_col_propto_last(M) == res
+
+    def test_simple_lie_closure(self):
+        """Test simple lie_closure example"""
+        dla1 = [
+            PauliSentence({
+                PauliWord({0:"X", 1:"X"}) : 1.,
+                PauliWord({0:"Y", 1:"Y"}) : 1.
+            }),
+            PauliSentence({
+                PauliWord({0:"Z"}) : 1.,
+            }),
+            PauliSentence({
+                PauliWord({1:"Z"}) : 1.,
+            }),
+            PauliSentence({
+                PauliWord({0:"Y", 1:"X"}) : -1.,
+                PauliWord({0:"X", 1:"Y"}) : 1.
+            }),
+        ]
+        gen11 = dla1[:-1]
+        res11 = lie_closure(gen11)
+        assert res11 == dla1
