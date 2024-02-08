@@ -1614,6 +1614,26 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
         assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
 
+    def test_sum_of_sums(self):
+        """Test that sum of sums and just an equivalent sum get compared correctly"""
+        X = qml.PauliX
+        qml.operation.enable_new_opmath()
+        op1 = (
+            0.5 * X(0)
+            + 0.5 * X(1)
+            + 0.5 * X(2)
+            + 0.5 * X(3)
+            + 0.5 * X(4)
+            + 0.5 * X(5)
+            + 0.5 * X(6)
+            + 0.5 * X(7)
+            + 0.5 * X(8)
+            + 0.5 * X(9)
+        )
+        op2 = qml.sum(*[0.5 * X(i) for i in range(10)])
+        assert qml.equal(op1, op2) == True
+        qml.operation.disable_new_opmath()
+
 
 class TestProdComparisons:
     """Tests comparisons between Prod operators"""
