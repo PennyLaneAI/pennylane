@@ -512,6 +512,10 @@ def gather_mcm(measurement, samples):
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement
     else:
+        # For composite measurements, `mcm_samples` has one column but
+        # `mv.wires` usually includes several wires. We therefore need to create a
+        # single-wire measurement for `process_samples` to handle the conversion
+        # correctly.
         if isinstance(measurement, (ExpectationMP, VarianceMP)):
             mcm_samples = mcm_samples.ravel()
         wires = qml.wires.Wires(0)

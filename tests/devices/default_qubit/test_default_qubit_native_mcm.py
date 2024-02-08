@@ -87,8 +87,10 @@ def test_apply_mid_measure():
         _ = apply_mid_measure(
             MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True, mid_measurements={}
         )
-    state, sample = apply_mid_measure(MidMeasureMP(0), np.zeros(2), mid_measurements={})
-    assert sample == 0
+    m0 = MidMeasureMP(0)
+    mid_measurements = {}
+    state = apply_mid_measure(m0, np.zeros(2), mid_measurements=mid_measurements)
+    assert mid_measurements[m0] == 0
     assert np.allclose(state, 0.0)
 
 
