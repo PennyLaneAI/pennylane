@@ -150,41 +150,32 @@ class TestLieClosure:
     def test_simple_lie_closure(self):
         """Test simple lie_closure example"""
         dla11 = [
-            PauliSentence({
-                PauliWord({0:"X", 1:"X"}) : 1.,
-                PauliWord({0:"Y", 1:"Y"}) : 1.
-            }),
-            PauliSentence({
-                PauliWord({0:"Z"}) : 1.,
-            }),
-            PauliSentence({
-                PauliWord({1:"Z"}) : 1.,
-            }),
-            PauliSentence({
-                PauliWord({0:"Y", 1:"X"}) : -1.,
-                PauliWord({0:"X", 1:"Y"}) : 1.
-            }),
+            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
+            PauliSentence(
+                {
+                    PauliWord({0: "Z"}): 1.0,
+                }
+            ),
+            PauliSentence(
+                {
+                    PauliWord({1: "Z"}): 1.0,
+                }
+            ),
+            PauliSentence({PauliWord({0: "Y", 1: "X"}): -1.0, PauliWord({0: "X", 1: "Y"}): 1.0}),
         ]
         gen11 = dla11[:-1]
         res11 = lie_closure(gen11)
         assert res11 == dla11
 
         dla12 = [
-            PauliSentence({
-                PauliWord({0:"X", 1:"X"}) : 1.,
-                PauliWord({0:"Y", 1:"Y"}) : 1.
-            }),
-            PauliSentence({
-                PauliWord({0:"Z"}) : 1.,
-            }),
-            PauliSentence({
-                PauliWord({0:"Y", 1:"X"}) : -1.,
-                PauliWord({0:"X", 1:"Y"}) : 1.
-            }),
-            PauliSentence({
-                PauliWord({0:"Z"}) : -2.,
-                PauliWord({1:"Z"}) : 2.
-            }),
+            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
+            PauliSentence(
+                {
+                    PauliWord({0: "Z"}): 1.0,
+                }
+            ),
+            PauliSentence({PauliWord({0: "Y", 1: "X"}): -1.0, PauliWord({0: "X", 1: "Y"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z"}): -2.0, PauliWord({1: "Z"}): 2.0}),
         ]
         gen12 = dla12[:-1]
         res12 = lie_closure(gen12)
