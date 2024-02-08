@@ -14,7 +14,9 @@
 """Unit tests for matrix expand functions."""
 # pylint: disable=too-few-public-methods,too-many-public-methods
 from functools import reduce
-
+import torch
+import jax
+import tensorflow as tf
 import numpy as np
 import pytest
 from gate_data import CNOT, II, SWAP, I, Toffoli
@@ -206,7 +208,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_torch(self, i, base_matrix, tol, torch):
+    def test_torch(self, i, base_matrix, tol):
         """Tests differentiation in torch by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
 
@@ -223,7 +225,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_jax(self, i, base_matrix, tol, jax):
+    def test_jax(self, i, base_matrix, tol):
         """Tests differentiation in jax by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
 
@@ -241,7 +243,7 @@ class TestExpandMatrix:
             (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
-    def test_tf(self, i, base_matrix, tol, tf):
+    def test_tf(self, i, base_matrix, tol):
         """Tests differentiation in TensorFlow by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
 
@@ -833,7 +835,6 @@ class TestReduceMatrices:
 class TestPartialTrace:
     """Unit tests for the partial_trace function."""
 
-
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_single_density_matrix(self, ml_framework, c_dtype):
         """Test partial trace on a single density matrix."""
@@ -848,7 +849,6 @@ class TestPartialTrace:
         # Perform the partial trace
         result = qml.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype)
         assert np.allclose(result, expected)
-
 
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_batched_density_matrices(self, ml_framework, c_dtype):
@@ -874,7 +874,6 @@ class TestPartialTrace:
         result = qml.math.quantum.partial_trace(rho, [1], c_dtype=c_dtype)
         assert np.allclose(result, expected)
 
-
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_over_no_wires(self, ml_framework, c_dtype):
         """Test that tracing over no wires returns the original matrix."""
@@ -886,7 +885,6 @@ class TestPartialTrace:
         # Perform the partial trace over no wires
         result = qml.math.quantum.partial_trace(rho, [], c_dtype=c_dtype)
         assert np.allclose(result, rho)
-
 
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_over_all_wires(self, ml_framework, c_dtype):
@@ -901,7 +899,6 @@ class TestPartialTrace:
         # Perform the partial trace over all wires
         result = qml.math.quantum.partial_trace(rho, [0, 1], c_dtype=c_dtype)
         assert np.allclose(result, expected)
-
 
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_invalid_wire_selection(self, ml_framework, c_dtype):
@@ -919,7 +916,6 @@ class TestPartialTrace:
                 IndexError,
                 tf.python.framework.errors_impl.InvalidArgumentError,
             )
-
 
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_single_matrix(self, ml_framework, c_dtype):
