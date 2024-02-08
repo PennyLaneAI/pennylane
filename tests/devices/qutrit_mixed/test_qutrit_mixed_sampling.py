@@ -132,11 +132,11 @@ class TestSampleState:
         spy.assert_called_once()
 
     @pytest.mark.jax
-    def test_sample_state_jax(self, two_qutrit_state):
+    def test_sample_state_jax(self, two_qutrit_pure_state):
         """Tests that the returned samples are as expected when explicitly calling _sample_state_jax."""
         import jax
 
-        state = qml.math.array(two_qutrit_state, like="jax")
+        state = qml.math.array(two_qutrit_pure_state, like="jax")
 
         samples = _sample_state_jax(state, 10, prng_key=jax.random.PRNGKey(84))
 
