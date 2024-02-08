@@ -336,7 +336,7 @@ class TestMeasureSamples:
         assert np.isclose(result1["1"] / num_shots, 1 / 4, atol=APPROX_ATOL)
         assert np.isclose(result1["2"] / num_shots, 1 / 8, atol=APPROX_ATOL)
 
-    def test_multiple_sample_measures(self):
+    def test_multiple_sample_measurements(self):
         """Test that a set of sample measurements works as expected"""
         state_vector = np.array([1, -1j, 1, 0, 0, 0, 0, 0, 0])
         state = np.outer(state_vector, np.conj(state_vector)) / 3
@@ -361,7 +361,7 @@ class TestMeasureSamples:
         assert result1.dtype == np.int64
         assert len(np.unique(result1)) == 3
 
-    def test_counts_measure(self, two_qutrit_pure_state):
+    def test_sample_and_counts_measurements(self, two_qutrit_pure_state):
         """Test that a set of sample and counts measurements works as expected"""
         num_shots = 500
         shots = qml.measurements.Shots(num_shots)
