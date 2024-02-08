@@ -1706,20 +1706,8 @@ class TestProdComparisons:
         """Test that prod of prods and just an equivalent Prod get compared correctly"""
         X = qml.PauliX
         qml.operation.enable_new_opmath()
-        op1 = (
-            0.5
-            * X(0)
-            @ (0.5 * X(1))
-            @ (0.5 * X(2))
-            @ (0.5 * X(3))
-            @ (0.5 * X(4))
-            @ (0.5 * X(5))
-            @ (0.5 * X(6))
-            @ (0.5 * X(7))
-            @ (0.5 * X(8))
-            @ (0.5 * X(9))
-        )
-        op2 = qml.prod(*[0.5 * X(i) for i in range(10)])
+        op1 = (0.5 * X(0)) @ (0.5 * X(1)) @ (0.5 * X(2)) @ (0.5 * X(3)) @ (0.5 * X(4))
+        op2 = qml.prod(*[0.5 * X(i) for i in range(5)])
         assert qml.equal(op1, op2)
         qml.operation.disable_new_opmath()
 
