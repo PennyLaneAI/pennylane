@@ -293,19 +293,12 @@ class Device(abc.ABC):
             Only then is the classical postprocessing called on the result object.
 
         """
-        return TransformProgram(), self._setup_execution_config(execution_config)
-
-    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
-        """
-        An optional private method that allows separating ``preprocess`` into its two different
-        responsibilities.
-        """
-        if (
-            self.supports_derivatives(execution_config)
-            and execution_config.gradient_method == "best"
-        ):
-            return replace(execution_config, gradient_method="device")
-        return execution_config
+        if self.supports_derivatives(execution_config) and execution_config.gradient_method in {
+            "best",
+            None,
+        }:
+            return TransformProgram(), replace(execution_config, gradient_method="device")
+        return TransformProgram(), execution_config
 
     @abc.abstractmethod
     def execute(
