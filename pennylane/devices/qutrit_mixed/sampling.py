@@ -76,6 +76,7 @@ def _apply_diagonalizing_gates(
     return state
 
 
+# pylint:disable = too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
     mps: List[Union[SampleMP, CountsMP]],
     state: np.ndarray,
