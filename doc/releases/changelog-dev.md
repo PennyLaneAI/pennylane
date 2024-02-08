@@ -207,6 +207,18 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+
+* Upgrade the `Prod.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
+  ```python3
+  >>> qml.operation.enable_new_opmath()
+  >>> op = X(0) @ (0.5 * X(1) + X(2))
+  >>> op.terms()
+  ([0.5, 1.0],
+   [X(1) @ X(0),
+    X(2) @ X(0)])
+  ```
+  [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+
 * String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
   ```
   >>> qml.PauliX(0)
