@@ -245,10 +245,10 @@
   integer power.
   [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
 
-* JAX JIT compatibility for `BasisStateProjector` in PennyLane has been enhanced, ensuring it 
+* JAX JIT compatibility for `BasisStateProjector` in PennyLane have been enhanced, ensuring it 
   aligns with the non-JIT behavior. Resolved array conversion issues during JIT compilation.
   [(#5102)](https://github.com/PennyLaneAI/pennylane/pull/5102)
-  
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
