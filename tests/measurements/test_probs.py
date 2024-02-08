@@ -262,16 +262,16 @@ class TestProbs:
             m0 = qml.measure(0)
             return qml.probs(op=m0)
 
-        res = circuit(phi)
-
         atol = tol if shots is None else tol_stochastic
         expected = np.array([np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
 
-        if not isinstance(shots, list):
-            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
-        else:
-            for r in res:  # pylint: disable=not-an-iterable
-                assert np.allclose(r, expected, atol=atol, rtol=0)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if not isinstance(shots, list):
+                assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+            else:
+                for r in res:  # pylint: disable=not-an-iterable
+                    assert np.allclose(r, expected, atol=atol, rtol=0)
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
     @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi])

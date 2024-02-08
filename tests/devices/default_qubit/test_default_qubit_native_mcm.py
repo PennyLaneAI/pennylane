@@ -28,6 +28,14 @@ from pennylane.devices.qubit.simulate import (
 
 
 def validate_counts(shots, results1, results2):
+    """Compares two counts.
+
+    If the results are ``Sequence``s, loop over entries.
+
+    Fails if a key of ``result1`` is not found in ``result1``.
+    Passes if counts are too low, chosen as ``100``.
+    Otherwise, fails if counts differ by more than ``20`` plus 20 percent.
+    """
     if isinstance(results1, Sequence):
         assert isinstance(results2, Sequence)
         assert len(results1) == len(results2)
@@ -41,6 +49,14 @@ def validate_counts(shots, results1, results2):
 
 
 def validate_samples(shots, results1, results2):
+    """Compares two samples.
+
+    If the results are ``Sequence``s, loop over entries.
+
+    Fails if the results do not have the same shape, within ``20`` entries plus 20 percent.
+    This is to handle cases when post-selection yields variable shapes.
+    Otherwise, fails if the sums of samples differ by more than ``20`` plus 20 percent.
+    """
     if isinstance(shots, Sequence):
         assert isinstance(results1, Sequence)
         assert isinstance(results2, Sequence)
@@ -57,6 +73,13 @@ def validate_samples(shots, results1, results2):
 
 
 def validate_expval(shots, results1, results2):
+    """Compares two expval, probs or var.
+
+    If the results are ``Sequence``s, validate the average of items.
+
+    If ``shots is None``, validate using ``np.allclose``'s default parameters.
+    Otherwise, fails if the results do not match within ``0.01`` plus 20 percent.
+    """
     if isinstance(results1, Sequence):
         assert isinstance(results2, Sequence)
         assert len(results1) == len(results2)
@@ -71,6 +94,7 @@ def validate_expval(shots, results1, results2):
 
 
 def validate_measurements(func, shots, results1, results2):
+    """Calls the correct validation function based on measurement type."""
     if func is qml.counts:
         validate_counts(shots, results1, results2)
         return
