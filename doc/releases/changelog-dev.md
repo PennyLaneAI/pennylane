@@ -231,9 +231,6 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
-* `qml.equal` compares operators based on their `pauli_rep` in case they have it.
-  [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
-
 <h3>Breaking changes 💔</h3>
 
 * Make PennyLane code compatible with the latest version of `black`.
