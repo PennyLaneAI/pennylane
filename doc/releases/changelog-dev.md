@@ -207,6 +207,18 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+
+* Upgrade the `Prod.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
+  ```python3
+  >>> qml.operation.enable_new_opmath()
+  >>> op = X(0) @ (0.5 * X(1) + X(2))
+  >>> op.terms()
+  ([0.5, 1.0],
+   [X(1) @ X(0),
+    X(2) @ X(0)])
+  ```
+  [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+
 * String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
   ```
   >>> qml.PauliX(0)
@@ -220,6 +232,18 @@
   ```
   [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
 
+* String representations of `Sum` objects now break into multiple lines
+  whenever the output is larger than 50 characters.
+  ```
+  >>> 0.5 * (X(0) @ X(1)) + 0.7 * (X(1) @ X(2)) + 0.8 * (X(2) @ X(3))
+  (
+      0.5 * (X(0) @ X(1))
+    + 0.7 * (X(1) @ X(2))
+    + 0.8 * (X(2) @ X(3))
+  )
+  ```
+  [(#5138)](https://github.com/PennyLaneAI/pennylane/pull/5138)
+
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
@@ -232,6 +256,24 @@
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
 <h3>Breaking changes 💔</h3>
+
+* The entry point convention registering compilers with PennyLane has changed.
+  [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
+
+  To allow for packages to register multiple compilers with PennyLane,
+  the `entry_points` convention under the designated group name
+  `pennylane.compilers` has been modified.
+  
+  Previously, compilers would register `qjit` (JIT decorator),
+  `ops` (compiler-specific operations), and `context` (for tracing and
+  program capture).
+  
+  Now, compilers must register `compiler_name.qjit`, `compiler_name.ops`,
+  and `compiler_name.context`, where `compiler_name` is replaced
+  by the name of the provided compiler.
+  
+  For more information, please see the
+  [documentation on adding compilers](https://docs.pennylane.ai/en/stable/code/qml_compiler.html#adding-a-compiler).
 
 * Make PennyLane code compatible with the latest version of `black`.
   [(#5112)](https://github.com/PennyLaneAI/pennylane/pull/5112)
@@ -423,6 +465,7 @@ Xiaoran Li,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Pablo Antonio Moreno Casares,
+Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
