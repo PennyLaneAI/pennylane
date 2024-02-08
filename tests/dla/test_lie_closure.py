@@ -151,4 +151,3 @@ class TestLieClosure:
     def test_is_any_col_propto_last(self, M, res):
         """Test utility function _is_any_col_propto_last that checks whether any column of the input is proportional to the last column"""
         assert _is_any_col_propto_last(M) == res
-
