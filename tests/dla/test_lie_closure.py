@@ -149,7 +149,7 @@ class TestLieClosure:
 
     def test_simple_lie_closure(self):
         """Test simple lie_closure example"""
-        dla1 = [
+        dla11 = [
             PauliSentence({
                 PauliWord({0:"X", 1:"X"}) : 1.,
                 PauliWord({0:"Y", 1:"Y"}) : 1.
@@ -165,6 +165,27 @@ class TestLieClosure:
                 PauliWord({0:"X", 1:"Y"}) : 1.
             }),
         ]
-        gen11 = dla1[:-1]
+        gen11 = dla11[:-1]
         res11 = lie_closure(gen11)
-        assert res11 == dla1
+        assert res11 == dla11
+
+        dla12 = [
+            PauliSentence({
+                PauliWord({0:"X", 1:"X"}) : 1.,
+                PauliWord({0:"Y", 1:"Y"}) : 1.
+            }),
+            PauliSentence({
+                PauliWord({0:"Z"}) : 1.,
+            }),
+            PauliSentence({
+                PauliWord({0:"Y", 1:"X"}) : -1.,
+                PauliWord({0:"X", 1:"Y"}) : 1.
+            }),
+            PauliSentence({
+                PauliWord({0:"Z"}) : -2.,
+                PauliWord({1:"Z"}) : 2.
+            }),
+        ]
+        gen12 = dla12[:-1]
+        res12 = lie_closure(gen12)
+        assert res12 == dla12
