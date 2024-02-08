@@ -351,7 +351,7 @@ class TestMeasureSamples:
 
         assert result.shape == (shots.total_shots, 2)
         assert result.dtype == np.int64
-        # TODO  fix: assert_correct_sampled_two_qutrit_pure_state(result)
+        assert len(np.unique(result)) == 3
 
         assert result0.shape == (shots.total_shots,)
         assert result0.dtype == np.int64
