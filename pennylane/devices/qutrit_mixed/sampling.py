@@ -326,7 +326,7 @@ def _sample_state_jax(
     else:
         samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
-    res = jnp.zeros(samples.shape + (num_wires,), dtype=np.int64)
+    res = jnp.zeros(samples.shape + (num_wires,), dtype=jnp.int64)
     for i in range(num_wires):
-        res[..., -(i + 1)] = (samples // (QUDIT_DIM**i)) % QUDIT_DIM
+        res = res.at[..., -(i + 1)].set((samples // (QUDIT_DIM**i)) % QUDIT_DIM)
     return res
