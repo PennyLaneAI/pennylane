@@ -116,18 +116,19 @@ def _measure_with_samples_diagonalizing_gates(
         for mp in mps:
             if isinstance(mp, SampleMP):
                 res = mp.process_samples(samples, wires)
-                res = math.squeeze(res)
             elif isinstance(mp, CountsMP):
-                shape = samples.shape
-                if mp.wires:
-                    selected_samples = samples[..., mp.wires]
-                else:
-                    selected_samples = samples
-                states, counts = np.unique(
-                    selected_samples, return_counts=True, axis=range(len(shape) - 1)
+                with qml.queuing.QueuingManager.stop_recording():
+                    processed_samples = qml.sample(op=mp.obs, wires=mp._wires).process_samples(
+                        samples, wires
+                    )
+
+                mp_has_obs = bool(mp.obs)
+                observables, counts = np.unique(
+                    processed_samples, return_counts=True, axis=-2 + mp_has_obs
                 )
-                state_strings = ["".join(state.astype("str")) for state in states]
-                res = dict(zip(state_strings, counts))
+                if not mp_has_obs:
+                    observables = ["".join(observable.astype("str")) for observable in observables]
+                res = dict(zip(observables, counts))
             else:
                 raise NotImplementedError
             processed.append(res)

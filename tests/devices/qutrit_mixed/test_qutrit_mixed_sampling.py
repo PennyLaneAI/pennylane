@@ -167,19 +167,6 @@ class TestSampleState:
         assert np.all(samples == samples2)
         assert not np.allclose(samples, samples3)
 
-    @pytest.mark.skip(
-        reason="Broken due to measure not dealing with marginal states"
-    )  # TODO, should it?
-    @pytest.mark.parametrize("wire_order", [[2], [2, 0], [0, 2, 1]])
-    def test_marginal_sample_state(self, wire_order):
-        """Tests that marginal states can be sampled as expected."""
-        state = np.zeros((QUDIT_DIM,) * THREE_QUTRITS * 2)
-        state[..., 1] = 0.5  # third wire is always 1
-        alltrue_axis = wire_order.index(2)
-
-        samples = sample_state(state, 20, wires=wire_order)
-        assert all(samples[:, alltrue_axis] == 1)
-
     def test_sample_state_custom_rng(self, two_qutrit_state):
         """Tests that a custom RNG can be used with sample_state."""
         custom_rng = np.random.default_rng(12345)
@@ -250,7 +237,7 @@ class TestSampleState:
         assert np.allclose(reordered_probs, random_probs, atol=APPROX_ATOL)
 
 
-class TestMeasureSamples:
+class TestMeasureWithSamples:
     """Test that the measure_with_samples function works as expected"""
 
     def test_sample_measure(self, two_qutrit_pure_state):
