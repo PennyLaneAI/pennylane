@@ -17,7 +17,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.devices.qubit.simulate import _FlexShots  # TODO, should I switch this
 from pennylane.devices.qutrit_mixed.sampling import (
     sample_state,
     _sample_state_jax,
@@ -300,7 +299,7 @@ class TestMeasureSamples:
 
     def test_counts_measure(self, two_qutrit_pure_state):
         """Test that a counts measurement works as expected"""
-        num_shots = 500
+        num_shots = 1000
         shots = qml.measurements.Shots(num_shots)
         mp = qml.counts()
 
@@ -318,7 +317,7 @@ class TestMeasureSamples:
         state = np.outer(state_vector, np.conj(state_vector))
         state = np.reshape(state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
 
-        num_shots = 500
+        num_shots = 1000
         shots = qml.measurements.Shots(num_shots)
 
         mp0 = qml.counts(wires=0)
@@ -363,7 +362,7 @@ class TestMeasureSamples:
 
     def test_sample_and_counts_measurements(self, two_qutrit_pure_state):
         """Test that a set of sample and counts measurements works as expected"""
-        num_shots = 500
+        num_shots = 1000
         shots = qml.measurements.Shots(num_shots)
         samples_mp = qml.sample()
         counts_mp = qml.counts()
