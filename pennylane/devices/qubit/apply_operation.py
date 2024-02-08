@@ -260,15 +260,18 @@ def apply_mid_measure(
     """
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
-    if not np.allclose(np.linalg.norm(state), 1.0):
-        mid_measurements[op] = 0
-        return np.zeros_like(state)
+
+    def return_nans(state):
+        state = np.empty_like(state)
+        state[:] = np.nan
+        return state
+
     wire = op.wires
     probs = qml.devices.qubit.measure(qml.probs(wire), state)
     sample = np.random.binomial(1, probs[1])
     mid_measurements[op] = sample
     if op.postselect is not None and sample != op.postselect:
-        return np.zeros_like(state)
+        return return_nans(state)
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)
     slices[axis] = int(not sample)
@@ -276,7 +279,7 @@ def apply_mid_measure(
     state_norm = np.linalg.norm(state)
     if state_norm < 1.0e-15:
         mid_measurements[op] = 0
-        return np.zeros_like(state)
+        return return_nans(state)
     state = state / state_norm
     if op.reset and sample == 1:
         state = apply_operation(
