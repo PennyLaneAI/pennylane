@@ -44,19 +44,6 @@ ops2 = [
 
 ops2plusY10 = ops2 + [PauliSentence({PauliWord({10: "Y"}): 1.0})]
 
-M1 = np.array([[1.0, 0, 0.5, 0.5, 1.0], [1.0, 0.5, 0, 1.0, 0.0], [1.0, 0.5, 1.0, 2.0, 4.0]])
-M2 = np.array([[1.0, 0, 0.5, 0.5, 1.0], [1.0, 0.5, 0, 0.0, 0.0], [1.0, 0.5, 1.0, 2.0, 4.0]])
-COL_PROPTO_LAST = (
-    (M1, False),
-    (M2, True),
-)
-
-
-@pytest.mark.parametrize("M, res", COL_PROPTO_LAST)
-def test_is_any_col_propto_last(M, res):
-    """Test utility function _is_any_col_propto_last that checks whether any column of the input is proportional to the last column"""
-    assert _is_any_col_propto_last(M) == res
-
 
 class TestVSpace:
     """Unit and integration tests for VSpace class"""
@@ -111,3 +98,56 @@ class TestVSpace:
         assert len_after_adding != len_before_adding
         assert len_after_adding == len(true_new_basis)
         assert len_before_adding == len_basis_before_adding
+
+
+class TestLieClosure:
+    """Tests for qml.dla.lie_closure()"""
+
+    M1 = np.array(
+        [
+            [
+                1.0,
+                0.0,
+                0.5,
+                0.5,
+                1.0,
+            ],  # second-to-last col proportional to last _but only in non-zero terms_ -> False
+            [1.0, 0.5, 0.0, 1.0, 0.0],
+            [1.0, 0.5, 1.0, 2.0, 4.0],
+        ]
+    )
+    M2 = np.array(
+        [
+            [1.0, 0.0, 0.5, 0.5, 1.0],  # second-to-last col proportional to last -> True
+            [1.0, 0.5, 0.0, 0.0, 0.0],
+            [1.0, 0.5, 1.0, 2.0, 4.0],
+        ]
+    )
+    M3 = np.array(
+        [
+            [1.0, 0.0, 0.5, 0.5, -1.0],  # second-to-last col proportional to last -> True
+            [1.0, 0.5, 0.0, 0.0, 0.0],  # additional feature: minus signs reversed
+            [1.0, 0.5, 1.0, 2.0, -4.0],
+        ]
+    )
+    M4 = np.array(
+        [
+            [1.0, 0.0, 0.5, -0.5, 1.0],  # second-to-last col proportional to last -> True
+            [1.0, 0.5, 0.0, 0.0, 0.0],  # additional feature: minus signs reversed
+            [1.0, 0.5, 1.0, -2.0, 4.0],
+        ]
+    )
+    M5 = np.array(
+        [
+            [1.0, 0.0, 0.5, 0.5, -1.0],  # second-to-last col proportional to last -> True
+            [1.0, 0.5, 0.0, 0.0, 0.0],  # additional feature: minus signs opposites
+            [1.0, 0.5, 1.0, -2.0, 4.0],
+        ]
+    )
+
+    IS_ANY_COL_PROPTO_LAST = ((M1, False), (M2, True), (M3, True), (M4, True), (M5, True))
+
+    @pytest.mark.parametrize("M, res", IS_ANY_COL_PROPTO_LAST)
+    def test_is_any_col_propto_last(self, M, res):
+        """Test utility function _is_any_col_propto_last that checks whether any column of the input is proportional to the last column"""
+        assert _is_any_col_propto_last(M) == res

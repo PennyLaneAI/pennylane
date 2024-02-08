@@ -32,7 +32,7 @@ def lie_closure(
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the Lie closure over commutation of a set of generators
 
-    The Lie closure of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}` is computed by 
+    The Lie closure of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}` is computed by
     taking all possible nested commutators until no new (i.e. linearly independent) operator is produced.
 
     Args:
@@ -48,12 +48,12 @@ def lie_closure(
     vspace = VSpace(generators)
 
     epoch = 0
-    old_length = 0 # dummy value
+    old_length = 0  # dummy value
     new_length = len(vspace)
-    print(old_length)
-    print(new_length)
-    print(new_length > old_length)
-    print(epoch > max_iterations)
+    # print(old_length)
+    # print(new_length)
+    # print(new_length > old_length)
+    # print(epoch > max_iterations)
 
     while new_length > old_length or epoch > max_iterations:
         if verbose > 0:
@@ -63,11 +63,13 @@ def lie_closure(
             for idx2 in range(max([idx1 + 1, old_length]), new_length):
                 ps2 = vspace.basis[idx2]
                 com = ps1.commutator(ps2)
+                if len(com) == 0:  # operators commute
+                    continue
 
                 # result is always purely imaginary
                 # TODO potentially renormalize?
                 for pw, val in com.items():
-                    com[pw] = val.imag
+                    com[pw] = val.imag / 2
                 vspace.add(com)
 
                 # old code I am not sure is necessary anymore
@@ -79,12 +81,11 @@ def lie_closure(
                 # for pw, val in com.items():
                 #     com[pw] = val.imag
                 # Add commutator to sparse array if it is linearly independent
-                
 
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
         new_length = len(vspace)
-        print(vspace.M)
+        # print(vspace.M)
         epoch += 1
 
     return vspace.basis
@@ -326,18 +327,23 @@ def _is_any_col_propto_last(inM):
     M = inM.copy()
 
     nonzero_mask = np.nonzero(M[:, 0])  # target vector is the last column
-    norms_of_columns = np.linalg.norm(M, axis=0)[np.newaxis, :]
 
     # process nonzero part of the matrix
     nonzero_part = M[nonzero_mask]
+    normalize_columns = np.linalg.norm(M, axis=0)[np.newaxis, :]
 
     # divide each column by its norm
     # If we decide to maintain a normalization in M, this is not needed anymore
-    nonzero_part = nonzero_part / norms_of_columns
+    # print(nonzero_part, normalize_columns)
+    nonzero_part = nonzero_part / normalize_columns
 
     # fill the original matrix with the nonzero elements
     # note that if a candidate vector has nonzero part where target vector is zero, this part is unaltered
     M[nonzero_mask] = nonzero_part
+    print(M)
 
     # check if any column matches the last column completely
-    return np.any(np.all(M[:, :-1].T == M[:, -1], axis=1))
+    # OR the negative of it
+    return np.any(np.all(M[:, :-1].T == M[:, -1], axis=1)) or np.any(
+        np.all(M[:, :-1].T == -M[:, -1], axis=1)
+    )
