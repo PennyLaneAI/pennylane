@@ -282,8 +282,9 @@ class DefaultClifford(Device):
         >>> circuit()
         tensor([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5], requires_grad=True)
 
-        Once above the limit, one can use :mod:`qml.expval <pennylane.expval>` compute the expectation value
-        of a single target ``basis state`` with the :mod:`qml.Projector <pennylane.Projector>`.
+        Once above the limit, one can use :mod:`qml.expval <pennylane.expval>` to compute the
+        expectation value of a single target ``basis state`` with the
+        :mod:`qml.Projector <pennylane.Projector>`.
 
         .. code-block:: python
 
