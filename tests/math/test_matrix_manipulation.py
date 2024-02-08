@@ -498,10 +498,14 @@ class TestExpandMatrix:
         )
 
         class DummyOp(qml.operation.Operator):
+            """Dummy operator for testing the expand_matrix method."""
+
             num_wires = 2
 
+            # pylint: disable=arguments-differ
             @staticmethod
             def compute_matrix():
+                """Compute the matrix of the DummyOp."""
                 return self.base_matrix_2
 
         op = DummyOp(wires=[0, 2])
@@ -528,10 +532,14 @@ class TestExpandMatrix:
         expanded_matrix = np.moveaxis(expanded_matrix, 0, -2)
 
         class DummyOp(qml.operation.Operator):
+            """Dummy operator for testing the expand_matrix method."""
+
             num_wires = 2
 
+            # pylint: disable=arguments-differ
             @staticmethod
             def compute_matrix():
+                """Compute the matrix of the DummyOp."""
                 return self.base_matrix_2_broadcasted
 
         op = DummyOp(wires=[0, 2])
