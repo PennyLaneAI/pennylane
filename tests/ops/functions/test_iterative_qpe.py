@@ -30,6 +30,7 @@ class TestIQPE:
         # TODO: When we have general statistics on measurements we can calculate it exactly with qml.probs
         dev = qml.device("default.qubit", shots=10000000)
 
+        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit_iterative():
             # Initial state
