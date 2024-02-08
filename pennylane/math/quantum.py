@@ -293,8 +293,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     # has a limit of 8 dimensions if same indices are used
     matrix = cast(matrix, dtype=c_dtype)
     if qml.math.ndim(matrix) == 2:
-        batch_dim = 1
-        dim = len(matrix)
+        batch_dim, dim = 1, matrix.shape[1]
     else:
         batch_dim, dim = matrix.shape[:2]
 
