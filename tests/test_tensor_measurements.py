@@ -21,6 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import expval, var, sample
 
+np.random.seed(0)
 
 Z = np.array([[1, 0], [0, -1]])
 THETA = np.linspace(0.11, 3, 5)
