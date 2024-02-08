@@ -52,9 +52,11 @@ class TestVSpace:
     def test_init(self):
         """Unit tests for initialization"""
         vspace = VSpace(ops1)
-        
+
         assert all(isinstance(op, PauliSentence) for op in vspace.basis)
-        assert np.allclose(vspace.M, [[1.0, 1.0], [1.0, 0.0]]) or np.allclose(vspace.M, [[1.0, 0.0], [1.0, 1.0]])
+        assert np.allclose(vspace.M, [[1.0, 1.0], [1.0, 0.0]]) or np.allclose(
+            vspace.M, [[1.0, 0.0], [1.0, 1.0]]
+        )
         assert vspace.basis == ops1[:-1]
         assert vspace.rank == 2
         assert vspace.num_pw == 2
@@ -186,45 +188,43 @@ class TestLieClosure:
     def test_lie_closure_transverse_field_ising_1D_open(self, n):
         """Test the lie closure works correctly for the transverse Field Ising model with open boundary conditions, a8 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
         generators = [
-            PauliSentence({PauliWord({i:"X", (i+1)%n:"X"}): 1.}) for i in range(n-1)
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n - 1)
         ]
         generators += [
-            PauliSentence({PauliWord({i:"X", (i+1)%n:"Z"}): 1.}) for i in range(n-1)
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
         res = qml.dla.lie_closure(generators)
-        assert len(res) == (2*n - 1)*(2*n - 2)//2
+        assert len(res) == (2 * n - 1) * (2 * n - 2) // 2
 
     @pytest.mark.parametrize("n", range(3, 5))
     def test_lie_closure_transverse_field_ising_1D_cyclic(self, n):
         """Test the lie closure works correctly for the transverse Field Ising model with cyclic boundary conditions, a8 in theorem IV.2 in https://arxiv.org/pdf/2309.05690.pdf"""
-        generators = [
-            PauliSentence({PauliWord({i:"X", (i+1)%n:"X"}): 1.}) for i in range(n)
-        ]
+        generators = [PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n)]
         generators += [
-            PauliSentence({PauliWord({i:"X", (i+1)%n:"Z"}): 1.}) for i in range(n)
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n)
         ]
 
         res = qml.dla.lie_closure(generators)
-        assert len(res) == 2*n*(2*n-1)
-    
+        assert len(res) == 2 * n * (2 * n - 1)
+
     def test_lie_closure_heisenberg_generators_odd(self):
         """Test the resulting DLA from Heisenberg generators with odd n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
         n = 3
         # dim of su(N) is N ** 2 - 1
         # Heisenberg generates su(2**(n-1)) for n odd            => dim should be (2**(n-1))**2 - 1
         generators = [
-            PauliSentence({PauliWord({i:"X", (i+1)%n:"X"}): 1.}) for i in range(n-1)
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n - 1)
         ]
         generators += [
-            PauliSentence({PauliWord({i:"Y", (i+1)%n:"Y"}): 1.}) for i in range(n-1)
+            PauliSentence({PauliWord({i: "Y", (i + 1) % n: "Y"}): 1.0}) for i in range(n - 1)
         ]
         generators += [
-            PauliSentence({PauliWord({i:"Z", (i+1)%n:"Z"}): 1.}) for i in range(n-1)
+            PauliSentence({PauliWord({i: "Z", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
         res = qml.dla.lie_closure(generators)
-        len(res) == (2**(n-1))**2 - 1
+        len(res) == (2 ** (n - 1)) ** 2 - 1
 
     def test_lie_closure_heisenberg_generators_odd(self):
         """Test the resulting DLA from Heisenberg generators with odd n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
@@ -232,14 +232,14 @@ class TestLieClosure:
         # dim of su(N) is N ** 2 - 1
         # Heisenberg generates (su(2**(n-2)))**4 for n>=4 even   => dim should be 4*((2**(n-2))**2 - 1)
         generators = [
-            PauliSentence({PauliWord({i:"X", (i+1)%n:"X"}): 1.}) for i in range(n-1)
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n - 1)
         ]
         generators += [
-            PauliSentence({PauliWord({i:"Y", (i+1)%n:"Y"}): 1.}) for i in range(n-1)
+            PauliSentence({PauliWord({i: "Y", (i + 1) % n: "Y"}): 1.0}) for i in range(n - 1)
         ]
         generators += [
-            PauliSentence({PauliWord({i:"Z", (i+1)%n:"Z"}): 1.}) for i in range(n-1)
+            PauliSentence({PauliWord({i: "Z", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
         res = qml.dla.lie_closure(generators)
-        len(res) == 4*((2**(n-2))**2 - 1)
+        len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
