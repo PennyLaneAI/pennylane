@@ -17,11 +17,12 @@
 # pylint: disable=consider-using-generator, protected-access
 import os
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import active_new_opmath
 from pennylane.pauli.utils import simplify
 
-import numpy as np
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
@@ -31,8 +32,7 @@ def _import_of():
     """Import openfermion and openfermionpyscf."""
     try:
         # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
-        import openfermion
-        import openfermionpyscf
+        import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
             "This feature requires openfermionpyscf. "
