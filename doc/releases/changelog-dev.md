@@ -114,9 +114,9 @@
   ```pycon
   >>> circuit()
   array([[0, 1, 1, 0, 0],
-         [1, 0, 1, 1, 1],
-         [0, 0, 0, 1, 0],
-         [1, 0, 0, 1, 1]])
+        [1, 0, 1, 1, 1],
+        [0, 0, 0, 1, 0],
+        [1, 0, 0, 1, 1]])
   ```
 
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
@@ -137,7 +137,7 @@
 * PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
   [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
 
-* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
+* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance
   for large workflows.
   [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
 
@@ -147,7 +147,7 @@
 <h4>Community contributions 🥳</h4>
 
 * `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
-   [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
+  [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
    It is now possible to transform a fermionic Hamiltonian to a qubit Hamiltonian with parity mapping.
 
    ```python
@@ -165,20 +165,14 @@
 
 <h3>Improvements 🛠</h3>
 
-* The `default.qubit` device handles measurement value lists when executing mid-circuit measurements natively.
-  [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
-
-* The `default.qubit` device handles composite measurements when executing mid-circuit measurements natively.
-  [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
-
-* The `default.qubit` device handles post-selection when executing mid-circuit measurements natively.
+* The `default.qubit` device handles post-selection, measurement value lists and composite measurements when executing mid-circuit measurements natively.
   [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 * Improve efficiency of matrix calculation when operator is symmetric over wires
-   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
+  [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
 * The module `pennylane/math/quantum.py` has now support for the min-entropy.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
@@ -267,10 +261,10 @@
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
 * Controlled operators with a custom controlled version decomposes like how their
-  controlled counterpart decomposes, as opposed to decomposing into their controlled version.   
+  controlled counterpart decomposes, as opposed to decomposing into their controlled version.
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
-  
+
   For example:
   ```
   >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
@@ -391,16 +385,16 @@
 * `PauliSentence.wires` no longer imposes a false order.
   [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
 
-* `qml.qchem.import_state` now applies the chemist-to-physicist 
+* `qml.qchem.import_state` now applies the chemist-to-physicist
   sign convention when initializing a PennyLane state vector from
-  classically pre-computed wavefunctions. That is, it interleaves 
+  classically pre-computed wavefunctions. That is, it interleaves
   spin-up/spin-down operators for the same spatial orbital index,
-  as standard in PennyLane (instead of commuting all spin-up 
-  operators to the left, as is standard in quantum chemistry). 
+  as standard in PennyLane (instead of commuting all spin-up
+  operators to the left, as is standard in quantum chemistry).
   [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
 
 * Multi-wire controlled `CNOT` and `PhaseShift` can now be decomposed correctly.
-  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/) 
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
   [(#5148)](https://github.com/PennyLaneAI/pennylane/pull/5148)
 
 * `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
