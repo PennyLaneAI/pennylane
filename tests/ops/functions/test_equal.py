@@ -1701,12 +1701,14 @@ class TestProdComparisons:
         op1 = qml.prod(*base_list1)
         op2 = qml.prod(*base_list2)
         assert qml.equal(op1, op2) == res
-    
+
     def test_prod_of_prods(self):
         """Test that prod of prods and just an equivalent Prod get compared correctly"""
         X = qml.PauliX
         qml.operation.enable_new_opmath()
-        op1 = (0.5 * X(0)
+        op1 = (
+            0.5
+            * X(0)
             @ (0.5 * X(1))
             @ (0.5 * X(2))
             @ (0.5 * X(3))
