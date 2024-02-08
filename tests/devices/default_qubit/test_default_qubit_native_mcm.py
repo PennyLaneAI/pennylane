@@ -112,7 +112,7 @@ def test_accumulate_native_mcm_unsupported_error():
         qml.classical_shadow(0),
     ],
 )
-def test_parse_native_mid_circuit_measurements(measurement):
+def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
     circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [measurement])
     with pytest.raises(ValueError, match="Native mid-circuit measurement mode does not support"):
         parse_native_mid_circuit_measurements(circuit, None, None)
