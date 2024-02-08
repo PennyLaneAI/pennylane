@@ -951,23 +951,8 @@ class TestIntegration:
         assert np.allclose(r1, r2)
         assert spy.call_count == 0
 
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def cry_qnode_deferred(x):
-            """QNode where we apply a controlled Y-rotation."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
-            qml.CRY(x, wires=[0, 1])
-            return qml.sample(qml.PauliZ(1))
-
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def conditional_ry_qnode_deferred(x):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
-            return qml.sample(qml.PauliZ(1))
+        cry_qnode_deferred = qml.defer_measurements(cry_qnode)
+        conditional_ry_qnode_deferred = qml.defer_measurements(conditional_ry_qnode)
 
         r1 = cry_qnode_deferred(first_par)
         r2 = conditional_ry_qnode_deferred(first_par)
@@ -990,7 +975,6 @@ class TestIntegration:
             return qml.expval(qml.PauliZ(1))
 
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
-        @qml.defer_measurements
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
@@ -1000,9 +984,12 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
+        dm_conditional_ry_qnode = qml.defer_measurements(conditional_ry_qnode)
+
         x_ = -0.654
         x1 = tf.Variable(x_, dtype=tf.float64)
         x2 = tf.Variable(x_, dtype=tf.float64)
+        x3 = tf.Variable(x_, dtype=tf.float64)
 
         with tf.GradientTape() as tape1:
             r1 = cry_qnode(x1)
@@ -1010,11 +997,17 @@ class TestIntegration:
         with tf.GradientTape() as tape2:
             r2 = conditional_ry_qnode(x2)
 
+        with tf.GradientTape() as tape3:
+            r3 = dm_conditional_ry_qnode(x3)
+
         assert np.allclose(r1, r2)
+        assert np.allclose(r1, r3)
 
         grad1 = tape1.gradient(r1, x1)
         grad2 = tape2.gradient(r2, x2)
+        grad3 = tape3.gradient(r3, x3)
         assert np.allclose(grad1, grad2)
+        assert np.allclose(grad1, grad3)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
