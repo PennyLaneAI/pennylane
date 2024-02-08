@@ -380,8 +380,10 @@ def simulate_tree_mcm(
             state = copy.deepcopy(state)
             state[tuple(slices)] = 0.0
             state_norm = np.linalg.norm(state)
+            # we can throw here because vanished states should
+            # be handled right outside ``branch_measurement``
             if state_norm < 1.0e-15:  # pragma: no cover
-                return None
+                raise ValueError(f"Cannot normalize state with state_norm {state_norm}")
             state = state / state_norm
             if op.reset and branch == 1:
                 state = apply_operation(qml.PauliX(wire), state)
@@ -389,8 +391,6 @@ def simulate_tree_mcm(
 
         wire = circuit_base._measurements[0].wires
         new_state = branch_state(state, wire, branch)
-        if new_state is None:
-            return None
         circuit_next._shots = qml.measurements.Shots(counts[branch])
         return simulate_tree_mcm(
             circuit_next,
@@ -505,7 +505,7 @@ def circuit_up_to_first_mcm(circuit):
         for i, op in enumerate(circuit.operations):
             if isinstance(op, MidMeasureMP):
                 return i, op
-        raise ValueError("MidMeasureMP not found.")
+        return len(circuit.operations) + 1, None
 
     i, op = find_next_mcm(circuit)
     # run circuit until next MidMeasureMP and sample

@@ -135,6 +135,38 @@ def test_unsupported_measurement():
 
 
 @flaky(max_runs=5)
+@pytest.mark.parametrize("shots", [10000, [10000, 10001]])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("reset", [False, True])
+@pytest.mark.parametrize("measure_f", [qml.expval])
+def test_single_mcm_with_stateprep(shots, postselect, reset, measure_f):
+    """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
+    conditional gate. A single measurement of the mid-circuit measurement value is performed at
+    the end."""
+
+    dev = qml.device("default.qubit", shots=shots)
+    params = np.pi / 4 * np.ones(2)
+
+    @qml.qnode(dev)
+    def func1(x, y):
+        qml.BasisStatePreparation([0, 1], wires=[0, 1])
+        qml.RX(x, wires=0)
+        qml.RY(x, wires=1)
+        m0 = qml.measure(0, reset=reset, postselect=postselect)
+        qml.cond(m0, qml.RY)(y, wires=0)
+        m1 = qml.measure(0, reset=reset, postselect=postselect)
+        qml.RX(x, wires=0)
+        return measure_f(op=m1)
+
+    func2 = qml.defer_measurements(func1)
+
+    results1 = func1(*params)
+    results2 = func2(*params)
+
+    validate_measurements(measure_f, shots, results1, results2)
+
+
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 10000, [10000, 10001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
