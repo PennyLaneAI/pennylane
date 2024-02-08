@@ -103,6 +103,16 @@ def assert_correct_sampled_batched_two_qutrit_pure_state(samples):
     assert np.all(np.logical_or(third_batch_bool_1, third_batch_bool_2))
 
 
+@pytest.mark.parametrize(
+    "mp", [qml.expval(qml.GellMann(0, 3)), qml.var(qml.GellMann(0, 3)), qml.probs()]
+)
+def test_currently_unsuported_observable(mp, two_qutrit_state):
+    """Test sample measurements that are not counts or sample raise a NotImplementedError."""
+    shots = qml.measurements.Shots(1)
+    with pytest.raises(NotImplementedError):
+        _ = measure_with_samples([mp], two_qutrit_state, shots)
+
+
 class TestSampleState:
     """Test that the sample_state function works as expected"""
 
@@ -158,7 +168,9 @@ class TestSampleState:
         assert np.all(samples == samples2)
         assert not np.allclose(samples, samples3)
 
-    @pytest.mark.skip(reason="Broken due to measure")
+    @pytest.mark.skip(
+        reason="Broken due to measure not dealing with marginal states"
+    )  # TODO, should it?
     @pytest.mark.parametrize("wire_order", [[2], [2, 0], [0, 2, 1]])
     def test_marginal_sample_state(self, wire_order):
         """Tests that marginal states can be sampled as expected."""
@@ -288,7 +300,7 @@ class TestMeasureSamples:
 
     def test_counts_measure(self, two_qutrit_pure_state):
         """Test that a sample measurement works as expected"""
-        num_shots = 200
+        num_shots = 500
         shots = qml.measurements.Shots(num_shots)
         mp = qml.counts()
 
@@ -306,7 +318,7 @@ class TestMeasureSamples:
         state = np.outer(state_vector, np.conj(state_vector))
         state = np.reshape(state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
 
-        num_shots = 200
+        num_shots = 500
         shots = qml.measurements.Shots(num_shots)
 
         mp0 = qml.counts(wires=0)
@@ -323,9 +335,6 @@ class TestMeasureSamples:
         assert np.isclose(result1["0"] / num_shots, 5 / 8, atol=APPROX_ATOL)
         assert np.isclose(result1["1"] / num_shots, 1 / 4, atol=APPROX_ATOL)
         assert np.isclose(result1["2"] / num_shots, 1 / 8, atol=APPROX_ATOL)
-
-    class TestMeasureCounts:
-        """Test that the measure_with_samples function works as expected"""
 
     # TODO: add 2 sample mps
     # TODO: add counts test
