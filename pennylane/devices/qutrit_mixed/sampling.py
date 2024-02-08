@@ -18,6 +18,7 @@ from typing import List, Union
 
 import numpy as np
 import pennylane as qml
+from pennylane import math
 from pennylane.measurements import (
     Shots,
     SampleMeasurement,
@@ -115,9 +116,18 @@ def _measure_with_samples_diagonalizing_gates(
         for mp in mps:
             if isinstance(mp, SampleMP):
                 res = mp.process_samples(samples, wires)
-                res = qml.math.squeeze(res)
+                res = math.squeeze(res)
             elif isinstance(mp, CountsMP):
-                res = mp.process_samples(samples, wires)
+                shape = samples.shape
+                if mp.wires:
+                    selected_samples = samples[..., mp.wires]
+                else:
+                    selected_samples = samples
+                states, counts = np.unique(
+                    selected_samples, return_counts=True, axis=range(len(shape) - 1)
+                )
+                state_strings = ["".join(state.astype("str")) for state in states]
+                res = dict(zip(state_strings, counts))
             else:
                 raise NotImplementedError
             processed.append(res)
@@ -142,7 +152,7 @@ def _measure_with_samples_diagonalizing_gates(
             except ValueError as e:
                 if str(e) != "probabilities contain NaN":
                     raise e
-                samples = qml.math.full((s, len(wires)), 0)
+                samples = math.full((s, len(wires)), 0)
 
             processed_samples.append(_process_single_shot(samples))
 
@@ -160,7 +170,7 @@ def _measure_with_samples_diagonalizing_gates(
     except ValueError as e:
         if str(e) != "probabilities contain NaN":
             raise e
-        samples = qml.math.full((shots.total_shots, len(wires)), 0)
+        samples = math.full((shots.total_shots, len(wires)), 0)
 
     return _process_single_shot(samples)
 
@@ -218,9 +228,9 @@ def _sample_state_jax(
     else:
         samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
-    res = jnp.zeros(samples.shape + (num_wires,), dtype=jnp.int64)
+    res = np.zeros(samples.shape + (num_wires,), dtype=np.int64)
     for i in range(num_wires):
-        res = res.at[..., -(i + 1)].set((samples // (QUDIT_DIM**i)) % QUDIT_DIM)
+        res[..., -(i + 1)] = (samples // (QUDIT_DIM**i)) % QUDIT_DIM
     return res
 
 

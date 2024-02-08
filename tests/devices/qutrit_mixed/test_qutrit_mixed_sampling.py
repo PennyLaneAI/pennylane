@@ -41,7 +41,7 @@ ml_frameworks_list = [
 
 
 def get_dm_of_state(state_vector, num_qudits, normalization=1):
-    state = np.outer(np.conj(state_vector), state_vector) / normalization
+    state = np.outer(state_vector, np.conj(state_vector)) / normalization
     return state.reshape((QUDIT_DIM,) * num_qudits * 2)
 
 
@@ -193,7 +193,7 @@ class TestSampleState:
         num_samples = 10000
 
         bell_state_vector = np.array([[1, 0, 0, 0, 1, 0, 0, 0, 1]])
-        bell_state = np.outer(np.conj(bell_state_vector), bell_state_vector) / 3
+        bell_state = np.outer(bell_state_vector, np.conj(bell_state_vector)) / 3
         bell_state = math.reshape(bell_state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
 
         samples = sample_state(bell_state, num_samples)
@@ -256,7 +256,7 @@ class TestMeasureSamples:
     def test_sample_measure_single_wire(self):
         """Test that a sample measurement on a single wire works as expected"""
         state_vector = np.array([1, -1j, 1, 0, 0, 0, 0, 0, 0])
-        state = np.outer(np.conj(state_vector), state_vector) / 3
+        state = np.outer(state_vector, np.conj(state_vector)) / 3
         state = np.reshape(state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
         shots = qml.measurements.Shots(100)
 
@@ -285,6 +285,47 @@ class TestMeasureSamples:
         one_prob = np.count_nonzero(result[:, 0] == 1) / result.shape[0]
         assert np.allclose(one_or_two_prob, 2 / 3, atol=APPROX_ATOL)
         assert np.allclose(one_prob, 1 / 3, atol=APPROX_ATOL)
+
+    def test_counts_measure(self, two_qutrit_pure_state):
+        """Test that a sample measurement works as expected"""
+        num_shots = 200
+        shots = qml.measurements.Shots(num_shots)
+        mp = qml.counts()
+
+        result = measure_with_samples([mp], two_qutrit_pure_state, shots=shots)[0]
+
+        assert isinstance(result, dict)
+        assert sorted(result.keys()) == ["02", "10", "21"]
+        assert np.isclose(result["02"] / num_shots, 1 / 3, atol=APPROX_ATOL)
+        assert np.isclose(result["10"] / num_shots, 1 / 3, atol=APPROX_ATOL)
+        assert np.isclose(result["21"] / num_shots, 1 / 3, atol=APPROX_ATOL)
+
+    def test_counts_measure_single_wire(self):
+        """Test that a sample measurement on a single wire works as expected"""
+        state_vector = np.array([np.sqrt(5 / 8), -0.5j, 1 / np.sqrt(8), 0, 0, 0, 0, 0, 0])
+        state = np.outer(state_vector, np.conj(state_vector))
+        state = np.reshape(state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
+
+        num_shots = 200
+        shots = qml.measurements.Shots(num_shots)
+
+        mp0 = qml.counts(wires=0)
+        mp1 = qml.counts(wires=1)
+
+        result0 = measure_with_samples([mp0], state, shots=shots)[0]
+        result1 = measure_with_samples([mp1], state, shots=shots)[0]
+
+        assert isinstance(result1, dict)
+        assert result0 == {"0": num_shots}
+
+        assert isinstance(result1, dict)
+        assert sorted(result1.keys()) == ["0", "1", "2"]
+        assert np.isclose(result1["0"] / num_shots, 5 / 8, atol=APPROX_ATOL)
+        assert np.isclose(result1["1"] / num_shots, 1 / 4, atol=APPROX_ATOL)
+        assert np.isclose(result1["2"] / num_shots, 1 / 8, atol=APPROX_ATOL)
+
+    class TestMeasureCounts:
+        """Test that the measure_with_samples function works as expected"""
 
     # TODO: add 2 sample mps
     # TODO: add counts test
