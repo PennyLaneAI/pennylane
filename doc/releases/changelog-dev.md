@@ -165,6 +165,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `default.qubit` device implements a depth-first tree-traversal algorithm to
+  accelerate native mid-circuit measurement execution. The new implementation
+  comprises all features supported with `qml.defer_measurements`, including
+  classical control, collecting statistics, and post-selection.
+  [(#5180)](https://github.com/PennyLaneAI/pennylane/pull/5180)
+
 * The `default.qubit` device now supports mid-circuit measurements without using the deferred measurement
   principle when using finite shots. The native execution mode comprises all features supported with `qml.defer_measurements`, including
   classical control, collecting statistics, and post-selection. This PR notably introduces support for
@@ -174,7 +180,7 @@
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
-* Improve efficiency of matrix calculation when operator is symmetric over wires
+* Improve efficiency of matrix calculation when operator is symmetric over wires.
   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
 * The module `pennylane/math/quantum.py` has now support for the min-entropy.
