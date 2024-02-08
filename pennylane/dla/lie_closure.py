@@ -15,7 +15,6 @@
 
 from functools import reduce
 
-# from typing import Union, Iterable
 from copy import copy
 import numpy as np
 
@@ -275,4 +274,7 @@ def _is_any_col_propto_last(inM):
     M[nonzero_mask] = nonzero_part
 
     # check if any column matches the last column completely
-    return np.any(np.all(M[:, :-1].T == M[:, -1], axis=1))
+    # OR the negative of it
+    return np.any(np.all(M[:, :-1].T == M[:, -1], axis=1)) or np.any(
+        np.all(M[:, :-1].T == -M[:, -1], axis=1)
+    )
