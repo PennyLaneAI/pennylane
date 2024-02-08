@@ -265,6 +265,11 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     >>> partial_trace(x, indices=[0])
     array([[1, 0], [0, 0]])
 
+    >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    ...
+    >>> partial_trace(x, indices=[0])
+    array([[1, 0], [0, 0]])
+
     >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
     ...               [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
     >>> partial_trace(x, indices=[0])
@@ -284,20 +289,19 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
            [[1.+0.j, 0.+0.j],
             [0.+0.j, 0.+0.j]]])>
     """
+    # Autograd does not support same indices sum in backprop, and tensorflow
+    # has a limit of 8 dimensions if same indices are used
+    matrix = cast(matrix, dtype=c_dtype)
     if qml.math.ndim(matrix) == 2:
         batch_dim = 1
         dim = len(matrix)
     else:
         batch_dim, dim = matrix.shape[:2]
-    # Autograd does not support same indices sum in backprop, and tensorflow
-    # has a limit of 8 dimensions if same indices are used
-    matrix = cast(matrix, dtype=c_dtype)
 
     if get_interface(matrix) in ["autograd", "tensorflow"]:
         return _batched_partial_trace_nonrep_indices(matrix, indices)
 
     # Dimension and reshape
-    # batch_dim, dim = matrix.shape[:2]
     num_indices = int(np.log2(dim))
     rho_dim = 2 * num_indices
 
@@ -335,7 +339,6 @@ def _batched_partial_trace_nonrep_indices(matrix, indices):
     else:
         batch_dim, dim = matrix.shape[:2]
 
-    # batch_dim, dim = matrix.shape[:2]
     num_indices = int(np.log2(dim))
     rho_dim = 2 * num_indices
     matrix = np.reshape(matrix, [batch_dim] + [2] * 2 * num_indices)

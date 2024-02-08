@@ -23,6 +23,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import numpy as pnp
 
+
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
 
@@ -832,6 +833,7 @@ class TestReduceMatrices:
 class TestPartialTrace:
     """Unit tests for the partial_trace function."""
 
+
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_single_density_matrix(self, ml_framework, c_dtype):
         """Test partial trace on a single density matrix."""
@@ -846,6 +848,7 @@ class TestPartialTrace:
         # Perform the partial trace
         result = qml.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype)
         assert np.allclose(result, expected)
+
 
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_batched_density_matrices(self, ml_framework, c_dtype):
@@ -871,6 +874,7 @@ class TestPartialTrace:
         result = qml.math.quantum.partial_trace(rho, [1], c_dtype=c_dtype)
         assert np.allclose(result, expected)
 
+
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_over_no_wires(self, ml_framework, c_dtype):
         """Test that tracing over no wires returns the original matrix."""
@@ -882,6 +886,7 @@ class TestPartialTrace:
         # Perform the partial trace over no wires
         result = qml.math.quantum.partial_trace(rho, [], c_dtype=c_dtype)
         assert np.allclose(result, rho)
+
 
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_over_all_wires(self, ml_framework, c_dtype):
@@ -896,6 +901,7 @@ class TestPartialTrace:
         # Perform the partial trace over all wires
         result = qml.math.quantum.partial_trace(rho, [0, 1], c_dtype=c_dtype)
         assert np.allclose(result, expected)
+
 
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_invalid_wire_selection(self, ml_framework, c_dtype):
@@ -913,6 +919,7 @@ class TestPartialTrace:
                 IndexError,
                 tf.python.framework.errors_impl.InvalidArgumentError,
             )
+
 
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_single_matrix(self, ml_framework, c_dtype):
