@@ -421,6 +421,7 @@ class TestBroadcastingPRNG:
     def test_sample_measure_shot_vector(self, mocker, shots, batched_qutrit_pure_state):
         """Test that broadcasting works for qml.sample and shot vectors"""
         import jax
+
         jax.config.update("jax_enable_x64", True)
 
         spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
