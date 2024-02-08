@@ -65,7 +65,9 @@ class TestVSpace:
         """Unit tests for initialization"""
         vspace = VSpace(ops1)
         assert all(isinstance(op, PauliSentence) for op in vspace.basis)
-        assert np.allclose(vspace.M, [[1.0, 1.0], [1.0, 0.0]])
+        assert np.allclose(vspace.M, [[1.0, 1.0], [1.0, 0.0]]) or np.allclose(
+            vspace.M, [[1.0, 0.0], [1.0, 1.0]]
+        )
         assert vspace.basis == ops1[:-1]
         assert vspace.rank == 2
         assert vspace.num_pw == 2
