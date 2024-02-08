@@ -158,6 +158,11 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
+    _grouping_cache = {}
+
+    def __init__(self, *operands: Operator, id=None, _pauli_rep=None):
+        self._groupings = None
+        super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
     @property
     def hash(self):
@@ -217,6 +222,31 @@ class Sum(CompositeOp):
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+
+    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+        """doc"""
+        pr = self.pauli_rep
+
+        # if _hash := self.hash in Sum._grouping_cache:
+        #     pw_groups = Sum._grouping_cache[self.hash]
+        if self._groupings is not None:
+            op_groups = [[pw.operation() for pw in group] for group in self._groupings]
+            coeff_groups = [[pr[pw] for pw in group] for group in self._groupings]
+
+        else:
+            if not pr:
+                raise ValueError("Can't compute grouping for Sums containing non-Pauli operators.")
+
+            coeffs, ops = self.terms()
+            op_groups, coeff_groups = qml.pauli.group_observables(
+                ops, coeffs, grouping_type=grouping_type, method=method
+            )
+
+            pw_groups = [[next(iter(op.pauli_rep)) for op in group] for group in op_groups]
+            # Sum._grouping_cache[_hash] = pw_groups
+            self._groupings = pw_groups
+
+        return op_groups, coeff_groups
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
@@ -330,6 +360,30 @@ class Sum(CompositeOp):
                 coeffs.append(1.0)
                 ops.append(factor)
         return coeffs, ops
+
+    def compute_groupings(self, grouping_type="qwc", method="rlf"):
+        """doc"""
+        pr = self.pauli_rep
+
+        if _hash := self.hash in Sum._grouping_cache:
+            pw_groups = Sum._grouping_cache[self.hash]
+
+            op_groups = [[pw.operation() for pw in group] for group in pw_groups]
+            coeff_groups = [[pr[pw] for pw in group] for group in pw_groups]
+
+        else:
+            if not pr:
+                raise ValueError("Can't compute groupings for Sums containing non-Pauli operators.")
+
+            coeffs, ops = self.terms()
+            op_groups, coeff_groups = qml.pauli.group_observables(
+                ops, coeffs, grouping_type=grouping_type, method=method
+            )
+
+            pw_groups = [[next(iter(op.pauli_rep)) for op in group] for group in op_groups]
+            Sum._grouping_cache[_hash] = pw_groups
+
+        return op_groups, coeff_groups
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
