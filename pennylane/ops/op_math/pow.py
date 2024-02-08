@@ -227,12 +227,16 @@ class Pow(ScalarSymbolicOp):
             if qml.math.get_deep_interface(mat) != "tensorflow":
                 return qmlmath.linalg.matrix_power(mat, scalar)
 
+            # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
+            # is not differentiable. So we use a custom implementation of matrix power for integer
+            # exponents below.
             if scalar == 0:
-                return qmlmath.eye(qml.math.shape(mat)[-1], like=mat)
+                # Used instead of qml.math.eye for tracing derivatives
+                return mat @ qmlmath.linalg.inv(mat)
             if scalar > 0:
                 out = mat
             else:
-                out = qmlmath.linalg.inv(mat)
+                out = mat = qmlmath.linalg.inv(mat)
                 scalar *= -1
 
             for _ in range(scalar - 1):
