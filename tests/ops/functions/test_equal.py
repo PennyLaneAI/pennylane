@@ -1631,7 +1631,7 @@ class TestSymbolicOpComparison:
             + 0.5 * X(9)
         )
         op2 = qml.sum(*[0.5 * X(i) for i in range(10)])
-        assert qml.equal(op1, op2) == True
+        assert qml.equal(op1, op2)
         qml.operation.disable_new_opmath()
 
 
