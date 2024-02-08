@@ -94,7 +94,7 @@ def test_apply_mid_measure():
     assert np.allclose(state, 0.0)
 
 
-def test_accumulate_native_mcm():
+def test_accumulate_native_mcm_unsupported_error():
     with pytest.raises(
         TypeError, match=f"Unsupported measurement of {type(qml.var(qml.PauliZ(0))).__name__}"
     ):
