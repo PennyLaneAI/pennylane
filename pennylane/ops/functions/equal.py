@@ -153,6 +153,11 @@ def equal(
 
     if isinstance(op2, (Hamiltonian, Tensor)):
         return _equal(op2, op1)
+    
+    if isinstance(op1, Operator) and isinstance(op2, Operator):
+        if (pr1 := op1.pauli_rep) and (pr2 := op2.pauli_rep):
+            return pr1 == pr2
+        
 
     return _equal(
         op1,
