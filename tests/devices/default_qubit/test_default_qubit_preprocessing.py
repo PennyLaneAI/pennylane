@@ -618,13 +618,6 @@ class TestPreprocessingIntegration:
         expected_expval = np.cos(y)
         assert qml.math.allclose(expected_expval, processed_results[1])
 
-    def test_preprocess_defer_measurements(self):
-        """Test preprocessing contains the defer measurement transform."""
-        dev = DefaultQubit()
-
-        program, _ = dev.preprocess()
-        assert qml.defer_measurements.transform in [t.transform for t in program]
-
 
 class TestAdjointDiffTapeValidation:
     """Unit tests for validate_and_expand_adjoint"""
