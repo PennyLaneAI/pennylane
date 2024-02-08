@@ -120,7 +120,7 @@ def _measure_with_samples_diagonalizing_gates(
                 with qml.queuing.QueuingManager.stop_recording():
                     processed_samples = qml.sample(op=mp.obs, wires=mp._wires).process_samples(
                         samples, wires
-                    )
+                    )  # pylint:disable = protected-access
 
                 mp_has_obs = bool(mp.obs)
                 observables, counts = np.unique(

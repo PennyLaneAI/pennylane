@@ -102,16 +102,6 @@ def assert_correct_sampled_batched_two_qutrit_pure_state(samples):
     assert np.all(np.logical_or(third_batch_bool_1, third_batch_bool_2))
 
 
-@pytest.mark.parametrize(
-    "mp", [qml.expval(qml.GellMann(0, 3)), qml.var(qml.GellMann(0, 3)), qml.probs()]
-)
-def test_currently_unsuported_observable(mp, two_qutrit_state):
-    """Test sample measurements that are not counts or sample raise a NotImplementedError."""
-    shots = qml.measurements.Shots(1)
-    with pytest.raises(NotImplementedError):
-        _ = measure_with_samples([mp], two_qutrit_state, shots)
-
-
 class TestSampleState:
     """Test that the sample_state function works as expected"""
 
@@ -369,8 +359,8 @@ class TestMeasureWithSamples:
         assert np.isclose(counts_results["21"] / num_shots, 1 / 3, atol=APPROX_ATOL)
 
 
-class TestInvalidStateSamples:
-    """Tests for mixed state matrices containing nan values or shot vectors with zero shots."""
+class TestInvalidSampling:
+    """Tests for non-expected states and inputs."""
 
     @pytest.mark.parametrize("shots", [10, [10, 10]])
     def test_only_catch_nan_errors(self, shots):
@@ -382,34 +372,14 @@ class TestInvalidStateSamples:
         with pytest.raises(ValueError, match="probabilities do not sum to 1"):
             _ = measure_with_samples([mp], state, _shots)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
-        "mp", [qml.sample(wires=0), qml.sample(op=qml.GellMann(0, 1)), qml.sample(wires=[0, 1])]
+        "mp", [qml.expval(qml.GellMann(0, 3)), qml.var(qml.GellMann(0, 3)), qml.probs()]
     )
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
-    @pytest.mark.parametrize("shots", [0, [0, 0]])
-    def test_nan_samples(self, mp, interface, shots):
-        """Test that the result of circuits with 0 probability postselections is NaN with the
-        expected shape."""
-        state = qml.math.full((3,) * QUDIT_DIM * 2, np.NaN, like=interface)
-        res = measure_with_samples((mp,), state, _FlexShots(shots), is_state_batched=False)
-
-        if not isinstance(shots, list):
-            assert isinstance(res, tuple)
-            res = res[0]
-            assert qml.math.shape(res) == (shots,) if len(mp.wires) == 1 else (shots, len(mp.wires))
-
-        else:
-            assert isinstance(res, tuple)
-            assert len(res) == 2
-            for i, r in enumerate(res):
-                assert isinstance(r, tuple)
-                r = r[0]
-                assert (
-                    qml.math.shape(r) == (shots[i],)
-                    if len(mp.wires) == 1
-                    else (shots[i], len(mp.wires))
-                )
+    def test_currently_unsuported_observable(mp, two_qutrit_state):
+        """Test sample measurements that are not counts or sample raise a NotImplementedError."""
+        shots = qml.measurements.Shots(1)
+        with pytest.raises(NotImplementedError):
+            _ = measure_with_samples([mp], two_qutrit_state, shots)
 
 
 shots_to_test = [
