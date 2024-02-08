@@ -421,6 +421,7 @@ class TestBroadcastingPRNG:
     def test_sample_measure_shot_vector(self, mocker, shots, batched_qutrit_pure_state):
         """Test that broadcasting works for qml.sample and shot vectors"""
         import jax
+        jax.config.update("jax_enable_x64", True)
 
         spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
 
@@ -448,9 +449,7 @@ class TestBroadcastingPRNG:
             r = r[0]
 
             assert r.shape == (3, s, 2)
-            # this is has started randomly failing do to r.dtype being int32 instead of int64.
-            # Not sure why they are getting returned as 32 instead, but maybe this will fix it?
-            assert res[0][0].dtype in [np.int32, np.int64]
+            assert res[0][0].dtype == np.int64
 
             # convert to numpy array because prng_key -> JAX -> ArrayImpl -> angry vanilla numpy below
             r = [np.array(i) for i in r]
