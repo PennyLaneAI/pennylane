@@ -91,7 +91,7 @@ def test_apply_mid_measure():
     mid_measurements = {}
     state = apply_mid_measure(m0, np.zeros(2), mid_measurements=mid_measurements)
     assert mid_measurements[m0] == 0
-    assert np.all(np.isnan(state))
+    assert np.allclose(state, 0.0)
 
 
 def test_accumulate_native_mcm_unsupported_error():

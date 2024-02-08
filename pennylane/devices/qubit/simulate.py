@@ -133,22 +133,15 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
     state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
 
     # initial state is batched only if the state preparation (if it exists) is batched
-    is_state_vanished = not qml.math.allclose(qml.math.linalg.norm(state), 1.0)
     is_state_batched = bool(prep and prep.batch_size is not None)
-    will_state_be_batched = is_state_batched or any(
-        op.batch_size is not None for op in circuit.operations
-    )
     for op in circuit.operations[bool(prep) :]:
-        if is_state_vanished or qml.math.allclose(qml.math.linalg.norm(state), np.nan):
-            is_state_vanished = not will_state_be_batched
-        if not is_state_vanished:
-            state = apply_operation(
-                op,
-                state,
-                is_state_batched=is_state_batched,
-                debugger=debugger,
-                mid_measurements=mid_measurements,
-            )
+        state = apply_operation(
+            op,
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+            mid_measurements=mid_measurements,
+        )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             state, circuit._shots = _postselection_postprocess(
@@ -370,7 +363,7 @@ def simulate_one_shot_native_mcm(
     state, is_state_batched = get_final_state(
         circuit, debugger=debugger, interface=interface, mid_measurements=mcm_dict
     )
-    if not qml.math.allclose(qml.math.linalg.norm(state), 1.0):
+    if not np.allclose(np.linalg.norm(state), 1.0):
         return None, mcm_dict
     return (
         measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
