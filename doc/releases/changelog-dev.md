@@ -231,6 +231,9 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
+* `qml.equal` compares operators based on their `pauli_rep` in case they have it.
+  [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
+
 <h3>Breaking changes 💔</h3>
 
 * Make PennyLane code compatible with the latest version of `black`.
@@ -403,6 +406,9 @@
 
 * `default.mixed` no longer throws `ValueError` when applying a state vector that is not of type `complex128` when used with tensorflow.
   [(#5155)](https://github.com/PennyLaneAI/pennylane/pull/5155)
+
+* Comparison of sum of sums with an equivalent sum in `qml.equal` yields the correct result now.
+  [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
 
 <h3>Contributors ✍️</h3>
 
