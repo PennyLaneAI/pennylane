@@ -344,7 +344,7 @@
 * A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
-* A warning about two mathematically equivalent hamiltonians undergoing different time evolutions added to `qml.ApproxTimeEvolution`.
+* A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions was added to `qml.ApproxTimeEvolution`.
   [(#5092)](https://github.com/PennyLaneAI/pennylane/pull/5137)
 
 <h3>Bug fixes 🐛</h3>
