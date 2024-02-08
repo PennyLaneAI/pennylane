@@ -13,5 +13,3 @@
 # limitations under the License.
 """A module containing functionality for (dynamical) Lie algebra"""
 
-
-# from .lie_closure import VSpace

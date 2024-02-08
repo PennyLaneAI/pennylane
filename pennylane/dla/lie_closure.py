@@ -25,17 +25,6 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 
-# def lie_closure(
-#     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
-#     return_intermediate: bool = False,
-# ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
-#     r"""
-#     Perform the lie closure of a set of operators.
-
-#     """
-#     return None
-
-
 class VSpace:
     """
     Class representing the linearly independent basis of a vector space.
@@ -272,14 +261,14 @@ def _is_any_col_propto_last(inM):
     M = inM.copy()
 
     nonzero_mask = np.nonzero(M[:, 0])  # target vector is the last column
-    norms_of_columns = np.linalg.norm(M, axis=0)[np.newaxis, :]
 
     # process nonzero part of the matrix
     nonzero_part = M[nonzero_mask]
+    normalize_columns = np.linalg.norm(M, axis=0)[np.newaxis, :]
 
     # divide each column by its norm
     # If we decide to maintain a normalization in M, this is not needed anymore
-    nonzero_part = nonzero_part / norms_of_columns
+    nonzero_part = nonzero_part / normalize_columns
 
     # fill the original matrix with the nonzero elements
     # note that if a candidate vector has nonzero part where target vector is zero, this part is unaltered
