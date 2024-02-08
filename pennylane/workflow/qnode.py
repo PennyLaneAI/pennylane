@@ -775,8 +775,7 @@ class QNode:
 
         if backprop_interface is not None:
             # device supports backpropagation natively
-
-            if mapped_interface == backprop_interface:
+            if mapped_interface == backprop_interface or interface == "auto":
                 return "backprop", {}, device
 
             raise qml.QuantumFunctionError(

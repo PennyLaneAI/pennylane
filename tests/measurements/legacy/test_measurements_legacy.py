@@ -119,12 +119,12 @@ class TestSampleMeasurement:
         ):
             circuit()
 
-    def test_method_overriden_by_device(self):
+    def test_method_overridden_by_device(self):
         """Test that the device can override a measurement process."""
 
         dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.PauliX(0)
             return qml.sample(wires=[0]), qml.sample(wires=[1])
@@ -177,7 +177,7 @@ class TestStateMeasurement:
 
         dev = qml.device("default.qubit.legacy", wires=2)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit():
             return qml.state()
 

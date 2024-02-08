@@ -44,7 +44,7 @@ class TestIntegration:
     )
     def test_mutual_info_output(self, interface, state, expected):
         """Test the output of qml.mutual_info"""
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device(f"default.qubit.{interface}", wires=4)
 
         @qml.qnode(dev, interface=interface)
         def circuit():
