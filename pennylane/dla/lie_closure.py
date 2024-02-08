@@ -145,6 +145,7 @@ class VSpace:
 
     @property
     def basis(self):
+        """List of basis operators of VSpace"""
         return self._basis
 
     def __len__(self):
