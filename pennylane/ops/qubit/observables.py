@@ -443,7 +443,7 @@ class BasisStateProjector(Projector, Operation):
         if not qml.math.is_abstract(state):
             # for cases like [jax.numpy.array(0), jax.numpy.array(1)]
             state_array = qml.math.asarray(state)
-            state_array = state_array.astype(int)
+            state_array = qml.math.cast(state_array, int)
             if not all(x in [0, 1] for x in state_array):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_array}")
         else:
