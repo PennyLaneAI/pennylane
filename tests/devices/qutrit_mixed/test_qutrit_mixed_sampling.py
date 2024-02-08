@@ -299,7 +299,7 @@ class TestMeasureSamples:
         assert np.allclose(one_prob, 1 / 3, atol=APPROX_ATOL)
 
     def test_counts_measure(self, two_qutrit_pure_state):
-        """Test that a sample measurement works as expected"""
+        """Test that a counts measurement works as expected"""
         num_shots = 500
         shots = qml.measurements.Shots(num_shots)
         mp = qml.counts()
@@ -313,7 +313,7 @@ class TestMeasureSamples:
         assert np.isclose(result["21"] / num_shots, 1 / 3, atol=APPROX_ATOL)
 
     def test_counts_measure_single_wire(self):
-        """Test that a sample measurement on a single wire works as expected"""
+        """Test that a counts measurement on a single wire works as expected"""
         state_vector = np.array([np.sqrt(5 / 8), -0.5j, 1 / np.sqrt(8), 0, 0, 0, 0, 0, 0])
         state = np.outer(state_vector, np.conj(state_vector))
         state = np.reshape(state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
@@ -336,9 +336,51 @@ class TestMeasureSamples:
         assert np.isclose(result1["1"] / num_shots, 1 / 4, atol=APPROX_ATOL)
         assert np.isclose(result1["2"] / num_shots, 1 / 8, atol=APPROX_ATOL)
 
-    # TODO: add 2 sample mps
-    # TODO: add counts test
-    # TODO: add mixed counts and sample test
+    def test_multiple_sample_measures(self):
+        """Test that a set of sample measurements works as expected"""
+        state_vector = np.array([1, -1j, 1, 0, 0, 0, 0, 0, 0])
+        state = np.outer(state_vector, np.conj(state_vector)) / 3
+        state = np.reshape(state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
+        shots = qml.measurements.Shots(100)
+
+        mp = qml.sample()
+        mp0 = qml.sample(wires=0)
+        mp1 = qml.sample(wires=1)
+
+        result, result0, result1 = measure_with_samples([mp, mp0, mp1], state, shots=shots)
+
+        assert result.shape == (shots.total_shots, 2)
+        assert result.dtype == np.int64
+        # TODO  fix: assert_correct_sampled_two_qutrit_pure_state(result)
+
+        assert result0.shape == (shots.total_shots,)
+        assert result0.dtype == np.int64
+        assert np.all(result0 == 0)
+
+        assert result1.shape == (shots.total_shots,)
+        assert result1.dtype == np.int64
+        assert len(np.unique(result1)) == 3
+
+    def test_counts_measure(self, two_qutrit_pure_state):
+        """Test that a set of sample and counts measurements works as expected"""
+        num_shots = 500
+        shots = qml.measurements.Shots(num_shots)
+        samples_mp = qml.sample()
+        counts_mp = qml.counts()
+
+        sample_results, counts_results = measure_with_samples(
+            [samples_mp, counts_mp], two_qutrit_pure_state, shots=shots
+        )
+
+        assert sample_results.shape == (shots.total_shots, 2)
+        assert sample_results.dtype == np.int64
+        assert_correct_sampled_two_qutrit_pure_state(sample_results)
+
+        assert isinstance(counts_results, dict)
+        assert sorted(counts_results.keys()) == ["02", "10", "21"]
+        assert np.isclose(counts_results["02"] / num_shots, 1 / 3, atol=APPROX_ATOL)
+        assert np.isclose(counts_results["10"] / num_shots, 1 / 3, atol=APPROX_ATOL)
+        assert np.isclose(counts_results["21"] / num_shots, 1 / 3, atol=APPROX_ATOL)
 
 
 class TestInvalidStateSamples:
