@@ -121,6 +121,7 @@ def get_final_state(
         circuit (.QuantumScript): The single circuit to simulate
         debugger (._Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        initial_state (TensorLike): Initial statevector
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
@@ -190,6 +191,7 @@ def measure_final_state(
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be for sampling.
+        initial_state (TensorLike): Initial statevector
 
     Returns:
         Tuple[TensorLike]: The measurement results
@@ -288,7 +290,6 @@ def simulate_tree_mcm(
     interface=None,
     initial_state=None,
     mcm_active=None,
-    mcm_counts=None,
     mcm_samples=None,
 ) -> Result:
     """Simulate a single quantum script with native mid-circuit measurements.
@@ -303,7 +304,9 @@ def simulate_tree_mcm(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
-        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the pre-rotated state. Used to pass the state between forward passes and vjp calculations.
+        initial_state (TensorLike): Initial statevector
+        mcm_active (dict): Mid-circuit measurement values or all parent circuits of ``circuit``
+        mcm_samples (dict): Mid-circuit measurement samples or all parent circuits of ``circuit``
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -328,16 +331,16 @@ def simulate_tree_mcm(
             )
         return tuple(results)
 
+    #######################
+    # main implementation #
+    #######################
+
     def init_dict(d):
         return {} if d is None else d
 
     mcm_active = init_dict(mcm_active)
-    mcm_counts = init_dict(mcm_counts)
     mcm_samples = init_dict(mcm_samples)
 
-    #######################
-    # main implementation #
-    #######################
     circuit_base, circuit_next, op = circuit_up_to_first_mcm(circuit)
     # we need to make sure the state is the all-wire state
     initial_state = prep_initial_state(circuit_base, interface, initial_state)
@@ -357,30 +360,18 @@ def simulate_tree_mcm(
         initial_state=initial_state,
     )
 
+    # Simply return measurements when ``circuit_base`` does not have an MCM
     if circuit_next is None:
         return measurements
 
     samples = measurements
+    update_mcm_samples(op, samples, mcm_active, mcm_samples)
 
-    update_samples(op, samples, mcm_active, mcm_samples)
-
-    meas = circuit_base.measurements[0]
-    counts = CountsMP(wires=meas.wires).process_samples(
-        samples.reshape((-1, 1)), wire_order=meas.wires
-    )
-    counts = dict((int(x), int(y)) for x, y in counts.items())
-    mcm_tmp = mcm_counts[op] if op in mcm_counts else None
-    mcm_tmp = Counter(mcm_tmp)
-    mcm_tmp.update(counts)
-    if op in mcm_counts:
-        mcm_counts[op].update(dict(mcm_tmp))
-    else:
-        mcm_counts[op] = dict(mcm_tmp)
-
+    # Define ``branch_measurement`` here to capture ``op``, ``rng``, ``prng_key``, ``debugger``, ``interface``
     def branch_measurement(
-        circuit_base, circuit_next, counts, state, branch, mcm_active, mcm_counts, mcm_samples
+        circuit_base, circuit_next, counts, state, branch, mcm_active, mcm_samples
     ):
-        """Returns the results of both branches executing ``circuit_next``."""
+        """Returns the measurements of the specified branch by executing ``circuit_next``."""
 
         def branch_state(state, wire, branch):
             axis = wire.toarray()[0]
@@ -409,15 +400,14 @@ def simulate_tree_mcm(
             interface=interface,
             initial_state=new_state,
             mcm_active=mcm_active,
-            mcm_counts=mcm_counts,
             mcm_samples=mcm_samples,
         )
 
+    counts = samples_to_counts(samples, circuit_base.measurements[0].wires)
     measurements = []
     for branch in counts.keys():
         if op.postselect is not None and branch != op.postselect:
-            mcm_counts[branch] = 0
-            truncate_samples(op, branch, mcm_active, mcm_samples)
+            prune_mcm_samples(op, branch, mcm_active, mcm_samples)
             continue
         mcm_active[op] = branch
         measurements.append(
@@ -428,7 +418,6 @@ def simulate_tree_mcm(
                 state,
                 branch,
                 mcm_active=mcm_active,
-                mcm_counts=mcm_counts,
                 mcm_samples=mcm_samples,
             )
         )
@@ -441,8 +430,22 @@ def simulate_tree_mcm(
     return combine_measurements(circuit, measurements, mcm_samples)
 
 
+def samples_to_counts(samples, wires):
+    """Converts samples to counts.
+
+    This function forces integer keys and values which are required by ``simulate_tree_mcm``.
+    """
+    counts = CountsMP(wires=wires).process_samples(samples.reshape((-1, 1)), wire_order=wires)
+    return dict((int(x), int(y)) for x, y in counts.items())
+
+
 def prep_initial_state(circuit_base, interface, initial_state):
-    """Returns an initial state which will act on all wires."""
+    """Returns an initial state which will act on all wires.
+
+    ``get_final_state`` executes a circuit on a subset of wires found in operations
+    or measurements, unless an initial_state is passed as an optional argument.
+    This function makes sure that an initial state with the correct size is passed
+    on the first invocation of ``simulate_tree_mcm``."""
     if initial_state is not None:
         return initial_state
     prep = None
@@ -451,8 +454,33 @@ def prep_initial_state(circuit_base, interface, initial_state):
     return create_initial_state(sorted(circuit_base.wires), prep, like=INTERFACE_TO_LIKE[interface])
 
 
-def update_samples(op, samples, mcm_active, mcm_samples):
-    """Updates the mid-measurement sample dictionary given a MidMeasureMP and samples."""
+def prune_mcm_samples(op, branch, mcm_active, mcm_samples):
+    """Removes samples from mid-measurement sample dictionary given a MidMeasureMP and branch.
+
+    Post-selection on a given mid-circuit measurement leads to ignoring certain branches
+    of the tree and samples. The corresponding samples in all other mid-circuit measurement
+    must be deleted accordingly. We need to find which samples are
+    corresponding to the current branch by looking at all parent nodes.
+    """
+    mask = mcm_samples[op] == branch
+    for k, v in mcm_active.items():
+        if k == op:
+            break
+        mask = np.logical_and(mask, mcm_samples[k] == v)
+    for k in mcm_samples.keys():
+        mcm_samples[k] = mcm_samples[k][np.logical_not(mask)]
+
+
+def update_mcm_samples(op, samples, mcm_active, mcm_samples):
+    """Updates the mid-measurement sample dictionary given a MidMeasureMP and samples.
+
+    If the ``mcm_active`` dictionary is empty, we are at the root and ``mcm_samples`
+    is simply updated with ``samples``.
+
+    If the ``mcm_active`` dictionary is not empty, we need to find which samples are
+    corresponding to the current branch by looking at all parent nodes. ``mcm_samples`
+    is then updated with samples at indices corresponding to parent nodes.
+    """
     if mcm_active:
         shape = next(iter(mcm_samples.values())).shape
         mask = np.ones(shape, dtype=bool)
@@ -467,19 +495,8 @@ def update_samples(op, samples, mcm_active, mcm_samples):
         mcm_samples[op] = samples
 
 
-def truncate_samples(op, branch, mcm_active, mcm_samples):
-    """Removes samples from mid-measurement sample dictionary given a MidMeasureMP and branch."""
-    mask = mcm_samples[op] == branch
-    for k, v in mcm_active.items():
-        if k == op:
-            break
-        mask = np.logical_and(mask, mcm_samples[k] == v)
-    for k in mcm_samples.keys():
-        mcm_samples[k] = mcm_samples[k][np.logical_not(mask)]
-
-
 def circuit_up_to_first_mcm(circuit):
-    """Returns two circuits: one that runs up-to the next mid-circuit measurement and one that runs beyond it."""
+    """Returns two circuits; one that runs up-to the next mid-circuit measurement and one that runs beyond it."""
     if not has_mid_circuit_measurements(circuit):
         return circuit, None, None
 
