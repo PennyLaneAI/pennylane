@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for sampling states in devices/qutrit_mixed."""
-from random import shuffle
 import pytest
 import numpy as np
 
