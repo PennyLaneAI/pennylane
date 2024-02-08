@@ -155,7 +155,7 @@ def mid_circuit_measurements(
 
     If the tape of device uses finite-shot, use the native implementation (i.e. no transform), and use defer measurements transforms otherwise.
     """
-    if tape.shots:
+    if tape.shots and tape.batch_size is None:
         return (tape,), null_postprocessing
     return qml.defer_measurements(tape, device=device)
 

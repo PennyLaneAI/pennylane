@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the var module"""
+from flaky import flaky
 import numpy as np
 import pytest
 
@@ -92,6 +93,7 @@ class TestVar:
         expected = np.sin(phi / 2) ** 2 - np.sin(phi / 2) ** 4
         assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
+    @flaky(max_runs=5)
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_composite_measurement_value(

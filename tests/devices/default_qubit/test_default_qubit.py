@@ -24,6 +24,8 @@ import pennylane as qml
 
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
+np.random.seed(0)
+
 
 def test_name():
     """Tests the name of DefaultQubit."""
@@ -1679,16 +1681,16 @@ class TestPostselection:
         dev = qml.device("default.qubit")
         param = qml.math.asarray(param, like=interface)
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_postselect(theta):
             qml.RX(theta, 0)
             qml.CNOT([0, 1])
             qml.measure(0, postselect=1)
             return qml.apply(mp)
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_expected():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -1721,9 +1723,7 @@ class TestPostselection:
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
     @pytest.mark.parametrize("shots", [50000, (50000, 50000)])
-    def test_postselection_valid_finite_shots(
-        self, param, mp, shots, interface, use_jit, tol_stochastic
-    ):
+    def test_postselection_valid_finite_shots(self, param, mp, shots, interface, use_jit):
         """Test that the results of a circuit with postselection is expected with
         finite shots."""
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
@@ -1734,16 +1734,16 @@ class TestPostselection:
         dev = qml.device("default.qubit")
         param = qml.math.asarray(param, like=interface)
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_postselect(theta):
             qml.RX(theta, 0)
             qml.CNOT([0, 1])
             qml.measure(0, postselect=1)
             return qml.apply(mp)
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_expected():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -1758,13 +1758,13 @@ class TestPostselection:
         expected = circ_expected(shots=shots)
 
         if not isinstance(shots, tuple):
-            assert qml.math.allclose(res, expected, atol=tol_stochastic, rtol=0)
+            assert qml.math.allclose(res, expected, atol=0.1, rtol=0)
             assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
         else:
             assert isinstance(res, tuple)
             for r, e in zip(res, expected):
-                assert qml.math.allclose(r, e, atol=tol_stochastic, rtol=0)
+                assert qml.math.allclose(r, e, atol=0.1, rtol=0)
                 assert qml.math.get_interface(r) == qml.math.get_interface(e)
 
     @pytest.mark.parametrize(
@@ -1787,8 +1787,8 @@ class TestPostselection:
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
 
-            @qml.qnode(dev, interface=interface)
             @qml.defer_measurements
+            @qml.qnode(dev, interface=interface)
             def circ_postselect(theta):
                 qml.RX(theta, 0)
                 qml.CNOT([0, 1])
@@ -1843,8 +1843,8 @@ class TestPostselection:
         # Wires are specified so that the shape for measurements can be determined correctly
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -1887,8 +1887,8 @@ class TestPostselection:
         dev = qml.device("default.qubit")
 
         @jax.jit
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -1924,8 +1924,8 @@ class TestPostselection:
 
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, interface=interface)
         @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])

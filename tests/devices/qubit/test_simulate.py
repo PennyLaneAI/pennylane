@@ -80,7 +80,7 @@ class TestBasicCircuit:
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
 
-        state, is_state_batched, _ = get_final_state(qs)
+        state, is_state_batched = get_final_state(qs)
         result = measure_final_state(qs, state, is_state_batched)
 
         assert np.allclose(state, np.array([np.cos(phi / 2), -1j * np.sin(phi / 2)]))
@@ -220,7 +220,7 @@ class TestBroadcasting:
         assert np.allclose(res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]))
         assert np.allclose(res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]))
 
-        state, is_state_batched, _ = get_final_state(qs)
+        state, is_state_batched = get_final_state(qs)
         res = measure_final_state(qs, state, is_state_batched)
         expected_state = np.array(
             [
@@ -254,7 +254,7 @@ class TestBroadcasting:
         assert np.allclose(res[0], np.cos(x))
         assert np.allclose(res[1], -np.cos(x))
 
-        state, is_state_batched, _ = get_final_state(qs)
+        state, is_state_batched = get_final_state(qs)
         res = measure_final_state(qs, state, is_state_batched)
 
         expected_state = np.zeros((4, 2, 2))
@@ -289,7 +289,7 @@ class TestBroadcasting:
             res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]), atol=0.05
         )
 
-        state, is_state_batched, _ = get_final_state(qs)
+        state, is_state_batched = get_final_state(qs)
         res = measure_final_state(qs, state, is_state_batched, rng=123)
         expected_state = np.array(
             [
@@ -327,7 +327,7 @@ class TestBroadcasting:
         assert np.allclose(res[0], np.cos(x), atol=0.05)
         assert np.allclose(res[1], -np.cos(x), atol=0.05)
 
-        state, is_state_batched, _ = get_final_state(qs)
+        state, is_state_batched = get_final_state(qs)
         res = measure_final_state(qs, state, is_state_batched, rng=123)
 
         expected_state = np.zeros((4, 2, 2))
@@ -394,7 +394,7 @@ class TestPostselection:
         is 0."""
         tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Projector([0], 0)])
 
-        res, _, _ = get_final_state(tape, interface=interface)
+        res, _ = get_final_state(tape, interface=interface)
         assert qml.math.all(qml.math.isnan(res))
 
 
