@@ -548,13 +548,13 @@ def combine_measurements(circuit, measurements, mcm_samples):
 
 
 @singledispatch
-def combine_measurements_core(original_measurement, measures):
+def combine_measurements_core(original_measurement, measures):  # pylint: disable=unused-argument
     """Returns the combined measurement value of a given type."""
     raise TypeError(f"Unsupported measurement of {type(original_measurement).__name__}")
 
 
 @combine_measurements_core.register
-def _(original_measurement: CountsMP, measures):
+def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argument
     keys = list(measures.keys())
     new_counts = Counter()
     for k in keys:
@@ -563,7 +563,7 @@ def _(original_measurement: CountsMP, measures):
 
 
 @combine_measurements_core.register
-def _(original_measurement: ExpectationMP, measures):
+def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-argument
     cum_value = 0
     total_counts = 0
     for v in measures.values():
@@ -573,7 +573,7 @@ def _(original_measurement: ExpectationMP, measures):
 
 
 @combine_measurements_core.register
-def _(original_measurement: ProbabilityMP, measures):
+def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-argument
     cum_value = 0
     total_counts = 0
     for v in measures.values():
@@ -583,13 +583,13 @@ def _(original_measurement: ProbabilityMP, measures):
 
 
 @combine_measurements_core.register
-def _(original_measurement: SampleMP, measures):
+def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
     new_sample = tuple(m[1] for m in measures.values())
     return np.squeeze(np.concatenate(new_sample))
 
 
 @combine_measurements_core.register
-def _(original_measurement: VarianceMP, measures):
+def _(original_measurement: VarianceMP, measures):  # pylint: disable=unused-argument
     new_sample = tuple(m[1] for m in measures.values())
     return np.squeeze(np.concatenate(new_sample))
 
