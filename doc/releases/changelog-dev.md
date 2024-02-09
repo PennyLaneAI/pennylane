@@ -221,6 +221,17 @@
   ```
   [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
 
+* Upgrade the `Sum.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
+  ```python3
+  >>> qml.operation.enable_new_opmath()
+  >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
+  >>> op.terms()
+  ([0.5, 0.7, 1.5],
+   [X(0), X(1), Y(1) @ Y(0)])
+  ```
+  [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
+
+
 * String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
   ```
   >>> qml.PauliX(0)
