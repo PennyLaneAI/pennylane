@@ -21,7 +21,6 @@ import pytest
 from scipy import sparse
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
 
 
