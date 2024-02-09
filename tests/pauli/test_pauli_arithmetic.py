@@ -398,7 +398,7 @@ class TestPauliWord:
         """Test that an appropriate error is raised when an empty
         PauliWord is cast to matrix."""
         res = pw4.to_mat(wire_order=[])
-        assert res == np.ones((1,1))
+        assert res == np.ones((1, 1))
 
     pw_wire_order = ((pw1, [0, 1]), (pw1, [0, 1, 3]), (pw2, [0]))
 
@@ -859,15 +859,15 @@ class TestPauliSentence:
         assert copy_ps2 == ps  # Ensure the original object is not modified
 
     PS_EMPTY_CASES = (
-        (PauliSentence({}), np.zeros((1,1))),
-        (PauliSentence({PauliWord({}): 1.}), np.ones((1,1))),
-        (PauliSentence({PauliWord({}): 2.5}), 2.5 * np.ones((1,1))),
+        (PauliSentence({}), np.zeros((1, 1))),
+        (PauliSentence({PauliWord({}): 1.0}), np.ones((1, 1))),
+        (PauliSentence({PauliWord({}): 2.5}), 2.5 * np.ones((1, 1))),
     )
 
     @pytest.mark.parametrize("ps, true_res", PS_EMPTY_CASES)
     def test_to_mat_empty(self, ps, true_res):
         """Test that empty PauliSentences and PauliSentences with empty PauliWords are handled correctly"""
-        
+
         res = ps.to_mat(wire_order=[])
         assert qml.math.allclose(res, true_res)
 
