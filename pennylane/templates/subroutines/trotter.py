@@ -124,6 +124,11 @@ class TrotterProduct(Operation):
     >>> my_circ()
     array([-0.13259524+0.59790098j,  0.        +0.j        , -0.13259524-0.77932754j,  0.        +0.j        ])
 
+    .. warning::
+
+        Two mathematically equivalent :class:`~.Hamiltonian` objects may undergo different time evolutions
+        due to the order in which the observables are stored.
+
     .. details::
         :title: Usage Details
 
