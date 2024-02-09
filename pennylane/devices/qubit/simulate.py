@@ -419,20 +419,6 @@ def has_mid_circuit_measurements(
     return any(isinstance(op, MidMeasureMP) for op in circuit.operations)
 
 
-def find_measurement_values(
-    circuit: qml.tape.QuantumScript,
-):
-    """Returns the indices of measurements with a non-trivial measurement value.
-
-    Args:
-        circuit (QuantumTape): A QuantumScript
-
-    Returns:
-        List[int]: Indices of measurements with a non-trivial measurement value.
-    """
-    return [i for i, m in enumerate(circuit.measurements) if m.mv]
-
-
 def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript, all_shot_meas, mcm_shot_meas
 ):
@@ -446,19 +432,20 @@ def parse_native_mid_circuit_measurements(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
-    idx_sample = find_measurement_values(circuit)
-    normalized_meas = [None] * len(circuit.measurements)
+    normalized_meas = []
     for i, m in enumerate(circuit.measurements):
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise ValueError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
         if m.mv:
-            normalized_meas[i] = gather_mcm(m, mcm_shot_meas)
+            meas = gather_mcm(m, mcm_shot_meas)
         else:
-            normalized_meas[i] = gather_non_mcm(m, all_shot_meas[i], mcm_shot_meas)
+            meas = gather_non_mcm(m, all_shot_meas[i], mcm_shot_meas)
         if isinstance(m, SampleMP):
-            normalized_meas[i] = qml.math.squeeze(normalized_meas[i])
+            meas = qml.math.squeeze(meas)
+        normalized_meas.append(meas)
+
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
