@@ -68,10 +68,12 @@
   sentence `ps1 = PauliSentence({pw1: 3.})`.
   You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each other. For example `ps1 - pw1 - 1`.
   Overall, you can now intuitively construct `PauliSentence` operators like `0.5 * pw1 - 1.5 * ps1 + 2`.
+  You can now also use `qml.dot` with `PauliWord`, `PauliSentence` and operators, e.g. `qml.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
   [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
+  [(#5027)](https://github.com/PennyLaneAI/pennylane/pull/5027)
 
 * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
   [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
@@ -222,6 +224,17 @@
     X(2) @ X(0)])
   ```
   [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+
+* Upgrade the `Sum.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
+  ```python3
+  >>> qml.operation.enable_new_opmath()
+  >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
+  >>> op.terms()
+  ([0.5, 0.7, 1.5],
+   [X(0), X(1), Y(1) @ Y(0)])
+  ```
+  [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
+
 
 * String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
   ```
