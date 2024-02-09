@@ -503,7 +503,7 @@ class QNode:
         self._qfunc_output = None
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
-        self._gradient_fn = None
+        self.gradient_fn = None
         self.gradient_kwargs = {}
         self._tape_cached = False
 
@@ -538,11 +538,6 @@ class QNode:
         )
 
     @property
-    def gradient_fn(self) -> Union[None, "qml.transforms.core.TransformDispatcher", str]:
-        """A processed version of :attr:`~.QNode.diff_method`.  ``diff_method`` is recommend to use instead."""
-        return self._gradient_fn
-
-    @property
     def interface(self):
         """The interface used by the QNode"""
         return self._interface
@@ -572,12 +567,12 @@ class QNode:
     def _update_gradient_fn(self, shots=None, tape=None):
         if self.diff_method is None:
             self._interface = None
-            self._gradient_fn = None
+            self.gradient_fn = None
             self.gradient_kwargs = {}
             return
         if tape is None and shots:
             tape = qml.tape.QuantumScript([], [], shots=shots)
-        self._gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
+        self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
             self._original_device, self.interface, self.diff_method, tape=tape
         )
         self.gradient_kwargs.update(self._user_gradient_kwargs or {})

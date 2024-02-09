@@ -294,7 +294,7 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit._gradient_fn == "backprop"
+        assert circuit.gradient_fn == "backprop"
         res = circuit(weights)
 
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
@@ -374,8 +374,7 @@ class TestPassthruIntegration:
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
 
-        # tf.Function seems to not handle target properties.
-        assert circuit1._gradient_fn == "backprop"  # pylint: disable=protected-access
+        assert circuit1.gradient_fn == "backprop"
         assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = tape.jacobian(res, p_tf)

@@ -177,6 +177,20 @@ def adjoint_observables(obs: qml.operation.Operator) -> bool:
     return obs.has_matrix
 
 
+def _supports_adjoint(circuit):
+    if circuit is None:
+        return True
+
+    prog = TransformProgram()
+    _add_adjoint_transforms(prog)
+
+    try:
+        prog((circuit,))
+    except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
+        return False
+    return True
+
+
 def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
@@ -422,21 +436,8 @@ class DefaultQubit(Device):
             )
 
         if execution_config.gradient_method == "adjoint":
-            return self._supports_adjoint(circuit=circuit)
+            return _supports_adjoint(circuit=circuit)
         return False
-
-    def _supports_adjoint(self, circuit):
-        if circuit is None:
-            return True
-
-        prog = TransformProgram()
-        _add_adjoint_transforms(prog)
-
-        try:
-            prog((circuit,))
-        except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
-            return False
-        return True
 
     def preprocess(
         self,

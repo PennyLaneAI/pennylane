@@ -1724,7 +1724,7 @@ class TestStateMeasurement:
 
         _skip_test_for_braket(dev)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd", diff_method=None)
         def circuit():
             qml.PauliX(0)
             return qml.state()

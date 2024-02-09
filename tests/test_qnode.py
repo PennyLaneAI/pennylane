@@ -339,16 +339,6 @@ class TestValidation:
         ):
             circ(shots=1)
 
-        dev2 = qml.device("default.qubit", shots=5)
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="does not support adjoint with requested circuit",
-        ):
-
-            @qnode(dev2, diff_method="adjoint")
-            def circ2():
-                return qml.expval(qml.PauliZ(0))
-
     @pytest.mark.autograd
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
@@ -1600,9 +1590,11 @@ class TestNewDeviceIntegration:
         assert new_dev is dev
 
     def test_device_with_custom_diff_method_name(self):
-        class CustomDeviceWithDiffMethod(qml.devices.DefaultQubit):
-            def supports_derivatives(self, config, circuit):
-                return config.gradient_method == "hello"
+        """Test a device that has its own custom diff method."""
+
+        class CustomDeviceWithDiffMethod2(qml.devices.DefaultQubit):
+            def supports_derivatives(self, execution_config=None, circuit=None):
+                return getattr(execution_config, "gradient_method", None) == "hello"
 
             def _setup_execution_config(self, execution_config=qml.devices.DefaultExecutionConfig):
                 if execution_config.gradient_method in {"best", "hello"}:
@@ -1611,13 +1603,15 @@ class TestNewDeviceIntegration:
                     )
                 return execution_config
 
-            def compute_derivatives(self, circuits, execution_config):
+            def compute_derivatives(
+                self, circuits, execution_config=qml.devices.DefaultExecutionConfig
+            ):
                 if self.tracker.active:
                     self.tracker.update(derivative_config=execution_config)
                     self.tracker.record()
                 return super().compute_derivatives(circuits, execution_config)
 
-        dev = CustomDeviceWithDiffMethod()
+        dev = CustomDeviceWithDiffMethod2()
 
         @qml.qnode(dev, diff_method="hello")
         def circuit(x):
