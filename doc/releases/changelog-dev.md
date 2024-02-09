@@ -68,10 +68,12 @@
   sentence `ps1 = PauliSentence({pw1: 3.})`.
   You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each other. For example `ps1 - pw1 - 1`.
   Overall, you can now intuitively construct `PauliSentence` operators like `0.5 * pw1 - 1.5 * ps1 + 2`.
+  You can now also use `qml.dot` with `PauliWord`, `PauliSentence` and operators, e.g. `qml.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
   [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
+  [(#5027)](https://github.com/PennyLaneAI/pennylane/pull/5027)
 
 * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
   [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
@@ -218,6 +220,17 @@
     X(2) @ X(0)])
   ```
   [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+
+* Upgrade the `Sum.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
+  ```python3
+  >>> qml.operation.enable_new_opmath()
+  >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
+  >>> op.terms()
+  ([0.5, 0.7, 1.5],
+   [X(0), X(1), Y(1) @ Y(0)])
+  ```
+  [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
+
 
 * String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
   ```
@@ -392,6 +405,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
+[(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
+
 * The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
   [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
 
@@ -450,6 +466,14 @@
 * `default.mixed` no longer throws `ValueError` when applying a state vector that is not of type `complex128` when used with tensorflow.
   [(#5155)](https://github.com/PennyLaneAI/pennylane/pull/5155)
 
+* `ctrl_decomp_zyz` no longer raises a `TypeError` if the rotation parameters are of type `torch.Tensor`
+  [(#5183)](https://github.com/PennyLaneAI/pennylane/pull/5183)
+
+* Comparing `Prod` and `Sum` objects now works regardless of nested structure with `qml.equal` if the
+  operators have a valid `pauli_rep` property.
+  [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -461,6 +485,7 @@ Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
+Lillian Frederiksen,
 Eugenio Gigante,
 Diego Guala,
 Soran Jahangiri,
