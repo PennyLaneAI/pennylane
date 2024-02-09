@@ -115,8 +115,8 @@ def from_qiskit(quantum_circuit, measurements=None):
     .. details::
         :title: Usage Details
 
-        The ``measurement`` keyword allows one to add a list of PennyLane `measurements`
-        that will override the terminal measurements present in their `QuantumCircuit`.
+        The ``measurement`` keyword allows one to add a list of PennyLane measurements
+        that will override the terminal measurements present in their ``QuantumCircuit``.
 
         .. code-block:: python
 
