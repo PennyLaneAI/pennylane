@@ -70,8 +70,8 @@ class FABLE(Operation):
     [ 0.99675093  0.99675093  0.83514837  0.83514837]]
 
     .. note::
-    By default it is assumed the matrix is a square matrix, however, for matrices with an arbitrary size,
-    we can add zeros to reach the correct dimension.
+    By default it is assumed the matrix is an NxN square matrix, where N is a power of 2. However, for matrices of arbitrary size,
+    we add zeros to reach the correct dimension. It is also assumed that the value of the input matrix are within [-1, 1]. Apply a subnormalization factor if needed.
     """
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
@@ -96,7 +96,7 @@ class FABLE(Operation):
             A = np.pad(A, ((0, 2**n - N), (0, 2**n - N)))
             N = 2**n
             warnings.warn(
-                f"The input matrix should be of shape NxN, where N is a power of 2. Zeroes were padded automatically to {A.shape}."
+                f"The input matrix should be of shape NxN, where N is a power of 2. Zeroes were padded automatically. Input is now of shape {A.shape}."
             )
 
         alpha = np.linalg.norm(np.ravel(A), np.inf)
