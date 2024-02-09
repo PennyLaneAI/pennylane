@@ -834,10 +834,12 @@ class PauliSentence(dict):
 
         if len(self) == 0:
             if not wire_order:
-                raise np.zeros((1, 1))
+                return np.zeros((1, 1))
             if format == "dense":
                 return np.zeros((2 ** len(wire_order), 2 ** len(wire_order)))
-            return sparse.zeros((2 ** len(wire_order), 2 ** len(wire_order)), format=format, dtype="complex128")
+            return sparse.zeros(
+                (2 ** len(wire_order), 2 ** len(wire_order)), format=format, dtype="complex128"
+            )
 
         if format != "dense":
             return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
