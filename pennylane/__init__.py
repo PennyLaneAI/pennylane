@@ -115,6 +115,7 @@ from pennylane.ops.functions import (
     commutator,
     comm,
 )
+from pennylane.ops.identity import I
 from pennylane.optimize import *
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
