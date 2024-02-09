@@ -22,7 +22,11 @@ import pennylane as qml
 
 @pytest.mark.parametrize(
     ("prod", "reflection_wires"),
-    [(qml.QFT([0, 1, 4]), [0, 1, 2]), (qml.QFT([0, 1, 2]), [3]), (qml.QFT([0, 1, 2]), [0, 1, 2, 3])],
+    [
+        (qml.QFT([0, 1, 4]), [0, 1, 2]),
+        (qml.QFT([0, 1, 2]), [3]),
+        (qml.QFT([0, 1, 2]), [0, 1, 2, 3]),
+    ],
 )
 def test_reflection_wires(prod, reflection_wires):
     """Assert reflection_wires is a subset of the U wires"""

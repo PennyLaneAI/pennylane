@@ -22,7 +22,6 @@ from pennylane.operation import Operation
 from pennylane.ops import SymbolicOp
 
 
-
 class Reflection(SymbolicOp, Operation):
     r"""Reflection(U, alpha = np.pi, reflection_wires = None)
     Apply a :math:`\alpha`-reflection over the state :math:`|\Psi\rangle = U|0\rangle`.
