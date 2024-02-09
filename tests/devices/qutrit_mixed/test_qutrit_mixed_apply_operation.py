@@ -31,7 +31,7 @@ ml_frameworks_list = [
 ]
 
 subspaces = [(0, 1), (0, 2), (1, 2)]
-krause_matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+krause_matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=complex)
 
 
 class CustomChannel(Channel):
@@ -43,8 +43,11 @@ class CustomChannel(Channel):
 
     @staticmethod
     def compute_kraus_matrices(p):
-        K0 = (math.sqrt(1 - p) * math.cast_like(np.eye(3), p)).astype(complex)
-        K1 = (math.sqrt(p) * math.cast_like(krause_matrix, p)).astype(complex)
+        if math.get_interface(p) == "tensorflow":
+            p = math.cast_like(p, 1j)
+
+        K0 = math.sqrt(1 - p + math.eps) * math.convert_like(math.eye(3, dtype=complex), p)
+        K1 = math.sqrt(p + math.eps) * math.convert_like(krause_matrix, p)
         return [K0, K1]
 
 
@@ -343,7 +346,8 @@ class TestTRXCalcGrad:
 
     phi = 0.325
 
-    def compare_expected_result(self, phi, state, probs, subspace, g):
+    @staticmethod
+    def compare_expected_result(phi, state, probs, subspace, g):
         trx = qml.TRX.compute_matrix(phi, subspace)
         trx_adj = qml.TRX.compute_matrix(-phi, subspace)
         state = math.reshape(state, (9, 9))
@@ -406,7 +410,7 @@ class TestTRXCalcGrad:
         phi = self.phi
 
         probs = f(phi)
-        g = jax.jacobian(f, holomorphic=True)(phi)
+        g = jax.jacobian(f)(phi)
         self.compare_expected_result(phi, state, probs, subspace, g)
 
     @pytest.mark.torch
@@ -425,9 +429,7 @@ class TestTRXCalcGrad:
         phi = torch.tensor(self.phi, requires_grad=True)
 
         probs = f(phi)
-        # forward-mode needed with complex results.
-        # See bug: https://github.com/pytorch/pytorch/issues/94397
-        g = torch.autograd.functional.jacobian(f, phi, strategy="forward-mode", vectorize=True)
+        g = torch.autograd.functional.jacobian(f, phi)
 
         self.compare_expected_result(
             phi.detach().numpy(),
@@ -443,7 +445,7 @@ class TestTRXCalcGrad:
         import tensorflow as tf
 
         state = tf.Variable(two_qutrit_state)
-        phi = tf.Variable(0.8589)
+        phi = tf.Variable(0.8589, trainable=True)
 
         with tf.GradientTape() as grad_tape:
             op = qml.TRX(phi, wires=0, subspace=subspace)
@@ -452,9 +454,9 @@ class TestTRXCalcGrad:
 
         grads = grad_tape.jacobian(probs, [phi])
         # tf takes gradient with respect to conj(z), so we need to conj the gradient
-        phi_grad = tf.math.conj(grads[0])
+        phi_grad = grads[0]  # tf.math.conj(grads[0])
 
-        self.compare_expected_result(phi, state, new_state, subspace, phi_grad)
+        self.compare_expected_result(phi, state, probs, subspace, phi_grad)
 
 
 class TestChannelCalcGrad:
@@ -462,7 +464,8 @@ class TestChannelCalcGrad:
 
     p = 0.325
 
-    def compare_expected_result(self, p, state, new_state, g):
+    @staticmethod
+    def compare_expected_result(p, state, new_state, g):
         krause_matrix_two_qutrits = np.kron(np.eye(3), krause_matrix)
         krause_matrix_two_qutrits_adj = krause_matrix_two_qutrits.transpose()
         state = math.reshape(state, (9, 9))
@@ -478,7 +481,7 @@ class TestChannelCalcGrad:
         assert qml.math.allclose(g, expected_derivative)
 
     @pytest.mark.autograd
-    def test_trx_grad_autograd(self, two_qutrit_state):
+    def test_channel_grad_autograd(self, two_qutrit_state):
         """Test that the application of a trx gate is differentiable with autograd."""
 
         state = qml.numpy.array(two_qutrit_state)
@@ -496,7 +499,7 @@ class TestChannelCalcGrad:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_trx_grad_jax(self, use_jit, two_qutrit_state):
+    def test_channel_grad_jax(self, use_jit, two_qutrit_state):
         """Test that the application of a trx gate is differentiable with jax."""
 
         import jax
@@ -504,7 +507,7 @@ class TestChannelCalcGrad:
         state = jax.numpy.array(two_qutrit_state)
 
         def f(p):
-            op = qml.TRX(p, wires=1)
+            op = CustomChannel(p, wires=1)
             new_state = apply_operation(op, state)
             return measure(qml.probs(), new_state)
 
@@ -514,11 +517,11 @@ class TestChannelCalcGrad:
         p = self.p
 
         probs = f(p)
-        g = jax.jacobian(f, holomorphic=True)(p)
+        g = jax.jacobian(f)(p)
         self.compare_expected_result(p, state, probs, g)
 
     @pytest.mark.torch
-    def test_trx_grad_torch(self, two_qutrit_state):
+    def test_channel_grad_torch(self, two_qutrit_state):
         """Tests the application and differentiation of a trx gate with torch."""
 
         import torch
@@ -526,16 +529,14 @@ class TestChannelCalcGrad:
         state = torch.tensor(two_qutrit_state)
 
         def f(p):
-            op = qml.TRX(p, wires=1)
+            op = CustomChannel(p, wires=1)
             new_state = apply_operation(op, state)
             return measure(qml.probs(), new_state)
 
         p = torch.tensor(self.p, requires_grad=True)
 
         probs = f(p)
-        # forward-mode needed with complex results.
-        # See bug: https://github.com/pytorch/pytorch/issues/94397
-        g = torch.autograd.functional.jacobian(f, p, strategy="forward-mode", vectorize=True)
+        g = torch.autograd.functional.jacobian(f, p)
 
         self.compare_expected_result(
             p.detach().numpy(),
@@ -545,15 +546,15 @@ class TestChannelCalcGrad:
         )
 
     @pytest.mark.tf
-    def test_trx_grad_tf(self, two_qutrit_state):
+    def test_channel_grad_tf(self, two_qutrit_state):
         """Tests the application and differentiation of a trx gate with tensorflow"""
         import tensorflow as tf
 
         state = tf.Variable(two_qutrit_state)
-        p = tf.Variable(0.8589)  # TODO, what should this value be
+        p = tf.Variable(0.8589 + 0j, trainable=True)
 
         with tf.GradientTape() as grad_tape:
-            op = qml.TRX(p, wires=1)
+            op = CustomChannel(p, wires=1)
             new_state = apply_operation(op, state)
             probs = measure(qml.probs(), new_state)
 
@@ -561,7 +562,7 @@ class TestChannelCalcGrad:
         # tf takes gradient with respect to conj(z), so we need to conj the gradient
         phi_grad = tf.math.conj(grads[0])
 
-        self.compare_expected_result(p, state, new_state, phi_grad)
+        self.compare_expected_result(p, state, probs, phi_grad)
 
 
 # TODO: move to other file when measurements PR is done
