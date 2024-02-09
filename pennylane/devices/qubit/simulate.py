@@ -13,12 +13,22 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
+from collections import Counter
+from functools import singledispatch
 from typing import Optional
 
 from numpy.random import default_rng
 import numpy as np
 
 import pennylane as qml
+from pennylane.measurements import (
+    CountsMP,
+    ExpectationMP,
+    MidMeasureMP,
+    ProbabilityMP,
+    SampleMP,
+    VarianceMP,
+)
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
@@ -98,7 +108,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
     return state, shots
 
 
-def get_final_state(circuit, debugger=None, interface=None):
+def get_final_state(circuit, debugger=None, interface=None, mid_measurements=None):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -108,6 +118,7 @@ def get_final_state(circuit, debugger=None, interface=None):
         circuit (.QuantumScript): The single circuit to simulate
         debugger (._Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
@@ -125,8 +136,13 @@ def get_final_state(circuit, debugger=None, interface=None):
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
-        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
-
+        state = apply_operation(
+            op,
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+            mid_measurements=mid_measurements,
+        )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             state, circuit._shots = _postselection_postprocess(
@@ -134,7 +150,7 @@ def get_final_state(circuit, debugger=None, interface=None):
             )
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
-        is_state_batched = is_state_batched or op.batch_size is not None
+        is_state_batched = is_state_batched or (op.batch_size is not None)
 
     for _ in range(len(circuit.wires) - len(circuit.op_wires)):
         # if any measured wires are not operated on, we pad the state with zeros.
@@ -237,7 +253,296 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
+    if circuit.shots and has_mid_circuit_measurements(circuit):
+        return simulate_native_mcm(
+            circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
+        )
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+
+
+# pylint: disable=too-many-arguments
+def simulate_native_mcm(
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+) -> Result:
+    """Simulate a single quantum script with native mid-circuit measurements.
+
+    Args:
+        circuit (QuantumTape): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
+        debugger (_Debugger): The debugger to use
+        interface (str): The machine learning interface to create the initial state with
+        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the pre-rotated state. Used to pass the state between forward passes and vjp calculations.
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+    """
+    if circuit.shots.has_partitioned_shots:
+        results = []
+        for s in circuit.shots:
+            aux_circuit = qml.tape.QuantumScript(
+                circuit.operations,
+                circuit.measurements,
+                shots=s,
+                trainable_params=circuit.trainable_params,
+            )
+            results.append(simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface))
+        return tuple(results)
+    aux_circuit = init_auxiliary_circuit(circuit)
+    all_shot_meas, list_mcm_values_dict = None, []
+    for _ in range(circuit.shots.total_shots):
+        one_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
+            aux_circuit, rng, prng_key, debugger, interface
+        )
+        all_shot_meas = accumulate_native_mcm(aux_circuit, all_shot_meas, one_shot_meas)
+        list_mcm_values_dict.append(mcm_values_dict)
+    return parse_native_mid_circuit_measurements(circuit, all_shot_meas, list_mcm_values_dict)
+
+
+def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
+    """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
+
+    Measurements with non-trivial measurement values are removed from the script. VarianceMP
+    measurements are also replaced by SampleMP measurements, which are necessary to evaluate
+    the variance.
+
+    Args:
+        circuit (QuantumTape): The original QuantumScript
+
+    Returns:
+        QuantumScript: A copy of the circuit with modified measurements
+    """
+    new_measurements = []
+    for m in circuit.measurements:
+        if not m.mv:
+            if isinstance(m, VarianceMP):
+                new_measurements.append(SampleMP(obs=m.obs))
+            else:
+                new_measurements.append(m)
+    return qml.tape.QuantumScript(
+        circuit.operations, new_measurements, shots=1, trainable_params=circuit.trainable_params
+    )
+
+
+def simulate_one_shot_native_mcm(
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+) -> Result:
+    """Simulate a single shot of a single quantum script with native mid-circuit measurements.
+
+    Args:
+        circuit (QuantumTape): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
+        debugger (_Debugger): The debugger to use
+        interface (str): The machine learning interface to create the initial state with
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+        dict: The mid-circuit measurement results of the simulation
+    """
+    mcm_dict = {}
+    state, is_state_batched = get_final_state(
+        circuit, debugger=debugger, interface=interface, mid_measurements=mcm_dict
+    )
+    return (
+        measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
+        mcm_dict,
+    )
+
+
+def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_shot_meas):
+    """Incorporates new measurements in current measurement sequence.
+
+    Args:
+        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
+        all_shot_meas (Sequence[Any]): List of accumulated measurement results
+        one_shot_meas (Sequence[Any]): List of measurement results
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+    """
+    if len(circuit.measurements) == 1:
+        one_shot_meas = [one_shot_meas]
+    if all_shot_meas is None:
+        new_shot_meas = one_shot_meas
+        for i, (m, s) in enumerate(zip(circuit.measurements, new_shot_meas)):
+            if isinstance(m, SampleMP) and isinstance(s, np.ndarray):
+                new_shot_meas[i] = [s]
+        return new_shot_meas
+    new_shot_meas = all_shot_meas
+    for i, m in enumerate(circuit.measurements):
+        if isinstance(m, CountsMP):
+            tmp = Counter(all_shot_meas[i])
+            tmp.update(Counter(one_shot_meas[i]))
+            new_shot_meas[i] = tmp
+        elif isinstance(m, SampleMP):
+            new_shot_meas[i].append(one_shot_meas[i])
+        else:
+            new_shot_meas[i] = all_shot_meas[i] + one_shot_meas[i]
+    return new_shot_meas
+
+
+def has_mid_circuit_measurements(
+    circuit: qml.tape.QuantumScript,
+):
+    """Returns True if the circuit contains a MidMeasureMP object and False otherwise.
+
+    Args:
+        circuit (QuantumTape): A QuantumScript
+
+    Returns:
+        bool: Whether the circuit contains a MidMeasureMP object
+    """
+    return any(isinstance(op, MidMeasureMP) for op in circuit.operations)
+
+
+def find_measurement_values(
+    circuit: qml.tape.QuantumScript,
+):
+    """Returns the indices of measurements with a non-trivial measurement value.
+
+    Args:
+        circuit (QuantumTape): A QuantumScript
+
+    Returns:
+        List[int]: Indices of measurements with a non-trivial measurement value.
+    """
+    return [i for i, m in enumerate(circuit.measurements) if m.mv]
+
+
+def find_not_measurement_values(
+    circuit: qml.tape.QuantumScript,
+):
+    """Returns the indices of measurements with a trivial measurement value.
+
+    Args:
+        circuit (QuantumTape): A QuantumScript
+
+    Returns:
+        List[int]: Indices of measurements with a trivial measurement value.
+    """
+    return [i for i, m in enumerate(circuit.measurements) if not m.mv]
+
+
+def parse_native_mid_circuit_measurements(
+    circuit: qml.tape.QuantumScript, all_shot_meas, mcm_shot_meas
+):
+    """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
+
+    Args:
+        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
+        all_shot_meas (Sequence[Any]): List of accumulated measurement results
+        mcm_shot_meas (Sequence[dict]): List of dictionaries containing the mid-circuit measurement results of each shot
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+    """
+    idx_one_shot = find_not_measurement_values(circuit)
+    normalized_meas = [None] * len(circuit.measurements)
+    for i, m in zip(idx_one_shot, all_shot_meas):
+        normalized_meas[i] = gather_non_mcm(circuit.measurements[i], m, mcm_shot_meas)
+
+    idx_sample = find_measurement_values(circuit)
+    counter = Counter()
+    if any(isinstance(m, (CountsMP, ProbabilityMP)) for m in circuit.measurements):
+        for d in mcm_shot_meas:
+            counter.update(d)
+    for i in idx_sample:
+        normalized_meas[i] = gather_mcm(
+            circuit.measurements[i], circuit.measurements[i].mv, mcm_shot_meas, counter
+        )
+    return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
+
+
+def gather_non_mcm(circuit_measurement, measurement, samples):
+    """Combines, gathers and normalizes several measurements with trivial measurement values.
+
+    Args:
+        circuit_measurement (MeasurementProcess): measurement
+        measurement (TensorLike): measurement results
+        samples (List[dict]): Mid-circuit measurement samples
+
+    Returns:
+        TensorLike: The combined measurement outcome
+    """
+    if isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
+        new_meas = measurement / len(samples)
+    elif isinstance(circuit_measurement, SampleMP):
+        new_meas = np.concatenate(tuple(s.ravel() for s in measurement))
+    elif isinstance(circuit_measurement, CountsMP):
+        new_meas = dict(sorted(measurement.items()))
+    elif isinstance(circuit_measurement, VarianceMP):
+        new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
+    else:
+        raise ValueError(
+            f"Native mid-circuit measurement mode does not support {circuit_measurement.__class__.__name__} measurements."
+        )
+    return new_meas
+
+
+@singledispatch
+def gather_mcm(measurement, mv, samples, counter):  # pylint: disable=unused-argument
+    """Combines, gathers and normalizes several measurements with non-trivial measurement values.
+
+    Args:
+        measurement (MeasurementProcess): measurement
+        mv (MeasurementValue): measurement value
+        samples (List[dict]): Mid-circuit measurement samples
+        counter (Counter): Measurement value counts
+
+    Returns:
+        TensorLike: The combined measurement outcome
+    """
+    raise ValueError(
+        f"Native mid-circuit measurement mode does not support {measurement.__class__.__name__} measurements."
+    )
+
+
+@gather_mcm.register
+def _(measurement: CountsMP, mv, samples, counter):  # pylint: disable=unused-argument
+    new_samples = {}
+    if len(samples) - counter[mv.measurements[0]] > 0:
+        new_samples[0] = len(samples) - counter[mv.measurements[0]]
+    if counter[mv.measurements[0]] > 0:
+        new_samples[1] = counter[mv.measurements[0]]
+    return new_samples
+
+
+@gather_mcm.register
+def _(measurement: ExpectationMP, mv, samples, counter):  # pylint: disable=unused-argument
+    return np.mean(np.array([dct[mv.measurements[0]] for dct in samples]))
+
+
+@gather_mcm.register
+def _(measurement: ProbabilityMP, mv, samples, counter):  # pylint: disable=unused-argument
+    p1 = counter[mv.measurements[0]] / float(len(samples))
+    return np.array([1 - p1, p1])
+
+
+@gather_mcm.register
+def _(measurement: SampleMP, mv, samples, counter):  # pylint: disable=unused-argument
+    return np.array([dct[mv.measurements[0]] for dct in samples])
+
+
+@gather_mcm.register
+def _(measurement: VarianceMP, mv, samples, counter):  # pylint: disable=unused-argument
+    return qml.math.var(np.array([dct[mv.measurements[0]] for dct in samples]))
