@@ -815,11 +815,13 @@ def expectation_value(operator_matrix, state_vector, check_state=False, check_op
     .. seealso:: :func:`pennylane.math.fidelity`
 
     """
-    if isinstance(state_vector, (list, tuple, int, float, complex)):
-        state_vector = np.asarray(state_vector)
+    # if isinstance(state_vector, (list, tuple, int, float, complex)):
+    #     state_vector = np.asarray(state_vector)
+    # if isinstance(operator_matrix, (list, tuple, int, float, complex)):
+    #     operator_matrix = np.asarray(operator_matrix)
 
-    if isinstance(operator_matrix, (list, tuple, int, float, complex)):
-        operator_matrix = np.asarray(operator_matrix)
+    # state_vector = cast(state_vector, dtype=c_dtype)
+    # operator_matrix = cast(operator_matrix, dtype=c_dtype)
 
     if check_state:
         _check_state_vector(state_vector)
@@ -832,10 +834,9 @@ def expectation_value(operator_matrix, state_vector, check_state=False, check_op
 
     # The overlap <psi|A|psi>
     expval = qml.math.einsum(
-        "...j,...ji,...i->...",
+        "...i,...i->...",
         qml.math.conj(state_vector),
-        operator_matrix,
-        state_vector,
+        qml.math.einsum("...ji,...i->...j", operator_matrix, state_vector, optimize="greedy"),
         optimize="greedy",
     )
     return expval
