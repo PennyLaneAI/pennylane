@@ -393,8 +393,7 @@ class TestPauliWord:
     )
 
     def test_to_mat_empty(self):
-        """Test that an appropriate error is raised when an empty
-        PauliWord is cast to matrix."""
+        """Test that an empty PauliWord is turned to the trivial 1 matrix"""
         res = pw4.to_mat(wire_order=[])
         assert res == np.ones((1, 1))
 
