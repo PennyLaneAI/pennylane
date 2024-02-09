@@ -408,14 +408,15 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
                 container.kwargs["decomposer"] = decomposer
                 container.kwargs["max_expansion"] = decomp_depth
 
-                original_stopping_condition = container.kwargs["stopping_condition"]
+                for cond in ["stopping_condition", "stopping_condition_shots"]:
+                    original_stopping_condition = container.kwargs[cond]
 
-                def stopping_condition(obj):
-                    if obj.name in custom_decomps or type(obj) in custom_decomps:
-                        return False
-                    return original_stopping_condition(obj)
+                    def stopping_condition(obj):
+                        if obj.name in custom_decomps or type(obj) in custom_decomps:
+                            return False
+                        return original_stopping_condition(obj)
 
-                container.kwargs["stopping_condition"] = stopping_condition
+                    container.kwargs[cond] = stopping_condition
 
                 break
 

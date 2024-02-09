@@ -26,6 +26,8 @@ from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
+X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
+
 no_mat_ops = (
     qml.Barrier,
     qml.WireCut,
@@ -157,20 +159,87 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         op4 = qml.prod(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
         assert op3.hash != op4.hash
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_terms(self, ops_lst):
-        """Test that terms are initialized correctly."""
-        prod_op = prod(*ops_lst)
-        coeff, prod_term_ops = prod_op.terms()  # not a fan of this behaviour
+    PROD_TERMS_OP_PAIRS_MIXED = (  # not all operands have pauli representation
+        (
+            qml.prod(qml.Hadamard(0), X(1), X(2)),
+            [1.0],
+            [qml.prod(qml.Hadamard(0), X(1), X(2))],
+        ),  # trivial product
+        (
+            qml.prod(qml.Hadamard(0), X(1), qml.Identity(2)),
+            [1.0],
+            [qml.prod(qml.Hadamard(0), X(1))],
+        ),
+        (
+            qml.prod(qml.Hadamard(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
+            [2 * 4],
+            [qml.prod(qml.Hadamard(0), X(1), X(2))],
+        ),  # product with scalar products inside
+        (
+            qml.prod(qml.Hadamard(0), qml.s_prod(4, X(0)), qml.s_prod(2, X(1))),
+            [2 * 4],
+            [qml.prod(qml.Hadamard(0), X(0), X(1))],
+        ),  # product with scalar products on same wire
+        (
+            qml.prod(qml.Hadamard(0), qml.s_prod(4, Y(1)), qml.sum(X(2), X(3))),
+            [4, 4],
+            [qml.prod(qml.Hadamard(0), Y(1), X(2)), qml.prod(qml.Hadamard(0), Y(1), X(3))],
+        ),  # product with sums inside
+        (
+            qml.prod(
+                qml.prod(qml.Hadamard(0), X(2), X(3)),
+                qml.s_prod(0.5, qml.sum(qml.Hadamard(5), qml.s_prod(0.4, X(6)))),
+            ),
+            [0.5, 0.2],
+            [
+                qml.prod(X(2), X(3), qml.Hadamard(5), qml.Hadamard(0)),
+                qml.prod(X(6), X(2), X(3), qml.Hadamard(0)),
+            ],
+        ),  # contrived example
+    )
 
-        assert coeff == [1.0]
-        assert len(prod_term_ops) == 1
-        assert prod_op.id == prod_term_ops[0].id
-        assert prod_op.data == prod_term_ops[0].data
-        assert prod_op.wires == prod_term_ops[0].wires
+    @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_MIXED)
+    def test_terms_no_pauli_rep(self, op, coeffs_true, ops_true):
+        """Test that Prod.terms() is correct for operators that dont all have a pauli_rep"""
+        coeffs, ops1 = op.terms()
+        assert coeffs == coeffs_true
+        assert ops1 == ops_true
 
-        for f1, f2 in zip(prod_op.operands, prod_term_ops[0].operands):
-            assert qml.equal(f1, f2)
+    PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
+        (qml.prod(X(0), X(1), X(2)), [1.0], [qml.prod(X(0), X(1), X(2))]),  # trivial product
+        (
+            qml.prod(X(0), X(1), X(2), qml.Identity(0)),
+            [1.0],
+            [qml.prod(X(0), X(1), X(2))],
+        ),  # trivial product
+        (
+            qml.prod(X(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
+            [2 * 4],
+            [qml.prod(X(0), X(1), X(2))],
+        ),  # product with scalar products inside
+        (
+            qml.prod(X(0), qml.s_prod(4, X(0)), qml.s_prod(2, X(1))),
+            [2 * 4],
+            [X(1)],
+        ),  # product with scalar products on same wire
+        (
+            qml.prod(X(0), qml.s_prod(4, Y(0)), qml.s_prod(2, X(1))),
+            [1j * 2 * 4],
+            [qml.prod(Z(0), X(1))],
+        ),  # product with scalar products on same wire
+        (
+            qml.prod(X(0), qml.s_prod(4, Y(1)), qml.sum(X(2), X(3))),
+            [4, 4],
+            [qml.prod(X(0), Y(1), X(2)), qml.prod(X(0), Y(1), X(3))],
+        ),  # product with sums inside
+    )
+
+    @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI)
+    def test_terms_pauli_rep(self, op, coeffs_true, ops_true):
+        """Test that Prod.terms() is correct for operators that all have a pauli_rep"""
+        coeffs, ops1 = op.terms()
+        assert coeffs == coeffs_true
+        assert ops1 == ops_true
 
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
@@ -341,6 +410,19 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         expected = prod(qml.RZ(1.1, 1), qml.CNOT([0, 1]), qml.Hadamard(0))
         assert qml.equal(prod_op, expected)
         assert prod_op.wires == Wires([1, 0])
+
+    def test_qfunc_single_operator(self):
+        """Test prod initialization with qfunc that queues a single operator."""
+
+        def qfunc():
+            qml.S(0)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            out = prod(qfunc)()
+
+        assert len(q) == 1
+        assert q.queue[0] == qml.S(0)
+        assert out == qml.S(0)
 
     def test_qfunc_init_accepts_args_kwargs(self):
         """Tests that prod preserves args when wrapping qfuncs."""

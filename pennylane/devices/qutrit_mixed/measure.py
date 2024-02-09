@@ -39,31 +39,28 @@ from .utils import (
 )
 from .apply_operation import apply_operation
 
-alphabet_array = math.asarray(list(alphabet))
 
+def _map_indices_apply_operation(**kwargs):
+    """Map indices to wires.
 
-def _map_indices_apply_operation(
-    state_indices, row_indices, new_row_indices, **kwargs
-):  # pylint: disable=unused-argument
-    """Map indices to wires
     Args:
-        state_indices (str): Indices that are summed.
-        row_indices (str): Indices that must be replaced with sums.
-        new_row_indices (str): Tensor indices of the state.
-        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`.
+        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`:
+            state_indices (str): Indices that are summed.
+            row_indices (str): Indices that must be replaced with sums.
+            new_row_indices (str): Tensor indices of the state.
 
     Returns:
         String of einsum indices to complete einsum calculations.
     """
-    op_1_indices = f"{new_row_indices}{row_indices}"
+    op_1_indices = f"{kwargs['new_row_indices']}{kwargs['row_indices']}"
 
     new_state_indices = get_new_state_einsum_indices(
-        old_indices=row_indices,
-        new_indices=new_row_indices,
-        state_indices=state_indices,
+        old_indices=kwargs["row_indices"],
+        new_indices=kwargs["new_row_indices"],
+        state_indices=kwargs["state_indices"],
     )
 
-    return f"{op_1_indices},...{state_indices}->...{new_state_indices}"
+    return f"{op_1_indices},...{kwargs['state_indices']}->...{new_state_indices}"
 
 
 def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = False):
@@ -97,7 +94,7 @@ def calculate_expval(
         is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        TensorLike: the result of the measurement.
+        TensorLike: expectation value of observable wrt the state.
     """
     obs = measurementprocess.obs
     rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
@@ -109,8 +106,8 @@ def calculate_expval(
     rho_mult_obs_reshaped = reshape_state_as_matrix(rho_mult_obs, num_wires)
     if is_state_batched:
         return math.real(math.stack([math.sum(math.diagonal(dm)) for dm in rho_mult_obs_reshaped]))
-    else:
-        return math.real(math.sum(math.diagonal(rho_mult_obs_reshaped)))
+
+    return math.real(math.sum(math.diagonal(rho_mult_obs_reshaped)))
 
 
 def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagonalization gates?
@@ -124,7 +121,7 @@ def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagon
         is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        TensorLike: the resulting resquared density_matrix.
+        TensorLike: state or reduced density matrix.
     """
     wires = measurementprocess.wires
     if not wires:
@@ -160,18 +157,12 @@ def calculate_probability(
         is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        TensorLike: the result of the measurement.
+        TensorLike: the probability of the state being in each measurable state.
     """
     for op in measurementprocess.diagonalizing_gates():
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     num_state_wires = get_num_wires(state, is_state_batched)
-    # get the final shape
-    final_shape = (
-        (state.shape[0], QUDIT_DIM**num_state_wires)
-        if is_state_batched
-        else (QUDIT_DIM**num_state_wires,)
-    )
 
     # probs are diagonal elements
     # stacking list since diagonal function axis selection parameter names
@@ -184,7 +175,7 @@ def calculate_probability(
 
     # if a probability is very small it may round to negative, undesirable.
     # math.clip with None bounds breaks with tensorflow, using this instead:
-    probs = math.where(probs < 0, -probs, probs)
+    probs = math.where(probs < 0, 0, probs)
 
     if mp_wires := measurementprocess.wires:
         expanded_shape = [QUDIT_DIM] * num_state_wires
@@ -215,7 +206,7 @@ def calculate_variance(
         is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        TensorLike: the result of the measurement.
+        TensorLike: the variance of the observable wrt the state.
     """
     probs = calculate_probability(measurementprocess, state, is_state_batched)
     eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
@@ -223,10 +214,39 @@ def calculate_variance(
     return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
 
 
+def calculate_expval_sum_of_terms(
+    measurementprocess: ExpectationMP,
+    state: TensorLike,
+    is_state_batched: bool = False,
+) -> TensorLike:
+    """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
+    and it must be backpropagation compatible.
+
+    Args:
+        measurementprocess (ExpectationMP): measurement process to apply to the state.
+        state (TensorLike): the state to measure.
+        is_state_batched (bool): whether the state is batched or not.
+
+    Returns:
+        TensorLike: the expectation value of the sum of Hamiltonian observable wrt the state.
+    """
+    if isinstance(measurementprocess.obs, Sum):
+        # Recursively call measure on each term, so that the best measurement method can
+        # be used for each term
+        return sum(
+            measure(ExpectationMP(term), state, is_state_batched=is_state_batched)
+            for term in measurementprocess.obs
+        )
+    # else hamiltonian
+    return sum(
+        c * measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
+        for c, t in zip(*measurementprocess.obs.terms())
+    )
+
+
 # pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess,
-    state: TensorLike,  # pylint: disable=unused-argument
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
@@ -268,40 +288,6 @@ def measure(
         is_state_batched (bool): whether the state is batched or not.
 
     Returns:
-        Tensorlike: the result of the measurement.
+        Tensorlike: the result of the measurement process being applied to the state.
     """
-    return get_measurement_function(measurementprocess, state)(
-        measurementprocess, state, is_state_batched
-    )
-
-
-def calculate_expval_sum_of_terms(
-    measurementprocess: ExpectationMP,
-    state: TensorLike,
-    is_state_batched: bool = False,
-    measure_func=measure,
-) -> TensorLike:
-    """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
-    and it must be backpropagation compatible.
-
-    Args:
-        measurementprocess (ExpectationMP): measurement process to apply to the state.
-        state (TensorLike): the state to measure.
-        is_state_batched (bool): whether the state is batched or not.
-        measure_func (function): measure function to use.
-
-    Returns:
-        TensorLike: the result of the measurement.
-    """
-    if isinstance(measurementprocess.obs, Sum):
-        # Recursively call measure on each term, so that the best measurement method can
-        # be used for each term
-        return sum(
-            measure_func(ExpectationMP(term), state, is_state_batched=is_state_batched)
-            for term in measurementprocess.obs
-        )
-    # else hamiltonian
-    return sum(
-        c * measure_func(ExpectationMP(t), state, is_state_batched=is_state_batched)
-        for c, t in zip(*measurementprocess.obs.terms())
-    )
+    return get_measurement_function(measurementprocess)(measurementprocess, state, is_state_batched)
