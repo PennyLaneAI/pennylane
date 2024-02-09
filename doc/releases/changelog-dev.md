@@ -463,9 +463,13 @@
 * `default.mixed` no longer throws `ValueError` when applying a state vector that is not of type `complex128` when used with tensorflow.
   [(#5155)](https://github.com/PennyLaneAI/pennylane/pull/5155)
 
+* `ctrl_decomp_zyz` no longer raises a `TypeError` if the rotation parameters are of type `torch.Tensor`
+  [(#5183)](https://github.com/PennyLaneAI/pennylane/pull/5183)
+
 * Comparing `Prod` and `Sum` objects now works regardless of nested structure with `qml.equal` if the
   operators have a valid `pauli_rep` property.
   [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -477,6 +481,7 @@ Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
+Lillian Frederiksen,
 Eugenio Gigante,
 Diego Guala,
 David Ittah,
