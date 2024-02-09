@@ -570,8 +570,8 @@ class TestSumOfTermsDifferentiability:
     x = 0.52
 
     @staticmethod
-    def f(scale, coeffs, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
-        ops = [qml.TRX(offset + scale * i, wires=i) for i in range(n_wires)]
+    def f(scale, coeffs, n_wires=5, offset=0.1, convert_to_hamiltonian=False):
+        ops = [qml.TRX(offset + scale * i, wires=i, subspace=(0, 2)) for i in range(n_wires)]
 
         if convert_to_hamiltonian:
             H = qml.Hamiltonian(
@@ -586,16 +586,16 @@ class TestSumOfTermsDifferentiability:
             t2 = qml.s_prod(coeffs[1], qml.prod(*(qml.GellMann(i, 5) for i in range(n_wires))))
             H = t1 + t2
 
-        state = create_initial_state(range(n_wires))
+        state = create_initial_state(range(n_wires), like=math.get_interface(scale))
         for op in ops:
-            apply_operation(op)
+            state = apply_operation(op, state)
         return measure(qml.expval(H), state)
 
     @staticmethod
-    def expected(scale, coeffs, n_wires=10, offset=0.1, like="numpy"):
+    def expected(scale, coeffs, n_wires=5, offset=0.1, like="numpy"):
         phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
-        cosines = qml.math.cos(phase)
-        sines = qml.math.sin(phase)
+        cosines = math.cos(phase / 2) ** 2
+        sines = -math.sin(phase)
         return coeffs[0] * qml.math.prod(cosines) + coeffs[1] * qml.math.prod(sines)
 
     @pytest.mark.autograd
