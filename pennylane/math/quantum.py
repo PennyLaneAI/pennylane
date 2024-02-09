@@ -762,6 +762,23 @@ def _compute_mutual_info(
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
 
 
+def _check_hermitian_operator(operators):
+    """Check the shape, and if the matrix is hermitian."""
+    dim = operators.shape[-1]
+
+    if (
+        len(operators.shape) not in (2, 3)
+        or operators.shape[-2] != dim
+        or not np.log2(dim).is_integer()
+    ):
+        print("State vector must be of shape (2**wires,) or (batch_dim, 2**wires)")
+
+    for ops in operators:
+        conj_trans = np.transpose(np.conj(ops))
+        if not np.allclose(ops, conj_trans):
+            raise ValueError("The matrix is not Hermitian.")
+
+
 def expectation_value(operator_matrix, state_vector, check_state=False, check_operator=False):
     r"""Compute the expectation value of an operator with respect to a pure state.
 
@@ -801,16 +818,14 @@ def expectation_value(operator_matrix, state_vector, check_state=False, check_op
     if isinstance(state_vector, (list, tuple, int, float, complex)):
         state_vector = np.asarray(state_vector)
 
-    if check_state:
-        _check_state_vector(state_vector)
-
     if isinstance(operator_matrix, (list, tuple, int, float, complex)):
         operator_matrix = np.asarray(operator_matrix)
 
+    if check_state:
+        _check_state_vector(state_vector)
+
     if check_operator:
-        conj_trans = np.transpose(np.conj(operator_matrix))
-        if not allclose(operator_matrix, conj_trans):
-            raise ValueError("The matrix is not Hermitian.")
+        _check_hermitian_operator(operator_matrix)
 
     if qml.math.shape(operator_matrix)[-1] != qml.math.shape(state_vector)[-1]:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
