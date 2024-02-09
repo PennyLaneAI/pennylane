@@ -220,9 +220,9 @@ def test_meas_samples(shots):
 
     samples = circuit_fn()
     assert len(samples) == 3
-    assert qml.math.shape(samples[0]) == (shots, 1)
-    assert qml.math.shape(samples[1]) == (shots, 1)
-    assert qml.math.shape(samples[2]) == (shots, 2)
+    assert qml.math.shape(samples[0]) == (shots,)
+    assert qml.math.shape(samples[1]) == (shots,)
+    assert qml.math.shape(samples[2]) == (shots,)
 
 
 @pytest.mark.parametrize("tableau", [True, False])
@@ -234,6 +234,7 @@ def test_meas_samples(shots):
         qml.PauliY(0),
         qml.PauliX(0) @ qml.PauliY(1),
         qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2),
+        qml.Projector([0, 1], wires=[0, 1]),
     ],
 )
 def test_meas_probs(tableau, shots, ops):
@@ -253,10 +254,6 @@ def test_meas_probs(tableau, shots, ops):
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
     gotten_probs, target_probs = qnode_clfrd(), qnode_qubit()
-    if gotten_probs.shape[-1] != target_probs.shape[-1]:
-        target_probs = qml.math.sum(target_probs.reshape((2,) * len(ops.wires)), axis=-1).reshape(
-            1, -1
-        )
 
     assert qml.math.allclose(gotten_probs, target_probs, atol=1e-2 if shots else 1e-8)
 
@@ -266,28 +263,24 @@ def test_meas_probs_large():
 
     dev_c = qml.device("default.clifford", seed=24)
 
-    def circuit_fn1():
-        for wire in range(30):
-            qml.PauliX(wire)
-            qml.PauliY(wire)
-            qml.PauliZ(wire)
-        return qml.probs(wires=range(1))
+    single_op = lambda idx: [qml.PauliX, qml.PauliY, qml.Hadamard, qml.PauliZ][idx]
 
-    assert qml.QNode(circuit_fn1, dev_c)().shape == (2,)
+    def circuit_fn2(meas):
+        for wire in range(16):
+            single_op(wire % 4)(wires=wire)
+            qml.CNOT([wire, wire + 1])
+        return qml.apply(meas)
 
-    def circuit_fn2(state):
-        for wire in range(30):
-            qml.PauliX(wire)
-            qml.PauliY(wire)
-            qml.PauliZ(wire)
-        return qml.expval(qml.Projector(state, wires=[0, 1]))
-
+    dev_c = qml.device("default.clifford", seed=24)
     qnode_clfrd = qml.QNode(circuit_fn2, dev_c)
 
-    basis_states = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
-    probs1 = [qnode_clfrd(state) for state in basis_states]
-    probs2 = [1.0, 0.0, 0.0, 0.0]
-    assert qml.math.allclose(probs1, probs2)
+    meas1 = qml.probs(op=qml.Projector([1, 1, 0], wires=[0, 6, 14]))
+    assert qnode_clfrd(meas1).shape == (8,)
+    assert qml.math.allclose(qnode_clfrd(meas1), [0.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25])
+
+    for basis_state in np.array([[1, 0, 1], [0, 0, 1], [0, 1, 1], [1, 1, 1]]):
+        meas_b = qml.expval(op=qml.Projector(basis_state, wires=[0, 6, 14]))
+        assert qnode_clfrd(meas_b) == [0.0, 0.25][basis_state[0]]
 
 
 @pytest.mark.parametrize("shots", [1024, 4096])
@@ -315,7 +308,7 @@ def test_meas_counts(shots, ops):
     assert list(counts_clfrd.keys()) == list(counts_qubit.keys())
 
     for k1, k2 in zip(counts_clfrd, counts_clfrd):
-        assert qml.math.abs(counts_clfrd[k1] - counts_qubit[k2]) / shots < 5.0
+        assert qml.math.abs(counts_clfrd[k1] - counts_qubit[k2]) / shots < 0.1  # 10% threshold
 
 
 @pytest.mark.parametrize("shots", [1024, 10240])
@@ -574,6 +567,19 @@ def test_meas_error():
         match="default.clifford does not support arbitrary measurements of a state with snapshots.",
     ):
         qml.snapshots(circuit_snap)()
+
+    @qml.qnode(qml.device("default.clifford", wires=3, shots=10))
+    def circuit_herm():
+        qml.Hadamard(wires=[0])
+        qml.CNOT(wires=[0, 1])
+        Amat = np.random.rand(4, 4)
+        return qml.probs(op=qml.Hermitian(Amat + Amat.conj().T, wires=[0, 1]))
+
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="Hermitian is not supported for rotating probabilities on default.clifford.",
+    ):
+        circuit_herm()
 
 
 @pytest.mark.parametrize("check", [True, False])
