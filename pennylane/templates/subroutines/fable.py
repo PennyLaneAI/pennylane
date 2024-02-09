@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 
 class FABLE(Operation):
     r"""Fable(A, tol)
-    Constructs a circuit using the FABLE technique<https://arxiv.org/abs/2205.00081>, which can simplify circuits without
+    Constructs a unitary using the FABLE technique<https://arxiv.org/abs/2205.00081>, which can simplify circuits without
     reducing accuracy for matrices of specific structure.
 
     **Details:**
@@ -85,20 +85,20 @@ class FABLE(Operation):
     def __init__(self, A, tol=0, id=None):
         M, N = A.shape
         if M != N:
-            raise ValueError(
-                f"The input matrix should be of shape NxN, got {A.shape}. Try padding zeros for the correct dimension"
+            warnings.warn(
+                f"The input matrix should be of shape NxN, got {A.shape}. Zeroes were padded automatically."
             )
+            k = max(M, N)
+            A = np.pad(A, ((0, k - N), (0, k - M)))
 
         alpha = np.linalg.norm(np.ravel(A), np.inf)
         if alpha > 1:
             raise ValueError(
-                "The subnormalization factor should be lower than 1. Ensure that the values of the input matrix are within [-1, 1]"
+                "The subnormalization factor should be lower than 1. Ensure that the values of the input matrix are within [-1, 1]."
             )
 
         if np.any(np.iscomplex(A)):
-            warnings.warn(
-                "Support for imaginary values has not been implemented yet. Proceed with caution."
-            )
+            raise ValueError("Support for imaginary values has not been implemented.")
 
         self._hyperparameters = {"tol": tol}
 
