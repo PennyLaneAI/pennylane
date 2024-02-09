@@ -24,7 +24,6 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 from pennylane.ops import Identity
-from pennylane.ops.qubit.non_parametric_ops import MultiControlledX
 
 
 class QubitCarry(Operation):
@@ -92,6 +91,7 @@ class QubitCarry(Operation):
     >>> carry
     1
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -235,6 +235,7 @@ class QubitSum(Operation):
     >>> abc_sum
     1
     """
+
     num_wires = 3
     """int: Number of wires that the operator acts on."""
 
@@ -351,6 +352,7 @@ class IntegerComparator(Operation):
     >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
     tensor(1.+0.j, requires_grad=True)
     """
+
     is_self_inverse = True
     num_wires = AnyWires
     num_params = 0
@@ -462,7 +464,7 @@ class IntegerComparator(Operation):
             control_values_list = [format(n, binary) for n in values]
             mat = np.eye(2 ** (len(control_wires) + 1))
             for control_values in control_values_list:
-                mat = mat @ MultiControlledX.compute_matrix(
+                mat = mat @ qml.MultiControlledX.compute_matrix(
                     control_wires, control_values=control_values
                 )
 
@@ -520,7 +522,7 @@ class IntegerComparator(Operation):
             gates = []
             for control_values in control_values_list:
                 gates.append(
-                    MultiControlledX(
+                    qml.MultiControlledX(
                         wires=control_wires + wires,
                         control_values=control_values,
                         work_wires=work_wires,

@@ -112,9 +112,10 @@ from pennylane.ops.functions import (
     matrix,
     simplify,
     iterative_qpe,
+    commutator,
+    comm,
 )
 from pennylane.optimize import *
-from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
