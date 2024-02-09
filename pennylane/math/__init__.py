@@ -180,4 +180,5 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "where",
+    "partial_trace",
 ]
