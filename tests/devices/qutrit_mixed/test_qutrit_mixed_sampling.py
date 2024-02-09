@@ -389,7 +389,7 @@ class TestMeasureWithSamples:
         """Test that a set of sample and counts measurements works as expected"""
         state_vector = np.sqrt(np.array([0, 0, 0, 0, 3, 0, 1, 0, 1]) / 5)
         state = get_dm_of_state(state_vector, 2)
-        num_shots = 5000
+        num_shots = 10000
         shots = qml.measurements.Shots(num_shots)
         mps = [
             qml.counts(qml.GellMann(0, 3)),
