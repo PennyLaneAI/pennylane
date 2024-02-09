@@ -102,6 +102,7 @@ class TestVSpace:
         assert len_after_adding == len(true_new_basis)
         assert len_before_adding == len_basis_before_adding
 
+
 class TestLieClosure:
     """Tests for qml.dla.lie_closure()"""
 
