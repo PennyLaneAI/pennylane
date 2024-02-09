@@ -207,7 +207,7 @@ class TestExpandMatrix:
     def test_torch(self, i, base_matrix, tol):
         """Tests differentiation in torch by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
-        import torch
+        import torch  # pylint: disable=Import outside toplevel (torch) (import-outside-toplevel)
 
         base_matrix = torch.tensor(base_matrix, requires_grad=True)
         jac = torch.autograd.functional.jacobian(self.func_for_autodiff, base_matrix)
@@ -225,7 +225,7 @@ class TestExpandMatrix:
     def test_jax(self, i, base_matrix, tol):
         """Tests differentiation in jax by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
-        import jax
+        import jax  # pylint: disable=Import outside toplevel (jax) (import-outside-toplevel)
 
         base_matrix = jax.numpy.array(base_matrix)
         jac_fn = jax.jacobian(self.func_for_autodiff)
@@ -244,7 +244,7 @@ class TestExpandMatrix:
     def test_tf(self, i, base_matrix, tol):
         """Tests differentiation in TensorFlow by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
-        import tensorflow as tf
+        import tensorflow as tf  # pylint: disable=Import outside toplevel (tensorflow) (import-outside-toplevel)
 
         base_matrix = tf.Variable(base_matrix)
         with tf.GradientTape() as tape:
@@ -918,7 +918,7 @@ class TestPartialTrace:
 
         # Attempt to trace over an invalid wire
         with pytest.raises(Exception) as e:
-            import tensorflow as tf
+            import tensorflow as tf  # pylint: disable=Import outside toplevel (tensorflow) (import-outside-toplevel)
 
             qml.math.quantum.partial_trace(rho, [2], c_dtype=c_dtype)
             assert e.type in (
