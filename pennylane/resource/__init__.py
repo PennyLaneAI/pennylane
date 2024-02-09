@@ -58,7 +58,7 @@ Error Tracking
     :toctree: api
 
     ~AlgorithmicError
-    
+
 Resource Classes
 ----------------
 
