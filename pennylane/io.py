@@ -107,11 +107,40 @@ def from_qiskit(quantum_circuit, measurements=None):
     Args:
         quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in qiskit
         measurements (list[MeasurementProcess]): the list of PennyLane measurements that
-            overrides the terminal measurements that may be present in the imput circuit.
+            overrides the terminal measurements that may be present in the input circuit.
 
     Returns:
-        function: the PennyLane template created based on the QuantumCircuit
-        object
+        function: the PennyLane template created based on the QuantumCircuit object
+
+    .. details::
+        :title: Usage Details
+
+        The ``measurement`` keyword allows one to add a list of PennyLane `measurements`
+        that will override the terminal measurements present in their `QuantumCircuit`.
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from qiskit import QuantumCircuit
+
+            qc = QuantumCircuit(2, 2)
+            qc.h(0)
+            qc.measure(0, 0)
+            qc.rz(0.24, [0])
+            qc.cx(0, 1)
+            qc.measure_all()
+
+            measurements = [qml.expval(qml.PauliZ(0)), qml.vn_entropy([1])]
+            quantum_circuit = qml.from_qiskit(qc, measurements=measurements)
+
+            @qml.qnode(qml.device("default.qubit"))
+            def circuit_loaded_qiskit_circuit():
+                return quantum_circuit()
+
+        >>> print(qml.draw(circuit_loaded_qiskit_circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●─┤  <Z>
+        1: ───────────────────╰X─┤  vnentropy
+
     """
     return load(quantum_circuit, format="qiskit", measurements=measurements)
 
