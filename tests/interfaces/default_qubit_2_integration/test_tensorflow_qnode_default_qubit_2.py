@@ -540,7 +540,7 @@ class TestShotsIntegration:
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
-        circuit.gradient_fn == "backprop"
+        assert circuit.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
