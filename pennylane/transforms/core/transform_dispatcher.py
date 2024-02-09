@@ -319,7 +319,7 @@ class TransformDispatcher:
         return TransformedDevice(original_device, self._transform)
 
     def _batch_transform(self, original_device, targs, tkwargs):
-        """Apply the transform on a batch"""
+        """Apply the transform on a batch of tapes"""
         execution_tapes = []
         batch_fns = []
         tape_counts = []
