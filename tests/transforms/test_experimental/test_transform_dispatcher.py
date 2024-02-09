@@ -471,6 +471,11 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert dispatched_transform.classical_cotransform is None
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_batch_transform(self, valid_transform):
+        """Test that dispatcher can dispatch onto a batch of tapes."""
+        # TODO implement thiss
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_custom_qnode_transform(self, valid_transform):
         """Test that the custom qnode transform is correctly executed"""
 
