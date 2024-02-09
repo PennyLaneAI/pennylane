@@ -394,14 +394,11 @@ class TestPauliWord:
         (pw3, [0, "b", "c"], np.kron(np.kron(matZ, matZ), matZ)),
     )
 
-    def test_to_mat_error(self):
+    def test_to_mat_empty(self):
         """Test that an appropriate error is raised when an empty
         PauliWord is cast to matrix."""
-        with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
-            pw4.to_mat(wire_order=[])
-
-        with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
-            pw4.to_mat(wire_order=Wires([]))
+        res = pw4.to_mat(wire_order=[])
+        assert res == np.ones((1,1))
 
     pw_wire_order = ((pw1, [0, 1]), (pw1, [0, 1, 3]), (pw2, [0]))
 
@@ -861,20 +858,18 @@ class TestPauliSentence:
         assert copy_ps1 == res  # Check if the modified object matches the expected result
         assert copy_ps2 == ps  # Ensure the original object is not modified
 
-    ps_match = (
-        (ps4, "Can't get the matrix of an empty PauliWord."),
-        (ps5, "Can't get the matrix of an empty PauliSentence."),
+    PS_EMPTY_CASES = (
+        (PauliSentence({}), np.zeros((1,1))),
+        (PauliSentence({PauliWord({}): 1.}), np.ones((1,1))),
+        (PauliSentence({PauliWord({}): 2.5}), 2.5 * np.ones((1,1))),
     )
 
-    @pytest.mark.parametrize("ps, match", ps_match)
-    def test_to_mat_error_empty(self, ps, match):
-        """Test that an appropriate error is raised when an empty
-        PauliSentence or PauliWord is cast to matrix."""
-        with pytest.raises(ValueError, match=match):
-            ps.to_mat(wire_order=[])
-
-        with pytest.raises(ValueError, match=match):
-            ps.to_mat(wire_order=Wires([]))
+    @pytest.mark.parametrize("ps, true_res", PS_EMPTY_CASES)
+    def test_to_mat_empty(self, ps, true_res):
+        """Test that empty PauliSentences and PauliSentences with empty PauliWords are handled correctly"""
+        
+        res = ps.to_mat(wire_order=[])
+        assert qml.math.allclose(res, true_res)
 
     ps_wire_order = ((ps1, []), (ps1, [0, 1, 2, "a", "b"]), (ps3, [0, 1, "c"]))
 
@@ -888,7 +883,7 @@ class TestPauliSentence:
 
     def test_to_mat_identity(self):
         """Test that an identity matrix is return if wire_order is provided."""
-        assert np.allclose(ps5.to_mat(wire_order=[0, 1]), np.eye(4))
+        assert np.allclose(ps5.to_mat(wire_order=[0, 1]), np.zeros((4, 4)))
         assert sparse.issparse(ps5.to_mat(wire_order=[0, 1], format="csr"))
 
     tup_ps_mat = (

@@ -837,8 +837,8 @@ class PauliSentence(dict):
                 return np.zeros((1, 1))
             if format == "dense":
                 return np.zeros((2 ** len(wire_order), 2 ** len(wire_order)))
-            return sparse.zeros(
-                (2 ** len(wire_order), 2 ** len(wire_order)), format=format, dtype="complex128"
+            return sparse.csr_matrix(
+                (2 ** len(wire_order), 2 ** len(wire_order)), dtype="complex128"
             )
 
         if format != "dense":
