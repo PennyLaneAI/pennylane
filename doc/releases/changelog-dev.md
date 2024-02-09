@@ -466,6 +466,8 @@
   operators have a valid `pauli_rep` property.
   [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
 
+* Empty `PauliSentence` instances are now correctly turned to zeros when calling their matrix.
+  [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
 <h3>Contributors ✍️</h3>
 
