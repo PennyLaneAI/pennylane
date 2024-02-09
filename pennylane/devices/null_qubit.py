@@ -17,14 +17,29 @@ auxiliary functionality outside direct circuit evaluations.
 """
 # pylint:disable=unused-argument
 
+from dataclasses import replace
+from functools import singledispatch
 from numbers import Number
 from typing import Union, Callable, Tuple, Sequence
 import inspect
 import logging
 import numpy as np
+from pennylane import math
+from pennylane.devices.execution_config import ExecutionConfig
+from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 
 from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
+from pennylane.measurements import (
+    MeasurementProcess,
+    CountsMP,
+    StateMP,
+    ProbabilityMP,
+    Shots,
+    MeasurementValue,
+    ClassicalShadowMP,
+)
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -38,6 +53,52 @@ QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 # always a function from a resultbatch to either a result or a result batch
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
+
+
+@singledispatch
+def null_measurement(mp: MeasurementProcess, obj_with_wires, shots: Shots, interface: str):
+    """Create all-zero results for various measurement processes."""
+    shape = mp.shape(obj_with_wires, shots)
+    if all(isinstance(s, int) for s in shape):
+        return math.zeros(shape, like=interface, dtype=mp.numeric_type)
+    return tuple(math.zeros(s, like=interface, dtype=mp.numeric_type) for s in shape)
+
+
+@null_measurement.register
+def _(mp: ClassicalShadowMP, obj_with_wires, shots: Shots, interface: str):
+    results = tuple(
+        math.zeros(mp.shape(obj_with_wires, Shots(s)), like=interface, dtype=np.int8) for s in shots
+    )
+    return results if shots.has_partitioned_shots else results[0]
+
+
+@null_measurement.register
+def _(mp: CountsMP, obj_with_wires, shots: Shots, interface: str):
+    outcomes = []
+    if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
+        num_wires = len(obj_with_wires.wires)
+        state = "0" * num_wires
+        results = tuple({state: math.asarray(s, like=interface)} for s in shots)
+        if mp.all_outcomes:
+            outcomes = [f"{x:0{num_wires}b}" for x in range(1, 2**num_wires)]
+    else:
+        outcomes = sorted(mp.eigvals())  # always assign shots to the smallest
+        results = tuple({outcomes[0]: math.asarray(s, like=interface)} for s in shots)
+        outcomes = outcomes[1:] if mp.all_outcomes else []
+
+    if outcomes:
+        zero = math.asarray(0, like=interface)
+        for res in results:
+            for val in outcomes:
+                res[val] = zero
+    return results[0] if len(results) == 1 else results
+
+
+@null_measurement.register(StateMP)
+@null_measurement.register(ProbabilityMP)
+def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots: Shots, interface: str):
+    result = math.asarray([1.0] + [0.0] * (2 ** len(obj_with_wires.wires) - 1), like=interface)
+    return (result,) * shots.num_copies if shots.has_partitioned_shots else result
 
 
 class NullQubit(Device):
@@ -89,24 +150,53 @@ class NullQubit(Device):
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
 
-    def _simulate(self, circuit):  # pylint:disable=no-self-use
-        # TODO
-        return 0.0
+    def _simulate(self, circuit, interface):
+        shots = circuit.shots
+        obj_with_wires = self if self.wires else circuit
+        results = tuple(
+            null_measurement(mp, obj_with_wires, shots, interface) for mp in circuit.measurements
+        )
+        if len(results) == 1:
+            return results[0]
+        if shots.has_partitioned_shots:
+            return tuple(zip(*results))
+        return results
 
     @staticmethod
-    def _derivatives(circuit):
-        # TODO
-        return 0.0
+    def _derivatives(circuit, interface):
+        derivatives = ((math.asarray(0.0, like=interface),) * len(circuit.trainable_params)) * len(
+            circuit.measurements
+        )
+        return derivatives[0] if len(derivatives) == 1 else derivatives
 
     @staticmethod
-    def _vjp(circuit, cots):
-        # TODO
-        return 0.0
+    def _vjp(circuit, interface):
+        return (math.asarray(0.0, like=interface),) * len(circuit.trainable_params)
 
     @staticmethod
-    def _jvp(circuit, tans):
-        # TODO
-        return 0.0
+    def _jvp(circuit, interface):
+        jvps = (math.asarray(0.0, like=interface),) * len(circuit.measurements)
+        return jvps[0] if len(jvps) == 1 else jvps
+
+    def preprocess(
+        self, execution_config=DefaultExecutionConfig
+    ) -> Tuple[TransformProgram, ExecutionConfig]:
+        updated_values = {}
+        if execution_config.gradient_method == "best":
+            updated_values["gradient_method"] = "device"
+        if execution_config.use_device_gradient is None:
+            updated_values["use_device_gradient"] = execution_config.gradient_method in {
+                "best",
+                "device",
+                "backprop",
+            }
+        if execution_config.use_device_jacobian_product is None:
+            updated_values["use_device_jacobian_product"] = (
+                execution_config.gradient_method == "device"
+            )
+        if execution_config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
+        return TransformProgram(), replace(execution_config, **updated_values)
 
     def execute(
         self,
@@ -127,7 +217,9 @@ class NullQubit(Device):
             is_single_circuit = True
             circuits = [circuits]
 
-        results = tuple(self._simulate(c) for c in circuits)
+        results = tuple(
+            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
+        )
 
         if self.tracker.active:
             self.tracker.update(batches=1)
@@ -155,6 +247,24 @@ class NullQubit(Device):
 
         return results[0] if is_single_circuit else results
 
+    def supports_derivatives(self, execution_config=None, circuit=None):
+        return execution_config is None or execution_config.gradient_method in (
+            "device",
+            "backprop",
+        )
+
+    def supports_vjp(self, execution_config=None, circuit=None):
+        return execution_config is None or execution_config.gradient_method in (
+            "device",
+            "backprop",
+        )
+
+    def supports_jvp(self, execution_config=None, circuit=None):
+        return execution_config is None or execution_config.gradient_method in (
+            "device",
+            "backprop",
+        )
+
     def compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
@@ -169,7 +279,9 @@ class NullQubit(Device):
             self.tracker.update(derivative_batches=1, derivatives=len(circuits))
             self.tracker.record()
 
-        res = tuple(self._derivatives(c) for c in circuits)
+        res = tuple(
+            self._derivatives(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
+        )
         return res[0] if is_single_circuit else res
 
     def execute_and_compute_derivatives(
@@ -192,8 +304,12 @@ class NullQubit(Device):
             )
             self.tracker.record()
 
-        results = tuple(self._simulate(c) for c in circuits)
-        jacs = tuple(self._derivatives(c) for c in circuits)
+        results = tuple(
+            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
+        )
+        jacs = tuple(
+            self._derivatives(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
+        )
 
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
@@ -207,13 +323,12 @@ class NullQubit(Device):
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
-            tangents = [tangents]
 
         if self.tracker.active:
             self.tracker.update(jvp_batches=1, jvps=len(circuits))
             self.tracker.record()
 
-        res = tuple(self._jvp(c, tans) for c, tans in zip(circuits, tangents))
+        res = tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
 
         return res[0] if is_single_circuit else res
 
@@ -227,7 +342,6 @@ class NullQubit(Device):
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
-            tangents = [tangents]
 
         if self.tracker.active:
             for c in circuits:
@@ -237,8 +351,10 @@ class NullQubit(Device):
             )
             self.tracker.record()
 
-        results = tuple(self._simulate(c) for c in circuits)
-        jvps = tuple(self._jvp(c, tans) for c, tans in zip(circuits, tangents))
+        results = tuple(
+            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
+        )
+        jvps = tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
 
         return (results[0], jvps[0]) if is_single_circuit else (results, jvps)
 
@@ -252,13 +368,12 @@ class NullQubit(Device):
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
-            cotangents = [cotangents]
 
         if self.tracker.active:
             self.tracker.update(vjp_batches=1, vjps=len(circuits))
             self.tracker.record()
 
-        res = tuple(self._vjp(c, cots) for c, cots in zip(circuits, cotangents))
+        res = tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
 
         return res[0] if is_single_circuit else res
 
@@ -272,7 +387,6 @@ class NullQubit(Device):
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
-            cotangents = [cotangents]
 
         if self.tracker.active:
             for c in circuits:
@@ -282,6 +396,8 @@ class NullQubit(Device):
             )
             self.tracker.record()
 
-        results = tuple(self._simulate(c) for c in circuits)
-        vjps = tuple(self._vjp(c, cots) for c, cots in zip(circuits, cotangents))
+        results = tuple(
+            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
+        )
+        vjps = tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
         return (results[0], vjps[0]) if is_single_circuit else (results, vjps)
