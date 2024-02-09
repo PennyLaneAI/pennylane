@@ -22,8 +22,6 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import numpy as pnp
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
-
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
 
@@ -912,7 +910,6 @@ class TestPartialTrace:
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_invalid_wire_selection(self, ml_framework, c_dtype):
         """Test that an error is raised for an invalid wire selection."""
-        import tensorflow as tf
 
         # Define a 2-qubit density matrix
         rho = qml.math.asarray(
