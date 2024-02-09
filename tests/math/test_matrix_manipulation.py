@@ -921,6 +921,7 @@ class TestPartialTrace:
 
         # Attempt to trace over an invalid wire
         with pytest.raises(Exception) as e:
+            import tensorflow as tf
             qml.math.quantum.partial_trace(rho, [2], c_dtype=c_dtype)
             assert e.type in (
                 ValueError,
