@@ -841,11 +841,6 @@ class TestPauliSentence:
         assert res1 == true_res1
         assert res2 == true_res2
 
-    ps_match = (
-        (ps4, "Can't get the matrix of an empty PauliWord."),
-        (ps5, "Can't get the matrix of an empty PauliSentence."),
-    )
-
     @pytest.mark.parametrize("string1, string2, result", add_ps_ps)
     def test_iadd_ps_ps(self, string1, string2, result):
         """Test that the correct result of inplace addition with PauliSentence is produced and other object is not changed."""
@@ -865,6 +860,11 @@ class TestPauliSentence:
         copy_ps1 += pw
         assert copy_ps1 == res  # Check if the modified object matches the expected result
         assert copy_ps2 == ps  # Ensure the original object is not modified
+
+    ps_match = (
+        (ps4, "Can't get the matrix of an empty PauliWord."),
+        (ps5, "Can't get the matrix of an empty PauliSentence."),
+    )
 
     @pytest.mark.parametrize("ps, match", ps_match)
     def test_to_mat_error_empty(self, ps, match):
