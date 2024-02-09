@@ -76,6 +76,20 @@ def _apply_diagonalizing_gates(
     return state
 
 
+def _process_counts_samples(mp, samples, wires):
+    """processes a shot of samples and counts the results."""
+    with qml.queuing.QueuingManager.stop_recording():
+        samples_processed = qml.sample(
+            op=mp.obs, wires=mp._wires  # pylint:disable = protected-access
+        ).process_samples(samples, wires)
+
+    mp_has_obs = bool(mp.obs)
+    observables, counts = np.unique(samples_processed, return_counts=True, axis=-2 + mp_has_obs)
+    if not mp_has_obs:
+        observables = ["".join(observable.astype("str")) for observable in observables]
+    return dict(zip(observables, counts))
+
+
 # pylint:disable = too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
     mps: List[Union[SampleMP, CountsMP]],
@@ -117,18 +131,7 @@ def _measure_with_samples_diagonalizing_gates(
                 res = mp.process_samples(samples, wires)
                 res = math.squeeze(res)
             elif isinstance(mp, CountsMP):
-                with qml.queuing.QueuingManager.stop_recording():
-                    samples_processed = qml.sample(
-                        op=mp.obs, wires=mp._wires  # pylint:disable = protected-access
-                    ).process_samples(samples, wires)
-
-                mp_has_obs = bool(mp.obs)
-                observables, counts = np.unique(
-                    samples_processed, return_counts=True, axis=-2 + mp_has_obs
-                )
-                if not mp_has_obs:
-                    observables = ["".join(observable.astype("str")) for observable in observables]
-                res = dict(zip(observables, counts))
+                res = _process_counts_samples(mp, samples, wires)
             else:
                 raise NotImplementedError
             processed.append(res)
@@ -314,7 +317,12 @@ def measure_with_samples(
     for group in groups:
         all_res.extend(
             _measure_with_samples_diagonalizing_gates(
-                group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=prng_key
+                group,
+                state,
+                shots,
+                is_state_batched=is_state_batched,
+                rng=rng,
+                prng_key=prng_key,
             )
         )
 

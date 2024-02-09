@@ -14,13 +14,13 @@
 """Unit tests for sampling states in devices/qutrit_mixed."""
 import pytest
 import numpy as np
+from flaky import flaky
 
 import pennylane as qml
 from pennylane import math
 from pennylane.devices.qutrit_mixed import sample_state, measure_with_samples
 from pennylane.devices.qutrit_mixed.sampling import _sample_state_jax
 from pennylane.measurements import Shots
-from flaky import flaky
 
 APPROX_ATOL = 0.05
 QUDIT_DIM = 3
@@ -189,13 +189,19 @@ class TestSampleState:
 
         # all samples are approximately equivalently sampled
         assert np.isclose(
-            math.count_nonzero(samples[:, 0] == 0) / num_samples, 1 / 3, atol=APPROX_ATOL
+            math.count_nonzero(samples[:, 0] == 0) / num_samples,
+            1 / 3,
+            atol=APPROX_ATOL,
         )
         assert np.isclose(
-            math.count_nonzero(samples[:, 0] == 1) / num_samples, 1 / 3, atol=APPROX_ATOL
+            math.count_nonzero(samples[:, 0] == 1) / num_samples,
+            1 / 3,
+            atol=APPROX_ATOL,
         )
         assert np.isclose(
-            math.count_nonzero(samples[:, 0] == 2) / num_samples, 1 / 3, atol=APPROX_ATOL
+            math.count_nonzero(samples[:, 0] == 2) / num_samples,
+            1 / 3,
+            atol=APPROX_ATOL,
         )
 
     @pytest.mark.slow
@@ -364,7 +370,10 @@ class TestMeasureWithSamples:
         state = get_dm_of_state(state_vector, 2)
         num_shots = 100
         shots = qml.measurements.Shots(num_shots)
-        mps = [qml.sample(qml.GellMann(0, 3)), qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1))]
+        mps = [
+            qml.sample(qml.GellMann(0, 3)),
+            qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1)),
+        ]
 
         results_gel_3, results_gel_1s = measure_with_samples(mps, state, shots=shots)
         assert results_gel_3.shape == (shots.total_shots,)
@@ -382,7 +391,10 @@ class TestMeasureWithSamples:
         state = get_dm_of_state(state_vector, 2)
         num_shots = 5000
         shots = qml.measurements.Shots(num_shots)
-        mps = [qml.counts(qml.GellMann(0, 3)), qml.counts(qml.GellMann(0, 1) @ qml.GellMann(1, 1))]
+        mps = [
+            qml.counts(qml.GellMann(0, 3)),
+            qml.counts(qml.GellMann(0, 1) @ qml.GellMann(1, 1)),
+        ]
 
         results_gel_3, results_gel_1s = measure_with_samples(mps, state, shots=shots)
 
@@ -453,7 +465,11 @@ class TestBroadcasting:
 
         measurement = qml.sample(wires=[0, 1])
         res = measure_with_samples(
-            [measurement], batched_qutrit_pure_state, shots, is_state_batched=True, rng=rng
+            [measurement],
+            batched_qutrit_pure_state,
+            shots,
+            is_state_batched=True,
+            rng=rng,
         )
 
         assert isinstance(res, tuple)
