@@ -40,7 +40,7 @@ def test_fable_real():
 
     @qml.qnode(dev)
     def circuit():
-        FABLE(np_matrix, tol=0)
+        FABLE(np_matrix, tol=0.01)
         return qml.state()
 
     expected = (
