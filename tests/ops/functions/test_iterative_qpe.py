@@ -121,7 +121,6 @@ class TestIQPE:
         phi = torch.tensor(1.0, requires_grad=True)
         assert torch.isclose(torch.func.grad(circuit)(phi), torch.func.grad(manual_circuit)(phi))
 
-    @pytest.mark.xfail(reason="See https://github.com/PennyLaneAI/pennylane/issues/5002")
     @pytest.mark.tf
     def test_check_gradients_tf(self):
         """Test to check that the gradients are correct comparing with the expanded circuit using TensorFlow"""
