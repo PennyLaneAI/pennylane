@@ -594,3 +594,4 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true  # upload errors should be caught early
+          token: ${{ secrets.CODECOV_TOKEN }}
