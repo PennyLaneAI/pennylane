@@ -59,7 +59,7 @@ Error Tracking
 
     ~AlgorithmicError
     ~ErrorOperation
-    
+
 Resource Classes
 ----------------
 
