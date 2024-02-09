@@ -414,7 +414,6 @@ class DefaultQubit(Device):
         if (
             execution_config.gradient_method in {"backprop", "best"}
             and execution_config.device_options.get("max_workers", self._max_workers) is None
-            and not (self.shots if circuit is None else circuit.shots)
         ):
             if circuit is None:
                 return True

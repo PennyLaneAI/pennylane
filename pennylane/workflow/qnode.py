@@ -507,7 +507,7 @@ class QNode:
         self.gradient_kwargs = {}
         self._tape_cached = False
 
-        self._update_gradient_fn(shots=device.shots)
+        self._update_gradient_fn()
         functools.update_wrapper(self, func)
         self._transform_program = qml.transforms.core.TransformProgram()
 
