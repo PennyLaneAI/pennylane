@@ -22,17 +22,18 @@ from pennylane.ops import SymbolicOp
 
 
 class Reflection(SymbolicOp, Operation):
-    r"""Reflection(U, alpha)
+    r"""Reflection(U, alpha, reflection_wires = None)
     Apply a :math:`\alpha`-reflection over the state :math:`|\Psi\rangle = U|0\rangle`.
 
     .. math::
 
-        \text{Reflection}(U, \alpha) = \identity - (1 - e^{-i\alpha}) |\Psi\rangle \langle \Psi|
+        \text{Reflection}(U, \alpha) = \identity - (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
 
 
     Args:
         U (qml.ops.op_math.prod.Prod): the product of operations that generate the state :math:`|\Psi\rangle`.
         alpha (float): the reflection angle.
+        reflection_wires (Any or Iterable[Any]): Subsystem of wires on which to reflect. The default is None and the reflection will be applied on the U wires.
 
     **Example**
 
@@ -60,6 +61,27 @@ class Reflection(SymbolicOp, Operation):
             return qml.state()
 
         circuit()
+
+        .. details::
+
+            :title: Theory
+
+            The operator is built as follows:
+
+            .. math::
+
+                \text{Reflection}(U, \alpha) = \identity - (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(\identity - (1 - e^{i\alpha}) |0\rangle \langle 0|)U^\dagger.
+
+            The central block is obtained through a PhaseShift controlled operator.
+
+            In the case of specifying `reflection_wires` the operator would have the following expression.
+
+            .. math::
+
+                U(\identity - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes \identity^{n-m}})U^\dagger,
+
+            where :math:`m` is the number of wires in `reflection_wires` and :math:`n` is the total number of wires.
+
     """
 
     def __init__(self, U, alpha, reflection_wires = None, id=None):
@@ -82,18 +104,17 @@ class Reflection(SymbolicOp, Operation):
         return self.U.wires
 
     def decomposition(self):
+
         wires = qml.wires.Wires(self.reflection_wires)
-        print(wires, "sssss")
         ops = []
 
         ops.append(qml.adjoint(self.U))
 
         if len(wires) > 1:
-            print("adios")
             ops.append(qml.PauliX(wires=wires[-1]))
             ops.append(
                 qml.ctrl(
-                    qml.PhaseShift(-self.alpha, wires=wires[-1]),
+                    qml.PhaseShift(self.alpha, wires=wires[-1]),
                     control=wires[:-1],
                     control_values=[0] * (len(wires) - 1),
                 )
@@ -101,9 +122,8 @@ class Reflection(SymbolicOp, Operation):
             ops.append(qml.PauliX(wires=wires[-1]))
 
         else:
-            print("hola", self.alpha)
             ops.append(qml.PauliX(wires=wires))
-            ops.append(qml.PhaseShift(-self.alpha, wires=wires))
+            ops.append(qml.PhaseShift(self.alpha, wires=wires))
             ops.append(qml.PauliX(wires=wires))
 
         ops.append(self.U)
