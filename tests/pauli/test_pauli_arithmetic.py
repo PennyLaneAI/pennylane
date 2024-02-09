@@ -43,8 +43,6 @@ pw_id = pw4  # Identity PauliWord
 
 words = [pw1, pw2, pw3, pw4]
 
-words = [pw1, pw2, pw3, pw4]
-
 ps1 = PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5})
 ps2 = PauliSentence({pw1: -1.23, pw2: -4j, pw3: 0.5})
 ps1_hamiltonian = PauliSentence({pw1: 1.23, pw2: 4, pw3: -0.5})

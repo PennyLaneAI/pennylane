@@ -539,7 +539,7 @@ class PauliSentence(dict):
     .. note::
 
         An empty :class:`~.PauliSentence` will be treated as the additive
-        identity (i.e 0 * Identity on all wires).
+        identity (i.e ``0 * Identity()``).
 
     **Examples**
 
@@ -567,7 +567,7 @@ class PauliSentence(dict):
     >>> PauliSentence({})
     0 * I
 
-    We can compute commutators using the `PauliSentence.commutator()` method
+    We can compute commutators using the ``PauliSentence.commutator()`` method
 
     >>> op1 = PauliWord({0:"X", 1:"X"})
     >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
@@ -576,6 +576,7 @@ class PauliSentence(dict):
     + 2j * X(0) @ Z(1)
 
     Or, alternatively, use :func:`~commutator`.
+
     >>> qml.commutator(op1, op2, pauli=True)
 
     Note that we need to specify ``pauli=True`` as :func:`~.commutator` returns PennyLane operators by default.
