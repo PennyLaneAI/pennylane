@@ -49,6 +49,16 @@ Quantum Phase Estimation Resources
     ~FirstQuantization
     ~DoubleFactorization
 
+Error Tracking
+--------------
+
+.. currentmodule:: pennylane.resource
+
+.. autosummary::
+    :toctree: api
+
+    ~AlgorithmicError
+    
 Resource Classes
 ----------------
 

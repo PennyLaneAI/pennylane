@@ -20,7 +20,15 @@ from pennylane.operation import Operation
 
 
 class AlgorithmicError(ABC):
-    """Abstract base class representing different types of mathematical errors."""
+    """Abstract base class representing an abstract type of mathematical error.
+
+    Args:
+        error (float): The numerical value of the error
+
+    .. note::
+        Child classes must implement the :func:`~.AlgorithmicError.combine` method which combines two
+        instances of this error type (as if the associated gates were applied in series).
+    """
 
     def __init__(self, error: float):
         self.error = error
