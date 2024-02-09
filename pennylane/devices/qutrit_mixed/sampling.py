@@ -33,7 +33,10 @@ from .apply_operation import apply_operation
 
 
 def _group_measurements(mps: List[Union[SampleMeasurement]]):
-    """TODO add"""
+    """Groups measurements such that:
+    - measurements without observables are done together
+    - measurements with observables are done separately
+    """
     if len(mps) == 1:
         return [mps], [[0]]
 
@@ -65,8 +68,8 @@ def _group_measurements(mps: List[Union[SampleMeasurement]]):
 def _apply_diagonalizing_gates(
     mps: List[SampleMeasurement], state: np.ndarray, is_state_batched: bool = False
 ):
-    """TODO add"""
-    if len(mps) == 1:
+    """Applies diagonalizing gates when necessary"""
+    if len(mps) == 1 and mps[0].obs:
         for op in mps[0].diagonalizing_gates():
             state = apply_operation(op, state, is_state_batched=is_state_batched)
 

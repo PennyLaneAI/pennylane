@@ -291,7 +291,7 @@ class TestMeasureWithSamples:
     @flaky
     def test_counts_measure_single_wire(self):
         """Test that a counts measurement on a single wire works as expected"""
-        state_vector = np.sqrt(np.array([5, -2j, 1, 0, 0, 0, 0, 0, 0])/8)
+        state_vector = np.sqrt(np.array([5, -2j, 1, 0, 0, 0, 0, 0, 0]) / 8)
         state = get_dm_of_state(state_vector, 2)
 
         num_shots = 1000
@@ -360,22 +360,20 @@ class TestMeasureWithSamples:
 
     def test_sample_observables(self):
         """Test that counts measurements properly counts samples of an observable"""
-        state_vector = np.sqrt(np.array([0, 0, 0, 0, 2, 0, 1, 0, 1])/4)
+        state_vector = np.sqrt(np.array([0, 0, 0, 0, 2, 0, 1, 0, 1]) / 4)
         state = get_dm_of_state(state_vector, 2)
         num_shots = 100
         shots = qml.measurements.Shots(num_shots)
         mps = [qml.sample(qml.GellMann(0, 3)), qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1))]
 
-        results_gel_3, results_gel_1s = measure_with_samples(
-            mps, state, shots=shots
-        )
+        results_gel_3, results_gel_1s = measure_with_samples(mps, state, shots=shots)
         assert results_gel_3.shape == (shots.total_shots,)
         assert results_gel_3.dtype == np.int64
-        assert (sorted(np.unique(results_gel_3)) == [-1, 0])
+        assert sorted(np.unique(results_gel_3)) == [-1, 0]
 
         assert results_gel_1s.shape == (shots.total_shots,)
         assert results_gel_1s.dtype == np.int64
-        assert (sorted(np.unique(results_gel_1s)) == [-1, 0, 1])
+        assert sorted(np.unique(results_gel_1s)) == [-1, 0, 1]
 
     @flaky
     def test_counts_observables(self):
@@ -386,22 +384,18 @@ class TestMeasureWithSamples:
         shots = qml.measurements.Shots(num_shots)
         mps = [qml.counts(qml.GellMann(0, 3)), qml.counts(qml.GellMann(0, 1) @ qml.GellMann(1, 1))]
 
-        results_gel_3, results_gel_1s = measure_with_samples(
-            mps, state, shots=shots
-        )
+        results_gel_3, results_gel_1s = measure_with_samples(mps, state, shots=shots)
 
         assert isinstance(results_gel_3, dict)
         assert sorted(results_gel_3.keys()) == [-1, 0]
-        assert np.isclose(results_gel_3[-1] / num_shots, 3/5, atol=APPROX_ATOL)
-        assert np.isclose(results_gel_3[0] / num_shots, 2/5, atol=APPROX_ATOL)
+        assert np.isclose(results_gel_3[-1] / num_shots, 3 / 5, atol=APPROX_ATOL)
+        assert np.isclose(results_gel_3[0] / num_shots, 2 / 5, atol=APPROX_ATOL)
 
         assert isinstance(results_gel_1s, dict)
         assert sorted(results_gel_1s.keys()) == [-1, 0, 1]
         assert np.isclose(results_gel_1s[-1] / num_shots, 0.3, atol=APPROX_ATOL)
         assert np.isclose(results_gel_1s[0] / num_shots, 2 / 5, atol=APPROX_ATOL)
         assert np.isclose(results_gel_1s[1] / num_shots, 0.3, atol=APPROX_ATOL)
-
-
 
 
 class TestInvalidSampling:
@@ -417,14 +411,14 @@ class TestInvalidSampling:
         with pytest.raises(ValueError, match="probabilities do not sum to 1"):
             _ = measure_with_samples([mp], state, _shots)
 
-
-    @pytest.mark.parametrize("mp", [qml.expval(qml.GellMann(0, 3)), qml.var(qml.GellMann(0, 3)), qml.probs()])
+    @pytest.mark.parametrize(
+        "mp", [qml.expval(qml.GellMann(0, 3)), qml.var(qml.GellMann(0, 3)), qml.probs()]
+    )
     def test_currently_unsuported_observable(self, mp, two_qutrit_state):
         """Test sample measurements that are not counts or sample raise a NotImplementedError."""
         shots = qml.measurements.Shots(1)
         with pytest.raises(NotImplementedError):
             _ = measure_with_samples([mp], two_qutrit_state, shots)
-
 
 
 shots_to_test = [
