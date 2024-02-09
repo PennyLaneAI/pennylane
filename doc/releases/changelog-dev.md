@@ -100,6 +100,8 @@
    ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
    ```
 
+* Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
+  [(##5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
 <h3>Improvements 🛠</h3>
 

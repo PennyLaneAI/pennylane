@@ -14,251 +14,151 @@
 """
 Tests for the Reflection Operator template
 """
-import functools
-import itertools
+
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.ops import Hadamard, PauliZ, MultiControlledX
 
 
-def test_repr():
-    """Tests the repr method for GroverOperator."""
-    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
-    expected = "GroverOperator(wires=[0, 1, 2], work_wires=[3, 4])"
-    assert repr(op) == expected
+@pytest.mark.parametrize(
+    ("prod", "reflection_wires"),
+    [(qml.QFT([0, 1, 4]), [0, 1, 2]), (qml.QFT([0, 1, 2]), [3]), qml.QFT([0, 1, 2]), [0, 1, 2, 3]],
+)
+def test_reflection_wires(prod, reflection_wires):
+    """Assert reflection_wires is a subset of the U wires"""
+    with pytest.raises(ValueError, match="The reflection_wires must be a subset of the U wires."):
+        qml.Reflection(prod, 0.5, reflection_wires=reflection_wires)
 
 
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Tests the flatten and unflatten methods for GroverOperator."""
-    work_wires = qml.wires.Wires((3, 4))
-    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=work_wires)
-    data, metadata = op._flatten()
-    assert data == tuple()
-    assert len(metadata) == 2
-    assert metadata[0] == op.wires
-    assert metadata[1] == (("work_wires", work_wires),)
-
-    # make sure metadata hashable
-    assert hash(metadata)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert new_op is not op
-
-
-def test_work_wires():
-    """Assert work wires get passed to MultiControlledX"""
-    wires = ("a", "b")
-    work_wire = ("aux",)
-
-    op = qml.GroverOperator(wires=wires, work_wires=work_wire)
-
-    assert op.hyperparameters["work_wires"] == work_wire
-
-    ops = op.expand().operations
-
-    assert ops[2].hyperparameters["work_wires"] == work_wire
-
-
-def test_work_wires_None():
-    """Test that work wires of None are not inpreted as work wires."""
-    op = qml.GroverOperator(wires=(0, 1, 2, 3), work_wires=None)
-    assert op.hyperparameters["work_wires"] == qml.wires.Wires([])
-
-
-@pytest.mark.parametrize("bad_wires", [0, (0,), tuple()])
-def test_single_wire_error(bad_wires):
-    """Assert error raised when called with only a single wire"""
-
-    with pytest.raises(ValueError, match="GroverOperator must have at least"):
-        qml.GroverOperator(wires=bad_wires)
-
-
-def test_id():
-    """Assert id keyword works"""
-
-    op = qml.GroverOperator(wires=(0, 1), id="hello")
-
-    assert op.id == "hello"
-
-
-decomp_3wires = [
-    qml.Hadamard,
-    qml.Hadamard,
-    qml.PauliZ,
-    qml.MultiControlledX,
-    qml.PauliZ,
-    qml.Hadamard,
-    qml.Hadamard,
-    qml.GlobalPhase,
-]
-
-
-def decomposition_wires(wires):
-    wire_order = [
-        wires[0],
-        wires[1],
-        wires[2],
-        wires,
-        wires[2],
-        wires[0],
-        wires[1],
-        wires,
+def test_decomposition_one_wire():
+    """Test that the decomposition of the Reflection operator is correct"""
+    op = qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0])
+    decomp = op.decomposition()
+    expected = [
+        qml.GlobalPhase(np.pi),
+        qml.adjoint(qml.Hadamard(0)),
+        qml.PauliX(wires=[0]),
+        qml.PhaseShift(0.5, wires=[0]),
+        qml.PauliX(wires=[0]),
+        qml.Hadamard(0),
     ]
-    return wire_order
+    assert decomp == expected
 
 
-@pytest.mark.parametrize("n_wires", [2, 4, 7])
-def test_grover_diffusion_matrix(n_wires):
-    """Test that the Grover diffusion matrix is the same as when constructed in a different way"""
-    wires = list(range(n_wires))
+def test_decomposition_two_wire():
+    """Test that the decomposition of the Reflection operator is correct"""
+    op = qml.Reflection(qml.QFT(wires=[0, 1]), 0.5)
 
-    # Test-oracle
-    oracle = np.identity(2**n_wires)
-    oracle[0, 0] = -1
+    decomp = op.decomposition()
+    expected = [
+        qml.GlobalPhase(np.pi),
+        qml.adjoint(qml.QFT(wires=[0, 1])),
+        qml.PauliX(wires=[1]),
+        qml.ctrl(qml.PhaseShift(0.5, wires=[1]), control=0, control_values=[0]),
+        qml.PauliX(wires=[1]),
+        qml.QFT(wires=[0, 1]),
+    ]
 
-    # s1 = H|0>, Hadamard on a single qubit in the ground state
-    s1 = np.array([1, 1]) / np.sqrt(2)
-
-    # uniform superposition state
-    s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
-    # Grover matrix
-    G_matrix = qml.GroverOperator(wires=wires).matrix()
-
-    amplitudes = G_matrix @ oracle @ s
-    probs = amplitudes**2
-
-    # Create Grover diffusion matrix G in alternative way
-    oplist = list(itertools.repeat(Hadamard.compute_matrix(), n_wires - 1))
-    oplist.append(PauliZ.compute_matrix())
-
-    ctrl_str = "0" * (n_wires - 1)
-    CX = MultiControlledX(
-        control_values=ctrl_str,
-        wires=wires,
-        work_wires=None,
-    ).matrix()
-
-    M = functools.reduce(np.kron, oplist)
-    G = M @ CX @ M
-
-    amplitudes2 = G @ oracle @ s
-    probs2 = amplitudes2**2
-
-    assert np.allclose(probs, probs2)
+    assert decomp == expected
 
 
-def test_grover_diffusion_matrix_results():
-    """Test that the matrix gives the same result as when running the example in the documentation
-    `here <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.templates.subroutines.GroverOperator.html>`_
-    """
+def test_default_values():
+    """Test that the default values are correct"""
+
+    U = qml.QFT(wires=[0, 1, 4])
+    op = qml.Reflection(U)
+
+    assert op.alpha == np.pi
+    assert op.reflection_wires == U.wires
+
+
+@pytest.mark.parametrize("n_wires", [3, 4, 5])
+def test_grover_as_reflection(n_wires):
+    """Test that the GroverOperator can be used as a Reflection operator"""
+
+    @qml.prod
+    def hadamards(wires):
+        for wire in wires:
+            qml.Hadamard(wires=wire)
+
+    grover_matrix = qml.GroverOperator(wires=range(n_wires))
+    reflection_matrix = qml.Reflection(hadamards(wires=range(n_wires)))
+
+    assert np.allclose(grover_matrix.matrix, reflection_matrix.matrix)
+
+
+@pytest.mark.tf
+@pytest.mark.jax
+@pytest.mark.torch
+@pytest.mark.parametrize("value", [1.2, 2.1, 3.4])
+def test_gradients_all_interfaces(value):
+    import torch
+    import jax
+    import pennylane.numpy as pnp
+    import tensorflow as tf
+
     n_wires = 3
-    wires = list(range(n_wires))
 
-    def oracle():
-        qml.Hadamard(wires[-1])
-        qml.Toffoli(wires=wires)
-        qml.Hadamard(wires[-1])
+    @qml.prod
+    def hadamards(wires):
+        for wire in wires:
+            qml.Hadamard(wires=wire)
 
-    dev = qml.device("default.qubit", wires=wires)
+    dev = qml.device("default.qubit")
 
     @qml.qnode(dev)
-    def GroverSearch(num_iterations=1):
-        for wire in wires:
-            qml.Hadamard(wire)
+    def circuit(alpha):
+        qml.RY(1.2, wires=0)
+        qml.RY(-1.4, wires=1)
+        qml.RX(-2, wires=0)
+        qml.CRX(1, wires=[0, 1])
+        qml.Reflection(hadamards(range(n_wires)), alpha)
 
-        for _ in range(num_iterations):
-            oracle()
-            qml.GroverOperator(wires=wires)
-        return qml.probs(wires)
+        return qml.expval(qml.PauliZ(0))
 
-    # Get probabilities from example
-    probs_example = GroverSearch(num_iterations=1)
+    def cost(alpha):
+        return circuit(alpha)
 
-    # Grover diffusion matrix
-    G_matrix = qml.GroverOperator(wires=wires).matrix()
+    alpha = pnp.array([value], requires_grad=True)
+    grad_autograd = qml.grad(cost)(alpha)
 
-    oracle_matrix = np.identity(2**n_wires)
-    oracle_matrix[-1, -1] = -1
+    grad_jax = jax.grad(cost)(jax.numpy.array(value, dtype=jax.numpy.float32))
 
-    # s1 = H|0>, Hadamard on a single qubit in the ground state
-    s1 = np.array([1, 1]) / np.sqrt(2)
+    x = torch.tensor([value], requires_grad=True)
 
-    # uniform superposition state
-    s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
+    y = cost(x)
+    y.backward()
+    grad_torch = x.grad
 
-    amplitudes = G_matrix @ oracle_matrix @ s
-    # Check that the probabilities are the same
-    probs_matrix = amplitudes**2
+    x = tf.Variable([value], dtype=tf.float32)
 
-    assert np.allclose(probs_example, probs_matrix)
+    with tf.GradientTape() as tape:
+        y = cost(x)
 
+    grad_tf = tape.gradient(y, x)
 
-@pytest.mark.parametrize("wires", ((0, 1, 2), ("a", "c", "b")))
-def test_expand(wires):
-    """Asserts decomposition uses expected operations and wires"""
-    op = qml.GroverOperator(wires=wires)
-
-    decomp = op.expand().operations
-
-    expected_wires = decomposition_wires(wires)
-
-    assert len(decomp) == len(decomp_3wires) == len(expected_wires)
-
-    for actual_op, expected_class, expected_wire in zip(decomp, decomp_3wires, expected_wires):
-        assert isinstance(actual_op, expected_class)
-        assert actual_op.wires == qml.wires.Wires(expected_wire)
+    assert np.allclose(grad_autograd, grad_jax, atol=1e-3)
+    assert np.allclose(grad_autograd, grad_torch, atol=1e-3)
+    assert np.allclose(grad_autograd, grad_tf, atol=1e-3)
 
 
-@pytest.mark.parametrize("n_wires", [6, 13])
-def test_findstate(n_wires):
-    """Asserts can find state marked by oracle, with operation full matrix and decomposition."""
-    wires = list(range(n_wires))
+def test_lightning_qubit():
+    dev1 = qml.device("lightning.qubit", wires=2)
 
-    dev = qml.device("default.qubit", wires=wires)
+    @qml.qnode(dev1)
+    def circuit1():
+        qml.RX(2, wires=0)
+        qml.CRY(1, wires=[0, 1])
+        qml.Reflection(U=qml.PauliX(wires=0), alpha=2.0)
+        return qml.probs(wires=[0, 1])
 
-    @qml.qnode(dev)
-    def circ():
-        for wire in wires:
-            qml.Hadamard(wire)
+    dev2 = qml.device("default.qubit", wires=2)
 
-        for _ in range(2):
-            qml.Hadamard(wires[0])
-            qml.MultiControlledX(wires=wires[1:] + wires[0:1])
-            qml.Hadamard(wires[0])
-            qml.GroverOperator(wires=wires)
+    @qml.qnode(dev2)
+    def circuit2():
+        qml.RX(2, wires=0)
+        qml.CRY(1, wires=[0, 1])
+        qml.Reflection(U=qml.PauliX(wires=0), alpha=2.0)
+        return qml.probs(wires=[0, 1])
 
-        return qml.probs(wires=wires)
-
-    probs = circ()
-
-    assert np.argmax(probs) == len(probs) - 1
-
-
-def test_matrix(tol):
-    """Test that the matrix representation is correct."""
-
-    res_static = qml.GroverOperator.compute_matrix(2, work_wires=None)
-    res_dynamic = qml.GroverOperator(wires=[0, 1]).matrix()
-    res_reordered = qml.GroverOperator(wires=[0, 1]).matrix([1, 0])
-
-    expected = np.array(
-        [[-0.5, 0.5, 0.5, 0.5], [0.5, -0.5, 0.5, 0.5], [0.5, 0.5, -0.5, 0.5], [0.5, 0.5, 0.5, -0.5]]
-    )
-
-    assert np.allclose(res_static, expected, atol=tol, rtol=0)
-    assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
-    # reordering should not affect this particular matrix
-    assert np.allclose(res_reordered, expected, atol=tol, rtol=0)
-
-
-@pytest.mark.parametrize("n_wires", [2, 3, 5])
-def test_decomposition_matrix(n_wires):
-    """Test that the decomposition and the matrix match."""
-    wires = list(range(n_wires))
-    op = qml.GroverOperator(wires)
-    mat1 = op.matrix()
-    mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wires)
-    assert np.allclose(mat1, mat2)
+    assert np.allclose(circuit1(), circuit2())

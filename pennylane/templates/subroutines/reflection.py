@@ -19,25 +19,26 @@ This submodule contains the template for the Reflection operation.
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops import SymbolicOp
+import numpy as np
 
 
 class Reflection(SymbolicOp, Operation):
-    r"""Reflection(U, alpha, reflection_wires = None)
+    r"""Reflection(U, alpha = np.pi, reflection_wires = None)
     Apply a :math:`\alpha`-reflection over the state :math:`|\Psi\rangle = U|0\rangle`.
 
     .. math::
 
-        \text{Reflection}(U, \alpha) = \identity - (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
+        \text{Reflection}(U, \alpha) = -\identity + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
 
 
     Args:
         U (qml.ops.op_math.prod.Prod): the product of operations that generate the state :math:`|\Psi\rangle`.
-        alpha (float): the reflection angle.
+        alpha (float): the reflection angle. Default is :math:`\pi`.
         reflection_wires (Any or Iterable[Any]): Subsystem of wires on which to reflect. The default is None and the reflection will be applied on the U wires.
 
     **Example**
 
-    The reflection :math:`\identity - 2|+\rangle \langle +|` applied to the state :math:`|1\rangle` would be as follows:
+    The reflection :math:`-\identity + 2|+\rangle \langle +|` applied to the state :math:`|1\rangle` would be as follows:
 
     .. code-block::
 
@@ -56,11 +57,12 @@ class Reflection(SymbolicOp, Operation):
             qml.qml.PauliX(wires=0)
 
             # Apply the reflection
-            qml.Reflection(U, alpha=np.pi)
+            qml.Reflection(U)
 
             return qml.state()
 
         circuit()
+
 
         .. details::
 
@@ -70,7 +72,7 @@ class Reflection(SymbolicOp, Operation):
 
             .. math::
 
-                \text{Reflection}(U, \alpha) = \identity - (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(\identity - (1 - e^{i\alpha}) |0\rangle \langle 0|)U^\dagger.
+                \text{Reflection}(U, \alpha) = -\identity + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-\identity + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^\dagger.
 
             The central block is obtained through a PhaseShift controlled operator.
 
@@ -84,7 +86,7 @@ class Reflection(SymbolicOp, Operation):
 
     """
 
-    def __init__(self, U, alpha, reflection_wires = None, id=None):
+    def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
         self.U = U
         self.alpha = alpha
 
@@ -93,21 +95,23 @@ class Reflection(SymbolicOp, Operation):
         else:
             self.reflection_wires = reflection_wires
 
+        if not set(self.reflection_wires).issubset(set(U.wires)):
+            raise ValueError("The reflection_wires must be a subset of the U wires.")
+
+        self._name = "Reflection"
+
         super().__init__(base=U, id=id)
 
     @property
     def has_matrix(self):
         return False
 
-    @property
-    def wires(self):
-        return self.U.wires
-
     def decomposition(self):
-
         wires = qml.wires.Wires(self.reflection_wires)
+
         ops = []
 
+        ops.append(qml.GlobalPhase(np.pi))
         ops.append(qml.adjoint(self.U))
 
         if len(wires) > 1:
