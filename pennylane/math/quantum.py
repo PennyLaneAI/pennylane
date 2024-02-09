@@ -22,6 +22,7 @@ from autoray import numpy as np
 from numpy import float64
 
 import pennylane as qml
+from . import single_dispatch  # pylint:disable=unused-import
 from .matrix_manipulation import _permute_dense_matrix
 from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
 from .utils import is_abstract, allclose, cast, convert_like, cast_like

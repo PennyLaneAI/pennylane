@@ -22,6 +22,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import numpy as pnp
 
+tf = pytest.importorskip("tensorflow", minversion="2.1")
 
 
 # Define a list of dtypes to test
