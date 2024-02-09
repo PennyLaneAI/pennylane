@@ -22,7 +22,7 @@ from pennylane.operation import Operation
 
 
 class AmplitudeAmplification(Operation):
-    r"""AmplitudeAmplification(U, O, iters=1, fixed_point=False, aux_wire=None)
+    r"""AmplitudeAmplification(U, O, iters=1, fixed_point=False, work_wire=None)
 
     Given a state :math:`|\Psi\rangle = \alpha |\psi\rangle + \beta|\psi^{\perp}}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\psi\rangle`.
 
@@ -35,11 +35,11 @@ class AmplitudeAmplification(Operation):
         O (qml.ops.op_math.prod.Prod): the oracle that flips the sign of the state :math:`|\psi\rangle` and do nothing to the state :math:`|\psi^{\perp}\rangle`.
         iters (int): the number of iterations of the amplitude amplification subroutine. Default is 1.
         fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm. Default is False.
-        aux_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm. Default is None.
+        work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm. Default is None.
 
     Raises:
-        ValueError: aux_wire must be specified if fixed_point == True.
-        ValueError: aux_wire must be different from the wires of U.
+        ValueError: work_wire must be specified if fixed_point == True.
+        ValueError: work_wire must be different from the wires of U.
 
     **Example**
 
@@ -62,7 +62,7 @@ class AmplitudeAmplification(Operation):
         def circuit():
 
           generator(wires = range(3))
-          qml.AmpAmp(U, O, iters = 5, fixed_point=True, aux_wire=3)
+          qml.AmpAmp(U, O, iters = 5, fixed_point=True, work_wire=3)
 
           return qml.probs(wires = range(3))
 
@@ -73,10 +73,10 @@ class AmplitudeAmplification(Operation):
 
     """
 
-    def __init__(self, U, O, iters=1, fixed_point=False, aux_wire=None, reflection_wires = None):
+    def __init__(self, U, O, iters=1, fixed_point=False, work_wire=None, reflection_wires = None):
         self.U = U
         self.O = O
-        self.aux_wire = aux_wire
+        self.work_wire = work_wire
         self.fixed_point = fixed_point
         self.n_iterations = iters
 
@@ -89,18 +89,18 @@ class AmplitudeAmplification(Operation):
 
         self.queue()
 
-        if fixed_point and aux_wire is None:
-            raise ValueError(f"aux_wire must be specified if fixed_point == True.")
+        if fixed_point and work_wire is None:
+            raise ValueError(f"work_wire must be specified if fixed_point == True.")
 
         if fixed_point and iters % 2 != 0:
             raise ValueError(f"Number of iterations must be even if fixed_point == True.")
 
 
-        if fixed_point and len(U.wires + qml.wires.Wires(aux_wire)) == len(U.wires):
-            raise ValueError(f"aux_wire must be different from the wires of U.")
+        if fixed_point and len(U.wires + qml.wires.Wires(work_wire)) == len(U.wires):
+            raise ValueError(f"work_wire must be different from the wires of U.")
 
         if fixed_point:
-            super().__init__(wires=U.wires + qml.wires.Wires(aux_wire))
+            super().__init__(wires=U.wires + qml.wires.Wires(work_wire))
         else:
             super().__init__(wires=U.wires)
 
@@ -111,13 +111,13 @@ class AmplitudeAmplification(Operation):
             alphas, betas = self.get_fixed_point_angles()
 
             for iter in range(self.n_iterations // 2):
-                ops.append(qml.Hadamard(wires=self.aux_wire))
-                ops.append(qml.ctrl(self.O, control=self.aux_wire))
-                ops.append(qml.Hadamard(wires=self.aux_wire))
-                ops.append(qml.PhaseShift(betas[iter], wires=self.aux_wire))
-                ops.append(qml.Hadamard(wires=self.aux_wire))
-                ops.append(qml.ctrl(self.O, control=self.aux_wire))
-                ops.append(qml.Hadamard(wires=self.aux_wire))
+                ops.append(qml.Hadamard(wires=self.work_wire))
+                ops.append(qml.ctrl(self.O, control=self.work_wire))
+                ops.append(qml.Hadamard(wires=self.work_wire))
+                ops.append(qml.PhaseShift(betas[iter], wires=self.work_wire))
+                ops.append(qml.Hadamard(wires=self.work_wire))
+                ops.append(qml.ctrl(self.O, control=self.work_wire))
+                ops.append(qml.Hadamard(wires=self.work_wire))
 
                 ops.append(qml.Reflection(self.U, -alphas[iter], reflection_wires=self.reflection_wires))
         else:
