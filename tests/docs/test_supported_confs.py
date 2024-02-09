@@ -264,23 +264,10 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_device(self, interface, return_type, shots, wire_specs):
         """Test diff_method=device raises an error for all interfaces for default.qubit"""
-        msg = (
-            "The default.qubit device does not provide a native "
-            "method for computing the jacobian."
-        )
+        msg = "does not support device with requested circuit."
 
         with pytest.raises(QuantumFunctionError, match=msg):
             get_qnode(interface, "device", return_type, shots, wire_specs)
-
-    @pytest.mark.parametrize("return_type", return_types)
-    @pytest.mark.parametrize("wire_specs", wire_specs_list)
-    def test_none_backprop(self, return_type, wire_specs):
-        """Test interface=None and diff_method=backprop raises an error"""
-        with pytest.raises(
-            QuantumFunctionError,
-            match=r"Device default\.qubit does not support backprop with .*gradient_method='backprop'.*interface=None",
-        ):
-            get_qnode(None, "backprop", return_type, None, wire_specs)
 
     @pytest.mark.parametrize(
         "diff_method", ["adjoint", "parameter-shift", "finite-diff", "spsa", "hadamard"]
@@ -295,31 +282,11 @@ class TestSupportedConfs:
         x = get_variable(None, wire_specs)
 
         msg = None
-        if not shots and return_type is Sample:
-            msg = "not accepted for analytic simulation"
-        elif diff_method == "adjoint":
-            if shots:
-                if return_type in {
-                    VnEntropy,
-                    MutualInfo,
-                    "StateCost",
-                    "StateVector",
-                    "DensityMatrix",
-                }:
-                    msg = "not accepted with finite shots"
-                else:
-                    msg = "Finite shots are not supported with"
-        elif shots and return_type in (
-            VnEntropy,
-            MutualInfo,
-            "DensityMatrix",
-            "StateCost",
-            "StateVector",
-        ):
-            msg = "not accepted with finite shots on"
+        if shots or return_type is Sample:
+            msg = f"does not support {diff_method} with requested circuit"
 
         if msg is not None:
-            with pytest.raises(qml.DeviceError, match=msg):
+            with pytest.raises(qml.QuantumFunctionError, match=msg):
                 circuit(x)
         else:
             circuit(x)
