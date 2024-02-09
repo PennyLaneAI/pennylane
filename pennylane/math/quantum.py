@@ -815,13 +815,10 @@ def expectation_value(operator_matrix, state_vector, check_state=False, check_op
     .. seealso:: :func:`pennylane.math.fidelity`
 
     """
-    # if isinstance(state_vector, (list, tuple, int, float, complex)):
-    #     state_vector = np.asarray(state_vector)
-    # if isinstance(operator_matrix, (list, tuple, int, float, complex)):
-    #     operator_matrix = np.asarray(operator_matrix)
-
-    # state_vector = cast(state_vector, dtype=c_dtype)
-    # operator_matrix = cast(operator_matrix, dtype=c_dtype)
+    if isinstance(state_vector, (list, tuple, int, float, complex)):
+        state_vector = np.asarray(state_vector)
+    if isinstance(operator_matrix, (list, tuple, int, float, complex)):
+        operator_matrix = np.asarray(operator_matrix)
 
     if check_state:
         _check_state_vector(state_vector)
