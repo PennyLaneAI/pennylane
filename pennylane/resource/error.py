@@ -62,8 +62,7 @@ class AlgorithmicError(ABC):
 
 
 class ErrorOperation(Operation):
-    r"""Base class that represents quantum gates or channels applied to quantum
-    states and stores the error of the quantum gate.
+    r"""Base class that represents quantum operations which carry somne form of algorithmic error.
 
     .. note::
         Child classes must implement the :func:`~.ErrorOperation.error` method which computes
