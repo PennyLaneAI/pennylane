@@ -269,11 +269,11 @@ def _equal_operators(
 # pylint: disable=unused-argument, protected-access
 def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     """Determine whether two Prod or Sum objects are equal"""
-    if len(op1.operands) != len(op2.operands):
-        return False
-
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
+
+    if len(op1.operands) != len(op2.operands):
+        return False
 
     # organizes by wire indicies while respecting commutation relations
     sorted_ops1 = op1._sort(op1.operands)

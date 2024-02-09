@@ -25,6 +25,8 @@ import logging
 import numpy as np
 
 import pennylane as qml
+from pennylane.ops.op_math.condition import Conditional
+from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
@@ -33,6 +35,7 @@ from pennylane.transforms.core import TransformProgram
 from . import Device
 from .preprocess import (
     decompose,
+    mid_circuit_measurements,
     validate_observables,
     validate_measurements,
     validate_multiprocessing_workers,
@@ -90,6 +93,11 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
 
     return op.has_matrix
+
+
+def stopping_condition_shots(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator object is supported by the device with shots."""
+    return isinstance(op, (Conditional, MidMeasureMP)) or stopping_condition(op)
 
 
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
@@ -451,9 +459,12 @@ class DefaultQubit(Device):
         transform_program = TransformProgram()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(qml.defer_measurements, device=self)
+        transform_program.add_transform(mid_circuit_measurements, device=self)
         transform_program.add_transform(
-            decompose, stopping_condition=stopping_condition, name=self.name
+            decompose,
+            stopping_condition=stopping_condition,
+            stopping_condition_shots=stopping_condition_shots,
+            name=self.name,
         )
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
