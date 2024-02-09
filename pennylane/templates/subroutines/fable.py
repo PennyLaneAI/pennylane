@@ -91,6 +91,14 @@ class FABLE(Operation):
             k = max(M, N)
             A = np.pad(A, ((0, k - N), (0, k - M)))
 
+        n = int(np.ceil(np.log2(N)))
+        if N < 2**n:
+            A = np.pad(A, ((0, 2**n - N), (0, 2**n - N)))
+            N = 2**n
+            warnings.warn(
+                f"The input matrix should be of shape NxN, where N is a power of 2. Zeroes were padded automatically to {A.shape}."
+            )
+
         alpha = np.linalg.norm(np.ravel(A), np.inf)
         if alpha > 1:
             raise ValueError(
