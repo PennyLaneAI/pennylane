@@ -912,6 +912,7 @@ class TestPartialTrace:
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_invalid_wire_selection(self, ml_framework, c_dtype):
         """Test that an error is raised for an invalid wire selection."""
+        import tensorflow as tf
         # Define a 2-qubit density matrix
         rho = qml.math.asarray(
             np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
