@@ -328,7 +328,7 @@ class QubitDevice(Device):
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
         Returns:
-            tuple: stastics for each shot item from the shot vector
+            tuple: statistics for each shot item from the shot vector
         """
         results = []
         s1 = 0
