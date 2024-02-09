@@ -450,6 +450,10 @@
 * `default.mixed` no longer throws `ValueError` when applying a state vector that is not of type `complex128` when used with tensorflow.
   [(#5155)](https://github.com/PennyLaneAI/pennylane/pull/5155)
 
+* Comparing `Prod` and `Sum` objects now works regardless of nested structure with `qml.equal` if the
+  operators have a valid `pauli_rep` property.
+  [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
