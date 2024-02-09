@@ -6,6 +6,16 @@
 
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
+* The `default.qubit` device treats mid-circuit measurements natively when operating in
+  shots-mode (i.e. `shots is not None`). Previously, circuits with mid-circuit measurements
+  would be decomposed using the `@qml.defer_measurements` transform (which is still a valid
+  decorator), requiring one extra wire for each mid-circuit measurement. The new
+  behavior is to evaluate the circuit `shots` times, "collapsing" the circuit state
+  stochastically along the way. While this is oftentimes slower, it requires much less
+  memory for circuits with several mid-circuit measurements, or circuits which have already
+  several wires.
+  [(#5088)](https://github.com/PennyLaneAI/pennylane/pull/5088)
+
 <h4>Work easily and efficiently with Pauli operators 🔧</h4>
 
 * New `qml.commutator` function that allows to compute commutators between
@@ -58,10 +68,12 @@
   sentence `ps1 = PauliSentence({pw1: 3.})`.
   You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each other. For example `ps1 - pw1 - 1`.
   Overall, you can now intuitively construct `PauliSentence` operators like `0.5 * pw1 - 1.5 * ps1 + 2`.
+  You can now also use `qml.dot` with `PauliWord`, `PauliSentence` and operators, e.g. `qml.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`.
   [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
   [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
   [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
   [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
+  [(#5027)](https://github.com/PennyLaneAI/pennylane/pull/5027)
 
 * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
   [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
@@ -164,6 +176,9 @@
 
 <h4>Other improvements</h4>
 
+* `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
+  [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
+
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
@@ -194,6 +209,29 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+
+* Upgrade the `Prod.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
+  ```python3
+  >>> qml.operation.enable_new_opmath()
+  >>> op = X(0) @ (0.5 * X(1) + X(2))
+  >>> op.terms()
+  ([0.5, 1.0],
+   [X(1) @ X(0),
+    X(2) @ X(0)])
+  ```
+  [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+
+* Upgrade the `Sum.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
+  ```python3
+  >>> qml.operation.enable_new_opmath()
+  >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
+  >>> op.terms()
+  ([0.5, 0.7, 1.5],
+   [X(0), X(1), Y(1) @ Y(0)])
+  ```
+  [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
+
+
 * String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
   ```
   >>> qml.PauliX(0)
@@ -207,6 +245,18 @@
   ```
   [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
 
+* String representations of `Sum` objects now break into multiple lines
+  whenever the output is larger than 50 characters.
+  ```
+  >>> 0.5 * (X(0) @ X(1)) + 0.7 * (X(1) @ X(2)) + 0.8 * (X(2) @ X(3))
+  (
+      0.5 * (X(0) @ X(1))
+    + 0.7 * (X(1) @ X(2))
+    + 0.8 * (X(2) @ X(3))
+  )
+  ```
+  [(#5138)](https://github.com/PennyLaneAI/pennylane/pull/5138)
+
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
@@ -219,6 +269,24 @@
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
 <h3>Breaking changes 💔</h3>
+
+* The entry point convention registering compilers with PennyLane has changed.
+  [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
+
+  To allow for packages to register multiple compilers with PennyLane,
+  the `entry_points` convention under the designated group name
+  `pennylane.compilers` has been modified.
+  
+  Previously, compilers would register `qjit` (JIT decorator),
+  `ops` (compiler-specific operations), and `context` (for tracing and
+  program capture).
+  
+  Now, compilers must register `compiler_name.qjit`, `compiler_name.ops`,
+  and `compiler_name.context`, where `compiler_name` is replaced
+  by the name of the provided compiler.
+  
+  For more information, please see the
+  [documentation on adding compilers](https://docs.pennylane.ai/en/stable/code/qml_compiler.html#adding-a-compiler).
 
 * Make PennyLane code compatible with the latest version of `black`.
   [(#5112)](https://github.com/PennyLaneAI/pennylane/pull/5112)
@@ -333,6 +401,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
+  [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
+
+* Fixes a queuing bug when using `qml.prod` with a qfunc that queues a single operator.
+  [(#5170)](https://github.com/PennyLaneAI/pennylane/pull/5170)
+
 * The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
 
@@ -388,6 +462,11 @@
 * `ctrl_decomp_zyz` no longer raises a `TypeError` if the rotation parameters are of type `torch.Tensor`
   [(#5183)](https://github.com/PennyLaneAI/pennylane/pull/5183)
 
+* Comparing `Prod` and `Sum` objects now works regardless of nested structure with `qml.equal` if the
+  operators have a valid `pauli_rep` property.
+  [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -398,6 +477,7 @@ Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
+Lillian Frederiksen,
 Eugenio Gigante,
 Diego Guala,
 Soran Jahangiri,
@@ -407,6 +487,7 @@ Xiaoran Li,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Pablo Antonio Moreno Casares,
+Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,

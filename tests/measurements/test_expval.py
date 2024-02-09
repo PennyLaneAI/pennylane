@@ -127,6 +127,7 @@ class TestExpval:
         are correct for a composite measurement value."""
         dev = qml.device("default.qubit")
 
+        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
