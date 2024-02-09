@@ -261,17 +261,15 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
 
     **Example**
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
-    ...
     >>> partial_trace(x, indices=[0])
     array([[1, 0], [0, 0]])
 
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
-    ...
     >>> partial_trace(x, indices=[0])
     array([[1, 0], [0, 0]])
 
     >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    ...               [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
+                     [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
     >>> partial_trace(x, indices=[0])
     array([[[1, 0],
             [0, 0]],
@@ -280,8 +278,8 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
             [0, 1]]])
 
     >>> x = tf.Variable([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    ...                  [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
-    >>> batched_partial_trace(x, indices=[1])
+                        [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
+    >>> partial_trace(x, indices=[1])
     <tf.Tensor: shape=(2, 2, 2), dtype=complex128, numpy=
     array([[[1.+0.j, 0.+0.j],
             [0.+0.j, 0.+0.j]],
