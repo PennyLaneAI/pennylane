@@ -51,6 +51,17 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
     return qml.transform(wrapped_expand_fn)
 
 
+def conditional_defer_measurements(tape, device=None):
+    """Applies the defer measurements transform if the device does not support mid circuit measurements."""
+    expand_mid_measure = isinstance(device, qml.Device) and not device.capabilities().get(
+        "supports_mid_measure", False
+    )
+    if expand_mid_measure:
+        # Assume that tapes are not split if old device is used since postselection is not supported.
+        return qml.defer_measurements(tape, device=device)
+    return (tape,), null_postprocessing
+
+
 def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformProgram":
     program = qml.transforms.core.TransformProgram(qnode.transform_program)
     if getattr(qnode.gradient_fn, "expand_transform", False):
@@ -61,6 +72,7 @@ def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformP
     if isinstance(qnode.device, qml.devices.Device):
         config = _make_execution_config(qnode)
         return program + qnode.device.preprocess(config)[0]
+    program.add_transform(qml.transform(conditional_defer_measurements), device=qnode.device)
     program.add_transform(qml.transform(qnode.device.batch_transform))
     program.add_transform(expand_fn_transform(qnode.device.expand_fn))
     return program
@@ -166,23 +178,30 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         num_user -= 1
 
     if level == "device":
-        level = -1 if full_transform_program.has_final_transform else None
+        processed_level = -1 if full_transform_program.has_final_transform else None
     elif level == "top":
-        level = 0
+        processed_level = 0
     elif level == "user":
-        level = num_user
+        processed_level = num_user
     elif level == "gradient":
         if getattr(qnode.gradient_fn, "expand_transform", False):
-            level = slice(0, num_user + 1)
+            processed_level = slice(0, num_user + 1)
         else:
-            level = slice(0, num_user)
+            processed_level = slice(0, num_user)
     elif isinstance(level, str):
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
-    if level is None or isinstance(level, int):
-        level = slice(0, level)
-    return full_transform_program[level]
+    else:
+        processed_level = level
+    if processed_level is None or isinstance(processed_level, int):
+        processed_level = slice(0, processed_level)
+
+    sub_program = full_transform_program[processed_level]
+    if str(level) in {"user", "gradient"} and qnode.transform_program.has_final_transform:
+        sub_program.push_back(qnode.transform_program[-1])
+
+    return sub_program
 
 
 def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") -> Callable:
@@ -295,7 +314,14 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         else:
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))
 
-        initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        if isinstance(qnode, QNode):
+            initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        else:
+            # fallback for torch layer and keras layer
+            qnode.construct(args, kwargs)
+            initial_tape = qnode.tape
+        params = initial_tape.get_parameters(trainable_only=False)
+        initial_tape.trainable_params = qml.math.get_trainable_indices(params)
         return program((initial_tape,))
 
     return batch_constructor

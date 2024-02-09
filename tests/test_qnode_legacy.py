@@ -1155,7 +1155,7 @@ class TestIntegration:
             qml.cond(m, qml.PauliX)(wires=1)
             return qml.expval(qml.PauliZ(wires=1))
 
-        res = qml.draw(circuit)("x")
+        res = qml.draw(circuit, level="device")("x")
         expected = "0: ──RX(x)─╭●─┤     \n1: ────────╰X─┤  <Z>"
 
         assert res == expected
