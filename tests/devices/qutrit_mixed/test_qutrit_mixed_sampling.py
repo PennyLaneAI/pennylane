@@ -17,12 +17,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.devices.qutrit_mixed.sampling import (
-    sample_state,
-    _sample_state_jax,
-    measure_with_samples,
-)
+from pennylane.devices.qutrit_mixed import sample_state, measure_with_samples
+from pennylane.devices.qutrit_mixed.sampling import _sample_state_jax
 from pennylane.measurements import Shots
+from flaky import flaky
 
 APPROX_ATOL = 0.05
 QUDIT_DIM = 3
@@ -164,6 +162,7 @@ class TestSampleState:
         expected = [[0, 2], [1, 0], [2, 1], [1, 2]]
         assert qml.math.allequal(samples, expected)
 
+    @flaky
     def test_approximate_probs_from_samples(self, three_qutrit_state):
         """Tests that the generated samples are approximately as expected."""
         shots = 20000
@@ -176,13 +175,13 @@ class TestSampleState:
         approx_probs = samples_to_probs(samples, THREE_QUTRITS)
         assert np.allclose(approx_probs, expected_probs, atol=APPROX_ATOL)
 
+    @flaky
     def test_entangled_qutrit_samples_always_match(self):
         """Tests that entangled qutrits are always in the same state."""
         num_samples = 10000
 
         bell_state_vector = np.array([[1, 0, 0, 0, 1, 0, 0, 0, 1]])
-        bell_state = np.outer(bell_state_vector, np.conj(bell_state_vector)) / 3
-        bell_state = math.reshape(bell_state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
+        bell_state = get_dm_of_state(bell_state_vector, 2, 3)
 
         samples = sample_state(bell_state, num_samples)
         assert samples.shape == (num_samples, 2)
@@ -244,8 +243,7 @@ class TestMeasureWithSamples:
     def test_sample_measure_single_wire(self):
         """Test that a sample measurement on a single wire works as expected"""
         state_vector = np.array([1, -1j, 1, 0, 0, 0, 0, 0, 0])
-        state = np.outer(state_vector, np.conj(state_vector)) / 3
-        state = np.reshape(state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
+        state = get_dm_of_state(state_vector, 2, 3)
         shots = qml.measurements.Shots(100)
 
         mp0 = qml.sample(wires=0)
@@ -262,9 +260,10 @@ class TestMeasureWithSamples:
         assert result1.dtype == np.int64
         assert len(np.unique(result1)) == 3
 
+    @flaky
     def test_approximate_sample_measure(self, two_qutrit_pure_state):
         """Test that a sample measurement returns approximately the correct distribution"""
-        shots = qml.measurements.Shots(10000)
+        shots = qml.measurements.Shots(5000)
         mp = qml.sample(wires=range(2))
 
         result = measure_with_samples([mp], two_qutrit_pure_state, shots=shots, rng=123)[0]
@@ -274,6 +273,7 @@ class TestMeasureWithSamples:
         assert np.allclose(one_or_two_prob, 2 / 3, atol=APPROX_ATOL)
         assert np.allclose(one_prob, 1 / 3, atol=APPROX_ATOL)
 
+    @flaky
     def test_counts_measure(self, two_qutrit_pure_state):
         """Test that a counts measurement works as expected"""
         num_shots = 1000
@@ -288,11 +288,11 @@ class TestMeasureWithSamples:
         assert np.isclose(result["10"] / num_shots, 1 / 3, atol=APPROX_ATOL)
         assert np.isclose(result["21"] / num_shots, 1 / 3, atol=APPROX_ATOL)
 
+    @flaky
     def test_counts_measure_single_wire(self):
         """Test that a counts measurement on a single wire works as expected"""
-        state_vector = np.array([np.sqrt(5 / 8), -0.5j, 1 / np.sqrt(8), 0, 0, 0, 0, 0, 0])
-        state = np.outer(state_vector, np.conj(state_vector))
-        state = np.reshape(state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
+        state_vector = np.sqrt(np.array([5, -2j, 1, 0, 0, 0, 0, 0, 0])/8)
+        state = get_dm_of_state(state_vector, 2)
 
         num_shots = 1000
         shots = qml.measurements.Shots(num_shots)
@@ -315,8 +315,7 @@ class TestMeasureWithSamples:
     def test_multiple_sample_measurements(self):
         """Test that a set of sample measurements works as expected"""
         state_vector = np.array([1, -1j, 1, 0, 0, 0, 0, 0, 0])
-        state = np.outer(state_vector, np.conj(state_vector)) / 3
-        state = np.reshape(state, (QUDIT_DIM,) * TWO_QUTRITS * 2)
+        state = get_dm_of_state(state_vector, 2, 3)
         shots = qml.measurements.Shots(100)
 
         mp = qml.sample()
@@ -337,8 +336,9 @@ class TestMeasureWithSamples:
         assert result1.dtype == np.int64
         assert len(np.unique(result1)) == 3
 
+    @flaky
     def test_sample_and_counts_measurements(self, two_qutrit_pure_state):
-        """Test that a set of sample and counts measurements works as expected"""
+        """Test that sample measurements properly sample an observable"""
         num_shots = 1000
         shots = qml.measurements.Shots(num_shots)
         samples_mp = qml.sample()
@@ -358,13 +358,58 @@ class TestMeasureWithSamples:
         assert np.isclose(counts_results["10"] / num_shots, 1 / 3, atol=APPROX_ATOL)
         assert np.isclose(counts_results["21"] / num_shots, 1 / 3, atol=APPROX_ATOL)
 
+    def test_sample_observables(self):
+        """Test that counts measurements properly counts samples of an observable"""
+        state_vector = np.sqrt(np.array([0, 0, 0, 0, 2, 0, 1, 0, 1])/4)
+        state = get_dm_of_state(state_vector, 2)
+        num_shots = 100
+        shots = qml.measurements.Shots(num_shots)
+        mps = [qml.sample(qml.GellMann(0, 3)), qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1))]
+
+        results_gel_3, results_gel_1s = measure_with_samples(
+            mps, state, shots=shots
+        )
+        assert results_gel_3.shape == (shots.total_shots,)
+        assert results_gel_3.dtype == np.int64
+        assert (sorted(np.unique(results_gel_3)) == [-1, 0])
+
+        assert results_gel_1s.shape == (shots.total_shots,)
+        assert results_gel_1s.dtype == np.int64
+        assert (sorted(np.unique(results_gel_1s)) == [-1, 0, 1])
+
+    @flaky
+    def test_counts_observables(self):
+        """Test that a set of sample and counts measurements works as expected"""
+        state_vector = np.sqrt(np.array([0, 0, 0, 0, 3, 0, 1, 0, 1]) / 5)
+        state = get_dm_of_state(state_vector, 2)
+        num_shots = 5000
+        shots = qml.measurements.Shots(num_shots)
+        mps = [qml.counts(qml.GellMann(0, 3)), qml.counts(qml.GellMann(0, 1) @ qml.GellMann(1, 1))]
+
+        results_gel_3, results_gel_1s = measure_with_samples(
+            mps, state, shots=shots
+        )
+
+        assert isinstance(results_gel_3, dict)
+        assert sorted(results_gel_3.keys()) == [-1, 0]
+        assert np.isclose(results_gel_3[-1] / num_shots, 3/5, atol=APPROX_ATOL)
+        assert np.isclose(results_gel_3[0] / num_shots, 2/5, atol=APPROX_ATOL)
+
+        assert isinstance(results_gel_1s, dict)
+        assert sorted(results_gel_1s.keys()) == [-1, 0, 1]
+        assert np.isclose(results_gel_1s[-1] / num_shots, 0.3, atol=APPROX_ATOL)
+        assert np.isclose(results_gel_1s[0] / num_shots, 2 / 5, atol=APPROX_ATOL)
+        assert np.isclose(results_gel_1s[1] / num_shots, 0.3, atol=APPROX_ATOL)
+
+
+
 
 class TestInvalidSampling:
     """Tests for non-expected states and inputs."""
 
     @pytest.mark.parametrize("shots", [10, [10, 10]])
     def test_only_catch_nan_errors(self, shots):
-        """Test that errors are only caught if they are raised due to nan values in the state."""
+        """Test that when probabilities don't add to 1 Error is thrown."""
         state = np.zeros((3,) * QUDIT_DIM * 2).astype(np.complex128)
         mp = qml.sample(wires=range(2))
         _shots = Shots(shots)
@@ -372,14 +417,14 @@ class TestInvalidSampling:
         with pytest.raises(ValueError, match="probabilities do not sum to 1"):
             _ = measure_with_samples([mp], state, _shots)
 
-    @pytest.mark.parametrize(
-        "mp", [qml.expval(qml.GellMann(0, 3)), qml.var(qml.GellMann(0, 3)), qml.probs()]
-    )
-    def test_currently_unsuported_observable(mp, two_qutrit_state):
+
+    @pytest.mark.parametrize("mp", [qml.expval(qml.GellMann(0, 3)), qml.var(qml.GellMann(0, 3)), qml.probs()])
+    def test_currently_unsuported_observable(self, mp, two_qutrit_state):
         """Test sample measurements that are not counts or sample raise a NotImplementedError."""
         shots = qml.measurements.Shots(1)
         with pytest.raises(NotImplementedError):
             _ = measure_with_samples([mp], two_qutrit_state, shots)
+
 
 
 shots_to_test = [

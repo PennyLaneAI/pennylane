@@ -33,6 +33,7 @@ from .apply_operation import apply_operation
 
 
 def _group_measurements(mps: List[Union[SampleMeasurement]]):
+    """TODO add"""
     if len(mps) == 1:
         return [mps], [[0]]
 
@@ -64,15 +65,10 @@ def _group_measurements(mps: List[Union[SampleMeasurement]]):
 def _apply_diagonalizing_gates(
     mps: List[SampleMeasurement], state: np.ndarray, is_state_batched: bool = False
 ):
+    """TODO add"""
     if len(mps) == 1:
-        diagonalizing_gates = mps[0].diagonalizing_gates()
-    elif all(mp.obs for mp in mps):
-        diagonalizing_gates = qml.pauli.diagonalize_qwc_pauli_words([mp.obs for mp in mps])[0]
-    else:
-        diagonalizing_gates = []
-
-    for op in diagonalizing_gates:
-        state = apply_operation(op, state, is_state_batched=is_state_batched)
+        for op in mps[0].diagonalizing_gates():
+            state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     return state
 
@@ -116,15 +112,16 @@ def _measure_with_samples_diagonalizing_gates(
         for mp in mps:
             if isinstance(mp, SampleMP):
                 res = mp.process_samples(samples, wires)
+                res = math.squeeze(res)
             elif isinstance(mp, CountsMP):
                 with qml.queuing.QueuingManager.stop_recording():
-                    processed_samples = qml.sample(
+                    samples_processed = qml.sample(
                         op=mp.obs, wires=mp._wires  # pylint:disable = protected-access
                     ).process_samples(samples, wires)
 
                 mp_has_obs = bool(mp.obs)
                 observables, counts = np.unique(
-                    processed_samples, return_counts=True, axis=-2 + mp_has_obs
+                    samples_processed, return_counts=True, axis=-2 + mp_has_obs
                 )
                 if not mp_has_obs:
                     observables = ["".join(observable.astype("str")) for observable in observables]
@@ -141,37 +138,26 @@ def _measure_with_samples_diagonalizing_gates(
             # Like default.qubit currently calling sample_state for each shot entry,
             # but it may be better to call sample_state just once with total_shots,
             # then use the shot_range keyword argument
-            try:
-                samples = sample_state(
-                    state,
-                    shots=s,
-                    is_state_batched=is_state_batched,
-                    wires=wires,
-                    rng=rng,
-                    prng_key=prng_key,
-                )
-            except ValueError as e:
-                if str(e) != "probabilities contain NaN":
-                    raise e
-                samples = math.full((s, len(wires)), 0)
-
+            samples = sample_state(
+                state,
+                shots=s,
+                is_state_batched=is_state_batched,
+                wires=wires,
+                rng=rng,
+                prng_key=prng_key,
+            )
             processed_samples.append(_process_single_shot(samples))
 
         return tuple(zip(*processed_samples))
 
-    try:
-        samples = sample_state(
-            state,
-            shots=shots.total_shots,
-            is_state_batched=is_state_batched,
-            wires=wires,
-            rng=rng,
-            prng_key=prng_key,
-        )
-    except ValueError as e:
-        if str(e) != "probabilities contain NaN":
-            raise e
-        samples = math.full((shots.total_shots, len(wires)), 0)
+    samples = sample_state(
+        state,
+        shots=shots.total_shots,
+        is_state_batched=is_state_batched,
+        wires=wires,
+        rng=rng,
+        prng_key=prng_key,
+    )
 
     return _process_single_shot(samples)
 
