@@ -85,10 +85,10 @@ def test_grover_as_reflection(n_wires):
         for wire in wires:
             qml.Hadamard(wires=wire)
 
-    grover_matrix = qml.GroverOperator(wires=range(n_wires))
-    reflection_matrix = qml.Reflection(hadamards(wires=range(n_wires)))
+    grover_matrix = qml.matrix(qml.GroverOperator(wires=range(n_wires)))
+    reflection_matrix = qml.matrix(qml.Reflection(hadamards(wires=range(n_wires))))
 
-    assert np.allclose(grover_matrix.matrix, reflection_matrix.matrix)
+    assert np.allclose(grover_matrix, reflection_matrix)
 
 
 @pytest.mark.tf
