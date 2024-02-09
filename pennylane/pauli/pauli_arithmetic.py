@@ -430,9 +430,9 @@ class PauliWord(dict):
         if len(self) == 0:
             n = len(wire_order) if wire_order is not None else 0
             return (
-                np.diag([coeff] * 2 ** n)
+                np.diag([coeff] * 2**n)
                 if format == "dense"
-                else coeff * sparse.eye(2 ** n, format=format, dtype="complex128")
+                else coeff * sparse.eye(2**n, format=format, dtype="complex128")
             )
 
         if format == "dense":
@@ -835,10 +835,8 @@ class PauliSentence(dict):
         if len(self) == 0:
             n = len(wire_order) if wire_order is not None else 0
             if format == "dense":
-                return np.zeros((2 ** n, 2 ** n))
-            return sparse.csr_matrix(
-                (2 ** n, 2 ** n), dtype="complex128"
-            )
+                return np.zeros((2**n, 2**n))
+            return sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
         if format != "dense":
             return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
