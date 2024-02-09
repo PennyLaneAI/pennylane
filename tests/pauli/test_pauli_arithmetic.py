@@ -864,8 +864,11 @@ class TestPauliSentence:
     def test_to_mat_empty(self, ps, true_res):
         """Test that empty PauliSentences and PauliSentences with empty PauliWords are handled correctly"""
 
-        res = ps.to_mat(wire_order=[])
-        assert qml.math.allclose(res, true_res)
+        res_dense = ps.to_mat(wire_order=[])
+        assert np.allclose(res_dense, true_res)
+        res_sparse = ps.to_mat(format="csr")
+        assert sparse.issparse(res_sparse)
+        assert qml.math.allclose(res_sparse.todense(), true_res)
 
     ps_wire_order = ((ps1, []), (ps1, [0, 1, 2, "a", "b"]), (ps3, [0, 1, "c"]))
 
