@@ -879,10 +879,14 @@ class TestPauliSentence:
         with pytest.raises(ValueError, match=match):
             ps.to_mat(wire_order=wire_order)
 
-    def test_to_mat_identity(self):
-        """Test that an identity matrix is return if wire_order is provided."""
-        assert np.allclose(ps5.to_mat(wire_order=[0, 1]), np.zeros((4, 4)))
-        assert sparse.issparse(ps5.to_mat(wire_order=[0, 1], format="csr"))
+    def test_to_mat_empty_sentence_with_wires(self):
+        """Test that a zero matrix is returned if wire_order is provided on an empty PauliSentence."""
+        true_res = np.zeros((4, 4))
+        res_dense = ps5.to_mat(wire_order=[0, 1])
+        assert np.allclose(res_dense, true_res)
+        res_sparse = ps5.to_mat(wire_order=[0, 1], format="csr")
+        assert sparse.issparse(res_sparse)
+        assert qml.math.allclose(res_sparse.todense(), true_res)
 
     tup_ps_mat = (
         (
