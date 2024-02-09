@@ -32,6 +32,116 @@ from .measure import measure
 from .apply_operation import apply_operation
 
 
+def _sample_state_jax(
+    state,
+    shots: int,
+    prng_key,
+    is_state_batched: bool = False,
+    wires=None,
+) -> np.ndarray:
+    """Returns a series of samples of a state for the JAX interface based on the PRNG.
+
+    Args:
+        state (array[complex]): A state vector to be sampled
+        shots (int): The number of samples to take
+        prng_key (jax.random.PRNGKey): A``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator.
+        is_state_batched (bool): whether the state is batched or not
+        wires (Sequence[int]): The wires to sample
+
+    Returns:
+        ndarray[int]: Sample values of the shape (shots, num_wires)
+    """
+    # pylint: disable=import-outside-toplevel
+    import jax
+    import jax.numpy as jnp
+
+    key = prng_key
+
+    total_indices = get_num_wires(state, is_state_batched)
+    state_wires = qml.wires.Wires(range(total_indices))
+
+    wires_to_sample = wires or state_wires
+    num_wires = len(wires_to_sample)
+    basis_states = np.arange(QUDIT_DIM**num_wires)
+
+    with qml.queuing.QueuingManager.stop_recording():
+        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched)
+
+    if is_state_batched:
+        # Produce separate keys for each of the probabilities along the broadcasted axis
+        keys = []
+        for _ in state:
+            key, subkey = jax.random.split(key)
+            keys.append(subkey)
+        samples = jnp.array(
+            [
+                jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
+                for _key, prob in zip(keys, probs)
+            ]
+        )
+    else:
+        samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
+
+    res = np.zeros(samples.shape + (num_wires,), dtype=np.int64)
+    for i in range(num_wires):
+        res[..., -(i + 1)] = (samples // (QUDIT_DIM**i)) % QUDIT_DIM
+    return res
+
+
+def sample_state(
+    state,
+    shots: int,
+    is_state_batched: bool = False,
+    wires=None,
+    rng=None,
+    prng_key=None,
+) -> np.ndarray:
+    """Returns a series of samples of a state.
+
+    Args:
+        state (array[complex]): A state vector to be sampled
+        shots (int): The number of samples to take
+        is_state_batched (bool): whether the state is batched or not
+        wires (Sequence[int]): The wires to sample
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
+            A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+
+    Returns:
+        ndarray[int]: Sample values of the shape (shots, num_wires)
+    """
+    if prng_key is not None:
+        return _sample_state_jax(
+            state, shots, prng_key, is_state_batched=is_state_batched, wires=wires
+        )
+
+    rng = np.random.default_rng(rng)
+
+    total_indices = get_num_wires(state, is_state_batched)
+    state_wires = qml.wires.Wires(range(total_indices))
+
+    wires_to_sample = wires or state_wires
+    num_wires = len(wires_to_sample)
+    basis_states = np.arange(QUDIT_DIM**num_wires)
+
+    with qml.queuing.QueuingManager.stop_recording():
+        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched)
+
+    if is_state_batched:
+        # rng.choice doesn't support broadcasting
+        samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
+    else:
+        samples = rng.choice(basis_states, shots, p=probs)
+
+    res = np.zeros(samples.shape + (num_wires,), dtype=np.int64)
+    for i in range(num_wires):
+        res[..., -(i + 1)] = (samples // (QUDIT_DIM**i)) % QUDIT_DIM
+    return res
+
+
 def _group_measurements(mps: List[Union[SampleMeasurement]]):
     """Groups measurements such that:
     - measurements without observables are done together
@@ -77,7 +187,7 @@ def _apply_diagonalizing_gates(
 
 
 def _process_counts_samples(mp, samples, wires):
-    """processes a shot of samples and counts the results."""
+    """Processes a shot of samples and counts the results."""
     with qml.queuing.QueuingManager.stop_recording():
         samples_processed = qml.sample(
             op=mp.obs, wires=mp._wires  # pylint:disable = protected-access
@@ -90,6 +200,9 @@ def _process_counts_samples(mp, samples, wires):
     return dict(zip(observables, counts))
 
 
+
+
+
 # pylint:disable = too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
     mps: List[Union[SampleMP, CountsMP]],
@@ -99,8 +212,7 @@ def _measure_with_samples_diagonalizing_gates(
     rng=None,
     prng_key=None,
 ) -> TensorLike:
-    """
-    Returns the samples of the measurement process performed on the given state,
+    """Returns the samples of the measurement process performed on the given state,
     by rotating the state into the measurement basis using the diagonalizing gates
     given by the measurement process.
 
@@ -168,119 +280,6 @@ def _measure_with_samples_diagonalizing_gates(
     return _process_single_shot(samples)
 
 
-# pylint:disable = unused-argument
-def _sample_state_jax(
-    state,
-    shots: int,
-    prng_key,
-    is_state_batched: bool = False,
-    wires=None,
-) -> np.ndarray:
-    """
-    Returns a series of samples of a state for the JAX interface based on the PRNG.
-
-    Args:
-        state (array[complex]): A state vector to be sampled
-        shots (int): The number of samples to take
-        prng_key (jax.random.PRNGKey): A``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator.
-        is_state_batched (bool): whether the state is batched or not
-        wires (Sequence[int]): The wires to sample
-
-    Returns:
-        ndarray[int]: Sample values of the shape (shots, num_wires)
-    """
-    # pylint: disable=import-outside-toplevel
-    import jax
-    import jax.numpy as jnp
-
-    key = prng_key
-
-    total_indices = get_num_wires(state, is_state_batched)
-    state_wires = qml.wires.Wires(range(total_indices))
-
-    wires_to_sample = wires or state_wires
-    num_wires = len(wires_to_sample)
-    basis_states = np.arange(QUDIT_DIM**num_wires)
-
-    with qml.queuing.QueuingManager.stop_recording():
-        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched)
-
-    if is_state_batched:
-        # Produce separate keys for each of the probabilities along the broadcasted axis
-        keys = []
-        for _ in state:
-            key, subkey = jax.random.split(key)
-            keys.append(subkey)
-        samples = jnp.array(
-            [
-                jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
-                for _key, prob in zip(keys, probs)
-            ]
-        )
-    else:
-        samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
-
-    res = np.zeros(samples.shape + (num_wires,), dtype=np.int64)
-    for i in range(num_wires):
-        res[..., -(i + 1)] = (samples // (QUDIT_DIM**i)) % QUDIT_DIM
-    return res
-
-
-def sample_state(
-    state,
-    shots: int,
-    is_state_batched: bool = False,
-    wires=None,
-    rng=None,
-    prng_key=None,
-) -> np.ndarray:
-    """
-    Returns a series of samples of a state.
-
-    Args:
-        state (array[complex]): A state vector to be sampled
-        shots (int): The number of samples to take
-        is_state_batched (bool): whether the state is batched or not
-        wires (Sequence[int]): The wires to sample
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
-            A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
-
-    Returns:
-        ndarray[int]: Sample values of the shape (shots, num_wires)
-    """
-    if prng_key is not None:
-        return _sample_state_jax(
-            state, shots, prng_key, is_state_batched=is_state_batched, wires=wires
-        )
-
-    rng = np.random.default_rng(rng)
-
-    total_indices = get_num_wires(state, is_state_batched)
-    state_wires = qml.wires.Wires(range(total_indices))
-
-    wires_to_sample = wires or state_wires
-    num_wires = len(wires_to_sample)
-    basis_states = np.arange(QUDIT_DIM**num_wires)
-
-    with qml.queuing.QueuingManager.stop_recording():
-        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched)
-
-    if is_state_batched:
-        # rng.choice doesn't support broadcasting
-        samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
-    else:
-        samples = rng.choice(basis_states, shots, p=probs)
-
-    res = np.zeros(samples.shape + (num_wires,), dtype=np.int64)
-    for i in range(num_wires):
-        res[..., -(i + 1)] = (samples // (QUDIT_DIM**i)) % QUDIT_DIM
-    return res
-
-
 # pylint:disable = too-many-arguments
 def measure_with_samples(
     mps: List[Union[SampleMP, CountsMP]],
@@ -290,8 +289,7 @@ def measure_with_samples(
     rng=None,
     prng_key=None,
 ) -> List[TensorLike]:
-    """
-    Returns the samples of the measurement process performed on the given state.
+    """Returns the samples of the measurement process performed on the given state.
     This function assumes that the user-defined wire labels in the measurement process
     have already been mapped to integer wires used in the device.
 
@@ -308,7 +306,7 @@ def measure_with_samples(
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
 
     Returns:
-        List[TensorLike[Any]]: Sample measurement results
+        List[TensorLike[Any]]: List of all sample measurement results
     """
 
     groups, indices = _group_measurements(mps)
