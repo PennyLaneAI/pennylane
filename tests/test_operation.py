@@ -1002,7 +1002,7 @@ class TestObservableConstruction:
         """Test the string representation of an observable with and without a return type."""
 
         m = qml.expval(qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"]))
-        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
+        expected = "expval(Z('a') @ Z('b'))"
         assert str(m) == expected
 
         m = qml.probs(wires=["a"])
@@ -1010,15 +1010,15 @@ class TestObservableConstruction:
         assert str(m) == expected
 
         m = qml.probs(op=qml.PauliZ(wires=["a"]))
-        expected = "probs(PauliZ(wires=['a']))"
+        expected = "probs(Z('a'))"
         assert str(m) == expected
 
         m = qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"])
-        expected = "PauliZ(wires=['a']) @ PauliZ(wires=['b'])"
+        expected = "Z('a') @ Z('b')"
         assert str(m) == expected
 
         m = qml.PauliZ(wires=["a"])
-        expected = "PauliZ(wires=['a'])"
+        expected = "Z('a')"
         assert str(m) == expected
 
     def test_id(self):
@@ -1456,10 +1456,16 @@ class TestTensor:
         assert t.batch_size is None
 
     def test_pauli_rep(self):
-        """Test that the _pauli_rep attribute of the Tensor is initialized as None."""
+        """Test that the _pauli_rep attribute of the Tensor is initialized correctly."""
+        # Pauli rep not None for Pauli observables
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
+        assert t.pauli_rep == qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 2: "Y"}): 1.0})
+
+        # Puli rep None if observables not valid Pauli observables
+        H = qml.Hadamard(1)
+        t = Tensor(X, H)
         assert t.pauli_rep is None
 
     def test_has_matrix(self):
@@ -1988,6 +1994,28 @@ class TestTensor:
         assert mapped_tensor.batch_size == tensor.batch_size
         for obs1, obs2 in zip(mapped_tensor.obs, final_obs):
             assert qml.equal(obs1, obs2)
+        assert mapped_tensor.pauli_rep == Tensor(*final_obs).pauli_rep
+
+    def test_map_wires_no_pauli_rep(self):
+        """Test that map_wires sets the pauli rep correctly if the original
+        Tensor did not have a pauli rep."""
+        tensor = Tensor(qml.PauliX(0), qml.Hadamard(1))
+        wire_map = {0: 10, 1: 11}
+        expected_tensor = Tensor(qml.PauliX(10), qml.Hadamard(11))
+
+        mapped_tensor = tensor.map_wires(wire_map=wire_map)
+        assert tensor is not mapped_tensor
+        assert mapped_tensor == expected_tensor
+        assert mapped_tensor.pauli_rep is None
+
+    def test_matmul_not_implemented(self):
+        """Test that matrix multiplication raises TypeError if unsupported
+        object is used."""
+
+        op = Tensor(qml.PauliX(0), qml.PauliZ(1))
+
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = op @ 1.0
 
 
 equal_obs = [

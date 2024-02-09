@@ -282,6 +282,7 @@ class TestProbs:
         are correct for a measurement value list."""
         dev = qml.device("default.qubit")
 
+        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)

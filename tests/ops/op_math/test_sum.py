@@ -14,6 +14,7 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
+# pylint: disable=eval-used
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -22,7 +23,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import math
+from pennylane import math, X, Y, Z
 from pennylane.wires import Wires
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
@@ -173,6 +174,47 @@ class TestInitialization:
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
+
+    qml.operation.enable_new_opmath()
+    SUM_REPR = (
+        (qml.sum(X(0), Y(1), Z(2)), "X(0) + Y(1) + Z(2)"),
+        (X(0) + X(1) + X(2), "X(0) + X(1) + X(2)"),
+        (0.5 * X(0) + 0.7 * X(1), "0.5 * X(0) + 0.7 * X(1)"),
+        (0.5 * (X(0) @ X(1)) + 0.7 * X(1), "0.5 * (X(0) @ X(1)) + 0.7 * X(1)"),
+        (
+            0.5 * (X(0) @ (0.5 * X(1))) + 0.7 * X(1) + 0.8 * qml.CNOT((0, 1)),
+            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * CNOT(wires=[0, 1])\n)",
+        ),
+        (
+            0.5 * (X(0) @ (0.5 * X(1))) + 0.7 * X(1) + 0.8 * (X(0) @ Y(1) @ Z(1)),
+            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * ((X(0) @ Y(1)) @ Z(1))\n)",
+        ),
+    )
+    qml.operation.disable_new_opmath()
+
+    @pytest.mark.parametrize("op, repr_true", SUM_REPR)
+    def test_repr(self, op, repr_true):
+        """Test the string representation of Sum instances"""
+        assert repr(op) == repr_true
+
+    qml.operation.enable_new_opmath()
+    SUM_REPR_EVAL = (
+        X(0) + Y(1) + Z(2),  # single line output
+        0.5 * X(0) + 3.5 * Y(1) + 10 * Z(2),  # single line output
+        X(0) @ X(1) + Y(1) @ Y(2) + Z(2),  # single line output
+        0.5 * (X(0) @ X(1) @ X(2))
+        + 1000 * (Y(1) @ X(0) @ X(1))
+        + 1000000000 * Z(2),  # multiline output
+        # qml.sum(*[0.5 * X(i) for i in range(10)]) # multiline output needs fixing of https://github.com/PennyLaneAI/pennylane/issues/5162 before working
+    )
+    qml.operation.disable_new_opmath()
+
+    @pytest.mark.parametrize("op", SUM_REPR_EVAL)
+    def test_eval_sum(self, op):
+        """Test that string representations of Sum can be evaluated and yield the same operator"""
+        qml.operation.enable_new_opmath()
+        assert qml.equal(eval(repr(op)), op)
+        qml.operation.disable_new_opmath()
 
 
 class TestMatrix:
@@ -798,27 +840,27 @@ class TestSortWires:
     def test_sorting_operators_with_one_wire(self):
         """Test that the sorting algorithm works for operators that act on one wire."""
         op_list = [
-            qml.PauliX(3),
-            qml.PauliZ(2),
-            qml.PauliY("a"),
+            qml.X(3),
+            qml.Z(2),
+            qml.Y("a"),
             qml.RX(1, 5),
-            qml.PauliY(0),
-            qml.PauliY(1),
-            qml.PauliZ("c"),
-            qml.PauliX(5),
-            qml.PauliZ("ba"),
+            qml.Y(0),
+            qml.Y(1),
+            qml.Z("c"),
+            qml.X(5),
+            qml.Z("ba"),
         ]
         sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
         final_list = [
-            qml.PauliY(0),
-            qml.PauliY(1),
-            qml.PauliZ(2),
-            qml.PauliX(3),
-            qml.PauliX(5),
+            qml.Y(0),
+            qml.Y(1),
+            qml.Z(2),
+            qml.X(3),
             qml.RX(1, 5),
-            qml.PauliY("a"),
-            qml.PauliZ("ba"),
-            qml.PauliZ("c"),
+            qml.X(5),
+            qml.Y("a"),
+            qml.Z("ba"),
+            qml.Z("c"),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
@@ -827,33 +869,33 @@ class TestSortWires:
     def test_sorting_operators_with_multiple_wires(self):
         """Test that the sorting algorithm works for operators that act on multiple wires."""
         op_tuple = (
-            qml.PauliX(3),
-            qml.PauliX(5),
+            qml.X(3),
+            qml.X(5),
             qml.Toffoli([2, 3, 4]),
             qml.CNOT([2, 5]),
-            qml.PauliZ("ba"),
+            qml.Z("ba"),
             qml.RX(1, 5),
-            qml.PauliY(0),
+            qml.Y(0),
             qml.CRX(1, [0, 2]),
-            qml.PauliZ(3),
+            qml.Z(3),
             qml.Toffoli([1, "c", "ab"]),
             qml.CRY(1, [1, 2]),
-            qml.PauliX("d"),
+            qml.X("d"),
         )
         sorted_list = Sum._sort(op_tuple)  # pylint: disable=protected-access
         final_list = [
-            qml.PauliY(0),
+            qml.Y(0),
             qml.CRX(1, [0, 2]),
             qml.CRY(1, [1, 2]),
             qml.Toffoli([1, "c", "ab"]),
             qml.CNOT([2, 5]),
             qml.Toffoli([2, 3, 4]),
-            qml.PauliX(3),
-            qml.PauliZ(3),
-            qml.PauliX(5),
+            qml.X(3),
+            qml.Z(3),
             qml.RX(1, 5),
-            qml.PauliZ("ba"),
-            qml.PauliX("d"),
+            qml.X(5),
+            qml.Z("ba"),
+            qml.X("d"),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
@@ -862,29 +904,29 @@ class TestSortWires:
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting algorithm works using a wire map."""
         op_list = [
-            qml.PauliX("three"),
-            qml.PauliX(5),
+            qml.X("three"),
+            qml.X(5),
             qml.Toffoli([2, "three", 4]),
             qml.CNOT([2, 5]),
             qml.RX(1, 5),
-            qml.PauliY(0),
+            qml.Y(0),
             qml.CRX(1, ["test", 2]),
-            qml.PauliZ("three"),
+            qml.Z("three"),
             qml.CRY(1, ["test", 2]),
         ]
         sorted_list = Sum._sort(  # pylint: disable=protected-access
             op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5}
         )
         final_list = [
-            qml.PauliY(0),
+            qml.Y(0),
             qml.CRX(1, ["test", 2]),
             qml.CRY(1, ["test", 2]),
             qml.CNOT([2, 5]),
             qml.Toffoli([2, "three", 4]),
-            qml.PauliX("three"),
-            qml.PauliZ("three"),
-            qml.PauliX(5),
+            qml.X("three"),
+            qml.Z("three"),
             qml.RX(1, 5),
+            qml.X(5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
