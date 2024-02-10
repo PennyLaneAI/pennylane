@@ -350,9 +350,9 @@ class TransformDispatcher:
             count = 0
             final_results = []
 
-            for idx, s in enumerate(tape_counts):
+            for f, s in zip(batch_fns, tape_counts):
                 # apply any batch transform post-processing
-                new_res = batch_fns[idx](res[count : count + s])
+                new_res = f(res[count : count + s])
                 final_results.append(new_res)
                 count += s
 
