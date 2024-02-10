@@ -257,6 +257,22 @@ class TestControlledDecompositionZYZ:
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
         assert equal_list(decomp, expected)
 
+    @pytest.mark.torch
+    def test_zyz_decomp_with_torch_params(self):
+        """Tests that the ZYZ decomposition runs when the target operation parameters
+        are of type torch.Tensor"""
+        import torch
+
+        target_op1 = qml.RY(torch.Tensor([1.2]), 0)
+        target_op2 = qml.RY(1.2, 0)
+
+        torch_decomp = ctrl_decomp_zyz(target_op1, 1)
+        decomp = ctrl_decomp_zyz(target_op2, 1)
+
+        assert np.all(
+            [qml.equal(op1, op2, check_interface=False) for op1, op2 in zip(torch_decomp, decomp)]
+        )
+
 
 class TestControlledBisectOD:
     """tests for qml.ops._ctrl_decomp_bisect_od"""
