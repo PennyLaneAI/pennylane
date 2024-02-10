@@ -404,7 +404,7 @@
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
 * A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions was added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
-  [(#5092)](https://github.com/PennyLaneAI/pennylane/pull/5137)
+  [(#5137)](https://github.com/PennyLaneAI/pennylane/pull/5137)
 
 <h3>Bug fixes 🐛</h3>
 
