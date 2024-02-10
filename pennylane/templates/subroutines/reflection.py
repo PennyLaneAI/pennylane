@@ -28,7 +28,7 @@ class Reflection(SymbolicOp, Operation):
 
     .. math::
 
-        \text{Reflection}(U, \alpha) = -\identity + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
+        \text{Reflection}(U, \alpha) = -\mathbb{I} + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
 
 
     Args:
@@ -38,7 +38,7 @@ class Reflection(SymbolicOp, Operation):
 
     **Example**
 
-    The reflection :math:`-\identity + 2|+\rangle \langle +|` applied to the state :math:`|1\rangle` would be as follows:
+    The reflection :math:`-\mathbb{I} + 2|+\rangle \langle +|` applied to the state :math:`|1\rangle` would be as follows:
 
     .. code-block::
 
@@ -64,25 +64,25 @@ class Reflection(SymbolicOp, Operation):
         circuit()
 
 
-        .. details::
+    .. details::
 
-            :title: Theory
+        :title: Theory
 
-            The operator is built as follows:
+        The operator is built as follows:
 
-            .. math::
+        .. math::
 
-                \text{Reflection}(U, \alpha) = -\identity + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-\identity + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^\dagger.
+            \text{Reflection}(U, \alpha) = -\mathbb{I} + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-\mathbb{I} + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^\dagger.
 
-            The central block is obtained through a PhaseShift controlled operator.
+        The central block is obtained through a PhaseShift controlled operator.
 
-            In the case of specifying `reflection_wires` the operator would have the following expression.
+        In the case of specifying `reflection_wires` the operator would have the following expression.
 
-            .. math::
+        .. math::
 
-                U(\identity - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes \identity^{n-m}})U^\dagger,
+            U(\mathbb{I} - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes \mathbb{I}^{n-m}})U^\dagger,
 
-            where :math:`m` is the number of wires in `reflection_wires` and :math:`n` is the total number of wires.
+        where :math:`m` is the number of wires in `reflection_wires` and :math:`n` is the total number of wires.
 
     """
 
