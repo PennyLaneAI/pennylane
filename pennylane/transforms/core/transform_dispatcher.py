@@ -324,7 +324,7 @@ class TransformDispatcher:
         batch_fns = []
         tape_counts = []
 
-        for t in original_device:
+        for t in original_batch:
             # Preprocess the tapes by applying batch transforms
             # to each tape, and storing corresponding tapes
             # for execution, processing functions, and list of tape lengths.
