@@ -42,6 +42,11 @@ class MockPluginConverter:
         """The last call arguments of the mocked loader."""
         return self.mock_loader.call_args[0]
 
+    @property
+    def call_args(self):
+        """The last call arguments of the mocked loader."""
+        return self.mock_loader.call_args
+
 
 load_entry_points = ["qiskit", "qasm", "qasm_file", "pyquil_program", "quil", "quil_file"]
 
@@ -84,6 +89,30 @@ class TestLoad:
 
         assert mock_plugin_converters[entry_point_name].called
         assert mock_plugin_converters[entry_point_name].last_args == ("Test",)
+
+        for plugin_converter in mock_plugin_converters:
+            if plugin_converter == entry_point_name:
+                continue
+
+            if mock_plugin_converters[plugin_converter].called:
+                raise Exception(f"The other plugin converter {plugin_converter} was called.")
+
+    @pytest.mark.parametrize(
+        "method, entry_point_name",
+        [
+            (qml.from_qiskit, "qiskit"),
+        ],
+    )
+    def test_convenience_functions_kwargs(self, method, entry_point_name, mock_plugin_converters):
+        """Test that the convenience load functions access the correct entrypoint with keywords."""
+
+        method("Test", measurements=[])
+
+        assert mock_plugin_converters[entry_point_name].called
+
+        args, kwargs = mock_plugin_converters[entry_point_name].call_args
+        assert args == ("Test",)
+        assert kwargs == {"measurements": []}
 
         for plugin_converter in mock_plugin_converters:
             if plugin_converter == entry_point_name:
