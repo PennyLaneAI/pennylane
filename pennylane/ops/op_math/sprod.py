@@ -200,9 +200,7 @@ class SProd(ScalarSymbolicOp):
     def is_hermitian(self):
         """If the base operator is hermitian and the scalar is real,
         then the scalar product operator is hermitian."""
-        return True
-
-    #        return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
+        return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
 
     # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
