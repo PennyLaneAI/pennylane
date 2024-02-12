@@ -65,7 +65,6 @@ class Reflection(SymbolicOp, Operation):
 
 
     .. details::
-
         :title: Theory
 
         The operator is built as follows:

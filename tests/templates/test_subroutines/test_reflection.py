@@ -166,3 +166,41 @@ def test_lightning_qubit():
         return qml.probs(wires=[0, 1])
 
     assert np.allclose(circuit1(), circuit2())
+
+
+def test_correct_queueing():
+    """Test that the Reflection operator is correctly queued in the circuit"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit1():
+        qml.Hadamard(wires=0)
+        qml.RY(2, wires=0)
+        qml.CRY(1, wires=[0, 1])
+        qml.Reflection(U=qml.Hadamard(wires=0), alpha=2.0)
+        return qml.state()
+
+    @qml.prod
+    def generator(wires):
+        qml.Hadamard(wires=wires)
+
+    @qml.qnode(dev)
+    def circuit2():
+        generator(wires=0)
+        qml.RY(2, wires=0)
+        qml.CRY(1, wires=[0, 1])
+        qml.Reflection(U=generator(wires=0), alpha=2.0)
+        return qml.state()
+
+    U = generator(0)
+
+    @qml.qnode(dev)
+    def circuit3():
+        generator(wires=0)
+        qml.RY(2, wires=0)
+        qml.CRY(1, wires=[0, 1])
+        qml.Reflection(U=U, alpha=2.0)
+        return qml.state()
+
+    assert np.allclose(circuit1(), circuit2())
+    assert np.allclose(circuit1(), circuit3())
