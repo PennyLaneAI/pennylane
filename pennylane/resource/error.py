@@ -18,7 +18,8 @@ from abc import ABC, abstractmethod
 
 
 class AlgorithmicError(ABC):
-    """Abstract base class representing an abstract type of mathematical error.
+    """Abstract base class representing an abstract type of error.
+    This class can be used to create objects that track and propagate errors introduced by approximations and other algorithmic inaccuracies.
 
     Args:
         error (float): The numerical value of the error
