@@ -43,7 +43,6 @@ class AlgorithmicError(ABC):
         Returns:
             AlgorithmicError: The total error after combination.
         """
-        raise NotImplementedError
 
     @staticmethod
     def get_error(approximate_op, exact_op, **kwargs):
