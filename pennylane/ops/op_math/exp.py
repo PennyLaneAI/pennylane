@@ -303,18 +303,18 @@ class Exp(ScalarSymbolicOp, Operation):
             if op_class not in {qml.PauliRot, qml.PCPhase}:
                 g, c = qml.generator(op_class)(coeff, base.wires)
                 # Some generators are not wire-ordered (e.g. OrbitalRotation)
-                new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
+                mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 
-                if qml.equal(base, new_g) and math.real(coeff) == 0:
+                if qml.equal(base, mapped_wires_g) and math.real(coeff) == 0:
                     coeff = math.real(
                         -1j / c * coeff
                     )  # cancel the coefficients added by the generator
                     return [op_class(coeff, g.wires)]
 
                 # could have absorbed the coefficient.
-                new_g2 = qml.simplify(qml.s_prod(c, g))
+                simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
 
-                if qml.equal(base, new_g2) and math.real(coeff) == 0:
+                if qml.equal(base, simplified_g) and math.real(coeff) == 0:
                     coeff = math.real(-1j * coeff)  # cancel the coefficients added by the generator
                     return [op_class(coeff, g.wires)]
 
