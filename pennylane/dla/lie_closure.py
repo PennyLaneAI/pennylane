@@ -116,16 +116,15 @@ class VSpace:
         self._basis = [generators[0]]
         rank = 1
 
-        # Sparse alternative
-        # M = dok_array((num_pw, rank), dtype=float)
+        # Sparse DOK-style array representing the basis (see docs above)
         M = np.zeros((num_pw, rank), dtype=float)
-        # Add the values of the first PauliSentence to the sparse array.
+        # Add the values of the first basis vector (a PauliSentence instance) to the sparse array.
         for pw, value in generators[0].items():
             M[pw_to_idx[pw], 0] = value
-        self.M = M
-        self.pw_to_idx = pw_to_idx
-        self.rank = rank
-        self.num_pw = num_pw
+        self._M = M
+        self._pw_to_idx = pw_to_idx
+        self._rank = rank
+        self._num_pw = num_pw
 
         # Add the values of all other PauliSentence objects from the input to the sparse array,
         # but only if they are linearly independent from the previous objects.
@@ -150,11 +149,11 @@ class VSpace:
         ]
 
         for ps in other:
-            # TODO: potential speed-up by adding list of ops all at once, i.e. computing the rank only once and not for every added term. Might be more specialized to lie_closure
-            self.M, self.pw_to_idx, self.rank, self.num_pw, added = self._add_if_independent(
-                self.M, ps, self.pw_to_idx, self.rank, self.num_pw
+            # TODO: Potential speed-up by computing the maximal linear independent set for all current basis vectors + other, essentially algorithm1 in https://arxiv.org/abs/1012.5256
+            self._M, self._pw_to_idx, self._rank, self._num_pw, is_independent = self._add_if_independent(
+                self._M, ps, self._pw_to_idx, self._rank, self._num_pw
             )
-            if added:
+            if is_independent:
                 self._basis.append(ps)
         return self._basis
 
@@ -192,14 +191,10 @@ class VSpace:
             # The input PauliSentence must have been linearly dependent
             return M, pw_to_idx, rank, num_pw, False
 
-        # Sparse alternative
-        # M.resize((new_num_pw, rank + 1))
 
         M = np.pad(M, ((0, new_num_pw - num_pw), (0, 1)))
-        # M = np.concatenate([np.concatenate([M, np.zeros((num_pw, 1))], axis=1), np.zeros((new_num_pw-num_pw, rank+1))], axis=0)
 
-        # If we actually had to add PauliWords (rows) to our basis, the new PauliSentence must have been
-        # linearly independent from all others
+        # If there are new PauliWords (i.e. new basis vectors), the candidate vector must be linearly independent
         if new_num_pw > num_pw:
             new_pw_to_idx = copy(pw_to_idx)
             for i, pw in enumerate(new_pws, start=num_pw):
@@ -220,12 +215,11 @@ class VSpace:
             M = M[:num_pw, :rank]
             return M, pw_to_idx, rank, num_pw, False
 
-        new_rank = np.linalg.matrix_rank(M)
+        new_rank = np.linalg.matrix_rank(M) # expensive
+        
         # Manual singular value alternative, probably slower than ``matrix_rank``
         # sing_value = np.min(np.abs(svd(M, compute_uv=False, lapack_driver="gesdd", check_finite=False)))
         if new_rank == rank:
-            # Sparse alternative
-            # M.resize((num_pw, rank))
             M = M[:num_pw, :rank]
             return M, pw_to_idx, rank, num_pw, False
 
@@ -270,7 +264,8 @@ def _is_any_col_propto_last(inM):
     nonzero_part = nonzero_part / normalize_columns
 
     # fill the original matrix with the nonzero elements
-    # note that if a candidate vector has nonzero part where target vector is zero, this part is unaltered
+    # note that if a candidate vector has nonzero part where the target vector is zero, this part is unaltered
+    # (this is good to catch cases where columns are proportional on the non-zero part of the last column, but not on those where the candidate is zero)
     M[nonzero_mask] = nonzero_part
 
     # check if any column matches the last column completely
