@@ -71,17 +71,17 @@ class Reflection(SymbolicOp, Operation):
 
         .. math::
 
-            \text{Reflection}(U, \alpha) = -\mathbb{I} + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-\mathbb{I} + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^\dagger.
+            \text{Reflection}(U, \alpha) = -\mathbb{I} + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-\mathbb{I} + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^{\dagger}.
 
         The central block is obtained through a PhaseShift controlled operator.
 
-        In the case of specifying `reflection_wires` the operator would have the following expression.
+        In the case of specifying the reflection wires,  the operator would have the following expression.
 
         .. math::
 
-            U(\mathbb{I} - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes \mathbb{I}^{n-m}})U^\dagger,
+            U(\mathbb{I} - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes \mathbb{I}^{n-m}})U^{\dagger},
 
-        where :math:`m` is the number of wires in `reflection_wires` and :math:`n` is the total number of wires.
+        where :math:`m` is the number of reflection wires and :math:`n` is the total number of wires.
 
     """
 
