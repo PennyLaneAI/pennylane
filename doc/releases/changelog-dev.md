@@ -126,6 +126,8 @@
 
 * Added new error tracking and propagation functionality. 
   [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
+  [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
+
 
 <h3>Improvements 🛠</h3>
 
