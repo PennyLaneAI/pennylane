@@ -181,6 +181,7 @@
 <h4>Other improvements</h4>
 
 * `qml.dot` now returns a `Sum` class even when all the coefficients match.
+  [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
 
 * `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
   [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)

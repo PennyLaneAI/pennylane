@@ -311,6 +311,13 @@ class Exp(ScalarSymbolicOp, Operation):
                     )  # cancel the coefficients added by the generator
                     return [op_class(coeff, g.wires)]
 
+                # could have absorbed the coefficient.
+                new_g2 = qml.simplify(qml.s_prod(c, g))
+
+                if qml.equal(base, new_g2) and math.real(coeff) == 0:
+                    coeff = math.real(-1j * coeff)  # cancel the coefficients added by the generator
+                    return [op_class(coeff, g.wires)]
+
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
