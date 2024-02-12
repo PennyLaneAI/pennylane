@@ -56,7 +56,7 @@ class TestVSpace:
         assert all(isinstance(op, PauliSentence) for op in vspace.basis)
         assert np.allclose(vspace._M, [[1.0, 1.0], [1.0, 0.0]]) or np.allclose(
             vspace._M, [[1.0, 0.0], [1.0, 1.0]]
-        ) # the ordering is random as it is taken from a dictionary that has no natural ordering
+        )  # the ordering is random as it is taken from a dictionary that has no natural ordering
         assert vspace.basis == ops1[:-1]
         assert vspace._rank == 2
         assert vspace._num_pw == 2
@@ -150,7 +150,14 @@ class TestLieClosure:
         ]
     )
 
-    IS_ANY_COL_PROPTO_LAST = ((M0, False), (M1, False), (M2, True), (M3, True), (M4, True), (M5, True))
+    IS_ANY_COL_PROPTO_LAST = (
+        (M0, False),
+        (M1, False),
+        (M2, True),
+        (M3, True),
+        (M4, True),
+        (M5, True),
+    )
 
     @pytest.mark.parametrize("M, res", IS_ANY_COL_PROPTO_LAST)
     def test_is_any_col_propto_last(self, M, res):

@@ -150,8 +150,8 @@ class VSpace:
 
         for ps in other:
             # TODO: Potential speed-up by computing the maximal linear independent set for all current basis vectors + other, essentially algorithm1 in https://arxiv.org/abs/1012.5256
-            self._M, self._pw_to_idx, self._rank, self._num_pw, is_independent = self._add_if_independent(
-                self._M, ps, self._pw_to_idx, self._rank, self._num_pw
+            self._M, self._pw_to_idx, self._rank, self._num_pw, is_independent = (
+                self._add_if_independent(self._M, ps, self._pw_to_idx, self._rank, self._num_pw)
             )
             if is_independent:
                 self._basis.append(ps)
@@ -191,7 +191,6 @@ class VSpace:
             # The input PauliSentence must have been linearly dependent
             return M, pw_to_idx, rank, num_pw, False
 
-
         M = np.pad(M, ((0, new_num_pw - num_pw), (0, 1)))
 
         # If there are new PauliWords (i.e. new basis vectors), the candidate vector must be linearly independent
@@ -215,8 +214,8 @@ class VSpace:
             M = M[:num_pw, :rank]
             return M, pw_to_idx, rank, num_pw, False
 
-        new_rank = np.linalg.matrix_rank(M) # expensive
-        
+        new_rank = np.linalg.matrix_rank(M)  # expensive
+
         # Manual singular value alternative, probably slower than ``matrix_rank``
         # sing_value = np.min(np.abs(svd(M, compute_uv=False, lapack_driver="gesdd", check_finite=False)))
         if new_rank == rank:
