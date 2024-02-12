@@ -858,13 +858,14 @@ class TestPauliSentence:
         (PauliSentence({}), np.zeros((1, 1))),
         (PauliSentence({PauliWord({}): 1.0}), np.ones((1, 1))),
         (PauliSentence({PauliWord({}): 2.5}), 2.5 * np.ones((1, 1))),
+        (PauliSentence({PauliWord({}): 2.5, PauliWord({0:"X"}): 1.}), 2.5 * np.eye(2) + qml.matrix(qml.PauliX(0))),
     )
 
     @pytest.mark.parametrize("ps, true_res", PS_EMPTY_CASES)
     def test_to_mat_empty(self, ps, true_res):
         """Test that empty PauliSentences and PauliSentences with empty PauliWords are handled correctly"""
 
-        res_dense = ps.to_mat(wire_order=[])
+        res_dense = ps.to_mat()
         assert np.allclose(res_dense, true_res)
         res_sparse = ps.to_mat(format="csr")
         assert sparse.issparse(res_sparse)

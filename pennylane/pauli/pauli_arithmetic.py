@@ -432,7 +432,7 @@ class PauliWord(dict):
         if len(self) == 0:
             n = len(wire_order) if wire_order is not None else 0
             return (
-                np.diag([coeff] * 2**n)
+                coeff * np.eye(2**n)
                 if format == "dense"
                 else coeff * sparse.eye(2**n, format=format, dtype="complex128")
             )
