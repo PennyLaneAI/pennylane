@@ -20,7 +20,8 @@ from pennylane.operation import Operation
 
 
 class AlgorithmicError(ABC):
-    """Abstract base class representing an abstract type of mathematical error.
+    """Abstract base class representing an abstract type of error.
+    This class can be used to create objects that track and propagate errors introduced by approximations and other algorithmic inaccuracies.
 
     Args:
         error (float): The numerical value of the error
@@ -44,7 +45,6 @@ class AlgorithmicError(ABC):
         Returns:
             AlgorithmicError: The total error after combination.
         """
-        raise NotImplementedError
 
     @staticmethod
     def get_error(approximate_op, exact_op, **kwargs):
