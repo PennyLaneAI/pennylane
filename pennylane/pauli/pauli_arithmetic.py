@@ -148,7 +148,9 @@ class PauliWord(dict):
     .. note::
 
         An empty :class:`~.PauliWord` will be treated as the multiplicative
-        identity (i.e identity on all wires).
+        identity (i.e identity on all wires). Its matrix is the identity matrix
+        (trivially the :math:`1\times 1` one matrix when no ``wire_order`` is passed to
+        ``PauliWord({}).to_mat()``).
 
     **Examples**
 
