@@ -77,4 +77,3 @@ class ErrorOperation(Operation):
         Returns:
             AlgorithmicError: The error.
         """
-        raise NotImplementedError
