@@ -121,9 +121,6 @@
         [1, 0, 0, 1, 1]])
   ```
 
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
-
 <h3>Improvements 🛠</h3>
 
 <h4>Faster gradients with VJPs and other performance improvements</h4>
@@ -181,6 +178,13 @@
 
 * The module `pennylane/math/quantum.py` has now support for the min-entropy.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
+
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
+* A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
+  [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
+
 
 <h4>Other improvements</h4>
 
