@@ -477,6 +477,8 @@
   operators have a valid `pauli_rep` property.
   [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
 
+* Controlled `GlobalPhase` with non-zero control wire no longer throws an error.
+  [(#5194)](https://github.com/PennyLaneAI/pennylane/pull/5194)
 
 <h3>Contributors ✍️</h3>
 
