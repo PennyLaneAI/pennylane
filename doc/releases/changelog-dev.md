@@ -186,15 +186,22 @@
 
 <h4>Other improvements</h4>
 
+* `qml.dot` now returns a `Sum` class even when all the coefficients match.
+  [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
+
 * `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
   [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
 
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
+* Ensure the `BlockEncode` operator is JIT-compatible with JAX.
+  [(#5110)](https://github.com/PennyLaneAI/pennylane/pull/5110)
+
 * Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
+
 
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
@@ -277,6 +284,10 @@
 * Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
+
+* Users can specify a list of PennyLane `measurements` they would want as terminal measurements
+  when converting a `QuantumCircuit` using `qml.from_qiskit`.
+  [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
 <h3>Breaking changes 💔</h3>
 
@@ -493,6 +504,7 @@ Diksha Dhawan,
 Lillian Frederiksen,
 Eugenio Gigante,
 Diego Guala,
+David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,

@@ -83,28 +83,22 @@ class TestDotSum:
         for op in result:
             assert isinstance(op, Prod)
 
-    def test_dot_groups_coeffs(self):
-        """Test that the `dot` function groups the coefficients."""
-        result = qml.dot(coeffs=[4, 4, 4], ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
-        assert isinstance(result, SProd)
-        assert result.scalar == 4
-        assert isinstance(result.base, Sum)
-        assert len(result.base) == 3
-        for op in result.base:
-            assert isinstance(op, qml.PauliX)
+    def test_coeffs_all_ones(self):
+        """Test when the coeffs are all ones that we get a sum of the individual products."""
+        result = qml.dot([1, 1, 1], [qml.X(0), qml.Y(1), qml.Z(2)])
+        assert isinstance(result, Sum)
+        assert result[0] == qml.X(0)
+        assert result[1] == qml.Y(1)
+        assert result[2] == qml.Z(2)
 
-    def test_dot_groups_coeffs_with_different_sign(self):
-        """test that the `dot` function groups coefficients with different signs."""
-        cs = [4, -4, 4]
-        result = qml.dot(coeffs=cs, ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
-        assert isinstance(result, SProd)
-        assert result.scalar == 4
-        for op, c in zip(result.base, cs):
-            if c == -4:
-                assert isinstance(op, SProd)
-                assert op.scalar == -1
-            else:
-                assert isinstance(op, qml.PauliX)
+    @pytest.mark.parametrize("coeffs", ([4, 4, 4], [4, -4, 4]))
+    def test_dot_does_not_groups_coeffs(self, coeffs):
+        """Test that the `dot` function does not groups the coefficients."""
+        result = qml.dot(coeffs=coeffs, ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
+        assert isinstance(result, Sum)
+        assert result[0] == qml.s_prod(coeffs[0], qml.PauliX(0))
+        assert result[1] == qml.s_prod(coeffs[1], qml.PauliX(1))
+        assert result[2] == qml.s_prod(coeffs[2], qml.PauliX(2))
 
     def test_dot_different_number_of_coeffs_and_ops(self):
         """Test that a ValueError is raised when the number of coefficients and operators does
@@ -259,14 +253,16 @@ class TestDotSum:
 
     def test_identities_with_pauli_words_pauli_false(self):
         """Test that identities in form of empty PauliWords are treated correctly"""
-        res = qml.dot([2.0, 2.0], [pw_id, pw1], pauli=False)
-        true_res = qml.s_prod(2, qml.sum(op_id, op1))
+        _pw1 = PauliWord({0: I, 1: X, 2: Y})
+        res = qml.dot([2.0, 2.0], [pw_id, _pw1], pauli=False)
+        true_res = qml.sum(qml.s_prod(2.0, qml.I()), 2.0 * qml.prod(qml.X(1), qml.Y(2)))
         assert res == true_res
 
     def test_identities_with_pauli_sentences_pauli_false(self):
         """Test that identities in form of PauliSentences with empty PauliWords are treated correctly"""
-        res = qml.dot([2.0, 2.0], [ps_id, pw1], pauli=False)
-        true_res = qml.s_prod(2, qml.sum(op_id, op1))
+        _pw1 = PauliWord({0: I, 1: X, 2: Y})
+        res = qml.dot([2.0, 2.0], [ps_id, _pw1], pauli=False)
+        true_res = qml.s_prod(2, qml.I()) + qml.s_prod(2.0, qml.prod(qml.X(1), qml.Y(2)))
         assert res == true_res
 
 
