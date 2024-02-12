@@ -434,7 +434,7 @@ class Testqsvt:
     def test_matrix_wx(self, A, phis, wires, result):
         """Assert that the matrix method produces the expected result using both call signatures."""
         m1 = qml.matrix(qml.qsvt(A, phis, wires, convention="Wx"))
-        m2 = qml.matrix(qml.qsvt)(A, phis, wires, convention="Wx")
+        m2 = qml.matrix(qml.qsvt, wire_order=wires)(A, phis, wires, convention="Wx")
 
         assert np.isclose(np.real(m1[0, 0]), result, rtol=1e-3)
         assert np.allclose(m1, m2)
