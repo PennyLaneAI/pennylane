@@ -121,6 +121,12 @@
          [1, 0, 0, 1, 1]])
   ```
 
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
+* Added new error tracking and propagation functionality. 
+  [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
+
 <h3>Improvements 🛠</h3>
 
 <h4>Faster gradients with VJPs and other performance improvements</h4>
@@ -512,4 +518,3 @@ Mudit Pandey,
 Alex Preciado,
 Matthew Silverman,
 Jay Soni.
-
