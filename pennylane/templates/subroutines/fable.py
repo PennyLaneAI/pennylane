@@ -87,35 +87,35 @@ class FABLE(Operation):
     """Gradient computation method."""
 
     def __init__(self, A, tol=0, id=None):
-        M, N = A.shape
-        if M != N:
-            warnings.warn(
-                f"The input matrix should be of shape NxN, got {A.shape}. Zeroes were padded automatically."
-            )
-            k = max(M, N)
-            A = np.pad(A, ((0, k - N), (0, k - M)))
+        if qml.math.any(qml.math.iscomplex(A)):
+            raise ValueError("Support for imaginary values has not been implemented.")
 
-        n = int(np.ceil(np.log2(N)))
-        if N < 2**n:
-            A = np.pad(A, ((0, 2**n - N), (0, 2**n - N)))
-            N = 2**n
-            warnings.warn(
-                f"The input matrix should be of shape NxN, where N is a power of 2. Zeroes were padded automatically. Input is now of shape {A.shape}."
-            )
-
-        alpha = np.linalg.norm(np.ravel(A), np.inf)
+        alpha = qml.math.linalg.norm(qml.math.ravel(A), np.inf)
         if alpha > 1:
             raise ValueError(
                 "The subnormalization factor should be lower than 1. Ensure that the values of the input matrix are within [-1, 1]."
             )
 
-        if np.any(np.iscomplex(A)):
-            raise ValueError("Support for imaginary values has not been implemented.")
+        M, N = qml.math.shape(A)
+        if M != N:
+            warnings.warn(
+                f"The input matrix should be of shape NxN, got {A.shape}. Zeroes were padded automatically."
+            )
+            k = max(M, N)
+            A = qml.math.pad(A, ((0, k - M), (0, k - N)))
+
+        n = int(qml.math.ceil(qml.math.log2(N)))
+        if N < 2**n:
+            A = qml.math.pad(A, ((0, 2**n - N), (0, 2**n - N)))
+            N = 2**n
+            warnings.warn(
+                f"The input matrix should be of shape NxN, where N is a power of 2. Zeroes were padded automatically. Input is now of shape {A.shape}."
+            )
 
         self._hyperparameters = {"tol": tol}
 
         ancilla = ["ancilla"]
-        s = int(np.log2(np.array(A).shape[0]))
+        s = int(qml.math.log2(qml.math.shape(A)[0]))
         wires_i = [f"i{index}" for index in range(s)]
         wires_j = [f"j{index}" for index in range(s)]
 
@@ -135,18 +135,18 @@ class FABLE(Operation):
             list[.Operator]: list of gates for efficient circuit
         """
         op_list = []
-        alphas = np.arccos(A).flatten()
+        alphas = qml.math.arccos(A).flatten()
         thetas = compute_theta(alphas)
 
         ancilla = [wires[0]]
         wires_i = wires[1 : 1 + len(wires) // 2]
         wires_j = wires[1 + len(wires) // 2 : len(wires)]
 
-        code = gray_code(2 * np.sqrt(len(A)))
+        code = gray_code(2 * qml.math.sqrt(len(A)))
         n_selections = len(code)
 
         control_wires = [
-            int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % n_selections], 2)))
+            int(qml.math.log2(int(code[i], 2) ^ int(code[(i + 1) % n_selections], 2)))
             for i in range(n_selections)
         ]
 
@@ -179,9 +179,8 @@ class FABLE(Operation):
         return op_list
 
     def _flatten(self):
-        return self.data, (self._hyperparameters)
+        return self.data, (self._hyperparameters["tol"])
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        hyperparams = metadata
-        return cls(data[0], tol=hyperparams["tol"])
+        return cls(data[0], tol=metadata)
