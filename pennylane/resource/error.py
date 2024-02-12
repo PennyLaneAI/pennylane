@@ -62,7 +62,7 @@ class AlgorithmicError(ABC):
 
 
 class ErrorOperation(Operation):
-    r"""Base class that represents quantum operations which carry somne form of algorithmic error.
+    r"""Base class that represents quantum operations which carry some form of algorithmic error.
 
     .. note::
         Child classes must implement the :func:`~.ErrorOperation.error` method which computes
