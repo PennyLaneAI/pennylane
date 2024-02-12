@@ -54,13 +54,13 @@ class TestVSpace:
         vspace = VSpace(ops1)
 
         assert all(isinstance(op, PauliSentence) for op in vspace.basis)
-        assert np.allclose(vspace.M, [[1.0, 1.0], [1.0, 0.0]]) or np.allclose(
-            vspace.M, [[1.0, 0.0], [1.0, 1.0]]
-        )
+        assert np.allclose(vspace._M, [[1.0, 1.0], [1.0, 0.0]]) or np.allclose(
+            vspace._M, [[1.0, 0.0], [1.0, 1.0]]
+        ) # the ordering is random as it is taken from a dictionary that has no natural ordering
         assert vspace.basis == ops1[:-1]
-        assert vspace.rank == 2
-        assert vspace.num_pw == 2
-        assert len(vspace.pw_to_idx) == 2
+        assert vspace._rank == 2
+        assert vspace._num_pw == 2
+        assert len(vspace._pw_to_idx) == 2
 
     ADD_LINEAR_INDEPENDENT = (
         (ops2, PauliWord({10: "Y"}), ops2plusY10),
@@ -69,7 +69,7 @@ class TestVSpace:
     )
 
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
-    def test_add_lin_independent(self, ops, op, true_new_basis):
+    def test_add_linear_independent(self, ops, op, true_new_basis):
         """Test that adding new (linearly independent) operators works as expected"""
         vspace = VSpace(ops)
         new_basis = vspace.add(op)
@@ -92,7 +92,7 @@ class TestVSpace:
 
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
     def test_len(self, ops, op, true_new_basis):
-        """Test the length of the VSpace instance with inplace and non-inplace addition to the basis"""
+        """Test the length of the VSpace instance with inplace addition to the basis"""
         vspace = VSpace(ops)
         len_before_adding = len(vspace)
         len_basis_before_adding = len(vspace.basis)
@@ -107,11 +107,18 @@ class TestVSpace:
 class TestLieClosure:
     """Tests for qml.dla.lie_closure()"""
 
-    M1 = np.array(
+    M0 = np.array(
         [
             [1.0, 0.0, 0.5, 0.5, 1.0],  # non-matching zeros 2nd to last and last
             [1.0, 0.5, 0.0, 1.0, 0.0],
             [1.0, 0.5, 1.0, 2.0, 4.0],
+        ]
+    )
+    M1 = np.array(
+        [
+            [1.0, 1.0, 0.0, 0.0, 1.0],  # non-matching zeros 2nd to last and last
+            [0.0, 1.0, 0.0, 1.0, 0.0],
+            [0.0, 4.0, 1.0, 0.0, 4.0],
         ]
     )
     M2 = np.array(
@@ -143,7 +150,7 @@ class TestLieClosure:
         ]
     )
 
-    IS_ANY_COL_PROPTO_LAST = ((M1, False), (M2, True), (M3, True), (M4, True), (M5, True))
+    IS_ANY_COL_PROPTO_LAST = ((M0, False), (M1, False), (M2, True), (M3, True), (M4, True), (M5, True))
 
     @pytest.mark.parametrize("M, res", IS_ANY_COL_PROPTO_LAST)
     def test_is_any_col_propto_last(self, M, res):
