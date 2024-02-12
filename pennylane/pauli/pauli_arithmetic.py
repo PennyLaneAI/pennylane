@@ -541,8 +541,8 @@ class PauliSentence(dict):
 
         An empty :class:`~.PauliSentence` will be treated as the additive
         identity (i.e ``0 * Identity()``). Its matrix is the all-zero matrix
-        (trivially the :math:`1\times 1` zero matrix when no `wire_order` is passed to
-        `PauliSentence({}).to_mat()`).
+        (trivially the :math:`1\times 1` zero matrix when no ``wire_order`` is passed to
+        ``PauliSentence({}).to_mat()``).
 
     **Examples**
 
