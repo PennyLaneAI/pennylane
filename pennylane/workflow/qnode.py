@@ -698,10 +698,7 @@ class QNode:
                 new_config = device.preprocess(config)[1]
                 return new_config.gradient_method, {}, device
 
-            try:
-                return QNode._validate_parameter_shift(device)
-            except qml.QuantumFunctionError:
-                return qml.gradients.finite_diff, {}, device
+            return QNode._validate_parameter_shift(device)
 
         try:
             return QNode._validate_device_method(device)

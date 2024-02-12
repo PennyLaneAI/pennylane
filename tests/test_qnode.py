@@ -123,6 +123,15 @@ class TestValidation:
             QNode._validate_backprop_method(dev, None)
 
     # pylint: disable=protected-access
+    def test_validate_device_method_new_device(self):
+        """Test that _validate_device_method raises a valueerror with the new device interface."""
+
+        dev = qml.device("default.qubit")
+
+        with pytest.raises(ValueError):
+            QNode._validate_device_method(dev)
+
+    # pylint: disable=protected-access
     def test_validate_backprop_method(self):
         """Test that the method for validating the backprop diff method
         tape works as expected"""
