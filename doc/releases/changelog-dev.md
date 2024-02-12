@@ -186,9 +186,13 @@
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
+* Ensure the `BlockEncode` operator is JIT-compatible with JAX.
+  [(#5110)](https://github.com/PennyLaneAI/pennylane/pull/5110)
+
 * Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
+
 
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
@@ -491,6 +495,7 @@ Diksha Dhawan,
 Lillian Frederiksen,
 Eugenio Gigante,
 Diego Guala,
+David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
