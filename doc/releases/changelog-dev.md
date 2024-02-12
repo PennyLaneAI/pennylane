@@ -276,6 +276,10 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
+* Users can specify a list of PennyLane `measurements` they would want as terminal measurements
+  when converting a `QuantumCircuit` using `qml.from_qiskit`.
+  [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
+
 <h3>Breaking changes 💔</h3>
 
 * The entry point convention registering compilers with PennyLane has changed.
