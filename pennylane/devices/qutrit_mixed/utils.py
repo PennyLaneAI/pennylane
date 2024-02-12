@@ -15,6 +15,7 @@
 import functools
 from string import ascii_letters as alphabet
 import pennylane as qml
+from pennylane import math
 from pennylane import numpy as np
 
 alphabet_array = np.array(list(alphabet))
@@ -33,7 +34,7 @@ def get_einsum_mapping(
         is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
-        str: indices mapping that defines the einsum
+        str: Indices mapping that defines the einsum
     """
     num_ch_wires = len(op.wires)
     num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
@@ -68,6 +69,36 @@ def get_einsum_mapping(
     )
 
 
+def reshape_state_as_matrix(state, num_wires):
+    """Given a non-flat, potentially batched state, flatten it to square matrix or matrices if batched.
+
+    Args:
+        state (TensorLike): A state that needs to be reshaped to a square matrix or matrices if batched
+        num_wires (int): The number of wires the state represents
+
+    Returns:
+        Tensorlike: A reshaped, square state, with an extra batch dimension if necessary
+    """
+    dim = QUDIT_DIM**num_wires
+    batch_size = math.get_batch_size(state, ((QUDIT_DIM,) * (num_wires * 2)), dim**2)
+    shape = (batch_size, dim, dim) if batch_size is not None else (dim, dim)
+    return math.reshape(state, shape)
+
+
+def get_num_wires(state, is_state_batched: bool = False):
+    """Finds the number of wires associated with a state
+
+    Args:
+        state (TensorLike): A device compatible state that may or may not be batched
+        is_state_batched (int): Boolean representing whether the state is batched or not
+
+    Returns:
+        int: Number of wires associated with state
+    """
+    len_row_plus_col = len(math.shape(state)) - is_state_batched
+    return int(len_row_plus_col / 2)
+
+
 def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
     """Retrieves the einsum indices string for the new state
 
@@ -77,7 +108,7 @@ def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
         state_indices (str): indices of the original state
 
     Returns:
-        str: the einsum indices of the new state
+        str: The einsum indices of the new state
     """
     return functools.reduce(
         lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
