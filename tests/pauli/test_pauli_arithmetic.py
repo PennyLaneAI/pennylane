@@ -858,7 +858,10 @@ class TestPauliSentence:
         (PauliSentence({}), np.zeros((1, 1))),
         (PauliSentence({PauliWord({}): 1.0}), np.ones((1, 1))),
         (PauliSentence({PauliWord({}): 2.5}), 2.5 * np.ones((1, 1))),
-        (PauliSentence({PauliWord({}): 2.5, PauliWord({0:"X"}): 1.}), 2.5 * np.eye(2) + qml.matrix(qml.PauliX(0))),
+        (
+            PauliSentence({PauliWord({}): 2.5, PauliWord({0: "X"}): 1.0}),
+            2.5 * np.eye(2) + qml.matrix(qml.PauliX(0)),
+        ),
     )
 
     @pytest.mark.parametrize("ps, true_res", PS_EMPTY_CASES)
