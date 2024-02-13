@@ -89,7 +89,36 @@ class TestExpectationValueMath:
     def test_state_vector_wrong_amplitudes(self, ops, state_vectors):
         """Test that a message is raised when a state does not have right norm"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            qml.math.expectation_value(ops, state_vectors, check_state=True, check_operator=True)
+            qml.math.expectation_value(ops, state_vectors, check_state=True)
+
+    operator_wrong_shape = [
+        ([[1, 0, 0], [0, 0, 1]], [0, 1]),
+        (
+            [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]],
+            [1, 0, 0, 0],
+        ),
+        ([[0, 1, 0], [1, 0, 0], [0, 0, 0], [0, 0, 1]], [1, 0]),
+    ]
+
+    @pytest.mark.parametrize("ops,state_vectors", operator_wrong_shape)
+    def test_operator_wrong_shape(self, ops, state_vectors):
+        """Test that a message is raised when the state does not have the right shape."""
+        with pytest.raises(ValueError, match="Operator matrix must be of shape"):
+            qml.math.expectation_value(ops, state_vectors, check_operator=True)
+
+    operator_non_hermitian = [
+        ([[1, 1], [0, 0]], [0, 1]),
+        (
+            [[0, 0, 1, 1, 0], [1, 0, 1, 0, 1], [1, 0, 1, 0, 1], [1, 0, 0, 1, 0], [0, 0, 0, 1, 0]],
+            [1, 0, 0, 0, 0],
+        ),
+    ]
+
+    @pytest.mark.parametrize("ops,state_vectors", operator_non_hermitian)
+    def test_operator_non_hermitian(self, ops, state_vectors):
+        """Test that a message is raised when the state does not have the right shape."""
+        with pytest.raises(ValueError, match="The matrix is not Hermitian"):
+            qml.math.expectation_value(ops, state_vectors, check_operator=True)
 
     state_wrong_shape = [
         ([[1, 0], [0, 1]], [0, 1, 0]),
@@ -105,7 +134,7 @@ class TestExpectationValueMath:
     def test_state_vector_wrong_shape(self, ops, state_vectors):
         """Test that a message is raised when the state does not have the right shape."""
         with pytest.raises(ValueError, match="State vector must be of shape"):
-            qml.math.expectation_value(ops, state_vectors, check_state=True, check_operator=True)
+            qml.math.expectation_value(ops, state_vectors, check_state=True)
 
     def test_same_number_wires_dm(self):
         """Test that the two states must act on the same number of wires"""
