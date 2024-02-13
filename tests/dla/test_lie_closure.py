@@ -137,7 +137,7 @@ class TestVSpace:
 
         vspace1 = VSpace(gens1)
         vspace2 = VSpace(gens2)
-        assert not vspace1 == vspace2
+        assert vspace1 != vspace2
 
     def test_eq_False1(self):
         """Test that non-equivalent vspaces are correctly determined"""
@@ -156,7 +156,7 @@ class TestVSpace:
 
         vspace1 = VSpace(gens1)
         vspace2 = VSpace(gens2)
-        assert not vspace1 == vspace2
+        assert vspace1 != vspace2
 
     def test_eq_False2(self):
         """Test that non-equivalent vspaces are correctly determined"""
@@ -175,7 +175,7 @@ class TestVSpace:
 
         vspace1 = VSpace(gens1)
         vspace2 = VSpace(gens2)
-        assert not vspace1 == vspace2
+        assert vspace1 != vspace2
 
     def test_eq_False3(self):
         """Test that non-equivalent vspaces are correctly determined"""
@@ -195,7 +195,7 @@ class TestVSpace:
 
         vspace1 = VSpace(gens1)
         vspace2 = VSpace(gens2)
-        assert not vspace1 == vspace2
+        assert vspace1 != vspace2
 
 
 class TestLieClosure:
