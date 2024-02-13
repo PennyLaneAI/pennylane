@@ -458,7 +458,8 @@ class TestDecomposition:
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
-    def test_generator_decomposition(self, op_name):
+    @pytest.mark.parametrize("str_wires", (True, False))
+    def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
         op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
@@ -481,6 +482,9 @@ class TestDecomposition:
             if op_class.num_wires in {AnyWires, AllWires}
             else list(range(op_class.num_wires))
         )
+        if str_wires:
+            alphabet = ("a", "b", "c", "d", "e", "f", "g")
+            wires = [alphabet[w] for w in wires]
 
         # PauliRot and PCPhase each have an extra required arg
         if op_class is qml.PauliRot:

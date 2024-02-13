@@ -795,6 +795,7 @@ class TestBlockEncode:
             (1, 1, {"norm": 1, "subspace": (1, 1, 2)}),
             ([1], 1, {"norm": 1, "subspace": (1, 1, 2)}),
             ([[1]], 1, {"norm": 1, "subspace": (1, 1, 2)}),
+            ([1, 0], [0, 1], {"norm": 1, "subspace": (1, 2, 4)}),
             (pnp.array(1), [1], {"norm": 1, "subspace": (1, 1, 2)}),
             (pnp.array([1]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
             (pnp.array([[1]]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
@@ -963,7 +964,7 @@ class TestBlockEncode:
         ("input_matrix", "wires", "output_matrix"),
         [
             (1, 0, [[1, 0], [0, -1]]),
-            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
+            ([0.3], 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
             (
                 [[0.1, 0.2], [0.3, 0.4]],
                 range(2),
@@ -983,12 +984,21 @@ class TestBlockEncode:
     )
     def test_blockencode_jax(self, input_matrix, wires, output_matrix):
         """Test that the BlockEncode operator matrix is correct for jax."""
+        import jax
         import jax.numpy as jnp
 
         input_matrix = jnp.array(input_matrix)
         op = qml.BlockEncode(input_matrix, wires)
         assert np.allclose(qml.matrix(op), output_matrix)
         assert qml.math.get_interface(qml.matrix(op)) == "jax"
+
+        # Test jitting behaviour as well.
+        @jax.jit
+        def f(A):
+            op = qml.BlockEncode(A, wires)
+            return qml.matrix(op)
+
+        assert np.allclose(f(input_matrix), output_matrix)
 
     @pytest.mark.parametrize("method", ["backprop"])
     @pytest.mark.parametrize(
