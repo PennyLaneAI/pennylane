@@ -348,7 +348,7 @@ class TestLieClosure:
         ]
 
         res = qml.dla.lie_closure(generators)
-        len(res) == (2 ** (n - 1)) ** 2 - 1
+        assert len(res) == (2 ** (n - 1)) ** 2 - 1
 
     def test_lie_closure_heisenberg_generators_even(self):
         """Test the resulting DLA from Heisenberg generators with odd n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
@@ -366,4 +366,4 @@ class TestLieClosure:
         ]
 
         res = qml.dla.lie_closure(generators)
-        len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
+        assert len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
