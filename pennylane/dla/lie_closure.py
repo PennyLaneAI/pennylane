@@ -228,6 +228,10 @@ class VSpace:
         return str(self.basis)
 
     def __eq__(self, other):
+        """
+        Two VSpaces are equivalent when they span the same dimensional space.
+        This is checked here by having matching PauliWord keys in the sparse DOK representation and having the same rank.
+        """
         if not self._num_pw == other._num_pw:
             return False
         if not set(self._pw_to_idx.keys()) == set(other._pw_to_idx.keys()):
