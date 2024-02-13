@@ -293,7 +293,7 @@ class TestLieClosure:
         ]
         gen12 = dla12[:-1]
         res12 = lie_closure(gen12)
-        assert res12 == dla12
+        assert VSpace(res12) == VSpace(dla12)
     
     def test_lie_closure_with_pl_ops(self):
         """Test that lie_closure works properly with PennyLane ops instead of PauliSentences"""
