@@ -261,7 +261,7 @@ def _polyfit(x, y, order):
     # i.e. coeffs = (X.T @ X)**-1 X.T @ y see https://en.wikipedia.org/wiki/Polynomial_regression
     c = qml.math.linalg.pinv(qml.math.transpose(X) @ X)
     c = c @ qml.math.transpose(X)
-    c = qml.math.dot(c, y)
+    c = qml.math.tensordot(c, y, axes=1)
     c = qml.math.transpose(qml.math.transpose(c) / scale)
     return c
 
