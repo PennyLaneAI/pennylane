@@ -32,7 +32,7 @@ def validate_counts(shots, results1, results2):
 
     If the results are ``Sequence``s, loop over entries.
 
-    Fails if a key of ``result1`` is not found in ``result1``.
+    Fails if a key of ``results1`` is not found in ``results2``.
     Passes if counts are too low, chosen as ``100``.
     Otherwise, fails if counts differ by more than ``20`` plus 20 percent.
     """
