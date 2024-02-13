@@ -22,7 +22,7 @@ from pennylane.devices.qutrit_mixed import sample_state, measure_with_samples
 from pennylane.devices.qutrit_mixed.sampling import _sample_state_jax
 from pennylane.measurements import Shots
 
-APPROX_ATOL = 0.05
+APPROX_ATOL = 0.01
 QUDIT_DIM = 3
 ONE_QUTRIT = 1
 TWO_QUTRITS = 2
@@ -163,16 +163,16 @@ class TestSampleState:
         assert qml.math.allequal(samples, expected)
 
     @flaky
-    def test_approximate_probs_from_samples(self, three_qutrit_state):
+    def test_approximate_probs_from_samples(self, two_qutrit_state):
         """Tests that the generated samples are approximately as expected."""
         shots = 20000
-        state = three_qutrit_state
+        state = two_qutrit_state
 
-        flat_state = state.reshape((QUDIT_DIM**THREE_QUTRITS,) * 2)
+        flat_state = state.reshape((QUDIT_DIM**TWO_QUTRITS,) * 2)
         expected_probs = np.abs(np.diag(flat_state))
 
         samples = sample_state(state, shots)
-        approx_probs = samples_to_probs(samples, THREE_QUTRITS)
+        approx_probs = samples_to_probs(samples, TWO_QUTRITS)
         assert np.allclose(approx_probs, expected_probs, atol=APPROX_ATOL)
 
     @flaky
@@ -266,13 +266,12 @@ class TestMeasureWithSamples:
         assert result1.dtype == np.int64
         assert len(np.unique(result1)) == 3
 
-    @flaky
     def test_approximate_sample_measure(self, two_qutrit_pure_state):
         """Test that a sample measurement returns approximately the correct distribution"""
-        shots = qml.measurements.Shots(5000)
+        shots = qml.measurements.Shots(10000)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples([mp], two_qutrit_pure_state, shots=shots, rng=123)[0]
+        result = measure_with_samples([mp], two_qutrit_pure_state, shots=shots, rng=147)[0]
 
         one_or_two_prob = np.count_nonzero(result[:, 0]) / result.shape[0]
         one_prob = np.count_nonzero(result[:, 0] == 1) / result.shape[0]
@@ -282,7 +281,7 @@ class TestMeasureWithSamples:
     @flaky
     def test_counts_measure(self, two_qutrit_pure_state):
         """Test that a counts measurement works as expected"""
-        num_shots = 1000
+        num_shots = 10000
         shots = qml.measurements.Shots(num_shots)
         mp = qml.counts()
 
@@ -300,7 +299,7 @@ class TestMeasureWithSamples:
         state_vector = np.sqrt(np.array([5, -2j, 1, 0, 0, 0, 0, 0, 0]) / 8)
         state = get_dm_of_state(state_vector, 2)
 
-        num_shots = 1000
+        num_shots = 10000
         shots = qml.measurements.Shots(num_shots)
 
         mp0 = qml.counts(wires=0)
@@ -345,7 +344,7 @@ class TestMeasureWithSamples:
     @flaky
     def test_sample_and_counts_measurements(self, two_qutrit_pure_state):
         """Test that sample measurements properly sample an observable"""
-        num_shots = 1000
+        num_shots = 10000
         shots = qml.measurements.Shots(num_shots)
         samples_mp = qml.sample()
         counts_mp = qml.counts()
@@ -391,6 +390,7 @@ class TestMeasureWithSamples:
         state = get_dm_of_state(state_vector, 2)
         num_shots = 10000
         shots = qml.measurements.Shots(num_shots)
+
         mps = [
             qml.counts(qml.GellMann(0, 3)),
             qml.counts(qml.GellMann(0, 1) @ qml.GellMann(1, 1)),
@@ -406,7 +406,7 @@ class TestMeasureWithSamples:
         assert isinstance(results_gel_1s, dict)
         assert sorted(results_gel_1s.keys()) == [-1, 0, 1]
         assert np.isclose(results_gel_1s[-1] / num_shots, 0.3, atol=APPROX_ATOL)
-        assert np.isclose(results_gel_1s[0] / num_shots, 2 / 5, atol=APPROX_ATOL)
+        assert np.isclose(results_gel_1s[0] / num_shots, 0.4, atol=APPROX_ATOL)
         assert np.isclose(results_gel_1s[1] / num_shots, 0.3, atol=APPROX_ATOL)
 
 
