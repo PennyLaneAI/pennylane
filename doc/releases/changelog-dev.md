@@ -494,6 +494,9 @@
   operators have a valid `pauli_rep` property.
   [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
 
+* The matrix of an empty `PauliSentence` instance is now correct (all-zeros).
+  Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
+  [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
 <h3>Contributors ✍️</h3>
 
