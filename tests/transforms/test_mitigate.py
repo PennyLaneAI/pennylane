@@ -197,7 +197,8 @@ class TestMitigateWithZNE:
         mitigated_qnode_expanded = qml.transforms.mitigate_with_zne(
             expanded_qnode, [1, 2, 3], fold_global, richardson_extrapolate
         )
-        inputs = np.random.uniform(0, 1, size=(batch_size, 2**2))
+        rng = np.random.default_rng(seed=18954959)
+        inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
         result_orig = mitigated_qnode_orig(inputs)
         result_expanded = mitigated_qnode_expanded(inputs)
         assert qml.math.allclose(result_orig, result_expanded)
