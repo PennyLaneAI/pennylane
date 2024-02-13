@@ -113,22 +113,17 @@ class VSpace:
 
         # List all linearly independent ``PauliSentence`` objects. The first element
         # always is independent, and the initial rank will be 1, correspondingly.
-        self._basis = [generators[0]]
-        rank = 1
+        self._basis = []
+        rank = 0
 
-        # Sparse DOK-style array representing the basis (see docs above)
-        M = np.zeros((num_pw, rank), dtype=float)
-        # Add the values of the first basis vector (a PauliSentence instance) to the sparse array.
-        for pw, value in generators[0].items():
-            M[pw_to_idx[pw], 0] = value
-        self._M = M
+        self._M = np.zeros((num_pw, rank), dtype=float)
         self._pw_to_idx = pw_to_idx
         self._rank = rank
         self._num_pw = num_pw
 
         # Add the values of all other PauliSentence objects from the input to the sparse array,
         # but only if they are linearly independent from the previous objects.
-        self._basis = self.add(generators[1:])
+        self._basis = self.add(generators)
 
     @property
     def basis(self):
