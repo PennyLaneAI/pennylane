@@ -31,13 +31,9 @@ jobs:
   upload-stable-deps:
     needs: tests
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-tags: true
-          sparse-checkout: .github
 
       - name: Prepare local repo
         run: |
@@ -46,7 +42,7 @@ jobs:
           git config user.email "<>"
           if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
             git checkout "${{ env.DEPS_BRANCH }}"
-            git rebase origin/master
+            git merge origin/master
           else
             git checkout master
             git checkout -b "${{ env.DEPS_BRANCH }}"
