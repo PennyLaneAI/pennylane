@@ -203,44 +203,44 @@ class TestLieClosure:
 
     M0 = np.array(
         [
-            [1.0, 0.0, 0.5, 0.5, 1.0],  # non-matching zeros 2nd to last and last
-            [1.0, 0.5, 0.0, 1.0, 0.0],
-            [1.0, 0.5, 1.0, 2.0, 4.0],
+            [1.0, 0.5, 1.0],  # non-matching zeros 2nd to last and last
+            [1.0, 1.0, 0.0],
+            [1.0, 2.0, 4.0],
         ]
     )
     M1 = np.array(
         [
-            [1.0, 1.0, 0.0, 0.0, 1.0],  # non-matching zeros 2nd to last and last
-            [0.0, 1.0, 0.0, 1.0, 0.0],
-            [0.0, 4.0, 1.0, 0.0, 4.0],
+            [1.0, 0.0, 1.0],  # non-matching zeros 2nd to last and last
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 4.0],
         ]
     )
     M2 = np.array(
         [
-            [1.0, 0.0, 0.5, 0.5, 1.0],  # second-to-last col proportional to last -> True
-            [1.0, 0.5, 0.0, 0.0, 0.0],
-            [1.0, 0.5, 1.0, 2.0, 4.0],
+            [1.0, 0.5, 1.0],  # second-to-last col proportional to last -> True
+            [1.0, 0.0, 0.0],
+            [1.0, 2.0, 4.0],
         ]
     )
     M3 = np.array(
         [
-            [1.0, 0.0, 0.5, 0.5, -1.0],  # second-to-last col proportional to last -> True
-            [1.0, 0.5, 0.0, 0.0, 0.0],  # additional feature: minus signs reversed
-            [1.0, 0.5, 1.0, 2.0, -4.0],
+            [1.0, 0.5, -1.0],  # second-to-last col proportional to last -> True
+            [1.0, 0.0, 0.0],   # additional feature: minus signs reversed
+            [1.0, 2.0, -4.0],
         ]
     )
     M4 = np.array(
         [
-            [1.0, 0.0, 0.5, -0.5, 1.0],  # second-to-last col proportional to last -> True
-            [1.0, 0.5, 0.0, 0.0, 0.0],  # additional feature: minus signs reversed
-            [1.0, 0.5, 1.0, -2.0, 4.0],
+            [1.0, -0.5, 1.0],  # second-to-last col proportional to last -> True
+            [1.0, 0.0, 0.0],   # additional feature: minus signs reversed
+            [1.0, -2.0, 4.0],
         ]
     )
     M5 = np.array(
         [
-            [1.0, 0.0, 0.5, 0.5, -1.0],  # second-to-last col proportional to last -> True
-            [1.0, 0.5, 0.0, 0.0, 0.0],  # additional feature: minus signs opposites
-            [1.0, 0.5, 1.0, -2.0, 4.0],
+            [1.0, 0.5, -1.0],  # second-to-last col proportional to last -> True
+            [1.0, 0.0, 0.0],  # additional feature: minus signs opposites
+            [1.0, -2.0, 4.0],
         ]
     )
 
