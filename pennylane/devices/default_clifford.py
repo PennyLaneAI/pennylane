@@ -842,7 +842,14 @@ class DefaultClifford(Device):
 
     # pylint: disable=too-many-branches, too-many-statements
     def _measure_probability(self, meas, _, **kwargs):
-        """Measure the probability of each computational basis state."""
+        """Measure the probability of each computational basis state.
+
+        Computes the probability for each computational basis state vector. This is done by
+        building the complete basis using a vectorized integer to bit-array transformation.
+        Then, for each basis state, one iterates over each of the measured qubits, and checks
+        the possibility of that state and performs post-selection. If an impossible state is
+        encountered, the corresponding branches are tracked and marked in a visited-array.
+        """
         circuit = kwargs.get("circuit")
 
         # Set the target states
