@@ -426,8 +426,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `ctrl_decomp_zyz` is now differentiable after changing `isclose` to `allclose`.
+  [(#5198)](https://github.com/PennyLaneAI/pennylane/pull/5198)
+
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
-[(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
+  [(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
 
 * The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
   [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
