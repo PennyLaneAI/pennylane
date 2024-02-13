@@ -771,15 +771,21 @@ def _check_hermitian_operator(operators):
         or operators.shape[-2] != dim
         or not np.log2(dim).is_integer()
     ):
-        print("State vector must be of shape (2**wires,) or (batch_dim, 2**wires)")
+        raise ValueError("Operator matrix must be of shape (2**wires,) or (batch_dim, 2**wires)")
 
-    for ops in operators:
-        conj_trans = np.transpose(np.conj(ops))
-        if not np.allclose(ops, conj_trans):
-            raise ValueError("The matrix is not Hermitian.")
+    if len(operators.shape) == 2:
+        operators = qml.math.stack([operators])
+
+    if not is_abstract(operators):
+        for ops in operators:
+            conj_trans = np.transpose(np.conj(ops))
+            if not allclose(ops, conj_trans):
+                raise ValueError("The matrix is not Hermitian.")
 
 
-def expectation_value(operator_matrix, state_vector, check_state=False, check_operator=False):
+def expectation_value(
+    operator_matrix, state_vector, check_state=False, check_operator=False, c_dtype="complex128"
+):
     r"""Compute the expectation value of an operator with respect to a pure state.
 
     The expectation value is the probabilistic expected result of an experiment.
@@ -815,10 +821,8 @@ def expectation_value(operator_matrix, state_vector, check_state=False, check_op
     .. seealso:: :func:`pennylane.math.fidelity`
 
     """
-    if isinstance(state_vector, (list, tuple, int, float, complex)):
-        state_vector = np.asarray(state_vector)
-    if isinstance(operator_matrix, (list, tuple, int, float, complex)):
-        operator_matrix = np.asarray(operator_matrix)
+    state_vector = cast(state_vector, dtype=c_dtype)
+    operator_matrix = cast(operator_matrix, dtype=c_dtype)
 
     if check_state:
         _check_state_vector(state_vector)
