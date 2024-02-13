@@ -156,7 +156,7 @@ class TestPauliWord:
         pw = PauliWord({0: I, 1: X, 2: Y})
         assert 3 not in pw.keys()
         assert pw[3] == I
-    
+
     @pytest.mark.parametrize("pw", words)
     def test_trivial_pauli_rep(self, pw):
         """Test the pauli_rep property of PauliWord instances"""
@@ -535,7 +535,7 @@ class TestPauliSentence:
         true_wires = pw.wires
         ps = PauliSentence({pw: 1.0})
         assert ps.wires == true_wires
-    
+
     @pytest.mark.parametrize("ps", sentences)
     def test_trivial_pauli_rep(self, ps):
         """Test the pauli_rep property of PauliSentence instances"""

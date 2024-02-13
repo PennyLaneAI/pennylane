@@ -45,7 +45,9 @@ def lie_closure(
         commutators (Lie closure).
     """
     if not all(isinstance(op, PauliSentence) for op in generators):
-        generators = [prep_i := op.pauli_rep if prep_i else qml.pauli.pauli_sentence(op) for op in generators]
+        generators = [
+            prep_i := op.pauli_rep if prep_i else qml.pauli.pauli_sentence(op) for op in generators
+        ]
 
     vspace = VSpace(generators)
 

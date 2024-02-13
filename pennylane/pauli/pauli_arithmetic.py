@@ -189,11 +189,11 @@ class PauliWord(dict):
             if op == I:
                 del mapping[wire]
         super().__init__(mapping)
-    
+
     @property
     def pauli_rep(self):
         """Trivial pauli_rep property"""
-        return PauliSentence({self: 1.})
+        return PauliSentence({self: 1.0})
 
     def __reduce__(self):
         """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
@@ -596,7 +596,7 @@ class PauliSentence(dict):
         """If the PauliWord is not in the sentence then the coefficient
         associated with it should be 0."""
         return 0.0
-    
+
     @property
     def pauli_rep(self):
         """Trivial pauli_rep property"""
