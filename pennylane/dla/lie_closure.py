@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ class VSpace:
 
     **Example**
 
-    Take the linearly dependent set of operators and span the vspace.
+    Take the linearly dependent set of operators and span the VSpace.
 
     .. code-block::python3
         ops = [
@@ -135,7 +135,7 @@ class VSpace:
 
         vspace = VSpace(ops)
 
-    It automatically detects that the third operator is lienarly dependent on the former two, so it is not added to the basis.
+    It automatically detects that the third operator is linearly dependent on the former two, so it does not add the third operator to the basis.
 
     >>> vspace.basis
     [1.0 * X(0) @ X(1)
@@ -165,26 +165,18 @@ class VSpace:
         all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
         num_pw = len(all_pws)
         # Create a dictionary mapping from PauliWord to row index
-        pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
+        self._pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
 
-        # List all linearly independent ``PauliSentence`` objects. The first element
-        # always is independent, and the initial rank will be 1, correspondingly.
-        self._basis = [generators[0]]
-        rank = 1
+        # Initialize VSpace properties trivially
+        self._basis = []
+        rank = 0
 
-        # Sparse DOK-style array representing the basis (see docs above)
-        M = np.zeros((num_pw, rank), dtype=float)
-        # Add the values of the first basis vector (a PauliSentence instance) to the sparse array.
-        for pw, value in generators[0].items():
-            M[pw_to_idx[pw], 0] = value
-        self._M = M
-        self._pw_to_idx = pw_to_idx
+        self._M = np.zeros((num_pw, rank), dtype=float)
         self._rank = rank
         self._num_pw = num_pw
 
-        # Add the values of all other PauliSentence objects from the input to the sparse array,
-        # but only if they are linearly independent from the previous objects.
-        self._basis = self.add(generators[1:])
+        # Add all generators that are linearly independent
+        self.add(generators)
 
     @property
     def basis(self):
@@ -296,9 +288,7 @@ class VSpace:
         rank1 = np.linalg.matrix_rank(self._M)
         rank2 = np.linalg.matrix_rank(other._M)
 
-        if rank1 == rank2:
-            return True
-        return False
+        return rank1 == rank2
 
 
 def _is_any_col_propto_last(inM):
