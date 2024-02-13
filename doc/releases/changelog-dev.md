@@ -121,6 +121,14 @@
         [1, 0, 0, 1, 1]])
   ```
 
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
+* Added new error tracking and propagation functionality. 
+  [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
+  [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
+
+
 <h3>Improvements 🛠</h3>
 
 <h4>Faster gradients with VJPs and other performance improvements</h4>
@@ -188,15 +196,22 @@
 
 <h4>Other improvements</h4>
 
+* `qml.dot` now returns a `Sum` class even when all the coefficients match.
+  [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
+
 * `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
   [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
 
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
+* Ensure the `BlockEncode` operator is JIT-compatible with JAX.
+  [(#5110)](https://github.com/PennyLaneAI/pennylane/pull/5110)
+
 * Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
+
 
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
@@ -279,6 +294,10 @@
 * Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
+
+* Users can specify a list of PennyLane `measurements` they would want as terminal measurements
+  when converting a `QuantumCircuit` using `qml.from_qiskit`.
+  [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
 <h3>Breaking changes 💔</h3>
 
@@ -412,6 +431,8 @@
 * A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
+* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
@@ -491,11 +512,13 @@ Abhishek Abhishek,
 Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
+Skylar Chan,
 Isaac De Vlugt,
 Diksha Dhawan,
 Lillian Frederiksen,
 Eugenio Gigante,
 Diego Guala,
+David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
@@ -509,4 +532,3 @@ Mudit Pandey,
 Alex Preciado,
 Matthew Silverman,
 Jay Soni.
-
