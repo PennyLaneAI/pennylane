@@ -293,6 +293,28 @@ class TestUnittestSplitNonCommuting:
         assert qml.equal(split[1].measurements[0], meas_type_2())
         assert qml.equal(split[1].measurements[1], meas_type_2(wires=[0, 1]))
 
+    def test_batch_of_tapes(self):
+        """Test that `split_non_commuting` can transform a batch of tapes"""
+
+        # create a batch with two fictitious tapes
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(1.2, 0)], [qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.X(1))]
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.RY(0.5, 0)], [qml.expval(qml.Z(0)), qml.expval(qml.Y(0))]
+        )
+        batch = [tape1, tape2]
+
+        # test transform on the batch
+        new_batch, _ = split_non_commuting(batch)
+
+        # test that result is equal to the one obtained with `map_batch_transform`
+        new_batch_check, _ = qml.transforms.map_batch_transform(split_non_commuting, batch)
+
+        # test that the two results are equal
+        assert len(new_batch) == len(new_batch_check)
+        assert all(qml.equal(tape1, tape2) for tape1, tape2 in zip(new_batch, new_batch_check))
+
 
 # measurements that require shots=True
 required_shot_meas_fn = [qml.sample, qml.counts]
