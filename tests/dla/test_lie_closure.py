@@ -318,11 +318,12 @@ class TestLieClosure:
         dla = gen + [
             PauliWord({0:"Y", 1:"X"}),
             PauliWord({0:"X", 1:"Y"}),
-            PauliWord({0:"Z", 1:"Z"}),
+            PauliWord({0:"Y", 1:"Y"}),
         ]
-        gen11 = dla[:-1]
-        res11 = lie_closure(gen11)
-        assert VSpace(res11) == VSpace(dla11)
+        dla = [op.pauli_rep for op in dla]
+        
+        res = lie_closure(gen)
+        assert VSpace(res) == VSpace(dla)
 
     @pytest.mark.parametrize("n", range(2, 5))
     def test_lie_closure_transverse_field_ising_1D_open(self, n):
