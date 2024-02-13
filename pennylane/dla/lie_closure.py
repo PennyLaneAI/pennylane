@@ -283,6 +283,23 @@ class VSpace:
     def __repr__(self):
         return str(self.basis)
 
+    def __eq__(self, other):
+        """
+        Two VSpaces are equivalent when they span the same dimensional space.
+        This is checked here by having matching PauliWord keys in the sparse DOK representation and having the same rank.
+        """
+        if not self._num_pw == other._num_pw:
+            return False
+        if not set(self._pw_to_idx.keys()) == set(other._pw_to_idx.keys()):
+            return False
+
+        rank1 = np.linalg.matrix_rank(self._M)
+        rank2 = np.linalg.matrix_rank(other._M)
+
+        if rank1 == rank2:
+            return True
+        return False
+
 
 def _is_any_col_propto_last(inM):
     """Given a 2D matrix M, check if any column is proportional to the last column
