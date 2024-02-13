@@ -267,16 +267,6 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
             wires=control + op.wires, control_values=control_values, work_wires=work_wires
         )
 
-    # TODO: remove special handling of CNOT and Toffoli when they inherit from Controlled
-    if isinstance(op, qml.CNOT):
-        return qml.MultiControlledX(
-            wires=control + op.wires, control_values=control_values + [1], work_wires=work_wires
-        )
-    if isinstance(op, qml.Toffoli):
-        return qml.MultiControlledX(
-            wires=control + op.wires, control_values=control_values + [1, 1], work_wires=work_wires
-        )
-
     work_wires = work_wires or []
     return qml.MultiControlledX(
         wires=control + op.wires,
