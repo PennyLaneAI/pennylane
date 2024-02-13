@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ class VSpace:
 
         vspace = VSpace(ops)
 
-    It automatically detects that the third operator is lienarly dependent on the former two, so it is not added to the basis.
+    It automatically detects that the third operator is linearly dependent on the former two, so it does not add the third operator to the basis.
 
     >>> vspace.basis
     [1.0 * X(0) @ X(1)
@@ -232,9 +232,7 @@ class VSpace:
         rank1 = np.linalg.matrix_rank(self._M)
         rank2 = np.linalg.matrix_rank(other._M)
 
-        if rank1 == rank2:
-            return True
-        return False
+        return rank1 == rank2
 
 
 def _is_any_col_propto_last(inM):
