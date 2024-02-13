@@ -225,14 +225,14 @@ class TestLieClosure:
     M3 = np.array(
         [
             [1.0, 0.5, -1.0],  # second-to-last col proportional to last -> True
-            [1.0, 0.0, 0.0],   # additional feature: minus signs reversed
+            [1.0, 0.0, 0.0],  # additional feature: minus signs reversed
             [1.0, 2.0, -4.0],
         ]
     )
     M4 = np.array(
         [
             [1.0, -0.5, 1.0],  # second-to-last col proportional to last -> True
-            [1.0, 0.0, 0.0],   # additional feature: minus signs reversed
+            [1.0, 0.0, 0.0],  # additional feature: minus signs reversed
             [1.0, -2.0, 4.0],
         ]
     )
