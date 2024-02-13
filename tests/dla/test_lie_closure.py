@@ -17,6 +17,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import X, Y, Z
 from pennylane.dla import lie_closure
 from pennylane.dla.lie_closure import VSpace, _is_any_col_propto_last
 from pennylane.pauli import PauliWord, PauliSentence
@@ -198,6 +199,18 @@ class TestLieClosure:
         gen12 = dla12[:-1]
         res12 = lie_closure(gen12)
         assert res12 == dla12
+    
+    def test_lie_closure_with_pl_ops(self):
+        """Test that lie_closure works properly with PennyLane ops instead of PauliSentences"""
+        dla11 = [
+            qml.sum(qml.prod(X(0), X(1)), qml.prod(Y(0), Y(1))),
+            Z(0),
+            Z(1),
+            qml.sum(qml.prod(Y(0), X(1)), qml.s_prod(-1., qml.prod(X(0), Y(1))))
+        ]
+        gen11 = dla11[:-1]
+        res11 = lie_closure(gen11)
+        assert set([_.operation() for _ in res11]) == set(dla11)
 
     @pytest.mark.parametrize("n", range(2, 5))
     def test_lie_closure_transverse_field_ising_1D_open(self, n):
@@ -241,7 +254,7 @@ class TestLieClosure:
         res = qml.dla.lie_closure(generators)
         len(res) == (2 ** (n - 1)) ** 2 - 1
 
-    def test_lie_closure_heisenberg_generators_odd(self):
+    def test_lie_closure_heisenberg_generators_even(self):
         """Test the resulting DLA from Heisenberg generators with odd n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
         n = 4
         # dim of su(N) is N ** 2 - 1
