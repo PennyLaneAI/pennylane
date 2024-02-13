@@ -303,7 +303,7 @@ class TestUnittestSplitNonCommuting:
         tape2 = qml.tape.QuantumScript(
             [qml.RY(0.5, 0)], [qml.expval(qml.Z(0)), qml.expval(qml.Y(0))]
         )
-        batch = [tape1, tape2]
+        batch = batch_type([tape1, tape2])
 
         # test transform on the batch
         new_batch, _ = split_non_commuting(batch)
