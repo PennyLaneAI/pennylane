@@ -124,6 +124,7 @@ def _process_counts_samples(mp, samples, wires):
     return dict(zip(observables, counts))
 
 
+# pylint:disable = too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
     mps: List[Union[SampleMP, CountsMP]],
     state: np.ndarray,
@@ -200,7 +201,6 @@ def _measure_with_samples_diagonalizing_gates(
     return _process_single_shot(samples)
 
 
-# pylint:disable = too-many-arguments
 def _sample_state_jax(
     state,
     shots: int,
