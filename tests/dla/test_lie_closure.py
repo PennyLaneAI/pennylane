@@ -200,6 +200,21 @@ class TestVSpace:
         assert not vspace1 == vspace2
 
 
+dla11 = [
+        PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
+        PauliSentence(
+            {
+                PauliWord({0: "Z"}): 1.0,
+            }
+        ),
+        PauliSentence(
+            {
+                PauliWord({1: "Z"}): 1.0,
+            }
+        ),
+        PauliSentence({PauliWord({0: "Y", 1: "X"}): -1.0, PauliWord({0: "X", 1: "Y"}): 1.0}),
+    ]
+
 class TestLieClosure:
     """Tests for qml.dla.lie_closure()"""
 
@@ -262,20 +277,6 @@ class TestLieClosure:
 
     def test_simple_lie_closure(self):
         """Test simple lie_closure example"""
-        dla11 = [
-            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
-            PauliSentence(
-                {
-                    PauliWord({0: "Z"}): 1.0,
-                }
-            ),
-            PauliSentence(
-                {
-                    PauliWord({1: "Z"}): 1.0,
-                }
-            ),
-            PauliSentence({PauliWord({0: "Y", 1: "X"}): -1.0, PauliWord({0: "X", 1: "Y"}): 1.0}),
-        ]
         gen11 = dla11[:-1]
         res11 = lie_closure(gen11)
         assert res11 == dla11
@@ -296,15 +297,15 @@ class TestLieClosure:
     
     def test_lie_closure_with_pl_ops(self):
         """Test that lie_closure works properly with PennyLane ops instead of PauliSentences"""
-        dla11 = [
+        dla = [
             qml.sum(qml.prod(X(0), X(1)), qml.prod(Y(0), Y(1))),
             Z(0),
             Z(1),
             qml.sum(qml.prod(Y(0), X(1)), qml.s_prod(-1., qml.prod(X(0), Y(1))))
         ]
-        gen11 = dla11[:-1]
+        gen11 = dla[:-1]
         res11 = lie_closure(gen11)
-        assert set([_.operation() for _ in res11]) == set(dla11)
+        assert VSpace(res11) == VSpace(dla11)
 
     @pytest.mark.parametrize("n", range(2, 5))
     def test_lie_closure_transverse_field_ising_1D_open(self, n):
