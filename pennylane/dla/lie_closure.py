@@ -61,7 +61,7 @@ class VSpace:
 
     **Example**
 
-    Take the linearly dependent set of operators and span the vspace.
+    Take the linearly dependent set of operators and span the VSpace.
 
     .. code-block::python3
         ops = [
