@@ -177,8 +177,8 @@
 * A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
   [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
 
-* Functions called `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
- `qml.devices` that samples observables and the computational basis on device-compatible states, it can also be used to count the samples.
+* Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
+ `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
   [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
 
 <h4>Other improvements</h4>
