@@ -14,7 +14,6 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
-import pennylane as qml
 from pennylane.ops import Controlled, Conditional
 from pennylane.measurements import MeasurementProcess, MidMeasureMP, MeasurementValue
 

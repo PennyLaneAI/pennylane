@@ -253,7 +253,7 @@ class CH(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
 
@@ -555,7 +555,7 @@ class CSWAP(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -683,7 +683,7 @@ class CCZ(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -937,7 +937,7 @@ class Toffoli(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
