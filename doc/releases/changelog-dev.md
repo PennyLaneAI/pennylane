@@ -492,6 +492,9 @@
   operators have a valid `pauli_rep` property.
   [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
 
+* A `QNode` transformed with `mitigate_with_zne` now accepts batch parameters.
+  [(#5195)](https://github.com/PennyLaneAI/pennylane/pull/5195)
+
 
 <h3>Contributors ✍️</h3>
 
