@@ -353,7 +353,6 @@ class CZ(ControlledOp):
 
 
 def _check_and_convert_control_values(control_values, control_wires):
-
     if isinstance(control_values, str):
         # Make sure all values are either 0 or 1
         if not set(control_values).issubset({"1", "0"}):

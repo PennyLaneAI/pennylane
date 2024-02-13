@@ -74,7 +74,7 @@ def _bisect_compute_a(u: np.ndarray):
     z = u[1, 1]
     zr = np.real(z)
     zi = np.imag(z)
-    if np.isclose(zr, -1):
+    if np.allclose(zr, -1):
         # special case [[-1, 0], [0, -1]]
         # would cause divide by 0 with the other formula, so we use hardcoded solution
         return np.array([[1, -1], [1, 1]]) * 2**-0.5
@@ -99,9 +99,9 @@ def _bisect_compute_b(u: np.ndarray):
     w = np.real(u[0, 0])
     s = np.real(u[1, 0])
     t = np.imag(u[1, 0])
-    if np.isclose(s, 0):
+    if np.allclose(s, 0):
         b = 0
-        if np.isclose(t, 0):
+        if np.allclose(t, 0):
             if w < 0:
                 c = 0
                 d = sqrt(-w)
@@ -111,7 +111,7 @@ def _bisect_compute_b(u: np.ndarray):
         else:
             c = sqrt(2 - 2 * w) * (-w / 2 - 1 / 2) / t
             d = sqrt(2 - 2 * w) / 2
-    elif np.isclose(t, 0):
+    elif np.allclose(t, 0):
         b = (1 / 2 - w / 2) * sqrt(2 * w + 2) / s
         c = sqrt(2 * w + 2) / 2
         d = 0
@@ -193,9 +193,9 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     decomp = []
 
-    if not qml.math.isclose(0.0, phi, atol=1e-8, rtol=0):
+    if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
         decomp.append(qml.RZ(phi, wires=target_wire))
-    if not qml.math.isclose(0.0, theta / 2, atol=1e-8, rtol=0):
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
         decomp.extend(
             [
                 qml.RY(theta / 2, wires=target_wire),
@@ -205,10 +205,10 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         )
     else:
         decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
-    if not qml.math.isclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
+    if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
         decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
     decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
-    if not qml.math.isclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
+    if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
         decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
 
     return decomp
@@ -245,7 +245,7 @@ def _ctrl_decomp_bisect_od(
 
     """
     ui = np.imag(u)
-    if not np.isclose(ui[1, 0], 0) or not np.isclose(ui[0, 1], 0):
+    if not np.allclose(ui[1, 0], 0) or not np.allclose(ui[0, 1], 0):
         raise ValueError(f"Target operation's matrix must have real off-diagonal, but it is {u}")
 
     a = _bisect_compute_a(u)
@@ -296,7 +296,7 @@ def _ctrl_decomp_bisect_md(
 
     """
     ui = np.imag(u)
-    if not np.isclose(ui[0, 0], 0) or not np.isclose(ui[1, 1], 0):
+    if not np.allclose(ui[0, 0], 0) or not np.allclose(ui[1, 1], 0):
         raise ValueError(f"Target operation's matrix must have real main-diagonal, but it is {u}")
 
     h_matrix = qml.Hadamard.compute_matrix()
@@ -431,10 +431,10 @@ def ctrl_decomp_bisect(
     target_matrix = _convert_to_su2(target_matrix)
     target_matrix_imag = np.imag(target_matrix)
 
-    if np.isclose(target_matrix_imag[1, 0], 0) and np.isclose(target_matrix_imag[0, 1], 0):
+    if np.allclose(target_matrix_imag[1, 0], 0) and np.allclose(target_matrix_imag[0, 1], 0):
         # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs
         return _ctrl_decomp_bisect_od(target_matrix, target_wire, control_wires)
-    if np.isclose(target_matrix_imag[0, 0], 0) and np.isclose(target_matrix_imag[1, 1], 0):
+    if np.allclose(target_matrix_imag[0, 0], 0) and np.allclose(target_matrix_imag[1, 1], 0):
         # Real main-diagonal specialized algorithm - 16n+O(1) CNOTs
         return _ctrl_decomp_bisect_md(target_matrix, target_wire, control_wires)
     # General algorithm - 20n+O(1) CNOTs
