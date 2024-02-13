@@ -126,8 +126,8 @@ class TrotterProduct(Operation):
 
     .. warning::
 
-        Two mathematically equivalent :class:`~.Hamiltonian` objects may undergo different time evolutions
-        due to the order in which the observables are stored.
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
+        due to the order in which those observables are stored.
 
     .. details::
         :title: Usage Details
