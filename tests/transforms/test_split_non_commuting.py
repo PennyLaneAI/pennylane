@@ -293,7 +293,8 @@ class TestUnittestSplitNonCommuting:
         assert qml.equal(split[1].measurements[0], meas_type_2())
         assert qml.equal(split[1].measurements[1], meas_type_2(wires=[0, 1]))
 
-    def test_batch_of_tapes(self):
+    @pytest.mark.parametrize("batch_type", (tuple, list))
+    def test_batch_of_tapes(self, batch_type):
         """Test that `split_non_commuting` can transform a batch of tapes"""
 
         # create a batch with two fictitious tapes
@@ -303,6 +304,7 @@ class TestUnittestSplitNonCommuting:
         tape2 = qml.tape.QuantumScript(
             [qml.RY(0.5, 0)], [qml.expval(qml.Z(0)), qml.expval(qml.Y(0))]
         )
+
         batch = batch_type([tape1, tape2])
 
         # test transform on the batch
