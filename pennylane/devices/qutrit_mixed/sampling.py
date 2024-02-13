@@ -97,8 +97,8 @@ def _process_samples(
 
     # Replace the basis state in the computational basis with the correct eigenvalue.
     # Extract only the columns of the basis samples required based on ``wires``.
-    powers_of_two = QUDIT_DIM ** qml.math.arange(num_wires)[::-1]
-    indices = samples @ powers_of_two
+    powers_of_three = QUDIT_DIM ** qml.math.arange(num_wires)[::-1]
+    indices = samples @ powers_of_three
     indices = qml.math.array(indices)  # Add np.array here for Jax support.
     try:
         # This also covers statistics for mid-circuit measurements manipulated using
