@@ -225,6 +225,7 @@ class MidMeasureMP(MeasurementProcess):
         postselect: Optional[int] = None,
         id: Optional[str] = None,
     ):
+        self.batch_size = None
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect

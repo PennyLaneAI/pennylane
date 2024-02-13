@@ -148,7 +148,9 @@ class PauliWord(dict):
     .. note::
 
         An empty :class:`~.PauliWord` will be treated as the multiplicative
-        identity (i.e identity on all wires).
+        identity (i.e identity on all wires). Its matrix is the identity matrix
+        (trivially the :math:`1\times 1` one matrix when no ``wire_order`` is passed to
+        ``PauliWord({}).to_mat()``).
 
     **Examples**
 
@@ -428,12 +430,11 @@ class PauliWord(dict):
             )
 
         if len(self) == 0:
-            if not wire_order:
-                raise ValueError("Can't get the matrix of an empty PauliWord.")
+            n = len(wire_order) if wire_order is not None else 0
             return (
-                np.diag([coeff] * 2 ** len(wire_order))
+                np.diag([coeff] * 2**n)
                 if format == "dense"
-                else coeff * sparse.eye(2 ** len(wire_order), format=format, dtype="complex128")
+                else coeff * sparse.eye(2**n, format=format, dtype="complex128")
             )
 
         if format == "dense":
@@ -539,7 +540,9 @@ class PauliSentence(dict):
     .. note::
 
         An empty :class:`~.PauliSentence` will be treated as the additive
-        identity (i.e 0 * Identity on all wires).
+        identity (i.e ``0 * Identity()``). Its matrix is the all-zero matrix
+        (trivially the :math:`1\times 1` zero matrix when no ``wire_order`` is passed to
+        ``PauliSentence({}).to_mat()``).
 
     **Examples**
 
@@ -567,7 +570,7 @@ class PauliSentence(dict):
     >>> PauliSentence({})
     0 * I
 
-    We can compute commutators using the `PauliSentence.commutator()` method
+    We can compute commutators using the ``PauliSentence.commutator()`` method
 
     >>> op1 = PauliWord({0:"X", 1:"X"})
     >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
@@ -576,6 +579,7 @@ class PauliSentence(dict):
     + 2j * X(0) @ Z(1)
 
     Or, alternatively, use :func:`~commutator`.
+
     >>> qml.commutator(op1, op2, pauli=True)
 
     Note that we need to specify ``pauli=True`` as :func:`~.commutator` returns PennyLane operators by default.
@@ -833,11 +837,10 @@ class PauliSentence(dict):
             return w or Wires(self.wires[0]) if self.wires else self.wires
 
         if len(self) == 0:
-            if not wire_order:
-                raise ValueError("Can't get the matrix of an empty PauliSentence.")
+            n = len(wire_order) if wire_order is not None else 0
             if format == "dense":
-                return np.eye(2 ** len(wire_order))
-            return sparse.eye(2 ** len(wire_order), format=format, dtype="complex128")
+                return np.zeros((2**n, 2**n))
+            return sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
         if format != "dense":
             return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
