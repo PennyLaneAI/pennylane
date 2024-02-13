@@ -462,6 +462,7 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Ludmila Botelho,
 Gabriel Bottrill,
 Astral Cai,
 Isaac De Vlugt,
