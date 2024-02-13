@@ -497,6 +497,9 @@
 * Controlled `GlobalPhase` with non-zero control wire no longer throws an error.
   [(#5194)](https://github.com/PennyLaneAI/pennylane/pull/5194)
 
+* A `QNode` transformed with `mitigate_with_zne` now accepts batch parameters.
+  [(#5195)](https://github.com/PennyLaneAI/pennylane/pull/5195)
+
 * The matrix of an empty `PauliSentence` instance is now correct (all-zeros).
   Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
   [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
