@@ -422,6 +422,8 @@
 * A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
+* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
@@ -495,6 +497,9 @@
 * A `QNode` transformed with `mitigate_with_zne` now accepts batch parameters.
   [(#5195)](https://github.com/PennyLaneAI/pennylane/pull/5195)
 
+* The matrix of an empty `PauliSentence` instance is now correct (all-zeros).
+  Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
+  [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
 <h3>Contributors ✍️</h3>
 
@@ -504,6 +509,7 @@ Abhishek Abhishek,
 Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
+Skylar Chan,
 Isaac De Vlugt,
 Diksha Dhawan,
 Lillian Frederiksen,
