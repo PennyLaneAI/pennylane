@@ -125,6 +125,43 @@ def test_accumulate_native_mcm_unsupported_error():
         accumulate_native_mcm(qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None])
 
 
+def test_all_invalid_shots_circuit():
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit_op():
+        m = qml.measure(0, postselect=1)
+        qml.cond(m, qml.PauliX)(1)
+        return (
+            qml.expval(op=qml.PauliZ(1)),
+            qml.probs(op=qml.PauliY(0) @ qml.PauliZ(1)),
+            qml.var(op=qml.PauliZ(1)),
+        )
+
+    res1 = circuit_op()
+    res2 = circuit_op(shots=10)
+    for r1, r2 in zip(res1, res2):
+        if isinstance(r1, Sequence):
+            assert len(r1) == len(r2)
+        assert np.all(np.isnan(r1))
+        assert np.all(np.isnan(r2))
+
+    @qml.qnode(dev)
+    def circuit_mcm():
+        m = qml.measure(0, postselect=1)
+        qml.cond(m, qml.PauliX)(1)
+        return qml.expval(op=m), qml.probs(op=m), qml.var(op=m)
+
+    res1 = circuit_mcm()
+    res2 = circuit_mcm(shots=10)
+    for r1, r2 in zip(res1, res2):
+        if isinstance(r1, Sequence):
+            assert len(r1) == len(r2)
+        assert np.all(np.isnan(r1))
+        assert np.all(np.isnan(r2))
+
+
 @pytest.mark.parametrize(
     "measurement",
     [

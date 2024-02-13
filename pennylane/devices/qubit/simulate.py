@@ -15,6 +15,7 @@
 # pylint: disable=protected-access
 from collections import Counter
 from typing import Optional, Sequence
+import warnings
 
 from numpy.random import default_rng
 import numpy as np
@@ -299,15 +300,21 @@ def simulate_native_mcm(
             results.append(simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface))
         return tuple(results)
     aux_circuit = init_auxiliary_circuit(circuit)
-    all_shot_meas, list_mcm_values_dict = None, []
+    all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
     for _ in range(circuit.shots.total_shots):
         one_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
             aux_circuit, rng, prng_key, debugger, interface
         )
         if one_shot_meas is None:
             continue
+        valid_shots += 1
         all_shot_meas = accumulate_native_mcm(aux_circuit, all_shot_meas, one_shot_meas)
         list_mcm_values_dict.append(mcm_values_dict)
+    if not valid_shots:
+        warnings.warn(
+            "All shots were thrown away as invalid. This can happen for example when post-selecting the 1-branch of a 0-state. Make sure your circuit has some probability of producing a valid shot.",
+            UserWarning,
+        )
     return parse_native_mid_circuit_measurements(circuit, all_shot_meas, list_mcm_values_dict)
 
 
@@ -432,14 +439,26 @@ def parse_native_mid_circuit_measurements(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
+
+    def fun_return_empty_shots(measurement):
+        return (
+            np.nan * np.ones_like(measurement.eigvals())
+            if isinstance(measurement, ProbabilityMP)
+            else np.nan
+        )
+
     normalized_meas = []
     for i, m in enumerate(circuit.measurements):
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise ValueError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
-        if m.mv:
+        if m.mv and not mcm_shot_meas:
+            meas = fun_return_empty_shots(m)
+        elif m.mv:
             meas = gather_mcm(m, mcm_shot_meas)
+        elif all_shot_meas is None:
+            meas = fun_return_empty_shots(m)
         else:
             meas = gather_non_mcm(m, all_shot_meas[i], mcm_shot_meas)
         if isinstance(m, SampleMP):
