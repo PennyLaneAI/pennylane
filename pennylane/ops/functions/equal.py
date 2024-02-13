@@ -177,18 +177,6 @@ def _equal(
 
 
 @_equal.register
-def _equal_identity(
-    op1: qml.Identity,
-    op2: qml.Identity,
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
-):
-    return True
-
-
-@_equal.register
 def _equal_circuit(
     op1: qml.tape.QuantumScript,
     op2: qml.tape.QuantumScript,
@@ -245,6 +233,9 @@ def _equal_operators(
         op2, type(op1)
     ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
         return False
+
+    if isinstance(op1, qml.Identity):
+        return True
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
