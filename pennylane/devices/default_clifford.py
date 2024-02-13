@@ -17,25 +17,23 @@ This module contains the Clifford simulator using ``stim``.
 
 from dataclasses import replace
 from functools import partial
-from numbers import Number
 from typing import Union, Tuple, Sequence
 import concurrent.futures
 import numpy as np
 
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 from pennylane.measurements import ExpectationMP, StateMP, DensityMatrixMP, PurityMP
-from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 
 from .default_qubit import accepted_sample_measurement
-
+from .modifiers import convert_single_circuit_to_batch, simulator_tracking
 from .preprocess import (
     decompose,
     validate_observables,
@@ -112,6 +110,8 @@ def _import_stim():
     return stim
 
 
+@simulator_tracking
+@convert_single_circuit_to_batch
 class DefaultClifford(Device):
     r"""A PennyLane device for fast simulation of Clifford circuits using
     `stim <https://github.com/quantumlib/stim/>`_.
@@ -340,48 +340,20 @@ class DefaultClifford(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            results = tuple(self.simulate(c, debugger=self._debugger) for c in circuits)
-        else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            _wrap_simulate = partial(self.simulate, debugger=None)
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                exec_map = executor.map(_wrap_simulate, vanilla_circuits)
-                results = tuple(exec_map)
+            return tuple(self.simulate(c, debugger=self._debugger) for c in circuits)
 
-            # reset _rng to mimic serial behavior - TODO: uncomment when using RNG
-            # self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        _wrap_simulate = partial(self.simulate, debugger=None)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            exec_map = executor.map(_wrap_simulate, vanilla_circuits)
+            results = tuple(exec_map)
 
-        if self.tracker.active:
-            self.tracker.update(batches=1)
-            self.tracker.record()
-            for i, c in enumerate(circuits):
-                qpu_executions, shots = get_num_shots_and_executions(c)
-                res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
-                if c.shots:  # pragma: no cover
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        shots=shots,
-                        resources=c.specs["resources"],
-                    )
-                else:
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        resources=c.specs["resources"],
-                    )
-                self.tracker.record()
+        # reset _rng to mimic serial behavior - TODO: uncomment when using RNG
+        # self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-        return results[0] if is_single_circuit else results
+        return results
 
     # pylint:disable=no-member
     def simulate(

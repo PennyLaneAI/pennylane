@@ -84,6 +84,31 @@ Other transforms that may be relevant to device preprocessing include:
     transforms.split_non_commuting
     transforms.hamiltonian_expand
 
+
+Modifiers
+---------
+
+The ``modifiers`` allow for the easy addition to default behavior 
+
+.. currentmodule:: pennylane.devices.modifiers
+.. autosummary::
+    :toctree: api
+
+    convert_single_circuit_to_batch
+    simulator_tracking
+
+For example with a custom device we can add simulator-style tracking and the ability to handle a single circuit.
+
+.. code-block:: python
+
+    @simulator_tracking
+    @convert_single_circuit_to_batch
+    class MyDevice(qml.devices.Device):
+
+        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+            return tuple(0.0 for _ in circuits)
+
+
 Qubit Simulation Tools
 ----------------------
 
