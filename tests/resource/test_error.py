@@ -17,7 +17,7 @@ Test base AlgorithmicError class and its associated methods.
 import pytest
 
 import pennylane as qml
-from pennylane.resource.error import AlgorithmicError
+from pennylane.resource.error import AlgorithmicError, ErrorOperation
 
 
 class SimpleError(AlgorithmicError):
@@ -45,7 +45,6 @@ class TestAlgorithmicError:
 
     def test_combine_not_implemented(self):
         """Test can't instantiate Error if the combine method is not defined."""
-
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
 
             class ErrorNoCombine(AlgorithmicError):  # pylint: disable=too-few-public-methods
@@ -81,3 +80,27 @@ class TestAlgorithmicError:
 
         res = SimpleError.get_error(approx_op, exact_op)
         assert res == 0.5
+
+
+class TestErrorOperation:  # pylint: disable=too-few-public-methods
+    """Test the base ErrorOperation class."""
+
+    def test_error_method(self):
+        """Test that error method works as expected"""
+
+        class SimpleErrorOperation(ErrorOperation):  # pylint: disable=too-few-public-methods
+            @property
+            def error(self):
+                return len(self.wires)
+
+        no_error_op = SimpleErrorOperation(wires=[1, 2, 3])
+        assert no_error_op.error == 3
+
+    def test_no_error_method(self):
+        """Test error is raised if the error method is not defined."""
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+
+            class NoErrorOp(ErrorOperation):  # pylint: disable=too-few-public-methods
+                num_wires = 3
+
+            _ = NoErrorOp(wires=[1, 2, 3])
