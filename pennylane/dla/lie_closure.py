@@ -226,6 +226,19 @@ class VSpace:
 
     def __repr__(self):
         return str(self.basis)
+    
+    def __eq__(self, other):
+        if not self._num_pw == other._num_pw:
+            return False
+        if not self._pw_to_idx == other._pw_to_idx:
+            return False
+
+        rank1 = np.linalg.matrix_rank(self._M)
+        rank2 = np.linalg.matrix_rank(other._M)
+
+        if rank1 == rank2:
+            return True
+        return False
 
 
 def _is_any_col_propto_last(inM):

@@ -102,6 +102,76 @@ class TestVSpace:
         assert len_after_adding != len_before_adding
         assert len_after_adding == len(true_new_basis)
         assert len_before_adding == len_basis_before_adding
+    
+    def test_eq_True(self):
+        """Test that equivalent vspaces are correctly determined"""
+        gens1 = [
+            PauliSentence({PauliWord({0:"X"}): 1.}),
+            PauliSentence({PauliWord({0:"Y"}): 1.}),
+            PauliSentence({PauliWord({0:"Z"}): 1.}),
+        ]
+
+        gens2 = [
+            PauliSentence({PauliWord({0:"Z"}): 1., PauliWord({0:"Y"}): 1.}),
+            PauliSentence({PauliWord({0:"X"}): 1., PauliWord({0:"Z"}): 1.}),
+            PauliSentence({PauliWord({0:"Y"}): 1.}),
+        ]
+
+        vspace1 = VSpace(gens1)
+        vspace2 = VSpace(gens2)
+        assert vspace1 == vspace2
+    
+    def test_eq_False0(self):
+        """Test that equivalent vspaces are correctly determined"""
+        gens1 = [
+            PauliSentence({PauliWord({0:"X"}): 1.}),
+            PauliSentence({PauliWord({0:"Y"}): 1.}),
+            PauliSentence({PauliWord({0:"Z"}): 1.}),
+        ]
+
+        gens2 = [
+            PauliSentence({PauliWord({0:"Z"}): 1.}),
+            PauliSentence({PauliWord({0:"X"}): 1., PauliWord({0:"Z"}): 1.}),
+        ]
+
+        vspace1 = VSpace(gens1)
+        vspace2 = VSpace(gens2)
+        assert not vspace1 == vspace2
+    
+    def test_eq_False1(self):
+        """Test that equivalent vspaces are correctly determined"""
+        gens1 = [
+            PauliSentence({PauliWord({0:"X"}): 1.}),
+            PauliSentence({PauliWord({0:"Y"}): 1.}),
+            PauliSentence({PauliWord({0:"Z"}): 1.}),
+        ]
+
+        gens2 = [
+            PauliSentence({PauliWord({1:"Z"}): 1.}),
+            PauliSentence({PauliWord({1:"X"}): 1., PauliWord({1:"Z"}): 1.}),
+        ]
+
+        vspace1 = VSpace(gens1)
+        vspace2 = VSpace(gens2)
+        assert not vspace1 == vspace2
+    
+    def test_eq_False2(self):
+        """Test that equivalent vspaces are correctly determined"""
+        gens1 = [
+            PauliSentence({PauliWord({0:"X"}): 1.}),
+            PauliSentence({PauliWord({0:"Y"}): 1.}),
+            PauliSentence({PauliWord({0:"Z"}): 1.}),
+        ]
+
+        gens2 = [
+            PauliSentence({PauliWord({1:"Z"}): 1., PauliWord({0:"Y"}): 1.}),
+            PauliSentence({PauliWord({0:"X"}): 1., PauliWord({1:"Z"}): 1.}),
+            PauliSentence({PauliWord({0:"Y"}): 1.}),
+        ]
+
+        vspace1 = VSpace(gens1)
+        vspace2 = VSpace(gens2)
+        assert vspace1 == vspace2
 
 
 class TestLieClosure:
