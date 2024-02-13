@@ -76,22 +76,12 @@ def _apply_diagonalizing_gates(
     return state
 
 
-def _process_counts_samples(mp, samples, wires):
-    """Processes a shot of samples and counts the results."""
-    samples_processed = _process_samples(mp, samples, wires)
-
-    mp_has_obs = bool(mp.obs)
-    observables, counts = np.unique(samples_processed, return_counts=True, axis=-2 + mp_has_obs)
-    if not mp_has_obs:
-        observables = ["".join(observable.astype("str")) for observable in observables]
-    return dict(zip(observables, counts))
-
-
 def _process_samples(
     mp,
     samples,
     wire_order,
 ):
+    """Processes samples like SampleMP.process_samples, but fixed for qutrits"""
     wire_map = dict(zip(wire_order, range(len(wire_order))))
     mapped_wires = [wire_map[w] for w in mp.wires]
 
@@ -121,6 +111,17 @@ def _process_samples(
         ) from e
 
     return samples
+
+
+def _process_counts_samples(mp, samples, wires):
+    """Processes a shot of samples and counts the results."""
+    samples_processed = _process_samples(mp, samples, wires)
+
+    mp_has_obs = bool(mp.obs)
+    observables, counts = np.unique(samples_processed, return_counts=True, axis=-2 + mp_has_obs)
+    if not mp_has_obs:
+        observables = ["".join(observable.astype("str")) for observable in observables]
+    return dict(zip(observables, counts))
 
 
 def _measure_with_samples_diagonalizing_gates(
