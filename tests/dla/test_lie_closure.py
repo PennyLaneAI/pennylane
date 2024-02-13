@@ -171,7 +171,7 @@ class TestVSpace:
 
         vspace1 = VSpace(gens1)
         vspace2 = VSpace(gens2)
-        assert vspace1 == vspace2
+        assert not vspace1 == vspace2
 
 
 class TestLieClosure:

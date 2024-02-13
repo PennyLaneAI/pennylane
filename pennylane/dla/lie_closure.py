@@ -230,7 +230,7 @@ class VSpace:
     def __eq__(self, other):
         if not self._num_pw == other._num_pw:
             return False
-        if not self._pw_to_idx == other._pw_to_idx:
+        if not set(self._pw_to_idx.keys()) == set(other._pw_to_idx.keys()):
             return False
 
         rank1 = np.linalg.matrix_rank(self._M)
