@@ -226,7 +226,7 @@ class VSpace:
 
     def __repr__(self):
         return str(self.basis)
-    
+
     def __eq__(self, other):
         if not self._num_pw == other._num_pw:
             return False
