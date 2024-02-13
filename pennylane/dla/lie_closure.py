@@ -109,21 +109,18 @@ class VSpace:
         all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
         num_pw = len(all_pws)
         # Create a dictionary mapping from PauliWord to row index
-        pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
+        self._pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
 
-        # List all linearly independent ``PauliSentence`` objects. The first element
-        # always is independent, and the initial rank will be 1, correspondingly.
+        # Initialize VSpace properties trivially
         self._basis = []
         rank = 0
 
         self._M = np.zeros((num_pw, rank), dtype=float)
-        self._pw_to_idx = pw_to_idx
         self._rank = rank
         self._num_pw = num_pw
 
-        # Add the values of all other PauliSentence objects from the input to the sparse array,
-        # but only if they are linearly independent from the previous objects.
-        self._basis = self.add(generators)
+        # Add all generators that are linearly independent
+        self.add(generators)
 
     @property
     def basis(self):
