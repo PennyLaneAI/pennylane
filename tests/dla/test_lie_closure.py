@@ -307,21 +307,21 @@ class TestLieClosure:
         gen11 = dla[:-1]
         res11 = lie_closure(gen11)
         assert VSpace(res11) == VSpace(dla11)
-    
+
     def test_lie_closure_with_PauliWords(self):
         """Test that lie_closure works properly with PauliWords"""
         gen = [
-            PauliWord({0:"X", 1:"X"}),
-            PauliWord({0:"Z"}),
-            PauliWord({1:"Z"}),
+            PauliWord({0: "X", 1: "X"}),
+            PauliWord({0: "Z"}),
+            PauliWord({1: "Z"}),
         ]
         dla = gen + [
-            PauliWord({0:"Y", 1:"X"}),
-            PauliWord({0:"X", 1:"Y"}),
-            PauliWord({0:"Y", 1:"Y"}),
+            PauliWord({0: "Y", 1: "X"}),
+            PauliWord({0: "X", 1: "Y"}),
+            PauliWord({0: "Y", 1: "Y"}),
         ]
         dla = [op.pauli_rep for op in dla]
-        
+
         res = lie_closure(gen)
         assert VSpace(res) == VSpace(dla)
 
