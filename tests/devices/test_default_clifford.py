@@ -20,7 +20,7 @@ import numpy as np
 import scipy as sp
 import pennylane as qml
 
-from pennylane.devices.default_clifford import _pl_to_stim
+from pennylane.devices.default_clifford import _pl_op_to_stim
 
 stim = pytest.importorskip("stim")
 
@@ -404,7 +404,7 @@ def test_prep_snap_clifford(circuit):
 )
 def test_pl_to_stim(pl_op, stim_op):
     """Test that the PennyLane operation get converted to Stim operation"""
-    op, wires = _pl_to_stim(pl_op)  # pylint:disable=protected-access
+    op, wires = _pl_op_to_stim(pl_op)  # pylint:disable=protected-access
     assert op == stim_op[0]
     assert wires == " ".join(map(str, stim_op[1]))
 
@@ -662,7 +662,7 @@ def test_meas_error_noisy():
     ],
 )
 def test_meas_noisy_distribution(channel_op):
-    """Test error is raised when noisy circuit are executed on Clifford device analytically."""
+    """Test error distribution of samples matches with that from default.mixed device."""
 
     dev_c = qml.device("default.clifford", shots=10000, wires=4)
     dev_q = qml.device("default.mixed", shots=10000, wires=4)

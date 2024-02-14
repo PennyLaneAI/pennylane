@@ -123,6 +123,14 @@
          [1, 0, 0, 1, 1]])
   ```
 
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
+
+* Added new error tracking and propagation functionality. 
+  [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
+  [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
+
+
 <h3>Improvements 🛠</h3>
 
 <h4>Faster gradients with VJPs and other performance improvements</h4>
@@ -181,6 +189,9 @@
 
 
 <h4>Other improvements</h4>
+
+* `qml.dot` now returns a `Sum` class even when all the coefficients match.
+  [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
 
 * `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
   [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
@@ -413,6 +424,8 @@
 * A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
+* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
@@ -483,6 +496,15 @@
   operators have a valid `pauli_rep` property.
   [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
 
+* Controlled `GlobalPhase` with non-zero control wire no longer throws an error.
+  [(#5194)](https://github.com/PennyLaneAI/pennylane/pull/5194)
+
+* A `QNode` transformed with `mitigate_with_zne` now accepts batch parameters.
+  [(#5195)](https://github.com/PennyLaneAI/pennylane/pull/5195)
+
+* The matrix of an empty `PauliSentence` instance is now correct (all-zeros).
+  Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
+  [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
 <h3>Contributors ✍️</h3>
 
@@ -492,6 +514,7 @@ Abhishek Abhishek,
 Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
+Skylar Chan,
 Isaac De Vlugt,
 Diksha Dhawan,
 Lillian Frederiksen,
@@ -511,4 +534,3 @@ Mudit Pandey,
 Alex Preciado,
 Matthew Silverman,
 Jay Soni.
-

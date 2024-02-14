@@ -130,7 +130,7 @@ def _validate_channels(tape, name="device"):
     return (tape,), null_postprocessing
 
 
-def _pl_to_stim(op):
+def _pl_op_to_stim(op):
     """Convert PennyLane operation to a Stim operation"""
     try:
         stim_op = _OPERATIONS_MAP[op.name]
@@ -149,11 +149,12 @@ def _pl_to_stim(op):
     return stim_op, " ".join(stim_tg)
 
 
-def _convert_op_to_linear_comb(meas_op):
-    """Convert a PennyLane observable to a linear combination of stim Pauli terms"""
+def _pl_obs_to_linear_comb(meas_op):
+    """Convert a PennyLane observable to a linear combination of Pauli strings"""
 
     meas_obs = qml.operation.convert_to_opmath(meas_op)
     meas_rep = meas_obs.pauli_rep
+
     # Use manual decomposition for enabling Hermitian and partial Projector support
     if isinstance(meas_obs, (qml.Hermitian, BasisStateProjector)):
         meas_rep = qml.pauli_decompose(meas_obs.matrix(), wire_order=meas_obs.wires, pauli=True)
@@ -330,8 +331,9 @@ class DefaultClifford(Device):
 
     .. details::
         :title: Error Channels
+        :href: clifford-errors
 
-        This device supports the ``finite-shot`` execution of the quantum circuits with
+        This device supports the ``finite-shot`` execution of quantum circuits with
         the following error channels that add ``Pauli noise``, allowing for one to perform
         any sampling-based `measurements <https://github.com/quantumlib/stim/>`_.
 
@@ -589,7 +591,7 @@ class DefaultClifford(Device):
         # Iterate over the gates --> manage them manually or apply them to circuit
         global_phase_ops = []
         for op in circuit.operations[use_prep_ops:]:
-            gate, wires = _pl_to_stim(op)
+            gate, wires = _pl_op_to_stim(op)
             if gate is not None:
                 # Note: This is a lot faster than doing `stim_ct.append(gate, wires)`
                 stim_circuit.append_from_stim_program_text(f"{gate} {wires}")
@@ -636,7 +638,7 @@ class DefaultClifford(Device):
             sampler = stim_circ.compile_sampler(seed=sample_seed)
             return [qml.math.array(sampler.sample(shots=shots), dtype=int)], qml.math.array([1.0])
 
-        coeffs, paulis = _convert_op_to_linear_comb(meas_obs)
+        coeffs, paulis = _pl_obs_to_linear_comb(meas_obs)
 
         samples = []
         for pauli, wire in paulis:
@@ -678,7 +680,7 @@ class DefaultClifford(Device):
                 samples = self._measure_observable_sample(
                     meas_op, stim_circuit, num_shots, sample_seed
                 )[0]
-                # Check if rotation was permissible
+                # Check if the rotation was permissible
                 if len(samples) > 1:
                     raise qml.QuantumFunctionError(
                         f"Observable {meas_op.name} is not supported for rotating probabilities on {self.name}."
@@ -711,7 +713,7 @@ class DefaultClifford(Device):
 
         results = []
         for meas in circuit.measurements:
-            ## measurement_func(meas, tableaus_simulator, **kwargs) -> meas_result
+            # signature: measurement_func(meas, tableaus_simulator, **kwargs) -> meas_result
             measurement_func = measurement_map.get(type(meas), None)
             if measurement_func is None:  # pragma: no cover
                 raise NotImplementedError(
@@ -771,7 +773,7 @@ class DefaultClifford(Device):
             ).squeeze()
 
         # Get the observable for the expectation value measurement
-        coeffs, paulis = _convert_op_to_linear_comb(meas_obs)
+        coeffs, paulis = _pl_obs_to_linear_comb(meas_obs)
 
         expecs = qml.math.zeros_like(coeffs)
         for idx, (pauli, wire) in enumerate(paulis):
@@ -841,8 +843,8 @@ class DefaultClifford(Device):
     def _measure_stabilizer_entropy(stabilizer, wires, log_base=None):
         r"""Computes the Rényi entanglement entropy using stabilizer information.
 
-        Computes the Rényi entanglement entropy :math:`S_A` for a subsytem described by
-        :math:`A`, :math:`S_A = \text{rank}(\text{proj}_A {\mathcal{S}}) - |\mathcal{S}|`,
+        Computes the Rényi entanglement entropy :math:`S_A` for a subsytem described
+        by :math:`A`, :math:`S_A = \text{rank}(\text{proj}_A {\mathcal{S}}) - |A|`,
         where :math:`\mathcal{S}` is the stabilizer group for the system using the theory
         described in Appendix A.1.d of `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
 
@@ -894,13 +896,26 @@ class DefaultClifford(Device):
 
     # pylint: disable=too-many-branches, too-many-statements
     def _measure_probability(self, meas, _, **kwargs):
-        """Measure the probability of each computational basis state.
+        r"""Measure the probability of each computational basis state.
 
-        Computes the probability for each computational basis state vector. This is done by
-        building the complete basis using a vectorized integer to bit-array transformation.
-        Then, for each basis state, one iterates over each of the measured qubits, and checks
-        the possibility of that state and performs post-selection. If an impossible state is
-        encountered, the corresponding branches are tracked and marked in a visited-array.
+        Computes the probability for each of the computational basis state vector iteratively
+        according to the follow pseudocode.
+
+        1. First, a complete basis set is built based on measured wires' length `l` by transforming
+           integers :math:`[0, 2^l)` to their corresponding binary vector form, if the selective
+           target states for computing probabilities have not been specified in the ``kwargs``.
+        2. Second, We then build a `stim.TableauSimulator` based on the input circuit. If an observable
+           `obs` is given, an additional diagonalizing circuit is appended to the input circuit for
+           rotating the computational basis based on the `diagonalizing_gates` method of the observable.
+        3. Finally, for every basis state, we iterate over each measured qubit `q_i` and peek if it can
+           be collapsed to the state :math:`|0\rangle` / :math:`\rangle`1` corresponding to the bit
+           `0` / `1` in the basis state vector at `i`th index.
+        4. If the qubit can be collapsed to the correct state, we do the post-selection and continue. If not,
+           we identify it as an `unattainable` state and assign them with a zero probability. We do so for all
+           the other basis states with the same `i`th index and keep this information stored in a visit-array.
+        5. Alternatively, if the qubit is in a superposition state, then it can collapse to either of the states
+           :math:`|0\rangle` / :math:`\rangle`1`. We identify this as a `branching` scenario. We half the
+           current probability and post-select based on the `i`th index of the basis state we are iterating.
         """
         circuit = kwargs.get("circuit")
 
@@ -918,8 +933,7 @@ class DefaultClifford(Device):
             basis_vec = np.arange(2**num_wires)[:, np.newaxis]
             tgt_states = (((basis_vec & (1 << np.arange(num_wires)[::-1]))) > 0).astype(int)
 
-        # TODO: We might be able to skip the inverse done below
-        # (as the distribution should be independent of inverse)
+        # Rotate the circuit basis to computational basis
         diagonalizing_cit = kwargs.get("stim_circuit").copy()
         diagonalizing_ops = [] if not meas.obs else meas.obs.diagonalizing_gates()
         for diag_op in diagonalizing_ops:
@@ -929,7 +943,7 @@ class DefaultClifford(Device):
                     f"Currently, we only support observables whose diagonalizing gates are Clifford, got {diag_op}"
                 )
             # Add to the circuit to rotate the basis
-            stim_op = _pl_to_stim(diag_op)
+            stim_op = _pl_op_to_stim(diag_op)
             if stim_op[0] is not None:
                 diagonalizing_cit.append_from_stim_program_text(f"{stim_op[0]} {stim_op[1]}")
 
@@ -954,7 +968,7 @@ class DefaultClifford(Device):
 
         # Iterate over the required basis states and for each of them compute the probability
         # If an impossible branch occur keep a note of it via a visit-array
-        # Worst case complexity O(B * M * N), where N is #measured_qubits and B is basis states.
+        # Worst case complexity O(B * M * N), where N is #measured_qubits and B is #basis_states.
         visited_probs = []
         prob_res = np.ones(tgt_states.shape[0])
         for tgt_index, (tgt_integ, tgt_state) in enumerate(zip(tgt_integs, tgt_states)):
