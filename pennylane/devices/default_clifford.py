@@ -22,7 +22,7 @@ import concurrent.futures
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram

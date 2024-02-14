@@ -181,20 +181,22 @@ def simulator_tracking(cls: type) -> type:
     * ``shots``: the number of shots
     * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
     * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions,
-                such as for non-commuting measurements and batched parameters.
-    * ``batches``: The number of times :meth:`~pennylane.devices.Device..execute` is called.
+        such as for non-commuting measurements and batched parameters.
+    * ``batches``: The number of times :meth:`~pennylane.devices.Device.execute` is called.
     * ``results``: The results of each call of :meth:`~pennylane.devices.Device.execute`
     * ``derivative_batches``: How many times :meth:`~pennylane.devices.Device.compute_derivatives` is called.
     * ``execute_and_derivative_batches``: How many times :meth:`~pennylane.devices.Device.execute_and_compute_derivatives`
-            is called
+        is called
     * ``vjp_batches``: How many times :meth:`~pennylane.devices.Device.compute_vjp` is called
     * ``execute_and_vjp_batches``: How many times :meth:`~pennylane.devices.Device.execute_and_compute_vjp` is called
     * ``jvp_batches``: How many times :meth:`~pennylane.devices.Device.compute_jvp` is called
     * ``execute_and_jvp_batches``: How many times :meth:`~pennylane.devices.Device.execute_and_compute_jvp` is called
-    * ``derivatives``: How many circuits are submitted to :meth:`~pennylane.devices.Device..compute_derivatives`
+    * ``derivatives``: How many circuits are submitted to :meth:`~pennylane.devices.Device.compute_derivatives`
         or :meth:`~pennylane.devices.Device.execute_and_compute_derivatives`.
-    * ``vjps``: How many circuits are submitted to :meth:`~.compute_vjp` or :meth:`~.execute_and_compute_vjp`
-    * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
+    * ``vjps``: How many circuits are submitted to :meth:`pennylane.devices.Device.compute_vjp`
+        or :meth:`~pennylane.devices.Device.execute_and_compute_vjp`
+    * ``jvps``: How many circuits are submitted to :meth:`~pennylane.devices.Device.compute_jvp`
+        or :meth:`~pennylane.devices.Device.execute_and_compute_jvp`
 
 
     .. code-block:: python
