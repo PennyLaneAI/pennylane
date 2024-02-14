@@ -621,8 +621,16 @@ class TestPauliSentence:
                 }
             ),
         ),
-        (PauliSentence({PauliWord({0:"X"}): 1.}), PauliWord({1:"X"}), PauliSentence({PauliWord({0:"X", 1:"X"}): 1.})),
-        (PauliSentence({PauliWord({0:"X"}): 1.}), PauliWord({0:"X"}), PauliSentence({PauliWord({}): 1.})),
+        (
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliWord({1: "X"}),
+            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0}),
+        ),
+        (
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliWord({0: "X"}),
+            PauliSentence({PauliWord({}): 1.0}),
+        ),
     )
 
     @pytest.mark.parametrize("pauli1, pauli2, res", tup_ps_mult)
