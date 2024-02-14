@@ -501,7 +501,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         batch2, fn2 = dispatched_transform2(batch1, index=0)
         result = tmp_dev.execute(batch2)
 
-        assert check_batch(batch2)
+        assert check_batch(batch1) and check_batch(batch2)
         assert isinstance(comb_postproc(result, fn1, fn2), TensorLike)
 
         ############################################################
@@ -513,7 +513,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         batch2, fn2 = qml.transforms.merge_rotations(batch1)
         result = tmp_dev.execute(batch2)
 
-        assert check_batch(batch2)
+        assert check_batch(batch1) and check_batch(batch2)
         assert isinstance(result, TensorLike)
 
         # check that final batch and post-processing functions are what we expect after the two transforms
