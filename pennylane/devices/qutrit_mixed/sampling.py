@@ -236,35 +236,6 @@ def _measure_with_samples_diagonalizing_gates(
     return _process_single_shot(samples)
 
 
-def _measure_hamiltonian_with_samples(
-    mp: List[SampleMeasurement],
-    state: np.ndarray,
-    shots: Shots,
-    is_state_batched: bool = False,
-    rng=None,
-    prng_key=None,
-):
-    """Sums expectation values of Sum Observables"""
-    # the list contains only one element based on how we group measurements
-    mp = mp[0]
-
-    # if the measurement process involves a Hamiltonian, measure each
-    # of the terms separately and sum
-    def _sum_for_single_shot(s):
-        results = measure_with_samples(
-            [ExpectationMP(t) for t in mp.obs.terms()[1]],
-            state,
-            s,
-            is_state_batched=is_state_batched,
-            rng=rng,
-            prng_key=prng_key,
-        )
-        return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
-
-    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
-    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
-
-
 def _measure_sum_with_samples(
     mp: List[SampleMeasurement],
     state: np.ndarray,
@@ -273,21 +244,26 @@ def _measure_sum_with_samples(
     rng=None,
     prng_key=None,
 ):
-    """Sums expectation values of Sum Observables"""
+    """Sums expectation values of Sum or Hamiltonian Observables"""
     # the list contains only one element based on how we group measurements
     mp = mp[0]
 
-    # if the measurement process involves a Sum, measure each
-    # of the terms separately and sum
+    # mp.obs returns is the list of observables for Sum,
+    # mp.obs.terms()[1] returns is the list of observables for Hamiltonian
+    obs_terms = mp.obs if isinstance(mp.obs, Sum) else mp.obs.terms()[1]
+
     def _sum_for_single_shot(s):
         results = measure_with_samples(
-            [ExpectationMP(t) for t in mp.obs],
+            [ExpectationMP(t) for t in obs_terms],
             state,
             s,
             is_state_batched=is_state_batched,
             rng=rng,
             prng_key=prng_key,
         )
+        if isinstance(mp.obs, Hamiltonian):
+            # If Hamiltonian apply coefficients
+            return sum((c * res for c, res in zip(mp.obs.terms()[0], results)))
         return sum(results)
 
     unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
@@ -436,9 +412,7 @@ def measure_with_samples(
 
     all_res = []
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Hamiltonian):
-            measure_fn = _measure_hamiltonian_with_samples
-        elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
+        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, (Hamiltonian, Sum)):
             measure_fn = _measure_sum_with_samples
         else:
             # measure with the usual method (rotate into the measurement basis)
