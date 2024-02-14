@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains decorators that can modify an implementation of the :class:`pennylane.devices.Device`
-class and add default behavior. 
+class and add default behavior.
 
 """
 from .convert_single_circuit import convert_single_circuit_to_batch

@@ -179,37 +179,20 @@ def convert_single_circuit_to_batch(cls: type) -> type:
         cls._applied_modifiers = [convert_single_circuit_to_batch]
 
     # execute must be defined
-    cls._batch_execute = cls.execute
-    cls.execute = _make_execute(cls._batch_execute)
+    cls.execute = _make_execute(cls.execute)
 
-    if cls.compute_derivatives != Device.compute_derivatives:
-        cls._batch_compute_derivatives = cls.compute_derivatives
-        cls.compute_derivatives = _make_compute_derivatives(cls._batch_compute_derivatives)
+    modifier_map = {
+        "compute_derivatives": _make_compute_derivatives,
+        "execute_and_compute_derivatives": _make_execute_and_compute_derivatives,
+        "compute_jvp": _make_compute_jvp,
+        "execute_and_compute_jvp": _make_execute_and_compute_jvp,
+        "compute_vjp": _make_compute_vjp,
+        "execute_and_compute_vjp": _make_execute_and_compute_vjp,
+    }
 
-    if cls.execute_and_compute_derivatives != Device.execute_and_compute_derivatives:
-        cls._batch_execute_and_compute_derivatives = cls.execute_and_compute_derivatives
-        cls.execute_and_compute_derivatives = _make_execute_and_compute_derivatives(
-            cls._batch_execute_and_compute_derivatives
-        )
-
-    if cls.compute_jvp != Device.compute_jvp:
-        cls._batch_compute_jvp = cls.compute_jvp
-        cls.compute_jvp = _make_compute_jvp(cls._batch_compute_jvp)
-
-    if cls.execute_and_compute_jvp != Device.execute_and_compute_jvp:
-        cls._batch_execute_and_compute_jvp = cls.execute_and_compute_jvp
-        cls.execute_and_compute_jvp = _make_execute_and_compute_jvp(
-            cls._batch_execute_and_compute_jvp
-        )
-
-    if cls.compute_vjp != Device.compute_vjp:
-        cls._batch_compute_vjp = cls.compute_vjp
-        cls.compute_vjp = _make_compute_vjp(cls._batch_compute_vjp)
-
-    if cls.execute_and_compute_vjp != Device.execute_and_compute_vjp:
-        cls._batch_execute_and_compute_vjp = cls.execute_and_compute_vjp
-        cls.execute_and_compute_vjp = _make_execute_and_compute_vjp(
-            cls._batch_execute_and_compute_vjp
-        )
+    for name, modifier in modifier_map.items():
+        if getattr(cls, name) != getattr(Device, name):
+            original = getattr(cls, name)
+            setattr(cls, name, modifier(original))
 
     return cls

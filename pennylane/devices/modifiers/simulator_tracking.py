@@ -234,37 +234,20 @@ def simulator_tracking(cls: type) -> type:
         cls._applied_modifiers = [simulator_tracking]
 
     # execute must be defined
-    cls._untracked_execute = cls.execute
-    cls.execute = _track_execute(cls._untracked_execute)
+    cls.execute = _track_execute(cls.execute)
 
-    if cls.compute_derivatives != Device.compute_derivatives:
-        cls._untracked_compute_derivatives = cls.compute_derivatives
-        cls.compute_derivatives = _track_compute_derivatives(cls._untracked_compute_derivatives)
+    modifier_map = {
+        "compute_derivatives": _track_compute_derivatives,
+        "execute_and_compute_derivatives": _track_execute_and_compute_derivatives,
+        "compute_jvp": _track_compute_jvp,
+        "execute_and_compute_jvp": _track_execute_and_compute_jvp,
+        "compute_vjp": _track_compute_vjp,
+        "execute_and_compute_vjp": _track_execute_and_compute_vjp,
+    }
 
-    if cls.execute_and_compute_derivatives != Device.execute_and_compute_derivatives:
-        cls._untracked_execute_and_compute_derivatives = cls.execute_and_compute_derivatives
-        cls.execute_and_compute_derivatives = _track_execute_and_compute_derivatives(
-            cls._untracked_execute_and_compute_derivatives
-        )
-
-    if cls.compute_jvp != Device.compute_jvp:
-        cls._untracked_compute_jvp = cls.compute_jvp
-        cls.compute_jvp = _track_compute_jvp(cls._untracked_compute_jvp)
-
-    if cls.execute_and_compute_jvp != Device.execute_and_compute_jvp:
-        cls._untracked_execute_and_compute_jvp = cls.execute_and_compute_jvp
-        cls.execute_and_compute_jvp = _track_execute_and_compute_jvp(
-            cls._untracked_execute_and_compute_jvp
-        )
-
-    if cls.compute_vjp != Device.compute_vjp:
-        cls._untracked_compute_vjp = cls.compute_vjp
-        cls.compute_vjp = _track_compute_vjp(cls._untracked_compute_vjp)
-
-    if cls.execute_and_compute_vjp != Device.execute_and_compute_vjp:
-        cls._untracked_execute_and_compute_vjp = cls.execute_and_compute_vjp
-        cls.execute_and_compute_vjp = _track_execute_and_compute_vjp(
-            cls._untracked_execute_and_compute_vjp
-        )
+    for name, modifier in modifier_map.items():
+        if getattr(cls, name) != getattr(Device, name):
+            original = getattr(cls, name)
+            setattr(cls, name, modifier(original))
 
     return cls

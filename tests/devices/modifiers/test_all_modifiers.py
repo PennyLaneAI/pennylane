@@ -54,6 +54,8 @@ def test_chained_modifiers():
 
 @pytest.mark.parametrize("modifier", (simulator_tracking, convert_single_circuit_to_batch))
 class TestModifierDefaultBeahviour:
+    """Test generic behavior for device modifiers."""
+
     def test_error_on_old_interface(self, modifier):
         """Test that a ValueError is raised is called on something that is not a subclass of Device."""
 
@@ -69,6 +71,16 @@ class TestModifierDefaultBeahviour:
                 return 0.0
 
         assert DummyDev._applied_modifiers == [modifier]
+
+        @modifier
+        class DummyDev2(qml.devices.Device):
+
+            _applied_modifiers = [None]  # some existing value
+
+            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+                return 0.0
+
+        assert DummyDev2._applied_modifiers == [None, modifier]
 
     def test_leaves_undefined_methods_untouched(self, modifier):
         """Test that undefined methods are left the same as the Device class methods."""
