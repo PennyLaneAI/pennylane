@@ -851,7 +851,7 @@ class DefaultClifford(Device):
         1. First, a complete basis set is built based on measured wires' length `l` by transforming
            integers :math:`[0, 2^l)` to their corresponding binary vector form, if the selective
            target states for computing probabilities have not been specified in the ``kwargs``.
-        2. Second, Wwe then build a `stim.TableauSimulator` based on the input circuit. If an observable
+        2. Second, We then build a `stim.TableauSimulator` based on the input circuit. If an observable
            `obs` is given, an additional diagonalizing circuit is appended to the input circuit for
            rotating the computational basis based on the `diagonalizing_gates` method of the observable.
         3. Finally, for every basis state, we iterate over each measured qubit `q_i` and peek if it can
