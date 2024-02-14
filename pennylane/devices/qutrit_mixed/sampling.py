@@ -101,11 +101,8 @@ def _process_samples(
     # Replace the basis state in the computational basis with the correct eigenvalue.
     # Extract only the columns of the basis samples required based on ``wires``.
     powers_of_three = QUDIT_DIM ** qml.math.arange(num_wires)[::-1]
-    indices = samples @ powers_of_three
-    indices = qml.math.array(indices)  # Add np.array here for Jax support.
+    indices = qml.math.array(samples @ powers_of_three)
     try:
-        # This also covers statistics for mid-circuit measurements manipulated using
-        # arithmetic operators
         samples = mp.eigvals()[indices]
     except qml.operation.EigvalsUndefinedError as e:
         # if observable has no info on eigenvalues, we cannot return this measurement
@@ -190,8 +187,7 @@ def _measure_with_samples_diagonalizing_gates(
         processed = []
         for mp in mps:
             if isinstance(mp, SampleMP):
-                res = _process_samples(mp, samples, wires)
-                res = math.squeeze(res)
+                res = math.squeeze(_process_samples(mp, samples, wires))
             elif isinstance(mp, CountsMP):
                 res = _process_counts_samples(mp, samples, wires)
             elif isinstance(mp, ExpectationMP):
