@@ -350,11 +350,12 @@ class DefaultClifford(Device):
             def circuit():
                 qml.Hadamard(wires=[0])
                 for idx in range(num_wires):
+                    qml.CNOT(wires=[idx, idx+1])
                 qml.BitFlip(0.2, wires=[1])
                 return qml.counts()
 
         >>> circuit()
-        {'0000': 417, '1011': 104, '1011': 95, '1111': 408}
+        {'0000': 417, '0100': 95, '1011': 104, '1111': 408}
 
     .. details::
         :title: Tracking
