@@ -124,7 +124,7 @@
 
 <h4>Easy to inspect transforms 🔎</h4>
 
-<h4>New Clifford and noisy qutrit devices 🦾</h4>
+<h4>New Clifford device 🦾</h4>
 
 * A new `default.clifford` device enables efficient simulation of large-scale Clifford circuits
   defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
@@ -155,13 +155,6 @@
          [0, 0, 0, 1, 0],
          [1, 0, 0, 1, 1]])
   ```
-
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
-
-* Added new error tracking and propagation functionality. 
-  [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
-  [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
 
 <h3>Improvements 🛠</h3>
 
@@ -218,6 +211,9 @@
 
 * A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
   [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
+
+* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
 <h4>Other operator arithmetic improvements</h4>
 
@@ -346,6 +342,10 @@
 * Users can specify a list of PennyLane `measurements` they would want as terminal measurements
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
   [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
+
+* Added new error tracking and propagation functionality. 
+  [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
+  [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
 
 <h3>Breaking changes 💔</h3>
 
