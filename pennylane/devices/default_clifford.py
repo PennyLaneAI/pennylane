@@ -327,14 +327,14 @@ class DefaultClifford(Device):
 
     .. details::
         :title: Error Channels
-        :href: clifford-noise-channels
 
-        This device supports the execution of following error channels that add Pauli noise in the circuit
-        in the ``finite-shot`` case and noisy measurement results.
+        This device supports the ``finite-shot`` execution of the quantum circuits with
+        the following error channels that add ``Pauli noise``, allowing for one to perform
+        any sampling-based `measurements <https://github.com/quantumlib/stim/>`_.
 
-            - **Multi-qubit Pauli errors**: :mod:`qml.PauliError <pennylane.PauliError>`
-            - **Single-qubit depolarization errors**: :mod:`qml.DepolarizingChannel <pennylane.DepolarizingChannel>`
-            - **Single-qubit flip errors**: :mod:`qml.BitFlip <pennylane.BitFlip>` and :mod:`qml.PhaseFlip <pennylane.PhaseFlip>`
+        - *Multi-qubit Pauli errors:* :mod:`qml.PauliError <pennylane.PauliError>`
+        - *Single-qubit depolarization errors:* :mod:`qml.DepolarizingChannel <pennylane.DepolarizingChannel>`
+        - *Single-qubit flip errors:* :mod:`qml.BitFlip <pennylane.BitFlip>` and :mod:`qml.PhaseFlip <pennylane.PhaseFlip>`
 
         .. code-block:: python
 
@@ -351,7 +351,7 @@ class DefaultClifford(Device):
                 return qml.counts()
 
         >>> circuit()
-        {'0000': 417, '0111': 104, '1000': 95, '1111': 408}
+        {'0000': 417, '1011': 104, '1011': 95, '1111': 408}
 
     .. details::
         :title: Tracking
