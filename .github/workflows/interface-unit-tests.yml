@@ -548,7 +548,7 @@ jobs:
     # Run this even if any of the above jobs are skipped but not if any of the jobs failed
     if: >-
       ${{
-        false &&
+        always() &&
         !contains(needs.*.result, 'failure') &&
         !contains(needs.*.result, 'cancelled') &&
         inputs.pipeline_mode == 'unit-tests'
