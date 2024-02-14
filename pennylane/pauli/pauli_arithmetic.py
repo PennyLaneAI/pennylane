@@ -252,6 +252,9 @@ class PauliWord(dict):
         Returns:
             PauliSentence: coeff * new_word
         """
+        if isinstance(other, PauliSentence):
+            return PauliSentence({self: 1.}) @ other
+
         new_word, coeff = self._matmul(other)
         return PauliSentence({new_word: coeff})
 
