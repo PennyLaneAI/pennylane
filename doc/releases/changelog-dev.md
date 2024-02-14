@@ -498,6 +498,9 @@
   operators have a valid `pauli_rep` property.
   [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
 
+* Controlled `GlobalPhase` with non-zero control wire no longer throws an error.
+  [(#5194)](https://github.com/PennyLaneAI/pennylane/pull/5194)
+
 * A `QNode` transformed with `mitigate_with_zne` now accepts batch parameters.
   [(#5195)](https://github.com/PennyLaneAI/pennylane/pull/5195)
 
