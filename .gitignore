@@ -8,7 +8,7 @@ qit.egg-info
 *.ipynp
 *.ipynb_checkpoints
 *.egg-info*
-.coverage
+.coverage*
 coverage_html_report/*
 notebooks/*
 .pytest_cache/*
