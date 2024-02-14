@@ -23,7 +23,11 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Wires, DecompositionUndefinedError
+from pennylane.operation import (
+    AnyWires,
+    Wires,
+    Operator,
+)
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from .controlled import ControlledOp
@@ -779,8 +783,6 @@ class CNOT(ControlledOp):
 
     arithmetic_depth = 0
 
-    has_decomposition = False  # do not try to decompose CNOT
-
     name = "CNOT"
 
     def _flatten(self):
@@ -796,9 +798,6 @@ class CNOT(ControlledOp):
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
-
-    def decomposition(self):
-        raise DecompositionUndefinedError
 
     @staticmethod
     @lru_cache()
