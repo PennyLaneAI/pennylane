@@ -102,15 +102,7 @@ def _process_samples(
     # Extract only the columns of the basis samples required based on ``wires``.
     powers_of_three = QUDIT_DIM ** qml.math.arange(num_wires)[::-1]
     indices = qml.math.array(samples @ powers_of_three)
-    try:
-        samples = mp.eigvals()[indices]
-    except qml.operation.EigvalsUndefinedError as e:
-        # if observable has no info on eigenvalues, we cannot return this measurement
-        raise qml.operation.EigvalsUndefinedError(
-            f"Cannot compute samples of {mp.obs.name}."
-        ) from e
-
-    return samples
+    return mp.eigvals()[indices]
 
 
 def _process_counts_samples(mp, samples, wires):
