@@ -112,45 +112,15 @@
     [[Y(0) @ Z(1)], [X(0) @ Y(1), Y(1)], [Z(0)]]
     ```
 
-* A new `qml.commutator` function is now available that allows you to compute commutators between
-  operators:
-  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
-  [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
+  * A new `qml.commutator` function is now available that allows you to compute commutators between
+    operators:
+    [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+    [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
 
-  ```pycon
-  >>> qml.commutator(X(0), Y(0))
-  2j * Z(0)
-  ```
-
-  We can return a `PauliSentence` instance by setting `pauli=True`.
-
-  ```pycon
-  >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
-  >>> op2 = qml.PauliY(0) + qml.PauliY(1)
-  >>> qml.commutator(op1, op2, pauli=True)
-  2j * X(1) @ Z(0)
-  + 2j * Z(1) @ X(0)
-  ```
-
-  We can also input `PauliWord` and `PauliSentence` instances.
-
-  ```pycon
-  >>> op1 = PauliWord({0:"X", 1:"X"})
-  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
-  >>> qml.commutator(op1, op2, pauli=True)
-  2j * Z(0) @ X(1)
-  + 2j * X(0) @ Z(1)
-  ```
-
-  We can also compute commutators with Pauli operators natively with the `PauliSentence.commutator` method.
-
-  ```pycon
-  >>> op1 = PauliWord({0:"X", 1:"X"})
-  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
-  >>> op1.commutator(op2)
-  2j * Z(0) @ X(1)
-  + 2j * X(0) @ Z(1)
-  ```
+    ```pycon
+    >>> qml.commutator(X(0), Y(0))
+    2j * Z(0)
+    ```
 
 <h4>Easy to inspect transforms 🔎</h4>
 
@@ -275,6 +245,17 @@
 
   * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances,
     `qml.matrix(PauliWord({0:"X"}))`.
+
+  * It is possible to compute commutators with Pauli operators natively with the
+    `PauliSentence.commutator` method.
+
+    ```pycon
+    >>> op1 = PauliWord({0: "X", 1: "X"})
+    >>> op2 = PauliWord({0: "Y"}) + PauliWord({1: "Y"})
+    >>> op1.commutator(op2)
+    2j * Z(0) @ X(1)
+    + 2j * X(0) @ Z(1)
+    ```
 
 * Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and `SProd` operations
   convert `Hamiltonian` and `Tensor` operands to `Sum` and `Prod` types, respectively. This helps
