@@ -6,6 +6,7 @@
 
 #     http://www.apache.org/licenses/LICENSE-2.0
 
+
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,9 +19,15 @@ from flaky import flaky
 
 import pennylane as qml
 from pennylane import math
-from pennylane.devices.qutrit_mixed import sample_state, measure_with_samples
+from pennylane.devices.qutrit_mixed import (
+    sample_state,
+    measure_with_samples,
+    create_initial_state,
+    apply_operation,
+)
 from pennylane.devices.qutrit_mixed.sampling import _sample_state_jax
 from pennylane.measurements import Shots
+
 
 APPROX_ATOL = 0.01
 QUDIT_DIM = 3
@@ -35,6 +42,18 @@ ml_frameworks_list = [
     pytest.param("torch", marks=pytest.mark.torch),
     pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
+
+shots_and_copies = (
+    [
+        [(100,), 1],
+        [((100, 1),), 1],
+        [((100, 2),), 2],
+        [(100, 100), 2],
+        [(100, 200), 2],
+        [(100, 100, 200), 3],
+        [(200, (100, 2)), 3],
+    ],
+)
 
 
 def get_dm_of_state(state_vector, num_qudits, normalization=1):
@@ -271,12 +290,53 @@ class TestMeasureWithSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples([mp], two_qutrit_pure_state, shots=shots, rng=147)[0]
+        result = measure_with_samples([mp], two_qutrit_pure_state, shots=shots, rng=1234)[0]
 
         one_or_two_prob = np.count_nonzero(result[:, 0]) / result.shape[0]
         one_prob = np.count_nonzero(result[:, 0] == 1) / result.shape[0]
         assert np.allclose(one_or_two_prob, 2 / 3, atol=APPROX_ATOL)
         assert np.allclose(one_prob, 1 / 3, atol=APPROX_ATOL)
+
+    def test_approximate_prob_measure(self, two_qutrit_pure_state):
+        """Test that a probability measurement works as expected"""
+        state = qml.math.array(two_qutrit_pure_state)
+        shots = qml.measurements.Shots(10000)
+        mp = qml.probs(wires=range(2))
+
+        result = measure_with_samples([mp], state, shots=shots, rng=1234)[0]
+
+        expected = np.array([0, 0, 1 / 3, 1 / 3, 0, 0, 0, 1 / 3, 0])
+        assert np.allclose(result, expected, atol=APPROX_ATOL)
+
+    def test_approximate_expval_measure(self, two_qutrit_state):
+        """Test that an expval measurement works as expected"""
+        state = qml.math.array(two_qutrit_state)
+        shots = qml.measurements.Shots(10000)
+        mp = qml.expval(qml.GellMann(0, 1) @ qml.GellMann(1, 1))
+
+        result = measure_with_samples([mp], state, shots=shots, rng=1234)[0]
+
+        gellmann_1_matrix = qml.GellMann.compute_matrix(1)
+        observable_matrix = np.kron(gellmann_1_matrix, gellmann_1_matrix)
+        expected = np.trace(observable_matrix @ state.reshape((9, 9)))
+
+        assert np.allclose(result, expected, atol=APPROX_ATOL)
+
+    def test_approximate_var_measure(self, two_qutrit_state):
+        """Test that a variance measurement works as expected"""
+        state = qml.math.array(two_qutrit_state)
+        shots = qml.measurements.Shots(10000)
+        mp = qml.var(qml.GellMann(0, 1) @ qml.GellMann(1, 1))
+
+        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
+
+        gellmann_1_matrix = qml.GellMann.compute_matrix(1)
+        obs_mat = np.kron(gellmann_1_matrix, gellmann_1_matrix)
+        reshaped_state = state.reshape((9, 9))
+        obs_squared = np.linalg.matrix_power(obs_mat, 2)
+        expected = np.trace(obs_squared @ reshaped_state) - np.trace(obs_mat @ reshaped_state) ** 2
+
+        assert np.allclose(result, expected, atol=APPROX_ATOL)
 
     @flaky
     def test_counts_measure(self, two_qutrit_pure_state):
@@ -485,6 +545,60 @@ class TestBroadcasting:
 
             assert_correct_sampled_batched_two_qutrit_pure_state(r)
 
+    # pylint:disable = too-many-arguments
+    @pytest.mark.parametrize(
+        "shots",
+        shots_to_test,
+    )
+    @pytest.mark.parametrize(
+        "measurement, expected",
+        [
+            (
+                qml.probs(wires=[0, 1]),
+                np.array(
+                    [
+                        [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                        [1 / 3, 0, 0, 1 / 3, 0, 0, 1 / 3, 0, 0],
+                        [1 / 9] * 9,
+                    ]
+                ),
+            ),
+            (qml.expval(qml.GellMann(1, 8)), np.array([-2 / np.sqrt(3), 1 / np.sqrt(3), 0])),
+            (qml.var(qml.GellMann(1, 8)), np.array([2 / 3, 0, 2])),
+        ],
+    )
+    def test_nonsample_measure_shot_vector(
+        self,
+        shots,
+        measurement,
+        expected,
+    ):
+        """Test that broadcasting works for the other sample measurements and shot vectors"""
+
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(shots)
+
+        state = [
+            get_dm_of_state(np.array([[0, 0, 0, 0, 0, 0, 0, 0, 1]]), 2),
+            get_dm_of_state(np.array([1, 0, 0, 1, 0, 0, 1, 0, 0]), 2, 3),
+            get_dm_of_state(np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1]]), 2, 9),
+        ]
+
+        state = np.stack(state)
+
+        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
+
+        assert isinstance(res, tuple)
+        assert len(res) == shots.num_copies
+
+        for r in res:
+            assert isinstance(r, tuple)
+            assert len(r) == 1
+            r = r[0]
+
+            assert r.shape == expected.shape
+            assert np.allclose(r, expected, atol=APPROX_ATOL)
+
 
 @pytest.mark.jax
 class TestBroadcastingPRNG:
@@ -559,3 +673,116 @@ class TestBroadcastingPRNG:
             r = [np.array(i) for i in r]
 
             assert_correct_sampled_batched_two_qutrit_pure_state(r)
+
+    # pylint:disable = too-many-arguments
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            ((10000, 2),),
+            (10000, 10000),
+            (10000, 20000),
+            (10000, 10000, 20000),
+            (20000, (10000, 2)),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "measurement, expected",
+        [
+            (
+                qml.probs(wires=[0, 1]),
+                np.array(
+                    [
+                        [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                        [1 / 3, 0, 0, 1 / 3, 0, 0, 1 / 3, 0, 0],
+                        [1 / 9] * 9,
+                    ]
+                ),
+            ),
+            (qml.expval(qml.GellMann(1, 8)), np.array([-2 / np.sqrt(3), 1 / np.sqrt(3), 0])),
+            (qml.var(qml.GellMann(1, 8)), np.array([2 / 3, 0, 2])),
+        ],
+    )
+    def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected):
+        """Test that broadcasting works for the other sample measurements and shot vectors"""
+
+        import jax
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(shots)
+
+        state = [
+            get_dm_of_state(np.array([[0, 0, 0, 0, 0, 0, 0, 0, 1]]), 2),
+            get_dm_of_state(np.array([1, 0, 0, 1, 0, 0, 1, 0, 0]), 2, 3),
+            get_dm_of_state(np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1]]), 2, 9),
+        ]
+        state = np.stack(state)
+
+        res = measure_with_samples(
+            [measurement],
+            state,
+            shots,
+            is_state_batched=True,
+            rng=rng,
+            prng_key=jax.random.PRNGKey(184),
+        )
+
+        spy.assert_called()
+
+        assert isinstance(res, tuple)
+        assert len(res) == shots.num_copies
+
+        for r in res:
+            assert isinstance(r, tuple)
+            assert len(r) == 1
+            r = r[0]
+
+            assert r.shape == expected.shape
+            assert np.allclose(r, expected, atol=0.01)
+
+
+@pytest.mark.parametrize(
+    "obs",
+    [
+        qml.Hamiltonian([0.8, 0.5], [qml.GellMann(0, 3), qml.GellMann(0, 1)]),
+        qml.s_prod(0.8, qml.GellMann(0, 3)) + qml.s_prod(0.5, qml.GellMann(0, 1)),
+    ],
+)
+class TestHamiltonianSamples:
+    """Test that the measure_with_samples function works as expected for
+    Hamiltonian and Sum observables"""
+
+    def test_hamiltonian_expval(self, obs):
+        """Test that sampling works well for Hamiltonian and Sum observables"""
+        shots = qml.measurements.Shots(10000)
+
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
+        state = create_initial_state((0,))
+        for op in ops:
+            state = apply_operation(op, state)
+
+        res = measure_with_samples([qml.expval(obs)], state, shots=shots, rng=300)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
+        assert np.allclose(res, expected, atol=APPROX_ATOL)
+
+    def test_hamiltonian_expval_shot_vector(self, obs):
+        """Test that sampling works well for Hamiltonian and Sum observables with a shot vector"""
+        shots = qml.measurements.Shots((10000, 100000))
+
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
+        state = create_initial_state((0,))
+        for op in ops:
+            state = apply_operation(op, state)
+
+        res = measure_with_samples([qml.expval(obs)], state, shots=shots, rng=300)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert np.allclose(res[0], expected, atol=APPROX_ATOL)
+        assert np.allclose(res[1], expected, atol=APPROX_ATOL)
