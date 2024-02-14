@@ -626,7 +626,7 @@ class DefaultClifford(Device):
                 samples = self._measure_observable_sample(
                     meas_op, stim_circuit, num_shots, sample_seed
                 )[0]
-                # Check if rotation was permissible
+                # Check if the rotation was permissible
                 if len(samples) > 1:
                     raise qml.QuantumFunctionError(
                         f"Observable {meas_op.name} is not supported for rotating probabilities on {self.name}."
@@ -866,8 +866,7 @@ class DefaultClifford(Device):
             basis_vec = np.arange(2**num_wires)[:, np.newaxis]
             tgt_states = (((basis_vec & (1 << np.arange(num_wires)[::-1]))) > 0).astype(int)
 
-        # TODO: We might be able to skip the inverse done below
-        # (as the distribution should be independent of inverse)
+        # Rotate the circuit basis to computational basis
         diagonalizing_cit = kwargs.get("stim_circuit").copy()
         diagonalizing_ops = [] if not meas.obs else meas.obs.diagonalizing_gates()
         for diag_op in diagonalizing_ops:
