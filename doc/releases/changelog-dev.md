@@ -505,6 +505,7 @@
   [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
 * Make `CompositeOp.eigendecomposition` jit-compatible.
+  [(#5207)](https://github.com/PennyLaneAI/pennylane/pull/5207)
 
 <h3>Contributors ✍️</h3>
 
