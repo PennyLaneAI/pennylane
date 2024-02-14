@@ -105,7 +105,7 @@ def _process_samples(
 
 
 def _process_counts_samples(mp, samples, wires):
-    """Processes a shot of samples and counts the results."""
+    """Processes a set of samples and counts the results."""
     samples_processed = _process_samples(mp, samples, wires)
     mp_has_obs = bool(mp.obs)
 
@@ -114,18 +114,18 @@ def _process_counts_samples(mp, samples, wires):
 
     ret = []
     for processed_sample in samples_processed:
-        observables, counts = np.unique(processed_sample, return_counts=True, axis=0)
+        observables, counts = math.unique(processed_sample, return_counts=True, axis=0)
         if not mp_has_obs:
             observables = ["".join(observable.astype("str")) for observable in observables]
         ret.append(dict(zip(observables, counts)))
 
     if len(samples.shape) == 2:
         return ret[0]
-    return np.array(ret)
+    return math.array(ret)
 
 
 def _process_expval_samples(mp, samples, wires):
-    """Processes a shot of samples and returns the expectation value of an observable."""
+    """Processes a set of samples and returns the expectation value of an observable."""
     samples_processed = _process_samples(mp, samples, wires)
 
     if len(samples_processed.shape) == 1:
@@ -133,15 +133,15 @@ def _process_expval_samples(mp, samples, wires):
 
     ret = []
     for processed_sample in samples_processed:
-        eigvals, counts = np.unique(processed_sample, return_counts=True)
-        probs = counts / np.sum(counts)
+        eigvals, counts = math.unique(processed_sample, return_counts=True)
+        probs = counts / math.sum(counts)
         ret.append(math.dot(probs, eigvals))
 
     return math.squeeze(ret)
 
 
 def _process_variance_samples(mp, samples, wires):
-    """Processes a shot of samples and returns the variance of an observable."""
+    """Processes a set of samples and returns the variance of an observable."""
     samples_processed = _process_samples(mp, samples, wires)
 
     if len(samples_processed.shape) == 1:
@@ -149,8 +149,8 @@ def _process_variance_samples(mp, samples, wires):
 
     ret = []
     for processed_sample in samples_processed:
-        eigvals, counts = np.unique(processed_sample, return_counts=True)
-        probs = counts / np.sum(counts)
+        eigvals, counts = math.unique(processed_sample, return_counts=True)
+        probs = counts / math.sum(counts)
         ret.append(math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2)
 
     return math.squeeze(ret)
@@ -393,8 +393,7 @@ def measure_with_samples(
     have already been mapped to integer wires used in the device.
 
     Args:
-        mps (List[SampleMeasurement]):
-            The sample measurements to perform
+        mps (List[SampleMeasurement]): The sample measurements to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (Shots): The number of samples to take
         is_state_batched (bool): whether the state is batched or not

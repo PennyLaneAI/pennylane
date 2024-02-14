@@ -67,8 +67,8 @@ def fixture_two_qutrit_pure_state():
     return get_dm_of_state(state_vector, TWO_QUTRITS, 3)
 
 
-@pytest.fixture(name="batched_qutrit_pure_state")
-def fixture_batched_qutrit_pure_state():
+@pytest.fixture(name="batched_two_qutrit_pure_state")
+def fixture_batched_two_qutrit_pure_state():
     state_vectors = [
         np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]),
         np.array([1, 0, 0, 0, 0, 1, 0, 0, 0]) / np.sqrt(2),
@@ -92,17 +92,11 @@ def samples_to_probs(samples, num_wires):
 def assert_correct_sampled_two_qutrit_pure_state(samples):
     """Asserts that the returned samples of the two qutrit pure state only contains expected states"""
     for sample in samples:
-        if not (
+        assert (
             math.allequal(sample, [0, 2])
             or math.allequal(sample, [1, 0])
             or math.allequal(sample, [2, 1])
-        ):
-            assert (
-                math.allequal(sample, [0, 2])
-                or math.allequal(sample, [1, 0])
-                or math.allequal(sample, [2, 1])
-            )
-            return
+        )
 
 
 def assert_correct_sampled_batched_two_qutrit_pure_state(samples):
@@ -488,11 +482,11 @@ shots_to_test_nonsamples = [
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
 
-    def test_sample_measure(self, batched_qutrit_pure_state):
+    def test_sample_measure(self, batched_two_qutrit_pure_state):
         """Test that broadcasting works for qml.sample and single shots"""
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(100)
-        state = batched_qutrit_pure_state
+        state = batched_two_qutrit_pure_state
 
         measurement = qml.sample(wires=[0, 1])
         res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)[0]
@@ -501,7 +495,7 @@ class TestBroadcasting:
         assert res.dtype == np.int64
 
     @pytest.mark.parametrize("shots", shots_to_test_samples)
-    def test_sample_measure_shot_vector(self, shots, batched_qutrit_pure_state):
+    def test_sample_measure_shot_vector(self, shots, batched_two_qutrit_pure_state):
         """Test that broadcasting works for qml.sample and shot vectors"""
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
@@ -509,7 +503,7 @@ class TestBroadcasting:
         measurement = qml.sample(wires=[0, 1])
         res = measure_with_samples(
             [measurement],
-            batched_qutrit_pure_state,
+            batched_two_qutrit_pure_state,
             shots,
             is_state_batched=True,
             rng=rng,
@@ -578,7 +572,7 @@ class TestBroadcastingPRNG:
     """Test that measurements work and use _sample_state_jax when the state has a batch dim
     and a PRNG key is provided"""
 
-    def test_sample_measure(self, mocker, batched_qutrit_pure_state):
+    def test_sample_measure(self, mocker, batched_two_qutrit_pure_state):
         """Test that broadcasting works for qml.sample and single shots"""
         import jax
 
@@ -590,7 +584,7 @@ class TestBroadcastingPRNG:
         measurement = qml.sample(wires=[0, 1])
         res = measure_with_samples(
             [measurement],
-            batched_qutrit_pure_state,
+            batched_two_qutrit_pure_state,
             shots,
             is_state_batched=True,
             rng=rng,
@@ -608,7 +602,7 @@ class TestBroadcastingPRNG:
         assert_correct_sampled_batched_two_qutrit_pure_state(res)
 
     @pytest.mark.parametrize("shots", shots_to_test_samples)
-    def test_sample_measure_shot_vector(self, mocker, shots, batched_qutrit_pure_state):
+    def test_sample_measure_shot_vector(self, mocker, shots, batched_two_qutrit_pure_state):
         """Test that broadcasting works for qml.sample and shot vectors"""
         import jax
 
@@ -622,7 +616,7 @@ class TestBroadcastingPRNG:
         measurement = qml.sample(wires=[0, 1])
         res = measure_with_samples(
             [measurement],
-            batched_qutrit_pure_state,
+            batched_two_qutrit_pure_state,
             shots,
             is_state_batched=True,
             rng=rng,
