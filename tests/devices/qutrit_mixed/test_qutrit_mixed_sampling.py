@@ -459,11 +459,10 @@ class TestInvalidSampling:
         with pytest.raises(ValueError, match="probabilities do not sum to 1"):
             _ = measure_with_samples([mp], state, _shots)
 
-    @pytest.mark.parametrize(
-        "mp", [qml.classical_shadow([0]), qml.shadow_expval(qml.GellMann(0, 1))]
-    )
-    def test_currently_unsuported_observable(self, mp, two_qutrit_state):
-        """Test sample measurements that are not counts or sample raise a NotImplementedError."""
+    @pytest.mark.parametrize("mp", [qml.probs(0), qml.probs(op=qml.GellMann(0, 1))])
+    def test_currently_unsupported_observable(self, mp, two_qutrit_state):
+        """Test sample measurements that are not sample, counts, expval,
+        or var raise a NotImplementedError."""
         shots = qml.measurements.Shots(1)
         with pytest.raises(NotImplementedError):
             _ = measure_with_samples([mp], two_qutrit_state, shots)
