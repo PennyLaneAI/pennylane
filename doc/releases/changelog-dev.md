@@ -504,6 +504,9 @@
   Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
   [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
+* Measuring the expectation of observables with abstract data now uses the jit-compatible
+  dot-product computation method, thereby no longer raising unexpected jitting errors.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

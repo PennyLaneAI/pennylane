@@ -190,7 +190,9 @@ def get_measurement_function(
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 
-            if measurementprocess.obs.name == "Hermitian":
+            if measurementprocess.obs.name == "Hermitian" or any(
+                math.is_abstract(d) for d in measurementprocess.obs.data
+            ):
                 return full_dot_products
 
             backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"

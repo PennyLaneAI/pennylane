@@ -97,6 +97,19 @@ class TestMeasurementDispatch:
         state = qml.numpy.zeros(2)
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
+    @pytest.mark.jax
+    def test_abstract_returns_full_dot_product(self):
+        import jax
+
+        @jax.jit
+        def get_meas_func_hash(t1, t2):
+            """Return the function hash, as that is jit-compatible"""
+            X0 = qml.X(0)
+            mp = qml.expval(qml.prod(X0, qml.RX(t1, 0), X0, qml.RX(t2, 0)))
+            return hash(get_measurement_function(mp, [1.0, 0.0]))
+
+        assert get_meas_func_hash(0.5, 1.0) == hash(full_dot_products)
+
 
 class TestMeasurements:
     @pytest.mark.parametrize(
@@ -173,6 +186,22 @@ class TestMeasurements:
 
         res = simulate(qs)
         assert np.allclose(res, expected)
+
+    @pytest.mark.jax
+    def test_op_math_observable_jit_compatible(self):
+        import jax
+
+        dev = qml.device("default.qubit", wires=4)
+
+        O1 = qml.X(0)
+        O2 = qml.X(0)
+
+        @qml.qnode(dev, interface="jax")
+        def qnode(t1, t2):
+            return qml.expval(qml.prod(O1, qml.RX(t1, 0), O2, qml.RX(t2, 0)))
+
+        t1, t2 = 0.5, 1.0
+        assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
 
 
 class TestBroadcasting:
