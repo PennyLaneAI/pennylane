@@ -531,6 +531,7 @@ This release contains contributions from (in alphabetical order):
 Abhishek Abhishek,
 Utkarsh Azad,
 Gabriel Bottrill,
+Thomas Bromley,
 Astral Cai,
 Skylar Chan,
 Isaac De Vlugt,
