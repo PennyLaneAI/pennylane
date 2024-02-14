@@ -121,6 +121,7 @@ def _process_counts_samples(mp, samples, wires):
 
     if len(samples.shape) == 2:
         return ret[0]
+    return np.array(ret)
 
 
 def _process_expval_samples(mp, samples, wires):
