@@ -469,12 +469,20 @@ class TestInvalidSampling:
             _ = measure_with_samples([mp], two_qutrit_state, shots)
 
 
-shots_to_test = [
+shots_to_test_samples = [
     ((100, 2),),
     (100, 100),
     (100, 100),
     (100, 100, 200),
     (200, (100, 2)),
+]
+
+shots_to_test_nonsamples = [
+    ((10000, 2),),
+    (10000, 10000),
+    (10000, 20000),
+    (10000, 10000, 20000),
+    (20000, (10000, 2)),
 ]
 
 
@@ -493,7 +501,7 @@ class TestBroadcasting:
         assert res.shape == (3, shots.total_shots, 2)
         assert res.dtype == np.int64
 
-    @pytest.mark.parametrize("shots", shots_to_test)
+    @pytest.mark.parametrize("shots", shots_to_test_samples)
     def test_sample_measure_shot_vector(self, shots, batched_qutrit_pure_state):
         """Test that broadcasting works for qml.sample and shot vectors"""
         rng = np.random.default_rng(123)
@@ -524,13 +532,13 @@ class TestBroadcasting:
     # pylint:disable = too-many-arguments
     @pytest.mark.parametrize(
         "shots",
-        shots_to_test,
+        shots_to_test_nonsamples,
     )
     @pytest.mark.parametrize(
         "measurement, expected",
         [
-            (qml.expval(qml.GellMann(1, 8)), np.array([-2 / np.sqrt(3), 1 / np.sqrt(3), 0])),
-            (qml.var(qml.GellMann(1, 8)), np.array([2 / 3, 0, 2])),
+            (qml.expval(qml.GellMann(1, 3)), np.array([1 / 2, 1, 0])),
+            (qml.var(qml.GellMann(1, 3)), np.array([1 / 4, 0, 1])),
         ],
     )
     def test_nonsample_measure_shot_vector(
@@ -541,13 +549,13 @@ class TestBroadcasting:
     ):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(123456)
         shots = qml.measurements.Shots(shots)
 
         state = [
-            get_dm_of_state(np.array([[0, 0, 0, 0, 0, 0, 0, 0, 1]]), 2),
+            get_dm_of_state(np.array([[0, 0, 0, 1, 0, 1, 0, 0, 0]]), 2, 2),
             get_dm_of_state(np.array([1, 0, 0, 1, 0, 0, 1, 0, 0]), 2, 3),
-            get_dm_of_state(np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1]]), 2, 9),
+            get_dm_of_state(np.array([[1, 1, 0, 0, 0, 0, 1, 1, 0]]), 2, 4),
         ]
 
         state = np.stack(state)
@@ -600,7 +608,7 @@ class TestBroadcastingPRNG:
 
         assert_correct_sampled_batched_two_qutrit_pure_state(res)
 
-    @pytest.mark.parametrize("shots", shots_to_test)
+    @pytest.mark.parametrize("shots", shots_to_test_samples)
     def test_sample_measure_shot_vector(self, mocker, shots, batched_qutrit_pure_state):
         """Test that broadcasting works for qml.sample and shot vectors"""
         import jax
@@ -641,21 +649,12 @@ class TestBroadcastingPRNG:
             assert_correct_sampled_batched_two_qutrit_pure_state(r)
 
     # pylint:disable = too-many-arguments
-    @pytest.mark.parametrize(
-        "shots",
-        [
-            ((10000, 2),),
-            (10000, 10000),
-            (10000, 20000),
-            (10000, 10000, 20000),
-            (20000, (10000, 2)),
-        ],
-    )
+    @pytest.mark.parametrize("shots", shots_to_test_nonsamples)
     @pytest.mark.parametrize(
         "measurement, expected",
         [
-            (qml.expval(qml.GellMann(1, 8)), np.array([-2 / np.sqrt(3), 1 / np.sqrt(3), 0])),
-            (qml.var(qml.GellMann(1, 8)), np.array([2 / 3, 0, 2])),
+            (qml.expval(qml.GellMann(1, 3)), np.array([1 / 2, 1, 0])),
+            (qml.var(qml.GellMann(1, 3)), np.array([1 / 4, 0, 1])),
         ],
     )
     def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected):
@@ -663,15 +662,15 @@ class TestBroadcastingPRNG:
 
         import jax
 
-        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+        spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
 
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
 
         state = [
-            get_dm_of_state(np.array([[0, 0, 0, 0, 0, 0, 0, 0, 1]]), 2),
+            get_dm_of_state(np.array([[0, 0, 0, 1, 0, 1, 0, 0, 0]]), 2, 2),
             get_dm_of_state(np.array([1, 0, 0, 1, 0, 0, 1, 0, 0]), 2, 3),
-            get_dm_of_state(np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1]]), 2, 9),
+            get_dm_of_state(np.array([[1, 1, 0, 0, 0, 0, 1, 1, 0]]), 2, 4),
         ]
         state = np.stack(state)
 

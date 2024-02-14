@@ -120,18 +120,32 @@ def _process_expval_samples(mp, samples, wires):
     """Processes a shot of samples and returns the expectation value of an observable."""
     samples_processed = _process_samples(mp, samples, wires)
 
-    eigvals, counts = np.unique(samples_processed, return_counts=True, axis=-1)
-    probs = counts / samples.shape[:-1]
-    return math.dot(probs, eigvals)
+    if len(samples_processed.shape) == 1:
+        samples_processed = [samples_processed]
+
+    ret = []
+    for processed_sample in samples_processed:
+        eigvals, counts = np.unique(processed_sample, return_counts=True)
+        probs = counts / np.sum(counts)
+        ret.append(math.dot(probs, eigvals))
+
+    return math.squeeze(ret)
 
 
 def _process_variance_samples(mp, samples, wires):
     """Processes a shot of samples and returns the variance of an observable."""
     samples_processed = _process_samples(mp, samples, wires)
 
-    eigvals, counts = np.unique(samples_processed, return_counts=True, axis=-1)
-    probs = counts / samples.shape[:-1]
-    return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
+    if len(samples_processed.shape) == 1:
+        samples_processed = [samples_processed]
+
+    ret = []
+    for processed_sample in samples_processed:
+        eigvals, counts = np.unique(processed_sample, return_counts=True)
+        probs = counts / np.sum(counts)
+        ret.append(math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2)
+
+    return math.squeeze(ret)
 
 
 # pylint:disable = too-many-arguments
@@ -222,7 +236,7 @@ def _measure_hamiltonian_with_samples(
     rng=None,
     prng_key=None,
 ):
-    """TODO"""
+    """Sums expectation values of Sum Observables"""
     # the list contains only one element based on how we group measurements
     mp = mp[0]
 
@@ -251,7 +265,7 @@ def _measure_sum_with_samples(
     rng=None,
     prng_key=None,
 ):
-    """TODO"""
+    """Sums expectation values of Sum Observables"""
     # the list contains only one element based on how we group measurements
     mp = mp[0]
 
