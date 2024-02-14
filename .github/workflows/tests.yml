@@ -31,24 +31,27 @@ jobs:
   upload-stable-deps:
     needs: tests
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Prepare local repo
         run: |
-          git fetch
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
+          echo "before:"
+          git branch -v
           if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
             git checkout "${{ env.DEPS_BRANCH }}"
-            git merge origin/master
           else
-            git checkout master
             git checkout -b "${{ env.DEPS_BRANCH }}"
           fi
-          rm -f .github/stable/*.txt
+          echo "after:"
+          git branch -v
+          echo "fake line to see if download fails" >> .github/stable/core.txt
+          tail .github/stable/core.txt
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
