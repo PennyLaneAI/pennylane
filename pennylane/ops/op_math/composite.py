@@ -19,8 +19,6 @@ import abc
 from typing import Callable, List
 import copy
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator, _UNSET_BATCH_SIZE
@@ -181,7 +179,7 @@ class CompositeOp(Operator):
                     )
                 )
 
-        return self._math_op(eigvals, axis=0)
+        return self._math_op(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
 
     @abc.abstractmethod
     def matrix(self, wire_order=None):
@@ -226,11 +224,10 @@ class CompositeOp(Operator):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
-        eigen_func = np.linalg.eigh if self.is_hermitian else np.linalg.eig
+        eigen_func = math.linalg.eigh if self.is_hermitian else math.linalg.eig
 
         if self.hash not in self._eigs:
             mat = self.matrix()
-            mat = math.to_numpy(mat)
             w, U = eigen_func(mat)
             self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
