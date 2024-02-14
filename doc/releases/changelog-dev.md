@@ -505,6 +505,9 @@
   Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
   [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
+* `PauliSentence.__matmul__` can handle `PauliWord` instances now.
+  [(#5208)](https://github.com/PennyLaneAI/pennylane/pull/5208)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
