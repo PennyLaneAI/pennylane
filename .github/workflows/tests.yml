@@ -35,9 +35,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-tags: true
-          sparse-checkout: .github
 
       - name: Prepare local repo
         run: |
@@ -46,7 +43,7 @@ jobs:
           git config user.email "<>"
           if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
             git checkout "${{ env.DEPS_BRANCH }}"
-            git rebase origin/master
+            git merge origin/master
           else
             git checkout master
             git checkout -b "${{ env.DEPS_BRANCH }}"
@@ -83,11 +80,13 @@ jobs:
           pr_title: "Update stable dependency files"
           pr_body: |
             Automatic update of stable requirement files to snapshot valid python environments.
+
             Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
 
             ```
             git commit --allow-empty -m 'trigger ci'
             ```
+
+            Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
           pr_allow_empty: false
           pr_draft: false
-          pr_reviewer: "timmysilv"
