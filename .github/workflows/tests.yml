@@ -35,20 +35,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: master
 
       - name: Prepare local repo
         run: |
-          git fetch
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
             git checkout "${{ env.DEPS_BRANCH }}"
-            git merge origin/master
           else
-            git checkout master
             git checkout -b "${{ env.DEPS_BRANCH }}"
           fi
-          rm -f .github/stable/*.txt
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
