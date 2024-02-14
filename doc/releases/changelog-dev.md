@@ -36,7 +36,45 @@
   using the `@qml.defer_measurements` transform, so the above circuit would have required thousands
   of qubits to simulate.
 
-<h4>Work easily and efficiently with Pauli operators 🔧</h4>
+<h4>Work easily and efficiently with operators 🔧</h4>
+
+* Over the past few releases, PennyLane's approach to operator arithmetic has been overhauled.
+  New classes such as `Sum` and `Prod` have been added in the
+  [op_math](https://docs.pennylane.ai/en/stable/code/qml_ops_op_math.html) module, providing
+  an extensive range of manipulations and ways to combine PennyLane operators. The updated operator
+  arithmetic functionality can be activated using `qml.operation.enable_new_opmath()` and will
+  become the default approach in the next release.
+
+  The following updates have been made in this version of PennyLane:
+
+  * You can now easily access Pauli operators via `I`, `X`, `Y`, and `Z`:
+    [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
+
+    ```pycon
+    >>> from pennylane import I, X, Y, Z
+    >>> X(0)
+    X(0)
+    ```
+
+  * PennyLane will try to automatically work with a Pauli representation of operators when
+    available. The Pauli representation can be optionally accessed via `op.pauli_rep`:
+    [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+    [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
+    [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
+    [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
+    [(#5027)](https://github.com/PennyLaneAI/pennylane/pull/5027)
+  
+    ```pycon
+    >>> op = X(0) + Y(0)
+    >>> type(op.pauli_rep)
+    pennylane.pauli.pauli_arithmetic.PauliSentence
+    ```
+    
+    The `PauliWord` and `PauliSentence` objects in the
+    [pauli](https://docs.pennylane.ai/en/stable/code/qml_pauli.html#classes) module provide an
+    efficient representation and can be combined using basic arithmetic like addition, products, and
+    scalar multiplication. These objects do not need to be directly handled in most workflows,
+    since manipulation will happen automatically in the background.
 
 * New `qml.commutator` function that allows to compute commutators between
   `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
@@ -80,33 +118,6 @@
   + 2j * X(0) @ Z(1)
   ```
 
-* Upgrade Pauli arithmetic:
-  You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
-  You can now intuitively add together
-  `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
-  For example `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
-  sentence `ps1 = PauliSentence({pw1: 3.})`.
-  You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each other. For example `ps1 - pw1 - 1`.
-  Overall, you can now intuitively construct `PauliSentence` operators like `0.5 * pw1 - 1.5 * ps1 + 2`.
-  You can now also use `qml.dot` with `PauliWord`, `PauliSentence` and operators, e.g. `qml.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`.
-  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
-  [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
-  [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
-  [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
-  [(#5027)](https://github.com/PennyLaneAI/pennylane/pull/5027)
-
-* `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances, `qml.matrix(PauliWord({0:"X"}))`.
-  [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
-
-* Composite operations (eg. those made with `qml.prod` and `qml.sum`) and `SProd` operations convert `Hamiltonian` and
-  `Tensor` operands to `Sum` and `Prod` types, respectively. This helps avoid the mixing of
-  incompatible operator types.
-  [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
-  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
-
-* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
-  [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
-
 <h4>Easy to inspect transforms 🔎</h4>
 
 <h4>New Clifford and noisy qutrit devices 🦾</h4>
@@ -147,7 +158,6 @@
 * Added new error tracking and propagation functionality. 
   [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
   [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
-
 
 <h3>Improvements 🛠</h3>
 
@@ -205,6 +215,44 @@
 * A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
   [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
 
+<h4>Other operator arithmetic improvements</h4>
+
+* The following capabilities have been added for Pauli arithmetic:
+  [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
+  [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
+  [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
+  [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
+  [(#5027)](https://github.com/PennyLaneAI/pennylane/pull/5027)
+  [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
+
+  * You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g.
+    `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
+  
+  * You can now intuitively add together
+    `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
+    For example, `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
+    sentence `ps1 = PauliSentence({pw1: 3.})`.
+  
+  * You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each
+    other. For example `ps1 - pw1 - 1`.
+  
+  * Overall, you can now intuitively construct `PauliSentence` operators like
+    `0.5 * pw1 - 1.5 * ps1 + 2`.
+
+  * You can now also use `qml.dot` with `PauliWord`, `PauliSentence` and operators, e.g.
+    `qml.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`.
+
+  * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances,
+    `qml.matrix(PauliWord({0:"X"}))`.
+
+* Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and `SProd` operations
+  convert `Hamiltonian` and `Tensor` operands to `Sum` and `Prod` types, respectively. This helps
+  avoid the mixing of incompatible operator types.
+  [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
+  [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
+
+* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
+  [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
 
 <h4>Other improvements</h4>
 
