@@ -6,15 +6,35 @@
 
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
-* The `default.qubit` device treats mid-circuit measurements natively when operating in
-  shots-mode (i.e. `shots is not None`). Previously, circuits with mid-circuit measurements
-  would be decomposed using the `@qml.defer_measurements` transform (which is still a valid
-  decorator), requiring one extra wire for each mid-circuit measurement. The new
-  behavior is to evaluate the circuit `shots` times, "collapsing" the circuit state
-  stochastically along the way. While this is oftentimes slower, it requires much less
-  memory for circuits with several mid-circuit measurements, or circuits which have already
-  several wires.
+* When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
+  measurements in a similar way to quantum hardware. For each shot, when a mid-circuit measurement
+  is encountered, the device evaluates the probability of projecting onto `|0>` or `|1>` and
+  makes a random choice to collapse the circuit state.
   [(#5088)](https://github.com/PennyLaneAI/pennylane/pull/5088)
+
+  This approach works well when there are a lot of mid-circuit measurements and the number of shots
+  is not too high:
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit", shots=10)
+
+  @qml.qnode(dev)
+  def f():
+      for i in range(1967):
+          qml.Hadamard(0)
+          qml.measure(0)
+      return qml.sample(qml.PauliX(0))
+  ```
+  ```pycon
+  >>> f()
+  tensor([-1, -1, -1,  1,  1, -1,  1, -1,  1, -1], requires_grad=True)
+  ```
+
+  Previously, mid-circuit measurements would be automatically replaced with an additional qubit
+  using the `@qml.defer_measurements` transform, so the above circuit would have required thousands
+  of qubits to simulate.
 
 <h4>Work easily and efficiently with Pauli operators 🔧</h4>
 
