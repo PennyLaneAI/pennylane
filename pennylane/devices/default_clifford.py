@@ -326,6 +326,34 @@ class DefaultClifford(Device):
         tensor(0.0, requires_grad=True)
 
     .. details::
+        :title: Error Channels
+        :href: clifford-noise-channels
+
+        This device supports the execution of following error channels that add Pauli noise in the circuit
+        in the ``finite-shot`` case and noisy measurement results.
+
+            - **Multi-qubit Pauli errors**: :mod:`qml.PauliError <pennylane.PauliError>`
+            - **Single-qubit depolarization errors**: :mod:`qml.DepolarizingChannel <pennylane.DepolarizingChannel>`
+            - **Single-qubit flip errors**: :mod:`qml.BitFlip <pennylane.BitFlip>` and :mod:`qml.PhaseFlip <pennylane.PhaseFlip>`
+
+        .. code-block:: python
+
+            import pennylane as qml
+            import numpy as np
+            dev = qml.device("default.clifford", shots=1024, seed=42)
+
+            num_wires = 3
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(wires=[0])
+                for idx in range(num_wires):
+                qml.BitFlip(0.2, wires=[1])
+                return qml.counts()
+
+        >>> circuit()
+        {'0000': 417, '0111': 104, '1000': 95, '1111': 408}
+
+    .. details::
         :title: Tracking
         :href: clifford-tracking
 
