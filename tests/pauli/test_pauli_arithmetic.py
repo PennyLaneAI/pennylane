@@ -634,12 +634,12 @@ class TestPauliSentence:
         (
             PauliSentence({PauliWord({0: "X"}): 1.0}),
             PauliWord({0: "Y"}),
-            PauliSentence({PauliWord({0:"Z"}): 1j}),
+            PauliSentence({PauliWord({0: "Z"}): 1j}),
         ),
         (
             PauliSentence({PauliWord({0: "Y"}): 1.0}),
             PauliWord({0: "X"}),
-            PauliSentence({PauliWord({0:"Z"}): -1j}),
+            PauliSentence({PauliWord({0: "Z"}): -1j}),
         ),
         (
             PauliWord({1: "X"}),
