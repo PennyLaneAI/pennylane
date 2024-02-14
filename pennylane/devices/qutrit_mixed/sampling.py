@@ -25,7 +25,6 @@ from pennylane.measurements import (
     SampleMeasurement,
     SampleMP,
     CountsMP,
-    ProbabilityMP,
     ExpectationMP,
     VarianceMP,
 )
