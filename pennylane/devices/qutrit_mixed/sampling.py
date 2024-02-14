@@ -134,14 +134,6 @@ def _process_variance_samples(mp, samples, wires):
     return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
 
 
-def _process_probs_samples(mp, samples, wires):
-    """Processes a shot of samples and returns the probabilities of unique measurement."""
-    samples_processed = _process_samples(mp, samples, wires)
-
-    observables, counts = np.unique(samples_processed, return_counts=True, axis=-2 + bool(mp.obs))
-    return counts / samples.shape[:-1]
-
-
 # pylint:disable = too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
     mps: List[SampleMeasurement],
@@ -186,8 +178,6 @@ def _measure_with_samples_diagonalizing_gates(
                 res = _process_expval_samples(mp, samples, wires)
             elif isinstance(mp, VarianceMP):
                 res = _process_variance_samples(mp, samples, wires)
-            elif isinstance(mp, ProbabilityMP):
-                res = _process_probs_samples(mp, samples, wires)
             else:
                 raise NotImplementedError
             processed.append(res)

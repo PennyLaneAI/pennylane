@@ -182,19 +182,6 @@ class TestSampleState:
         assert qml.math.allequal(samples, expected)
 
     @flaky
-    def test_approximate_probs_from_samples(self, two_qutrit_state):
-        """Tests that the generated samples are approximately as expected."""
-        shots = 20000
-        state = two_qutrit_state
-
-        flat_state = state.reshape((QUDIT_DIM**TWO_QUTRITS,) * 2)
-        expected_probs = np.abs(np.diag(flat_state))
-
-        samples = sample_state(state, shots)
-        approx_probs = samples_to_probs(samples, TWO_QUTRITS)
-        assert np.allclose(approx_probs, expected_probs, atol=APPROX_ATOL)
-
-    @flaky
     def test_entangled_qutrit_samples_always_match(self):
         """Tests that entangled qutrits are always in the same state."""
         num_samples = 10000
@@ -296,17 +283,6 @@ class TestMeasureWithSamples:
         one_prob = np.count_nonzero(result[:, 0] == 1) / result.shape[0]
         assert np.allclose(one_or_two_prob, 2 / 3, atol=APPROX_ATOL)
         assert np.allclose(one_prob, 1 / 3, atol=APPROX_ATOL)
-
-    def test_approximate_prob_measure(self, two_qutrit_pure_state):
-        """Test that a probability measurement works as expected"""
-        state = qml.math.array(two_qutrit_pure_state)
-        shots = qml.measurements.Shots(10000)
-        mp = qml.probs(wires=range(2))
-
-        result = measure_with_samples([mp], state, shots=shots, rng=1234)[0]
-
-        expected = np.array([0, 0, 1 / 3, 1 / 3, 0, 0, 0, 1 / 3, 0])
-        assert np.allclose(result, expected, atol=APPROX_ATOL)
 
     def test_approximate_expval_measure(self, two_qutrit_state):
         """Test that an expval measurement works as expected"""
@@ -553,16 +529,6 @@ class TestBroadcasting:
     @pytest.mark.parametrize(
         "measurement, expected",
         [
-            (
-                qml.probs(wires=[0, 1]),
-                np.array(
-                    [
-                        [0, 0, 0, 0, 0, 0, 0, 0, 1],
-                        [1 / 3, 0, 0, 1 / 3, 0, 0, 1 / 3, 0, 0],
-                        [1 / 9] * 9,
-                    ]
-                ),
-            ),
             (qml.expval(qml.GellMann(1, 8)), np.array([-2 / np.sqrt(3), 1 / np.sqrt(3), 0])),
             (qml.var(qml.GellMann(1, 8)), np.array([2 / 3, 0, 2])),
         ],
@@ -688,16 +654,6 @@ class TestBroadcastingPRNG:
     @pytest.mark.parametrize(
         "measurement, expected",
         [
-            (
-                qml.probs(wires=[0, 1]),
-                np.array(
-                    [
-                        [0, 0, 0, 0, 0, 0, 0, 0, 1],
-                        [1 / 3, 0, 0, 1 / 3, 0, 0, 1 / 3, 0, 0],
-                        [1 / 9] * 9,
-                    ]
-                ),
-            ),
             (qml.expval(qml.GellMann(1, 8)), np.array([-2 / np.sqrt(3), 1 / np.sqrt(3), 0])),
             (qml.var(qml.GellMann(1, 8)), np.array([2 / 3, 0, 2])),
         ],
