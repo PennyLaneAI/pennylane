@@ -14,20 +14,10 @@
 """
 Tests for the AmplitudeAmplification template.
 """
-# pylint: disable=private-access, protected-access
-import copy
-from functools import reduce
 
 import pytest
 import numpy as np
 import pennylane as qml
-
-
-from pennylane import numpy as qnp
-from pennylane.math import allclose, get_interface
-
-# auxiliar operators
-
 
 @qml.prod
 def generator(wires):
