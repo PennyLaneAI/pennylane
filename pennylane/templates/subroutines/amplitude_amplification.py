@@ -16,6 +16,7 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
+# pylint: disable-msg=too-many-arguments
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
