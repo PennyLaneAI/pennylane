@@ -19,9 +19,9 @@ import copy
 from functools import reduce
 
 import pytest
-
-import pennylane as qml
 import numpy as np
+import pennylane as qml
+
 
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
@@ -129,9 +129,9 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "U, O, iters, fixed_point, work_wire",
         (
-            (generator(wires=range(3)), oracle([0, 1], wires=range(3)), True, 3),
-            (generator(wires=range(2)), oracle([0, 1], wires=range(2)), False, 2),
-            (generator(wires=range(4)), oracle([0, 1], wires=range(4)), True, 5),
+            (generator(wires=range(3)), oracle([0, 1], wires=range(3)), 1, True, 3),
+            (generator(wires=range(2)), oracle([0, 1], wires=range(2)), 2, False, 2),
+            (generator(wires=range(4)), oracle([0, 1], wires=range(4)), 3, True, 5),
         ),
     )
     def test_init_correctly(self, U, O, iters, fixed_point, work_wire):
