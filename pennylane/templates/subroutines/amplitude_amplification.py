@@ -73,7 +73,7 @@ class AmplitudeAmplification(Operation):
 
     """
 
-    def __init__(self, U, O, iters=1, fixed_point=False, work_wire=None, reflection_wires = None):
+    def __init__(self, U, O, iters=1, fixed_point=False, work_wire=None, reflection_wires=None):
         self.U = U
         self.O = O
         self.work_wire = work_wire
@@ -94,7 +94,6 @@ class AmplitudeAmplification(Operation):
 
         if fixed_point and iters % 2 != 0:
             raise ValueError(f"Number of iterations must be even if fixed_point == True.")
-
 
         if fixed_point and len(U.wires + qml.wires.Wires(work_wire)) == len(U.wires):
             raise ValueError(f"work_wire must be different from the wires of U.")
@@ -119,7 +118,9 @@ class AmplitudeAmplification(Operation):
                 ops.append(qml.ctrl(self.O, control=self.work_wire))
                 ops.append(qml.Hadamard(wires=self.work_wire))
 
-                ops.append(qml.Reflection(self.U, -alphas[iter], reflection_wires=self.reflection_wires))
+                ops.append(
+                    qml.Reflection(self.U, -alphas[iter], reflection_wires=self.reflection_wires)
+                )
         else:
             for _ in range(self.n_iterations):
                 ops.append(self.O)
