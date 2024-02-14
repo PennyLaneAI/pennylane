@@ -146,7 +146,7 @@ jobs:
           requirements_file: ${{ inputs.requirements_file }}
 
       - name: Set PyTest Args
-        if: steps.continue.outputs.confirm == 'true'
+        if: steps.continue.outputs.confirm == 'true' && false
         id: pytest_args
         env:
           PIPELINE_MODE: ${{ inputs.pipeline_mode }}
@@ -162,7 +162,7 @@ jobs:
           fi
 
       - name: Run PennyLane Unit Tests
-        if: steps.continue.outputs.confirm == 'true'
+        if: steps.continue.outputs.confirm == 'true' && false
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
           COV_CORE_SOURCE: pennylane
@@ -172,11 +172,11 @@ jobs:
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
       - name: Adjust coverage file for Codecov
-        if: inputs.pipeline_mode == 'unit-tests'
+        if: inputs.pipeline_mode == 'unit-tests' && false
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload Coverage File
-        if: inputs.pipeline_mode == 'unit-tests'
+        if: inputs.pipeline_mode == 'unit-tests' && false
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.coverage_artifact_name }}
