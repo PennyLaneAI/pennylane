@@ -107,12 +107,20 @@ def _process_samples(
 def _process_counts_samples(mp, samples, wires):
     """Processes a shot of samples and counts the results."""
     samples_processed = _process_samples(mp, samples, wires)
-
     mp_has_obs = bool(mp.obs)
-    observables, counts = np.unique(samples_processed, return_counts=True, axis=-2 + mp_has_obs)
-    if not mp_has_obs:
-        observables = ["".join(observable.astype("str")) for observable in observables]
-    return dict(zip(observables, counts))
+
+    if len(samples.shape) == 2:
+        samples_processed = [samples_processed]
+
+    ret = []
+    for processed_sample in samples_processed:
+        observables, counts = np.unique(processed_sample, return_counts=True, axis=0)
+        if not mp_has_obs:
+            observables = ["".join(observable.astype("str")) for observable in observables]
+        ret.append(dict(zip(observables, counts)))
+
+    if len(samples.shape) == 2:
+        return ret[0]
 
 
 def _process_expval_samples(mp, samples, wires):
