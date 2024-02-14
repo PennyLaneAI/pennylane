@@ -533,9 +533,12 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
-        w = qml.math.zeros(2 ** len(basis_state))
+        w = qml.math.zeros(2**len(basis_state), like=basis_state)
         idx = qml.math.dot(basis_state, 2 ** qml.math.arange(len(basis_state) - 1, -1, -1))
-        w = qml.math.where(w, idx, 1)
+
+        # Use JAX's functional array update (no need for interface check)
+        w = w.at[idx].set(1)
+
         return w
 
     @staticmethod
