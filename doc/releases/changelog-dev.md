@@ -504,6 +504,8 @@
   Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
   [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
+* `QubitDensityMatrix` now works with jax-jit on the `default.mixed` device.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
