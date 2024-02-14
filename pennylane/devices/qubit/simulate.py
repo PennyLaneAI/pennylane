@@ -440,25 +440,16 @@ def parse_native_mid_circuit_measurements(
         tuple(TensorLike): The results of the simulation
     """
 
-    def fun_return_empty_shots(measurement):
-        return (
-            np.nan * np.ones_like(measurement.eigvals())
-            if isinstance(measurement, ProbabilityMP)
-            else np.nan
-        )
-
     normalized_meas = []
     for i, m in enumerate(circuit.measurements):
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise ValueError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
-        if m.mv and not mcm_shot_meas:
-            meas = fun_return_empty_shots(m)
+        if (m.mv and not mcm_shot_meas) or not all_shot_meas:
+            meas = np.nan * np.ones_like(m.eigvals()) if isinstance(m, ProbabilityMP) else np.nan
         elif m.mv:
             meas = gather_mcm(m, mcm_shot_meas)
-        elif all_shot_meas is None:
-            meas = fun_return_empty_shots(m)
         else:
             meas = gather_non_mcm(m, all_shot_meas[i], mcm_shot_meas)
         if isinstance(m, SampleMP):
