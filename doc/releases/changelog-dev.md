@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+<h4>Easy to import circuits 💾</h4>
+
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
 * When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
@@ -121,8 +123,6 @@
     >>> qml.commutator(X(0), Y(0))
     2j * Z(0)
     ```
-
-<h4>Easy to inspect transforms 🔎</h4>
 
 <h4>New Clifford device 🦾</h4>
 
