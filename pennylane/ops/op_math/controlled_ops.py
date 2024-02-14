@@ -26,7 +26,6 @@ import pennylane as qml
 from pennylane.operation import (
     AnyWires,
     Wires,
-    Operator,
 )
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
