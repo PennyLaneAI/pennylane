@@ -264,7 +264,9 @@ class CompositeOp(Operator):
             else:
                 tmp_sum = self.__class__(*ops)
                 eigvecs = tmp_sum.eigendecomposition["eigvec"]
-                diag_gates.append(qml.QubitUnitary(eigvecs.conj().T, wires=tmp_sum.wires))
+                diag_gates.append(
+                    qml.QubitUnitary(math.transpose(math.conj(eigvecs)), wires=tmp_sum.wires)
+                )
         return diag_gates
 
     def label(self, decimals=None, base_label=None, cache=None):
