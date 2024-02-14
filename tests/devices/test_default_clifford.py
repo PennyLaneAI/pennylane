@@ -27,6 +27,18 @@ stim = pytest.importorskip("stim")
 pytestmark = pytest.mark.external
 
 
+# pylint: disable=protected-access
+def test_applied_modifiers():
+    """Test that defualt qubit has the `convert_single_circuit_to_batch` and `simulator_tracking`
+    modifiers applied.
+    """
+    dev = qml.device("default.clifford")
+    assert dev._applied_modifiers == [
+        qml.devices.modifiers.convert_single_circuit_to_batch,
+        qml.devices.modifiers.simulator_tracking,
+    ]
+
+
 def circuit_1():
     """Circuit 1 with Clifford gates."""
     qml.GlobalPhase(np.pi)

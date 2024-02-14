@@ -178,9 +178,9 @@ def convert_single_circuit_to_batch(cls: type) -> type:
     else:
         cls._applied_modifiers = [convert_single_circuit_to_batch]
 
-    if cls.execute != Device.execute:
-        cls._batch_execute = cls.execute
-        cls.execute = _make_execute(cls._batch_execute)
+    # execute must be defined
+    cls._batch_execute = cls.execute
+    cls.execute = _make_execute(cls._batch_execute)
 
     if cls.compute_derivatives != Device.compute_derivatives:
         cls._batch_compute_derivatives = cls.compute_derivatives

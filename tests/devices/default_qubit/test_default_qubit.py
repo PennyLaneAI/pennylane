@@ -78,6 +78,18 @@ def test_snapshot_multiprocessing_qnode():
         qml.snapshots(circuit)()
 
 
+# pylint: disable=protected-access
+def test_applied_modifiers():
+    """Test that defualt qubit has the `convert_single_circuit_to_batch` and `simulator_tracking`
+    modifiers applied.
+    """
+    dev = DefaultQubit()
+    assert dev._applied_modifiers == [
+        qml.devices.modifiers.convert_single_circuit_to_batch,
+        qml.devices.modifiers.simulator_tracking,
+    ]
+
+
 class TestSupportsDerivatives:
     """Test that DefaultQubit states what kind of derivatives it supports."""
 

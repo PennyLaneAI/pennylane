@@ -188,6 +188,10 @@
 
 <h4>Other improvements</h4>
 
+* Adds `qml.devices.modifiers.simulator_tracking` and `qml.devices.modifiers.convert_single_circuit_to_batch`
+  to add basic default behavior onto a device class.
+  [(#5200)](https://github.com/PennyLaneAI/pennylane/pull/5200)
+
 * `qml.dot` now returns a `Sum` class even when all the coefficients match.
   [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
 

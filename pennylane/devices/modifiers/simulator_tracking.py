@@ -17,6 +17,7 @@
 from functools import wraps
 
 from pennylane.devices import DefaultExecutionConfig, Device
+from pennylane.tape import QuantumScript
 
 from ..qubit.sampling import get_num_shots_and_executions
 
@@ -27,10 +28,16 @@ def _track_execute(untracked_execute):
     @wraps(untracked_execute)
     def execute(self, circuits, execution_config=DefaultExecutionConfig):
         results = untracked_execute(self, circuits, execution_config)
+        if isinstance(circuits, QuantumScript):
+            batch = (circuits,)
+            batch_results = (results,)
+        else:
+            batch = circuits
+            batch_results = results
         if self.tracker.active:
             self.tracker.update(batches=1)
             self.tracker.record()
-            for r, c in zip(results, circuits):
+            for r, c in zip(batch_results, batch):
                 qpu_executions, shots = get_num_shots_and_executions(c)
                 if c.shots:
                     self.tracker.update(
@@ -59,7 +66,11 @@ def _track_compute_derivatives(untracked_compute_derivatives):
     @wraps(untracked_compute_derivatives)
     def compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
         if self.tracker.active:
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            if isinstance(circuits, QuantumScript):
+                derivatives = 1
+            else:
+                derivatives = len(circuits)
+            self.tracker.update(derivative_batches=1, derivatives=derivatives)
             self.tracker.record()
         return untracked_compute_derivatives(self, circuits, execution_config)
 
@@ -72,12 +83,13 @@ def _track_execute_and_compute_derivatives(untracked_execute_and_compute_derivat
     @wraps(untracked_execute_and_compute_derivatives)
     def execute_and_compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
         if self.tracker.active:
-            for c in circuits:
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            for c in batch:
                 self.tracker.update(resources=c.specs["resources"])
             self.tracker.update(
                 execute_and_derivative_batches=1,
-                executions=len(circuits),
-                derivatives=len(circuits),
+                executions=len(batch),
+                derivatives=len(batch),
             )
             self.tracker.record()
         return untracked_execute_and_compute_derivatives(self, circuits, execution_config)
@@ -91,7 +103,8 @@ def _track_compute_jvp(untracked_compute_jvp):
     @wraps(untracked_compute_jvp)
     def compute_jvp(self, circuits, tangents, execution_config=DefaultExecutionConfig):
         if self.tracker.active:
-            self.tracker.update(jvp_batches=1, jvps=len(circuits))
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            self.tracker.update(jvp_batches=1, jvps=len(batch))
             self.tracker.record()
         return untracked_compute_jvp(self, circuits, tangents, execution_config)
 
@@ -104,11 +117,10 @@ def _track_execute_and_compute_jvp(untracked_execute_and_compute_jvp):
     @wraps(untracked_execute_and_compute_jvp)
     def execute_and_compute_jvp(self, circuits, tangents, execution_config=DefaultExecutionConfig):
         if self.tracker.active:
-            for c in circuits:
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            for c in batch:
                 self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_jvp_batches=1, executions=len(circuits), jvps=len(circuits)
-            )
+            self.tracker.update(execute_and_jvp_batches=1, executions=len(batch), jvps=len(batch))
             self.tracker.record()
 
         return untracked_execute_and_compute_jvp(self, circuits, tangents, execution_config)
@@ -122,7 +134,8 @@ def _track_compute_vjp(untracked_compute_vjp):
     @wraps(untracked_compute_vjp)
     def compute_vjp(self, circuits, cotangents, execution_config=DefaultExecutionConfig):
         if self.tracker.active:
-            self.tracker.update(vjp_batches=1, vjps=len(circuits))
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            self.tracker.update(vjp_batches=1, vjps=len(batch))
             self.tracker.record()
 
         return untracked_compute_vjp(self, circuits, cotangents, execution_config)
@@ -138,11 +151,10 @@ def _track_execute_and_compute_vjp(untracked_execute_and_compute_vjp):
         self, circuits, cotangents, execution_config=DefaultExecutionConfig
     ):
         if self.tracker.active:
-            for c in circuits:
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            for c in batch:
                 self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_vjp_batches=1, executions=len(circuits), vjps=len(circuits)
-            )
+            self.tracker.update(execute_and_vjp_batches=1, executions=len(batch), vjps=len(batch))
             self.tracker.record()
         return untracked_execute_and_compute_vjp(self, circuits, cotangents, execution_config)
 
@@ -165,21 +177,24 @@ def simulator_tracking(cls: type) -> type:
 
     Simulator style tracking updates:
 
-        * ``executions``: the number of unique circuits that would be required on quantum hardware
-        * ``shots``: the number of shots
-        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
-        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
-        * ``batches``: The number of times :meth:`~.execute` is called.
-        * ``results``: The results of each call of :meth:`~.execute`
-        * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
-        * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
-        * ``vjp_batches``: How many times :meth:`~.compute_vjp` is called
-        * ``execute_and_vjp_batches``: How many times :meth:`~.execute_and_compute_vjp` is called
-        * ``jvp_batches``: How many times :meth:`~.compute_jvp` is called
-        * ``execute_and_jvp_batches``: How many times :meth:`~.execute_and_compute_jvp` is called
-        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives`.
-        * ``vjps``: How many circuits are submitted to :meth:`~.compute_vjp` or :meth:`~.execute_and_compute_vjp`
-        * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
+    * ``executions``: the number of unique circuits that would be required on quantum hardware
+    * ``shots``: the number of shots
+    * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+    * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions,
+                such as for non-commuting measurements and batched parameters.
+    * ``batches``: The number of times :meth:`~pennylane.devices.Device..execute` is called.
+    * ``results``: The results of each call of :meth:`~pennylane.devices.Device.execute`
+    * ``derivative_batches``: How many times :meth:`~pennylane.devices.Device.compute_derivatives` is called.
+    * ``execute_and_derivative_batches``: How many times :meth:`~pennylane.devices.Device.execute_and_compute_derivatives`
+            is called
+    * ``vjp_batches``: How many times :meth:`~pennylane.devices.Device.compute_vjp` is called
+    * ``execute_and_vjp_batches``: How many times :meth:`~pennylane.devices.Device.execute_and_compute_vjp` is called
+    * ``jvp_batches``: How many times :meth:`~pennylane.devices.Device.compute_jvp` is called
+    * ``execute_and_jvp_batches``: How many times :meth:`~pennylane.devices.Device.execute_and_compute_jvp` is called
+    * ``derivatives``: How many circuits are submitted to :meth:`~pennylane.devices.Device..compute_derivatives`
+        or :meth:`~pennylane.devices.Device.execute_and_compute_derivatives`.
+    * ``vjps``: How many circuits are submitted to :meth:`~.compute_vjp` or :meth:`~.execute_and_compute_vjp`
+    * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
 
 
     .. code-block:: python
@@ -209,18 +224,16 @@ def simulator_tracking(cls: type) -> type:
 
     """
     if not issubclass(cls, Device):
-        raise ValueError(
-            "convert_single_circuit_to_batch only accepts subclasses of pennylane.devices.Device"
-        )
+        raise ValueError("simulator_tracking only accepts subclasses of pennylane.devices.Device")
 
     if hasattr(cls, "_applied_modifiers"):
         cls._applied_modifiers.append(simulator_tracking)
     else:
         cls._applied_modifiers = [simulator_tracking]
 
-    if cls.execute != Device.execute:
-        cls._untracked_execute = cls.execute
-        cls.execute = _track_execute(cls._untracked_execute)
+    # execute must be defined
+    cls._untracked_execute = cls.execute
+    cls.execute = _track_execute(cls._untracked_execute)
 
     if cls.compute_derivatives != Device.compute_derivatives:
         cls._untracked_compute_derivatives = cls.compute_derivatives
