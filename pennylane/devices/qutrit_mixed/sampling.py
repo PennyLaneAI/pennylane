@@ -19,11 +19,14 @@ from typing import List, Union
 import numpy as np
 import pennylane as qml
 from pennylane import math
+from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
     Shots,
     SampleMeasurement,
     SampleMP,
     CountsMP,
+    ExpectationMP,
+    VarianceMP,
 )
 from pennylane.typing import TensorLike
 
@@ -124,9 +127,27 @@ def _process_counts_samples(mp, samples, wires):
     return dict(zip(observables, counts))
 
 
+def _process_expval_samples(mp, samples, wires):
+    """Processes a shot of samples and returns the expectation value of an observable."""
+    samples_processed = _process_samples(mp, samples, wires)
+
+    eigvals, counts = np.unique(samples_processed, return_counts=True, axis=-1)
+    probs = counts / samples.shape[:-1]
+    return math.dot(probs, eigvals)
+
+
+def _process_variance_samples(mp, samples, wires):
+    """Processes a shot of samples and returns the variance of an observable."""
+    samples_processed = _process_samples(mp, samples, wires)
+
+    eigvals, counts = np.unique(samples_processed, return_counts=True, axis=-1)
+    probs = counts / samples.shape[:-1]
+    return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
+
+
 # pylint:disable = too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
-    mps: List[Union[SampleMP, CountsMP]],
+    mps: List[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -165,6 +186,10 @@ def _measure_with_samples_diagonalizing_gates(
                 res = math.squeeze(res)
             elif isinstance(mp, CountsMP):
                 res = _process_counts_samples(mp, samples, wires)
+            elif isinstance(mp, ExpectationMP):
+                res = _process_expval_samples(mp, samples, wires)
+            elif isinstance(mp, VarianceMP):
+                res = _process_variance_samples(mp, samples, wires)
             else:
                 raise NotImplementedError
             processed.append(res)
@@ -199,6 +224,64 @@ def _measure_with_samples_diagonalizing_gates(
     )
 
     return _process_single_shot(samples)
+
+
+def _measure_hamiltonian_with_samples(
+    mp: List[SampleMeasurement],
+    state: np.ndarray,
+    shots: Shots,
+    is_state_batched: bool = False,
+    rng=None,
+    prng_key=None,
+):
+    """TODO"""
+    # the list contains only one element based on how we group measurements
+    mp = mp[0]
+
+    # if the measurement process involves a Hamiltonian, measure each
+    # of the terms separately and sum
+    def _sum_for_single_shot(s):
+        results = measure_with_samples(
+            [ExpectationMP(t) for t in mp.obs.terms()[1]],
+            state,
+            s,
+            is_state_batched=is_state_batched,
+            rng=rng,
+            prng_key=prng_key,
+        )
+        return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
+
+    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
+    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
+
+
+def _measure_sum_with_samples(
+    mp: List[SampleMeasurement],
+    state: np.ndarray,
+    shots: Shots,
+    is_state_batched: bool = False,
+    rng=None,
+    prng_key=None,
+):
+    """TODO"""
+    # the list contains only one element based on how we group measurements
+    mp = mp[0]
+
+    # if the measurement process involves a Sum, measure each
+    # of the terms separately and sum
+    def _sum_for_single_shot(s):
+        results = measure_with_samples(
+            [ExpectationMP(t) for t in mp.obs],
+            state,
+            s,
+            is_state_batched=is_state_batched,
+            rng=rng,
+            prng_key=prng_key,
+        )
+        return sum(results)
+
+    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
+    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
 def _sample_state_jax(
@@ -312,7 +395,7 @@ def sample_state(
 
 
 def measure_with_samples(
-    mps: List[Union[SampleMP, CountsMP]],
+    mps: List[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -324,7 +407,7 @@ def measure_with_samples(
     have already been mapped to integer wires used in the device.
 
     Args:
-        mps (List[SampleMP]):
+        mps (List[SampleMeasurement]):
             The sample measurements to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (Shots): The number of samples to take
@@ -343,8 +426,16 @@ def measure_with_samples(
 
     all_res = []
     for group in groups:
+        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Hamiltonian):
+            measure_fn = _measure_hamiltonian_with_samples
+        elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
+            measure_fn = _measure_sum_with_samples
+        else:
+            # measure with the usual method (rotate into the measurement basis)
+            measure_fn = _measure_with_samples_diagonalizing_gates
+
         all_res.extend(
-            _measure_with_samples_diagonalizing_gates(
+            measure_fn(
                 group,
                 state,
                 shots,
