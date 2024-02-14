@@ -424,7 +424,7 @@ class TestInvalidSampling:
             _ = measure_with_samples([mp], state, _shots)
 
     @pytest.mark.parametrize(
-        "mp", [qml.expval(qml.GellMann(0, 3)), qml.var(qml.GellMann(0, 3)), qml.probs()]
+        "mp", [qml.classical_shadow([0]), qml.shadow_expval(qml.GellMann(0, 1))]
     )
     def test_currently_unsuported_observable(self, mp, two_qutrit_state):
         """Test sample measurements that are not counts or sample raise a NotImplementedError."""
