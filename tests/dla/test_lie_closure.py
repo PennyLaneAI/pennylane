@@ -196,17 +196,21 @@ class TestVSpace:
         vspace1 = VSpace(gens1)
         vspace2 = VSpace(gens2)
         assert vspace1 != vspace2
-    
+
     def test_eq_False4(self):
         """Test case where both vspaces have the same rank, same PauliWords but span different spaces"""
-        v1 = VSpace([
-            PauliSentence({PauliWord({0:"X"}): 1., PauliWord({0:"Y"}): 1.}),
-            PauliSentence({PauliWord({0:"Z"}): 1., PauliWord({0:"Y"}): 1.}),
-        ])
-        v2 = VSpace([
-            PauliSentence({PauliWord({0:"X"}): 1., PauliWord({0:"Z"}): 1.}),
-            PauliSentence({PauliWord({0:"Y"}): 1.}),
-        ])
+        v1 = VSpace(
+            [
+                PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({0: "Y"}): 1.0}),
+                PauliSentence({PauliWord({0: "Z"}): 1.0, PauliWord({0: "Y"}): 1.0}),
+            ]
+        )
+        v2 = VSpace(
+            [
+                PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({0: "Z"}): 1.0}),
+                PauliSentence({PauliWord({0: "Y"}): 1.0}),
+            ]
+        )
         assert v1 != v2
 
 
