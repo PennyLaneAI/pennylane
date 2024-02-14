@@ -73,8 +73,44 @@
     The `PauliWord` and `PauliSentence` objects in the
     [pauli](https://docs.pennylane.ai/en/stable/code/qml_pauli.html#classes) module provide an
     efficient representation and can be combined using basic arithmetic like addition, products, and
-    scalar multiplication. These objects do not need to be directly handled in most workflows,
+    scalar multiplication. These objects do not need to be directly handled in most workflows
     since manipulation will happen automatically in the background.
+
+  * Extensive improvements have been made to the string representations of PennyLane operators,
+    making them shorter and possible to copy as valid PennyLane code:
+    [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
+    [(#5138)](https://github.com/PennyLaneAI/pennylane/pull/5138)
+
+    ```
+    >>> 0.5 * X(0)
+    0.5 * X(0)
+    >>> 0.5 * (X(0) + Y(1))
+    0.5 * (X(0) + Y(1))
+    ```
+    
+    Sums with many terms are broken up into multiple lines, but can still be copied back as valid
+    code:
+
+    ```
+    >>> 0.5 * (X(0) @ X(1)) + 0.7 * (X(1) @ X(2)) + 0.8 * (X(2) @ X(3))
+    (
+        0.5 * (X(0) @ X(1))
+      + 0.7 * (X(1) @ X(2))
+      + 0.8 * (X(2) @ X(3))
+    )
+    ```
+  
+  * The `Sum` and `Prod` classes have been updated to reach feature parity with `Hamiltonian`
+    and `Tensor`, respectively. This includes support for grouping via the `pauli` module:
+    [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
+    [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+    [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
+    
+    ```pycon
+    >>> obs = [X(0) @ Y(1), Z(0), Y(0) @ Z(1), Y(1)]
+    >>> qml.pauli.group_observables(obs)
+    [[Y(0) @ Z(1)], [X(0) @ Y(1), Y(1)], [Z(0)]]
+    ```
 
 * New `qml.commutator` function that allows to compute commutators between
   `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
@@ -254,13 +290,42 @@
 * `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
   [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
 
-<h4>Other improvements</h4>
-
 * `qml.dot` now returns a `Sum` class even when all the coefficients match.
   [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
 
 * `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
   [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
+
+* Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
+  [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
+  [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
+
+* Upgrade the `Prod.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and
+  pure product operators.
+  [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+
+  ```python
+  >>> qml.operation.enable_new_opmath()
+  >>> op = X(0) @ (0.5 * X(1) + X(2))
+  >>> op.terms()
+  ([0.5, 1.0],
+   [X(1) @ X(0),
+    X(2) @ X(0)])
+  ```
+
+* Upgrade the `Sum.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and
+  pure product operators.
+  [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
+
+  ```python
+  >>> qml.operation.enable_new_opmath()
+  >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
+  >>> op.terms()
+  ([0.5, 0.7, 1.5],
+   [X(0), X(1), Y(1) @ Y(0)])
+  ```
+
+<h4>Other improvements</h4>
 
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
@@ -268,18 +333,13 @@
 * Ensure the `BlockEncode` operator is JIT-compatible with JAX.
   [(#5110)](https://github.com/PennyLaneAI/pennylane/pull/5110)
 
-* Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
-  [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
-  [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
-
-
 * The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
 
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
-* A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
+* A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
 
 * Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
@@ -295,54 +355,6 @@
 * CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
-
-
-* Upgrade the `Prod.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
-  ```python3
-  >>> qml.operation.enable_new_opmath()
-  >>> op = X(0) @ (0.5 * X(1) + X(2))
-  >>> op.terms()
-  ([0.5, 1.0],
-   [X(1) @ X(0),
-    X(2) @ X(0)])
-  ```
-  [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
-
-* Upgrade the `Sum.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and pure product operators.
-  ```python3
-  >>> qml.operation.enable_new_opmath()
-  >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
-  >>> op.terms()
-  ([0.5, 0.7, 1.5],
-   [X(0), X(1), Y(1) @ Y(0)])
-  ```
-  [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
-
-
-* String representations of Pauli operators have been improved and there are new aliases `X, Y, Z, I` for `PauliX, PauliY, PauliZ, Identity`.
-  ```
-  >>> qml.PauliX(0)
-  X(0)
-  >>> qml.PauliX('a')
-  X('a')
-  >>> 0.5 * X(0)
-  0.5 * X(0)
-  >>> 0.5 * (X(0) + Y(1))
-  0.5 * (X(0) + Y(1))
-  ```
-  [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
-
-* String representations of `Sum` objects now break into multiple lines
-  whenever the output is larger than 50 characters.
-  ```
-  >>> 0.5 * (X(0) @ X(1)) + 0.7 * (X(1) @ X(2)) + 0.8 * (X(2) @ X(3))
-  (
-      0.5 * (X(0) @ X(1))
-    + 0.7 * (X(1) @ X(2))
-    + 0.8 * (X(2) @ X(3))
-  )
-  ```
-  [(#5138)](https://github.com/PennyLaneAI/pennylane/pull/5138)
 
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
