@@ -500,11 +500,11 @@ class DefaultQubit(Device):
         """
         updated_values = {}
         if execution_config.gradient_method == "best":
-            updated_values["gradient_method"] = "device"
+            updated_values["gradient_method"] = "backprop"
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = execution_config.gradient_method in {
                 "best",
-                "device",
+                "adjoint",
                 "backprop",
             }
         if execution_config.use_device_jacobian_product is None:
