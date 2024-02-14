@@ -112,16 +112,14 @@
     [[Y(0) @ Z(1)], [X(0) @ Y(1), Y(1)], [Z(0)]]
     ```
 
-* New `qml.commutator` function that allows to compute commutators between
-  `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
+* A new `qml.commutator` function is now available that allows you to compute commutators between
+  operators:
   [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
   [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
 
-  Basic usage with PennyLane operators.
-
   ```pycon
-  >>> qml.commutator(qml.PauliX(0), qml.PauliY(0))
-  2j*(PauliZ(wires=[0]))
+  >>> qml.commutator(X(0), Y(0))
+  2j * Z(0)
   ```
 
   We can return a `PauliSentence` instance by setting `pauli=True`.
@@ -271,9 +269,6 @@
   
   * You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each
     other. For example `ps1 - pw1 - 1`.
-  
-  * Overall, you can now intuitively construct `PauliSentence` operators like
-    `0.5 * pw1 - 1.5 * ps1 + 2`.
 
   * You can now also use `qml.dot` with `PauliWord`, `PauliSentence` and operators, e.g.
     `qml.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`.
