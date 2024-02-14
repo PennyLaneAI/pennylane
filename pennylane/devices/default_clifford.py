@@ -37,6 +37,7 @@ from pennylane.measurements import (
     VarianceMP,
     ProbabilityMP,
     SampleMP,
+    CountsMP,
     ClassicalShadowMP,
     ShadowExpvalMP,
 )
@@ -282,10 +283,10 @@ class DefaultClifford(Device):
         to reach its limit with ``20-24`` qubits on a typical consumer grade machine.
 
         As long as number of qubits are below this limit, one can simply use the :func:`qml.probs <pennylane.probs>`
-        with its usual arguments and probabilities for the specified target states would be computed and returned.
-        We test this for a circuit that prepares the ``n``-qubit Greenberger-Horne-Zeilinger state (GHZ state) state.
+        function with its usual arguments to compute probabilities for the complete computational basis states.
+        We test this for a circuit that prepares the ``n``-qubit Greenberger-Horne-Zeilinger (GHZ) state.
         This means that the probabilities for the basis states :math:`|0\rangle^{\otimes n}` and
-        :math:`|1\rangle^{\otimes n}` should be :math:`0.5`, and for :math:`0.0` for the rest.
+        :math:`|1\rangle^{\otimes n}` should be :math:`0.5`, and :math:`0.0` for the rest.
 
         .. code-block:: python
 
@@ -304,8 +305,10 @@ class DefaultClifford(Device):
         >>> circuit()
         tensor([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5], requires_grad=True)
 
-        Once above the limit, one can use :mod:`qml.expval <pennylane.expval>` compute the expectation value
-        of a single target ``basis state`` with the :mod:`qml.Projector <pennylane.Projector>`.
+        Once above the limit (or even otherwise), one can obtain the probability
+        of a single target basis state by computing the expectation value of the
+        corresponding projector using :mod:`qml.expval <pennylane.expval>` and
+        :mod:`qml.Projector <pennylane.Projector>`.
 
         .. code-block:: python
 
@@ -626,6 +629,12 @@ class DefaultClifford(Device):
         """Compute sample output from a stim circuit for a given Pauli observable"""
         meas_dict = {"X": "MX", "Y": "MY", "Z": "MZ", "_": "M"}
 
+        if isinstance(meas_obs, BasisStateProjector):
+            stim_circ = stim_circuit.copy()
+            stim_circ.append_from_stim_program_text("M " + " ".join(map(str, meas_obs.wires)))
+            sampler = stim_circ.compile_sampler(seed=sample_seed)
+            return [qml.math.array(sampler.sample(shots=shots), dtype=int)], qml.math.array([1.0])
+
         coeffs, paulis = _convert_op_to_linear_comb(meas_obs)
 
         samples = []
@@ -646,7 +655,7 @@ class DefaultClifford(Device):
         num_shots = circuit.shots.total_shots
         sample_seed = seed if isinstance(seed, int) else self._rng.integers(2**31 - 1, size=1)[0]
 
-        # maps measurement type to the desired analytic measurement method
+        # maps measurement type to the desired sampling measurement method
         measurement_map = {
             ExpectationMP: self._sample_expectation,
             VarianceMP: self._sample_variance,
@@ -660,21 +669,26 @@ class DefaultClifford(Device):
             if measurement_func is not None:
                 res = measurement_func(meas, stim_circuit, shots=num_shots, seed=sample_seed)
             else:
+                # Decide wire order
                 meas_wires = meas.wires if meas.wires else range(stim_circuit.num_qubits)
-                meas_op = meas.obs or qml.prod(*[qml.PauliZ(idx) for idx in meas_wires])
-                samples = qml.math.array(
-                    [
-                        self._measure_observable_sample(
-                            meas_op, stim_circuit, num_shots, sample_seed
-                        )[0]
-                    ]
-                )
                 wire_order = {wire: idx for idx, wire in enumerate(meas.wires)}
-                res = (
-                    qml.math.squeeze(samples[0], axis=0)
-                    if isinstance(meas, SampleMP)
-                    else meas.process_samples(samples=samples, wire_order=wire_order)
-                )
+                # Decide measurement op
+                meas_op = meas.obs or qml.prod(*[qml.PauliZ(idx) for idx in meas_wires])
+                samples = self._measure_observable_sample(
+                    meas_op, stim_circuit, num_shots, sample_seed
+                )[0]
+                # Check if rotation was permissible
+                if len(samples) > 1:
+                    raise qml.QuantumFunctionError(
+                        f"Observable {meas_op.name} is not supported for rotating probabilities on {self.name}."
+                    )
+                # Process the result from samples
+                res = meas.process_samples(samples=np.array(samples), wire_order=wire_order)
+                # Post-processing for special cases
+                if isinstance(meas, CountsMP):
+                    res = res[0]
+                elif isinstance(meas, SampleMP):
+                    res = np.squeeze(res)
 
             results.append(res)
 
@@ -829,7 +843,7 @@ class DefaultClifford(Device):
         Computes the Rényi entanglement entropy :math:`S_A` for a subsytem described by
         :math:`A`, :math:`S_A = \text{rank}(\text{proj}_A {\mathcal{S}}) - |\mathcal{S}|`,
         where :math:`\mathcal{S}` is the stabilizer group for the system using the theory
-        described in `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
+        described in Appendix A.1.d of `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
 
         Args:
             stabilizer (TensorLike): stabilizer set for the system
@@ -868,7 +882,7 @@ class DefaultClifford(Device):
             qml.math.any(qml.qchem.tapering._reduced_row_echelon(partition_mat), axis=1)
         )
 
-        # Use the Eq. A17 in arXiv:1901.08092 for entropy calculation
+        # Compute the entropy
         entropy = qml.math.log(2) * (rank - len(wires))
 
         # Determine wether to use any log base
@@ -879,7 +893,14 @@ class DefaultClifford(Device):
 
     # pylint: disable=too-many-branches, too-many-statements
     def _measure_probability(self, meas, _, **kwargs):
-        """Measure the probability of each computational basis state."""
+        """Measure the probability of each computational basis state.
+
+        Computes the probability for each computational basis state vector. This is done by
+        building the complete basis using a vectorized integer to bit-array transformation.
+        Then, for each basis state, one iterates over each of the measured qubits, and checks
+        the possibility of that state and performs post-selection. If an impossible state is
+        encountered, the corresponding branches are tracked and marked in a visited-array.
+        """
         circuit = kwargs.get("circuit")
 
         # Set the target states
@@ -971,15 +992,13 @@ class DefaultClifford(Device):
         """Measure the expectation value with respect to samples from simulator device."""
         # Get the observable for the expectation value measurement
         meas_op = meas.obs
-        if isinstance(meas_op, BasisStateProjector):
-            stim_circ = stim_circuit.copy()
-            stim_circ.append_from_stim_program_text("M " + " ".join(map(str, meas_op.wires)))
-            sampler = stim_circ.compile_sampler(seed=seed)
-            samples = qml.math.array(sampler.sample(shots=shots), dtype=int)
-            matches = np.where((samples == meas_op.data[0]).all(axis=1))[0]
-            return len(matches) / shots
 
         samples, coeffs = self._measure_observable_sample(meas_op, stim_circuit, shots, seed)
+
+        if isinstance(meas_op, BasisStateProjector):
+            matches = np.where((samples[0] == meas_op.data[0]).all(axis=1))[0]
+            return len(matches) / shots
+
         expecs = [
             qml.math.mean(qml.math.power([-1] * shots, qml.math.sum(sample, axis=1)))
             for sample in samples

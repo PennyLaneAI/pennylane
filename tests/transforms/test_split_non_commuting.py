@@ -94,6 +94,7 @@ class TestUnittestSplitNonCommuting:
             qml.PauliZ(0)
             qml.Hadamard(0)
             qml.CNOT((0, 1))
+            meas_type()  # Included to check splitting with all-wire measurements
             meas_type(wires=[0])
             meas_type(wires=[1])
             meas_type(wires=[0, 1])
@@ -279,6 +280,7 @@ class TestUnittestSplitNonCommuting:
             qml.Hadamard(0)
             qml.Hadamard(1)
             meas_type_1(op=qml.PauliX(0))
+            meas_type_2()
             meas_type_2(wires=[1])
             meas_type_2(wires=[0, 1])
 
@@ -288,7 +290,8 @@ class TestUnittestSplitNonCommuting:
         assert len(split) == 2
         assert qml.equal(split[0].measurements[0], meas_type_1(op=qml.PauliX(0)))
         assert qml.equal(split[0].measurements[1], meas_type_2(wires=[1]))
-        assert qml.equal(split[1].measurements[0], meas_type_2(wires=[0, 1]))
+        assert qml.equal(split[1].measurements[0], meas_type_2())
+        assert qml.equal(split[1].measurements[1], meas_type_2(wires=[0, 1]))
 
 
 # measurements that require shots=True
