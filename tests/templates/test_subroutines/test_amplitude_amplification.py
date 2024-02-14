@@ -45,7 +45,7 @@ class TestInitialization:
     """Test the AmplitudeAmplification class initializes correctly."""
 
     @pytest.mark.parametrize(
-        "fixed_point, aux_wire, raise_error",
+        "fixed_point, work_wire, raise_error",
         (
             (True, 3, False),
             (True, "a", False),
@@ -53,24 +53,24 @@ class TestInitialization:
             (True, None, True),
         ),
     )
-    def test_error_none_wire(self, fixed_point, aux_wire, raise_error):
-        """Test an error is raised if aux_wire is None and fixed_point is True."""
+    def test_error_none_wire(self, fixed_point, work_wire, raise_error):
+        """Test an error is raised if work_wire is None and fixed_point is True."""
 
         U = generator(wires=range(3))
         O = oracle([0, 2], wires=range(3))
 
         if raise_error:
             with pytest.raises(
-                TypeError, match="aux_wire must be specified if fixed_point == True."
+                TypeError, match="work_wire must be specified if fixed_point == True."
             ):
                 qml.AmplitudeAmplification(
-                    U, O, iters=3, fixed_point=fixed_point, aux_wire=aux_wire
+                    U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire
                 )
 
         else:
             try:
                 qml.AmplitudeAmplification(
-                    U, O, iters=3, fixed_point=fixed_point, aux_wire=aux_wire
+                    U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire
                 )
             except TypeError:
                 assert False  # test should fail if an error was raised when we expect it not to
@@ -98,7 +98,7 @@ class TestInitialization:
                 assert False  # test should fail if an error was raised when we expect it not to
 
     @pytest.mark.parametrize(
-        "wires, fixed_point, aux_wire, raise_error",
+        "wires, fixed_point, work_wire, raise_error",
         (
             ([0, 1, 2], True, 2, True),
             ([0, 1, 2], True, "a", False),
@@ -106,45 +106,45 @@ class TestInitialization:
             ([0, 1], False, 0, False),
         ),
     )
-    def test_error_wrong_wire(self, wires, fixed_point, aux_wire, raise_error):
-        """Test an error is raised if aux_wire is part of the U wires."""
+    def test_error_wrong_wire(self, wires, fixed_point, work_wire, raise_error):
+        """Test an error is raised if work_wire is part of the U wires."""
 
         U = generator(wires=wires)
         O = oracle([0], wires=wires)
 
         if raise_error:
-            with pytest.raises(TypeError, match="aux_wire must be different from the wires of U."):
+            with pytest.raises(TypeError, match="work_wire must be different from the wires of U."):
                 qml.AmplitudeAmplification(
-                    U, O, iters=3, fixed_point=fixed_point, aux_wire=aux_wire
+                    U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire
                 )
 
         else:
             try:
                 qml.AmplitudeAmplification(
-                    U, O, iters=3, fixed_point=fixed_point, aux_wire=aux_wire
+                    U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire
                 )
             except TypeError:
                 assert False  # test should fail if an error was raised when we expect it not to
 
     @pytest.mark.parametrize(
-        "U, O, iters, fixed_point, aux_wire",
+        "U, O, iters, fixed_point, work_wire",
         (
             (generator(wires=range(3)), oracle([0, 1], wires=range(3)), True, 3),
             (generator(wires=range(2)), oracle([0, 1], wires=range(2)), False, 2),
             (generator(wires=range(4)), oracle([0, 1], wires=range(4)), True, 5),
         ),
     )
-    def test_init_correctly(self, U, O, iters, fixed_point, aux_wire):
+    def test_init_correctly(self, U, O, iters, fixed_point, work_wire):
         """Test that all of the attributes are initalized correctly."""
 
-        op = qml.AmplitudeAmplification(U, O, iters, fixed_point, aux_wire)
+        op = qml.AmplitudeAmplification(U, O, iters, fixed_point, work_wire)
 
-        assert op.wires == U.wires + qml.wires.Wires(aux_wire)
+        assert op.wires == U.wires + qml.wires.Wires(work_wire)
         assert op.U == U
         assert op.O == O
         assert op.iters == iters
         assert op.fixed_point == fixed_point
-        assert op.aux_wire == aux_wire
+        assert op.work_wire == work_wire
 
 
 class TestResults:
