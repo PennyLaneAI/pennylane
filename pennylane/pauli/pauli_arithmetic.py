@@ -682,6 +682,9 @@ class PauliSentence(dict):
     def __matmul__(self, other):
         """Matrix / tensor product between two PauliSentences by iterating over each sentence and multiplying
         the Pauli words pair-wise"""
+        if isinstance(other, PauliWord):
+            other = PauliSentence({other: 1.})
+
         final_ps = PauliSentence()
 
         if len(self) == 0 or len(other) == 0:
