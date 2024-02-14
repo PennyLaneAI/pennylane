@@ -472,7 +472,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert dispatched_transform.classical_cotransform is None
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_batch_transform(self, valid_transform):
+    @pytest.mark.parametrize("batch_type", (tuple, list))
+    def test_batch_transform(self, valid_transform, batch_type, num_margin=1e-8):
         """Test that dispatcher can dispatch onto a batch of tapes."""
 
         def check_batch(batch):
@@ -483,36 +484,46 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         def comb_postproc(results: TensorLike, fn1: Callable, fn2: Callable):
             return fn1(fn2(results))
 
-        # Create a fictitious tape
-        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
-        tape = qml.tape.QuantumTape(
-            [qml.RX(0.5, wires=0), qml.RY(0.1, wires=1), qml.CNOT(wires=(0, 1))], [qml.expval(H)]
-        )
+        # Create a simple device and tape
+        dev = qml.device("default.qubit", wires=3)
+        H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+        measur = [qml.expval(H)]
+        ops = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
+        tape = qml.tape.QuantumTape(ops, measur)
 
-        # Test with two elementary user-defined transforms and fictitious results
+        ############################################################
+        ### Test with two elementary user-defined transforms
+        ############################################################
+
         dispatched_transform1 = transform(valid_transform)
         dispatched_transform2 = transform(valid_transform)
         batch1, fn1 = dispatched_transform1(tape, index=0)
         batch2, fn2 = dispatched_transform2(batch1, index=0)
-
-        result = (
-            qml.numpy.tensor([0.0, 1.0, 5.0], requires_grad=True),
-            qml.numpy.tensor([1.5, 3.0, 6.8], requires_grad=True),
-        )
-
-        assert check_batch(batch1) and check_batch(batch2)
-        assert isinstance(comb_postproc(result, fn1, fn2), TensorLike)
-
-        # Test with two `concrete` transforms
-        batch1, fn1 = qml.transforms.hamiltonian_expand(tape)
-        batch2, fn2 = qml.transforms.broadcast_expand(batch1)
         result = dev.execute(batch2)
 
-        # Check that result is equal to the one obtained with `map_batch_transform`
-        batch_m, fn_m = qml.transforms.map_batch_transform(qml.transforms.broadcast_expand, batch1)
-        res_check = dev.execute(batch_m)
+        assert check_batch(batch2)
+        assert isinstance(comb_postproc(result, fn1, fn2), TensorLike)
 
-        assert comb_postproc(result, fn1, fn2) == comb_postproc(res_check, fn1, fn_m)
+        ############################################################
+        ### Test with two `concrete` transforms
+        ############################################################
+
+        tape = qml.tape.QuantumTape(ops, measur)
+        batch1, fn1 = qml.transforms.hamiltonian_expand(tape)
+        batch2, fn2 = qml.transforms.merge_rotations(batch1)
+        result = dev.execute(batch2)
+
+        assert check_batch(batch2)
+        assert isinstance(result, TensorLike)
+
+        # check that final batch and post-processing functions are what we expect after the two transforms
+        fin_ops = [qml.Hadamard(0), qml.RX(0.8, 0), qml.CNOT([0, 1])]
+        tp1 = qml.tape.QuantumTape(fin_ops, [qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliZ(1))])
+        tp2 = qml.tape.QuantumTape(fin_ops, [qml.expval(qml.PauliY(2) @ qml.PauliZ(1))])
+        fin_batch = batch_type([tp1, tp2])
+
+        assert all(qml.equal(tapeA, tapeB) for tapeA, tapeB in zip(fin_batch, batch2))
+        assert abs(comb_postproc(result, fn1, fn2).item() - 0.5) < num_margin
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_custom_qnode_transform(self, valid_transform):

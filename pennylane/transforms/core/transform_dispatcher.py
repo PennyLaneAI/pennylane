@@ -356,9 +356,9 @@ class TransformDispatcher:
                 final_results.append(new_res)
                 count += s
 
-            return final_results
+            return tuple(final_results)
 
-        return execution_tapes, processing_fn
+        return tuple(execution_tapes), processing_fn
 
 
 class TransformContainer:
