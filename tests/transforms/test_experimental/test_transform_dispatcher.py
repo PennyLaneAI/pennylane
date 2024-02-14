@@ -485,7 +485,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             return fn1(fn2(results))
 
         # Create a simple device and tape
-        dev = qml.device("default.qubit", wires=3)
+        tmp_dev = qml.device("default.qubit", wires=3)
         H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
         measur = [qml.expval(H)]
         ops = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
@@ -499,7 +499,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         dispatched_transform2 = transform(valid_transform)
         batch1, fn1 = dispatched_transform1(tape, index=0)
         batch2, fn2 = dispatched_transform2(batch1, index=0)
-        result = dev.execute(batch2)
+        result = tmp_dev.execute(batch2)
 
         assert check_batch(batch2)
         assert isinstance(comb_postproc(result, fn1, fn2), TensorLike)
@@ -511,7 +511,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         tape = qml.tape.QuantumTape(ops, measur)
         batch1, fn1 = qml.transforms.hamiltonian_expand(tape)
         batch2, fn2 = qml.transforms.merge_rotations(batch1)
-        result = dev.execute(batch2)
+        result = tmp_dev.execute(batch2)
 
         assert check_batch(batch2)
         assert isinstance(result, TensorLike)
