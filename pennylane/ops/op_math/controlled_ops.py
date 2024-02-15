@@ -316,7 +316,7 @@ class CZ(ControlledOp):
 
     def __init__(self, wires):
         control_wire, wire = wires
-        super().__init__(qml.Z(wires=wire), control_wire)
+        super().__init__(qml.Z(wire), control_wire)
 
     @staticmethod
     @lru_cache()
@@ -461,7 +461,7 @@ class MultiControlledX(ControlledOp):
         control_values = _check_and_convert_control_values(control_values, control_wires)
 
         super().__init__(
-            qml.X(wires=wires),
+            qml.X(wires),
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -564,7 +564,7 @@ class MultiControlledX(ControlledOp):
                 "At least one work wire is required to decompose operation: MultiControlledX"
             )
 
-        flips1 = [qml.X(wires=w) for w, val in zip(control_wires, control_values) if not val]
+        flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
         if len(control_wires) == 1:
             decomp = [qml.CNOT(wires=wires)]
@@ -573,7 +573,7 @@ class MultiControlledX(ControlledOp):
         else:
             decomp = decompose_mcx(control_wires, target_wire, work_wires)
 
-        flips2 = [qml.X(wires=w) for w, val in zip(control_wires, control_values) if not val]
+        flips2 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
         return flips1 + decomp + flips2
 

@@ -38,12 +38,12 @@ obs = {
     "Identity": qml.Identity(wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
-    "PauliX": qml.X(wires=[0]),
+    "PauliX": qml.X([0]),
     "PauliY": qml.Y(0),
     "PauliZ": qml.Z(0),
-    "X": qml.X(wires=[0]),
-    "Y": qml.Y(wires=[0]),
-    "Z": qml.Z(wires=[0]),
+    "X": qml.X([0]),
+    "Y": qml.Y([0]),
+    "Z": qml.Z([0]),
     "Projector": [
         qml.Projector(np.array([1]), wires=[0]),
         qml.Projector(np.array([0, 1]), wires=[0]),
@@ -70,21 +70,21 @@ if not set(all_obs) == all_available_obs:
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
 obs_lst = [
-    qml.X(wires=0) @ qml.Y(wires=1),
-    qml.X(wires=1) @ qml.Y(wires=0),
-    qml.X(wires=1) @ qml.Z(wires=2),
-    qml.X(wires=2) @ qml.Z(wires=1),
-    qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.Z(wires=2),
-    qml.Z(wires=0) @ qml.X(wires=1) @ qml.Y(wires=2),
+    qml.X(0) @ qml.Y(1),
+    qml.X(1) @ qml.Y(0),
+    qml.X(1) @ qml.Z(2),
+    qml.X(2) @ qml.Z(1),
+    qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.Z(2),
+    qml.Z(0) @ qml.X(1) @ qml.Y(2),
 ]
 
 obs_permuted_lst = [
-    qml.Y(wires=1) @ qml.X(wires=0),
-    qml.Y(wires=0) @ qml.X(wires=1),
-    qml.Z(wires=2) @ qml.X(wires=1),
-    qml.Z(wires=1) @ qml.X(wires=2),
-    qml.Z(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1),
-    qml.X(wires=1) @ qml.Y(wires=2) @ qml.Z(wires=0),
+    qml.Y(1) @ qml.X(0),
+    qml.Y(0) @ qml.X(1),
+    qml.Z(2) @ qml.X(1),
+    qml.Z(1) @ qml.X(2),
+    qml.Z(2) @ qml.Identity(wires=0) @ qml.Identity(wires=1),
+    qml.X(1) @ qml.Y(2) @ qml.Z(0),
 ]
 
 label_maps = [[0, 1, 2], ["a", "b", "c"], ["beta", "alpha", "gamma"], [3, "beta", "a"]]
@@ -232,7 +232,7 @@ class TestExpval:
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Z(wires=0)), qml.expval(qml.Z(wires=1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
         res = circuit()
         assert np.allclose(
@@ -252,7 +252,7 @@ class TestExpval:
             qml.RY(theta, wires=[0])
             qml.RY(phi, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.X(wires=0)), qml.expval(qml.X(wires=1))
+            return qml.expval(qml.X(0)), qml.expval(qml.X(1))
 
         res = circuit()
         expected = np.array([np.sin(theta) * np.sin(phi), np.sin(phi)])
@@ -271,7 +271,7 @@ class TestExpval:
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Y(wires=0)), qml.expval(qml.Y(wires=1))
+            return qml.expval(qml.Y(0)), qml.expval(qml.Y(1))
 
         res = circuit()
         expected = np.array([0.0, -np.cos(theta) * np.sin(phi)])
@@ -427,7 +427,7 @@ class TestTensorExpval:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.X(wires=0) @ qml.Y(wires=2))
+            return qml.expval(qml.X(0) @ qml.Y(2))
 
         res = circuit()
 
@@ -451,7 +451,7 @@ class TestTensorExpval:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.Z(wires=0) @ qml.Hadamard(wires=1) @ qml.Y(wires=2))
+            return qml.expval(qml.Z(0) @ qml.Hadamard(wires=1) @ qml.Y(2))
 
         res = circuit()
 
@@ -470,8 +470,8 @@ class TestTensorExpval:
         in the tensor observable, provided the wires each term acts on remain constant.
 
         eg:
-        ob1 = qml.Z(wires=0) @ qml.Y(wires=1)
-        ob2 = qml.Y(wires=1) @ qml.Z(wires=0)
+        ob1 = qml.Z(0) @ qml.Y(1)
+        ob2 = qml.Y(1) @ qml.Z(0)
 
         @qml.qnode(dev)
         def circ(obs):
@@ -501,7 +501,7 @@ class TestTensorExpval:
         dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
 
         def circ(wire_labels):
-            return qml.expval(qml.Z(wires=wire_labels[0]) @ qml.X(wires=wire_labels[2]))
+            return qml.expval(qml.Z(wire_labels[0]) @ qml.X(wire_labels[2]))
 
         c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])
@@ -553,7 +553,7 @@ class TestTensorExpval:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.Z(wires=0) @ qml.Hermitian(A_, wires=[1, 2]))
+            return qml.expval(qml.Z(0) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -664,7 +664,7 @@ class TestSample:
         @qml.qnode(dev)
         def circuit():
             qml.RX(1.5708, wires=[0])
-            return qml.sample(qml.Z(wires=0))
+            return qml.sample(qml.Z(0))
 
         res = circuit()
 
@@ -1192,7 +1192,7 @@ class TestVar:
         def circuit():
             qml.RX(phi, wires=[0])
             qml.RY(theta, wires=[0])
-            return qml.var(qml.Z(wires=0))
+            return qml.var(qml.Z(0))
 
         res = circuit()
 
@@ -1371,8 +1371,8 @@ class TestTensorVar:
         in the tensor observable, provided the wires each term acts on remain constant.
 
         eg:
-        ob1 = qml.Z(wires=0) @ qml.Y(wires=1)
-        ob2 = qml.Y(wires=1) @ qml.Z(wires=0)
+        ob1 = qml.Z(0) @ qml.Y(1)
+        ob2 = qml.Y(1) @ qml.Z(0)
 
         @qml.qnode(dev)
         def circ(obs):
@@ -1401,7 +1401,7 @@ class TestTensorVar:
         dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
 
         def circ(wire_labels):
-            return qml.var(qml.Z(wires=wire_labels[0]) @ qml.X(wires=wire_labels[2]))
+            return qml.var(qml.Z(wire_labels[0]) @ qml.X(wire_labels[2]))
 
         c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])

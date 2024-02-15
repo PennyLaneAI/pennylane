@@ -97,7 +97,7 @@ using arithmetic operators for more complex conditioning:
         m0 = qml.measure(0)
         m1 = qml.measure(1)
         qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
-        return qml.expval(qml.Z(wires=2))
+        return qml.expval(qml.Z(2))
 
 Wires can be reused as normal after making mid-circuit measurements. Moreover, a measured wire can also be
 reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qml.measure`` to ``True``.

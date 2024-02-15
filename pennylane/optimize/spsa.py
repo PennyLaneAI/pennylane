@@ -118,7 +118,7 @@ class SPSAOptimizer:
     ... def layer_fn_spsa(inputs, weights):
     ...     qml.AngleEmbedding(inputs, wires=range(n_qubits))
     ...     qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
-    ...     return qml.expval(qml.Z(wires=0))
+    ...     return qml.expval(qml.Z(0))
     ...
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
     ... def fn(params, tensor_in, tensor_out):

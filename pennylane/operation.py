@@ -509,7 +509,7 @@ class Operator(abc.ABC):
                 # The general signature of this function is (*parameters, wires, **hyperparameters).
                 op_list = []
                 if do_flip:
-                    op_list.append(qml.X(wires=wires[1]))
+                    op_list.append(qml.X(wires[1]))
                 op_list.append(qml.RX(angle, wires=wires[0]))
                 return op_list
 

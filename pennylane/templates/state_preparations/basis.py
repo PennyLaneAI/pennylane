@@ -43,7 +43,7 @@ class BasisStatePreparation(Operation):
         @qml.qnode(dev)
         def circuit(basis_state):
             qml.BasisStatePreparation(basis_state, wires=range(4))
-            return [qml.expval(qml.Z(wires=i)) for i in range(4)]
+            return [qml.expval(qml.Z(i)) for i in range(4)]
 
         basis_state = [0, 1, 1, 0]
 

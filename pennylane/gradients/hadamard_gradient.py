@@ -326,9 +326,9 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                 elif m.obs:
                     obs_new = [m.obs]
                 else:
-                    obs_new = [qml.Z(wires=i) for i in m.wires]
+                    obs_new = [qml.Z(i) for i in m.wires]
 
-                obs_new.append(qml.Y(wires=aux_wire))
+                obs_new.append(qml.Y(aux_wire))
                 obs_new = qml.operation.Tensor(*obs_new)
 
                 if isinstance(m, qml.measurements.ExpectationMP):
@@ -427,44 +427,38 @@ def _get_generators(trainable_op):
     """
     # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
     if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
-        generators = [qml.Z(wires=trainable_op.wires)]
+        generators = [qml.Z(trainable_op.wires)]
         coeffs = [-0.5]
     elif isinstance(trainable_op, qml.CRX):
         generators = [
-            qml.X(wires=trainable_op.wires[1]),
-            qml.prod(qml.Z(wires=trainable_op.wires[0]), qml.X(wires=trainable_op.wires[1])),
+            qml.X(trainable_op.wires[1]),
+            qml.prod(qml.Z(trainable_op.wires[0]), qml.X(trainable_op.wires[1])),
         ]
         coeffs = [-0.25, 0.25]
     elif isinstance(trainable_op, qml.CRY):
         generators = [
-            qml.Y(wires=trainable_op.wires[1]),
-            qml.prod(qml.Z(wires=trainable_op.wires[0]), qml.Y(wires=trainable_op.wires[1])),
+            qml.Y(trainable_op.wires[1]),
+            qml.prod(qml.Z(trainable_op.wires[0]), qml.Y(trainable_op.wires[1])),
         ]
         coeffs = [-0.25, 0.25]
     elif isinstance(trainable_op, qml.CRZ):
         generators = [
-            qml.Z(wires=trainable_op.wires[1]),
-            qml.prod(qml.Z(wires=trainable_op.wires[0]), qml.Z(wires=trainable_op.wires[1])),
+            qml.Z(trainable_op.wires[1]),
+            qml.prod(qml.Z(trainable_op.wires[0]), qml.Z(trainable_op.wires[1])),
         ]
         coeffs = [-0.25, 0.25]
     elif isinstance(trainable_op, qml.IsingXX):
-        generators = [
-            qml.prod(qml.X(wires=trainable_op.wires[0]), qml.X(wires=trainable_op.wires[1]))
-        ]
+        generators = [qml.prod(qml.X(trainable_op.wires[0]), qml.X(trainable_op.wires[1]))]
         coeffs = [-0.5]
     elif isinstance(trainable_op, qml.IsingYY):
-        generators = [
-            qml.prod(qml.Y(wires=trainable_op.wires[0]), qml.Y(wires=trainable_op.wires[1]))
-        ]
+        generators = [qml.prod(qml.Y(trainable_op.wires[0]), qml.Y(trainable_op.wires[1]))]
         coeffs = [-0.5]
     elif isinstance(trainable_op, qml.IsingZZ):
-        generators = [
-            qml.prod(qml.Z(wires=trainable_op.wires[0]), qml.Z(wires=trainable_op.wires[1]))
-        ]
+        generators = [qml.prod(qml.Z(trainable_op.wires[0]), qml.Z(trainable_op.wires[1]))]
         coeffs = [-0.5]
     # For rotation it is possible to only use PauliZ by applying some other rotations in the main function
     elif isinstance(trainable_op, qml.Rot):
-        generators = [qml.Z(wires=trainable_op.wires)]
+        generators = [qml.Z(trainable_op.wires)]
         coeffs = [-0.5]
     else:
         generators = trainable_op.generator().ops

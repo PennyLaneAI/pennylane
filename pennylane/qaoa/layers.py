@@ -82,7 +82,7 @@ def cost_layer(gamma, hamiltonian):
 
                 qaoa.cost_layer(gamma, cost_h)
 
-                return [qml.expval(qml.Z(wires=i)) for i in range(2)]
+                return [qml.expval(qml.Z(i)) for i in range(2)]
 
         which gives us a circuit of the form:
 
@@ -144,7 +144,7 @@ def mixer_layer(alpha, hamiltonian):
 
                 qaoa.mixer_layer(alpha, mixer_h)
 
-                return [qml.expval(qml.Z(wires=i)) for i in range(2)]
+                return [qml.expval(qml.Z(i)) for i in range(2)]
 
         which gives us a circuit of the form:
 

@@ -103,7 +103,7 @@ def layer(template, depth, *args, **kwargs):
             def subroutine(wires):
                 qml.Hadamard(wires=wires[0])
                 qml.CNOT(wires=wires)
-                qml.X(wires=wires[1])
+                qml.X(wires[1])
 
         We wish to repeat this gate sequence three times on wires ``1`` and ``2``. Since the wires on which the subroutine acts
         don't change with each repetition, the ``wires`` parameter is passed as a keyword argument.

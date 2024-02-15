@@ -1233,14 +1233,14 @@ def diagonalize_pauli_word(pauli_word):
         for sigma in pauli_word.obs:
             if sigma.name != "Identity":
                 if diag_term is None:
-                    diag_term = qml.Z(wires=sigma.wires)
+                    diag_term = qml.Z(sigma.wires)
                 else:
-                    diag_term @= qml.Z(wires=sigma.wires)
+                    diag_term @= qml.Z(sigma.wires)
 
     elif isinstance(pauli_word, paulis_with_identity):
         sigma = pauli_word
         if sigma.name != "Identity":
-            diag_term = qml.Z(wires=sigma.wires)
+            diag_term = qml.Z(sigma.wires)
 
     if diag_term is None:
         diag_term = qml.Identity(pauli_word.wires.tolist()[0])

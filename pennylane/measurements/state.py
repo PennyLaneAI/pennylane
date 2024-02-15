@@ -103,7 +103,7 @@ def density_matrix(wires) -> "DensityMatrixMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.Y(wires=0)
+            qml.Y(0)
             qml.Hadamard(wires=1)
             return qml.density_matrix([0])
 

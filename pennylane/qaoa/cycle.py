@@ -278,16 +278,16 @@ def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: Tuple) ->
             out_wire = edges_to_qubits[get_nvalues(out_edge)]
             in_wire = edges_to_qubits[get_nvalues(in_edge)]
 
-            t = qml.X(wires=wire) @ qml.X(wires=out_wire) @ qml.X(wires=in_wire)
+            t = qml.X(wire) @ qml.X(out_wire) @ qml.X(in_wire)
             ops.append(t)
 
-            t = qml.Y(wires=wire) @ qml.Y(wires=out_wire) @ qml.X(wires=in_wire)
+            t = qml.Y(wire) @ qml.Y(out_wire) @ qml.X(in_wire)
             ops.append(t)
 
-            t = qml.Y(wires=wire) @ qml.X(wires=out_wire) @ qml.Y(wires=in_wire)
+            t = qml.Y(wire) @ qml.X(out_wire) @ qml.Y(in_wire)
             ops.append(t)
 
-            t = qml.X(wires=wire) @ qml.Y(wires=out_wire) @ qml.Y(wires=in_wire)
+            t = qml.X(wire) @ qml.Y(out_wire) @ qml.Y(in_wire)
             ops.append(t)
 
             coeffs.extend([0.25, 0.25, 0.25, -0.25])
@@ -404,7 +404,7 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Hamilt
             raise TypeError(f"Edge {edge} does not contain weight data") from e
 
         coeffs.append(np.log(weight))
-        ops.append(qml.Z(wires=edges_to_qubits[get_nvalues(edge)]))
+        ops.append(qml.Z(edges_to_qubits[get_nvalues(edge)]))
 
     H = Hamiltonian(coeffs, ops)
     # store the valuable information that all observables are in one commuting group

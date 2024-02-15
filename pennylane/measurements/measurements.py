@@ -370,7 +370,7 @@ class MeasurementProcess(ABC):
 
         **Example:**
 
-        >>> m = MeasurementProcess(Expectation, obs=qml.X(wires=1))
+        >>> m = MeasurementProcess(Expectation, obs=qml.X(1))
         >>> m.eigvals()
         array([1, -1])
 

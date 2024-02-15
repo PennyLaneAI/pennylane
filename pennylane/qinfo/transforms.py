@@ -864,7 +864,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
         @qml.qnode(dev, interface="jax")
         def circuit1():
-            qml.Z(wires=0)
+            qml.Z(0)
             return qml.state()
 
     >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))

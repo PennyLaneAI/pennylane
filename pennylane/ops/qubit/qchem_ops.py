@@ -147,7 +147,7 @@ class SingleExcitation(Operation):
 
         @qml.qnode(dev)
         def circuit(phi):
-            qml.X(wires=0)
+            qml.X(0)
             qml.SingleExcitation(phi, wires=[0, 1])
             return qml.state()
 
@@ -383,11 +383,11 @@ class SingleExcitationMinus(Operation):
 
         """
         decomp_ops = [
-            qml.X(wires=wires[0]),
-            qml.X(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(-phi / 2, wires=[wires[1], wires[0]]),
-            qml.X(wires=wires[0]),
-            qml.X(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(-phi / 2, wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(phi, wires=[wires[1], wires[0]]),
@@ -510,11 +510,11 @@ class SingleExcitationPlus(Operation):
 
         """
         decomp_ops = [
-            qml.X(wires=wires[0]),
-            qml.X(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(phi / 2, wires=[wires[1], wires[0]]),
-            qml.X(wires=wires[0]),
-            qml.X(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(phi / 2, wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(phi, wires=[wires[1], wires[0]]),
@@ -572,8 +572,8 @@ class DoubleExcitation(Operation):
 
         @qml.qnode(dev)
         def circuit(phi):
-            qml.X(wires=0)
-            qml.X(wires=1)
+            qml.X(0)
+            qml.X(1)
             qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
             return qml.state()
 
@@ -1132,7 +1132,7 @@ class FermionicSWAP(Operation):
         >>> dev = qml.device('default.qubit', wires=2)
         >>> @qml.qnode(dev)
         ... def circuit(phi):
-        ...     qml.X(wires=1)
+        ...     qml.X(1)
         ...     qml.FermionicSWAP(phi, wires=[0, 1])
         ...     return qml.state()
         >>> circuit(0.1)

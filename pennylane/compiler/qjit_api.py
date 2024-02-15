@@ -96,7 +96,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             qml.Hadamard(wires=0)
             qml.RX(theta, wires=1)
             qml.CNOT(wires=[0,1])
-            return qml.expval(qml.Z(wires=1))
+            return qml.expval(qml.Z(1))
 
     >>> circuit(0.5)  # the first call, compilation occurs here
     array(0.)

@@ -199,15 +199,15 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         decomp.extend(
             [
                 qml.RY(theta / 2, wires=target_wire),
-                qml.ctrl(qml.X(wires=target_wire), control=control_wires),
+                qml.ctrl(qml.X(target_wire), control=control_wires),
                 qml.RY(-theta / 2, wires=target_wire),
             ]
         )
     else:
-        decomp.append(qml.ctrl(qml.X(wires=target_wire), control=control_wires))
+        decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
     if not qml.math.isclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
         decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
-    decomp.append(qml.ctrl(qml.X(wires=target_wire), control=control_wires))
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
     if not qml.math.isclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
         decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
 
@@ -256,9 +256,9 @@ def _ctrl_decomp_bisect_od(
 
     def component():
         return [
-            qml.ctrl(qml.X(wires=target_wire), control=control_k1, work_wires=control_k2),
+            qml.ctrl(qml.X(target_wire), control=control_k1, work_wires=control_k2),
             qml.QubitUnitary(a, target_wire),
-            qml.ctrl(qml.X(wires=target_wire), control=control_k2, work_wires=control_k1),
+            qml.ctrl(qml.X(target_wire), control=control_k2, work_wires=control_k1),
             qml.adjoint(qml.QubitUnitary(a, target_wire)),
         ]
 
@@ -350,9 +350,9 @@ def _ctrl_decomp_bisect_general(
 
     component = [
         qml.QubitUnitary(c2t, target_wire),
-        qml.ctrl(qml.X(wires=target_wire), control=control_k2, work_wires=control_k1),
+        qml.ctrl(qml.X(target_wire), control=control_k2, work_wires=control_k1),
         qml.adjoint(qml.QubitUnitary(c1, target_wire)),
-        qml.ctrl(qml.X(wires=target_wire), control=control_k1, work_wires=control_k2),
+        qml.ctrl(qml.X(target_wire), control=control_k1, work_wires=control_k2),
     ]
 
     od_decomp = _ctrl_decomp_bisect_od(d, target_wire, control_wires)

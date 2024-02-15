@@ -188,11 +188,11 @@ def _rot_decompose(op):
     if isinstance(op, qml.ops.Adjoint):  # pylint: disable=no-member
         ops_ = _rot_decompose(op.base.adjoint())
     elif isinstance(op, qml.RX):
-        ops_ = _simplify_param(theta, qml.X(wires=wires))
+        ops_ = _simplify_param(theta, qml.X(wires))
         if ops_ is None:  # Use Rx = H @ Rz @ H
             ops_ = [qml.Hadamard(wires), qml.RZ(theta, wires), qml.Hadamard(wires)]
     elif isinstance(op, qml.RY):
-        ops_ = _simplify_param(theta, qml.Y(wires=wires))
+        ops_ = _simplify_param(theta, qml.Y(wires))
         if ops_ is None:  # Use Ry = S @ H @ Rz @ H @ S.adjoint()
             ops_ = [
                 qml.S(wires),
@@ -202,11 +202,11 @@ def _rot_decompose(op):
                 qml.adjoint(qml.S(wires)),
             ][::-1]
     elif isinstance(op, qml.RZ):
-        ops_ = _simplify_param(theta, qml.Z(wires=wires))
+        ops_ = _simplify_param(theta, qml.Z(wires))
         if ops_ is None:
             ops_ = [qml.RZ(theta, wires)]
     elif isinstance(op, qml.PhaseShift):
-        ops_ = _simplify_param(theta, qml.Z(wires=wires))
+        ops_ = _simplify_param(theta, qml.Z(wires))
         if ops_ is None:
             ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(-theta / 2)]
         else:

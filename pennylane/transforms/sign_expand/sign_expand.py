@@ -245,7 +245,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.X(wires=2)
+            qml.X(2)
             return qml.expval(H)
 
     >>> circuit()
@@ -255,7 +255,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(wires=2)]
+            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
             measurements = [qml.expval(H)]
             tape = qml.tape.QuantumTape(operations, measurements)
 
@@ -288,7 +288,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(wires=2)]
+            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
             measurements = [qml.var(H)]
             tape = qml.tape.QuantumTape(operations, measurements)
 

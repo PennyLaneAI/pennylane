@@ -143,7 +143,7 @@ class Prod(CompositeOp):
 
     **Example**
 
-    >>> prop_op = Prod(qml.X(wires=0), qml.Z(wires=0))
+    >>> prop_op = Prod(qml.X(0), qml.Z(0))
     >>> prop_op
     X(0) @ Z(0)
     >>> qml.matrix(prop_op)
@@ -158,7 +158,7 @@ class Prod(CompositeOp):
         first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
-    >>> op = Prod(qml.X(wires=0), qml.Z(wires=1))
+    >>> op = Prod(qml.X(0), qml.Z(1))
     >>> op.decomposition()
     [Z(1), X(0)]
 
@@ -168,7 +168,7 @@ class Prod(CompositeOp):
         The Prod operator represents both matrix composition and tensor products
         between operators.
 
-        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.X(wires=0), qml.Z(wires=1))
+        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.X(0), qml.Z(1))
         >>> prod_op.matrix()
         array([[ 0.        +0.j        ,  0.        +0.j        ,
                  0.81677345-0.57695852j,  0.        +0.j        ],
@@ -203,7 +203,7 @@ class Prod(CompositeOp):
 
         .. code-block:: python
 
-            prod_op = Prod(qml.Z(wires=0), qml.Hadamard(wires=1))
+            prod_op = Prod(qml.Z(0), qml.Hadamard(wires=1))
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
