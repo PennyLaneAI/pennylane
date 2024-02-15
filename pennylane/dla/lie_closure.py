@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Functions to convert a fermionic operator to the qubit basis."""
+"""A function to compute the Lie closure of a set of operators"""
 
 from functools import reduce
 
