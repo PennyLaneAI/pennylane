@@ -347,52 +347,6 @@ class TestMeasureWithSamples:
         assert np.isclose(result1["1"] / num_shots, 1 / 4, atol=APPROX_ATOL)
         assert np.isclose(result1["2"] / num_shots, 1 / 8, atol=APPROX_ATOL)
 
-    # def test_multiple_sample_measurements(self):
-    #     """Test that a set of sample measurements works as expected"""
-    #     state_vector = np.array([1, -1j, 1, 0, 0, 0, 0, 0, 0])
-    #     state = get_dm_of_state(state_vector, 2, 3)
-    #     shots = qml.measurements.Shots(100)
-    #
-    #     mp = qml.sample()
-    #     mp0 = qml.sample(wires=0)
-    #     mp1 = qml.sample(wires=1)
-    #
-    #     result, result0, result1 = measure_with_samples([mp, mp0, mp1], state, shots=shots)
-    #
-    #     assert result.shape == (shots.total_shots, 2)
-    #     assert result.dtype == np.int64
-    #     assert len(np.unique(result)) == 3
-    #
-    #     assert result0.shape == (shots.total_shots,)
-    #     assert result0.dtype == np.int64
-    #     assert np.all(result0 == 0)
-    #
-    #     assert result1.shape == (shots.total_shots,)
-    #     assert result1.dtype == np.int64
-    #     assert len(np.unique(result1)) == 3
-
-    # @flaky
-    # def test_sample_and_counts_measurements(self, two_qutrit_pure_state):
-    #     """Test that sample measurements properly sample an observable"""
-    #     num_shots = 10000
-    #     shots = qml.measurements.Shots(num_shots)
-    #     samples_mp = qml.sample()
-    #     counts_mp = qml.counts()
-    #
-    #     sample_results, counts_results = measure_with_samples(
-    #         [samples_mp, counts_mp], two_qutrit_pure_state, shots=shots
-    #     )
-    #
-    #     assert sample_results.shape == (shots.total_shots, 2)
-    #     assert sample_results.dtype == np.int64
-    #     assert_correct_sampled_two_qutrit_pure_state(sample_results)
-    #
-    #     assert isinstance(counts_results, dict)
-    #     assert sorted(counts_results.keys()) == ["02", "10", "21"]
-    #     assert np.isclose(counts_results["02"] / num_shots, 1 / 3, atol=APPROX_ATOL)
-    #     assert np.isclose(counts_results["10"] / num_shots, 1 / 3, atol=APPROX_ATOL)
-    #     assert np.isclose(counts_results["21"] / num_shots, 1 / 3, atol=APPROX_ATOL)
-
     def test_sample_observables(self):
         """Test that counts measurements properly counts samples of an observable"""
         state_vector = np.sqrt(np.array([0, 0, 0, 0, 2, 0, 1, 0, 1]) / 4)
