@@ -15,9 +15,11 @@
 Test base AlgorithmicError class and its associated methods.
 """
 import pytest
+import numpy as np
 
 import pennylane as qml
-from pennylane.resource.error import AlgorithmicError, ErrorOperation
+from pennylane.resource.error import AlgorithmicError, SpectralNormError, ErrorOperation
+from pennylane.operation import Observable, Operation
 
 
 class SimpleError(AlgorithmicError):
@@ -80,6 +82,70 @@ class TestAlgorithmicError:
 
         res = SimpleError.get_error(approx_op, exact_op)
         assert res == 0.5
+
+
+class TestSpectralNormError:
+    """Test methods for the SpectralNormError class"""
+
+    @pytest.mark.parametrize("err1", [0, 0.25, 0.75, 1.50, 2.50])
+    @pytest.mark.parametrize("err2", [0, 0.25, 0.75, 1.50, 2.50])
+    def test_combine(self, err1, err2):
+        """Test that combine works as expected"""
+        ErrorObj1 = SpectralNormError(err1)
+        ErrorObj2 = SpectralNormError(err2)
+
+        res = ErrorObj1.combine(ErrorObj2)
+        assert res.error == err1 + err2
+        assert isinstance(res, type(ErrorObj1))
+
+    @pytest.mark.parametrize(
+        "phi, expected",
+        [
+            [0, 2.0000000000000004],
+            [0.25, 1.9980522880732308],
+            [0.75, 1.9828661007943447],
+            [1.50, 1.9370988373785705],
+            [2.50, 1.8662406421959807],
+        ],
+    )
+    def test_get_error(self, phi, expected):
+        """Test that get_error works as expected"""
+        approx_op = qml.Hadamard(0)
+        exact_op = qml.RX(phi, 1)
+
+        res = SpectralNormError.get_error(approx_op, exact_op)
+        assert res == expected
+
+    @pytest.mark.parametrize(
+        "phi, expected",
+        [
+            [0, 1.311891347309272],
+            [0.25, 1.3182208123805488],
+            [0.75, 1.3772695464365001],
+            [1.50, 1.6078817482299055],
+            [2.50, 2.0506044587737255],
+        ],
+    )
+    def test_custom_operator(self, phi, expected):
+        """Test that get_error fails if the operator matrix is not defined"""
+
+        class toy_operator(Operation):
+            def matrix(self):
+                return np.array([[0.5, 1.0], [1.2, 1.3]])
+
+        approx_op = toy_operator(1)
+        exact_op = qml.RX(phi, 1)
+
+        res = SpectralNormError.get_error(approx_op, exact_op)
+        assert res == expected
+
+    def test_no_operator_matrix_defined(self):
+        """Test that get_error fails if the operator matrix is not defined"""
+        approx_op = Operation
+        exact_op = qml.RX(0.1, 1)
+
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            SpectralNormError.get_error(approx_op, exact_op)
 
 
 class TestErrorOperation:  # pylint: disable=too-few-public-methods
