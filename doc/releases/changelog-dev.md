@@ -368,6 +368,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
+  when working in the tape paradigm.
+  [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
+
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
   module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
@@ -422,6 +426,9 @@
 
 * A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
+
+* A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions was added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
+  [(#5137)](https://github.com/PennyLaneAI/pennylane/pull/5137)
 
 * Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
 
@@ -505,6 +512,9 @@
   Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
   [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
+* `PauliSentence.__matmul__` can handle `PauliWord` instances now.
+  [(#5208)](https://github.com/PennyLaneAI/pennylane/pull/5208)
+
 * Make `CompositeOp.eigendecomposition` jit-compatible.
   [(#5207)](https://github.com/PennyLaneAI/pennylane/pull/5207)
 
@@ -520,10 +530,12 @@ Skylar Chan,
 Isaac De Vlugt,
 Diksha Dhawan,
 Lillian Frederiksen,
+Pietropaolo Frisoni,
 Eugenio Gigante,
 Diego Guala,
 David Ittah,
 Soran Jahangiri,
+Jacky Jiang,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
