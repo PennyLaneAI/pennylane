@@ -293,6 +293,10 @@
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
   [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
+* An error message provides clearer instructions for installing PennyLane-Qiskit if the `qml.from_qiskit` 
+  function fails because the Qiskit converter is missing.
+  [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
+
 <h3>Breaking changes 💔</h3>
 
 * The entry point convention registering compilers with PennyLane has changed.
