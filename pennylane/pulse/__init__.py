@@ -134,9 +134,11 @@ The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`
 parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
 >>> H1
-  (2*(X(0) @ X(1)))
-+ (<lambda>(params_0, t)*(Y(0) @ Y(1)))
-+ (<lambda>(params_1, t)*(Z(0) @ Z(1)))
+(
+    2 * X(0) @ X(1)
+  + <lambda>(params_0, t) * Y(0) @ Y(1)
+  + <lambda>(params_1, t) * Z(0) @ Z(1)
+)
 
 >>> params = [1.2, [2.3, 3.4]]  # f1 takes a single parameter, f2 takes 2
 >>> H1(params, t=0.5)
