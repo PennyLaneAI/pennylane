@@ -59,6 +59,7 @@ info = {
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
+            "default.qutrit.mixed = pennylane.devices.default_qutrit_mixed:DefaultQutritMixed",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },

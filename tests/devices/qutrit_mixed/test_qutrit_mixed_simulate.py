@@ -18,8 +18,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 
-# TODO change when added to __init__
-from pennylane.devices.qutrit_mixed.simulate import simulate, get_final_state, measure_final_state
+from pennylane.devices.qutrit_mixed import simulate, get_final_state, measure_final_state
 
 
 def expected_TRX_circ_expval_values(phi, subspace):
