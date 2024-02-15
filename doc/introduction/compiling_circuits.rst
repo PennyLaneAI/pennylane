@@ -335,8 +335,7 @@ observables and coefficients:
 >>> coeffs = [1.43, 4.21, 0.97]
 >>> obs_groupings, coeffs_groupings = qml.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
 >>> obs_groupings
-[[Z(1), X(0) @ X(1)],
- [Y(0)]]
+[[Z(1), X(0) @ X(1)], [Y(0)]]
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
