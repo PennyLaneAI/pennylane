@@ -28,7 +28,7 @@ import scipy
 
 import pennylane as qml
 from .composite import CompositeOp
-from pennylane.operation import Observable, Tensor, _UNSET_BATCH_SIZE
+from pennylane.operation import Observable, Tensor, _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -165,6 +165,8 @@ class LinearCombination(CompositeOp):
     grad_method = "A"  # supports analytic gradients
     batch_size = None
     ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
+    _op_symbol = "+"
+    _math_op = qml.math.sum
 
     def _flatten(self):
         # note that we are unable to restore grouping type or method without creating new properties
@@ -199,6 +201,7 @@ class LinearCombination(CompositeOp):
 
         self._coeffs = coeffs
         self._ops = list(ops)
+        self.operands = (qml.s_prod(c, op) for c, op in zip(coeffs, ops)) # generator to avoid explicit construction
 
         # TODO: avoid having multiple ways to store ops and coeffs,
         # ideally only use parameters for coeffs, and hyperparameters for ops
@@ -218,10 +221,9 @@ class LinearCombination(CompositeOp):
                     self.ops, grouping_type=grouping_type, method=method
                 )
 
-        coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
+        # coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
 
         # Things from CompositeOp __init__
-        # TODO CompositeOp needs operands?
         self._id = id
         self.queue_idx = None
         self._name = self.__class__.__name__
@@ -235,8 +237,85 @@ class LinearCombination(CompositeOp):
     def _build_pauli_rep(self):
         if all(op_pauli_rep := [op.pauli_rep for op in self._ops]):
             coeffs = self._coeffs
-            return sum((c * op for c, op in zip(coeffs, op_pauli_rep)), start=coeffs[0]*op_pauli_rep[0].pauli_rep)
+            return sum((c * op for c, op in zip(coeffs, op_pauli_rep)), start=coeffs[0]*op_pauli_rep[0])
         return None
+    
+    @classmethod
+    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+        """Sort algorithm that sorts a list of sum summands by their wire indices.
+
+        Args:
+            op_list (List[.Operator]): list of operators to be sorted
+            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+                Defaults to None.
+
+        Returns:
+            List[.Operator]: sorted list of operators
+        """
+
+        if isinstance(op_list, tuple):
+            op_list = list(op_list)
+
+        def _sort_key(op: Operator) -> tuple:
+            """Sorting key used in the `sorted` python built-in function.
+
+            Args:
+                op (.Operator): Operator.
+
+            Returns:
+                Tuple[int, int, str]: Tuple containing the minimum wire value, the number of wires
+                    and the string of the operator. This tuple is used to compare different operators
+                    in the sorting algorithm.
+            """
+            wires = op.wires
+            if wire_map is not None:
+                wires = wires.map(wire_map)
+            return sorted(list(map(str, wires)))[0], len(wires), str(op)
+
+        return sorted(op_list, key=_sort_key)
+    
+    @property
+    def is_hermitian(self):
+        """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
+        if self.pauli_rep is not None:
+            coeffs_list = self._coeffs
+            if not qml.math.is_abstract(coeffs_list[0]):
+                return not any(qml.math.iscomplex(c) for c in coeffs_list)
+
+        return all(s.is_hermitian for s in self)
+    
+    def matrix(self, wire_order=None):
+        r"""Representation of the operator as a matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        If the matrix depends on trainable parameters, the result
+        will be cast in the same autodifferentiation framework as the parameters.
+
+        A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator.compute_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the
+            operator's wires
+
+        Returns:
+            tensor_like: matrix representation
+        """
+        coeffs, ops = self.coeffs, self.ops
+        gen = (
+            (c*qml.matrix(op) if isinstance(op, qml.Hamiltonian) else c*op.matrix(), op.wires)
+            for c, op in zip(coeffs, ops)
+        )
+
+        reduced_mat, sum_wires = qml.math.reduce_matrices(gen, reduce_func=qml.math.add)
+
+        wire_order = wire_order or self.wires
+
+        return qml.math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
