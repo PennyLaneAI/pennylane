@@ -507,26 +507,29 @@ class TestSampleMeasurements:
 
     @staticmethod
     def expval_of_TRY_circ(x, subspace):
+        """Find the expval of GellMann_3 on simple TRY circuit"""
         if subspace[1] == 1:
             return np.cos(x)
         return np.cos(x / 2) ** 2
 
     @staticmethod
     def sample_sum_of_TRY_circ(x, subspace):
+        """Find the expval of computational basis for both wires on simple TRY circuit"""
         if subspace[1] == 1:
             return [np.sin(x / 2) ** 2, 0]
         return [2 * np.sin(x / 2) ** 2, 0]
 
     @staticmethod
     def expval_of_2_qutrit_circ(x, subspace):
+        """expval of GellMann_3 on wire=0 on the 2 qutrit circuit used"""
         if subspace[1] == 1:
             return np.cos(x)
         return np.cos(x / 2) ** 2
 
     @staticmethod
     def probs_of_2_qutrit_circ(x, y, subspace):
-        probs = (
-            np.array(
+        """possible measurement values and probabilityies for the 2 qutrit circuit used"""
+        probs = np.array(
                 [
                     np.cos(x / 2) * np.cos(y / 2),
                     np.cos(x / 2) * np.sin(y / 2),
@@ -534,8 +537,7 @@ class TestSampleMeasurements:
                     np.sin(x / 2) * np.cos(y / 2),
                 ]
             )
-            ** 2
-        )
+        probs **= 2
         if subspace[1] == 1:
             keys = ["00", "01", "10", "11"]
         else:
