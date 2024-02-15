@@ -511,27 +511,46 @@ class TestSampleMeasurements:
     def expval_of_TRY_circ(x, subspace):
         if subspace[1] == 1:
             return np.cos(x)
-        return np.cos(x) ** 2
+        return np.cos(x / 2) ** 2
 
     @staticmethod
     def sample_sum_of_TRY_circ(x, subspace):
-        return None
+        if subspace[1] == 1:
+            return [np.sin(x / 2) ** 2, 0]
+        return [2 * np.sin(x / 2) ** 2, 0]
 
     @staticmethod
     def expval_of_2_qutrit_circ(x, subspace):
         if subspace[1] == 1:
             return np.cos(x)
-        return np.sin(x) ** 2 / 4 + np.cos(x / 2) ^ 4
+        return np.cos(x / 2) ** 2
 
     @staticmethod
-    def sample_sum_of_TRY_circ(x, y, subspace):
-        return None
+    def probs_of_2_qutrit_circ(x, y, subspace):
+        probs = (
+            np.array(
+                [
+                    np.cos(x / 2) * np.cos(y / 2),
+                    np.cos(x / 2) * np.sin(y / 2),
+                    np.sin(x / 2) * np.sin(y / 2),
+                    np.sin(x / 2) * np.cos(y / 2),
+                ]
+            )
+            ** 2
+        )
+        if subspace[1] == 1:
+            keys = ["00", "01", "10", "11"]
+        else:
+            keys = ["00", "02", "20", "22"]
+        return keys, probs
 
     def test_single_expval(self, subspace):
         """Test a simple circuit with a single expval measurement"""
         x = np.array(0.732)
         qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)], [qml.expval(qml.GellMann(0, 3))], shots=10000
+            [qml.TRY(x, wires=0, subspace=subspace)],
+            [qml.expval(qml.GellMann(0, 3))],
+            shots=1000000,
         )
         result = simulate(qs)
         assert isinstance(result, np.float64)
@@ -572,23 +591,17 @@ class TestSampleMeasurements:
             shots=num_shots,
         )
         result = simulate(qs)
-        result_gell_mann_3_expval = (result[0][1] - result[0][1]) / num_shots
-        result_probs = np.array(result[1].items()) / num_shots
 
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert np.allclose(result_gell_mann_3_expval, np.cos(x), atol=0.1)
+        assert np.allclose(result[0], self.expval_of_2_qutrit_circ(x, subspace), atol=0.1)
 
-        assert result[1].shape == (4,)
+        expected_keys, expected_probs = self.probs_of_2_qutrit_circ(x, y, subspace)
+        assert list(result[1].keys()) == expected_keys
         assert np.allclose(
-            result_probs,
-            [
-                np.cos(x / 2) ** 2 * np.cos(y / 2) ** 2,
-                np.cos(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.cos(y / 2) ** 2,
-            ],
+            np.array(list(result[1].values())) / num_shots,
+            expected_probs,
             atol=0.1,
         )
 
@@ -608,7 +621,7 @@ class TestSampleMeasurements:
         x = np.array(0.732)
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0)], [qml.expval(qml.GellMann(3, 0))], shots=shots
+            [qml.TRY(x, wires=0, subspace=subspace)], [qml.expval(qml.GellMann(0, 3))], shots=shots
         )
         result = simulate(qs)
 
@@ -633,34 +646,11 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
+        expected = self.sample_sum_of_TRY_circ(x, subspace)
         assert all(isinstance(res, np.ndarray) for res in result)
         assert all(res.shape == (s, 2) for res, s in zip(result, shots))
         assert all(
-            np.allclose(
-                np.sum(res, axis=0).astype(np.float32) / s, [np.sin(x / 2) ** 2, 0], atol=0.1
-            )
-            for res, s in zip(result, shots)
-        )
-
-    @pytest.mark.parametrize("shots", shots_data)
-    def test_counts_shot_vector(self, shots, subspace):
-        """Test a simple circuit with a single sample measurement for shot vectors"""
-        x = np.array(0.732)
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)], [qml.sample(wires=range(2))], shots=shots
-        )
-        result = simulate(qs)
-
-        assert isinstance(result, tuple)
-        assert len(result) == len(list(shots))
-
-        assert all(isinstance(res, np.ndarray) for res in result)
-        assert all(res.shape == (s, 2) for res, s in zip(result, shots))
-        assert all(
-            np.allclose(
-                np.sum(res, axis=0).astype(np.float32) / s, [np.sin(x / 2) ** 2, 0], atol=0.1
-            )
+            np.allclose(np.sum(res, axis=0).astype(np.float32) / s, expected, atol=0.1)
             for res, s in zip(result, shots)
         )
 
@@ -692,20 +682,16 @@ class TestSampleMeasurements:
             assert len(shot_res) == 3
 
             assert isinstance(shot_res[0], np.float64)
-            assert isinstance(shot_res[1], np.ndarray)
+            assert isinstance(shot_res[1], dict)
             assert isinstance(shot_res[2], np.ndarray)
 
-            assert np.allclose(shot_res[0], np.cos(x), atol=0.1)
+            assert np.allclose(shot_res[0], self.expval_of_TRY_circ(x, subspace), atol=0.1)
 
-            assert shot_res[1].shape == (4,)
+            expected_keys, expected_probs = self.probs_of_2_qutrit_circ(x, y, subspace)
+            assert list(shot_res[1].keys()) == expected_keys
             assert np.allclose(
-                shot_res[1],
-                [
-                    np.cos(x / 2) ** 2 * np.cos(y / 2) ** 2,
-                    np.cos(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                    np.sin(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                    np.sin(x / 2) ** 2 * np.cos(y / 2) ** 2,
-                ],
+                np.array(list(shot_res[1].values())) / s,
+                expected_probs,
                 atol=0.1,
             )
 
@@ -713,6 +699,7 @@ class TestSampleMeasurements:
 
     def test_custom_wire_labels(self, subspace):
         """Test that custom wire labels works as expected"""
+        num_shots = 10000
         x, y = np.array(0.732), np.array(0.488)
         qs = qml.tape.QuantumScript(
             [
@@ -725,28 +712,24 @@ class TestSampleMeasurements:
                 qml.counts(wires=["a", "b"]),
                 qml.sample(wires=["b", "a"]),
             ],
-            shots=10000,
+            shots=num_shots,
         )
         result = simulate(qs)
 
         assert isinstance(result, tuple)
         assert len(result) == 3
         assert isinstance(result[0], np.float64)
-        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[1], dict)
         assert isinstance(result[2], np.ndarray)
 
-        assert np.allclose(result[0], np.cos(x), atol=0.1)
+        assert np.allclose(result[0], self.expval_of_TRY_circ(x, subspace), atol=0.1)
 
-        assert result[1].shape == (4,)
+        expected_keys, expected_probs = self.probs_of_2_qutrit_circ(x, y, subspace)
+        assert list(result[1].keys()) == expected_keys
         assert np.allclose(
-            result[1],
-            [
-                np.cos(x / 2) ** 2 * np.cos(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.cos(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.cos(y / 2) ** 2,
-            ],
+            np.array(list(result[1].values())) / num_shots,
+            expected_probs,
             atol=0.1,
         )
 
-        assert result[2].shape == (10000, 2)
+        assert result[2].shape == (num_shots, 2)
