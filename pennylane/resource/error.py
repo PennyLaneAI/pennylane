@@ -16,7 +16,8 @@ Stores classes and logic to define and track algorithmic error in a quantum work
 """
 from abc import ABC, abstractmethod
 
-from pennylane.operation import Operation
+from pennylane.operation import Operation, Operator, MatrixUndefinedError
+from pennylane import math as fn
 
 
 class AlgorithmicError(ABC):
@@ -77,3 +78,40 @@ class ErrorOperation(Operation):
         Returns:
             AlgorithmicError: The error.
         """
+
+
+class SpectralNormError(AlgorithmicError):
+    """Class representing the spectral norm error.
+    The spectral norm error is defined as the distance (in spectral norm) between the true unitary we wish to apply and the approximate unitary that we actually apply.
+
+    Args:
+        error (float): The numerical value of the error
+
+    """
+
+    def combine(self, other: AlgorithmicError):
+        """A method to combine two spectral norm errors.
+
+        Args:
+            other (AlgorithmicError): The other instance of error being combined.
+
+        Returns:
+            AlgorithmicError: The total error after combination.
+        """
+        return self.__class__(self.error + other.error)
+
+    def get_error(approximate_op: Operator, exact_op: Operator, **kwargs):
+        """A method to allow users to compute spectral norm error between two operators.
+
+        Args:
+            approximate_op (.Operator): The approximate operator.
+            exact_op (.Operator): The exact operator.
+
+        Returns:
+            float: The error between the exact operator and its
+            approximation.
+        """
+        if approximate_op.has_matrix and exact_op.has_matrix:
+            return fn.svd(exact_op.matrix() - approximate_op.matrix(), compute_uv=False)[0]
+        else:
+            raise MatrixUndefinedError
