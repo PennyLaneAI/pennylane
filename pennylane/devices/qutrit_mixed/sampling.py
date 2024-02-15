@@ -14,8 +14,6 @@
 """
 Code relevant for sampling a qutrit mixed state.
 """
-from typing import List, Union
-
 import numpy as np
 import pennylane as qml
 from pennylane import math
@@ -159,14 +157,13 @@ def _measure_with_samples_diagonalizing_gates(
     def _process_single_shot(samples):
         if isinstance(mp, SampleMP):
             return math.squeeze(_process_samples(mp, samples, wires))
-        elif isinstance(mp, CountsMP):
+        if isinstance(mp, CountsMP):
             return _process_counts_samples(mp, samples, wires)
-        elif isinstance(mp, ExpectationMP):
+        if isinstance(mp, ExpectationMP):
             return _process_expval_samples(mp, samples, wires)
-        elif isinstance(mp, VarianceMP):
+        if isinstance(mp, VarianceMP):
             return _process_variance_samples(mp, samples, wires)
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
@@ -372,7 +369,6 @@ def measure_with_samples(
         TensorLike[Any]: Sample measurement results
     """
 
-    all_res = []
     if isinstance(mp, ExpectationMP) and isinstance(mp.obs, (Hamiltonian, Sum)):
         measure_fn = _measure_sum_with_samples
     else:
