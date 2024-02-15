@@ -150,7 +150,7 @@ class VSpace:
         return self._basis
 
     @staticmethod
-    def _add_if_independent(M, pauli_sentence, pw_to_idx, rank, num_pw):
+    def _add_if_independent(M, pauli_sentence, pw_to_idx, rank, num_pw, tol=1e-15):
         r"""
         Checks if ``pauli_sentence`` is linearly independent.
 
@@ -199,22 +199,20 @@ class VSpace:
         # Add new PauliSentence entries to matrix
         for pw, value in pauli_sentence.items():
             M[pw_to_idx[pw], rank] = value
+        
 
-        # Check if new vector is proportional to any of the previous vectors
-        # This is significantly cheaper than computing the rank and should be done first
-        if _is_any_col_propto_last(M):
-            M = M[:num_pw, :rank]
-            return M, pw_to_idx, rank, num_pw, False
+        # Check if new vector is linearly dependent on the current basis
+        v = M[:, -1].copy() # remove copy to normalize M
+        v /= np.linalg.norm(v)
+        A = M[:, :-1]
+        v = v - A@qml.math.linalg.inv(qml.math.conj(A.T) @ A) @ qml.math.conj(A).T @ v
 
-        new_rank = np.linalg.matrix_rank(M)  # expensive
+        if np.linalg.norm(v) > tol:
+            return M, pw_to_idx, rank + 1, new_num_pw, True
 
-        # Manual singular value alternative, probably slower than ``matrix_rank``
-        # sing_value = np.min(np.abs(svd(M, compute_uv=False, lapack_driver="gesdd", check_finite=False)))
-        if new_rank == rank:
-            M = M[:num_pw, :rank]
-            return M, pw_to_idx, rank, num_pw, False
+        return M[:num_pw, :rank], pw_to_idx, rank, num_pw, False
 
-        return M, pw_to_idx, rank + 1, new_num_pw, True
+        
 
     def __repr__(self):
         return str(self.basis)
