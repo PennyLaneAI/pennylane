@@ -95,7 +95,7 @@ def coefficients(
             qml.RY(inpt[1], wires='a')
             qml.Rot(*weights[1], wires='a')
 
-            return qml.expval(qml.PauliZ(wires='a'))
+            return qml.expval(qml.Z(wires='a'))
 
     .. note::
 

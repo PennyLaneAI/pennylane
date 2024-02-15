@@ -72,7 +72,7 @@ def drive(amplitude, phase, wires):
     .. code-block:: python3
 
         wires = [0, 1, 2, 3]
-        H_int = sum([qml.PauliX(i) @ qml.PauliX((i+1)%len(wires)) for i in wires])
+        H_int = sum([qml.X(i) @ qml.X((i+1)%len(wires)) for i in wires])
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
@@ -189,7 +189,7 @@ def drive(amplitude, phase, wires):
             H_d = qml.pulse.drive(amplitude, phase, wires)
 
             # detuning term
-            H_z = qml.dot([-3*np.pi/4]*len(wires), [qml.PauliZ(i) for i in wires])
+            H_z = qml.dot([-3*np.pi/4]*len(wires), [qml.Z(i) for i in wires])
 
 
         The total Hamiltonian of that evolution is given by
@@ -223,8 +223,8 @@ def drive(amplitude, phase, wires):
         amplitude_and_phase(qml.math.sin, amplitude, phase),
     ]
 
-    drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
-    drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
+    drive_x_term = 0.5 * sum(qml.X(wire) for wire in wires)
+    drive_y_term = -0.5 * sum(qml.Y(wire) for wire in wires)
 
     observables = [drive_x_term, drive_y_term]
 

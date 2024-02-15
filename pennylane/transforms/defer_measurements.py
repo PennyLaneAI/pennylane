@@ -252,7 +252,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
                             # We know that the measured wire will be in the |1> state if
                             # postselected |1>. So we can just apply a PauliX instead of
                             # a CNOT to reset
-                            new_operations.append(qml.PauliX(op.wires[0]))
+                            new_operations.append(qml.X(op.wires[0]))
 
                 cur_wire += 1
             else:

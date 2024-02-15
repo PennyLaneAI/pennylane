@@ -147,7 +147,7 @@ class BasisEmbedding(Operation):
             ops_list = []
             for wire, bit in zip(wires, basis_state):
                 if bit == 1:
-                    ops_list.append(qml.PauliX(wire))
+                    ops_list.append(qml.X(wire))
             return ops_list
 
         ops_list = []

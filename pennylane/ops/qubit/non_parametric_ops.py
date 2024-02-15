@@ -233,7 +233,7 @@ class PauliX(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliX.compute_matrix())
+        >>> print(qml.X.compute_matrix())
         [[0 1]
          [1 0]]
         """
@@ -264,7 +264,7 @@ class PauliX(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliX.compute_eigvals())
+        >>> print(qml.X.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -289,7 +289,7 @@ class PauliX(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliX.compute_diagonalizing_gates(wires=[0]))
+        >>> print(qml.X.compute_diagonalizing_gates(wires=[0]))
         [Hadamard(wires=[0])]
         """
         return [Hadamard(wires=wires)]
@@ -311,7 +311,7 @@ class PauliX(Observable, Operation):
 
         **Example:**
 
-        >>> print(qml.PauliX.compute_decomposition(0))
+        >>> print(qml.X.compute_decomposition(0))
         [PhaseShift(1.5707963267948966, wires=[0]),
         RX(3.141592653589793, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0])]
@@ -399,7 +399,7 @@ class PauliY(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliY.compute_matrix())
+        >>> print(qml.Y.compute_matrix())
         [[ 0.+0.j -0.-1.j]
          [ 0.+1.j  0.+0.j]]
         """
@@ -430,7 +430,7 @@ class PauliY(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliY.compute_eigvals())
+        >>> print(qml.Y.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -455,7 +455,7 @@ class PauliY(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliY.compute_diagonalizing_gates(wires=[0]))
+        >>> print(qml.Y.compute_diagonalizing_gates(wires=[0]))
         [Z(0), S(wires=[0]), Hadamard(wires=[0])]
         """
         return [
@@ -480,7 +480,7 @@ class PauliY(Observable, Operation):
 
         **Example:**
 
-        >>> print(qml.PauliY.compute_decomposition(0))
+        >>> print(qml.Y.compute_decomposition(0))
         [PhaseShift(1.5707963267948966, wires=[0]),
         RY(3.141592653589793, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0])]
@@ -563,7 +563,7 @@ class PauliZ(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliZ.compute_matrix())
+        >>> print(qml.Z.compute_matrix())
         [[ 1  0]
          [ 0 -1]]
         """
@@ -594,7 +594,7 @@ class PauliZ(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliZ.compute_eigvals())
+        >>> print(qml.Z.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -620,7 +620,7 @@ class PauliZ(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliZ.compute_diagonalizing_gates(wires=[0]))
+        >>> print(qml.Z.compute_diagonalizing_gates(wires=[0]))
         []
         """
         return []
@@ -641,7 +641,7 @@ class PauliZ(Observable, Operation):
 
         **Example:**
 
-        >>> print(qml.PauliZ.compute_decomposition(0))
+        >>> print(qml.Z.compute_decomposition(0))
         [PhaseShift(3.141592653589793, wires=[0])]
 
         """

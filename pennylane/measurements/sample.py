@@ -160,7 +160,7 @@ class SampleMP(SampleMeasurement):
         if self.obs is None:
             # Computational basis samples
             return int
-        int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
+        int_eigval_obs = {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
         tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float

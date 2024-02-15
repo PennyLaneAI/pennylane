@@ -240,7 +240,7 @@ def _create_prep_list():
         return [qml.Identity(wire)]
 
     def _prep_one(wire):
-        return [qml.PauliX(wire)]
+        return [qml.X(wire)]
 
     def _prep_plus(wire):
         return [qml.Hadamard(wire)]

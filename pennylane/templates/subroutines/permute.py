@@ -102,7 +102,7 @@ class Permute(Operation):
             @qml.qnode(dev)
             def circuit():
                 qml.Permute(["c", 3,"a",2,0], wires=wire_labels)
-                return qml.expval(qml.PauliZ("c"))
+                return qml.expval(qml.Z("c"))
 
         The permuted circuit is:
 
@@ -125,7 +125,7 @@ class Permute(Operation):
             def circuit():
                 # Only permute the order of 3 of them
                 qml.Permute(["c", 2, 0], wires=[2, 0, "c"])
-                return qml.expval(qml.PauliZ("c"))
+                return qml.expval(qml.Z("c"))
 
         will permute only the second, third, and fifth wires as follows:
 

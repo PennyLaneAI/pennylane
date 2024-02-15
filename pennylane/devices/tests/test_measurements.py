@@ -38,7 +38,7 @@ obs = {
     "Identity": qml.Identity(wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
-    "PauliX": qml.PauliX(wires=[0]),
+    "PauliX": qml.X(wires=[0]),
     "PauliY": qml.Y(0),
     "PauliZ": qml.Z(0),
     "X": qml.X(wires=[0]),
@@ -70,21 +70,21 @@ if not set(all_obs) == all_available_obs:
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
 obs_lst = [
-    qml.PauliX(wires=0) @ qml.PauliY(wires=1),
-    qml.PauliX(wires=1) @ qml.PauliY(wires=0),
-    qml.PauliX(wires=1) @ qml.PauliZ(wires=2),
-    qml.PauliX(wires=2) @ qml.PauliZ(wires=1),
-    qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2),
-    qml.PauliZ(wires=0) @ qml.PauliX(wires=1) @ qml.PauliY(wires=2),
+    qml.X(wires=0) @ qml.Y(wires=1),
+    qml.X(wires=1) @ qml.Y(wires=0),
+    qml.X(wires=1) @ qml.Z(wires=2),
+    qml.X(wires=2) @ qml.Z(wires=1),
+    qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.Z(wires=2),
+    qml.Z(wires=0) @ qml.X(wires=1) @ qml.Y(wires=2),
 ]
 
 obs_permuted_lst = [
-    qml.PauliY(wires=1) @ qml.PauliX(wires=0),
-    qml.PauliY(wires=0) @ qml.PauliX(wires=1),
-    qml.PauliZ(wires=2) @ qml.PauliX(wires=1),
-    qml.PauliZ(wires=1) @ qml.PauliX(wires=2),
-    qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1),
-    qml.PauliX(wires=1) @ qml.PauliY(wires=2) @ qml.PauliZ(wires=0),
+    qml.Y(wires=1) @ qml.X(wires=0),
+    qml.Y(wires=0) @ qml.X(wires=1),
+    qml.Z(wires=2) @ qml.X(wires=1),
+    qml.Z(wires=1) @ qml.X(wires=2),
+    qml.Z(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1),
+    qml.X(wires=1) @ qml.Y(wires=2) @ qml.Z(wires=0),
 ]
 
 label_maps = [[0, 1, 2], ["a", "b", "c"], ["beta", "alpha", "gamma"], [3, "beta", "a"]]
@@ -115,7 +115,7 @@ class TestSupportedObservables:
 
             @qml.qnode(dev, **kwargs)
             def circuit(obs_circ):
-                if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
+                if dev.supports_operation(qml.X):  # ionq can't have empty circuits
                     qml.X(0)
                 return qml.expval(obs_circ)
 
@@ -139,7 +139,7 @@ class TestSupportedObservables:
 
         @qml.qnode(dev)
         def circuit():
-            if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
+            if dev.supports_operation(qml.X):  # ionq can't have empty circuits
                 qml.X(0)
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
@@ -232,7 +232,7 @@ class TestExpval:
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+            return qml.expval(qml.Z(wires=0)), qml.expval(qml.Z(wires=1))
 
         res = circuit()
         assert np.allclose(
@@ -252,7 +252,7 @@ class TestExpval:
             qml.RY(theta, wires=[0])
             qml.RY(phi, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliX(wires=0)), qml.expval(qml.PauliX(wires=1))
+            return qml.expval(qml.X(wires=0)), qml.expval(qml.X(wires=1))
 
         res = circuit()
         expected = np.array([np.sin(theta) * np.sin(phi), np.sin(phi)])
@@ -271,7 +271,7 @@ class TestExpval:
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(wires=0)), qml.expval(qml.PauliY(wires=1))
+            return qml.expval(qml.Y(wires=0)), qml.expval(qml.Y(wires=1))
 
         res = circuit()
         expected = np.array([0.0, -np.cos(theta) * np.sin(phi)])
@@ -427,7 +427,7 @@ class TestTensorExpval:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliX(wires=0) @ qml.PauliY(wires=2))
+            return qml.expval(qml.X(wires=0) @ qml.Y(wires=2))
 
         res = circuit()
 
@@ -451,7 +451,7 @@ class TestTensorExpval:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0) @ qml.Hadamard(wires=1) @ qml.PauliY(wires=2))
+            return qml.expval(qml.Z(wires=0) @ qml.Hadamard(wires=1) @ qml.Y(wires=2))
 
         res = circuit()
 
@@ -470,8 +470,8 @@ class TestTensorExpval:
         in the tensor observable, provided the wires each term acts on remain constant.
 
         eg:
-        ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
-        ob2 = qml.PauliY(wires=1) @ qml.PauliZ(wires=0)
+        ob1 = qml.Z(wires=0) @ qml.Y(wires=1)
+        ob2 = qml.Y(wires=1) @ qml.Z(wires=0)
 
         @qml.qnode(dev)
         def circ(obs):
@@ -501,7 +501,7 @@ class TestTensorExpval:
         dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
 
         def circ(wire_labels):
-            return qml.expval(qml.PauliZ(wires=wire_labels[0]) @ qml.PauliX(wires=wire_labels[2]))
+            return qml.expval(qml.Z(wires=wire_labels[0]) @ qml.X(wires=wire_labels[2]))
 
         c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])
@@ -513,7 +513,7 @@ class TestTensorExpval:
         def circ(wire_labels):
             sub_routine(wire_labels)
             return qml.expval(
-                qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
+                qml.X(wire_labels[0]) @ qml.Y(wire_labels[1]) @ qml.Z(wire_labels[2])
             )
 
         circ_base_label = qml.QNode(circ, device=dev)
@@ -555,7 +555,7 @@ class TestTensorExpval:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0) @ qml.Hermitian(A_, wires=[1, 2]))
+            return qml.expval(qml.Z(wires=0) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -666,7 +666,7 @@ class TestSample:
         @qml.qnode(dev)
         def circuit():
             qml.RX(1.5708, wires=[0])
-            return qml.sample(qml.PauliZ(wires=0))
+            return qml.sample(qml.Z(wires=0))
 
         res = circuit()
 
@@ -1194,7 +1194,7 @@ class TestVar:
         def circuit():
             qml.RX(phi, wires=[0])
             qml.RY(theta, wires=[0])
-            return qml.var(qml.PauliZ(wires=0))
+            return qml.var(qml.Z(wires=0))
 
         res = circuit()
 
@@ -1373,8 +1373,8 @@ class TestTensorVar:
         in the tensor observable, provided the wires each term acts on remain constant.
 
         eg:
-        ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
-        ob2 = qml.PauliY(wires=1) @ qml.PauliZ(wires=0)
+        ob1 = qml.Z(wires=0) @ qml.Y(wires=1)
+        ob2 = qml.Y(wires=1) @ qml.Z(wires=0)
 
         @qml.qnode(dev)
         def circ(obs):
@@ -1403,7 +1403,7 @@ class TestTensorVar:
         dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
 
         def circ(wire_labels):
-            return qml.var(qml.PauliZ(wires=wire_labels[0]) @ qml.PauliX(wires=wire_labels[2]))
+            return qml.var(qml.Z(wires=wire_labels[0]) @ qml.X(wires=wire_labels[2]))
 
         c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])
@@ -1415,7 +1415,7 @@ class TestTensorVar:
         def circ(wire_labels):
             sub_routine(wire_labels)
             return qml.var(
-                qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
+                qml.X(wire_labels[0]) @ qml.Y(wire_labels[1]) @ qml.Z(wire_labels[2])
             )
 
         circ_base_label = qml.QNode(circ, device=dev)

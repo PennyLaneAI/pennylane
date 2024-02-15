@@ -95,7 +95,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     .. code-block:: python3
 
         coeffs = [lambda p, t: p * t for _ in range(4)]
-        ops = [qml.PauliX(i) for i in range(4)]
+        ops = [qml.X(i) for i in range(4)]
 
         # ParametrizedHamiltonian
         H = qml.dot(coeffs, ops)

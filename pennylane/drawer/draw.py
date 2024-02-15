@@ -144,7 +144,7 @@ def draw(
         @qml.qnode(qml.device('lightning.qubit', wires=3))
         def longer_circuit(params):
             qml.StronglyEntanglingLayers(params, wires=range(3))
-            return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+            return [qml.expval(qml.Z(i)) for i in range(3)]
 
         print(qml.draw(longer_circuit, max_length=60)(params))
 

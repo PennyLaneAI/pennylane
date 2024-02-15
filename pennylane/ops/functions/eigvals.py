@@ -98,7 +98,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
             def circuit(theta):
                 qml.RX(theta, wires=1)
-                qml.PauliZ(wires=0)
+                qml.Z(wires=0)
 
         We can use ``qml.eigvals`` to generate a new function that returns the eigenvalues
         corresponding to the function ``circuit``:

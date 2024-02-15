@@ -29,12 +29,12 @@ from pennylane.wires import Wires
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
-    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(0.5j, qml.PauliY(wire))
+    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(0.5j, qml.Y(wire))
 
 
 def ad(wire, d=2):
     """annihilation operator"""
-    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
+    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(-0.5j, qml.Y(wire))
 
 
 # pylint: disable=too-many-arguments
@@ -404,7 +404,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq)]
 
-    drive_y_term = sum(qml.PauliY(wire) for wire in wires)
+    drive_y_term = sum(qml.Y(wire) for wire in wires)
 
     observables = [drive_y_term]
 

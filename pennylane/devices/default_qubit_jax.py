@@ -92,7 +92,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
             @qml.qnode(dev, interface="jax", diff_method="backprop")
             def circuit():
                 qml.Hadamard(0)
-                return qml.sample(qml.PauliZ(wires=0))
+                return qml.sample(qml.Z(wires=0))
 
             a = circuit()
             b = circuit() # Bad! b will be the exact same samples as a.
@@ -109,7 +109,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
                 @qml.qnode(dev, interface="jax", diff_method="backprop")
                 def circuit():
                     qml.Hadamard(0)
-                    return qml.sample(qml.PauliZ(wires=0))
+                    return qml.sample(qml.Z(wires=0))
                 return circuit()
 
             key1 = jax.random.PRNGKey(0)

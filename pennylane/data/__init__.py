@@ -82,7 +82,7 @@ Creating a Dataset
 
 To create a new dataset in-memory, initialize a new :class:`~.Dataset` with the desired attributes:
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+>>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(wires=0), qml.Z(wires=1)])
 >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
 >>> dataset = qml.data.Dataset(
 ...   hamiltonian = hamiltonian,
@@ -146,7 +146,7 @@ Attribute Metadata
 Dataset attributes can also contain additional metadata, such as docstrings. The :func:`~.data.attribute`
 function can be used to attach metadata on assignment or initialization.
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+>>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(wires=0), qml.Z(wires=1)])
 >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
 >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
 ...     hamiltonian,

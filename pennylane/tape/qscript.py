@@ -161,7 +161,7 @@ class QuantumScript:
     ``ops`` and ``measurements`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
 
-    >>> qscript = QuantumScript((qml.PauliX(i) for i in range(3)))
+    >>> qscript = QuantumScript((qml.X(i) for i in range(3)))
     >>> qscript.circuit
     [X(0), X(1), X(2)]
 
@@ -1147,7 +1147,7 @@ class QuantumScript:
 
         **Example:**
 
-        >>> circuit = qml.tape.QuantumScript([qml.PauliX("a")], [qml.expval(qml.PauliZ("b"))])
+        >>> circuit = qml.tape.QuantumScript([qml.X("a")], [qml.expval(qml.Z("b"))])
         >>> circuit.map_to_standard_wires().circuit
         [X(0), expval(Z(1))]
 

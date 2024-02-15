@@ -186,9 +186,9 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
         operations = tape.operations + added_operations
 
         if tape.measurements[0].return_type == qml.measurements.Expectation:
-            measurements = [qml.expval(-1 * qml.PauliZ(controls[0]))]
+            measurements = [qml.expval(-1 * qml.Z(controls[0]))]
         else:
-            measurements = [qml.var(qml.PauliZ(controls[0]))]
+            measurements = [qml.var(qml.Z(controls[0]))]
 
         new_tape = qml.tape.QuantumScript(operations, measurements, shots=tape.shots)
 
@@ -245,7 +245,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
+            qml.X(wires=2)
             return qml.expval(H)
 
     >>> circuit()
@@ -255,7 +255,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.PauliX(wires=2)]
+            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(wires=2)]
             measurements = [qml.expval(H)]
             tape = qml.tape.QuantumTape(operations, measurements)
 
@@ -288,7 +288,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.PauliX(wires=2)]
+            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(wires=2)]
             measurements = [qml.var(H)]
             tape = qml.tape.QuantumTape(operations, measurements)
 

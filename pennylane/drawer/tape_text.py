@@ -274,7 +274,7 @@ def tape_text(
             qml.Toffoli(wires=(0, 1, "aux"))
         ]
         measurements = [
-            qml.expval(qml.PauliZ("aux")),
+            qml.expval(qml.Z("aux")),
             qml.var(qml.Z(0) @ qml.Z(1)),
             qml.probs(wires=(0, 1, 2, "aux"))
         ]

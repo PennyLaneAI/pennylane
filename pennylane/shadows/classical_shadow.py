@@ -245,7 +245,7 @@ class ClassicalShadow:
 
             return word
 
-        if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)):
+        if isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Identity)):
             word = pauli_list_to_word([observable])
             return [(1, word)]
 

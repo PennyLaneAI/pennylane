@@ -158,7 +158,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         Measurements that accept both observables and ``wires`` so that e.g. ``qml.counts``,
         ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
         these measurements are interpreted as measuring with respect to the observable
-        ``qml.PauliZ(wires[0])@qml.PauliZ(wires[1])@...@qml.PauliZ(wires[len(wires)-1])``
+        ``qml.Z(wires[0])@qml.Z(wires[1])@...@qml.Z(wires[len(wires)-1])``
 
         .. code-block:: python3
 
@@ -188,7 +188,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
             # create the PauliZ tensor product observable when only wires are provided for the
             # measurements
             obs_wires = obs.wires if obs.wires else tape.wires
-            pauliz_obs = qml.prod(*(qml.PauliZ(wire) for wire in obs_wires))
+            pauliz_obs = qml.prod(*(qml.Z(wire) for wire in obs_wires))
 
             obs_list.append(pauliz_obs)
 

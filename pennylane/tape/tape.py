@@ -65,9 +65,9 @@ def _validate_computational_basis_sampling(measurements):
 
         with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
             pauliz_for_cb_obs = (
-                qml.PauliZ(all_wires)
+                qml.Z(all_wires)
                 if len(all_wires) == 1
-                else qml.operation.Tensor(*[qml.PauliZ(w) for w in all_wires])
+                else qml.operation.Tensor(*[qml.Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:

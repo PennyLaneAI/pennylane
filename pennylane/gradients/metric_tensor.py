@@ -624,7 +624,7 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
                 # Controlled-generator operation of second diff'ed op
                 qml.apply(gen_op_j)
                 # Measure X on auxiliary wire
-                qml.expval(qml.PauliX(aux_wire))
+                qml.expval(qml.X(aux_wire))
 
             tapes.append(qml.tape.QuantumScript.from_queue(q))
             # Memorize to which metric entry this tape belongs

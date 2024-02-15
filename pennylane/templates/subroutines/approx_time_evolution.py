@@ -102,7 +102,7 @@ class ApproxTimeEvolution(Operation):
             @qml.qnode(dev)
             def circuit(time):
                 ApproxTimeEvolution(hamiltonian, time, 1)
-                return [qml.expval(qml.PauliZ(wires=i)) for i in wires]
+                return [qml.expval(qml.Z(wires=i)) for i in wires]
 
         >>> circuit(1)
         tensor([-0.41614684 -0.41614684], requires_grad=True)

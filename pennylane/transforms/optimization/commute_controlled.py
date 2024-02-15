@@ -179,12 +179,12 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
         @qml.qnode(device=dev)
         def circuit(theta):
             qml.CZ(wires=[0, 2])
-            qml.PauliX(wires=2)
+            qml.X(wires=2)
             qml.S(wires=0)
 
             qml.CNOT(wires=[0, 1])
 
-            qml.PauliY(wires=1)
+            qml.Y(wires=1)
             qml.CRY(theta, wires=[0, 1])
             qml.PhaseShift(theta/2, wires=0)
 
@@ -206,12 +206,12 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
 
             def qfunc(theta):
                 qml.CZ(wires=[0, 2])
-                qml.PauliX(wires=2)
+                qml.X(wires=2)
                 qml.S(wires=0)
 
                 qml.CNOT(wires=[0, 1])
 
-                qml.PauliY(wires=1)
+                qml.Y(wires=1)
                 qml.CRY(theta, wires=[0, 1])
                 qml.PhaseShift(theta/2, wires=0)
 

@@ -143,7 +143,7 @@ class Prod(CompositeOp):
 
     **Example**
 
-    >>> prop_op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=0))
+    >>> prop_op = Prod(qml.X(wires=0), qml.Z(wires=0))
     >>> prop_op
     X(0) @ Z(0)
     >>> qml.matrix(prop_op)
@@ -158,7 +158,7 @@ class Prod(CompositeOp):
         first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
-    >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
+    >>> op = Prod(qml.X(wires=0), qml.Z(wires=1))
     >>> op.decomposition()
     [Z(1), X(0)]
 
@@ -168,7 +168,7 @@ class Prod(CompositeOp):
         The Prod operator represents both matrix composition and tensor products
         between operators.
 
-        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.PauliX(wires=0), qml.PauliZ(wires=1))
+        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.X(wires=0), qml.Z(wires=1))
         >>> prod_op.matrix()
         array([[ 0.        +0.j        ,  0.        +0.j        ,
                  0.81677345-0.57695852j,  0.        +0.j        ],
@@ -203,7 +203,7 @@ class Prod(CompositeOp):
 
         .. code-block:: python
 
-            prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+            prod_op = Prod(qml.Z(wires=0), qml.Hadamard(wires=1))
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
@@ -551,7 +551,7 @@ class _ProductFactorsGrouping:
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
                 factor = factor.base
-            if isinstance(factor, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
+            if isinstance(factor, (qml.Identity, qml.X, qml.Y, qml.Z)):
                 self._add_pauli_factor(factor=factor, wires=wires)
                 self._remove_non_pauli_factors(wires=wires)
             else:

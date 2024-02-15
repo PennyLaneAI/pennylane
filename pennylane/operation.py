@@ -509,7 +509,7 @@ class Operator(abc.ABC):
                 # The general signature of this function is (*parameters, wires, **hyperparameters).
                 op_list = []
                 if do_flip:
-                    op_list.append(qml.PauliX(wires=wires[1]))
+                    op_list.append(qml.X(wires=wires[1]))
                 op_list.append(qml.RX(angle, wires=wires[0]))
                 return op_list
 
@@ -528,7 +528,7 @@ class Operator(abc.ABC):
         @qml.qnode(dev)
         def circuit(angle):
             FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-            return qml.expval(qml.PauliZ("q1"))
+            return qml.expval(qml.Z("q1"))
 
     >>> a = np.array(3.14)
     >>> circuit(a)

@@ -517,7 +517,7 @@ def apply(op, context=QueuingManager):
 
                     # The following PauliX operation will be queued
                     # to the active queuing context, tape2, during instantiation.
-                    op1 = qml.PauliX(wires=0)
+                    op1 = qml.X(wires=0)
 
                     # We can use qml.apply to apply the same operation to tape1
                     # without leaving the tape2 context.

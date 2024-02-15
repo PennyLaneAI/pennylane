@@ -93,7 +93,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features):
                 qml.IQPEmbedding(features, wires=range(3))
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -106,7 +106,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features):
                 qml.IQPEmbedding(features, wires=range(3), n_repeats=4)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -124,7 +124,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features):
                 qml.IQPEmbedding(features, wires=range(3), pattern=pattern)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -140,7 +140,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features, pattern):
                 qml.IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             res1 = circuit([1., 2., 3.], pattern=pattern1)
             res2 = circuit([1., 2., 3.], pattern=pattern2)

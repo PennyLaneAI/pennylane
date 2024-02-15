@@ -623,7 +623,7 @@ class DefaultClifford(Device):
                 meas_wires = meas.wires if meas.wires else range(stim_circuit.num_qubits)
                 wire_order = {wire: idx for idx, wire in enumerate(meas.wires)}
                 # Decide measurement op
-                meas_op = meas.obs or qml.prod(*[qml.PauliZ(idx) for idx in meas_wires])
+                meas_op = meas.obs or qml.prod(*[qml.Z(idx) for idx in meas_wires])
                 samples = self._measure_observable_sample(
                     meas_op, stim_circuit, num_shots, sample_seed
                 )[0]

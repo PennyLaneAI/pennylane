@@ -61,7 +61,7 @@ def _prep_zero_state(wire):
 
 
 def _prep_one_state(wire):
-    return [qml.PauliX(wire)]
+    return [qml.X(wire)]
 
 
 def _prep_plus_state(wire):
@@ -69,7 +69,7 @@ def _prep_plus_state(wire):
 
 
 def _prep_minus_state(wire):
-    return [qml.PauliX(wire), qml.Hadamard(wire)]
+    return [qml.X(wire), qml.Hadamard(wire)]
 
 
 def _prep_iplus_state(wire):
@@ -77,7 +77,7 @@ def _prep_iplus_state(wire):
 
 
 def _prep_iminus_state(wire):
-    return [qml.PauliX(wire), qml.Hadamard(wire), qml.S(wires=wire)]
+    return [qml.X(wire), qml.Hadamard(wire), qml.S(wires=wire)]
 
 
 def find_and_place_cuts(

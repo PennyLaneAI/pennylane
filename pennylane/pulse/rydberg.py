@@ -285,7 +285,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
             # Global phase from the number operator
             -0.5 * sum(qml.Identity(wire) for wire in wires) * np.pi * 2
             # Equivalent of the number operator up to the global phase above
-            + 0.5 * sum(qml.PauliZ(wire) for wire in wires) * np.pi * 2
+            + 0.5 * sum(qml.Z(wire) for wire in wires) * np.pi * 2
         )
         detuning_coeffs.append(detuning)
 

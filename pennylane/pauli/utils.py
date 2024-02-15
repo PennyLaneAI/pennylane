@@ -1186,7 +1186,7 @@ def qwc_rotation(pauli_operators):
     >>> qwc_rotation(pauli_operators)
     [RY(-1.5707963267948966, wires=['a']), RX(1.5707963267948966, wires=['b'])]
     """
-    paulis_with_identity = (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)
+    paulis_with_identity = (qml.Identity, qml.X, qml.Y, qml.Z)
     if not all(isinstance(element, paulis_with_identity) for element in pauli_operators):
         raise TypeError(
             f"All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
@@ -1194,10 +1194,10 @@ def qwc_rotation(pauli_operators):
         )
     with OperationRecorder() as rec:
         for pauli in pauli_operators:
-            if isinstance(pauli, qml.PauliX):
+            if isinstance(pauli, qml.X):
                 qml.RY(-np.pi / 2, wires=pauli.wires)
 
-            elif isinstance(pauli, qml.PauliY):
+            elif isinstance(pauli, qml.Y):
                 qml.RX(np.pi / 2, wires=pauli.wires)
 
     # known issue with pylint recognizing @property members
@@ -1226,21 +1226,21 @@ def diagonalize_pauli_word(pauli_word):
     if not is_pauli_word(pauli_word):
         raise TypeError(f"Input must be a Pauli word, instead got: {pauli_word}.")
 
-    paulis_with_identity = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)
+    paulis_with_identity = (qml.X, qml.Y, qml.Z, qml.Identity)
     diag_term = None
 
     if isinstance(pauli_word, Tensor):
         for sigma in pauli_word.obs:
             if sigma.name != "Identity":
                 if diag_term is None:
-                    diag_term = qml.PauliZ(wires=sigma.wires)
+                    diag_term = qml.Z(wires=sigma.wires)
                 else:
-                    diag_term @= qml.PauliZ(wires=sigma.wires)
+                    diag_term @= qml.Z(wires=sigma.wires)
 
     elif isinstance(pauli_word, paulis_with_identity):
         sigma = pauli_word
         if sigma.name != "Identity":
-            diag_term = qml.PauliZ(wires=sigma.wires)
+            diag_term = qml.Z(wires=sigma.wires)
 
     if diag_term is None:
         diag_term = qml.Identity(pauli_word.wires.tolist()[0])
@@ -1292,7 +1292,7 @@ def diagonalize_qwc_pauli_words(
     pauli_operators = []
     diag_terms = []
 
-    paulis_with_identity = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)
+    paulis_with_identity = (qml.X, qml.Y, qml.Z, qml.Identity)
     for term in qwc_grouping:
         diag_terms.append(diagonalize_pauli_word(term))
         if isinstance(term, Tensor):
@@ -1601,6 +1601,6 @@ def _get_pauli_map(n):
     """
     warn("_get_pauli_map is deprecated, as it is no longer used.", qml.PennyLaneDeprecationWarning)
     return [
-        {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
+        {"I": qml.Identity(i), "X": qml.X(i), "Y": qml.Y(i), "Z": qml.Z(i)}
         for i in range(n + 1)
     ]
