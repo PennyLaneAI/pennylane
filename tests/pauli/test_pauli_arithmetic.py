@@ -622,42 +622,44 @@ class TestPauliSentence:
             ),
         ),
         (
-            PauliSentence({PauliWord({0: "X"}): 1.0}), # ps @ pw disjoint wires
+            PauliSentence({PauliWord({0: "X"}): 1.0}),  # ps @ pw disjoint wires
             PauliWord({1: "X"}),
             PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0}),
         ),
         (
-            PauliSentence({PauliWord({0: "X"}): 1.0}), # ps @ pw same wires same op
+            PauliSentence({PauliWord({0: "X"}): 1.0}),  # ps @ pw same wires same op
             PauliWord({0: "X"}),
             PauliSentence({PauliWord({}): 1.0}),
         ),
         (
-            PauliSentence({PauliWord({0: "X"}): 1.0}), # ps @ pw same wires different op
+            PauliSentence({PauliWord({0: "X"}): 1.0}),  # ps @ pw same wires different op
             PauliWord({0: "Y"}),
             PauliSentence({PauliWord({0: "Z"}): 1j}),
         ),
         (
-            PauliSentence({PauliWord({0: "Y"}): 1.0}), # ps @ pw same wires different op check minus sign
+            PauliSentence(
+                {PauliWord({0: "Y"}): 1.0}
+            ),  # ps @ pw same wires different op check minus sign
             PauliWord({0: "X"}),
             PauliSentence({PauliWord({0: "Z"}): -1j}),
         ),
         (
-            PauliWord({1: "X"}), # pw @ ps disjoint wires
+            PauliWord({1: "X"}),  # pw @ ps disjoint wires
             PauliSentence({PauliWord({0: "X"}): 1.0}),
             PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0}),
         ),
         (
-            PauliWord({0: "X"}), # ps @ pw same wires same op
+            PauliWord({0: "X"}),  # ps @ pw same wires same op
             PauliSentence({PauliWord({0: "X"}): 1.0}),
             PauliSentence({PauliWord({}): 1.0}),
         ),
         (
-            PauliWord({0: "X"}), # ps @ pw same wires different op
+            PauliWord({0: "X"}),  # ps @ pw same wires different op
             PauliSentence({PauliWord({0: "Y"}): 1.0}),
             PauliSentence({PauliWord({0: "Z"}): 1j}),
         ),
         (
-            PauliWord({0: "Y"}), # ps @ pw same wires different op check minus sign
+            PauliWord({0: "Y"}),  # ps @ pw same wires different op check minus sign
             PauliSentence({PauliWord({0: "X"}): 1.0}),
             PauliSentence({PauliWord({0: "Z"}): -1j}),
         ),
