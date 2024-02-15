@@ -120,35 +120,28 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
 
     circuit = circuit.map_to_standard_wires()
 
-    if not circuit.shots:
+    if circuit.shots:
+        # finite-shot case
+        def measure_func(mp, state, is_state_batched):
+            return measure_with_samples(
+                mp,
+                state,
+                shots=circuit.shots,
+                is_state_batched=is_state_batched,
+                rng=rng,
+                prng_key=prng_key,
+            )
+
+    else:
         # analytic case
-
-        if len(circuit.measurements) == 1:
-            return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
-
-        return tuple(
-            measure(mp, state, is_state_batched=is_state_batched) for mp in circuit.measurements
-        )
-
-    # finite-shot case
-
-    rng = default_rng(rng)
-    results = measure_with_samples(
-        circuit.measurements,
-        state,
-        shots=circuit.shots,
-        is_state_batched=is_state_batched,
-        rng=rng,
-        prng_key=prng_key,
-    )
+        measure_func = measure
 
     if len(circuit.measurements) == 1:
-        if circuit.shots.has_partitioned_shots:
-            return tuple(res[0] for res in results)
+        return measure_func(circuit.measurements[0], state, is_state_batched=is_state_batched)
 
-        return results[0]
-
-    return results
+    return tuple(
+        measure_func(mp, state, is_state_batched=is_state_batched) for mp in circuit.measurements
+    )
 
 
 # pylint: disable=too-many-arguments

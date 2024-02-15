@@ -290,7 +290,7 @@ class TestBroadcasting:
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
         ops = [
-            qml.TRX(np.pi, wires=1, subpace=subspace),
+            qml.TRX(np.pi, wires=1, subspace=subspace),
             qml.TRY(x, wires=0, subspace=subspace),
             qml.TAdd(wires=[0, 1]),
         ]
@@ -319,7 +319,7 @@ class TestBroadcasting:
         x = np.array([0.8, 1.0, 1.2, 1.4])
 
         ops = [
-            qml.TRX(np.pi, wires=1, subpace=subspace),
+            qml.TRX(np.pi, wires=1, subspace=subspace),
             qml.TRY(x, wires=0, subspace=subspace),
             qml.TAdd(wires=[0, 1]),
         ]
@@ -349,7 +349,7 @@ class TestBroadcasting:
         x = np.array([0.8, 1.0, 1.2, 1.4])
 
         ops = [
-            qml.TRX(np.pi, wires=2, subpace=subspace),
+            qml.TRX(np.pi, wires=2, subspace=subspace),
             qml.TRY(x, wires=1, subspace=subspace),
             qml.TAdd(wires=[1, 2]),
         ]
@@ -516,7 +516,7 @@ class TestSampleMeasurements:
     #  - 1 test custom wire labels
     # TODO total = 6 funcs, fix testing values
 
-    def test_single_expval(self):
+    def test_single_expval(self, subspace):
         """Test a simple circuit with a single expval measurement"""
         # x = np.array(0.732)
         # qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10000)
@@ -583,7 +583,7 @@ class TestSampleMeasurements:
 
         assert result[2].shape == (10000, 2)
 
-    def test_shots_reuse(self, mocker):
+    def test_shots_reuse(self, mocker, subspace):
         """Test that samples are reused when two measurements commute"""
         # ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
         # mps = [
@@ -626,7 +626,7 @@ class TestSampleMeasurements:
     ]
 
     @pytest.mark.parametrize("shots", shots_data)
-    def test_expval_shot_vector(self, shots):
+    def test_expval_shot_vector(self, shots, subspace):
         """Test a simple circuit with a single expval measurement for shot vectors"""
         # x = np.array(0.732)
         # shots = qml.measurements.Shots(shots)
