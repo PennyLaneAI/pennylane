@@ -165,12 +165,19 @@ def _pl_obs_to_linear_comb(meas_op):
             f"default.clifford doesn't support expectation value calculation with {type(meas_op).__name__} at the moment."
         )
 
-    coeffs = np.array(list(meas_rep.values()))
-    paulis = [
-        ("".join(pw.values()), list(pw.keys())) if pw.values() else ("I", meas_obs.wires[:1])
-        for pw in meas_rep
-    ]
-
+    coeffs, paulis = np.array(list(meas_rep.values())), []
+    meas_op_wires = list(meas_op.wires)
+    for pw in meas_rep:
+        p_wire, p_word = pw.keys(), pw.values()
+        if not p_word:
+            # empty pauli word correspond to identity
+            r_wire, r_word = meas_op_wires[:1], ["I"]
+        else:
+            # reorder the wires based on original meas_op
+            # reorder the pauli terms based on above.
+            r_wire = sorted(p_wire, key = meas_op_wires.index)
+            r_word = list(map(pw.get, r_wire))
+        paulis.append(("".join(r_word), r_wire))
     return coeffs, paulis
 
 

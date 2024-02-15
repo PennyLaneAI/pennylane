@@ -662,7 +662,7 @@ def test_meas_error_noisy():
     ],
 )
 def test_meas_noisy_distribution(channel_op):
-    """Test error distribution of samples matches with that from default.mixed device."""
+    """Test error distribution of samples matches with that from `default.mixed` device."""
 
     dev_c = qml.device("default.clifford", shots=10000, wires=4)
     dev_q = qml.device("default.mixed", shots=10000, wires=4)
