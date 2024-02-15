@@ -71,6 +71,24 @@ class TestLoad:
         ):
             qml.load("Test", format="some_non_existing_format")
 
+    def test_qiskit_not_installed(self, monkeypatch):
+        """Test that a specific error is raised if qml.from_qiskit is called and the qiskit
+        plugin converter isn't found"""
+
+        # temporarily make a mock_converter_dict with no "qiskit"
+        mock_plugin_converter_dict = {
+            entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
+        }
+        del mock_plugin_converter_dict["qiskit"]
+        monkeypatch.setattr(qml.io, "plugin_converters", mock_plugin_converter_dict)
+
+        with pytest.raises(
+            RuntimeError,
+            match="Conversion from Qiskit requires the PennyLane-Qiskit plugin. "
+            "You can install the plugin by",
+        ):
+            qml.from_qiskit("Test")
+
     @pytest.mark.parametrize(
         "method,entry_point_name",
         [
@@ -95,7 +113,7 @@ class TestLoad:
                 continue
 
             if mock_plugin_converters[plugin_converter].called:
-                raise Exception(f"The other plugin converter {plugin_converter} was called.")
+                raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
 
     @pytest.mark.parametrize(
         "method, entry_point_name",
@@ -119,4 +137,4 @@ class TestLoad:
                 continue
 
             if mock_plugin_converters[plugin_converter].called:
-                raise Exception(f"The other plugin converter {plugin_converter} was called.")
+                raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
