@@ -127,10 +127,10 @@ class TestInitialization:
         coeffs = [2.0, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
         H = ParametrizedHamiltonian(coeffs, ops)
-        expected = '(\n    2.0 * X(0)\n  + f1(params_0, t) * Y(0)\n  + f2(params_1, t) * Z(0)\n)'
+        expected = "(\n    2.0 * X(0)\n  + f1(params_0, t) * Y(0)\n  + f2(params_1, t) * Z(0)\n)"
 
         assert repr(H) == expected
-    
+
     def test__repr__with_Sum_and_Prod(self):
         """Test repr method returns expected string"""
 
@@ -138,7 +138,7 @@ class TestInitialization:
         h1 = qml.prod(qml.X(0), qml.sum(qml.X(1), qml.X(2)))
         H = qml.pulse.constant * h0 + qml.pulse.constant * h1 + qml.pulse.constant * qml.X(1)
 
-        expected = '(\n    constant(params_0, t) * (X(0) + X(1) + X(2) + X(3) + X(4))\n  + constant(params_1, t) * X(0) @ (X(1) + X(2))\n  + constant(params_2, t) * X(1)\n)'
+        expected = "(\n    constant(params_0, t) * (X(0) + X(1) + X(2) + X(3) + X(4))\n  + constant(params_1, t) * X(0) @ (X(1) + X(2))\n  + constant(params_2, t) * X(1)\n)"
 
         assert repr(H) == expected
 
@@ -158,7 +158,7 @@ class TestInitialization:
         coeffs = [2.0, f1, f2, f3(0.5)]
         observables = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0), qml.PauliX(0)]
         H = ParametrizedHamiltonian(coeffs, observables)
-        expected = '(\n    2.0 * X(0)\n  + f1(params_0, t) * Y(0)\n  + f2(params_1, t) * Z(0)\n  + f3(params_2, t) * X(0)\n)'
+        expected = "(\n    2.0 * X(0)\n  + f1(params_0, t) * Y(0)\n  + f2(params_1, t) * Z(0)\n  + f3(params_2, t) * X(0)\n)"
         assert repr(H) == expected
 
     def test_wire_attribute(self):
