@@ -29,7 +29,7 @@ iniconfig==2.0.0
 jax==0.4.23
 jaxlib==0.4.23
 kiwisolver==1.4.5
-matplotlib==3.8.2
+matplotlib==3.8.3
 ml-dtypes==0.3.2
 mypy-extensions==1.0.0
 networkx==3.2.1

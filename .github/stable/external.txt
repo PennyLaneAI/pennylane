@@ -85,7 +85,7 @@ lark==1.1.9
 libclang==16.0.6
 Markdown==3.5.2
 MarkupSafe==2.1.5
-matplotlib==3.8.2
+matplotlib==3.8.3
 matplotlib-inline==0.1.6
 mistune==3.0.2
 ml-dtypes==0.2.0
@@ -97,7 +97,7 @@ nest-asyncio==1.6.0
 networkx==3.2.1
 nodeenv==1.8.0
 notebook==7.1.0
-notebook_shim==0.2.3
+notebook_shim==0.2.4
 numpy==1.26.4
 oauthlib==3.2.2
 opt-einsum==3.3.0

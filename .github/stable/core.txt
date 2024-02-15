@@ -26,7 +26,7 @@ idna==3.6
 importlib-resources==6.1.1
 iniconfig==2.0.0
 kiwisolver==1.4.5
-matplotlib==3.8.2
+matplotlib==3.8.3
 mypy-extensions==1.0.0
 networkx==3.2.1
 nodeenv==1.8.0
