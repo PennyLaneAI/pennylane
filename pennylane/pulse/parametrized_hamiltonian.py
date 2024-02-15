@@ -82,7 +82,11 @@ class ParametrizedHamiltonian:
         params = [p1, p2]  # p1 is passed to f1, and p2 to f2
 
     >>> H(params, t=1.)
-    (2.0 * X(0)) + ((0.8414709568023682 * Y(0)) + (1.0 * Z(0)))
+    (
+        2.0 * X(0)
+      + 0.8414709848078965 * Y(0)
+      + 1.0 * Z(0)
+    )
 
     .. note::
         To be able to compute the time evolution of the Hamiltonian with :func:`~.pennylane.evolve`,
@@ -95,7 +99,7 @@ class ParametrizedHamiltonian:
     >>> H.H_fixed()
     2.0 * X(0)
     >>> H.H_parametrized([[1.2, 2.3], 4.5], 0.5)
-    (1.095316767692566 * Y(0)) + (2.25 * Z(0))
+    1.095316728312625 * Y(0) + 2.25 * Z(0)
 
 
     .. details::
@@ -125,7 +129,11 @@ class ParametrizedHamiltonian:
 
             >>> params = [[4.6, 2.3], 1.2]
             >>> H(params, t=0.5)
-            (2 * X(0)) + ((3.212763786315918 * Y(0)) + (1.0530991554260254 * Z(0)))
+            (
+                2 * X(0)
+              + 3.212763940260521 * Y(0)
+              + 1.0530990742684472 * Z(0)
+            )
 
             Internally we are computing ``f1([4.6, 2.3], 0.5)`` and ``f2(1.2, 0.5)``.
 
@@ -204,7 +212,12 @@ class ParametrizedHamiltonian:
 
         >>> H3 = H2 + H1
         >>> H3([4., [5., 6.], 2., 3.], t=1)
-        (((5.0 * Y(0)) + (-1.3970774909946293 * X(1))) + (0.9092974268256817 * X(0))) + (0.1411200080598672 * Y(1))
+        (
+            5.0 * Y(0)
+          + -1.3970774909946293 * X(1)
+          + 0.9092974268256817 * X(0)
+          + 0.1411200080598672 * Y(1)
+        )
 
     """
 
