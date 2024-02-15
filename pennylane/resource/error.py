@@ -100,6 +100,7 @@ class SpectralNormError(AlgorithmicError):
         """
         return self.__class__(self.error + other.error)
 
+    @staticmethod
     def get_error(approximate_op: Operator, exact_op: Operator, **kwargs):
         """A method to allow users to compute spectral norm error between two operators.
 
@@ -113,5 +114,5 @@ class SpectralNormError(AlgorithmicError):
         """
         if approximate_op.has_matrix and exact_op.has_matrix:
             return fn.svd(exact_op.matrix() - approximate_op.matrix(), compute_uv=False)[0]
-        else:
-            raise MatrixUndefinedError
+
+        raise MatrixUndefinedError
