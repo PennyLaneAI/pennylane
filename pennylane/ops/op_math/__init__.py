@@ -65,8 +65,11 @@ Controlled Operator Classes
     ~CY
     ~CZ
     ~CH
+    ~CCZ
+    ~CSWAP
     ~CNOT
     ~Toffoli
+    ~MultiControlledX
     ~CRX
     ~CRY
     ~CRZ
