@@ -199,20 +199,17 @@ class VSpace:
         # Add new PauliSentence entries to matrix
         for pw, value in pauli_sentence.items():
             M[pw_to_idx[pw], rank] = value
-        
 
         # Check if new vector is linearly dependent on the current basis
-        v = M[:, -1].copy() # remove copy to normalize M
+        v = M[:, -1].copy()  # remove copy to normalize M
         v /= np.linalg.norm(v)
         A = M[:, :-1]
-        v = v - A@qml.math.linalg.inv(qml.math.conj(A.T) @ A) @ qml.math.conj(A).T @ v
+        v = v - A @ qml.math.linalg.inv(qml.math.conj(A.T) @ A) @ qml.math.conj(A).T @ v
 
         if np.linalg.norm(v) > tol:
             return M, pw_to_idx, rank + 1, new_num_pw, True
 
         return M[:num_pw, :rank], pw_to_idx, rank, num_pw, False
-
-        
 
     def __repr__(self):
         return str(self.basis)
