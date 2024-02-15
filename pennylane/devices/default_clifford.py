@@ -175,7 +175,7 @@ def _pl_obs_to_linear_comb(meas_op):
         else:
             # reorder the wires based on original meas_op
             # reorder the pauli terms based on above.
-            r_wire = sorted(p_wire, key = meas_op_wires.index)
+            r_wire = sorted(p_wire, key=meas_op_wires.index)
             r_word = list(map(pw.get, r_wire))
         paulis.append(("".join(r_word), r_wire))
     return coeffs, paulis
