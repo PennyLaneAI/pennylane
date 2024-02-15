@@ -26,7 +26,32 @@ from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
 
 
-def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
+def _var_op(op, argname=None):
+    if argname is not None and argname != "op":
+        warnings.warn(
+            f"var got argument '{argname}' of type {type(op)}. Using argument as op", UserWarning
+        )
+
+    if not op.is_hermitian:
+        warnings.warn(f"{op.name} might not be hermitian.")
+
+    return VarianceMP(obs=op)
+
+
+def _var_mv(mv, argname=None):
+    if argname is not None and argname != "mv":
+        warnings.warn(
+            f"var got argument '{argname}' of type {type(mv)}. Using argument as mv", UserWarning
+        )
+
+    if isinstance(mv, Sequence):
+        raise ValueError(
+            "qml.var does not support measuring sequences of measurements or observables"
+        )
+    return VarianceMP(mv=mv)
+
+
+def var(*args, **kwargs) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:
@@ -55,17 +80,26 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     >>> circuit(0.5)
     0.7701511529340698
     """
-    if isinstance(op, MeasurementValue):
-        return VarianceMP(obs=op)
+    _args = [a for a in args if a is not None]
+    _kwargs = {key: value for key, value in kwargs.items() if value is not None}
 
-    if isinstance(op, Sequence):
-        raise ValueError(
-            "qml.var does not support measuring sequences of measurements or observables"
-        )
+    if (n_args := len(_args) + len(_kwargs)) != 1:
+        raise TypeError(f"expval takes 1 argument but {n_args} were given")
 
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
-    return VarianceMP(obs=op)
+    if _args:
+        arg = args[0]
+        argname = None
+
+    elif _kwargs:
+        argname, arg = next(iter(_kwargs.items()))
+
+        if argname not in ("op", "mv"):
+            raise TypeError(f"var got an unexpected keyword argument '{argname}'")
+
+    if isinstance(arg, Operator):
+        return _var_op(arg, argname=argname)
+
+    return _var_mv(arg, argname=argname)
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
