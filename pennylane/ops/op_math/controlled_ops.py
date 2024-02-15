@@ -212,10 +212,10 @@ class CH(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(metadata[0])
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
-        super().__init__(qml.Hadamard(wires=target_wires), control_wires)
+        super().__init__(qml.Hadamard(wires=target_wires), control_wires, id=id)
 
     @staticmethod
     @lru_cache()
@@ -419,9 +419,9 @@ class CZ(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(metadata[0])
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wire, wire = wires
-        super().__init__(qml.PauliZ(wires=wire), control_wire)
+        super().__init__(qml.PauliZ(wires=wire), control_wire, id=id)
 
     @staticmethod
     @lru_cache()
@@ -498,10 +498,10 @@ class CSWAP(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(metadata[0])
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
-        super().__init__(qml.SWAP(wires=target_wires), control_wires)
+        super().__init__(qml.SWAP(wires=target_wires), control_wires, id=id)
 
     @staticmethod
     @lru_cache()
@@ -615,10 +615,10 @@ class CCZ(ControlledOp):
 
     name = "CCZ"
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
-        super().__init__(qml.PauliZ(wires=target_wires), control_wires)
+        super().__init__(qml.PauliZ(wires=target_wires), control_wires, id=id)
 
     @staticmethod
     @lru_cache()
@@ -755,9 +755,9 @@ class CNOT(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(metadata[0])
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wire, wire = wires
-        super().__init__(qml.PauliX(wires=wire), control_wire)
+        super().__init__(qml.PauliX(wires=wire), control_wire, id=id)
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
@@ -837,10 +837,10 @@ class Toffoli(ControlledOp):
     def _unflatten(cls, _, metadata):
         return cls(metadata[0])
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
-        super().__init__(qml.PauliX(wires=target_wires), control_wires)
+        super().__init__(qml.PauliX(wires=target_wires), control_wires, id=id)
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
