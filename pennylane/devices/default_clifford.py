@@ -340,9 +340,9 @@ class DefaultClifford(Device):
         :title: Error Channels
         :href: clifford-errors
 
-        This device supports the ``finite-shot`` execution of quantum circuits with
-        the following error channels that add ``Pauli noise``, allowing for one to perform
-        any sampling-based `measurements <https://github.com/quantumlib/stim/>`_.
+        This device supports the finite-shot execution of quantum circuits with
+        the following error channels that add Pauli noise, allowing for one to perform
+        any sampling-based measurements.
 
         - *Multi-qubit Pauli errors:* :mod:`qml.PauliError <pennylane.PauliError>`
         - *Single-qubit depolarization errors:* :mod:`qml.DepolarizingChannel <pennylane.DepolarizingChannel>`
