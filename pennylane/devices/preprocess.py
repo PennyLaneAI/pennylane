@@ -148,6 +148,19 @@ def validate_device_wires(
 
 
 @transform
+def mid_circuit_measurements(
+    tape: qml.tape.QuantumTape, device
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Provide the transform to handle mid-circuit measurements.
+
+    If the tape of device uses finite-shot, use the native implementation (i.e. no transform), and use defer measurements transforms otherwise.
+    """
+    if tape.shots and tape.batch_size is None:
+        return (tape,), null_postprocessing
+    return qml.defer_measurements(tape, device=device)
+
+
+@transform
 def validate_multiprocessing_workers(
     tape: qml.tape.QuantumTape, max_workers: int, device
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
@@ -240,6 +253,7 @@ def validate_adjoint_trainable_params(
 def decompose(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
+    stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
     skip_initial_state_prep: bool = True,
     decomposer: Optional[
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
@@ -254,6 +268,9 @@ def decompose(
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
             a ``DecompositionUndefinedError`` will be raised.
+        stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
+            should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
+            a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape as shots.
         skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
             If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
@@ -311,6 +328,9 @@ def decompose(
 
         def decomposer(op):
             return op.decomposition()
+
+    if stopping_condition_shots is not None and tape.shots:
+        stopping_condition = stopping_condition_shots
 
     if not all(stopping_condition(op) for op in tape.operations):
         try:
