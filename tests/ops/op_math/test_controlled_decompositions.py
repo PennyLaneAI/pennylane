@@ -157,16 +157,16 @@ class TestControlledDecompositionZYZ:
             return qml.probs(wires=target_wires)
 
         circ_ad = qml.QNode(circuit, dev, diff_method="adjoint")
-        circ_ps = qml.QNode(circuit, dev, diff_method="finite-diff")
+        circ_bp = qml.QNode(circuit, dev, diff_method="backprop")
         par = qml.numpy.array([0.1234, 0.235, 0.5678])
         jac_ad = qml.jacobian(circ_ad)(par)
-        jac_ps = qml.jacobian(circ_ps)(par)
+        jac_bp = qml.jacobian(circ_bp)(par)
 
         # different methods must agree
         assert jac_ad.size == 2 * 3
         assert np.allclose(jac_ad.shape, [2, 3])
-        assert np.allclose(jac_ad.shape, jac_ps.shape)
-        assert np.allclose(jac_ad, jac_ps, atol=tol, rtol=0)
+        assert np.allclose(jac_ad.shape, jac_bp.shape)
+        assert np.allclose(jac_ad, jac_bp, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", su2_ops)
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
