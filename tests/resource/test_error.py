@@ -129,13 +129,11 @@ class TestSpectralNormError:
     def test_custom_operator(self, phi, expected):
         """Test that get_error fails if the operator matrix is not defined"""
 
-        class toy_operator(qml.operation.Operator):
-            num_wires = 1
-
+        class DummyOp(Operation):  # pylint: disable=too-few-public-methods
             def matrix(self):
                 return np.array([[0.5, 1.0], [1.2, 1.3]])
 
-        approx_op = toy_operator(1)
+        approx_op = DummyOp(1)
         exact_op = qml.RX(phi, 1)
 
         res = SpectralNormError.get_error(approx_op, exact_op)
