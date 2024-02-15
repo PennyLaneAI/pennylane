@@ -261,6 +261,8 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
         tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
 
     **Example**
+    
+    We can compute the partial trace of the matrix ``x`` with respect to its first index.
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
     >>> partial_trace(x, indices=[0])
     array([[1, 0], [0, 0]])
