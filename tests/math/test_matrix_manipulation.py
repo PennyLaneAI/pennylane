@@ -225,7 +225,7 @@ class TestExpandMatrix:
     def test_jax(self, i, base_matrix, tol):
         """Tests differentiation in jax by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
-        import jax  # pylint: disable=Import outside toplevel (jax) (import-outside-toplevel)
+        import jax
 
         base_matrix = jax.numpy.array(base_matrix)
         jac_fn = jax.jacobian(self.func_for_autodiff)
@@ -244,7 +244,7 @@ class TestExpandMatrix:
     def test_tf(self, i, base_matrix, tol):
         """Tests differentiation in TensorFlow by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
-        import tensorflow as tf  # pylint: disable=Import outside toplevel (tensorflow) (import-outside-toplevel)
+        import tensorflow as tf
 
         base_matrix = tf.Variable(base_matrix)
         with tf.GradientTape() as tape:
