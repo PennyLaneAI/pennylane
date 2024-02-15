@@ -225,8 +225,6 @@ class TestBasicCircuit:
         assert qml.math.allclose(g[2], expected[2])
         assert qml.math.allclose(g[3], expected[3])
 
-    # TODO check if necessary pylint
-    # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
     @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_tf_results_and_backprop(self, subspace):
