@@ -427,6 +427,9 @@
 * A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
+* A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions was added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
+  [(#5137)](https://github.com/PennyLaneAI/pennylane/pull/5137)
+
 * Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
 
 <h3>Bug fixes 🐛</h3>
@@ -529,6 +532,7 @@ Eugenio Gigante,
 Diego Guala,
 David Ittah,
 Soran Jahangiri,
+Jacky Jiang,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
