@@ -248,13 +248,6 @@ class CH(ControlledOp):
             ]
         )
 
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix()
-        wire_order = wire_order or self.wires
-        return qml.math.expand_matrix(
-            canonical_matrix, wires=self.active_wires, wire_order=wire_order
-        )
-
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
@@ -282,9 +275,6 @@ class CH(ControlledOp):
             qml.CZ(wires=wires),
             qml.RY(+np.pi / 4, wires=wires[1]),
         ]
-
-    def decomposition(self):
-        return self.compute_decomposition(self.wires)
 
 
 class CY(ControlledOp):
@@ -388,9 +378,6 @@ class CY(ControlledOp):
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
 
-    def decomposition(self):
-        return self.compute_decomposition(self.wires)
-
 
 class CZ(ControlledOp):
     r"""CZ(wires)
@@ -465,9 +452,6 @@ class CZ(ControlledOp):
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=arguments-differ
         return [qml.ControlledPhaseShift(np.pi, wires=wires)]
-
-    def decomposition(self):
-        return self.compute_decomposition(self.wires)
 
 
 class CSWAP(ControlledOp):
@@ -584,16 +568,6 @@ class CSWAP(ControlledOp):
             qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
         ]
         return decomp_ops
-
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix()
-        wire_order = wire_order or self.wires
-        return qml.math.expand_matrix(
-            canonical_matrix, wires=self.active_wires, wire_order=wire_order
-        )
-
-    def decomposition(self):
-        return self.compute_decomposition(self.wires)
 
 
 class CCZ(ControlledOp):
@@ -738,16 +712,6 @@ class CCZ(ControlledOp):
             qml.Hadamard(wires=wires[2]),
         ]
 
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix()
-        wire_order = wire_order or self.wires
-        return qml.math.expand_matrix(
-            canonical_matrix, wires=self.active_wires, wire_order=wire_order
-        )
-
-    def decomposition(self):
-        return self.compute_decomposition(self.wires)
-
 
 class CNOT(ControlledOp):
     r"""CNOT(wires)
@@ -821,13 +785,6 @@ class CNOT(ControlledOp):
          [0 0 1 0]]
         """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix()
-        wire_order = wire_order or self.wires
-        return qml.math.expand_matrix(
-            canonical_matrix, wires=self.active_wires, wire_order=wire_order
-        )
 
     def _controlled(self, wire):
         return qml.Toffoli(wires=wire + self.wires)
@@ -927,13 +884,6 @@ class Toffoli(ControlledOp):
             ]
         )
 
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix()
-        wire_order = wire_order or self.wires
-        return qml.math.expand_matrix(
-            canonical_matrix, wires=self.active_wires, wire_order=wire_order
-        )
-
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
@@ -986,9 +936,6 @@ class Toffoli(ControlledOp):
             qml.adjoint(qml.T(wires=wires[1])),
             CNOT(wires=[wires[0], wires[1]]),
         ]
-
-    def decomposition(self):
-        return self.compute_decomposition(self.wires)
 
 
 def _check_and_convert_control_values(control_values, control_wires):
@@ -1364,20 +1311,6 @@ class CRX(ControlledOp):
             qml.RZ(-pi_half, wires=wires[1]),
         ]
 
-    def decomposition(self):
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n
-
-        A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_decomposition`.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-        return self.compute_decomposition(*self.parameters, wires=self.wires)
-
 
 class CRY(ControlledOp):
     r"""The controlled-RY operator
@@ -1517,20 +1450,6 @@ class CRY(ControlledOp):
             qml.RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
-
-    def decomposition(self):
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n
-
-        A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_decomposition`.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-        return self.compute_decomposition(*self.parameters, wires=self.wires)
 
 
 class CRZ(ControlledOp):
@@ -1713,20 +1632,6 @@ class CRZ(ControlledOp):
             qml.CNOT(wires=wires),
         ]
 
-    def decomposition(self):
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n
-
-        A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_decomposition`.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-        return self.compute_decomposition(*self.parameters, wires=self.wires)
-
 
 class CRot(ControlledOp):
     r"""The controlled-Rot operator
@@ -1896,20 +1801,6 @@ class CRot(ControlledOp):
             qml.RZ(omega, wires=wires[1]),
         ]
 
-    def decomposition(self):
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n
-
-        A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_decomposition`.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-        return self.compute_decomposition(*self.parameters, wires=self.wires)
-
 
 class ControlledPhaseShift(ControlledOp):
     r"""A qubit controlled phase shift.
@@ -2074,20 +1965,6 @@ class ControlledPhaseShift(ControlledOp):
             qml.CNOT(wires=wires),
             qml.PhaseShift(phi / 2, wires=wires[1]),
         ]
-
-    def decomposition(self):
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n
-
-        A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_decomposition`.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-        return self.compute_decomposition(*self.parameters, wires=self.wires)
 
 
 CPhase = ControlledPhaseShift
