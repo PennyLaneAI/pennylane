@@ -277,6 +277,9 @@
   ```
   [(#5138)](https://github.com/PennyLaneAI/pennylane/pull/5138)
 
+* Documentation has been updated with new string representations.
+  [(#5153)](https://github.com/PennyLaneAI/pennylane/pull/5153)
+
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
