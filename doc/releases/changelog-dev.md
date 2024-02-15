@@ -516,6 +516,12 @@
 * `PauliSentence.__matmul__` can handle `PauliWord` instances now.
   [(#5208)](https://github.com/PennyLaneAI/pennylane/pull/5208)
 
+* Make `CompositeOp.eigendecomposition` jit-compatible.
+  [(#5207)](https://github.com/PennyLaneAI/pennylane/pull/5207)
+
+* `QubitDensityMatrix` now works with jax-jit on the `default.mixed` device.
+  [(#5203)](https://github.com/PennyLaneAI/pennylane/pull/5203)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
