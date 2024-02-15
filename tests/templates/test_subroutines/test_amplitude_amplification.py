@@ -19,6 +19,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 
+
 @qml.prod
 def generator(wires):
     for wire in wires:
@@ -137,36 +138,35 @@ class TestInitialization:
         assert op.work_wire == work_wire
 
 
-class TestResults:
-    @pytest.mark.parametrize(
-        "n_wires, items, iters",
-        (
-            (3, [0, 2], 1),
-            (3, [1, 2], 2),
-            (5, [4, 5, 7, 12], 3),
-            (5, [0, 1, 2, 3, 4], 4),
-        ),
-    )
-    def test_compare_grover(self, n_wires, items, iters):
-        U = generator(wires=range(n_wires))
-        O = oracle(items, wires=range(n_wires))
+@pytest.mark.parametrize(
+    "n_wires, items, iters",
+    (
+        (3, [0, 2], 1),
+        (3, [1, 2], 2),
+        (5, [4, 5, 7, 12], 3),
+        (5, [0, 1, 2, 3, 4], 4),
+    ),
+)
+def test_compare_grover(self, n_wires, items, iters):
+    U = generator(wires=range(n_wires))
+    O = oracle(items, wires=range(n_wires))
 
-        dev = qml.device("default.qubit", wires=n_wires)
+    dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
-        def circuit_amplitude_amplification():
-            generator(wires=range(n_wires))
-            qml.AmplitudeAmplification(U, O, iters)
-            return qml.probs(wires=range(n_wires))
+    @qml.qnode(dev)
+    def circuit_amplitude_amplification():
+        generator(wires=range(n_wires))
+        qml.AmplitudeAmplification(U, O, iters)
+        return qml.probs(wires=range(n_wires))
 
-        @qml.qnode(dev)
-        def circuit_grover():
-            generator(wires=range(n_wires))
+    @qml.qnode(dev)
+    def circuit_grover():
+        generator(wires=range(n_wires))
 
-            for _ in range(iters):
-                oracle(items, wires=range(n_wires))
-                qml.GroverOperator(wires=range(n_wires))
+        for _ in range(iters):
+            oracle(items, wires=range(n_wires))
+            qml.GroverOperator(wires=range(n_wires))
 
-            return qml.probs(wires=range(n_wires))
+        return qml.probs(wires=range(n_wires))
 
-        assert np.allclose(circuit_amplitude_amplification(), circuit_grover(), atol=1e-5)
+    assert np.allclose(circuit_amplitude_amplification(), circuit_grover(), atol=1e-5)

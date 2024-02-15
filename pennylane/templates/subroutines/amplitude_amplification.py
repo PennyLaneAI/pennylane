@@ -93,9 +93,6 @@ class AmplitudeAmplification(Operation):
         if fixed_point and work_wire is None:
             raise ValueError("work_wire must be specified if fixed_point == True.")
 
-        if fixed_point and iters % 2 != 0:
-            raise ValueError("Number of iterations must be even if fixed_point == True.")
-
         if fixed_point and len(U.wires + qml.wires.Wires(work_wire)) == len(U.wires):
             raise ValueError("work_wire must be different from the wires of U.")
 
