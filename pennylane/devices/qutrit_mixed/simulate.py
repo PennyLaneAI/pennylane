@@ -52,7 +52,7 @@ def get_final_state(circuit, debugger=None, interface=None):
     """
     Get the final state that results from executing the given quantum script.
 
-    This is an internal function that will be called by the successor to ``default.qubit``.
+    This is an internal function that will be called by ``default.qutrit.mixed``.
 
     Args:
         circuit (.QuantumScript): The single circuit to simulate
@@ -98,7 +98,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     """
     Perform the measurements required by the circuit on the provided state.
 
-    This is an internal function that will be called by the successor to ``default.qubit``.
+    This is an internal function that will be called by ``default.qutrit.mixed``.
 
     Args:
         circuit (.QuantumScript): The single circuit to simulate
@@ -157,7 +157,7 @@ def simulate(
 ) -> Result:
     """Simulate a single quantum script.
 
-    This is an internal function that will be called by the successor to ``default.qubit``.
+    This is an internal function that will be called by ``default.qutrit.mixed``.
 
     Args:
         circuit (QuantumTape): The single circuit to simulate
@@ -169,7 +169,8 @@ def simulate(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
-        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the pre-rotated state. Used to pass the state between forward passes and vjp calculations.
+        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the
+            pre-rotated state. Used to pass the state between forward passes and vjp calculations.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -178,10 +179,10 @@ def simulate(
 
     This function assumes that all operations provide matrices.
 
-    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+    >>> qs = qml.tape.QuantumScript([qml.TRX(1.2, wires=0)], [qml.expval(qml.GellMann(0, 3)), qml.probs(wires=(0,1))])
     >>> simulate(qs)
     (0.36235775447667357,
-    tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
+    tensor([0.68117888, 0.        , 0.        , 0.31882112, 0.        , 0.        ], requires_grad=True))
 
     """
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
