@@ -269,21 +269,21 @@ class TestBasicCircuit:
 class TestBroadcasting:
     """Test that simulate works with broadcasted parameters"""
 
-    # TODO:
-    #  - 1 broad-casted state, from prep, check measurements
-    #  - 1 broadcasted state, from operation, check measurements
-    #  - 1 broad-casted state, from prep, check sample
-    #  - 1 broadcasted state, from operation, check sample
-    #  - 1 broadcasting with extra measurement wires
-    # TODO total = 5 funcs
-
     @staticmethod
     def get_state(x, subspace):
-        return None
+        state = []
+        for x_val in x:
+            vec = np.zeros(9, dtype=complex)
+            vec[subspace[1]] = -1j * np.cos(x_val / 2)
+            vec[3 + (2 * subspace[1])] = -1j * np.sin(x_val / 2)
+            state.append(np.outer(vec, np.conj(vec)).reshape((3,) * 4))
+        return state
 
     @staticmethod
     def get_expectation_values(x, subspace):
-        return None
+        if subspace == (0, 1):
+            return [np.cos(x), -np.cos(x / 2) ** 2]
+        return [np.cos(x / 2) ** 2, -np.sin(x / 2) ** 2]
 
     def test_broadcasted_op_state(self, subspace):
         """Test that simulate works for state measurements
@@ -340,7 +340,7 @@ class TestBroadcasting:
         assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
-        assert np.allclose(res[0], expected, atol=0.05)
+        assert np.allclose(res, expected, atol=0.05)
 
     def test_broadcasting_with_extra_measurement_wires(self, mocker, subspace):
         """Test that broadcasting works when the operations don't act on all wires."""
@@ -361,8 +361,7 @@ class TestBroadcasting:
         assert isinstance(res, tuple)
         assert len(res) == 3
         assert np.allclose(res[0], 1.0)
-        assert np.allclose(res[1], np.cos(x))
-        assert np.allclose(res[2], -np.cos(x))
+        assert np.allclose(res[1:], self.get_expectation_values(x, subspace))
         assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
 
 
