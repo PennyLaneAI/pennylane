@@ -195,13 +195,13 @@ class LinearCombination(CompositeOp):
 
         for obs in ops:
             if not isinstance(obs, Observable):
-                raise ValueError(
-                    "Could not create circuits. Some or all ops are not valid."
-                )
+                raise ValueError("Could not create circuits. Some or all ops are not valid.")
 
         self._coeffs = coeffs
         self._ops = list(ops)
-        self.operands = (qml.s_prod(c, op) for c, op in zip(coeffs, ops)) # generator to avoid explicit construction
+        self.operands = (
+            qml.s_prod(c, op) for c, op in zip(coeffs, ops)
+        )  # generator to avoid explicit construction
 
         # TODO: avoid having multiple ways to store ops and coeffs,
         # ideally only use parameters for coeffs, and hyperparameters for ops
@@ -237,9 +237,11 @@ class LinearCombination(CompositeOp):
     def _build_pauli_rep(self):
         if all(op_pauli_rep := [op.pauli_rep for op in self._ops]):
             coeffs = self._coeffs
-            return sum((c * op for c, op in zip(coeffs, op_pauli_rep)), start=coeffs[0]*op_pauli_rep[0])
+            return sum(
+                (c * op for c, op in zip(coeffs, op_pauli_rep)), start=coeffs[0] * op_pauli_rep[0]
+            )
         return None
-    
+
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
         """Sort algorithm that sorts a list of sum summands by their wire indices.
@@ -273,7 +275,7 @@ class LinearCombination(CompositeOp):
             return sorted(list(map(str, wires)))[0], len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
-    
+
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
@@ -283,7 +285,7 @@ class LinearCombination(CompositeOp):
                 return not any(qml.math.iscomplex(c) for c in coeffs_list)
 
         return all(s.is_hermitian for s in self)
-    
+
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
@@ -307,7 +309,7 @@ class LinearCombination(CompositeOp):
         """
         coeffs, ops = self.coeffs, self.ops
         gen = (
-            (c*qml.matrix(op) if isinstance(op, qml.Hamiltonian) else c*op.matrix(), op.wires)
+            (c * qml.matrix(op) if isinstance(op, qml.Hamiltonian) else c * op.matrix(), op.wires)
             for c, op in zip(coeffs, ops)
         )
 
@@ -711,7 +713,9 @@ class LinearCombination(CompositeOp):
                 (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
             }
 
-        raise ValueError("Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor.")
+        raise ValueError(
+            "Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor."
+        )
 
     def __matmul__(self, H):
         r"""The tensor product operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
