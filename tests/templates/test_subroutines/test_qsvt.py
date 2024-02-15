@@ -255,6 +255,34 @@ class TestQSVT:
         assert np.allclose(qml.matrix(op), default_matrix)
         assert qml.math.get_interface(qml.matrix(op)) == "jax"
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
+    )
+    def test_QSVT_jax_with_identity(self, input_matrix, angles, wires):
+        """Test that applying the identity operation before the qsvt function
+        does not affect the matrix for jax.
+
+        The primary purpose of this test is to ensure that qml.matrix() can
+        multiply a NumPy matrix by a JAX matrix when the inferred interface is
+        NumPy (i.e., the default interface when no parameters are given).
+        """
+        import jax
+
+        def identity_and_qsvt(angles):
+            qml.Identity(wires=wires[0])
+            qml.qsvt(input_matrix, angles, wires)
+
+        @jax.jit
+        def get_matrix_with_identity(angles):
+            return qml.matrix(identity_and_qsvt, wire_order=wires)(angles)
+
+        matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
+        matrix_with_identity = get_matrix_with_identity(angles)
+
+        assert np.allclose(matrix, matrix_with_identity)
+
     @pytest.mark.tf
     @pytest.mark.parametrize(
         ("input_matrix", "angles", "wires"),
