@@ -229,4 +229,3 @@ class VSpace:
         rank3 = np.linalg.matrix_rank(np.concatenate([self._M, other._M], axis=1))
 
         return rank1 == rank2 and rank2 == rank3
-

@@ -213,7 +213,6 @@ class TestVSpace:
         )
         assert v1 != v2
 
-
     """Tests for qml.dla.lie_closure()"""
 
     M0 = np.array(
