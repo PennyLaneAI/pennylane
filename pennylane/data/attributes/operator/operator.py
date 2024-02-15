@@ -67,6 +67,9 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.DiagonalQubitUnitary,
                 # pennylane/ops/qubit/non_parametric_qml.py
                 qml.Hadamard,
+                qml.PauliX,
+                qml.PauliY,
+                qml.PauliZ,
                 qml.X,
                 qml.Y,
                 qml.Z,
