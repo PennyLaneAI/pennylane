@@ -19,10 +19,15 @@ import numpy as np
 
 import pennylane as qml
 
-from pennylane.devices import NullQubit, DefaultQubit, ExecutionConfig
+from pennylane.devices import NullQubit, ExecutionConfig
+from pennylane.measurements import (
+    SampleMeasurement,
+    StateMeasurement,
+    ClassicalShadowMP,
+    ShadowExpvalMP,
+)
 
 np.random.seed(0)
-dq = DefaultQubit()
 
 
 def test_name():
@@ -105,7 +110,7 @@ class TestBasicCircuit:
 
         dev = NullQubit()
         result = dev.execute(qs)
-        dq_res = dq.execute(qs)
+        dq_res = qml.device("default.qubit").execute(qs)
 
         assert isinstance(result, tuple)
         assert len(result) == 2
@@ -359,15 +364,39 @@ class TestSampleMeasurements:
         assert np.array_equal(res1, np.zeros((100, 2)))
         assert np.array_equal(res2, np.zeros(50))
 
-    def test_counts_wires(self):
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_counts_wires(self, all_outcomes):
         """Test that a Counts measurement with wires works as expected"""
         x = np.array(np.pi / 2)
-        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.counts(wires=[0, 1])], shots=10000)
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)], [qml.counts(wires=[0, 1], all_outcomes=all_outcomes)], shots=10000
+        )
 
         dev = NullQubit()
         result = dev.execute(qs)
 
-        assert result == {"00": 10000}
+        expected = {"00": 10000, "01": 0, "10": 0, "11": 0} if all_outcomes else {"00": 10000}
+        assert result == expected
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_counts_wires_batched(self, all_outcomes):
+        """Test that a Counts measurement with wires and batching works as expected"""
+        x = np.array([np.pi / 2, np.pi / 4])
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)],
+            [qml.counts(wires=[0, 1], all_outcomes=all_outcomes)],
+            shots=[50, 100, 150],
+        )
+
+        dev = NullQubit()
+        result = dev.execute(qs)
+        print(result)
+
+        assert (
+            result == tuple([{"00": s, "01": 0, "10": 0, "11": 0}] * 2 for s in qs.shots)
+            if all_outcomes
+            else tuple([{"00": s}] * 2 for s in qs.shots)
+        )
 
     @pytest.mark.parametrize("all_outcomes", [False, True])
     def test_counts_obs(self, all_outcomes):
@@ -382,6 +411,25 @@ class TestSampleMeasurements:
         dev = NullQubit()
         result = dev.execute(qs)
         assert result == ({-1: 10000, 1: 0} if all_outcomes else {-1: 10000})
+
+    @pytest.mark.parametrize("all_outcomes", [False, True])
+    def test_counts_obs_batched(self, all_outcomes):
+        """Test that a Counts measurement with an observable and batching works as expected"""
+        x = np.array([np.pi / 2, np.pi / 4])
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)],
+            [qml.counts(qml.PauliZ(0), all_outcomes=all_outcomes)],
+            shots=[50, 100, 150],
+        )
+
+        dev = NullQubit()
+        result = dev.execute(qs)
+        print(result)
+        assert (
+            result == tuple([{-1: s, 1: 0}] * 2 for s in qs.shots)
+            if all_outcomes
+            else tuple([{-1: s}] * 2 for s in qs.shots)
+        )
 
 
 class TestExecutingBatches:
@@ -996,3 +1044,53 @@ class TestIntegration:
             return qml.counts(all_outcomes=all_outcomes)
 
         assert circuit() == expected
+
+
+@pytest.mark.parametrize("shots", [None, 100, [(100, 3)]])
+@pytest.mark.parametrize("x", [1.1, [1.1, 2.2]])
+@pytest.mark.parametrize(
+    "mp",
+    [
+        qml.expval(qml.PauliZ(0)),
+        qml.var(qml.PauliZ(0)),
+        qml.state(),
+        qml.probs(),
+        qml.probs(wires=[1]),
+        qml.sample(),
+        qml.sample(wires=[1]),
+        qml.sample(op=qml.PauliZ(0)),
+        qml.mutual_info([0], [1]),
+        qml.purity([1]),
+        qml.purity([0, 1]),
+        qml.density_matrix([1]),
+        qml.density_matrix([0, 1]),
+        qml.vn_entropy([1]),
+        qml.vn_entropy([0, 1]),
+        qml.classical_shadow([1]),
+        qml.classical_shadow([0, 1]),
+        qml.shadow_expval(qml.PauliZ(0)),
+        qml.shadow_expval([qml.PauliZ(0), qml.PauliZ(1)]),
+    ],
+)
+def test_measurement_shape_matches_default_qubit(mp, x, shots):
+    """Test that all results match default.qubit in shape."""
+    if shots and not isinstance(mp, (SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP)):
+        pytest.skip(reason="MeasurementProcess doesn't work with finite shots.")
+
+    if not shots and not isinstance(mp, StateMeasurement):
+        pytest.skip(reason="MeasurementProcess doesn't work in analytic mode.")
+
+    if isinstance(x, list) and isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
+        pytest.xfail(reason="default.qubit cannot handle batching with shadow measurements")
+
+    nq = qml.device("null.qubit", shots=shots)
+    dq = qml.device("default.qubit", shots=shots)
+
+    def circuit(param):
+        qml.RX(param, 0)
+        qml.CNOT([0, 1])
+        return qml.apply(mp)
+
+    res = qml.QNode(circuit, nq)(x)
+    target = qml.QNode(circuit, dq)(x)
+    assert qml.math.shape(res) == qml.math.shape(target)

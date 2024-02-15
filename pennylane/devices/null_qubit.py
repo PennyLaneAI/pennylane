@@ -39,6 +39,7 @@ from pennylane.measurements import (
     Shots,
     MeasurementValue,
     ClassicalShadowMP,
+    DensityMatrixMP,
 )
 
 from . import Device
@@ -56,24 +57,35 @@ PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
 @singledispatch
-def null_measurement(mp: MeasurementProcess, obj_with_wires, shots: Shots, interface: str):
+def null_measurement(
+    mp: MeasurementProcess, obj_with_wires, shots: Shots, batch_size: int, interface: str
+):
     """Create all-zero results for various measurement processes."""
+    return _null_measurement(mp, obj_with_wires, shots, batch_size, interface)
+
+
+def _null_measurement(mp, obj_with_wires, shots, batch_size, interface):
     shape = mp.shape(obj_with_wires, shots)
     if all(isinstance(s, int) for s in shape):
+        if batch_size is not None:
+            shape = (batch_size,) + shape
         return math.zeros(shape, like=interface, dtype=mp.numeric_type)
+    if batch_size is not None:
+        shape = ((batch_size,) + s for s in shape)
     return tuple(math.zeros(s, like=interface, dtype=mp.numeric_type) for s in shape)
 
 
 @null_measurement.register
-def _(mp: ClassicalShadowMP, obj_with_wires, shots: Shots, interface: str):
-    results = tuple(
-        math.zeros(mp.shape(obj_with_wires, Shots(s)), like=interface, dtype=np.int8) for s in shots
-    )
+def _(mp: ClassicalShadowMP, obj_with_wires, shots, batch_size, interface):
+    shapes = [mp.shape(obj_with_wires, Shots(s)) for s in shots]
+    if batch_size is not None:
+        shapes = [(batch_size,) + shape for shape in shapes]
+    results = tuple(math.zeros(shape, like=interface, dtype=np.int8) for shape in shapes)
     return results if shots.has_partitioned_shots else results[0]
 
 
 @null_measurement.register
-def _(mp: CountsMP, obj_with_wires, shots: Shots, interface: str):
+def _(mp: CountsMP, obj_with_wires, shots, batch_size, interface):
     outcomes = []
     if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
         num_wires = len(obj_with_wires.wires)
@@ -91,13 +103,21 @@ def _(mp: CountsMP, obj_with_wires, shots: Shots, interface: str):
         for res in results:
             for val in outcomes:
                 res[val] = zero
+    if batch_size is not None:
+        results = tuple([r] * batch_size for r in results)
     return results[0] if len(results) == 1 else results
 
 
 @null_measurement.register(StateMP)
 @null_measurement.register(ProbabilityMP)
-def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots: Shots, interface: str):
-    result = math.asarray([1.0] + [0.0] * (2 ** len(obj_with_wires.wires) - 1), like=interface)
+def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots, batch_size, interface):
+    if isinstance(mp, DensityMatrixMP):
+        return _null_measurement(mp, obj_with_wires, shots, batch_size, interface)
+    wires = mp.wires or obj_with_wires.wires
+    state = [1.0] + [0.0] * (2 ** len(wires) - 1)
+    if batch_size is not None:
+        state = [state] * batch_size
+    result = math.asarray(state, like=interface)
     return (result,) * shots.num_copies if shots.has_partitioned_shots else result
 
 
@@ -154,7 +174,8 @@ class NullQubit(Device):
         shots = circuit.shots
         obj_with_wires = self if self.wires else circuit
         results = tuple(
-            null_measurement(mp, obj_with_wires, shots, interface) for mp in circuit.measurements
+            null_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
+            for mp in circuit.measurements
         )
         if len(results) == 1:
             return results[0]
