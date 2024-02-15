@@ -98,6 +98,7 @@ def test_custom_operation():
     assert qml.math.allclose(result, -np.sqrt(4 / 3))
 
 
+# pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
