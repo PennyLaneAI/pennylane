@@ -131,7 +131,9 @@ invalid_LinearCombinations = [
 
 simplify_LinearCombinations = [
     (
-        LinearCombination([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
+        LinearCombination(
+            [1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]
+        ),
         LinearCombination([2, 1], [qml.PauliX(0), qml.PauliX(1)]),
     ),
     (
@@ -245,8 +247,12 @@ add_LinearCombinations = [
     ),
     (
         LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        LinearCombination([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        LinearCombination([1.5, 1.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        LinearCombination(
+            [0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+        ),
+        LinearCombination(
+            [1.5, 1.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+        ),
     ),
     (
         LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -335,8 +341,12 @@ sub_LinearCombinations = [
     ),
     (
         LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        LinearCombination([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        LinearCombination([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        LinearCombination(
+            [0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+        ),
+        LinearCombination(
+            [0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+        ),
     ),
     (
         LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -711,7 +721,9 @@ class TestLinearCombination:
         assert H.label() == "𝓗"
         assert H.label(decimals=2) == "𝓗"
 
-    @pytest.mark.parametrize("terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_str))
+    @pytest.mark.parametrize(
+        "terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_str)
+    )
     def test_LinearCombination_str(self, terms, string):
         """Tests that the __str__ function for printing is correct"""
         H = LinearCombination(*terms)
@@ -733,7 +745,9 @@ class TestLinearCombination:
         H._ipython_display_()
         mock_print.assert_called_with(repr(H))
 
-    @pytest.mark.parametrize("terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_repr))
+    @pytest.mark.parametrize(
+        "terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_repr)
+    )
     def test_LinearCombination_repr(self, terms, string):
         """Tests that the __repr__ function for printing is correct"""
         H = LinearCombination(*terms)
@@ -814,9 +828,13 @@ class TestLinearCombination:
         """Tests that the compare method returns the correct result for LinearCombinations
         with qml.GellMann present."""
         H1 = LinearCombination([1], [qml.GellMann(wires=2, index=2)])
-        H2 = LinearCombination([1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)])
+        H2 = LinearCombination(
+            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)]
+        )
         H3 = LinearCombination([1], [qml.GellMann(wires=2, index=1)])
-        H4 = LinearCombination([1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)])
+        H4 = LinearCombination(
+            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)]
+        )
 
         assert H1.compare(qml.GellMann(wires=2, index=2)) is True
         assert H1.compare(qml.GellMann(wires=2, index=1)) is False
@@ -902,7 +920,9 @@ class TestLinearCombination:
         same wires is attempted"""
         h1 = LinearCombination([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
 
-        with pytest.raises(ValueError, match="LinearCombinations can only be multiplied together if"):
+        with pytest.raises(
+            ValueError, match="LinearCombinations can only be multiplied together if"
+        ):
             _ = h1 @ h1
 
     @pytest.mark.parametrize(("H1", "H2", "H"), add_LinearCombinations)
@@ -1023,7 +1043,9 @@ class TestLinearCombination:
         tensor = qml.PauliX(0) @ qml.PauliX(1)
         herm = qml.Hermitian([[1, 0], [0, 1]], wires=4)
 
-        ham = LinearCombination([1.0, 1.0], [tensor, qml.PauliX(2)]) @ LinearCombination([1.0], [herm])
+        ham = LinearCombination([1.0, 1.0], [tensor, qml.PauliX(2)]) @ LinearCombination(
+            [1.0], [herm]
+        )
         assert isinstance(ham, qml.LinearCombination)
 
 

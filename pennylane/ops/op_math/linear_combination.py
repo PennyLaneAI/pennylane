@@ -235,7 +235,7 @@ class LinearCombination(CompositeOp):
         self._batch_size = _UNSET_BATCH_SIZE
 
     def _build_pauli_rep(self):
-        if len(self.ops)==0:
+        if len(self.ops) == 0:
             return qml.pauli.PauliSentence({})
 
         if all(op_pauli_rep := [op.pauli_rep for op in self._ops]):
