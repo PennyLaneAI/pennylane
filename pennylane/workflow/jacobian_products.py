@@ -15,7 +15,6 @@
 Defines classes that take the vjps, jvps, and jacobians of circuits.
 """
 import abc
-from functools import partial
 import inspect
 import logging
 from typing import Tuple, Callable, Optional, Union
