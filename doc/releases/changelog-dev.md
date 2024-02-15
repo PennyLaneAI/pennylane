@@ -280,6 +280,9 @@
 * Documentation has been updated with new string representations.
   [(#5153)](https://github.com/PennyLaneAI/pennylane/pull/5153)
 
+* String representations of `ParametrizedHamiltonian` have been updated to match the style of other PL operators.
+  [(#5215)](https://github.com/PennyLaneAI/pennylane/pull/5215)
+
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
