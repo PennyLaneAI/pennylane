@@ -207,7 +207,7 @@ class TestExpandMatrix:
     def test_torch(self, i, base_matrix, tol):
         """Tests differentiation in torch by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
-        import torch  # pylint: disable=Import outside toplevel (torch) (import-outside-toplevel)
+        import torch
 
         base_matrix = torch.tensor(base_matrix, requires_grad=True)
         jac = torch.autograd.functional.jacobian(self.func_for_autodiff, base_matrix)
