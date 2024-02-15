@@ -290,6 +290,7 @@ class TestMeasureWithSamples:
         observable_matrix = np.kron(gellmann_1_matrix, gellmann_1_matrix)
         expected = np.trace(observable_matrix @ state.reshape((9, 9)))
 
+        assert isinstance(result, np.float64)
         assert np.allclose(result, expected, atol=APPROX_ATOL)
 
     def test_approximate_var_measure(self, two_qutrit_state):
@@ -306,6 +307,7 @@ class TestMeasureWithSamples:
         obs_squared = np.linalg.matrix_power(obs_mat, 2)
         expected = np.trace(obs_squared @ reshaped_state) - np.trace(obs_mat @ reshaped_state) ** 2
 
+        assert isinstance(result, np.float64)
         assert np.allclose(result, expected, atol=APPROX_ATOL)
 
     @flaky
@@ -444,6 +446,20 @@ class TestBroadcasting:
 
         assert res.shape == (3, shots.total_shots, 2)
         assert res.dtype == np.int64
+
+    def test_counts_measure(self, batched_two_qutrit_pure_state):
+        """Test that broadcasting works for qml.sample and single shots"""
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(100)
+        state = batched_two_qutrit_pure_state
+
+        measurement = qml.counts(wires=[0, 1])
+        res = measure_with_samples(measurement, state, shots, is_state_batched=True, rng=rng)
+
+        assert res.shape == (3,)
+        assert list(res[0].keys()) == ["11"]
+        assert list(res[1].keys()) == ["00", "12"]
+        assert list(res[2].keys()) == ["01", "10", "21", "22"]
 
     @pytest.mark.parametrize("shots", shots_to_test_samples)
     def test_sample_measure_shot_vector(self, shots, batched_two_qutrit_pure_state):
@@ -649,6 +665,7 @@ class TestHamiltonianSamples:
         res = measure_with_samples(qml.expval(obs), state, shots=shots, rng=300)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
+        assert isinstance(res, np.float64)
         assert np.allclose(res, expected, atol=APPROX_ATOL)
 
     def test_hamiltonian_expval_shot_vector(self, obs):

@@ -69,56 +69,26 @@ def _process_samples(
     return mp.eigvals()[indices]
 
 
-def _process_counts_samples(mp, samples, wires):
+def _process_counts_samples(processed_sample, mp_has_obs):
     """Processes a set of samples and counts the results."""
-    samples_processed = _process_samples(mp, samples, wires)
-    mp_has_obs = bool(mp.obs)
-
-    if len(samples.shape) == 2:
-        samples_processed = [samples_processed]
-
-    ret = []
-    for processed_sample in samples_processed:
-        observables, counts = math.unique(processed_sample, return_counts=True, axis=0)
-        if not mp_has_obs:
-            observables = ["".join(observable.astype("str")) for observable in observables]
-        ret.append(dict(zip(observables, counts)))
-
-    if len(samples.shape) == 2:
-        return ret[0]
-    return math.array(ret)
+    observables, counts = math.unique(processed_sample, return_counts=True, axis=0)
+    if not mp_has_obs:
+        observables = ["".join(observable.astype("str")) for observable in observables]
+    return dict(zip(observables, counts))
 
 
-def _process_expval_samples(mp, samples, wires):
+def _process_expval_samples(processed_sample):
     """Processes a set of samples and returns the expectation value of an observable."""
-    samples_processed = _process_samples(mp, samples, wires)
-
-    if len(samples_processed.shape) == 1:
-        samples_processed = [samples_processed]
-
-    ret = []
-    for processed_sample in samples_processed:
-        eigvals, counts = math.unique(processed_sample, return_counts=True)
-        probs = counts / math.sum(counts)
-        ret.append(math.dot(probs, eigvals))
-
-    return math.squeeze(ret)
+    eigvals, counts = math.unique(processed_sample, return_counts=True)
+    probs = counts / math.sum(counts)
+    return math.dot(probs, eigvals)
 
 
-def _process_variance_samples(mp, samples, wires):
+def _process_variance_samples(processed_sample):
     """Processes a set of samples and returns the variance of an observable."""
-    samples_processed = _process_samples(mp, samples, wires)
-
-    if len(samples_processed.shape) == 1:
-        samples_processed = [samples_processed]
-
-    ret = []
-    for processed_sample in samples_processed:
-        eigvals, counts = math.unique(processed_sample, return_counts=True)
-        probs = counts / math.sum(counts)
-        ret.append(math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2)
-
-    return math.squeeze(ret)
+    eigvals, counts = math.unique(processed_sample, return_counts=True)
+    probs = counts / math.sum(counts)
+    return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
 
 
 # pylint:disable = too-many-arguments
@@ -155,15 +125,27 @@ def _measure_with_samples_diagonalizing_gates(
     wires = qml.wires.Wires(range(total_indices))
 
     def _process_single_shot(samples):
+        samples_processed = _process_samples(mp, samples, wires)
         if isinstance(mp, SampleMP):
-            return math.squeeze(_process_samples(mp, samples, wires))
+            return math.squeeze(samples_processed)
         if isinstance(mp, CountsMP):
-            return _process_counts_samples(mp, samples, wires)
-        if isinstance(mp, ExpectationMP):
-            return _process_expval_samples(mp, samples, wires)
-        if isinstance(mp, VarianceMP):
-            return _process_variance_samples(mp, samples, wires)
-        raise NotImplementedError
+
+            def process_func(x):
+                return _process_counts_samples(x, bool(mp.obs))
+
+        elif isinstance(mp, ExpectationMP):
+            process_func = _process_expval_samples
+        elif isinstance(mp, VarianceMP):
+            process_func = _process_variance_samples
+        else:
+            raise NotImplementedError
+
+        if is_state_batched:
+            ret = []
+            for processed_sample in samples_processed:
+                ret.append(process_func(processed_sample))
+            return math.squeeze(ret)
+        return process_func(samples_processed)
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
@@ -229,7 +211,9 @@ def _measure_sum_with_samples(
             return sum((c * res for c, res in zip(mp.obs.terms()[0], results)))
         return sum(results)
 
-    return tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
+    if shots.has_partitioned_shots:
+        return tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
+    return _sum_for_single_shot(shots)
 
 
 def _sample_state_jax(
