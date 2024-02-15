@@ -18,6 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
+from pennylane.typing import TensorLike
 from pennylane import execute
 
 pytestmark = pytest.mark.jax
@@ -576,7 +577,7 @@ class TestJaxExecuteIntegration:
             return execute(tapes=[tape1, tape2], device=dev, **execute_kwargs)
 
         res = cost_fn(params)
-        assert isinstance(res, list)
+        assert isinstance(res, TensorLike)
         assert all(isinstance(r, jax.numpy.ndarray) for r in res)
         assert all(r.shape == () for r in res)
 
@@ -856,7 +857,7 @@ class TestVectorValued:
             x, y, dev, interface="jax-python", ek=execute_kwargs
         )
 
-        assert isinstance(res, list)
+        assert isinstance(res, TensorLike)
         assert len(res) == 2
 
         for r, exp_shape in zip(res, [(), (2,)]):
