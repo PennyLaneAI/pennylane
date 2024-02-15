@@ -170,7 +170,7 @@ class op_transform:
             ansatz(weights)
             qml.CNOT(wires=[0, 1])
             qml.Rot(0.0, 0.0, 0.0, wires=0)
-            return qml.expval(qml.PauliX(1))
+            return qml.expval(qml.X(1))
     """
 
     def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
@@ -400,7 +400,7 @@ class op_transform:
                 ansatz(weights)
                 qml.CNOT(wires=[0, 1])
                 qml.Rot(0.0, 0.0, 0.0, wires=0)
-                return qml.expval(qml.PauliX(1))
+                return qml.expval(qml.X(1))
         """
         self._tape_fn = fn
         return self

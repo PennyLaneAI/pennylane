@@ -96,7 +96,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             qml.Hadamard(wires=0)
             qml.RX(theta, wires=1)
             qml.CNOT(wires=[0,1])
-            return qml.expval(qml.PauliZ(wires=1))
+            return qml.expval(qml.Z(1))
 
     >>> circuit(0.5)  # the first call, compilation occurs here
     array(0.)
@@ -118,8 +118,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             qml.RY(x["ry_param"], wires=0)
             qml.CNOT(wires=[0, 1])
             return {
-                "XY": qml.expval(qml.PauliX(0) @ qml.PauliY(1)),
-                "X": qml.expval(qml.PauliX(0)),
+                "XY": qml.expval(qml.X(0) @ qml.Y(1)),
+                "X": qml.expval(qml.X(0)),
             }
 
     >>> x = {"rx_param": 0.5, "ry_param": 0.54}
@@ -211,7 +211,7 @@ def while_loop(cond_fn):
             # apply the while loop
             final_x = loop_rx(x)
 
-            return qml.expval(qml.PauliZ(0)), final_x
+            return qml.expval(qml.Z(0)), final_x
 
     >>> circuit(1.6)
     (array(-0.02919952), array(2.56))
@@ -302,7 +302,7 @@ def for_loop(lower_bound, upper_bound, step):
             # apply the for loop
             final_x = loop_rx(x)
 
-            return qml.expval(qml.PauliZ(0)), final_x
+            return qml.expval(qml.Z(0)), final_x
 
     >>> circuit(7, 1.6)
     (array(0.97926626), array(0.55395718))

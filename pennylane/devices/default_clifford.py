@@ -206,7 +206,7 @@ class DefaultClifford(Device):
         qscripts = [
             qml.tape.QuantumScript(
                 [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])],
-                [qml.expval(qml.PauliZ(0))]
+                [qml.expval(qml.Z(0))]
             )
         ] * num_qscripts
 
@@ -504,7 +504,7 @@ class DefaultClifford(Device):
 
         This function assumes that all operations are Clifford.
 
-        >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.PauliZ(0)), qml.state()])
+        >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.Z(0)), qml.state()])
         >>> qml.devices.DefaultClifford().simulate(qs)
         (array(0),
          array([[0, 1, 0],
@@ -623,7 +623,7 @@ class DefaultClifford(Device):
                 meas_wires = meas.wires if meas.wires else range(stim_circuit.num_qubits)
                 wire_order = {wire: idx for idx, wire in enumerate(meas.wires)}
                 # Decide measurement op
-                meas_op = meas.obs or qml.prod(*[qml.PauliZ(idx) for idx in meas_wires])
+                meas_op = meas.obs or qml.prod(*[qml.Z(idx) for idx in meas_wires])
                 samples = self._measure_observable_sample(
                     meas_op, stim_circuit, num_shots, sample_seed
                 )[0]

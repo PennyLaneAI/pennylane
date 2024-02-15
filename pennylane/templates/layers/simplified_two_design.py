@@ -74,7 +74,7 @@ class SimplifiedTwoDesign(Operation):
             @qml.qnode(dev)
             def circuit(init_weights, weights):
                 qml.SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
             init_weights = [pi, pi, pi]
             weights_layer1 = [[0., pi],

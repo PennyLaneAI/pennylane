@@ -273,7 +273,7 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
             qml.RY(x[1, 1], wires=0),
             qml.RZ(x[1, 2], wires=1)
         ]
-        measurements = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
+        measurements = [qml.expval(qml.Z(0)), qml.probs(wires=1)]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can use the ``jvp`` function to compute the Jacobian vector product,
@@ -377,10 +377,10 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
             qml.RY(x[1, 1], wires=0),
             qml.RZ(x[1, 2], wires=1)
         ]
-        measurements1 = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
+        measurements1 = [qml.expval(qml.Z(0)), qml.probs(wires=1)]
         tape1 = qml.tape.QuantumTape(ops, measurements1)
 
-        measurements2 = [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))]
+        measurements2 = [qml.expval(qml.Z(0) @ qml.Z(1))]
         tape2 = qml.tape.QuantumTape(ops, measurements2)
 
         tapes = [tape1, tape2]

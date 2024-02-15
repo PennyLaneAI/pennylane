@@ -39,7 +39,7 @@ def expval(op: Union[Operator, MeasurementValue]):
             qml.RX(x, wires=0)
             qml.Hadamard(wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(0))
+            return qml.expval(qml.Y(0))
 
     Executing this QNode:
 

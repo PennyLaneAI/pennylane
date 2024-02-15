@@ -49,7 +49,7 @@ class Select(Operation):
     **Example**
 
     >>> dev = qml.device('default.qubit', wires=4)
-    >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
+    >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
     >>> @qml.qnode(dev)
     >>> def circuit():
     >>>     qml.Select(ops, control=[0,1])
@@ -150,7 +150,7 @@ class Select(Operation):
 
         **Example**
 
-        >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
+        >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
         >>> op = qml.Select(ops, control=[0,1])
         >>> op.decomposition()
         [MultiControlledX(wires=[0, 1, 2], control_values="00"),
@@ -185,7 +185,7 @@ class Select(Operation):
 
         **Example**
 
-        >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
+        >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
         >>> qml.Select.compute_decomposition(ops, control=[0,1])
         [MultiControlledX(wires=[0, 1, 2], control_values="00"),
          MultiControlledX(wires=[0, 1, 3], control_values="01"),

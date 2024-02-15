@@ -119,7 +119,7 @@ def hadamard_grad(
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
     (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
@@ -139,7 +139,7 @@ def hadamard_grad(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.hadamard_grad(circuit)(params)
         (tensor([-0.3875172], requires_grad=True),
@@ -152,7 +152,7 @@ def hadamard_grad(
         function, which together define the gradient are directly returned:
 
         >>> ops = [qml.RX(p, wires=0) for p in params]
-        >>> measurements = [qml.expval(qml.PauliZ(0))]
+        >>> measurements = [qml.expval(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
         >>> gradient_tapes
@@ -168,7 +168,7 @@ def hadamard_grad(
 
         >>> tape = qml.tape.QuantumScript(
         ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-        ...     [qml.expval(qml.PauliZ(0))],
+        ...     [qml.expval(qml.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
         >>> qml.gradients.hadamard_grad(tape, argnum=1)
@@ -190,7 +190,7 @@ def hadamard_grad(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
         [-0.3875172  -0.18884787 -0.38355704]
@@ -204,7 +204,7 @@ def hadamard_grad(
         ...    qml.RX(params[0], wires="a")
         ...    qml.RY(params[1], wires="a")
         ...    qml.RX(params[2], wires="a")
-        ...    return qml.expval(qml.PauliZ("a"))
+        ...    return qml.expval(qml.Z("a"))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
         [-0.3875172  -0.18884787 -0.38355704]
@@ -326,9 +326,9 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                 elif m.obs:
                     obs_new = [m.obs]
                 else:
-                    obs_new = [qml.PauliZ(wires=i) for i in m.wires]
+                    obs_new = [qml.Z(i) for i in m.wires]
 
-                obs_new.append(qml.PauliY(wires=aux_wire))
+                obs_new.append(qml.Y(aux_wire))
                 obs_new = qml.operation.Tensor(*obs_new)
 
                 if isinstance(m, qml.measurements.ExpectationMP):
@@ -427,56 +427,38 @@ def _get_generators(trainable_op):
     """
     # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
     if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
-        generators = [qml.PauliZ(wires=trainable_op.wires)]
+        generators = [qml.Z(trainable_op.wires)]
         coeffs = [-0.5]
     elif isinstance(trainable_op, qml.CRX):
         generators = [
-            qml.PauliX(wires=trainable_op.wires[1]),
-            qml.prod(
-                qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliX(wires=trainable_op.wires[1])
-            ),
+            qml.X(trainable_op.wires[1]),
+            qml.prod(qml.Z(trainable_op.wires[0]), qml.X(trainable_op.wires[1])),
         ]
         coeffs = [-0.25, 0.25]
     elif isinstance(trainable_op, qml.CRY):
         generators = [
-            qml.PauliY(wires=trainable_op.wires[1]),
-            qml.prod(
-                qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliY(wires=trainable_op.wires[1])
-            ),
+            qml.Y(trainable_op.wires[1]),
+            qml.prod(qml.Z(trainable_op.wires[0]), qml.Y(trainable_op.wires[1])),
         ]
         coeffs = [-0.25, 0.25]
     elif isinstance(trainable_op, qml.CRZ):
         generators = [
-            qml.PauliZ(wires=trainable_op.wires[1]),
-            qml.prod(
-                qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliZ(wires=trainable_op.wires[1])
-            ),
+            qml.Z(trainable_op.wires[1]),
+            qml.prod(qml.Z(trainable_op.wires[0]), qml.Z(trainable_op.wires[1])),
         ]
         coeffs = [-0.25, 0.25]
     elif isinstance(trainable_op, qml.IsingXX):
-        generators = [
-            qml.prod(
-                qml.PauliX(wires=trainable_op.wires[0]), qml.PauliX(wires=trainable_op.wires[1])
-            )
-        ]
+        generators = [qml.prod(qml.X(trainable_op.wires[0]), qml.X(trainable_op.wires[1]))]
         coeffs = [-0.5]
     elif isinstance(trainable_op, qml.IsingYY):
-        generators = [
-            qml.prod(
-                qml.PauliY(wires=trainable_op.wires[0]), qml.PauliY(wires=trainable_op.wires[1])
-            )
-        ]
+        generators = [qml.prod(qml.Y(trainable_op.wires[0]), qml.Y(trainable_op.wires[1]))]
         coeffs = [-0.5]
     elif isinstance(trainable_op, qml.IsingZZ):
-        generators = [
-            qml.prod(
-                qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliZ(wires=trainable_op.wires[1])
-            )
-        ]
+        generators = [qml.prod(qml.Z(trainable_op.wires[0]), qml.Z(trainable_op.wires[1]))]
         coeffs = [-0.5]
     # For rotation it is possible to only use PauliZ by applying some other rotations in the main function
     elif isinstance(trainable_op, qml.Rot):
-        generators = [qml.PauliZ(wires=trainable_op.wires)]
+        generators = [qml.Z(trainable_op.wires)]
         coeffs = [-0.5]
     else:
         generators = trainable_op.generator().ops

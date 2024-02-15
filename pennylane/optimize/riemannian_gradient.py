@@ -221,7 +221,7 @@ class RiemannianGradientOptimizer:
     Define a Hamiltonian cost function to minimize:
 
     >>> coeffs = [-1., -1., -1.]
-    >>> observables = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)]
+    >>> observables = [qml.X(0), qml.Z(1), qml.Y(0) @ qml.X(1)]
     >>> hamiltonian = qml.Hamiltonian(coeffs, observables)
 
     Create an initial state and return the expectation value of the Hamiltonian:

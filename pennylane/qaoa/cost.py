@@ -64,7 +64,7 @@ def bit_driver(wires: Union[Iterable, qaoa.Wires], b: int):
     else:
         raise ValueError(f"'b' must be either 0 or 1, got {b}")
 
-    ops = [qml.PauliZ(w) for w in wires]
+    ops = [qml.Z(w) for w in wires]
     return qml.Hamiltonian(coeffs, ops)
 
 
@@ -211,25 +211,25 @@ def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
                 coeffs.extend([0.25 * sign, 0.25 * sign, 0.25 * sign])
                 ops.extend(
                     [
-                        qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])),
-                        qml.PauliZ(get_nvalue(e[0])),
-                        qml.PauliZ(get_nvalue(e[1])),
+                        qml.Z(get_nvalue(e[0])) @ qml.Z(get_nvalue(e[1])),
+                        qml.Z(get_nvalue(e[0])),
+                        qml.Z(get_nvalue(e[1])),
                     ]
                 )
 
         if reward == "10":
             for e in graph_edges:
                 coeffs.append(-0.5 * sign)
-                ops.append(qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])))
+                ops.append(qml.Z(get_nvalue(e[0])) @ qml.Z(get_nvalue(e[1])))
 
         if reward == "11":
             for e in graph_edges:
                 coeffs.extend([0.25 * sign, -0.25 * sign, -0.25 * sign])
                 ops.extend(
                     [
-                        qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])),
-                        qml.PauliZ(get_nvalue(e[0])),
-                        qml.PauliZ(get_nvalue(e[1])),
+                        qml.Z(get_nvalue(e[0])) @ qml.Z(get_nvalue(e[1])),
+                        qml.Z(get_nvalue(e[0])),
+                        qml.Z(get_nvalue(e[1])),
                     ]
                 )
 

@@ -78,8 +78,8 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliZ(wires=0)
-            qml.PauliX(wires=1)
+            qml.Z(0)
+            qml.X(1)
             return qml.probs(op=qml.Hermitian(H, wires=0))
 
     >>> circuit()

@@ -62,7 +62,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
             qml.RY(0.9, wires=0),
             qml.CNOT(wires=[0, 1]),
         ]
-        measurements = [qml.expval(qml.PauliZ(1))]
+        measurements = [qml.expval(qml.Z(1))]
         tape = qml.tape.QuantumTape(ops,)
 
     Its corresponding circuit graph can be found using
@@ -135,7 +135,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
             qml.qcut.PrepareNode(wires=1),
             qml.CNOT(wires=[1, 0]),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
@@ -240,7 +240,7 @@ def _create_prep_list():
         return [qml.Identity(wire)]
 
     def _prep_one(wire):
-        return [qml.PauliX(wire)]
+        return [qml.X(wire)]
 
     def _prep_plus(wire):
         return [qml.Hadamard(wire)]

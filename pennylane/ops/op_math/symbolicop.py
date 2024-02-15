@@ -255,7 +255,7 @@ class ScalarSymbolicOp(SymbolicOp):
             base_matrix = qml.math.convert_like(base_matrix, self.scalar)
         elif scalar_interface == "tensorflow":
             # just cast everything to complex128. Otherwise we may have casting problems
-            # where things get truncated like in SProd(tf.Variable(0.1), qml.PauliX(0))
+            # where things get truncated like in SProd(tf.Variable(0.1), qml.X(0))
             scalar = qml.math.cast(scalar, "complex128")
             base_matrix = qml.math.cast(base_matrix, "complex128")
 

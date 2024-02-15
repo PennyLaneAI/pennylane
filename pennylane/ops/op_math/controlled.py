@@ -68,9 +68,9 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
         @qml.qnode(qml.device('default.qubit', wires=range(4)))
         def circuit(x):
-            qml.PauliX(2)
+            qml.X(2)
             qml.ctrl(qml.RX, (1,2,3), control_values=(0,1,0))(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)("x"))
     0: ────╭RX(x)─┤  <Z>
@@ -178,7 +178,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
         flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
         op_control_values = None if flip_control_on_zero else control_values
         if flip_control_on_zero:
-            _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
+            _ = [qml.X(w) for w, val in zip(control, control_values) if not val]
 
         _ = [
             ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
@@ -186,7 +186,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
         ]
 
         if flip_control_on_zero:
-            _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
+            _ = [qml.X(w) for w, val in zip(control, control_values) if not val]
 
         if qml.QueuingManager.recording():
             _ = [qml.apply(m) for m in qscript.measurements]
@@ -205,9 +205,9 @@ def _get_special_ops():
     """
 
     ops_with_custom_ctrl_ops = {
-        (qml.PauliZ, 1): qml.CZ,
-        (qml.PauliZ, 2): qml.CCZ,
-        (qml.PauliY, 1): qml.CY,
+        (qml.Z, 1): qml.CZ,
+        (qml.Z, 2): qml.CCZ,
+        (qml.Y, 1): qml.CY,
         (qml.CZ, 1): qml.CCZ,
         (qml.SWAP, 1): qml.CSWAP,
         (qml.Hadamard, 1): qml.CH,
@@ -227,7 +227,7 @@ def _get_pauli_x_based_ops():
     This is placed inside a function to avoid circular imports.
 
     """
-    return qml.PauliX, qml.CNOT, qml.Toffoli, qml.MultiControlledX
+    return qml.X, qml.CNOT, qml.Toffoli, qml.MultiControlledX
 
 
 def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=None):
@@ -252,8 +252,8 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
     """Handles PauliX-based controlled operations."""
 
     op_map = {
-        (qml.PauliX, 1): qml.CNOT,
-        (qml.PauliX, 2): qml.Toffoli,
+        (qml.X, 1): qml.CNOT,
+        (qml.X, 2): qml.Toffoli,
         (qml.CNOT, 1): qml.Toffoli,
     }
 
@@ -262,7 +262,7 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
         qml.QueuingManager.remove(op)
         return op_map[custom_key](wires=control + op.wires)
 
-    if isinstance(op, qml.PauliX):
+    if isinstance(op, qml.X):
         return qml.MultiControlledX(
             wires=control + op.wires, control_values=control_values, work_wires=work_wires
         )
@@ -643,7 +643,7 @@ class Controlled(SymbolicOp):
             return decomp
 
         # We need to add paulis to flip some control wires
-        d = [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
+        d = [qml.X(w) for w, val in zip(self.control_wires, self.control_values) if not val]
 
         decomp = _decompose_no_control_values(self)
         if decomp is None:
@@ -653,7 +653,7 @@ class Controlled(SymbolicOp):
         else:
             d += decomp
 
-        d += [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
+        d += [qml.X(w) for w, val in zip(self.control_wires, self.control_values) if not val]
         return d
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -725,10 +725,10 @@ def _is_single_qubit_special_unitary(op):
 def _decompose_pauli_x_based_no_control_values(op: Controlled):
     """Decomposes a PauliX-based operation"""
 
-    if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 1:
+    if isinstance(op.base, qml.X) and len(op.control_wires) == 1:
         return [qml.CNOT(wires=op.active_wires)]
 
-    if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 2:
+    if isinstance(op.base, qml.X) and len(op.control_wires) == 2:
         return qml.Toffoli.compute_decomposition(wires=op.active_wires)
 
     if isinstance(op.base, qml.CNOT) and len(op.control_wires) == 1:

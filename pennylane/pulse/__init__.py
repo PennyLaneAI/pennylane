@@ -98,9 +98,9 @@ are callables. The callables defining the parameterized coefficients must have t
     f2 = lambda p, t: p[0] * jnp.cos(p[1]* t ** 2)
 
     # defining the operations for the three terms in the Hamiltonian
-    XX = qml.PauliX(0) @ qml.PauliX(1)
-    YY = qml.PauliY(0) @ qml.PauliY(1)
-    ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
+    XX = qml.X(0) @ qml.X(1)
+    YY = qml.Y(0) @ qml.Y(1)
+    ZZ = qml.Z(0) @ qml.Z(1)
 
 
 
@@ -182,7 +182,7 @@ can be created using the :func:`~.pennylane.evolve` function:
     from jax import numpy as jnp
 
     f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
-    H = 2 * qml.PauliX(0) + f1 * qml.PauliY(1)
+    H = 2 * qml.X(0) + f1 * qml.Y(1)
     ev = qml.evolve(H)
 
 >>> ev
@@ -225,7 +225,7 @@ following :class:`~.ParametrizedHamiltonian`:
         from jax import numpy as jnp
 
         f1 = lambda p, t: jnp.sin(p * t)
-        H = f1 * qml.PauliY(0)
+        H = f1 * qml.Y(0)
 
 
 Now we can execute the evolution of this Hamiltonian in a QNode and compute its gradient:
@@ -240,7 +240,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
     @qml.qnode(dev, interface="jax")
     def circuit(params):
         qml.evolve(H)(params, t=[0, 10])
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
 >>> params = [1.2]
 >>> circuit(params)

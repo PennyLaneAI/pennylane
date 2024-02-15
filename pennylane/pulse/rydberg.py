@@ -90,7 +90,7 @@ def rydberg_interaction(
         @qml.qnode(dev, interface="jax")
         def circuit():
             qml.evolve(H_i)([], t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit()
     Array(1., dtype=float32)
@@ -211,7 +211,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H_i + H_d)(params, t=[0, 0.5])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     Here we set a maximum amplitude of :math:`2.4 \times 2 \pi \text{MHz}`, and calculate the result of running the pulse program:
 
@@ -243,7 +243,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
             qml.evolve(H)(params, t=[0, 0.5])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         p_global = 2.4
         p_local_amp_0 = [1.3, -2.0]
@@ -285,7 +285,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
             # Global phase from the number operator
             -0.5 * sum(qml.Identity(wire) for wire in wires) * np.pi * 2
             # Equivalent of the number operator up to the global phase above
-            + 0.5 * sum(qml.PauliZ(wire) for wire in wires) * np.pi * 2
+            + 0.5 * sum(qml.Z(wire) for wire in wires) * np.pi * 2
         )
         detuning_coeffs.append(detuning)
 

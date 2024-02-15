@@ -49,7 +49,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     ...     qml.RY(2.5, wires=0)
     ...     qml.RZ(weights[1] ** 2, wires=1)
     ...     qml.RX(weights[2], wires=1)
-    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
 
     We can use this transform to extract the relationship :math:`f: \mathbb{R}^n \rightarrow
     \mathbb{R}^m` between the input QNode arguments :math:`w` and the gate arguments :math:`g`, for
@@ -127,7 +127,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     ...     qml.CNOT(wires=[0, 1])
     ...     qml.RY(y ** 2, wires=1)
     ...     qml.RZ(1 / z, wires=1)
-    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
     >>> jac_fn = qml.gradients.classical_jacobian(circuit, argnum=[1, 2])
     >>> x, y, z = np.array([0.1, -2.5, 0.71])
     >>> jac_fn(x, y, z)

@@ -87,9 +87,9 @@ def compile(
             qml.CNOT(wires=[1, 0])
             qml.RZ(-z, wires=2)
             qml.RX(y, wires=2)
-            qml.PauliY(wires=2)
+            qml.Y(2)
             qml.CY(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     The default compilation pipeline is applied before execution.
 
@@ -109,9 +109,9 @@ def compile(
             qml.CNOT(wires=[1, 0])
             qml.RZ(-z, wires=2)
             qml.RX(y, wires=2)
-            qml.PauliY(wires=2)
+            qml.Y(2)
             qml.CY(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     Visually, the original function looks like this:
 

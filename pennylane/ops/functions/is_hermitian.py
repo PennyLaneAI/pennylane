@@ -36,7 +36,7 @@ def is_hermitian(op: Operator):
 
     **Example**
 
-    >>> op = qml.PauliX(wires=0)
+    >>> op = qml.X(0)
     >>> qml.is_hermitian(op)
     True
     >>> op2 = qml.RX(0.54, wires=0)

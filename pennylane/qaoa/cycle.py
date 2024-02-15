@@ -278,16 +278,16 @@ def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: Tuple) ->
             out_wire = edges_to_qubits[get_nvalues(out_edge)]
             in_wire = edges_to_qubits[get_nvalues(in_edge)]
 
-            t = qml.PauliX(wires=wire) @ qml.PauliX(wires=out_wire) @ qml.PauliX(wires=in_wire)
+            t = qml.X(wire) @ qml.X(out_wire) @ qml.X(in_wire)
             ops.append(t)
 
-            t = qml.PauliY(wires=wire) @ qml.PauliY(wires=out_wire) @ qml.PauliX(wires=in_wire)
+            t = qml.Y(wire) @ qml.Y(out_wire) @ qml.X(in_wire)
             ops.append(t)
 
-            t = qml.PauliY(wires=wire) @ qml.PauliX(wires=out_wire) @ qml.PauliY(wires=in_wire)
+            t = qml.Y(wire) @ qml.X(out_wire) @ qml.Y(in_wire)
             ops.append(t)
 
-            t = qml.PauliX(wires=wire) @ qml.PauliY(wires=out_wire) @ qml.PauliY(wires=in_wire)
+            t = qml.X(wire) @ qml.Y(out_wire) @ qml.Y(in_wire)
             ops.append(t)
 
             coeffs.extend([0.25, 0.25, 0.25, -0.25])
@@ -404,7 +404,7 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Hamilt
             raise TypeError(f"Edge {edge} does not contain weight data") from e
 
         coeffs.append(np.log(weight))
-        ops.append(qml.PauliZ(wires=edges_to_qubits[get_nvalues(edge)]))
+        ops.append(qml.Z(edges_to_qubits[get_nvalues(edge)]))
 
     H = Hamiltonian(coeffs, ops)
     # store the valuable information that all observables are in one commuting group
@@ -600,7 +600,7 @@ def _inner_out_flow_constraint_hamiltonian(
             edge = tuple(edge[:2])
         wire = (edges_to_qubits[get_nvalues(edge)],)
         coeffs.append(1)
-        ops.append(qml.PauliZ(wire))
+        ops.append(qml.Z(wire))
 
     coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
 
@@ -609,7 +609,7 @@ def _inner_out_flow_constraint_hamiltonian(
             edge = tuple(edge[:2])
         wire = (edges_to_qubits[get_nvalues(edge)],)
         coeffs.append(-2 * (d - 1))
-        ops.append(qml.PauliZ(wire))
+        ops.append(qml.Z(wire))
 
     coeffs.append(d * (d - 2))
     ops.append(qml.Identity(0))
@@ -675,14 +675,14 @@ def _inner_net_flow_constraint_hamiltonian(
             edge = tuple(edge[:2])
         wires = (edges_to_qubits[get_nvalues(edge)],)
         coeffs.append(-1)
-        ops.append(qml.PauliZ(wires))
+        ops.append(qml.Z(wires))
 
     for edge in in_edges:
         if len(edge) > 2:
             edge = tuple(edge[:2])
         wires = (edges_to_qubits[get_nvalues(edge)],)
         coeffs.append(1)
-        ops.append(qml.PauliZ(wires))
+        ops.append(qml.Z(wires))
 
     coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
     H = Hamiltonian(coeffs, ops)

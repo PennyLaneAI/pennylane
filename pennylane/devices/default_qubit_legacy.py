@@ -124,8 +124,11 @@ class DefaultQubitLegacy(QubitDevice):
         "IntegerComparator",
         "DiagonalQubitUnitary",
         "PauliX",
+        "X",
         "PauliY",
+        "Y",
         "PauliZ",
+        "Z",
         "MultiRZ",
         "Hadamard",
         "S",
@@ -182,8 +185,11 @@ class DefaultQubitLegacy(QubitDevice):
 
     observables = {
         "PauliX",
+        "X",
         "PauliY",
+        "Y",
         "PauliZ",
+        "Z",
         "Hadamard",
         "Hermitian",
         "Identity",
@@ -1008,9 +1014,9 @@ class DefaultQubitLegacy(QubitDevice):
 
         obs_list = self._stack(
             [
-                qml.PauliX.compute_matrix(),
-                qml.PauliY.compute_matrix(),
-                qml.PauliZ.compute_matrix(),
+                qml.X.compute_matrix(),
+                qml.Y.compute_matrix(),
+                qml.Z.compute_matrix(),
             ]
         )
         uni_list = self._stack(

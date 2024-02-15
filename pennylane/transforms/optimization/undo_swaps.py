@@ -51,11 +51,11 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         @qml.qnode(device=dev)
         def circuit():
             qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
+            qml.X(1)
             qml.SWAP(wires=[0,1])
             qml.SWAP(wires=[0,2])
-            qml.PauliY(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.Y(0)
+            return qml.expval(qml.Z(0))
 
     The SWAP gates are removed before execution.
 
@@ -68,11 +68,11 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
             def qfunc():
                 qml.Hadamard(wires=0)
-                qml.PauliX(wires=1)
+                qml.X(1)
                 qml.SWAP(wires=[0,1])
                 qml.SWAP(wires=[0,2])
-                qml.PauliY(wires=0)
-                return qml.expval(qml.PauliZ(0))
+                qml.Y(0)
+                return qml.expval(qml.Z(0))
 
         The circuit before optimization:
 

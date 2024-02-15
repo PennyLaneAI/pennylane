@@ -459,7 +459,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
         @qml.qnode(dev, expansion_strategy="device")
         def circuit():
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)())
     0: ─╭●─┤  <Z>

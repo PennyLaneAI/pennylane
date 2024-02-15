@@ -63,7 +63,7 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
             qml.RX(x[3], wires=0)
             qml.RY(x[4], wires=1)
             qml.RZ(x[5], wires=2)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+            return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
 
     Setting ``scale_factor=1`` does not affect the circuit:
@@ -119,7 +119,7 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
 
             x = np.arange(6)
 
-            H = 1.*qml.PauliX(0) @ qml.PauliX(1) + 1.*qml.PauliX(1) @ qml.PauliX(2)
+            H = 1.*qml.X(0) @ qml.X(1) + 1.*qml.X(1) @ qml.X(2)
 
             def circuit(x):
                 qml.RY(x[0], wires=0)
@@ -402,7 +402,7 @@ def mitigate_with_zne(
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     Executions of ``circuit`` will now be mitigated:
 

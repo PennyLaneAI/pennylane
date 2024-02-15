@@ -218,12 +218,12 @@ class GlobalPhase(Operation):
 
         @qml.qnode(dev)
         def circuit(phi=None, return_state=False):
-            qml.PauliX(0)
+            qml.X(0)
             if phi:
                 qml.GlobalPhase(phi)
             if return_state:
                 return qml.state()
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
     The circuit yields the same expectation values with and without the global phase:
 

@@ -157,7 +157,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
         return np.array([0.0]), [qml.Identity(wires[0])]
 
-    xyz2pauli = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
+    xyz2pauli = {"X": qml.X, "Y": qml.Y, "Z": qml.Z}
 
     def _get_op(term, wires):
         """A function to compute the PL operator associated with the term string."""

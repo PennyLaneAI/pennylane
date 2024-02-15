@@ -42,8 +42,8 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
     **Example**
 
     >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-    >>> pauli_word_1 = qml.PauliX('a') @ qml.PauliY('b')
-    >>> pauli_word_2 = qml.PauliZ('a') @ qml.PauliZ('c')
+    >>> pauli_word_1 = qml.X('a') @ qml.Y('b')
+    >>> pauli_word_2 = qml.Z('a') @ qml.Z('c')
     >>> is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
     False
     """
@@ -336,7 +336,7 @@ def is_commuting(operation1, operation2, wire_map=None):
 
     **Example**
 
-    >>> qml.is_commuting(qml.PauliX(wires=0), qml.PauliZ(wires=0))
+    >>> qml.is_commuting(qml.X(0), qml.Z(0))
     False
     """
     # pylint: disable=too-many-branches

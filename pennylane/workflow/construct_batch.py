@@ -104,7 +104,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
             @qml.transforms.cancel_inverses # transform 1
             @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
             def circuit():
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         By default, we get the full transform program. This can be manually specified by ``level=None``.
 
@@ -220,9 +220,9 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
                 qml.RX(x, wires=0)
                 qml.RX(-x, wires=0)
                 qml.SWAP((0,1))
-                qml.PauliX(0)
-                qml.PauliX(0)
-                return qml.expval(qml.PauliX(0) + qml.PauliY(0))
+                qml.X(0)
+                qml.X(0)
+                return qml.expval(qml.X(0) + qml.Y(0))
 
         We can inspect what the device will execute with:
 

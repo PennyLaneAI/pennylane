@@ -115,7 +115,7 @@ class batch_transform:
     We can apply this transform to a quantum tape:
 
     >>> ops = [qml.Hadamard(wires=0), qml.RX(-0.5, wires=0)]
-    >>> tape = qml.tape.QuantumTape(ops, [qml.expval(qml.PauliX(0))])
+    >>> tape = qml.tape.QuantumTape(ops, [qml.expval(qml.X(0))])
     >>> tapes, fn = my_transform(tape, 0.65, 2.5)
     >>> print(qml.drawer.tape_text(tapes[0], decimals=2))
     0: ──H──RY(0.33)─┤  <X>
@@ -142,7 +142,7 @@ class batch_transform:
     ... def circuit(x):
     ...     qml.Hadamard(wires=0)
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliX(0))
+    ...     return qml.expval(qml.X(0))
     >>> print(circuit(-0.5))
     1.2629730888100839
 
@@ -152,7 +152,7 @@ class batch_transform:
     ... def circuit(x):
     ...     qml.Hadamard(wires=0)
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliX(0))
+    ...     return qml.expval(qml.X(0))
     >>> circuit = my_transform(circuit, 0.65, 2.5)
     >>> print(circuit(-0.5))
     1.2629730888100839
@@ -471,7 +471,7 @@ def map_batch_transform(
 
     .. code-block:: python
 
-        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        H = qml.Z(0) @ qml.Z(1) - qml.X(0)
 
 
         ops1 = [
@@ -483,7 +483,7 @@ def map_batch_transform(
         tape1 = qml.tape.QuantumTape(ops1, measurements1)
 
         ops2 = [qml.Hadamard(0), qml.CRX(0.5, wires=(0,1)), qml.CNOT((0,1))]
-        measurements2 = [qml.expval(H + 0.5 * qml.PauliY(0))]
+        measurements2 = [qml.expval(H + 0.5 * qml.Y(0))]
         tape2 = qml.tape.QuantumTape(ops2, measurements2)
 
 

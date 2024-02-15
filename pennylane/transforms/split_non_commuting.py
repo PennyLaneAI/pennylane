@@ -56,7 +56,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x,wires=0)
-            return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+            return [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
 
     Instead of decorating the QNode, we can also create a new function that yields the same result
     in the following way:
@@ -66,7 +66,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x,wires=0)
-            return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+            return [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
 
         circuit = qml.transforms.split_non_commuting(circuit)
 
@@ -89,10 +89,10 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         def circuit0(x):
             qml.RY(x[0], wires=0)
             qml.RX(x[1], wires=0)
-            return [qml.expval(qml.PauliX(0)),
-                    qml.expval(qml.PauliZ(0)),
-                    qml.expval(qml.PauliY(1)),
-                    qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+            return [qml.expval(qml.X(0)),
+                    qml.expval(qml.Z(0)),
+                    qml.expval(qml.Y(1)),
+                    qml.expval(qml.Z(0) @ qml.Z(1)),
                     ]
 
     Drawing this QNode unveils the separate executions in the background
@@ -121,7 +121,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
 
         .. code-block:: python3
 
-            measurements = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))]
+            measurements = [qml.expval(qml.Z(0)), qml.expval(qml.Y(0))]
             tape = qml.tape.QuantumTape(measurements=measurements)
 
             tapes, processing_fn = qml.transforms.split_non_commuting(tape)
@@ -137,10 +137,10 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         .. code-block:: python3
 
             measurements = [
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
-                qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
-                qml.expval(qml.PauliZ(0)),
-                qml.expval(qml.PauliX(0))
+                qml.expval(qml.Z(0) @ qml.Z(1)),
+                qml.expval(qml.X(0) @ qml.X(1)),
+                qml.expval(qml.Z(0)),
+                qml.expval(qml.X(0))
             ]
             tape = qml.tape.QuantumTape(measurements=measurements)
 
@@ -158,12 +158,12 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         Measurements that accept both observables and ``wires`` so that e.g. ``qml.counts``,
         ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
         these measurements are interpreted as measuring with respect to the observable
-        ``qml.PauliZ(wires[0])@qml.PauliZ(wires[1])@...@qml.PauliZ(wires[len(wires)-1])``
+        ``qml.Z(wires[0])@qml.Z(wires[1])@...@qml.Z(wires[len(wires)-1])``
 
         .. code-block:: python3
 
             measurements = [
-                qml.expval(qml.PauliX(0)),
+                qml.expval(qml.X(0)),
                 qml.probs(wires=[1]),
                 qml.probs(wires=[0, 1])
             ]
@@ -188,7 +188,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
             # create the PauliZ tensor product observable when only wires are provided for the
             # measurements
             obs_wires = obs.wires if obs.wires else tape.wires
-            pauliz_obs = qml.prod(*(qml.PauliZ(wire) for wire in obs_wires))
+            pauliz_obs = qml.prod(*(qml.Z(wire) for wire in obs_wires))
 
             obs_list.append(pauliz_obs)
 

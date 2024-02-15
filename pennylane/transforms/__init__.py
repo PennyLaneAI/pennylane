@@ -271,7 +271,7 @@ passes on a QNode to maximize gate reduction before execution.
             qml.RY(y, wires=0)
             qml.RZ(y, wires=0)
             qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
 In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
 merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.

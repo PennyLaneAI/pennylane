@@ -65,7 +65,7 @@ def s_prod(scalar, operator, lazy=True, id=None):
 
     **Example**
 
-    >>> sprod_op = s_prod(2.0, qml.PauliX(0))
+    >>> sprod_op = s_prod(2.0, qml.X(0))
     >>> sprod_op
     2.0 * X(0)
     >>> sprod_op.matrix()
@@ -99,7 +99,7 @@ class SProd(ScalarSymbolicOp):
 
     **Example**
 
-    >>> sprod_op = SProd(1.23, qml.PauliX(0))
+    >>> sprod_op = SProd(1.23, qml.X(0))
     >>> sprod_op
     1.23 * X(0)
     >>> qml.matrix(sprod_op)

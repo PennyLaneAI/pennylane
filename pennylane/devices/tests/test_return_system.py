@@ -40,7 +40,7 @@ class TestIntegrationMultipleReturns:
         dev = device(n_wires)
 
         obs1 = qml.Projector([0], wires=0)
-        obs2 = qml.PauliZ(wires=1)
+        obs2 = qml.Z(1)
         func = qubit_ansatz
 
         def circuit(x):
@@ -65,7 +65,7 @@ class TestIntegrationMultipleReturns:
         dev = device(n_wires)
 
         obs1 = qml.Projector([0], wires=0)
-        obs2 = qml.PauliZ(wires=1)
+        obs2 = qml.Z(1)
         func = qubit_ansatz
 
         def circuit(x):
@@ -92,7 +92,7 @@ class TestIntegrationMultipleReturns:
 
         def circuit(x):
             qubit_ansatz(x)
-            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(op=qml.PauliY(wires=1))
+            return qml.probs(op=qml.Z(0)), qml.probs(op=qml.Y(1))
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -115,9 +115,9 @@ class TestIntegrationMultipleReturns:
             qubit_ansatz(x)
             return (
                 qml.probs(wires=0),
-                qml.expval(qml.PauliZ(wires=0)),
-                qml.probs(op=qml.PauliY(wires=1)),
-                qml.expval(qml.PauliY(wires=1)),
+                qml.expval(qml.Z(0)),
+                qml.probs(op=qml.Y(1)),
+                qml.expval(qml.Y(1)),
             )
 
         qnode = qml.QNode(circuit, dev, diff_method=None)

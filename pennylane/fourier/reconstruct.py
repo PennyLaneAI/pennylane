@@ -412,7 +412,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
             qml.RY(Y[1], wires=1)
             qml.CNOT(wires=[0, 1])
             qml.RY(5*  Y[1], wires=1)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
         x = 0.4
         Y = np.array([1.9, -0.5])
@@ -553,7 +553,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
                 qml.RY(Y[1], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.RY(5*  Y[1], wires=1)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                return qml.expval(qml.Z(0) @ qml.Z(1))
 
             f = 2.3
 

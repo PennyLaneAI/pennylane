@@ -92,9 +92,9 @@ def transform(
         def qnode_circuit(a):
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=0)
+            qml.X(0)
             qml.RZ(a, wires=1)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     We first apply ``transform`` to ``my_quantum_transform``:
 

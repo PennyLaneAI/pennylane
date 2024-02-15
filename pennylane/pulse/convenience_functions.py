@@ -42,7 +42,7 @@ def constant(scalar, time):
 
     The ``constant`` function can be used to create a parametrized Hamiltonian
 
-    >>> H = qml.pulse.constant * qml.PauliX(0)
+    >>> H = qml.pulse.constant * qml.X(0)
 
     When calling the parametrized Hamiltonian, ``constant`` will always return the input parameter
 
@@ -61,7 +61,7 @@ def constant(scalar, time):
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=2)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
 
     >>> params = jnp.array([5.0])
@@ -131,7 +131,7 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
 
     ``rect`` can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
 
-    >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.PauliX(0)
+    >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.X(0)
 
     The resulting Hamiltonian will be non-zero only inside the window.
 
@@ -146,14 +146,14 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
     .. code-block:: python
 
         windows = [(1, 7), (9, 14)]
-        H = qml.pulse.rect(jnp.polyval, windows) * qml.PauliX(0)
+        H = qml.pulse.rect(jnp.polyval, windows) * qml.X(0)
 
     When calling the :class:`.ParametrizedHamiltonian`, ``rect`` will evaluate the given function only
     inside the time windows, and otherwise return 0.
 
     One can also pass a scalar to the ``rect`` function
 
-    >>> H = qml.pulse.rect(10, (1, 7)) * qml.PauliX(0)
+    >>> H = qml.pulse.rect(10, (1, 7)) * qml.X(0)
 
     In this case, ``rect`` will return the given scalar only when the time is inside the provided
     time windows
@@ -258,7 +258,7 @@ def pwc(timespan):
 
     >>> timespan = (2, 7)
     >>> f1 = qml.pulse.pwc(timespan)
-    >>> H = f1 * qml.PauliX(0)
+    >>> H = f1 * qml.X(0)
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
     a time, it will assign the array as the constants in the piece-wise function, and select the constant corresponding

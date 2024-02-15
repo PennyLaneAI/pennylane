@@ -52,7 +52,7 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
     >>> def circuit(x):
     >>>     qml.RX(x, wires=1)
     >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
+    >>>     return qml.expval(qml.Z(0))
 
     Args:
         quantum_circuit_object: the quantum circuit that will be converted
@@ -102,7 +102,7 @@ def from_qiskit(quantum_circuit, measurements=None):
     >>> def circuit(x):
     >>>     qml.RX(x, wires=1)
     >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
+    >>>     return qml.expval(qml.Z(0))
 
     Args:
         quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in qiskit
@@ -130,7 +130,7 @@ def from_qiskit(quantum_circuit, measurements=None):
             qc.cx(0, 1)
             qc.measure_all()
 
-            measurements = [qml.expval(qml.PauliZ(0)), qml.vn_entropy([1])]
+            measurements = [qml.expval(qml.Z(0)), qml.vn_entropy([1])]
             quantum_circuit = qml.from_qiskit(qc, measurements=measurements)
 
             @qml.qnode(qml.device("default.qubit"))
@@ -166,7 +166,7 @@ def from_qasm(quantum_circuit: str):
     >>> def circuit(x):
     >>>     qml.RX(x, wires=1)
     >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
+    >>>     return qml.expval(qml.Z(0))
 
     Args:
         quantum_circuit (str): a QASM string containing a valid quantum circuit
@@ -192,7 +192,7 @@ def from_qasm_file(qasm_filename: str):
     >>> def circuit(x):
     >>>     qml.RX(x, wires=1)
     >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
+    >>>     return qml.expval(qml.Z(0))
 
     Args:
         qasm_filename (str): path to a QASM file containing a valid quantum circuit
@@ -221,7 +221,7 @@ def from_pyquil(pyquil_program):
     >>> def circuit(x):
     >>>     qml.RX(x, wires=1)
     >>>     my_circuit(wires=[1, 0])
-    >>>     return qml.expval(qml.PauliZ(0))
+    >>>     return qml.expval(qml.Z(0))
 
     Args:
         pyquil_program (pyquil.Program): a program created in pyQuil
@@ -252,7 +252,7 @@ def from_quil(quil: str):
     >>> def circuit(x):
     >>>     qml.RX(x, wires=1)
     >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
+    >>>     return qml.expval(qml.Z(0))
 
     Args:
         quil (str): a Quil string containing a valid quantum circuit
@@ -279,7 +279,7 @@ def from_quil_file(quil_filename: str):
     >>> def circuit(x):
     >>>     qml.RX(x, wires=1)
     >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
+    >>>     return qml.expval(qml.Z(0))
 
     Args:
         quil_filename (str): path to a Quil file containing a valid quantum circuit

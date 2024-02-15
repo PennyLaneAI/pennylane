@@ -61,7 +61,7 @@ def _prep_zero_state(wire):
 
 
 def _prep_one_state(wire):
-    return [qml.PauliX(wire)]
+    return [qml.X(wire)]
 
 
 def _prep_plus_state(wire):
@@ -69,7 +69,7 @@ def _prep_plus_state(wire):
 
 
 def _prep_minus_state(wire):
-    return [qml.PauliX(wire), qml.Hadamard(wire)]
+    return [qml.X(wire), qml.Hadamard(wire)]
 
 
 def _prep_iplus_state(wire):
@@ -77,7 +77,7 @@ def _prep_iplus_state(wire):
 
 
 def _prep_iminus_state(wire):
-    return [qml.PauliX(wire), qml.Hadamard(wire), qml.S(wires=wire)]
+    return [qml.X(wire), qml.Hadamard(wire), qml.S(wires=wire)]
 
 
 def find_and_place_cuts(
@@ -358,7 +358,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
             wire_cut,
             qml.RY(0.5, wires=0),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove the wire cut node using:
@@ -441,7 +441,7 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
             multi_wire_cut,
             qml.RZ(0.6, wires=1),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove all the wire cut nodes using:
@@ -604,7 +604,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             multi_wire_cut,
             qml.RZ(0.6, wires=1),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the corresponding graph, remove all the wire cut nodes, and

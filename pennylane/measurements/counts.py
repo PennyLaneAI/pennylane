@@ -70,7 +70,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
             qml.RX(x, wires=0)
             qml.Hadamard(wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.PauliY(0))
+            return qml.counts(qml.Y(0))
 
     Executing this QNode:
 
@@ -106,7 +106,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(wires=0)
+            qml.X(0)
             return qml.counts()
 
     Executing this QNode shows only the observed outcomes:
@@ -120,7 +120,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(wires=0)
+            qml.X(0)
             return qml.counts(all_outcomes=True)
 
     Executing this QNode shows counts for all states:

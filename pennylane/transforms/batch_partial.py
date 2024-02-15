@@ -71,7 +71,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
-            return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
     The ``qml.batch_partial`` decorator allows us to create a partial callable
     object that wraps the QNode. For example,
