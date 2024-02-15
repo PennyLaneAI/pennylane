@@ -432,46 +432,34 @@ def _get_generators(trainable_op):
     elif isinstance(trainable_op, qml.CRX):
         generators = [
             qml.X(wires=trainable_op.wires[1]),
-            qml.prod(
-                qml.Z(wires=trainable_op.wires[0]), qml.X(wires=trainable_op.wires[1])
-            ),
+            qml.prod(qml.Z(wires=trainable_op.wires[0]), qml.X(wires=trainable_op.wires[1])),
         ]
         coeffs = [-0.25, 0.25]
     elif isinstance(trainable_op, qml.CRY):
         generators = [
             qml.Y(wires=trainable_op.wires[1]),
-            qml.prod(
-                qml.Z(wires=trainable_op.wires[0]), qml.Y(wires=trainable_op.wires[1])
-            ),
+            qml.prod(qml.Z(wires=trainable_op.wires[0]), qml.Y(wires=trainable_op.wires[1])),
         ]
         coeffs = [-0.25, 0.25]
     elif isinstance(trainable_op, qml.CRZ):
         generators = [
             qml.Z(wires=trainable_op.wires[1]),
-            qml.prod(
-                qml.Z(wires=trainable_op.wires[0]), qml.Z(wires=trainable_op.wires[1])
-            ),
+            qml.prod(qml.Z(wires=trainable_op.wires[0]), qml.Z(wires=trainable_op.wires[1])),
         ]
         coeffs = [-0.25, 0.25]
     elif isinstance(trainable_op, qml.IsingXX):
         generators = [
-            qml.prod(
-                qml.X(wires=trainable_op.wires[0]), qml.X(wires=trainable_op.wires[1])
-            )
+            qml.prod(qml.X(wires=trainable_op.wires[0]), qml.X(wires=trainable_op.wires[1]))
         ]
         coeffs = [-0.5]
     elif isinstance(trainable_op, qml.IsingYY):
         generators = [
-            qml.prod(
-                qml.Y(wires=trainable_op.wires[0]), qml.Y(wires=trainable_op.wires[1])
-            )
+            qml.prod(qml.Y(wires=trainable_op.wires[0]), qml.Y(wires=trainable_op.wires[1]))
         ]
         coeffs = [-0.5]
     elif isinstance(trainable_op, qml.IsingZZ):
         generators = [
-            qml.prod(
-                qml.Z(wires=trainable_op.wires[0]), qml.Z(wires=trainable_op.wires[1])
-            )
+            qml.prod(qml.Z(wires=trainable_op.wires[0]), qml.Z(wires=trainable_op.wires[1]))
         ]
         coeffs = [-0.5]
     # For rotation it is possible to only use PauliZ by applying some other rotations in the main function

@@ -512,9 +512,7 @@ class TestTensorExpval:
 
         def circ(wire_labels):
             sub_routine(wire_labels)
-            return qml.expval(
-                qml.X(wire_labels[0]) @ qml.Y(wire_labels[1]) @ qml.Z(wire_labels[2])
-            )
+            return qml.expval(qml.X(wire_labels[0]) @ qml.Y(wire_labels[1]) @ qml.Z(wire_labels[2]))
 
         circ_base_label = qml.QNode(circ, device=dev)
         circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
@@ -1414,9 +1412,7 @@ class TestTensorVar:
 
         def circ(wire_labels):
             sub_routine(wire_labels)
-            return qml.var(
-                qml.X(wire_labels[0]) @ qml.Y(wire_labels[1]) @ qml.Z(wire_labels[2])
-            )
+            return qml.var(qml.X(wire_labels[0]) @ qml.Y(wire_labels[1]) @ qml.Z(wire_labels[2]))
 
         circ_base_label = qml.QNode(circ, device=dev)
         circ_custom_label = qml.QNode(circ, device=dev_custom_labels)

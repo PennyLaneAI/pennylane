@@ -447,10 +447,7 @@ class SingleExcitationPlus(Operation):
     def generator(self):
         w1, w2 = self.wires
         return 0.25 * (
-            qml.Identity(w1)
-            + qml.X(w1) @ qml.Y(w2)
-            - qml.Y(w1) @ qml.X(w2)
-            + qml.Z(w1) @ qml.Z(w2)
+            qml.Identity(w1) + qml.X(w1) @ qml.Y(w2) - qml.Y(w1) @ qml.X(w2) + qml.Z(w1) @ qml.Z(w2)
         )
 
     def __init__(self, phi, wires, id=None):

@@ -144,9 +144,7 @@ class FlipSign(Operation):
         if arr_bin[-1] == 0:
             op_list.append(qml.X(wires[-1]))
 
-        op_list.append(
-            qml.ctrl(qml.Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
-        )
+        op_list.append(qml.ctrl(qml.Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
 
         if arr_bin[-1] == 0:
             op_list.append(qml.X(wires[-1]))

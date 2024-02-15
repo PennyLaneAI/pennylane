@@ -1601,6 +1601,5 @@ def _get_pauli_map(n):
     """
     warn("_get_pauli_map is deprecated, as it is no longer used.", qml.PennyLaneDeprecationWarning)
     return [
-        {"I": qml.Identity(i), "X": qml.X(i), "Y": qml.Y(i), "Z": qml.Z(i)}
-        for i in range(n + 1)
+        {"I": qml.Identity(i), "X": qml.X(i), "Y": qml.Y(i), "Z": qml.Z(i)} for i in range(n + 1)
     ]
