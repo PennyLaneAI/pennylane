@@ -140,7 +140,11 @@ parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
 >>> params = [1.2, [2.3, 3.4]]  # f1 takes a single parameter, f2 takes 2
 >>> H1(params, t=0.5)
-(2*(X(0) @ X(1))) + ((-0.2876553535461426*(Y(0) @ Y(1))) + (1.5179612636566162*(Z(0) @ Z(1))))
+(
+    2 * (X(0) @ X(1))
+  + -0.2876553231625218 * (Y(0) @ Y(1))
+  + 1.517961235535459 * (Z(0) @ Z(1))
+)
 
 
 When passing parameters, ensure that the order of the coefficient functions and the order of
