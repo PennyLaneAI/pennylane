@@ -127,7 +127,7 @@ class TestInitialization:
         coeffs = [2.0, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
         H = ParametrizedHamiltonian(coeffs, ops)
-        expected = '(\n    2.0 * X(0))\n  + f1(params_0, t) * Y(0)\n  + f2(params_1, t) * Z(0)\n)'
+        expected = '(\n    2.0 * X(0)\n  + f1(params_0, t) * Y(0)\n  + f2(params_1, t) * Z(0)\n)'
 
         assert repr(H) == expected
     
@@ -158,7 +158,7 @@ class TestInitialization:
         coeffs = [2.0, f1, f2, f3(0.5)]
         observables = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0), qml.PauliX(0)]
         H = ParametrizedHamiltonian(coeffs, observables)
-        expected = '(\n    2.0 * X(0))\n  + f1(params_0, t) * Y(0)\n  + f2(params_1, t) * Z(0)\n  + f3(params_2, t) * X(0)\n)'
+        expected = '(\n    2.0 * X(0)\n  + f1(params_0, t) * Y(0)\n  + f2(params_1, t) * Z(0)\n  + f3(params_2, t) * X(0)\n)'
         assert repr(H) == expected
 
     def test_wire_attribute(self):

@@ -260,7 +260,7 @@ class ParametrizedHamiltonian:
         terms = []
 
         for coeff, op in zip(self.coeffs_fixed, self.ops_fixed):
-            term = f"{coeff} * {op})"
+            term = f"{coeff} * {op}"
             terms.append(term)
 
         for i, (coeff, op) in enumerate(zip(self.coeffs_parametrized, self.ops_parametrized)):
