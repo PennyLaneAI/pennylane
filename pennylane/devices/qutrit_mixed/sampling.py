@@ -34,45 +34,12 @@ from .measure import measure
 from .apply_operation import apply_operation
 
 
-def _group_measurements(mps: List[Union[SampleMeasurement]]):
-    """Groups measurements such that:
-    - measurements without observables are done together
-    - measurements with observables are done separately
-    """
-    if len(mps) == 1:
-        return [mps], [[0]]
-
-    # measurements with observables
-    mp_obs = []
-    mp_obs_indices = []
-
-    # measurements with no observables
-    mp_no_obs = []
-    mp_no_obs_indices = []
-
-    for i, mp in enumerate(mps):
-        if mp.obs is None:
-            mp_no_obs.append(mp)
-            mp_no_obs_indices.append(i)
-        else:
-            mp_obs.append([mp])
-            mp_obs_indices.append([i])
-
-    mp_no_obs_indices = [mp_no_obs_indices] if mp_no_obs else []
-    mp_no_obs = [mp_no_obs] if mp_no_obs else []
-
-    all_mp_groups = mp_no_obs + mp_obs
-    all_indices = mp_no_obs_indices + mp_obs_indices
-
-    return all_mp_groups, all_indices
-
-
 def _apply_diagonalizing_gates(
-    mps: List[SampleMeasurement], state: np.ndarray, is_state_batched: bool = False
+    mp: SampleMeasurement, state: np.ndarray, is_state_batched: bool = False
 ):
     """Applies diagonalizing gates when necessary"""
-    if len(mps) == 1 and mps[0].obs:
-        for op in mps[0].diagonalizing_gates():
+    if mp.obs:
+        for op in mp.diagonalizing_gates():
             state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     return state
@@ -158,7 +125,7 @@ def _process_variance_samples(mp, samples, wires):
 
 # pylint:disable = too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
-    mps: List[SampleMeasurement],
+    mp: SampleMeasurement,
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -184,26 +151,22 @@ def _measure_with_samples_diagonalizing_gates(
         TensorLike[Any]: Sample measurement results
     """
     # apply diagonalizing gates
-    state = _apply_diagonalizing_gates(mps, state, is_state_batched)
+    state = _apply_diagonalizing_gates(mp, state, is_state_batched)
 
     total_indices = get_num_wires(state, is_state_batched)
     wires = qml.wires.Wires(range(total_indices))
 
     def _process_single_shot(samples):
-        processed = []
-        for mp in mps:
-            if isinstance(mp, SampleMP):
-                res = math.squeeze(_process_samples(mp, samples, wires))
-            elif isinstance(mp, CountsMP):
-                res = _process_counts_samples(mp, samples, wires)
-            elif isinstance(mp, ExpectationMP):
-                res = _process_expval_samples(mp, samples, wires)
-            elif isinstance(mp, VarianceMP):
-                res = _process_variance_samples(mp, samples, wires)
-            else:
-                raise NotImplementedError
-            processed.append(res)
-        return tuple(processed)
+        if isinstance(mp, SampleMP):
+            return math.squeeze(_process_samples(mp, samples, wires))
+        elif isinstance(mp, CountsMP):
+            return _process_counts_samples(mp, samples, wires)
+        elif isinstance(mp, ExpectationMP):
+            return _process_expval_samples(mp, samples, wires)
+        elif isinstance(mp, VarianceMP):
+            return _process_variance_samples(mp, samples, wires)
+        else:
+            raise NotImplementedError
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
@@ -212,6 +175,7 @@ def _measure_with_samples_diagonalizing_gates(
             # Like default.qubit currently calling sample_state for each shot entry,
             # but it may be better to call sample_state just once with total_shots,
             # then use the shot_range keyword argument
+            print(s)
             samples = sample_state(
                 state,
                 shots=s,
@@ -222,7 +186,7 @@ def _measure_with_samples_diagonalizing_gates(
             )
             processed_samples.append(_process_single_shot(samples))
 
-        return tuple(zip(*processed_samples))
+        return tuple(processed_samples)
 
     samples = sample_state(
         state,
@@ -237,7 +201,7 @@ def _measure_with_samples_diagonalizing_gates(
 
 
 def _measure_sum_with_samples(
-    mp: List[SampleMeasurement],
+    mp: SampleMeasurement,
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -245,29 +209,30 @@ def _measure_sum_with_samples(
     prng_key=None,
 ):
     """Sums expectation values of Sum or Hamiltonian Observables"""
-    # the list contains only one element based on how we group measurements
-    mp = mp[0]
-
     # mp.obs returns is the list of observables for Sum,
     # mp.obs.terms()[1] returns is the list of observables for Hamiltonian
     obs_terms = mp.obs if isinstance(mp.obs, Sum) else mp.obs.terms()[1]
 
     def _sum_for_single_shot(s):
-        results = measure_with_samples(
-            [ExpectationMP(t) for t in obs_terms],
-            state,
-            s,
-            is_state_batched=is_state_batched,
-            rng=rng,
-            prng_key=prng_key,
-        )
+        results = []
+        for term in obs_terms:
+            results.append(
+                measure_with_samples(
+                    ExpectationMP(term),
+                    state,
+                    s,
+                    is_state_batched=is_state_batched,
+                    rng=rng,
+                    prng_key=prng_key,
+                )
+            )
+
         if isinstance(mp.obs, Hamiltonian):
             # If Hamiltonian apply coefficients
             return sum((c * res for c, res in zip(mp.obs.terms()[0], results)))
         return sum(results)
 
-    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
-    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
+    return tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
 
 
 def _sample_state_jax(
@@ -381,19 +346,19 @@ def sample_state(
 
 
 def measure_with_samples(
-    mps: List[SampleMeasurement],
+    mp: SampleMeasurement,
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-) -> List[TensorLike]:
+) -> TensorLike:
     """Returns the samples of the measurement process performed on the given state.
     This function assumes that the user-defined wire labels in the measurement process
     have already been mapped to integer wires used in the device.
 
     Args:
-        mps (List[SampleMeasurement]): The sample measurements to perform
+        mp (SampleMeasurement): The sample measurement to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (Shots): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
@@ -404,39 +369,21 @@ def measure_with_samples(
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
 
     Returns:
-        List[TensorLike[Any]]: List of all sample measurement results
+        TensorLike[Any]: Sample measurement results
     """
 
-    groups, indices = _group_measurements(mps)
-
     all_res = []
-    for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, (Hamiltonian, Sum)):
-            measure_fn = _measure_sum_with_samples
-        else:
-            # measure with the usual method (rotate into the measurement basis)
-            measure_fn = _measure_with_samples_diagonalizing_gates
+    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, (Hamiltonian, Sum)):
+        measure_fn = _measure_sum_with_samples
+    else:
+        # measure with the usual method (rotate into the measurement basis)
+        measure_fn = _measure_with_samples_diagonalizing_gates
 
-        all_res.extend(
-            measure_fn(
-                group,
-                state,
-                shots,
-                is_state_batched=is_state_batched,
-                rng=rng,
-                prng_key=prng_key,
-            )
-        )
-
-    flat_indices = [_i for i in indices for _i in i]
-
-    # reorder results
-    sorted_res = tuple(
-        res for _, res in sorted(list(enumerate(all_res)), key=lambda r: flat_indices[r[0]])
+    return measure_fn(
+        mp,
+        state,
+        shots,
+        is_state_batched=is_state_batched,
+        rng=rng,
+        prng_key=prng_key,
     )
-
-    # put the shot vector axis before the measurement axis
-    if shots.has_partitioned_shots:
-        sorted_res = tuple(zip(*sorted_res))
-
-    return sorted_res

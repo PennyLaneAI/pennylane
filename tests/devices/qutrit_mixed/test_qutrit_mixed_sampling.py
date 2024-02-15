@@ -240,7 +240,7 @@ class TestMeasureWithSamples:
         shots = qml.measurements.Shots(100)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples([mp], two_qutrit_pure_state, shots=shots)[0]
+        result = measure_with_samples(mp, two_qutrit_pure_state, shots=shots)
 
         assert result.shape == (shots.total_shots, 2)
         assert result.dtype == np.int64
@@ -255,8 +255,8 @@ class TestMeasureWithSamples:
         mp0 = qml.sample(wires=0)
         mp1 = qml.sample(wires=1)
 
-        result0 = measure_with_samples([mp0], state, shots=shots)[0]
-        result1 = measure_with_samples([mp1], state, shots=shots)[0]
+        result0 = measure_with_samples(mp0, state, shots=shots)
+        result1 = measure_with_samples(mp1, state, shots=shots)
 
         assert result0.shape == (shots.total_shots,)
         assert result0.dtype == np.int64
@@ -271,7 +271,7 @@ class TestMeasureWithSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples([mp], two_qutrit_pure_state, shots=shots, rng=1234)[0]
+        result = measure_with_samples(mp, two_qutrit_pure_state, shots=shots, rng=1234)
 
         one_or_two_prob = np.count_nonzero(result[:, 0]) / result.shape[0]
         one_prob = np.count_nonzero(result[:, 0] == 1) / result.shape[0]
@@ -284,7 +284,7 @@ class TestMeasureWithSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.expval(qml.GellMann(0, 1) @ qml.GellMann(1, 1))
 
-        result = measure_with_samples([mp], state, shots=shots, rng=1234)[0]
+        result = measure_with_samples(mp, state, shots=shots, rng=1234)
 
         gellmann_1_matrix = qml.GellMann.compute_matrix(1)
         observable_matrix = np.kron(gellmann_1_matrix, gellmann_1_matrix)
@@ -298,7 +298,7 @@ class TestMeasureWithSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.var(qml.GellMann(0, 1) @ qml.GellMann(1, 1))
 
-        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
+        result = measure_with_samples(mp, state, shots=shots, rng=123)
 
         gellmann_1_matrix = qml.GellMann.compute_matrix(1)
         obs_mat = np.kron(gellmann_1_matrix, gellmann_1_matrix)
@@ -315,7 +315,7 @@ class TestMeasureWithSamples:
         shots = qml.measurements.Shots(num_shots)
         mp = qml.counts()
 
-        result = measure_with_samples([mp], two_qutrit_pure_state, shots=shots)[0]
+        result = measure_with_samples(mp, two_qutrit_pure_state, shots=shots)
 
         assert isinstance(result, dict)
         assert sorted(result.keys()) == ["02", "10", "21"]
@@ -335,8 +335,8 @@ class TestMeasureWithSamples:
         mp0 = qml.counts(wires=0)
         mp1 = qml.counts(wires=1)
 
-        result0 = measure_with_samples([mp0], state, shots=shots)[0]
-        result1 = measure_with_samples([mp1], state, shots=shots)[0]
+        result0 = measure_with_samples(mp0, state, shots=shots)
+        result1 = measure_with_samples(mp1, state, shots=shots)
 
         assert isinstance(result1, dict)
         assert result0 == {"0": num_shots}
@@ -347,51 +347,51 @@ class TestMeasureWithSamples:
         assert np.isclose(result1["1"] / num_shots, 1 / 4, atol=APPROX_ATOL)
         assert np.isclose(result1["2"] / num_shots, 1 / 8, atol=APPROX_ATOL)
 
-    def test_multiple_sample_measurements(self):
-        """Test that a set of sample measurements works as expected"""
-        state_vector = np.array([1, -1j, 1, 0, 0, 0, 0, 0, 0])
-        state = get_dm_of_state(state_vector, 2, 3)
-        shots = qml.measurements.Shots(100)
+    # def test_multiple_sample_measurements(self):
+    #     """Test that a set of sample measurements works as expected"""
+    #     state_vector = np.array([1, -1j, 1, 0, 0, 0, 0, 0, 0])
+    #     state = get_dm_of_state(state_vector, 2, 3)
+    #     shots = qml.measurements.Shots(100)
+    #
+    #     mp = qml.sample()
+    #     mp0 = qml.sample(wires=0)
+    #     mp1 = qml.sample(wires=1)
+    #
+    #     result, result0, result1 = measure_with_samples([mp, mp0, mp1], state, shots=shots)
+    #
+    #     assert result.shape == (shots.total_shots, 2)
+    #     assert result.dtype == np.int64
+    #     assert len(np.unique(result)) == 3
+    #
+    #     assert result0.shape == (shots.total_shots,)
+    #     assert result0.dtype == np.int64
+    #     assert np.all(result0 == 0)
+    #
+    #     assert result1.shape == (shots.total_shots,)
+    #     assert result1.dtype == np.int64
+    #     assert len(np.unique(result1)) == 3
 
-        mp = qml.sample()
-        mp0 = qml.sample(wires=0)
-        mp1 = qml.sample(wires=1)
-
-        result, result0, result1 = measure_with_samples([mp, mp0, mp1], state, shots=shots)
-
-        assert result.shape == (shots.total_shots, 2)
-        assert result.dtype == np.int64
-        assert len(np.unique(result)) == 3
-
-        assert result0.shape == (shots.total_shots,)
-        assert result0.dtype == np.int64
-        assert np.all(result0 == 0)
-
-        assert result1.shape == (shots.total_shots,)
-        assert result1.dtype == np.int64
-        assert len(np.unique(result1)) == 3
-
-    @flaky
-    def test_sample_and_counts_measurements(self, two_qutrit_pure_state):
-        """Test that sample measurements properly sample an observable"""
-        num_shots = 10000
-        shots = qml.measurements.Shots(num_shots)
-        samples_mp = qml.sample()
-        counts_mp = qml.counts()
-
-        sample_results, counts_results = measure_with_samples(
-            [samples_mp, counts_mp], two_qutrit_pure_state, shots=shots
-        )
-
-        assert sample_results.shape == (shots.total_shots, 2)
-        assert sample_results.dtype == np.int64
-        assert_correct_sampled_two_qutrit_pure_state(sample_results)
-
-        assert isinstance(counts_results, dict)
-        assert sorted(counts_results.keys()) == ["02", "10", "21"]
-        assert np.isclose(counts_results["02"] / num_shots, 1 / 3, atol=APPROX_ATOL)
-        assert np.isclose(counts_results["10"] / num_shots, 1 / 3, atol=APPROX_ATOL)
-        assert np.isclose(counts_results["21"] / num_shots, 1 / 3, atol=APPROX_ATOL)
+    # @flaky
+    # def test_sample_and_counts_measurements(self, two_qutrit_pure_state):
+    #     """Test that sample measurements properly sample an observable"""
+    #     num_shots = 10000
+    #     shots = qml.measurements.Shots(num_shots)
+    #     samples_mp = qml.sample()
+    #     counts_mp = qml.counts()
+    #
+    #     sample_results, counts_results = measure_with_samples(
+    #         [samples_mp, counts_mp], two_qutrit_pure_state, shots=shots
+    #     )
+    #
+    #     assert sample_results.shape == (shots.total_shots, 2)
+    #     assert sample_results.dtype == np.int64
+    #     assert_correct_sampled_two_qutrit_pure_state(sample_results)
+    #
+    #     assert isinstance(counts_results, dict)
+    #     assert sorted(counts_results.keys()) == ["02", "10", "21"]
+    #     assert np.isclose(counts_results["02"] / num_shots, 1 / 3, atol=APPROX_ATOL)
+    #     assert np.isclose(counts_results["10"] / num_shots, 1 / 3, atol=APPROX_ATOL)
+    #     assert np.isclose(counts_results["21"] / num_shots, 1 / 3, atol=APPROX_ATOL)
 
     def test_sample_observables(self):
         """Test that counts measurements properly counts samples of an observable"""
@@ -399,16 +399,15 @@ class TestMeasureWithSamples:
         state = get_dm_of_state(state_vector, 2)
         num_shots = 100
         shots = qml.measurements.Shots(num_shots)
-        mps = [
-            qml.sample(qml.GellMann(0, 3)),
-            qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1)),
-        ]
 
-        results_gel_3, results_gel_1s = measure_with_samples(mps, state, shots=shots)
+        results_gel_3 = measure_with_samples(qml.sample(qml.GellMann(0, 3)), state, shots=shots)
         assert results_gel_3.shape == (shots.total_shots,)
         assert results_gel_3.dtype == np.int64
         assert sorted(np.unique(results_gel_3)) == [-1, 0]
 
+        results_gel_1s = measure_with_samples(
+            qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1)), state, shots=shots
+        )
         assert results_gel_1s.shape == (shots.total_shots,)
         assert results_gel_1s.dtype == np.int64
         assert sorted(np.unique(results_gel_1s)) == [-1, 0, 1]
@@ -421,18 +420,16 @@ class TestMeasureWithSamples:
         num_shots = 10000
         shots = qml.measurements.Shots(num_shots)
 
-        mps = [
-            qml.counts(qml.GellMann(0, 3)),
-            qml.counts(qml.GellMann(0, 1) @ qml.GellMann(1, 1)),
-        ]
-
-        results_gel_3, results_gel_1s = measure_with_samples(mps, state, shots=shots)
+        results_gel_3 = measure_with_samples(qml.counts(qml.GellMann(0, 3)), state, shots=shots)
 
         assert isinstance(results_gel_3, dict)
         assert sorted(results_gel_3.keys()) == [-1, 0]
         assert np.isclose(results_gel_3[-1] / num_shots, 3 / 5, atol=APPROX_ATOL)
         assert np.isclose(results_gel_3[0] / num_shots, 2 / 5, atol=APPROX_ATOL)
 
+        results_gel_1s = measure_with_samples(
+            qml.counts(qml.GellMann(0, 1) @ qml.GellMann(1, 1)), state, shots=shots
+        )
         assert isinstance(results_gel_1s, dict)
         assert sorted(results_gel_1s.keys()) == [-1, 0, 1]
         assert np.isclose(results_gel_1s[-1] / num_shots, 0.3, atol=APPROX_ATOL)
@@ -451,7 +448,7 @@ class TestInvalidSampling:
         _shots = Shots(shots)
 
         with pytest.raises(ValueError, match="probabilities do not sum to 1"):
-            _ = measure_with_samples([mp], state, _shots)
+            _ = measure_with_samples(mp, state, _shots)
 
     @pytest.mark.parametrize("mp", [qml.probs(0), qml.probs(op=qml.GellMann(0, 1))])
     def test_currently_unsupported_observable(self, mp, two_qutrit_state):
@@ -459,7 +456,7 @@ class TestInvalidSampling:
         or var raise a NotImplementedError."""
         shots = qml.measurements.Shots(1)
         with pytest.raises(NotImplementedError):
-            _ = measure_with_samples([mp], two_qutrit_state, shots)
+            _ = measure_with_samples(mp, two_qutrit_state, shots)
 
 
 shots_to_test_samples = [
@@ -489,7 +486,7 @@ class TestBroadcasting:
         state = batched_two_qutrit_pure_state
 
         measurement = qml.sample(wires=[0, 1])
-        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)[0]
+        res = measure_with_samples(measurement, state, shots, is_state_batched=True, rng=rng)
 
         assert res.shape == (3, shots.total_shots, 2)
         assert res.dtype == np.int64
@@ -502,7 +499,7 @@ class TestBroadcasting:
 
         measurement = qml.sample(wires=[0, 1])
         res = measure_with_samples(
-            [measurement],
+            measurement,
             batched_two_qutrit_pure_state,
             shots,
             is_state_batched=True,
@@ -513,10 +510,6 @@ class TestBroadcasting:
         assert len(res) == shots.num_copies
 
         for s, r in zip(shots, res):
-            assert isinstance(r, tuple)
-            assert len(r) == 1
-            r = r[0]
-
             assert r.shape == (3, s, 2)
             assert r.dtype == np.int64
 
@@ -553,16 +546,12 @@ class TestBroadcasting:
 
         state = np.stack(state)
 
-        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
+        res = measure_with_samples(measurement, state, shots, is_state_batched=True, rng=rng)
 
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies
 
         for r in res:
-            assert isinstance(r, tuple)
-            assert len(r) == 1
-            r = r[0]
-
             assert r.shape == expected.shape
             assert np.allclose(r, expected, atol=APPROX_ATOL)
 
@@ -583,13 +572,13 @@ class TestBroadcastingPRNG:
 
         measurement = qml.sample(wires=[0, 1])
         res = measure_with_samples(
-            [measurement],
+            measurement,
             batched_two_qutrit_pure_state,
             shots,
             is_state_batched=True,
             rng=rng,
             prng_key=jax.random.PRNGKey(184),
-        )[0]
+        )
 
         spy.assert_called()
 
@@ -615,7 +604,7 @@ class TestBroadcastingPRNG:
 
         measurement = qml.sample(wires=[0, 1])
         res = measure_with_samples(
-            [measurement],
+            measurement,
             batched_two_qutrit_pure_state,
             shots,
             is_state_batched=True,
@@ -629,10 +618,6 @@ class TestBroadcastingPRNG:
         assert len(res) == shots.num_copies
 
         for s, r in zip(shots, res):
-            assert isinstance(r, tuple)
-            assert len(r) == 1
-            r = r[0]
-
             assert r.shape == (3, s, 2)
             assert res[0][0].dtype == np.int64
 
@@ -668,7 +653,7 @@ class TestBroadcastingPRNG:
         state = np.stack(state)
 
         res = measure_with_samples(
-            [measurement],
+            measurement,
             state,
             shots,
             is_state_batched=True,
@@ -682,10 +667,6 @@ class TestBroadcastingPRNG:
         assert len(res) == shots.num_copies
 
         for r in res:
-            assert isinstance(r, tuple)
-            assert len(r) == 1
-            r = r[0]
-
             assert r.shape == expected.shape
             assert np.allclose(r, expected, atol=0.01)
 
@@ -711,7 +692,7 @@ class TestHamiltonianSamples:
         for op in ops:
             state = apply_operation(op, state)
 
-        res = measure_with_samples([qml.expval(obs)], state, shots=shots, rng=300)
+        res = measure_with_samples(qml.expval(obs), state, shots=shots, rng=300)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
         assert np.allclose(res, expected, atol=APPROX_ATOL)
@@ -726,7 +707,7 @@ class TestHamiltonianSamples:
         for op in ops:
             state = apply_operation(op, state)
 
-        res = measure_with_samples([qml.expval(obs)], state, shots=shots, rng=300)
+        res = measure_with_samples(qml.expval(obs), state, shots=shots, rng=300)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
 
