@@ -33,7 +33,7 @@ class Attribute(set):
 
     We can check either a string or an Operation for inclusion in this set:
 
-    >>> qml.PauliX(0) in pauli_ops
+    >>> qml.X(0) in pauli_ops
     True
     >>> "Hadamard" in pauli_ops
     False

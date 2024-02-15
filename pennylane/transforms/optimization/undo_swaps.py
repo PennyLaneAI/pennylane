@@ -55,7 +55,7 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             qml.SWAP(wires=[0,1])
             qml.SWAP(wires=[0,2])
             qml.PauliY(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     The SWAP gates are removed before execution.
 
@@ -72,7 +72,7 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 qml.SWAP(wires=[0,1])
                 qml.SWAP(wires=[0,2])
                 qml.PauliY(wires=0)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         The circuit before optimization:
 

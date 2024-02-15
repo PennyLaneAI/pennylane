@@ -211,7 +211,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
 
     **Example**
 
-    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> obs = [qml.Y(0), qml.X(0) @ qml.X(1), qml.Z(1)]
     >>> coeffs = [1.43, 4.21, 0.97]
     >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
     >>> obs_groupings

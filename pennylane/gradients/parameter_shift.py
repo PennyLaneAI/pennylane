@@ -878,7 +878,7 @@ def param_shift(
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.jacobian(circuit)(params)
     array([-0.3875172 , -0.18884787, -0.38355704])
@@ -895,7 +895,7 @@ def param_shift(
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
     (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32), Array([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
@@ -942,7 +942,7 @@ def param_shift(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> qml.gradients.param_shift(circuit)(params)
         ((tensor(-0.38751724, requires_grad=True),
           tensor(-0.18884792, requires_grad=True),
@@ -955,7 +955,7 @@ def param_shift(
         function, which together define the gradient are directly returned:
 
         >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
-        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
         >>> gradient_tapes
@@ -974,7 +974,7 @@ def param_shift(
 
         >>> tape = qml.tape.QuantumScript(
         ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-        ...     [qml.expval(qml.PauliZ(0))],
+        ...     [qml.expval(qml.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
         >>> qml.gradients.param_shift(tape, argnum=1)
@@ -1000,7 +1000,7 @@ def param_shift(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.param_shift(circuit)(params)
         (((array(-0.6), array(-0.1), array(-0.1)),
@@ -1018,7 +1018,7 @@ def param_shift(
 
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> ops = [qml.RX(p, wires=0) for p in params]
-        >>> measurements = [qml.expval(qml.PauliZ(0))]
+        >>> measurements = [qml.expval(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         >>> len(gradient_tapes)
@@ -1038,7 +1038,7 @@ def param_shift(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> number = 100
         >>> serial_call = "qml.gradients.param_shift(circuit, broadcast=False)(params)"
         >>> timeit.timeit(serial_call, globals=globals(), number=number) / number

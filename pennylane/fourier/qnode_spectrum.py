@@ -69,7 +69,7 @@ def _process_ids(encoding_args, argnum, qnode):
 
     >>> @qml.qnode(dev)
     >>> def circuit(a, b, c, x=2):
-    ...     return qml.expval(qml.PauliX(0))
+    ...     return qml.expval(qml.X(0))
 
     which takes arguments:
 

@@ -87,7 +87,7 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     >>> @qml.qnode(dev)
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
 
     We can then call ``broadcast_expand`` on the QNode and store the
     expanded ``QNode``:
@@ -112,7 +112,7 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     We also can call the transform manually on a tape:
 
     >>> ops = [qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)]
-    >>> measurements = [qml.expval(qml.PauliZ(0))]
+    >>> measurements = [qml.expval(qml.Z(0))]
     >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tapes, fn = qml.transforms.broadcast_expand(tape)
     >>> tapes

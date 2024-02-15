@@ -58,7 +58,7 @@ def pattern_matching_optimization(
 
     .. code-block:: python
 
-        ops = [qml.S(0), qml.S(0), qml.PauliZ(0)]
+        ops = [qml.S(0), qml.S(0), qml.Z(0)]
         pattern = qml.tape.QuantumTape(ops)
 
 

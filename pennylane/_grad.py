@@ -596,7 +596,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
         def circuit(n, params):
             qml.RX(params[n, 0], wires=n)
             qml.RY(params[n, 1], wires=n)
-            return qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(1))
 
         @qml.qjit
         def workflow(primals, tangents):

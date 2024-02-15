@@ -206,7 +206,7 @@ class DefaultClifford(Device):
         qscripts = [
             qml.tape.QuantumScript(
                 [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])],
-                [qml.expval(qml.PauliZ(0))]
+                [qml.expval(qml.Z(0))]
             )
         ] * num_qscripts
 
@@ -504,7 +504,7 @@ class DefaultClifford(Device):
 
         This function assumes that all operations are Clifford.
 
-        >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.PauliZ(0)), qml.state()])
+        >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.Z(0)), qml.state()])
         >>> qml.devices.DefaultClifford().simulate(qs)
         (array(0),
          array([[0, 1, 0],

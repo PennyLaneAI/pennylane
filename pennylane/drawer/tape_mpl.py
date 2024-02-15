@@ -309,7 +309,7 @@ def tape_mpl(
             qml.RX(1.2345, wires=0),
             qml.CRZ(1.2345, wires=(3,0))
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
         fig, ax = tape_mpl(tape)
@@ -331,7 +331,7 @@ def tape_mpl(
     .. code-block:: python
 
         ops = [qml.RX(1.23456, wires=0), qml.Rot(1.2345,2.3456, 3.456, wires=0)]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape2 = qml.tape.QuantumTape(ops, measurements)
 
         fig, ax = tape_mpl(tape2, decimals=2)

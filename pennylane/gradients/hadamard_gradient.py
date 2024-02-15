@@ -119,7 +119,7 @@ def hadamard_grad(
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
     (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
@@ -139,7 +139,7 @@ def hadamard_grad(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.hadamard_grad(circuit)(params)
         (tensor([-0.3875172], requires_grad=True),
@@ -152,7 +152,7 @@ def hadamard_grad(
         function, which together define the gradient are directly returned:
 
         >>> ops = [qml.RX(p, wires=0) for p in params]
-        >>> measurements = [qml.expval(qml.PauliZ(0))]
+        >>> measurements = [qml.expval(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
         >>> gradient_tapes
@@ -168,7 +168,7 @@ def hadamard_grad(
 
         >>> tape = qml.tape.QuantumScript(
         ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-        ...     [qml.expval(qml.PauliZ(0))],
+        ...     [qml.expval(qml.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
         >>> qml.gradients.hadamard_grad(tape, argnum=1)
@@ -190,7 +190,7 @@ def hadamard_grad(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
         [-0.3875172  -0.18884787 -0.38355704]

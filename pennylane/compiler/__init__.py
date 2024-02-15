@@ -164,7 +164,7 @@ rather than in Python at compile time. You can enable this feature via the
         else:
             qml.T(wires=0)
 
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
 >>> circuit(3)
 array(0.)

@@ -471,9 +471,9 @@ def pulse_odegen(
 
         jax.config.update("jax_enable_x64", True)
         H = (
-            qml.pulse.constant * qml.PauliY(0)
-            + jnp.polyval * qml.PauliY(1)
-            + qml.pulse.constant * (qml.PauliZ(0) @ qml.PauliX(1))
+            qml.pulse.constant * qml.Y(0)
+            + jnp.polyval * qml.Y(1)
+            + qml.pulse.constant * (qml.Z(0) @ qml.X(1))
         )
         params = [jnp.array(0.2), jnp.array([0.6, 0.2]), jnp.array(0.4)]
         t = [0.1, 0.9]
@@ -488,7 +488,7 @@ def pulse_odegen(
         @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
         def circuit(params):
             op = qml.evolve(H)(params, t)
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.X(0))
 
     We registered the ``QNode`` to be differentiated with the ``pulse_odegen`` method.
     This allows us to simply differentiate it with ``jax.grad``, which internally

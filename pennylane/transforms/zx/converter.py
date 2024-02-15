@@ -87,7 +87,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
             qml.CNOT(wires=[0, 1]),
             qml.CNOT(wires=[1, 0]),
             qml.SWAP(wires=[0, 1]),
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
         params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
         g = circuit(params)
@@ -418,7 +418,7 @@ def from_zx(graph, decompose_phases=True):
             qml.CNOT(wires=[1, 0]),
             qml.CNOT(wires=[0, 1]),
             qml.SWAP(wires=[1, 0]),
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
         params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
         g = circuit(params)

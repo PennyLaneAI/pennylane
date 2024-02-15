@@ -56,7 +56,7 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
 
     **Example**
 
-    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> obs = [qml.Y(0), qml.X(0) @ qml.X(1), qml.Z(1)]
     >>> coeffs = [1.43, 4.21, 0.97]
     >>> rotations, groupings, grouped_coeffs = optimize_measurements(obs, coeffs, 'qwc', 'rlf')
     >>> print(rotations)

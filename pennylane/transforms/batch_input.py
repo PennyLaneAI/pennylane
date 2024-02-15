@@ -67,7 +67,7 @@ def batch_input(
             qml.RY(weights[0], wires=0)
             qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
             qml.RY(weights[1], wires=1)
-            return qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(1))
 
     >>> x = tf.random.uniform((10, 2), 0, 1)
     >>> w = tf.random.uniform((2,), 0, 1)

@@ -242,7 +242,7 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     If a ``StatePrepBase`` occurs as the first operation of a tape, the operation will not be expanded:
 
-    >>> ops = [qml.StatePrep([0, 1], wires=0), qml.PauliZ(1), qml.StatePrep([1, 0], wires=0)]
+    >>> ops = [qml.StatePrep([0, 1], wires=0), qml.Z(1), qml.StatePrep([1, 0], wires=0)]
     >>> tape = qml.tape.QuantumScript(ops, [])
     >>> new_tape = qml.tape.tape.expand_tape_state_prep(tape)
     >>> new_tape.operations

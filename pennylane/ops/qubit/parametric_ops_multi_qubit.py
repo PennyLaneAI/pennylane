@@ -236,7 +236,7 @@ class PauliRot(Operation):
     >>> @qml.qnode(dev)
     ... def example_circuit():
     ...     qml.PauliRot(0.5, 'X',  wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(example_circuit())
     0.8775825618903724
     """

@@ -117,7 +117,7 @@ ability to collect statistics on single measurement values.
         qml.RX(x, wires=0)
         qml.RY(y, wires=1)
         m0 = qml.measure(1)
-        return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+        return qml.expval(qml.Z(0)), qml.sample(m0)
 
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
@@ -222,7 +222,7 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     ``MeasurementProcess._flatten`` and ``MeasurementProcess._unflatten`` need to be overwritten if the measurement has additional
     metadata, such as ``seed`` or ``all_outcomes``.
 
-    >>> H = 2.0 * qml.PauliX(0)
+    >>> H = 2.0 * qml.X(0)
     >>> mp = qml.expval(H)
     >>> mp._flatten()
     ((<Hamiltonian: terms=1, wires=[0]>, None), ())

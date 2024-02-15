@@ -66,7 +66,7 @@ def cost_layer(gamma, hamiltonian):
             from pennylane import qaoa
             import pennylane as qml
 
-            cost_h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+            cost_h = qml.Hamiltonian([1, 1], [qml.Z(0), qml.Z(0) @ qml.Z(1)])
 
         We can then pass it into ``qaoa.cost_layer``, within a quantum circuit:
 
@@ -128,7 +128,7 @@ def mixer_layer(alpha, hamiltonian):
             from pennylane import qaoa
             import pennylane as qml
 
-            mixer_h = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)])
+            mixer_h = qml.Hamiltonian([1, 1], [qml.X(0), qml.X(0) @ qml.X(1)])
 
         We can then pass it into ``qaoa.mixer_layer``, within a quantum circuit:
 

@@ -39,8 +39,8 @@ obs = {
     "Hadamard": qml.Hadamard(wires=[0]),
     "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
     "PauliX": qml.PauliX(wires=[0]),
-    "PauliY": qml.PauliY(0),
-    "PauliZ": qml.PauliZ(0),
+    "PauliY": qml.Y(0),
+    "PauliZ": qml.Z(0),
     "X": qml.X(wires=[0]),
     "Y": qml.Y(wires=[0]),
     "Z": qml.Z(wires=[0]),
@@ -49,7 +49,7 @@ obs = {
         qml.Projector(np.array([0, 1]), wires=[0]),
     ],
     "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
-    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)]),
+    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.Z(0), qml.X(0)]),
 }
 
 all_obs = obs.keys()
@@ -116,7 +116,7 @@ class TestSupportedObservables:
             @qml.qnode(dev, **kwargs)
             def circuit(obs_circ):
                 if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
-                    qml.PauliX(0)
+                    qml.X(0)
                 return qml.expval(obs_circ)
 
             if observable == "Projector":
@@ -140,7 +140,7 @@ class TestSupportedObservables:
         @qml.qnode(dev)
         def circuit():
             if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
-                qml.PauliX(0)
+                qml.X(0)
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
         assert isinstance(circuit(), (float, np.ndarray))
@@ -165,7 +165,7 @@ class TestHamiltonianSupport:
             return qml.expval(
                 qml.Hamiltonian(
                     coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
+                    [qml.X(0), qml.Z(0)],
                 )
             )
 
@@ -176,13 +176,13 @@ class TestHamiltonianSupport:
             """First Pauli subcircuit"""
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.X(0))
 
         def circuit2(param):
             """Second Pauli subcircuit"""
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         half1 = qml.QNode(circuit1, dev, diff_method="parameter-shift")
         half2 = qml.QNode(circuit2, dev, diff_method="parameter-shift")
@@ -637,8 +637,8 @@ class TestTensorExpval:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def result():
-            qml.PauliX(0)
-            qml.PauliX(2)
+            qml.X(0)
+            qml.X(2)
             qml.SingleExcitation(0.1, wires=[0, 1])
             qml.SingleExcitation(0.2, wires=[2, 3])
             qml.SingleExcitation(0.3, wires=[1, 2])
@@ -1616,7 +1616,7 @@ class TestSampleMeasurement:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(0)
+            qml.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         res = circuit()
@@ -1637,7 +1637,7 @@ class TestSampleMeasurement:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(0)
+            qml.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         with pytest.raises(
@@ -1658,7 +1658,7 @@ class TestSampleMeasurement:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(0)
+            qml.X(0)
             return qml.sample(wires=0), qml.sample(wires=1)
 
         circuit.device.measurement_map[SampleMP] = "test_method"
@@ -1686,7 +1686,7 @@ class TestStateMeasurement:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(0)
+            qml.X(0)
             return MyMeasurement()
 
         assert circuit() == 1
@@ -1707,7 +1707,7 @@ class TestStateMeasurement:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(0)
+            qml.X(0)
             return MyMeasurement()
 
         with pytest.warns(
@@ -1724,7 +1724,7 @@ class TestStateMeasurement:
 
         @qml.qnode(dev, interface="autograd")
         def circuit():
-            qml.PauliX(0)
+            qml.X(0)
             return qml.state()
 
         circuit.device.measurement_map[StateMP] = "test_method"
@@ -1749,7 +1749,7 @@ class TestCustomMeasurement:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(0)
+            qml.X(0)
             return MyMeasurement()
 
         assert circuit() == 1
@@ -1767,7 +1767,7 @@ class TestCustomMeasurement:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(0)
+            qml.X(0)
             return qml.classical_shadow(wires=0)
 
         circuit.device.measurement_map[ClassicalShadowMP] = "test_method"

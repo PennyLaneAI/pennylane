@@ -192,7 +192,7 @@ definition:
 >>> dataset = QuantumOscillator(
 ...     mass=1,
 ...     force_constant=0.5,
-...     hamiltonian=qml.PauliX(0),
+...     hamiltonian=qml.X(0),
 ...     energy_levels=np.array([0.1, 0.2])
 ... )
 >>> dataset.attr_info["mass"]["doc"]

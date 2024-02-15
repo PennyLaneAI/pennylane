@@ -192,7 +192,7 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
             qml.T(wires=0)
             qml.RZ(theta/2, wires=1)
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(0.5)
     0.9999999999999999
@@ -219,7 +219,7 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
                 qml.T(wires=0)
                 qml.RZ(theta/2, wires=1)
 
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         >>> qnode = qml.QNode(qfunc, dev)
         >>> print(qml.draw(qnode)(0.5))

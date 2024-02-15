@@ -71,7 +71,7 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
             qml.RX(x, wires=0)
             qml.Hadamard(wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliY(0))
+            return qml.sample(qml.Y(0))
 
     Executing this QNode:
 

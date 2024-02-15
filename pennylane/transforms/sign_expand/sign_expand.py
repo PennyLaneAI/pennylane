@@ -228,7 +228,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-        H = qml.PauliZ(0) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+        H = qml.Z(0) + 0.5 * qml.Z(2) + qml.Z(1)
 
     a device with auxiliary qubits,
 

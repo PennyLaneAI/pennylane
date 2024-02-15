@@ -369,7 +369,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(H)(params, time)
-            return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
+            return qml.expval(qml.Z(0) + qml.Z(1) + qml.Z(2))
 
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of :math:`0.5 \times 2\pi \text{GHz}`)
     and set the drive frequency equal to the qubit frequencies. Note how the order of the construction

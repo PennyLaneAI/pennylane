@@ -291,7 +291,7 @@ def decompose(
 
     >>> def stopping_condition(obj):
     ...     return obj.name in {"CNOT", "RX", "RZ"}
-    >>> tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.PauliZ(0))])
+    >>> tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.Z(0))])
     >>> batch, fn = decompose(tape, stopping_condition)
     >>> batch[0].circuit
     [CNOT(wires=[0, 1]),
@@ -385,7 +385,7 @@ def validate_observables(
 
     >>> def accepted_observable(obj):
     ...    return obj.name in {"PauliX", "PauliY", "PauliZ"}
-    >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0) + qml.PauliY(0))])
+    >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0) + qml.Y(0))])
     >>> validate_observables(tape, accepted_observable)
     DeviceError: Observable <Hamiltonian: terms=2, wires=[0]> not supported on device
 
@@ -430,7 +430,7 @@ def validate_measurements(
     ...     return isinstance(m, qml.measurements.StateMP)
     >>> def shots_measurements(m):
     ...     return isinstance(m, qml.measurements.CountsMP)
-    >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+    >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
     DeviceError: Measurement expval(Z(0)) not accepted for analytic simulation on device.
     >>> tape = qml.tape.QuantumScript([], [qml.sample()], shots=10)

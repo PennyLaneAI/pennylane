@@ -64,7 +64,7 @@ def merge_rotations(
             qml.Hadamard(wires=2)
             qml.CRZ(z, wires=[2, 0])
             qml.RY(-y, wires=1)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(0.1, 0.2, 0.3)
     0.9553364891256055
@@ -84,7 +84,7 @@ def merge_rotations(
                 qml.Hadamard(wires=2)
                 qml.CRZ(z, wires=[2, 0])
                 qml.RY(-y, wires=1)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         The circuit before optimization:
 

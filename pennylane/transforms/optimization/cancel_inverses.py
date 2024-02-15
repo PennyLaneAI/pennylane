@@ -96,7 +96,7 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             qml.RX(y, wires=2)
             qml.CNOT(wires=[0, 2])
             qml.PauliX(wires=1)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(0.1, 0.2, 0.3)
     0.999999999999999
@@ -119,7 +119,7 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 qml.RX(y, wires=2)
                 qml.CNOT(wires=[0, 2])
                 qml.PauliX(wires=1)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         The circuit before optimization:
 

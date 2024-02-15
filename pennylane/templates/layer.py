@@ -83,7 +83,7 @@ def layer(template, depth, *args, **kwargs):
             @qml.qnode(dev)
             def circuit():
                 qml.layer(subroutine, 3)
-                return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+                return [qml.expval(qml.Z(0)), qml.expval(qml.Z(1))]
 
 
         This creates the following circuit:
@@ -114,7 +114,7 @@ def layer(template, depth, *args, **kwargs):
             @qml.qnode(dev)
             def circuit():
                 qml.layer(subroutine, 3, wires=[1, 2])
-                return [qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))]
+                return [qml.expval(qml.Z(1)), qml.expval(qml.Z(2))]
 
         which yields the following circuit:
 
@@ -146,7 +146,7 @@ def layer(template, depth, *args, **kwargs):
             @qml.qnode(dev)
             def circuit(params):
                 qml.layer(ansatz, 2, params)
-                return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+                return [qml.expval(qml.Z(0)), qml.expval(qml.Z(1))]
 
         Since we only have one dynamic argument, ``params``, we pass an array of first-dimension two,
         for the two layers of the repeated ansatz. We can also see that the ``params`` argument
@@ -187,7 +187,7 @@ def layer(template, depth, *args, **kwargs):
             @qml.qnode(dev)
             def circuit(param1, param2):
                 qml.layer(ansatz, 2, param1, param2, wires=[1, 2], var=True)
-                return [qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))]
+                return [qml.expval(qml.Z(1)), qml.expval(qml.Z(2))]
 
         We can then run the circuit with a given set of parameters (note that the parameters are
         of size (2, 1), as the circuit is repeated twice, and for each repetition, both ``param1`` and

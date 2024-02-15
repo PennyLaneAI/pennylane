@@ -44,7 +44,7 @@ class Permute(Operation):
         def apply_perm():
             # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
             qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     See "Usage Details" for further examples.
 
@@ -63,7 +63,7 @@ class Permute(Operation):
             @qml.qnode(dev)
             def apply_perm():
                 qml.Permute([3, 2, 0, 1], dev.wires)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         >>> print(qml.draw(apply_perm, expansion_strategy="device")())
         0: ─╭SWAP─────────────┤  <Z>

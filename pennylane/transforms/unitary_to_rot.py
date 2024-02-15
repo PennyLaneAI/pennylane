@@ -64,7 +64,7 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
         def qfunc():
             qml.QubitUnitary(U, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     The original circuit is:
 

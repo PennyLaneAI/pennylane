@@ -196,7 +196,7 @@ def apply_operation(
     >>> state
     tensor([[1., 0.],
         [0., 0.]], requires_grad=True)
-    >>> apply_operation(qml.PauliX(0), state)
+    >>> apply_operation(qml.X(0), state)
     tensor([[0., 0.],
         [1., 0.]], requires_grad=True)
 

@@ -539,7 +539,7 @@ class SampleMeasurement(MeasurementProcess):
     >>> dev = qml.device("default.qubit", wires=2, shots=1000)
     >>> @qml.qnode(dev)
     ... def circuit():
-    ...     qml.PauliX(0)
+    ...     qml.X(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
     >>> circuit()
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))

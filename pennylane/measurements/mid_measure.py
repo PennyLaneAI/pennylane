@@ -64,7 +64,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
 
         @qml.qnode(dev)
         def func():
-            qml.PauliX(1)
+            qml.X(1)
             m_0 = qml.measure(1, reset=True)
             return qml.probs(wires=[1])
 

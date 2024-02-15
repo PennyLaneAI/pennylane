@@ -358,7 +358,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
             wire_cut,
             qml.RY(0.5, wires=0),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove the wire cut node using:
@@ -441,7 +441,7 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
             multi_wire_cut,
             qml.RZ(0.6, wires=1),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove all the wire cut nodes using:
@@ -604,7 +604,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             multi_wire_cut,
             qml.RZ(0.6, wires=1),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the corresponding graph, remove all the wire cut nodes, and

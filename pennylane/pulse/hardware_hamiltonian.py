@@ -101,7 +101,7 @@ def drive(amplitude, phase, wires):
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H_int + H_d)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> params = [2.4]
     >>> circuit(params)
@@ -124,7 +124,7 @@ def drive(amplitude, phase, wires):
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
             qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         p_global = 2.4
         p_amp = [1.3, -2.0]
@@ -206,7 +206,7 @@ def drive(amplitude, phase, wires):
             @qml.qnode(dev, interface="jax")
             def circuit(params):
                 qml.evolve(H_i + H_z + H_d)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         >>> params = [2.4]
         >>> circuit(params)

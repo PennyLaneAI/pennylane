@@ -68,9 +68,9 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
         @qml.qnode(qml.device('default.qubit', wires=range(4)))
         def circuit(x):
-            qml.PauliX(2)
+            qml.X(2)
             qml.ctrl(qml.RX, (1,2,3), control_values=(0,1,0))(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)("x"))
     0: ────╭RX(x)─┤  <Z>

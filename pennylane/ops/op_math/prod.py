@@ -65,20 +65,20 @@ def prod(*ops, id=None, lazy=True):
 
         This operator supports batched operands:
 
-        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Prod`
 
     **Example**
 
-    >>> prod_op = prod(qml.PauliX(0), qml.PauliZ(0))
+    >>> prod_op = prod(qml.X(0), qml.Z(0))
     >>> prod_op
     X(0) @ Z(0)
     >>> prod_op.matrix()
@@ -188,8 +188,8 @@ class Prod(CompositeOp):
 
             @qml.qnode(dev)
             def circuit(theta):
-                qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
-                return qml.expval(qml.PauliZ(1))
+                qml.prod(qml.Z(0), qml.RX(theta, 1))
+                return qml.expval(qml.Z(1))
 
         >>> par = np.array(1.23, requires_grad=True)
         >>> circuit(par)

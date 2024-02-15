@@ -262,7 +262,7 @@ class TestComparison:
             for gates in gates_per_layers:
                 for gate in gates:
                     qml.apply(gate)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)

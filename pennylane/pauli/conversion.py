@@ -121,7 +121,7 @@ def _generalized_pauli_decompose(
         ... def circuit(A):
         ...    coeffs, _ = qml.pauli.conversion._generalized_pauli_decompose(A, padding=True)
         ...    qml.RX(qml.math.real(coeffs[2]), 0)
-        ...    return qml.expval(qml.PauliZ(0))
+        ...    return qml.expval(qml.Z(0))
         >>> qml.grad(circuit)(A)
         array([[0.+0.j        , 0.+0.23971277j]])
 

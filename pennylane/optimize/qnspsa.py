@@ -87,7 +87,7 @@ class QNSPSAOptimizer:
     ... def cost(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.CRY(params[1], wires=[0, 1])
-    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
 
     Once constructed, the qnode can be passed directly to the ``step`` or ``step_and_cost``
     function of the optimizer.

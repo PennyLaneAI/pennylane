@@ -196,9 +196,9 @@ def paulix_ops(generators, num_qubits):  # pylint: disable=protected-access
 
     **Example**
 
-    >>> generators = [qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-    ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-    ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
+    >>> generators = [qml.Hamiltonian([1.0], [qml.Z(0) @ qml.Z(1)]),
+    ...               qml.Hamiltonian([1.0], [qml.Z(0) @ qml.Z(2)]),
+    ...               qml.Hamiltonian([1.0], [qml.Z(0) @ qml.Z(3)])]
     >>> paulix_ops(generators, 4)
     [X(1), X(2), X(3)]
     """
@@ -242,7 +242,7 @@ def clifford(generators, paulixops):
     >>> t2 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZIZI')])
     >>> t3 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZIIZ')])
     >>> generators = [t1, t2, t3]
-    >>> paulixops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
+    >>> paulixops = [qml.X(1), qml.X(2), qml.X(3)]
     >>> u = clifford(generators, paulixops)
     >>> print(u)
       (0.3535533905932737) [Z1 Z2 X3]
@@ -664,7 +664,7 @@ def taper_operation(
     >>> @qml.qnode(dev)
     ... def circuit(params):
     ...     tap_op(params[0])
-    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    ...     return qml.expval(qml.Z(0)@qml.Z(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
     0: ──Exp(0.00+1.57j Y)─┤ ╭<Z@Z>
@@ -687,7 +687,7 @@ def taper_operation(
         ... def circuit(params):
         ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
         ...                           generators, paulixops, paulix_sector, H.wires)
-        ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+        ...     return qml.expval(qml.Z(0)@qml.Z(1))
         >>> drawer = qml.draw(circuit, show_all_wires=True)
         >>> print(drawer(params=[3.14159]))
         0: ─╭Exp(-0.00-0.79j X@Y)─╭Exp(-0.00-0.79j Y@X)─┤ ╭<Z@Z>

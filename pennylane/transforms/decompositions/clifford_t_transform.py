@@ -356,7 +356,7 @@ def clifford_t_decomposition(
             qml.RX(x, 0)
             qml.CNOT([0, 1])
             qml.RY(y, 0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         x, y = 1.1, 2.2
         decomposed_circuit = qml.transforms.clifford_t_decomposition(circuit)
