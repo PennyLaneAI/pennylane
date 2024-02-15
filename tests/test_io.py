@@ -73,7 +73,8 @@ class TestLoad:
 
     def test_qiskit_not_installed(self, monkeypatch):
         """Test that a specific error is raised if qml.from_qiskit is called and the qiskit
-        plugin converter isn't found, instead of the generic 'ValueError: Converter does not exist.'"""
+        plugin converter isn't found, instead of the generic 'ValueError: Converter does not exist.'
+        """
 
         # temporarily make a mock_converter_dict with no "qiskit"
         mock_plugin_converter_dict = {
