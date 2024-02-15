@@ -265,10 +265,6 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     >>> partial_trace(x, indices=[0])
     array([[1, 0], [0, 0]])
 
-    >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
-    >>> partial_trace(x, indices=[0])
-    array([[1, 0], [0, 0]])
-
     >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
                      [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
     >>> partial_trace(x, indices=[0])
