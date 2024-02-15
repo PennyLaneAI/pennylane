@@ -377,6 +377,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
+  when working in the tape paradigm.
+  [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
+
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
   module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
@@ -514,6 +518,9 @@
   Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
   [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
+* `PauliSentence.__matmul__` can handle `PauliWord` instances now.
+  [(#5208)](https://github.com/PennyLaneAI/pennylane/pull/5208)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -526,6 +533,7 @@ Skylar Chan,
 Isaac De Vlugt,
 Diksha Dhawan,
 Lillian Frederiksen,
+Pietropaolo Frisoni,
 Eugenio Gigante,
 Diego Guala,
 David Ittah,
