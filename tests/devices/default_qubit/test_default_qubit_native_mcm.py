@@ -28,6 +28,14 @@ from pennylane.devices.qubit.simulate import (
 
 
 def validate_counts(shots, results1, results2):
+    """Compares two counts.
+
+    If the results are ``Sequence``s, loop over entries.
+
+    Fails if a key of ``results1`` is not found in ``results2``.
+    Passes if counts are too low, chosen as ``100``.
+    Otherwise, fails if counts differ by more than ``20`` plus 20 percent.
+    """
     if isinstance(results1, Sequence):
         assert isinstance(results2, Sequence)
         assert len(results1) == len(results2)
@@ -41,6 +49,14 @@ def validate_counts(shots, results1, results2):
 
 
 def validate_samples(shots, results1, results2):
+    """Compares two samples.
+
+    If the results are ``Sequence``s, loop over entries.
+
+    Fails if the results do not have the same shape, within ``20`` entries plus 20 percent.
+    This is to handle cases when post-selection yields variable shapes.
+    Otherwise, fails if the sums of samples differ by more than ``20`` plus 20 percent.
+    """
     if isinstance(shots, Sequence):
         assert isinstance(results1, Sequence)
         assert isinstance(results2, Sequence)
@@ -57,6 +73,13 @@ def validate_samples(shots, results1, results2):
 
 
 def validate_expval(shots, results1, results2):
+    """Compares two expval, probs or var.
+
+    If the results are ``Sequence``s, validate the average of items.
+
+    If ``shots is None``, validate using ``np.allclose``'s default parameters.
+    Otherwise, fails if the results do not match within ``0.01`` plus 20 percent.
+    """
     if isinstance(results1, Sequence):
         assert isinstance(results2, Sequence)
         assert len(results1) == len(results2)
@@ -71,6 +94,7 @@ def validate_expval(shots, results1, results2):
 
 
 def validate_measurements(func, shots, results1, results2):
+    """Calls the correct validation function based on measurement type."""
     if func is qml.counts:
         validate_counts(shots, results1, results2)
         return
@@ -87,16 +111,58 @@ def test_apply_mid_measure():
         _ = apply_mid_measure(
             MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True, mid_measurements={}
         )
-    state, sample = apply_mid_measure(MidMeasureMP(0), np.zeros(2), mid_measurements={})
-    assert sample == 0
+    m0 = MidMeasureMP(0, postselect=1)
+    mid_measurements = {}
+    state = apply_mid_measure(m0, np.zeros(2), mid_measurements=mid_measurements)
+    assert mid_measurements[m0] == 0
+    assert np.allclose(state, 0.0)
+    state = apply_mid_measure(m0, np.array([1, 0]), mid_measurements=mid_measurements)
+    assert mid_measurements[m0] == 0
     assert np.allclose(state, 0.0)
 
 
-def test_accumulate_native_mcm():
+def test_accumulate_native_mcm_unsupported_error():
     with pytest.raises(
         TypeError, match=f"Unsupported measurement of {type(qml.var(qml.PauliZ(0))).__name__}"
     ):
         accumulate_native_mcm(qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None])
+
+
+def test_all_invalid_shots_circuit():
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit_op():
+        m = qml.measure(0, postselect=1)
+        qml.cond(m, qml.PauliX)(1)
+        return (
+            qml.expval(op=qml.PauliZ(1)),
+            qml.probs(op=qml.PauliY(0) @ qml.PauliZ(1)),
+            qml.var(op=qml.PauliZ(1)),
+        )
+
+    res1 = circuit_op()
+    res2 = circuit_op(shots=10)
+    for r1, r2 in zip(res1, res2):
+        if isinstance(r1, Sequence):
+            assert len(r1) == len(r2)
+        assert np.all(np.isnan(r1))
+        assert np.all(np.isnan(r2))
+
+    @qml.qnode(dev)
+    def circuit_mcm():
+        m = qml.measure(0, postselect=1)
+        qml.cond(m, qml.PauliX)(1)
+        return qml.expval(op=m), qml.probs(op=m), qml.var(op=m)
+
+    res1 = circuit_mcm()
+    res2 = circuit_mcm(shots=10)
+    for r1, r2 in zip(res1, res2):
+        if isinstance(r1, Sequence):
+            assert len(r1) == len(r2)
+        assert np.all(np.isnan(r1))
+        assert np.all(np.isnan(r2))
 
 
 @pytest.mark.parametrize(
@@ -110,7 +176,7 @@ def test_accumulate_native_mcm():
         qml.classical_shadow(0),
     ],
 )
-def test_parse_native_mid_circuit_measurements(measurement):
+def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
     circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [measurement])
     with pytest.raises(ValueError, match="Native mid-circuit measurement mode does not support"):
         parse_native_mid_circuit_measurements(circuit, None, None)

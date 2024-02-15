@@ -164,6 +164,21 @@ class Sum(CompositeOp):
         # Since addition is always commutative, we do not need to sort
         return hash(("Sum", frozenset(o.hash for o in self.operands)))
 
+    def __str__(self):
+        """String representation of the PauliSentence."""
+        ops = self.operands
+        return " + ".join(f"{str(op)}" if i == 0 else f"{str(op)}" for i, op in enumerate(ops))
+
+    def __repr__(self):
+        """Terminal representation for PauliSentence"""
+        # post-processing the flat str() representation
+        # We have to do it like this due to the possible
+        # nesting of Sums, e.g. X(0) + X(1) + X(2) is a sum(sum(X(0), X(1)), X(2))
+        if len(main_string := str(self)) > 50:
+            main_string = main_string.replace(" + ", "\n  + ")
+            return f"(\n    {main_string}\n)"
+        return main_string
+
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
@@ -173,19 +188,6 @@ class Sum(CompositeOp):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
         return all(s.is_hermitian for s in self)
-
-    def terms(self):
-        r"""Representation of the operator as a linear combination of other operators.
-
-        .. math:: O = \sum_i c_i O_i
-
-        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
-
-        Returns:
-            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
-            and list of operations :math:`O_i`
-        """
-        return [1.0] * len(self), list(self)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -298,6 +300,51 @@ class Sum(CompositeOp):
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
         return qml.s_prod(0, qml.Identity(self.wires))
+
+    def terms(self):
+        r"""Representation of the operator as a linear combination of other operators.
+
+        .. math:: O = \sum_i c_i O_i
+
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
+
+        **Example**
+
+        >>> qml.operation.enable_new_opmath()
+        >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
+        >>> op.terms()
+        ([0.5, 0.7, 1.5],
+         [X(0), X(1), Y(1) @ Y(0)])
+
+        Note that this method disentangles nested structures of ``Sum`` instances like so.
+        >>> op = 0.5 * X(0) + (2. * (X(1) + 3. * X(2)))
+        >>> print(op)
+        (0.5*(PauliX(wires=[0]))) + (2.0*((0.5*(PauliX(wires=[1]))) + (3.0*(PauliX(wires=[2])))))
+        >>> print(op.terms())
+        ([0.5, 1.0, 6.0], [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])])
+
+        """
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            ops = [pauli.operation() for pauli in pr.keys()]
+            return list(pr.values()), ops
+
+        new_summands = self._simplify_summands(summands=self.operands).get_summands()
+
+        coeffs = []
+        ops = []
+        for factor in new_summands:
+            if isinstance(factor, qml.ops.SProd):
+                coeffs.append(factor.scalar)
+                ops.append(factor.base)
+            else:
+                coeffs.append(1.0)
+                ops.append(factor)
+        return coeffs, ops
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:

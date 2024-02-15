@@ -17,6 +17,7 @@ from collections import Counter
 from functools import singledispatch
 from typing import Optional, Sequence
 import copy
+import warnings
 
 from numpy.random import default_rng
 import numpy as np
@@ -535,11 +536,21 @@ def circuit_up_to_first_mcm(circuit):
     return circuit_base, circuit_next, op
 
 
+def measurement_with_no_shots(measurement):
+    """Returns a NaN scalar or array of the correct size when executing an all-invalid-shot circuit."""
+    return (
+        np.nan * np.ones_like(measurement.eigvals())
+        if isinstance(measurement, ProbabilityMP)
+        else np.nan
+    )
+
+
 def combine_measurements(circuit, measurements, mcm_samples):
     """Returns combined measurement values of various types."""
+
     keys = list(measurements.keys())
     # convert dict-of-lists to list-of-dicts
-    if isinstance(measurements[keys[0]][1], Sequence):
+    if keys and isinstance(measurements[keys[0]][1], Sequence):
         ds = [
             [(measurements[keys[i]][0], m) for m in measurements[keys[i]][1]]
             for i in range(len(measurements))
@@ -547,11 +558,20 @@ def combine_measurements(circuit, measurements, mcm_samples):
         new_measurements = [{keys[0]: m0, keys[1]: m1} for m0, m1 in zip(*ds)]
     else:
         new_measurements = [measurements]
+    empty_mcm_samples = len(next(iter(mcm_samples.values()))) == 0
+    if empty_mcm_samples and any(len(m) != 0 for m in mcm_samples.values()):
+        raise ValueError("mcm_samples have inconsistent shapes.")
     # loop over measurements
     final_measurements = []
     for circ_meas in circuit.measurements:
-        if circ_meas.mv:
+        if circ_meas.mv and empty_mcm_samples:
+            comb_meas = measurement_with_no_shots(circ_meas)
+        elif circ_meas.mv:
             comb_meas = gather_mcm(circ_meas, mcm_samples)
+        elif not new_measurements or not new_measurements[0]:
+            if len(new_measurements) > 0:
+                _ = new_measurements.pop(0)
+            comb_meas = measurement_with_no_shots(circ_meas)
         else:
             comb_meas = combine_measurements_core(circ_meas, new_measurements.pop(0))
         if isinstance(circ_meas, SampleMP):
@@ -648,15 +668,21 @@ def simulate_native_mcm(
             results.append(simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface))
         return tuple(results)
     aux_circuit = init_auxiliary_circuit(circuit)
-    all_shot_meas, list_mcm_values_dict = None, []
+    all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
     for _ in range(circuit.shots.total_shots):
         one_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
             aux_circuit, rng, prng_key, debugger, interface
         )
         if one_shot_meas is None:
             continue
+        valid_shots += 1
         all_shot_meas = accumulate_native_mcm(aux_circuit, all_shot_meas, one_shot_meas)
         list_mcm_values_dict.append(mcm_values_dict)
+    if not valid_shots:
+        warnings.warn(
+            "All shots were thrown away as invalid. This can happen for example when post-selecting the 1-branch of a 0-state. Make sure your circuit has some probability of producing a valid shot.",
+            UserWarning,
+        )
     return parse_native_mid_circuit_measurements(circuit, all_shot_meas, list_mcm_values_dict)
 
 
@@ -768,20 +794,6 @@ def has_mid_circuit_measurements(
     return any(isinstance(op, MidMeasureMP) for op in circuit.operations)
 
 
-def find_measurement_values(
-    circuit: qml.tape.QuantumScript,
-):
-    """Returns the indices of measurements with a non-trivial measurement value.
-
-    Args:
-        circuit (QuantumTape): A QuantumScript
-
-    Returns:
-        List[int]: Indices of measurements with a non-trivial measurement value.
-    """
-    return [i for i, m in enumerate(circuit.measurements) if m.mv]
-
-
 def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript, all_shot_meas, mcm_shot_meas
 ):
@@ -795,19 +807,25 @@ def parse_native_mid_circuit_measurements(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
-    idx_sample = find_measurement_values(circuit)
-    normalized_meas = [None] * len(circuit.measurements)
+
+    normalized_meas = []
     for i, m in enumerate(circuit.measurements):
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise ValueError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
-        if i in idx_sample:
-            normalized_meas[i] = gather_mcm(m, mcm_shot_meas)
+        if m.mv and not mcm_shot_meas:
+            meas = measurement_with_no_shots(m)
+        elif m.mv:
+            meas = gather_mcm(m, mcm_shot_meas)
+        elif not all_shot_meas:
+            meas = measurement_with_no_shots(m)
         else:
-            normalized_meas[i] = gather_non_mcm(m, all_shot_meas[i], mcm_shot_meas)
+            meas = gather_non_mcm(m, all_shot_meas[i], mcm_shot_meas)
         if isinstance(m, SampleMP):
-            normalized_meas[i] = qml.math.squeeze(normalized_meas[i])
+            meas = qml.math.squeeze(meas)
+        normalized_meas.append(meas)
+
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
@@ -823,18 +841,13 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
         TensorLike: The combined measurement outcome
     """
     if isinstance(circuit_measurement, CountsMP):
-        new_meas = dict(sorted(measurement.items()))
-    elif isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
-        new_meas = measurement / len(samples)
-    elif isinstance(circuit_measurement, SampleMP):
-        new_meas = np.squeeze(np.concatenate(tuple(s.reshape(1, -1) for s in measurement)))
-    elif isinstance(circuit_measurement, VarianceMP):
-        new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
-    else:
-        raise ValueError(
-            f"Native mid-circuit measurement mode does not support {type(circuit_measurement).__name__} measurements."
-        )
-    return new_meas
+        return dict(sorted(measurement.items()))
+    if isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
+        return measurement / len(samples)
+    if isinstance(circuit_measurement, SampleMP):
+        return np.squeeze(np.concatenate(tuple(s.reshape(1, -1) for s in measurement)))
+    # VarianceMP
+    return qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
 
 
 def gather_mcm(measurement, samples):
@@ -867,6 +880,10 @@ def gather_mcm(measurement, samples):
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement
     else:
+        # For composite measurements, `mcm_samples` has one column but
+        # `mv.wires` usually includes several wires. We therefore need to create a
+        # single-wire measurement for `process_samples` to handle the conversion
+        # correctly.
         if isinstance(measurement, (ExpectationMP, VarianceMP)):
             mcm_samples = mcm_samples.ravel()
         wires = qml.wires.Wires(0)
