@@ -19,7 +19,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.resource.error import AlgorithmicError, SpectralNormError, ErrorOperation
-from pennylane.operation import Observable, Operation
+from pennylane.operation import Operation
 
 
 class SimpleError(AlgorithmicError):
@@ -129,7 +129,9 @@ class TestSpectralNormError:
     def test_custom_operator(self, phi, expected):
         """Test that get_error fails if the operator matrix is not defined"""
 
-        class toy_operator(Operation):
+        class toy_operator(qml.operation.Operator):
+            num_wires = 1
+
             def matrix(self):
                 return np.array([[0.5, 1.0], [1.2, 1.3]])
 
