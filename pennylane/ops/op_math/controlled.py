@@ -205,9 +205,9 @@ def _get_special_ops():
     """
 
     ops_with_custom_ctrl_ops = {
-        (qml.Z, 1): qml.CZ,
-        (qml.Z, 2): qml.CCZ,
-        (qml.Y, 1): qml.CY,
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliZ, 2): qml.CCZ,
+        (qml.PauliY, 1): qml.CY,
         (qml.CZ, 1): qml.CCZ,
         (qml.SWAP, 1): qml.CSWAP,
         (qml.Hadamard, 1): qml.CH,
@@ -252,8 +252,8 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
     """Handles PauliX-based controlled operations."""
 
     op_map = {
-        (qml.X, 1): qml.CNOT,
-        (qml.X, 2): qml.Toffoli,
+        (qml.PauliX, 1): qml.CNOT,
+        (qml.PauliX, 2): qml.Toffoli,
         (qml.CNOT, 1): qml.Toffoli,
     }
 
@@ -262,7 +262,7 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
         qml.QueuingManager.remove(op)
         return op_map[custom_key](wires=control + op.wires)
 
-    if isinstance(op, qml.X):
+    if isinstance(op, qml.PauliX):
         return qml.MultiControlledX(
             wires=control + op.wires, control_values=control_values, work_wires=work_wires
         )
@@ -725,10 +725,10 @@ def _is_single_qubit_special_unitary(op):
 def _decompose_pauli_x_based_no_control_values(op: Controlled):
     """Decomposes a PauliX-based operation"""
 
-    if isinstance(op.base, qml.X) and len(op.control_wires) == 1:
+    if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 1:
         return [qml.CNOT(wires=op.active_wires)]
 
-    if isinstance(op.base, qml.X) and len(op.control_wires) == 2:
+    if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 2:
         return qml.Toffoli.compute_decomposition(wires=op.active_wires)
 
     if isinstance(op.base, qml.CNOT) and len(op.control_wires) == 1:

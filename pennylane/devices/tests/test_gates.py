@@ -55,7 +55,7 @@ ops = {
     "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "MultiRZ": qml.MultiRZ(0, wires=[0]),
-    "PauliX": qml.X([0]),
+    "PauliX": qml.X(0),
     "PauliY": qml.Y(0),
     "PauliZ": qml.Z(0),
     "X": qml.X([0]),
@@ -274,9 +274,9 @@ def adjoint_tuple(op, orig_mat):
 # list of all non-parametrized single-qubit gates,
 # along with the PennyLane operation name
 single_qubit = [
-    (qml.X, X),
-    (qml.Y, Y),
-    (qml.Z, Z),
+    (qml.PauliX, X),
+    (qml.PauliY, Y),
+    (qml.PauliZ, Z),
     (qml.X, X),
     (qml.Y, Y),
     (qml.Z, Z),

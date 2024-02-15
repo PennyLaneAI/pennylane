@@ -38,12 +38,12 @@ obs = {
     "Identity": qml.Identity(wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
-    "PauliX": qml.X([0]),
-    "PauliY": qml.Y(0),
-    "PauliZ": qml.Z(0),
-    "X": qml.X([0]),
-    "Y": qml.Y([0]),
-    "Z": qml.Z([0]),
+    "PauliX": qml.PauliX(0),
+    "PauliY": qml.PauliY(0),
+    "PauliZ": qml.PauliZ(0),
+    "X": qml.X(0),
+    "Y": qml.Y(0),
+    "Z": qml.Z(0),
     "Projector": [
         qml.Projector(np.array([1]), wires=[0]),
         qml.Projector(np.array([0, 1]), wires=[0]),
@@ -115,8 +115,8 @@ class TestSupportedObservables:
 
             @qml.qnode(dev, **kwargs)
             def circuit(obs_circ):
-                if dev.supports_operation(qml.X):  # ionq can't have empty circuits
-                    qml.X(0)
+                if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
+                    qml.PauliX(0)
                 return qml.expval(obs_circ)
 
             if observable == "Projector":
@@ -139,8 +139,8 @@ class TestSupportedObservables:
 
         @qml.qnode(dev)
         def circuit():
-            if dev.supports_operation(qml.X):  # ionq can't have empty circuits
-                qml.X(0)
+            if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
+                qml.PauliX(0)
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
         assert isinstance(circuit(), (float, np.ndarray))
