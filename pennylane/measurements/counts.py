@@ -234,7 +234,7 @@ class CountsMP(SampleMeasurement):
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))
-        return (self.obs or self.mv, self._eigvals), metadata
+        return (self.obs, self.mv, self._eigvals), metadata
 
     def __repr__(self):
         if self.mv:
