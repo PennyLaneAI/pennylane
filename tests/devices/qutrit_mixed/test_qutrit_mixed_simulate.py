@@ -98,7 +98,7 @@ def test_custom_operation():
     assert qml.math.allclose(result, -np.sqrt(4 / 3))
 
 
-class TestStatePrepBase:  # TODO check against qubit
+class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
@@ -507,24 +507,36 @@ class TestDebugger:
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""
 
-    # TODO:
-    #  - 1 single sample
-    #  - 1 multi measurement
-    #  - 1 sample shots
-    #  - 1 test counts
-    #  - 1 test custom wire labels
-    # TODO total = 6 funcs, fix testing values
+    @staticmethod
+    def expval_of_TRY_circ(x, subspace):
+        if subspace[1] == 1:
+            return np.cos(x)
+        return np.cos(x) ** 2
+
+    @staticmethod
+    def sample_sum_of_TRY_circ(x, subspace):
+        return None
+
+    @staticmethod
+    def expval_of_2_qutrit_circ(x, subspace):
+        if subspace[1] == 1:
+            return np.cos(x)
+        return np.sin(x) ** 2 / 4 + np.cos(x / 2) ^ 4
+
+    @staticmethod
+    def sample_sum_of_TRY_circ(x, y, subspace):
+        return None
 
     def test_single_expval(self, subspace):
         """Test a simple circuit with a single expval measurement"""
-        # x = np.array(0.732)
-        # qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10000)
-        # result = simulate(qs)
-        #
-        # assert isinstance(result, np.float64)
-        # assert result.shape == ()
-        # assert np.allclose(result, np.cos(x), atol=0.1)
-        pass
+        x = np.array(0.732)
+        qs = qml.tape.QuantumScript(
+            [qml.TRY(x, wires=0, subspace=subspace)], [qml.expval(qml.GellMann(0, 3))], shots=10000
+        )
+        result = simulate(qs)
+        assert isinstance(result, np.float64)
+        assert result.shape == ()
+        assert np.allclose(result, self.expval_of_TRY_circ(x, subspace), atol=0.1)
 
     def test_single_sample(self, subspace):
         """Test a simple circuit with a single sample measurement"""
@@ -538,7 +550,7 @@ class TestSampleMeasurements:
         assert result.shape == (10000, 2)
         assert np.allclose(
             np.sum(result, axis=0).astype(np.float32) / 10000,
-            subspace[1] * [np.sin(x / 2) ** 2, 0],
+            self.sample_sum_of_TRY_circ(x, subspace),
             atol=0.1,
         )
 
@@ -582,40 +594,6 @@ class TestSampleMeasurements:
 
         assert result[2].shape == (10000, 2)
 
-    def test_shots_reuse(self, mocker, subspace):
-        """Test that samples are reused when two measurements commute"""
-        # ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
-        # mps = [
-        #     qml.expval(qml.PauliX(0)),
-        #     qml.expval(qml.PauliX(1)),
-        #     qml.expval(qml.PauliZ(0)),
-        #     qml.var(qml.PauliX(1)),
-        #     qml.var(qml.PauliY(0)),
-        #     qml.probs(wires=[0]),
-        #     qml.probs(wires=[0, 1]),
-        #     qml.sample(wires=[0, 1]),
-        #     qml.expval(
-        #         qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1)])
-        #     ),
-        #     qml.expval(qml.sum(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1))),
-        #     qml.expval(qml.s_prod(2.0, qml.PauliX(0))),
-        #     qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1))),
-        # ]
-        #
-        # qs = qml.tape.QuantumScript(ops, mps, shots=100)
-        #
-        # spy = mocker.spy(qml.devices.qubit.sampling, "sample_state")
-        # result = simulate(qs)
-        #
-        # assert isinstance(result, tuple)
-        # assert len(result) == len(mps)
-        #
-        # # check that samples are reused when possible
-        # # 3 groups for expval and var, 1 group for probs and sample, 2 groups each for
-        # # Hamiltonian and Sum, and 1 group each for SProd and Prod
-        # assert spy.call_count == 10
-        pass
-
     shots_data = [
         [10000, 10000],
         [(10000, 2)],
@@ -627,18 +605,20 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("shots", shots_data)
     def test_expval_shot_vector(self, shots, subspace):
         """Test a simple circuit with a single expval measurement for shot vectors"""
-        # x = np.array(0.732)
-        # shots = qml.measurements.Shots(shots)
-        # qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=shots)
-        # result = simulate(qs)
-        #
-        # assert isinstance(result, tuple)
-        # assert len(result) == len(list(shots))
-        #
-        # assert all(isinstance(res, np.float64) for res in result)
-        # assert all(res.shape == () for res in result)
-        # assert all(np.allclose(res, np.cos(x), atol=0.1) for res in result)
-        pass
+        x = np.array(0.732)
+        shots = qml.measurements.Shots(shots)
+        qs = qml.tape.QuantumScript(
+            [qml.TRY(x, wires=0)], [qml.expval(qml.GellMann(3, 0))], shots=shots
+        )
+        result = simulate(qs)
+
+        assert isinstance(result, tuple)
+        assert len(result) == len(list(shots))
+
+        expected = self.expval_of_TRY_circ(x, subspace)
+        assert all(isinstance(res, np.float64) for res in result)
+        assert all(res.shape == () for res in result)
+        assert all(np.allclose(res, expected, atol=0.1) for res in result)
 
     @pytest.mark.parametrize("shots", shots_data)
     def test_sample_shot_vector(self, shots, subspace):
@@ -692,8 +672,8 @@ class TestSampleMeasurements:
         qs = qml.tape.QuantumScript(
             [
                 qml.TRX(x, wires=0, subspace=subspace),
-                qml.CNOT(wires=[0, 1]),
-                qml.RY(y, wires=1, subspace=subspace),
+                qml.TAdd(wires=[0, 1]),
+                qml.TRY(y, wires=1, subspace=subspace),
             ],
             [
                 qml.expval(qml.GellMann(0, 3)),
@@ -737,7 +717,7 @@ class TestSampleMeasurements:
         qs = qml.tape.QuantumScript(
             [
                 qml.TRX(x, wires="b", subspace=subspace),
-                qml.TRX(wires=["b", "a"]),
+                qml.TAdd(wires=["b", "a"]),
                 qml.TRY(y, wires="a", subspace=subspace),
             ],
             [
