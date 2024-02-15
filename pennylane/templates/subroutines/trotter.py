@@ -124,6 +124,11 @@ class TrotterProduct(Operation):
     >>> my_circ()
     array([-0.13259524+0.59790098j,  0.        +0.j        , -0.13259524-0.77932754j,  0.        +0.j        ])
 
+    .. warning::
+
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
+        due to the order in which those observables are stored.
+
     .. details::
         :title: Usage Details
 
