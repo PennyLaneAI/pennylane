@@ -148,7 +148,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         if e.args[0].split(".")[0] == "Converter does not exist":
             raise RuntimeError(
                 "Conversion from Qiskit requires the PennyLane-Qiskit plugin. "
-                "You can install the plugin by running ``pip install pennylane-qiskit``. "
+                "You can install the plugin by running: pip install pennylane-qiskit. "
                 "You may need to restart your kernel after installation. "
                 "If you have any difficulties, you can reach out on the PennyLane forum at "
                 "https://discuss.pennylane.ai/c/pennylane-plugins/pennylane-qiskit/"
