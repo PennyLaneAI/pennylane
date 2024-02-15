@@ -290,6 +290,7 @@ class TestMeasureWithSamples:
         observable_matrix = np.kron(gellmann_1_matrix, gellmann_1_matrix)
         expected = np.trace(observable_matrix @ state.reshape((9, 9)))
 
+        assert isinstance(result, np.float64)
         assert np.allclose(result, expected, atol=APPROX_ATOL)
 
     def test_approximate_var_measure(self, two_qutrit_state):
@@ -306,6 +307,7 @@ class TestMeasureWithSamples:
         obs_squared = np.linalg.matrix_power(obs_mat, 2)
         expected = np.trace(obs_squared @ reshaped_state) - np.trace(obs_mat @ reshaped_state) ** 2
 
+        assert isinstance(result, np.float64)
         assert np.allclose(result, expected, atol=APPROX_ATOL)
 
     @flaky
@@ -663,6 +665,7 @@ class TestHamiltonianSamples:
         res = measure_with_samples(qml.expval(obs), state, shots=shots, rng=300)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
+        assert isinstance(res, np.float64)
         assert np.allclose(res, expected, atol=APPROX_ATOL)
 
     def test_hamiltonian_expval_shot_vector(self, obs):
