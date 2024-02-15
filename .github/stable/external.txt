@@ -43,7 +43,7 @@ fonttools==4.48.1
 fqdn==1.5.1
 future==0.18.3
 gast==0.5.4
-google-auth==2.27.0
+google-auth==2.28.0
 google-auth-oauthlib==1.2.0
 google-pasta==0.2.0
 grpcio==1.60.1
