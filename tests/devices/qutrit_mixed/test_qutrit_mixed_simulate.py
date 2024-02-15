@@ -530,13 +530,13 @@ class TestSampleMeasurements:
     def probs_of_2_qutrit_circ(x, y, subspace):
         """possible measurement values and probabilityies for the 2 qutrit circuit used"""
         probs = np.array(
-                [
-                    np.cos(x / 2) * np.cos(y / 2),
-                    np.cos(x / 2) * np.sin(y / 2),
-                    np.sin(x / 2) * np.sin(y / 2),
-                    np.sin(x / 2) * np.cos(y / 2),
-                ]
-            )
+            [
+                np.cos(x / 2) * np.cos(y / 2),
+                np.cos(x / 2) * np.sin(y / 2),
+                np.sin(x / 2) * np.sin(y / 2),
+                np.sin(x / 2) * np.cos(y / 2),
+            ]
+        )
         probs **= 2
         if subspace[1] == 1:
             keys = ["00", "01", "10", "11"]
