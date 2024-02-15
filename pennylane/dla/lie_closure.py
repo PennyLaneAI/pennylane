@@ -260,7 +260,7 @@ def _is_any_col_propto_last(inM):
     """
     M = inM.copy()
 
-    nonzero_mask = np.nonzero(M[:, 0])  # target vector is the last column
+    nonzero_mask = np.nonzero(M[:, -1])  # target vector is the last column
 
     # process nonzero part of the matrix
     nonzero_part = M[nonzero_mask]
