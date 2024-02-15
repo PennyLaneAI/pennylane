@@ -24,6 +24,7 @@ from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
 from .measure import measure
 from .sampling import measure_with_samples
+from .utils import QUDIT_DIM
 
 
 INTERFACE_TO_LIKE = {
@@ -80,18 +81,15 @@ def get_final_state(circuit, debugger=None, interface=None):
         is_state_batched = is_state_batched or op.batch_size is not None
 
     num_operated_wires = len(circuit.op_wires)
-    pre_state = state
     for i in range(len(circuit.wires) - num_operated_wires):
-        # if any measured wires are not operated on, we pad the state with zeros.
+        # If any measured wires are not operated on, we pad the dm with zeros.
         # We know they belong at the end because the circuit is in standard wire-order
-        # TODO-
+        # F
         current_axis = num_operated_wires + i + is_state_batched
         state = qml.math.stack(
-            ([state, qml.math.zeros_like(state), qml.math.zeros_like(state)]), axis=current_axis
+            ([state] + [qml.math.zeros_like(state)] * (QUDIT_DIM - 1)), axis=current_axis
         )
-        state = qml.math.stack(
-            ([state, qml.math.zeros_like(state), qml.math.zeros_like(state)]), axis=-1
-        )
+        state = qml.math.stack(([state] + [qml.math.zeros_like(state)] * (QUDIT_DIM - 1)), axis=-1)
 
     return state, is_state_batched
 
@@ -120,28 +118,32 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
 
     circuit = circuit.map_to_standard_wires()
 
-    if circuit.shots:
-        # finite-shot case
-        def measure_func(mp, state, is_state_batched):
-            return measure_with_samples(
-                mp,
-                state,
-                shots=circuit.shots,
-                is_state_batched=is_state_batched,
-                rng=rng,
-                prng_key=prng_key,
-            )
-
-    else:
+    if not circuit.shots:
         # analytic case
-        measure_func = measure
+
+        if len(circuit.measurements) == 1:
+            return measure(circuit.measurements[0], state, is_state_batched)
+
+        return tuple(measure(mp, state, is_state_batched) for mp in circuit.measurements)
+
+    # finite-shot case
+    results = tuple(
+        measure_with_samples(
+            mp,
+            state,
+            shots=circuit.shots,
+            is_state_batched=is_state_batched,
+            rng=rng,
+            prng_key=prng_key,
+        )
+        for mp in circuit.measurements
+    )
 
     if len(circuit.measurements) == 1:
-        return measure_func(circuit.measurements[0], state, is_state_batched=is_state_batched)
-
-    return tuple(
-        measure_func(mp, state, is_state_batched=is_state_batched) for mp in circuit.measurements
-    )
+        return results[0]
+    if circuit.shots.has_partitioned_shots:
+        return tuple(zip(*results))
+    return results
 
 
 # pylint: disable=too-many-arguments
