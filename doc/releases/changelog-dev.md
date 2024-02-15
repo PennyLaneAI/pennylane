@@ -126,9 +126,12 @@
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
-* Added new error tracking and propagation functionality. 
+* Added new error tracking and propagation functionality.
   [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
   [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
+
+* Added new SpectralNormError class to the new error tracking functionality.
+  [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
 
 
 <h3>Improvements 🛠</h3>
@@ -146,7 +149,7 @@
 * PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
   [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
 
-* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance 
+* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance
   for large workflows.
   [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
 
@@ -301,15 +304,15 @@
   To allow for packages to register multiple compilers with PennyLane,
   the `entry_points` convention under the designated group name
   `pennylane.compilers` has been modified.
-  
+
   Previously, compilers would register `qjit` (JIT decorator),
   `ops` (compiler-specific operations), and `context` (for tracing and
   program capture).
-  
+
   Now, compilers must register `compiler_name.qjit`, `compiler_name.ops`,
   and `compiler_name.context`, where `compiler_name` is replaced
   by the name of the provided compiler.
-  
+
   For more information, please see the
   [documentation on adding compilers](https://docs.pennylane.ai/en/stable/code/qml_compiler.html#adding-a-compiler).
 
@@ -339,10 +342,10 @@
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
 * Controlled operators with a custom controlled version decomposes like how their
-  controlled counterpart decomposes, as opposed to decomposing into their controlled version.   
+  controlled counterpart decomposes, as opposed to decomposing into their controlled version.
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
-  
+
   For example:
   ```
   >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
@@ -478,16 +481,16 @@
 * `PauliSentence.wires` no longer imposes a false order.
   [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
 
-* `qml.qchem.import_state` now applies the chemist-to-physicist 
+* `qml.qchem.import_state` now applies the chemist-to-physicist
   sign convention when initializing a PennyLane state vector from
-  classically pre-computed wavefunctions. That is, it interleaves 
+  classically pre-computed wavefunctions. That is, it interleaves
   spin-up/spin-down operators for the same spatial orbital index,
-  as standard in PennyLane (instead of commuting all spin-up 
-  operators to the left, as is standard in quantum chemistry). 
+  as standard in PennyLane (instead of commuting all spin-up
+  operators to the left, as is standard in quantum chemistry).
   [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
 
 * Multi-wire controlled `CNOT` and `PhaseShift` can now be decomposed correctly.
-  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/) 
+  [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
   [(#5148)](https://github.com/PennyLaneAI/pennylane/pull/5148)
 
 * `draw_mpl` no longer raises an error when drawing a circuit containing an adjoint of a controlled operation.
@@ -533,6 +536,7 @@ Astral Cai,
 Skylar Chan,
 Isaac De Vlugt,
 Diksha Dhawan,
+Amintor Dusko
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Eugenio Gigante,
