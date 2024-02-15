@@ -62,12 +62,12 @@ def dot(
     Note that additions of the same operator are not executed by default.
 
     >>> qml.dot([1., 1.], [qml.X(0), qml.X(0)])
-    PauliX(wires=[0]) + PauliX(wires=[0])
+    X(0) + X(0)
 
     You can obtain a cleaner version by simplifying the resulting expression.
 
     >>> qml.dot([1., 1.], [qml.X(0), qml.X(0)]).simplify()
-    2.0*(PauliX(wires=[0]))
+    2.0 * X(0)
 
     ``pauli=True`` can be used to construct a more efficient, simplified version of the operator.
     Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
@@ -86,8 +86,10 @@ def dot(
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
     >>> ops = [qml.X(0), qml.Y(0)]
     >>> qml.dot(coeffs, ops)
-      (<lambda>(params_0, t)*(X(0)))
-    + (<lambda>(params_1, t)*(Y(0)))
+    (
+        <lambda>(params_0, t) * X(0)
+      + <lambda>(params_1, t) * Y(0)
+    )
     """
 
     if len(coeffs) != len(ops):
