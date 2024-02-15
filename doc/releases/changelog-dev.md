@@ -95,6 +95,7 @@
   defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
   [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
   [(#4954)](https://github.com/PennyLaneAI/pennylane/pull/4954)
+  [(#5144)](https://github.com/PennyLaneAI/pennylane/pull/5144)
 
   Given a circuit with only Clifford gates, one can use this device to obtain the usual range
   of PennyLane [measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html)
