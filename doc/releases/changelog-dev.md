@@ -426,7 +426,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `ctrl_decomp_zyz` is now differentiable after changing `isclose` to `allclose`.
+* `ctrl_decomp_zyz` is now differentiable.
   [(#5198)](https://github.com/PennyLaneAI/pennylane/pull/5198)
 
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
