@@ -480,18 +480,13 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
         TensorLike: The combined measurement outcome
     """
     if isinstance(circuit_measurement, CountsMP):
-        new_meas = dict(sorted(measurement.items()))
-    elif isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
-        new_meas = measurement / len(samples)
-    elif isinstance(circuit_measurement, SampleMP):
-        new_meas = np.squeeze(np.concatenate(tuple(s.reshape(1, -1) for s in measurement)))
-    elif isinstance(circuit_measurement, VarianceMP):
-        new_meas = qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
-    else:
-        raise ValueError(
-            f"Native mid-circuit measurement mode does not support {type(circuit_measurement).__name__} measurements."
-        )
-    return new_meas
+        return dict(sorted(measurement.items()))
+    if isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
+        return measurement / len(samples)
+    if isinstance(circuit_measurement, SampleMP):
+        return np.squeeze(np.concatenate(tuple(s.reshape(1, -1) for s in measurement)))
+    # VarianceMP
+    return qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
 
 
 def gather_mcm(measurement, samples):

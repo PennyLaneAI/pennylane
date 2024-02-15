@@ -274,9 +274,6 @@ def apply_mid_measure(
     slices[axis] = int(not sample)
     state[tuple(slices)] = 0.0
     state_norm = np.linalg.norm(state)
-    if state_norm < 1.0e-15:
-        mid_measurements[op] = 0
-        return np.zeros_like(state)
     state = state / state_norm
     if op.reset and sample == 1:
         state = apply_operation(
