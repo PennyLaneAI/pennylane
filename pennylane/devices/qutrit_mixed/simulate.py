@@ -127,6 +127,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
         return tuple(measure(mp, state, is_state_batched) for mp in circuit.measurements)
 
     # finite-shot case
+    rng = default_rng(rng)  # TODO: Done in sampling anyway should I have it here too?
     results = tuple(
         measure_with_samples(
             mp,
