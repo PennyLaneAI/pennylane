@@ -187,7 +187,6 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     .. seealso:: :func:`pennylane.math.reduce_statevector`, and :func:`pennylane.density_matrix`
 
     **Example**
-
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
     >>> reduce_dm(x, indices=[0])
     [[1.+0.j 0.+0.j]
