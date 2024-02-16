@@ -28,3 +28,17 @@ jobs:
         docs-folder: "doc/"
         pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf && pip3 install aiohttp fsspec h5py"
         build-command: "sphinx-build -b html . _build -W --keep-going"
+
+    - name: Freeze dependencies
+      run: pip freeze | grep -v "file:///" > .github/stable/doc.txt
+
+    - name: Determine if changes have been made
+      id: changed
+      run: |
+        echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+    - name: Stage changes
+      if: steps.changed.outputs.has_changes != '0'
+      run: |
+        git status
+        git diff
