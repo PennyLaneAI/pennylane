@@ -357,6 +357,14 @@
   [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
   [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
 
+* Replacing `map_batch_transform` in the source code with the method `_batch_transform` 
+  implemented in `TransformDispatcher`.
+  [(#5212)](https://github.com/PennyLaneAI/pennylane/pull/5212)
+
+* `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
+  when working in the tape paradigm.
+  [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
+
 <h3>Breaking changes 💔</h3>
 
 * The entry point convention registering compilers with PennyLane has changed.
@@ -432,14 +440,6 @@
   [(#5097)](https://github.com/PennyLaneAI/pennylane/pull/5097)
 
 <h3>Deprecations 👋</h3>
-
-* Replacing `map_batch_transform` in the source code with the method `_batch_transform` 
-  implemented in `TransformDispatcher`.
-  [(#5212)](https://github.com/PennyLaneAI/pennylane/pull/5212)
-
-* `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
-  when working in the tape paradigm.
-  [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
   module and will be removed from the Operator class in an upcoming release.
