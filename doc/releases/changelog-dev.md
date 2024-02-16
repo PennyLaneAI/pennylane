@@ -316,7 +316,7 @@
 
 <h4>Other improvements</h4>
 
-* The `QSVT` operation now determines it's `data` from the block encoding and projector operator data.
+* The `QSVT` operation now determines its `data` from the block encoding and projector operator data.
   [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
 
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
