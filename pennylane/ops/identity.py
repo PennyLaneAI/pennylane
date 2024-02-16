@@ -22,8 +22,8 @@ import pennylane as qml
 from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
 
 
-class Identity(CVObservable, Operation):
-    r"""pennylane.Identity(wires)
+class I(CVObservable, Operation):
+    r"""pennylane.I(wires)
     The identity observable :math:`\I`.
 
     The expectation of this observable
@@ -84,14 +84,14 @@ class Identity(CVObservable, Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.Identity.eigvals`
+        .. seealso:: :meth:`~.I.eigvals`
 
         Returns:
             array: eigenvalues
 
         **Example**
 
-        >>> print(qml.Identity.compute_eigvals())
+        >>> print(qml.I.compute_eigvals())
         [ 1 1]
         """
         return qml.math.ones(2**n_wires)
@@ -183,16 +183,16 @@ class Identity(CVObservable, Operation):
     @staticmethod
     def identity_op(*params):
         """Alias for matrix representation of the identity operator."""
-        return Identity.compute_matrix(*params)
+        return I.compute_matrix(*params)
 
     def adjoint(self):
-        return Identity(wires=self.wires)
+        return I(wires=self.wires)
 
     def pow(self, _):
-        return [Identity(wires=self.wires)]
+        return [I(wires=self.wires)]
 
 
-I = Identity
+Identity = I
 
 
 class GlobalPhase(Operation):
@@ -389,4 +389,4 @@ class GlobalPhase(Operation):
         return [GlobalPhase(z * self.data[0], self.wires)]
 
     def generator(self):
-        return qml.s_prod(-1, qml.Identity(self.wires))
+        return qml.s_prod(-1, qml.I(self.wires))
