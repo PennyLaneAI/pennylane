@@ -18,6 +18,9 @@ name: "Documentation check"
 on:
 - pull_request
 
+env:
+  DEPS_BRANCH: timmy-deps-test
+
 jobs:
   sphinx:
     runs-on: ubuntu-latest
@@ -29,8 +32,23 @@ jobs:
         pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf && pip3 install aiohttp fsspec h5py"
         build-command: "sphinx-build -b html . _build -W --keep-going"
 
+    - name: Prepare local repo
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "<>"
+        if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
+          git checkout "${{ env.DEPS_BRANCH }}"
+        else
+          git checkout master
+          git pull
+          git checkout -b "${{ env.DEPS_BRANCH }}"
+        fi
+
     - name: Freeze dependencies
-      run: pip freeze | grep -v "file:///" > .github/stable/doc.txt
+      run: |
+        git checkout master
+        pip freeze > .github/stable/doc.txt
+        cat .github/stable/doc.txt
 
     - name: Determine if changes have been made
       id: changed
@@ -40,5 +58,28 @@ jobs:
     - name: Stage changes
       if: steps.changed.outputs.has_changes != '0'
       run: |
-        git status
-        git diff
+        git add .github/stable/doc.txt
+        git commit -m "Update stable docs dependencies"
+        git push -f --set-upstream origin "${{ env.DEPS_BRANCH }}"
+
+    # Create PR to master
+    - name: Create pull request
+      if: steps.changed.outputs.has_changes != '0'
+      uses: repo-sync/pull-request@v2
+      with:
+        source_branch: "${{ env.DEPS_BRANCH }}"
+        destination_branch: "master"
+        github_token: "${{ secrets.GITHUB_TOKEN }}"
+        pr_title: "Update stable dependency files"
+        pr_body: |
+          Automatic update of stable requirement files to snapshot valid python environments.
+
+          Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
+
+          ```
+          git commit --allow-empty -m 'trigger ci'
+          ```
+
+          Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
+        pr_allow_empty: false
+        pr_draft: false
