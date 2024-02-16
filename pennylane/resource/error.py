@@ -82,6 +82,7 @@ class ErrorOperation(Operation):
 
 class SpectralNormError(AlgorithmicError):
     """Class representing the spectral norm error.
+
     The spectral norm error is defined as the distance (in spectral norm) between the true unitary we wish to apply and the approximate unitary that we actually apply.
 
     Args:
