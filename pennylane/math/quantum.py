@@ -187,6 +187,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     .. seealso:: :func:`pennylane.math.reduce_statevector`, and :func:`pennylane.density_matrix`
 
     **Example**
+
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
     >>> reduce_dm(x, indices=[0])
     [[1.+0.j 0.+0.j]
@@ -294,6 +295,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     else:
         is_batched = True
         batch_dim, dim = matrix.shape[:2]
+
 
     if get_interface(matrix) in ["autograd", "tensorflow"]:
         return _batched_partial_trace_nonrep_indices(matrix, indices, batch_dim, dim)
