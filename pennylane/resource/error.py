@@ -90,7 +90,7 @@ class SpectralNormError(AlgorithmicError):
 
     """
 
-    def combine(self, other: 'SpectralNormError'):
+    def combine(self, other: "SpectralNormError"):
         """A method to combine two spectral norm errors.
 
         Args:
