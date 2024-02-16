@@ -204,6 +204,7 @@ class X(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
+        self.__class__.__name__ = "PauliX"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
@@ -375,6 +376,7 @@ class Y(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
+        self.__class__.__name__ = "PauliY"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
@@ -543,6 +545,7 @@ class Z(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
+        self.__class__.__name__ = "PauliZ"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
