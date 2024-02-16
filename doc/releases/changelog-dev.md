@@ -299,6 +299,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.expval`, `qml.var`, `qml.sample`, `qml.counts`, and `qml.probs` now include an `mv`
+  keyword argument, which should be used to provide mid-circuit measurement values instead
+  of `op`.
+  [(#)]()
+
 * The entry point convention registering compilers with PennyLane has changed.
   [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
 

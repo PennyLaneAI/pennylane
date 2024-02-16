@@ -79,9 +79,10 @@ def expval(*args, **kwargs):
     -0.4794255386042029
 
     Args:
-        op (Union[Observable, MeasurementValue]): a quantum observable object. To
-            get expectation values for mid-circuit measurements, ``op`` should be
-            a ``MeasurementValue``.
+        op (Observable): a quantum observable object
+        mv (MeasurementValue): ``MeasurementValue`` corresponding to mid-circuit
+            measurements. To get the variance for more than one ``MeasurementValue``,
+            they can be composed using arithmetic operators.
 
     Returns:
         ExpectationMP: measurement process instance

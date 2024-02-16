@@ -77,10 +77,14 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue or None): a quantum observable object. To get counts
+        op (Observable or None): a quantum observable object. To get counts
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
+        mv (Union[MeasurementValue, Sequence[MeasurementValue]]): One or more
+            ``MeasurementValue``'s corresponding to mid-circuit measurements. To get
+            probabilities for more than one ``MeasurementValue``, they can be passed
+            in a list or tuple or composed using arithmetic operators.
         all_outcomes(bool): determines whether the returned dict will contain only the observed
             outcomes (default), or whether it will display all possible outcomes for the system
 
@@ -177,7 +181,7 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
     if (n_args := len(_args) + len(_kwargs)) > 1:
         raise ValueError(
             f"counts takes 1 argument other than 'all_outcomes', but "
-            "{n_args} were given. Only one out of the following can be provided: "
+            f"{n_args} were given. Only one out of the following can be provided: "
             "an Operator, one or more MeasurementValues, or wires. Other arguments "
             "must be of NoneType."
         )
@@ -198,7 +202,7 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
     if isinstance(arg, Operator):
         return _counts_op(arg, argname=argname, all_outcomes=all_outcomes)
 
-    elif isinstance(arg, MeasurementValue) or (
+    if isinstance(arg, MeasurementValue) or (
         isinstance(arg, Sequence) and any(isinstance(a, MeasurementValue) for a in arg)
     ):
         return _counts_mv(arg, argname=argname, all_outcomes=all_outcomes)

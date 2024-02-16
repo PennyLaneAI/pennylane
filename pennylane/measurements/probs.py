@@ -183,7 +183,7 @@ def probs(*args, **kwargs) -> "ProbabilityMP":
     if isinstance(arg, Operator):
         return _probs_op(arg, argname=argname)
 
-    elif isinstance(arg, MeasurementValue) or (
+    if isinstance(arg, MeasurementValue) or (
         isinstance(arg, Sequence) and any(isinstance(a, MeasurementValue) for a in arg)
     ):
         return _probs_mv(arg, argname=argname)

@@ -16,7 +16,7 @@
 This module contains the qml.var measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -55,9 +55,10 @@ def var(*args, **kwargs) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:
-        op (Union[Operator, MeasurementValue]): a quantum observable object.
-            To get variances for mid-circuit measurements, ``op`` should be a
-            ``MeasurementValue``.
+        op (Operator): a quantum observable object.
+        mv (MeasurementValue): ``MeasurementValue`` corresponding to mid-circuit
+            measurements. To get the variance for more than one ``MeasurementValue``,
+            they can be composed using arithmetic operators.
 
     Returns:
         VarianceMP: Measurement process instance
