@@ -142,19 +142,24 @@ class TestCommutationDAG:
         "Test a the DAG and its attributes for a more complicated circuit."
         # pylint: disable=protected-access
 
+        op_wires = [
+            (qml.CNOT, [3, 0]),
+            (qml.PauliX, [4]),
+            (qml.PauliZ, [0]),
+            (qml.CNOT, [4, 2]),
+            (qml.CNOT, [0, 1]),
+            (qml.CNOT, [3, 4]),
+            (qml.CNOT, [1, 2]),
+            (qml.PauliX, [1]),
+            (qml.CNOT, [1, 0]),
+            (qml.PauliX, [1]),
+            (qml.CNOT, [1, 2]),
+            (qml.CNOT, [0, 3]),
+        ]
+
         def circuit():
-            qml.CNOT(wires=[3, 0])
-            qml.PauliX(wires=4)
-            qml.PauliZ(wires=0)
-            qml.CNOT(wires=[4, 2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[3, 4])
-            qml.CNOT(wires=[1, 2])
-            qml.PauliX(wires=1)
-            qml.CNOT(wires=[1, 0])
-            qml.PauliX(wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.CNOT(wires=[0, 3])
+            for op, ws in op_wires:
+                op(wires=ws)
 
         dag = qml.transforms.commutation_dag(circuit)()
 
@@ -162,23 +167,7 @@ class TestCommutationDAG:
         consecutive_wires = Wires(range(len(wires)))
         wires_map = OrderedDict(zip(wires, consecutive_wires))
 
-        nodes = [
-            qml.CNOT(wires=[3, 0]),
-            qml.PauliX(wires=4),
-            qml.PauliZ(wires=0),
-            qml.CNOT(wires=[4, 2]),
-            qml.CNOT(wires=[0, 1]),
-            qml.CNOT(wires=[3, 4]),
-            qml.CNOT(wires=[1, 2]),
-            qml.PauliX(wires=1),
-            qml.CNOT(wires=[1, 0]),
-            qml.PauliX(wires=1),
-            qml.CNOT(wires=[1, 2]),
-            qml.CNOT(wires=[0, 3]),
-        ]
-
-        for node in nodes:
-            node._wires = Wires([wires_map[wire] for wire in node.wires.tolist()])
+        nodes = list(op(wires=[wires_map[w] for w in ws]) for op, ws in op_wires)
 
         edges = [
             (0, 2, {"commute": False}),
