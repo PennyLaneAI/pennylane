@@ -889,7 +889,8 @@ def svd(tensor, like=None, **kwargs):
     if like == "tensorflow":
         from tensorflow.linalg import svd, adjoint
 
-        # Tensorflow results need some pos-processing to keep it similar to other frameworks.
+        # Tensorflow results need some post-processing to keep it similar to other frameworks.
+
         if kwargs.get("compute_uv", True):
             S, U, V = svd(tensor, **kwargs)
             return U, S, adjoint(V)
