@@ -237,10 +237,10 @@ class TestcommPauliFalse:
 
     def test_paulis_used_when_ever_possible(self, mocker):
         """Test that pauli_rep is used whenever possible even when ``pauli=False``"""
-        spy3 = mocker.spy(qml.QueuingManager, "stop_recording")
+        spy3 = mocker.spy(PauliSentence, "operation")
         op1 = qml.PauliX(0) @ qml.PauliX(1)
         op2 = qml.PauliY(0) + qml.PauliY(1)
         res = qml.commutator(op1, op2, pauli=False)
-        spy3.assert_not_called()
+        spy3.assert_called()
 
         assert isinstance(res, Operator)
