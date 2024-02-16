@@ -284,10 +284,31 @@ class QSVT(Operation):
         total_wires = ua_wires.union(proj_wires)
         super().__init__(wires=total_wires, id=id)
 
+    @property
+    def data(self):
+        r"""Flattened list of operator data in this QSVT operation.
+
+        This ensures that the backend of a ``QuantumScript`` which contains a
+        ``QSVT`` operation can be inferred with respect to the types of the
+        ``QSVT`` block encoding and projector-controlled phase shift data.
+        """
+        return tuple(datum for op in self._operators for datum in op.data)
+
+    @data.setter
+    def data(self, new_data):
+        if new_data:
+            for op in self._operators:
+                if op.num_params > 0:
+                    op.data = new_data[: op.num_params]
+                    new_data = new_data[op.num_params :]
+
+    @property
+    def _operators(self) -> list[qml.operation.Operator]:
+        """Flattened list of operators that compose this QSVT operation."""
+        return [self._hyperparameters["UA"], *self._hyperparameters["projectors"]]
+
     @staticmethod
-    def compute_decomposition(
-        UA, projectors, **hyperparameters
-    ):  # pylint: disable=arguments-differ
+    def compute_decomposition(*data, UA, projectors, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         The :class:`~.QSVT` is decomposed into alternating block encoding
