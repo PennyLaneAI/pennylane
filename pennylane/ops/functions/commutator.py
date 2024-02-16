@@ -101,7 +101,7 @@ def commutator(op1, op2, pauli=False):
         or insert an extra ``stop_recording()`` context (see :class:`~QueuingManager`).
 
     """
-    # Processing
+
     both_have_pauli_rep = not op1.pauli_rep is None and not op2.pauli_rep is None
 
     if pauli or both_have_pauli_rep:
