@@ -115,6 +115,7 @@ from pennylane.ops.functions import (
     commutator,
     comm,
 )
+from pennylane.ops.identity import I
 from pennylane.optimize import *
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
@@ -294,7 +295,7 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        def ion_trap_cnot(wires):
+        def ion_trap_cnot(wires, **_):
             return [
                 qml.RY(np.pi/2, wires=wires[0]),
                 qml.IsingXX(np.pi/2, wires=wires),
@@ -306,6 +307,8 @@ def device(name, *args, **kwargs):
     Next, we create a device, and a QNode for testing. When constructing the
     QNode, we can set the expansion strategy to ``"device"`` to ensure the
     decomposition is applied and will be viewable when we draw the circuit.
+    Note that custom decompositions should accept keyword arguments even when
+    it is not used.
 
     .. code-block:: python
 

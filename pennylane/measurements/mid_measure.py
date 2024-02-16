@@ -225,6 +225,7 @@ class MidMeasureMP(MeasurementProcess):
         postselect: Optional[int] = None,
         id: Optional[str] = None,
     ):
+        self.batch_size = None
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect
@@ -273,6 +274,16 @@ class MidMeasureMP(MeasurementProcess):
         )
 
         return hash(fingerprint)
+
+    @property
+    def data(self):
+        """The data of the measurement. Needed to match the Operator API."""
+        return []
+
+    @property
+    def name(self):
+        """The name of the measurement. Needed to match the Operator API."""
+        return "MidMeasureMP"
 
 
 class MeasurementValue(Generic[T]):
@@ -388,6 +399,11 @@ class MeasurementValue(Generic[T]):
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
+
+    def concretize(self, measurements: dict):
+        """Returns a concrete value from a dictionary of hashes with concrete values."""
+        values = tuple(measurements[meas] for meas in self.measurements)
+        return self.processing_fn(*values)
 
     def _merge(self, other: "MeasurementValue"):
         """Merge two measurement values"""

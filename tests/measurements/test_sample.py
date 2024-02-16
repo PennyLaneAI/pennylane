@@ -165,20 +165,20 @@ class TestSample:
             m0 = qml.measure(0)
             return qml.sample(m0)
 
-        res = circuit(phi)
-
-        if isinstance(shots, list):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s,) for r, s in zip(res, shots))
-        else:
-            assert res.shape == (shots,)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if isinstance(shots, list):
+                assert len(res) == len(shots)
+                assert all(r.shape == (s,) for r, s in zip(res, shots))
+            else:
+                assert res.shape == (shots,)
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
     def test_observable_is_composite_measurement_value(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a composite measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", shots=shots)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -188,21 +188,22 @@ class TestSample:
             m1 = qml.measure(1)
             return qml.sample(op=m0 + m1)
 
-        res = circuit(phi)
-
-        if isinstance(shots, list):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s,) for r, s in zip(res, shots))
-        else:
-            assert res.shape == (shots,)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if isinstance(shots, list):
+                assert len(res) == len(shots)
+                assert all(r.shape == (s,) for r, s in zip(res, shots))
+            else:
+                assert res.shape == (shots,)
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
     def test_observable_is_measurement_value_list(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a measurement value list."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", shots=shots)
 
+        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -210,13 +211,13 @@ class TestSample:
             m1 = qml.measure(1)
             return qml.sample(op=[m0, m1])
 
-        res = circuit(phi)
-
-        if isinstance(shots, list):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s, 2) for r, s in zip(res, shots))
-        else:
-            assert res.shape == (shots, 2)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if isinstance(shots, list):
+                assert len(res) == len(shots)
+                assert all(r.shape == (s, 2) for r, s in zip(res, shots))
+            else:
+                assert res.shape == (shots, 2)
 
     def test_mixed_lists_as_op_not_allowed(self):
         """Test that passing a list not containing only measurement values raises an error."""
