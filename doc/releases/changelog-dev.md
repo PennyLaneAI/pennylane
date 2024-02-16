@@ -60,17 +60,6 @@
   + 2j * X(0) @ Z(1)
   ```
 
-
-<h3>Improvements 🛠</h3>
-
-  ```pycon
-  >>> op1 = PauliWord({0:"X", 1:"X"})
-  >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
-  >>> op1.commutator(op2)
-  2j * Z(0) @ X(1)
-  + 2j * X(0) @ Z(1)
-  ```
-
 * Upgrade Pauli arithmetic:
   You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g. `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
   You can now intuitively add together
