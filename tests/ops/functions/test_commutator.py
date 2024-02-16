@@ -78,7 +78,7 @@ def test_alias():
     res1 = qml.comm(X0, Y0)
     res1_true = qml.commutator(X0, Y0)
     assert res1 == res1_true
-    res2 = qml.commutator(X0, Y0, pauli=True)
+    res2 = qml.comm(X0, Y0, pauli=True)
     res2_true = qml.commutator(X0, Y0, pauli=True)
     assert res2 == res2_true
 
