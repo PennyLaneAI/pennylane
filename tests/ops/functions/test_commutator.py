@@ -206,12 +206,12 @@ class TestcommPauliFalse:
         (
             PauliWord({0: "X", 1: "X"}),
             PauliWord({0: "Y", 1: "Y"}),
-            qml.s_prod(0.0, Id([0])),
+            qml.s_prod(0.0, Id([0, 1])),
         ),
         (
             PauliWord({0: "X", 1: "X"}),
             PauliWord({"a": "X", "b": "Y"}),
-            qml.s_prod(0.0, Id([0])),
+            qml.s_prod(0.0, Id([0, 1, "a", "b"])),
         ),
     )
 
