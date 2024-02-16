@@ -40,7 +40,7 @@ def _probs_op(op, argname=None):
             "Symbolic Operations are not supported for rotating probabilities yet."
         )
 
-    if qml.operation.defines_diagonalizing_gates(op):
+    if not qml.operation.defines_diagonalizing_gates(op):
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
@@ -161,7 +161,11 @@ def probs(*args, **kwargs) -> "ProbabilityMP":
     _kwargs = {key: value for key, value in kwargs.items() if value is not None}
 
     if (n_args := len(_args) + len(_kwargs)) > 1:
-        raise TypeError(f"qml.probs() takes 1 argument, but {n_args} were given.")
+        raise ValueError(
+            f"qml.probs() takes 1 argument, but {n_args} were given. Only one "
+            "out of the following can be provided: an Operator, one or more "
+            "MeasurementValues, or wires. Other arguments must be of NoneType."
+        )
 
     if n_args == 0:
         return ProbabilityMP()

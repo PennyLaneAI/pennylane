@@ -118,7 +118,7 @@ def test_multi_mcm_stats_same_wire(mp, compose_mv):
     mv2 = MeasurementValue([mp2], None)
 
     mv = mv1 * mv2 if compose_mv else [mv1, mv2]
-    tape = qml.tape.QuantumScript([qml.PauliX(0), mp1, mp2], [mp(op=mv)], shots=10)
+    tape = qml.tape.QuantumScript([qml.PauliX(0), mp1, mp2], [mp(mv=mv)], shots=10)
     [deferred_tape], _ = qml.defer_measurements(tape)
 
     emp1 = MidMeasureMP(1, id="foo")
@@ -128,7 +128,7 @@ def test_multi_mcm_stats_same_wire(mp, compose_mv):
     emv = emv1 * emv2 if compose_mv else [emv1, emv2]
 
     assert deferred_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1]), qml.CNOT([0, 2])]
-    assert deferred_tape.measurements == [mp(op=emv)]
+    assert deferred_tape.measurements == [mp(mv=emv)]
 
 
 class TestQNode:
@@ -384,7 +384,7 @@ class TestQNode:
         def circ1(x):
             qml.RX(x, 0)
             m0 = qml.measure(0)
-            return qml.probs(op=m0)
+            return qml.probs(mv=m0)
 
         dev = DefaultQubit(seed=10)
 
@@ -408,7 +408,7 @@ class TestQNode:
             qml.RX(x, 0)
             m0 = qml.measure(0)
             qml.PauliX(0)
-            return qml.probs(op=m0)
+            return qml.probs(mv=m0)
 
         dev = DefaultQubit()
 
@@ -443,7 +443,7 @@ class TestQNode:
             qml.RX(x, 0)
             m0 = qml.measure(0)
             qml.RY(y, 1)
-            return qml.expval(qml.PauliX(1)), qml.probs(op=m0)
+            return qml.expval(qml.PauliX(1)), qml.probs(mv=m0)
 
         dev = DefaultQubit(seed=10)
 

@@ -165,24 +165,24 @@ valid_meausurements = [
     ShadowExpvalMP([qml.PauliZ(0), 4.0 * qml.PauliX(0)], seed=86, k=4),
     CountsMP(obs=2.0 * qml.PauliX(0), all_outcomes=True),
     CountsMP(eigvals=[0.5, 0.6], wires=Wires(0), all_outcomes=False),
-    CountsMP(obs=mv, all_outcomes=True),
+    CountsMP(mv=mv, all_outcomes=True),
     ExpectationMP(obs=qml.s_prod(2.0, qml.PauliX(0))),
     ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
-    ExpectationMP(obs=mv),
+    ExpectationMP(mv=mv),
     MidMeasureMP(wires=Wires("a"), reset=True, id="abcd"),
     MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
     ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
     ProbabilityMP(obs=3.0 * qml.PauliX(0)),
-    ProbabilityMP(obs=mv),
+    ProbabilityMP(mv=mv),
     PurityMP(wires=Wires("a")),
     SampleMP(obs=3.0 * qml.PauliY(0)),
     SampleMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
-    SampleMP(obs=mv),
+    SampleMP(mv=mv),
     StateMP(),
     StateMP(wires=("a", "b")),
     VarianceMP(obs=qml.s_prod(0.5, qml.PauliX(0))),
     VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
-    VarianceMP(obs=mv),
+    VarianceMP(mv=mv),
     VnEntropyMP(wires=Wires("a"), log_base=3),
 ]
 
@@ -342,10 +342,10 @@ class TestProperties:
         m1 = qml.measure(1)
         m1.measurements[0].id = "def"
 
-        mp1 = qml.sample(op=[m0, m1])
+        mp1 = qml.sample(mv=[m0, m1])
         assert np.all(mp1.eigvals() == [0, 1, 2, 3])
 
-        mp2 = qml.sample(op=3 * m0 - m1 / 2)
+        mp2 = qml.sample(mv=3 * m0 - m1 / 2)
         assert np.all(mp2.eigvals() == [0, -0.5, 3, 2.5])
 
     def test_error_obs_and_eigvals(self):
@@ -406,13 +406,13 @@ class TestProperties:
 
         wire_map = {"a": 0, "b": 1}
 
-        mp1 = qml.sample(op=[m0, m1])
+        mp1 = qml.sample(mv=[m0, m1])
         mapped_mp1 = mp1.map_wires(wire_map)
-        assert qml.equal(mapped_mp1, qml.sample(op=[m2, m3]))
+        assert qml.equal(mapped_mp1, qml.sample(mv=[m2, m3]))
 
-        mp2 = qml.sample(op=m0 * m1)
+        mp2 = qml.sample(mv=m0 * m1)
         mapped_mp2 = mp2.map_wires(wire_map)
-        assert qml.equal(mapped_mp2, qml.sample(op=m2 * m3))
+        assert qml.equal(mapped_mp2, qml.sample(mv=m2 * m3))
 
     def test_name_and_data_are_deprecated(self):
         """Test that MP.name and MP.data are deprecated."""

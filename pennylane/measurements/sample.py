@@ -147,7 +147,11 @@ def sample(*args, **kwargs) -> "SampleMP":
     _kwargs = {key: value for key, value in kwargs.items() if value is not None}
 
     if (n_args := len(_args) + len(_kwargs)) > 1:
-        raise TypeError(f"qml.sample() takes 1 argument, but {n_args} were given.")
+        raise ValueError(
+            f"qml.sample() takes 1 argument, but {n_args} were given. Only one "
+            "out of the following can be provided: an Operator, one or more "
+            "MeasurementValues, or wires. Other arguments must be of NoneType."
+        )
 
     if n_args == 0:
         return SampleMP()

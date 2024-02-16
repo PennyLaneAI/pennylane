@@ -400,7 +400,7 @@ statistics are :class:`~.pennylane.devices.DefaultQubit`, :class:`~.pennylane.de
         qml.RX(x, wires=0)
         m0 = qml.measure(0)
         qml.cond(m0, qml.RY)(y, wires=1)
-        return qml.probs(wires=1), qml.probs(op=m0)
+        return qml.probs(wires=1), qml.probs(mv=m0)
 
 Executing this ``QNode``:
 

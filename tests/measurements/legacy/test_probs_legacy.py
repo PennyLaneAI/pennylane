@@ -188,7 +188,7 @@ class TestProbs:
         def circuit(phi):
             qml.RX(phi, 0)
             m0 = qml.measure(0)
-            return qml.probs(op=m0)
+            return qml.probs(mv=m0)
 
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "probability")
@@ -226,7 +226,7 @@ class TestProbs:
             m1 = qml.measure(1)
             qml.RX(2.0 * phi, 2)
             m2 = qml.measure(2)
-            return qml.probs(op=[m0, m1, m2])
+            return qml.probs(mv=[m0, m1, m2])
 
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "probability")
@@ -619,7 +619,7 @@ class TestProbs:
 
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
     def test_prob_wires_and_hermitian(self, hermitian):
-        """Test that we can cannot give simultaneously wires and a hermitian."""
+        """Test that we can cannot simultaneously give multiple arguments."""
 
         dev = qml.device("default.qubit.legacy", wires=2)
 
@@ -628,11 +628,7 @@ class TestProbs:
             qml.PauliX(wires=0)
             return qml.probs(op=qml.Hermitian(hermitian, wires=0), wires=1)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Cannot specify the wires to probs if an observable is "
-            "provided. The wires for probs will be determined directly from the observable.",
-        ):
+        with pytest.raises(ValueError, match=r"qml.probs\(\) takes 1 argument, but 2 were given"):
             circuit()
 
     def test_non_commuting_probs_raises_error(self):

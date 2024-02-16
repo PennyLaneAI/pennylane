@@ -51,14 +51,9 @@ class TestCounts:
         assert meas_copy.all_outcomes is True
 
     def test_providing_observable_and_wires(self):
-        """Test that a ValueError is raised if both an observable is provided and wires are
-        specified"""
+        """Test that a ValueError is raised if more than one argument is provided"""
 
-        with pytest.raises(
-            ValueError,
-            match="Cannot specify the wires to sample if an observable is provided."
-            " The wires to sample will be determined directly from the observable.",
-        ):
+        with pytest.raises(ValueError, match=r"qml.counts\(\) takes 1 argument, but 2 were given"):
             qml.counts(qml.PauliZ(0), wires=[0, 1])
 
     def test_observable_might_not_be_hermitian(self):
@@ -90,7 +85,7 @@ class TestCounts:
         assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
 
         mv = qml.measure(0)
-        m4 = CountsMP(obs=mv, all_outcomes=False)
+        m4 = CountsMP(mv=mv, all_outcomes=False)
         assert repr(m4) == "CountsMP(MeasurementValue(wires=[0]), all_outcomes=False)"
 
 
@@ -186,7 +181,7 @@ class TestProcessSamples:
         m0 = qml.measure(0)
         m1 = qml.measure(1)
 
-        result = qml.counts(op=m0 | m1).process_samples(samples, wire_order=[0, 1])
+        result = qml.counts(mv=m0 | m1).process_samples(samples, wire_order=[0, 1])
 
         assert len(result) == 2
         assert set(result.keys()) == {0, 1}
@@ -202,7 +197,7 @@ class TestProcessSamples:
         m0 = qml.measure(0)
         m1 = qml.measure(1)
 
-        result = qml.counts(op=[m0, m1]).process_samples(samples, wire_order=[0, 1])
+        result = qml.counts(mv=[m0, m1]).process_samples(samples, wire_order=[0, 1])
 
         assert len(result) == 4
         assert set(result.keys()) == {"00", "01", "10", "11"}
@@ -219,7 +214,7 @@ class TestProcessSamples:
             qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
-            _ = qml.counts(op=[m0, qml.PauliZ(0)])
+            _ = qml.counts(mv=[m0, qml.PauliZ(0)])
 
     def test_composed_measurement_value_lists_not_allowed(self):
         """Test that passing a list containing measurement values composed with arithmetic
@@ -232,7 +227,7 @@ class TestProcessSamples:
             qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
-            _ = qml.counts(op=[m0 + m1, m2])
+            _ = qml.counts(mv=[m0 + m1, m2])
 
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""

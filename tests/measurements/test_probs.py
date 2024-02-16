@@ -260,7 +260,7 @@ class TestProbs:
         def circuit(phi):
             qml.RX(phi, 0)
             m0 = qml.measure(0)
-            return qml.probs(op=m0)
+            return qml.probs(mv=m0)
 
         res = circuit(phi)
 
@@ -291,7 +291,7 @@ class TestProbs:
             m1 = qml.measure(1)
             qml.RX(2.0 * phi, 2)
             m2 = qml.measure(2)
-            return qml.probs(op=[m0, m1, m2])
+            return qml.probs(mv=[m0, m1, m2])
 
         res = circuit(phi, shots=shots)
 
@@ -319,17 +319,17 @@ class TestProbs:
         m1 = qml.measure(1)
 
         with pytest.raises(ValueError, match=r"Cannot use qml.probs\(\) when measuring multiple"):
-            _ = qml.probs(op=m0 + m1)
+            _ = qml.probs(mv=m0 + m1)
 
-    def test_mixed_lists_as_op_not_allowed(self):
+    def test_mixed_lists_as_mv_not_allowed(self):
         """Test that passing a list not containing only measurement values raises an error."""
         m0 = qml.measure(0)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
+            ValueError,
+            match="Sequences containing a mix of mid-circuit measurement values and other objects",
         ):
-            _ = qml.probs(op=[m0, qml.PauliZ(0)])
+            _ = qml.probs(mv=[m0, qml.PauliZ(0)])
 
     def test_composed_measurement_value_lists_not_allowed(self):
         """Test that passing a list containing measurement values composed with arithmetic
@@ -342,7 +342,7 @@ class TestProbs:
             qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
-            _ = qml.probs(op=[m0 + m1, m2])
+            _ = qml.probs(mv=[m0 + m1, m2])
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, shots):
@@ -672,7 +672,7 @@ class TestProbs:
 
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
     def test_prob_wires_and_hermitian(self, hermitian):
-        """Test that we can cannot give simultaneously wires and a hermitian."""
+        """Test that we can cannot simultaneously give multiple arguments."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -681,11 +681,7 @@ class TestProbs:
             qml.PauliX(wires=0)
             return qml.probs(op=qml.Hermitian(hermitian, wires=0), wires=1)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Cannot specify the wires to probs if an observable is "
-            "provided. The wires for probs will be determined directly from the observable.",
-        ):
+        with pytest.raises(ValueError, match=r"qml.probs\(\) takes 1 argument, but 2 were given"):
             circuit()
 
     @pytest.mark.parametrize(

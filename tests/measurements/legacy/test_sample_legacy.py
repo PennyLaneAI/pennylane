@@ -32,7 +32,7 @@ def custom_measurement_process(device, spy):
         meas = call_args.args[1]
         shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
         if isinstance(meas, (Operator, MeasurementValue)):
-            meas = qml.sample(op=meas)
+            meas = qml.sample(meas)
         assert qml.math.allequal(
             device.sample(call_args.args[1], **call_args.kwargs),
             meas.process_samples(
@@ -137,7 +137,7 @@ class TestSample:
             m0 = qml.measure(0)
             qml.RX(phi, 1)
             m1 = qml.measure(1)
-            return qml.sample(op=m0 + m1)
+            return qml.sample(mv=m0 + m1)
 
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "sample")
@@ -166,7 +166,7 @@ class TestSample:
             qml.RX(phi, 0)
             m0 = qml.measure(0)
             m1 = qml.measure(1)
-            return qml.sample(op=[m0, m1])
+            return qml.sample(mv=[m0, m1])
 
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "sample")
@@ -284,7 +284,7 @@ class TestSample:
         custom_measurement_process(dev, spy)
 
     def test_providing_observable_and_wires(self):
-        """Test that a ValueError is raised if both an observable is provided and wires are specified"""
+        """Test that a ValueError is raised if multiple arguments are provided"""
         dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
@@ -292,11 +292,7 @@ class TestSample:
             qml.Hadamard(wires=0)
             return qml.sample(qml.PauliZ(0), wires=[0, 1])
 
-        with pytest.raises(
-            ValueError,
-            match="Cannot specify the wires to sample if an observable is provided."
-            " The wires to sample will be determined directly from the observable.",
-        ):
+        with pytest.raises(ValueError, match=r"qml.sample\(\) takes 1 argument, but 2 were given"):
             _ = circuit()
 
     def test_providing_no_observable_and_no_wires(self, mocker):

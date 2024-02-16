@@ -173,7 +173,11 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
     _kwargs = {key: value for key, value in kwargs.items() if value is not None}
 
     if (n_args := len(_args) + len(_kwargs)) > 1:
-        raise TypeError(f"qml.sample() takes 1 argument, but {n_args} were given.")
+        raise ValueError(
+            f"qml.counts() takes 1 argument, but {n_args} were given. Only one "
+            "out of the following can be provided: an Operator, one or more "
+            "MeasurementValues, or wires. Other arguments must be of NoneType."
+        )
 
     if n_args == 0:
         return CountsMP(all_outcomes=all_outcomes)
@@ -271,7 +275,7 @@ class CountsMP(SampleMeasurement):
         bin_size: int = None,
     ):
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(
+            samples = qml.sample(op=self.obs, mv=self.mv, wires=self._wires).process_samples(
                 samples, wire_order, shot_range, bin_size
             )
 

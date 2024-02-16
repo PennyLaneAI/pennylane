@@ -84,7 +84,7 @@ def var(*args, **kwargs) -> "VarianceMP":
     _kwargs = {key: value for key, value in kwargs.items() if value is not None}
 
     if (n_args := len(_args) + len(_kwargs)) != 1:
-        raise TypeError(f"expval takes 1 argument but {n_args} were given")
+        raise ValueError(f"var takes 1 argument but {n_args} were given")
 
     if _args:
         arg = args[0]
@@ -143,7 +143,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=op).process_samples(
+            samples = qml.sample(op).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 
