@@ -113,10 +113,10 @@ class TestExpval:
             m0 = qml.measure(0)
             return qml.expval(m0)
 
-        res = circuit(phi)
-
         atol = tol if shots is None else tol_stochastic
-        assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
@@ -127,7 +127,6 @@ class TestExpval:
         are correct for a composite measurement value."""
         dev = qml.device("default.qubit")
 
-        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -137,8 +136,6 @@ class TestExpval:
             qml.RX(2 * phi, 2)
             m2 = qml.measure(2)
             return qml.expval(m0 * m1 + m2)
-
-        res = circuit(phi, shots=shots)
 
         @qml.qnode(dev)
         def expected_circuit(phi):
@@ -155,7 +152,9 @@ class TestExpval:
         expected = evals[0] * evals[1] + evals[2]
 
         atol = tol if shots is None else tol_stochastic
-        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi, shots=shots)
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""
