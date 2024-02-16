@@ -527,8 +527,7 @@ def mitigate_with_zne(
         """Maps from input tape executions to an error-mitigated estimate"""
 
         # content of `results` must be modified in this post-processing function
-        if isinstance(results, tuple):
-            results = list(results)
+        results = list(results)
 
         for i, tape in enumerate(out_tapes):
             # stack the results if there are multiple measurements
