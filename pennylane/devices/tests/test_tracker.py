@@ -21,61 +21,32 @@ import pennylane as qml
 class TestTracker:
     """Tests that the device uses a tracker attribute properly"""
 
+    @pytest.mark.tier2
     def test_tracker_initialization(self, device):
         """Tests a tracker instance is assigned at initialization."""
 
         dev = device(1)
 
-        if not dev.capabilities().get("supports_tracker", False):
+        if isinstance(dev, qml.Device) and not dev.capabilities().get("supports_tracker", False):
             pytest.skip("Device does not support a tracker")
 
         assert isinstance(dev.tracker, qml.Tracker)
 
-    def test_tracker_updated_in_execution_mode(self, device, mocker):
+    @pytest.mark.tier1
+    def test_tracker_updated_in_execution_mode(self, device):
         """Tests that device update and records during tracking mode"""
 
         dev = device(1)
 
-        if not dev.capabilities().get("supports_tracker", False):
+        if isinstance(dev, qml.Device) and not dev.capabilities().get("supports_tracker", False):
             pytest.skip("Device does not support a tracker")
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circ():
             return qml.expval(qml.PauliX(wires=[0]))
-
-        spy_update = mocker.spy(dev.tracker, "update")
-        spy_record = mocker.spy(dev.tracker, "record")
 
         dev.tracker.active = False
-        circ()
-
-        assert spy_update.call_count == 0
-        assert spy_record.call_count == 0
-
-        dev.tracker.active = True
-        circ()
-
-        assert spy_update.call_count == 1
-        assert spy_record.call_count == 1
-
-    def test_tracker_batch_execute(self, device, mocker):
-        """Asserts tracker updates and records upon both batch execute and standard execute."""
-
-        dev = device(1)
-
-        if not dev.capabilities().get("supports_tracker", False):
-            pytest.skip("Device does not support a tracker")
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circ():
-            return qml.expval(qml.PauliX(wires=[0]))
-
-        spy_update = mocker.spy(dev.tracker, "update")
-        spy_record = mocker.spy(dev.tracker, "record")
-
-        circ()
-        dev.tracker.active = True
-        dev.batch_execute([circ.qtape])
-
-        assert spy_update.call_count == 2
-        assert spy_record.call_count == 2
+        with dev.tracker:
+            circ()
+        assert dev.tracker.history["batches"] == [1]
+        assert dev.tracker.history["executions"] == [1]

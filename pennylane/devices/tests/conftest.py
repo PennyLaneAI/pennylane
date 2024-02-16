@@ -105,10 +105,11 @@ def device(device_kwargs):
                 f"plugin and all of its dependencies must be installed."
             )
 
-        capabilities = dev.capabilities()
-        if capabilities.get("model", None) != "qubit":
-            # exit the tests if device based on cv model (currently not supported)
-            pytest.exit("The device test suite currently only runs on qubit-based devices.")
+        if isinstance(dev, qml.Device):
+            capabilities = dev.capabilities()
+            if capabilities.get("model", None) != "qubit":
+                # exit the tests if device based on cv model (currently not supported)
+                pytest.exit("The device test suite currently only runs on qubit-based devices.")
 
         return dev
 
