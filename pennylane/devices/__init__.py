@@ -97,7 +97,8 @@ The ``modifiers`` allow for the easy addition of default behavior to a device.
     convert_single_circuit_to_batch
     simulator_tracking
 
-For example with a custom device we can add simulator-style tracking and the ability to handle a single circuit.
+For example with a custom device we can add simulator-style tracking and the ability
+to handle a single circuit. See the documentation for each modifier for more details.
 
 .. code-block:: python
 
@@ -107,6 +108,22 @@ For example with a custom device we can add simulator-style tracking and the abi
 
         def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
+
+>>> dev = MyDevice()
+>>> tape = qml.tape.QuantumTape([qml.S(0)], [qml.expval(qml.X(0))])
+>>> with dev.tracker:
+...     out = dev.execute(tape)
+>>> out
+0.0
+>>> dev.tracker.history
+{'batches': [1],
+ 'simulations': [1],
+ 'executions': [1],
+ 'results': [0.0],
+ 'resources': [Resources(num_wires=1, num_gates=1,
+ gate_types=defaultdict(<class 'int'>, {'S': 1}),
+ gate_sizes=defaultdict(<class 'int'>, {1: 1}), depth=1,
+ shots=Shots(total_shots=None, shot_vector=()))]}
 
 
 Qubit Simulation Tools
