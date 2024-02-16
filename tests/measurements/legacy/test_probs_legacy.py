@@ -628,7 +628,7 @@ class TestProbs:
             qml.PauliX(wires=0)
             return qml.probs(op=qml.Hermitian(hermitian, wires=0), wires=1)
 
-        with pytest.raises(ValueError, match=r"qml.probs\(\) takes 1 argument, but 2 were given"):
+        with pytest.raises(ValueError, match="probs takes 1 argument, but 2 were given"):
             circuit()
 
     def test_non_commuting_probs_raises_error(self):

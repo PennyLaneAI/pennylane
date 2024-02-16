@@ -65,6 +65,42 @@ class TestProbs:
         res = qml.probs(wires=0)
         assert res.numeric_type is float
 
+    def test_invalid_argument_error(self):
+        """Test that passing an argument with an invalid name raises an error"""
+        with pytest.raises(TypeError, match="probs got an unexpected keyword argument"):
+            _ = qml.probs(invalid_name=qml.PauliZ(0))
+
+    def test_multiple_arguments_error(self):
+        """Test that an error is raised if multiple non-None arguments are given"""
+        obs = qml.PauliZ(0)
+        mv = qml.measure(0)
+        with pytest.raises(ValueError, match="probs takes 1 argument"):
+            _ = qml.probs(op=obs, mv=mv)
+
+    @pytest.mark.parametrize(
+        "arg, argname, mp_attribute",
+        [
+            (qml.PauliZ(0), "mv", "obs"),
+            (qml.PauliZ(0), "wires", "obs"),
+            (qml.measurements.MeasurementValue([], None), "op", "mv"),
+            (qml.measurements.MeasurementValue([], None), "wires", "mv"),
+            ([0, 1], "mv", "_wires"),
+            ([0, 1], "op", "_wires"),
+        ],
+    )
+    def test_incorrect_argname_warning(self, arg, argname, mp_attribute):
+        """Test that a warning is raised when an argument is misnamed and that the correct
+        attribute is set in the measurment process."""
+        kwargs = {argname: arg}
+        with pytest.warns(UserWarning, match=f"probs got argument '{argname}'"):
+            mp = qml.probs(**kwargs)
+
+        mp_attr = getattr(mp, mp_attribute, -1)
+        if isinstance(mp_attr, qml.wires.Wires):
+            assert mp_attr == qml.wires.Wires(arg)
+        else:
+            assert mp_attr == arg
+
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     @pytest.mark.parametrize("shots", [None, 10])
     def test_shape(self, wires, shots):
@@ -681,7 +717,7 @@ class TestProbs:
             qml.PauliX(wires=0)
             return qml.probs(op=qml.Hermitian(hermitian, wires=0), wires=1)
 
-        with pytest.raises(ValueError, match=r"qml.probs\(\) takes 1 argument, but 2 were given"):
+        with pytest.raises(ValueError, match="probs takes 1 argument, but 2 were given"):
             circuit()
 
     @pytest.mark.parametrize(

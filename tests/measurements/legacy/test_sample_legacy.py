@@ -292,7 +292,7 @@ class TestSample:
             qml.Hadamard(wires=0)
             return qml.sample(qml.PauliZ(0), wires=[0, 1])
 
-        with pytest.raises(ValueError, match=r"qml.sample\(\) takes 1 argument, but 2 were given"):
+        with pytest.raises(ValueError, match="sample takes 1 argument, but 2 were given"):
             _ = circuit()
 
     def test_providing_no_observable_and_no_wires(self, mocker):

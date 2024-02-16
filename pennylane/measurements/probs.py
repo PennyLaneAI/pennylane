@@ -162,7 +162,7 @@ def probs(*args, **kwargs) -> "ProbabilityMP":
 
     if (n_args := len(_args) + len(_kwargs)) > 1:
         raise ValueError(
-            f"qml.probs() takes 1 argument, but {n_args} were given. Only one "
+            f"probs takes 1 argument, but {n_args} were given. Only one "
             "out of the following can be provided: an Operator, one or more "
             "MeasurementValues, or wires. Other arguments must be of NoneType."
         )

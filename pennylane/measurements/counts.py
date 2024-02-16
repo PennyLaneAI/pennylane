@@ -176,9 +176,10 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
 
     if (n_args := len(_args) + len(_kwargs)) > 1:
         raise ValueError(
-            f"qml.counts() takes 1 argument, but {n_args} were given. Only one "
-            "out of the following can be provided: an Operator, one or more "
-            "MeasurementValues, or wires. Other arguments must be of NoneType."
+            f"counts takes 1 argument other than 'all_outcomes', but "
+            "{n_args} were given. Only one out of the following can be provided: "
+            "an Operator, one or more MeasurementValues, or wires. Other arguments "
+            "must be of NoneType."
         )
 
     if n_args == 0:
@@ -192,7 +193,7 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
         argname, arg = next(iter(_kwargs.items()))
 
         if argname not in ("wires", "op", "mv"):
-            raise TypeError(f"sample got an unexpected keyword argument '{argname}'")
+            raise TypeError(f"counts got an unexpected keyword argument '{argname}'")
 
     if isinstance(arg, Operator):
         return _counts_op(arg, argname=argname, all_outcomes=all_outcomes)
