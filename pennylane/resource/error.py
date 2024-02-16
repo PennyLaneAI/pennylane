@@ -90,14 +90,14 @@ class SpectralNormError(AlgorithmicError):
 
     """
 
-    def combine(self, other: AlgorithmicError):
+    def combine(self, other: 'SpectralNormError'):
         """A method to combine two spectral norm errors.
 
         Args:
-            other (AlgorithmicError): The other instance of error being combined.
+            other (SpectralNormError): The other instance of error being combined.
 
         Returns:
-            AlgorithmicError: The total error after combination.
+            SpectralNormError: The total error after combination.
         """
         return self.__class__(self.error + other.error)
 
@@ -106,8 +106,8 @@ class SpectralNormError(AlgorithmicError):
         """Compute spectral norm error between two operators.
 
         Args:
-            approximate_op (.Operator): The approximate operator.
-            exact_op (.Operator): The exact operator.
+            approximate_op (Operator): The approximate operator.
+            exact_op (Operator): The exact operator.
 
         Returns:
             float: The error between the exact operator and its
