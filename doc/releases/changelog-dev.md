@@ -190,6 +190,25 @@
 
 <h4>Other improvements</h4>
 
+* `qml.expval`, `qml.var`, `qml.sample`, `qml.probs`, and `qml.counts` now construct measurement processes
+  based on the type of the arguments rather than their name.
+  [(#5224)](https://github.com/PennyLaneAI/pennylane/pull/5224)
+
+  This allows users to pass in any argument as a positional argument without worrying about
+  setting the arguments incorrectly. For example, previously, `qml.probs(qml.PauliZ(0))` would
+  set the `wires` attribute to be `qml.PauliZ(0)` as the first argument of `probs` was `wires`.
+  However, now, `qml.PauliZ(0)` is correctly set as the observable.
+
+  Moreover, the type of the argument now supercedes the name. If the name and type of an
+  argument don't match, a warning is raised. For example:
+
+  ```pycon
+  >>> qml.probs(wires=qml.PauliZ(0))
+  UserWarning: probs got argument 'wires' of type <class 'pennylane.ops.qubit.non_parametric_ops.PauliZ'>. Using argument as op
+    warn(
+  probs(Z(0))
+  ```
+
 * `qml.dot` now returns a `Sum` class even when all the coefficients match.
   [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
 
@@ -302,7 +321,7 @@
 * `qml.expval`, `qml.var`, `qml.sample`, `qml.counts`, and `qml.probs` now include an `mv`
   keyword argument, which should be used to provide mid-circuit measurement values instead
   of `op`.
-  [(#)]()
+  [(#5224)](https://github.com/PennyLaneAI/pennylane/pull/5224)
 
 * The entry point convention registering compilers with PennyLane has changed.
   [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
