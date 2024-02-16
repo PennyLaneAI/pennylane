@@ -13,10 +13,7 @@ build:
     - graphviz
   jobs:
     post_install:
-      - git checkout master
-      - pip freeze > .github/stable/doc.txt
-      - cat .github/stable/doc.txt
-      - git status
+      - ./.github/workflows/scripts/docs_freeze_push.sh
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
