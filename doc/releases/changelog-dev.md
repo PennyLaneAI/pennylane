@@ -167,7 +167,7 @@
 <h4>Faster gradients with VJPs and other performance improvements</h4>
 
 * Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
-  is now strictly faster for jax.
+  now strictly faster for jax.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
