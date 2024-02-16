@@ -127,7 +127,7 @@ class TestSpectralNormError:
         ],
     )
     def test_custom_operator(self, phi, expected):
-        """Test that get_error fails if the operator matrix is not defined"""
+        """Test that get_error for a custom operator"""
 
         class DummyOp(Operation):  # pylint: disable=too-few-public-methods
             def matrix(self):
