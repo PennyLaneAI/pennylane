@@ -161,6 +161,10 @@
          [0, 0, 0, 1, 0],
          [1, 0, 0, 1, 1]])
   ```
+  
+  The `default.clifford` device also supports the `PauliError`, `DepolarizingChannel`, `BitFlip` and
+  `PhaseFlip`
+  [noise channels](https://docs.pennylane.ai/en/latest/introduction/operations.html#noisy-channels).
 
 <h3>Improvements 🛠</h3>
 
