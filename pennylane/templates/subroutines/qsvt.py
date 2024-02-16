@@ -308,7 +308,7 @@ class QSVT(Operation):
         return [self._hyperparameters["UA"], *self._hyperparameters["projectors"]]
 
     @staticmethod
-    def compute_decomposition(*_data, UA, projectors, **kwargs):  # pylint: disable=arguments-differ
+    def compute_decomposition(*_data, UA, projectors, **_kwargs):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         The :class:`~.QSVT` is decomposed into alternating block encoding
