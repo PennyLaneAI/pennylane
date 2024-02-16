@@ -11,6 +11,13 @@ build:
     python: "3.9"
   apt_packages:
     - graphviz
+  jobs:
+    post_install:
+      - git update-index --assume-unchanged environment.yml docs/conf.py
+      - git checkout master
+      - pip freeze > .github/stable/doc.txt
+      - cat .github/stable/doc.txt
+      - git status
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
