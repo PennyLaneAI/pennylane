@@ -164,7 +164,8 @@
   
   The `default.clifford` device also supports the `PauliError`, `DepolarizingChannel`, `BitFlip` and
   `PhaseFlip`
-  [noise channels](https://docs.pennylane.ai/en/latest/introduction/operations.html#noisy-channels).
+  [noise channels](https://docs.pennylane.ai/en/latest/introduction/operations.html#noisy-channels)
+  when operating in finite-shot mode.
 
 <h3>Improvements 🛠</h3>
 
