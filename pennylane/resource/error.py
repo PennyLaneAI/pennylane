@@ -103,7 +103,7 @@ class SpectralNormError(AlgorithmicError):
 
     @staticmethod
     def get_error(approximate_op: Operator, exact_op: Operator, **kwargs):
-        """A method to allow users to compute spectral norm error between two operators.
+        """Compute spectral norm error between two operators.
 
         Args:
             approximate_op (.Operator): The approximate operator.
