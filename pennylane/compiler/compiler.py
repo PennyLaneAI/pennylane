@@ -48,31 +48,17 @@ class AvailableCompilers:
     # and their entry point loaders.
     names_entrypoints = defaultdict(dict)
 
-    # The map consists of supported compiler names (str) and their version compatibility (bool).
-    # This boolean indicates whether the installed version of a compiler package is greater
-    # than or equal to the minimum version. If `False`, it checks the compatibility again before
-    # raising a `CompileError`.
-    # This value will be updated in `_check_compiler_version` to reduce the required
-    # version checks of installed compiler packages at runtime.
-    compiler_checked = defaultdict(dict)
-
 
 def _check_compiler_version(name):
     """Check if the installed version of the given compiler is greater than
     or equal to the required minimum version.
     """
-    if AvailableCompilers.compiler_checked[name]:
-        return  # Used the cached value!
-
     if name == "catalyst":
         installed_catalyst_version = metadata.version("pennylane-catalyst")
         if Version(re.sub(r"\.dev\d+", "", installed_catalyst_version)) < PL_CATALYST_MIN_VERSION:
             raise CompileError(
                 f"PennyLane-Catalyst {PL_CATALYST_MIN_VERSION} or greater is required, but installed {installed_catalyst_version}"
             )
-
-    # else
-    AvailableCompilers.compiler_checked[name] = True
 
 
 def _refresh_compilers():
@@ -92,9 +78,16 @@ def _refresh_compilers():
     )
 
     for entry in entries:
-        # Only need name of the parent module
-        module_name = entry.module.split(".")[0]
-        AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
+        try:
+            # First element of split is the compiler name
+            # New convention for entry point.
+            compiler_name, e_name = entry.name.split(".")
+            AvailableCompilers.names_entrypoints[compiler_name][e_name] = entry  # pragma: no cover
+        except ValueError:
+            # Keep old behaviour.
+            # TODO: Deprecate in 0.35 release
+            compiler_name = entry.module.split(".")[0]
+            AvailableCompilers.names_entrypoints[compiler_name][entry.name] = entry
 
     # Check whether available compilers follow the entry_point interface
     # by validating that all entry points (qjit, context, and ops) are defined.

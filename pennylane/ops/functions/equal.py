@@ -269,6 +269,9 @@ def _equal_operators(
 # pylint: disable=unused-argument, protected-access
 def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     """Determine whether two Prod or Sum objects are equal"""
+    if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
+        return True
+
     if len(op1.operands) != len(op2.operands):
         return False
 
@@ -343,6 +346,9 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
 def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     """Determine whether two SProd objects are equal"""
     rtol, atol = (kwargs["rtol"], kwargs["atol"])
+
+    if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
+        return True
 
     if not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
         return False

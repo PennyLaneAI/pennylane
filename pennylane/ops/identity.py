@@ -39,6 +39,7 @@ class Identity(CVObservable, Operation):
     Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
+
     num_params = 0
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
@@ -53,13 +54,22 @@ class Identity(CVObservable, Operation):
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
-    def __init__(self, *params, wires=None, id=None):
-        super().__init__(*params, wires=wires, id=id)
+    def __init__(self, wires=None, id=None):
+        super().__init__(wires=[] if wires is None else wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
+
+    def __repr__(self):
+        """String representation."""
+        if len(self.wires) == 0:
+            return "I()"
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"I('{wire}')"
+        return f"I({wire})"
 
     @staticmethod
     def compute_eigvals(n_wires=1):  # pylint: disable=arguments-differ
@@ -111,6 +121,10 @@ class Identity(CVObservable, Operation):
     @lru_cache()
     def compute_sparse_matrix(n_wires=1):  # pylint: disable=arguments-differ
         return sparse.eye(int(2**n_wires), format="csr")
+
+    def matrix(self, wire_order=None):
+        n_wires = len(wire_order) if wire_order else len(self.wires)
+        return self.compute_matrix(n_wires=n_wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -178,6 +192,9 @@ class Identity(CVObservable, Operation):
         return [Identity(wires=self.wires)]
 
 
+I = Identity
+
+
 class GlobalPhase(Operation):
     r"""A global phase operation that multiplies all components of the state by :math:`e^{-i \phi}`.
 
@@ -239,6 +256,7 @@ class GlobalPhase(Operation):
 
 
     """
+
     grad_method = "A"
     num_params = 1
     num_wires = AllWires
@@ -371,5 +389,4 @@ class GlobalPhase(Operation):
         return [GlobalPhase(z * self.data[0], self.wires)]
 
     def generator(self):
-        wires = self.wires or [0]
-        return -1 * qml.Identity(wires)
+        return qml.s_prod(-1, qml.Identity(self.wires))

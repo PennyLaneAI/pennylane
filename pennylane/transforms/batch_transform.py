@@ -360,7 +360,7 @@ class batch_transform:
             # tapes, fn = some_transform(tape, *transform_args)
             return self._tape_wrapper(*targs, **tkwargs)(qnode)
 
-        if isinstance(qnode, (qml.QNode, qml.ExpvalCost)):
+        if isinstance(qnode, qml.QNode):
             # Input is a QNode:
             # result = some_transform(qnode, *transform_args)(*qnode_args)
             wrapper = self.qnode_wrapper(qnode, targs, tkwargs)
@@ -510,7 +510,7 @@ def map_batch_transform(
         tape_counts.append(len(new_tapes))
 
     def processing_fn(res: ResultBatch) -> ResultBatch:
-        """Applies a batch of post-procesing functions to results.
+        """Applies a batch of post-processing functions to results.
 
         Args:
             res (ResultBatch): the results of executing a batch of circuits

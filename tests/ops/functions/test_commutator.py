@@ -58,7 +58,6 @@ class TestLegacySupport:
         assert isinstance(res, SProd)
         assert true_res == res
 
-    @pytest.mark.xfail
     def test_Hamiltonian_sum(self):
         """Test that Hamiltonians with Tensors and sums get transformed to new operator classes and return the correct result"""
         H1 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
@@ -76,7 +75,7 @@ class TestLegacySupport:
 
 def test_alias():
     """Test that the alias qml.comm() works as expected"""
-    res1 = qml.commutator(X0, Y0)
+    res1 = qml.comm(X0, Y0)
     res1_true = qml.commutator(X0, Y0)
     assert res1 == res1_true
     res2 = qml.commutator(X0, Y0, pauli=True)

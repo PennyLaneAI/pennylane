@@ -85,6 +85,7 @@ class DoubleFactorization(Operation):
         default value of 0.0016 Ha (chemical accuracy). The costs are computed using Eqs. (C39-C40)
         of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
     """
+
     num_wires = AnyWires
     grad_method = None
 

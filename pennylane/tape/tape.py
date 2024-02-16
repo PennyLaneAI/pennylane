@@ -19,7 +19,7 @@ import copy
 from threading import RLock
 
 import pennylane as qml
-from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
+from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP, MeasurementProcess
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 from pennylane.pytrees import register_pytree
@@ -184,14 +184,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         (diagonal_measurements, new_measurements),
     ]:
         for obj in queue:
-            stop = stop_at(obj)
+            stop_at_meas = not expand_measurements and isinstance(obj, MeasurementProcess)
 
-            if not expand_measurements:
-                # Measurements should not be expanded; treat measurements
-                # as a stopping condition
-                stop = stop or isinstance(obj, qml.measurements.MeasurementProcess)
-
-            if stop:
+            if stop_at_meas or stop_at(obj):
                 # do not expand out the object; append it to the
                 # new tape, and continue to the next object in the queue
                 new_queue.append(obj)

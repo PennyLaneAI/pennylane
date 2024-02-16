@@ -282,6 +282,7 @@ class TestProbs:
         are correct for a measurement value list."""
         dev = qml.device("default.qubit")
 
+        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -431,7 +432,7 @@ class TestProbs:
             qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
         state = np.array([1, 0])
-        matrix = qml.matrix(circuit_rotated)(0.56)
+        matrix = qml.matrix(circuit_rotated, wire_order=[0])(0.56)
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 1)
         expected = expected.flatten()
@@ -461,7 +462,7 @@ class TestProbs:
             qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
         state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-        matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2])(0.56, 0.1)
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 3)
         expected = np.einsum("ijk->i", expected).flatten()
@@ -495,7 +496,7 @@ class TestProbs:
             qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
         state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-        matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2])(0.56, 0.1)
         state = np.dot(matrix, state)
 
         expected = np.reshape(np.abs(state) ** 2, [2] * 3)
@@ -534,7 +535,7 @@ class TestProbs:
             qml.PauliX(wires=3)
             qml.Hermitian(hermitian, wires=wire).diagonalizing_gates()
 
-        matrix = qml.matrix(circuit_rotated)()
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2, 3])()
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -576,7 +577,7 @@ class TestProbs:
             qml.PauliZ(wires=3)
             operation(wires=wire).diagonalizing_gates()
 
-        matrix = qml.matrix(circuit_rotated)()
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2, 3])()
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -617,7 +618,7 @@ class TestProbs:
             observable[0](wires=0).diagonalizing_gates()
             observable[1](wires=1).diagonalizing_gates()
 
-        matrix = qml.matrix(circuit_rotated)()
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2, 3])()
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 

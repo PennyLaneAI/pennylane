@@ -225,6 +225,7 @@ class MidMeasureMP(MeasurementProcess):
         postselect: Optional[int] = None,
         id: Optional[str] = None,
     ):
+        self.batch_size = None
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect
@@ -273,6 +274,16 @@ class MidMeasureMP(MeasurementProcess):
         )
 
         return hash(fingerprint)
+
+    @property
+    def data(self):
+        """The data of the measurement. Needed to match the Operator API."""
+        return []
+
+    @property
+    def name(self):
+        """The name of the measurement. Needed to match the Operator API."""
+        return "MidMeasureMP"
 
 
 class MeasurementValue(Generic[T]):

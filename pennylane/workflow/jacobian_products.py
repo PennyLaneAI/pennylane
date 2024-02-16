@@ -15,7 +15,6 @@
 Defines classes that take the vjps, jvps, and jacobians of circuits.
 """
 import abc
-from functools import partial
 import inspect
 import logging
 from typing import Tuple, Callable, Optional, Union
@@ -249,9 +248,13 @@ class TransformJacobianProducts(JacobianProductCalculator):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 "TransformJacobianProduct being created with (%s, %s, %s, %s)",
-                inspect.getsource(inner_execute)
-                if (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(inner_execute))
-                else inner_execute,
+                (
+                    inspect.getsource(inner_execute)
+                    if (
+                        logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(inner_execute)
+                    )
+                    else inner_execute
+                ),
                 gradient_transform,
                 gradient_kwargs,
                 cache_full_jacobian,
@@ -306,10 +309,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
         num_result_tapes = len(tapes)
 
-        partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
-        jac_tapes, jac_postprocessing = qml.transforms.map_batch_transform(
-            partial_gradient_fn, tapes
-        )
+        jac_tapes, jac_postprocessing = self._gradient_transform(tapes, **self._gradient_kwargs)
 
         full_batch = tapes + tuple(jac_tapes)
         full_results = self._inner_execute(full_batch)
@@ -323,10 +323,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
             logger.debug("compute_jacobian called with %s", tapes)
         if tapes in self._cache:
             return self._cache[tapes]
-        partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
-        jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(
-            partial_gradient_fn, tapes
-        )
+        jac_tapes, batch_post_processing = self._gradient_transform(tapes, **self._gradient_kwargs)
         results = self._inner_execute(jac_tapes)
         jacs = tuple(batch_post_processing(results))
         self._cache[tapes] = jacs

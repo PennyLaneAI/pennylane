@@ -688,6 +688,7 @@ class Operator(abc.ABC):
         one of them (in other words, without the leading underscore) for the first time will
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
+
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     def __init_subclass__(cls, **_):
@@ -1042,6 +1043,7 @@ class Operator(abc.ABC):
 
     def __init__(self, *params, wires=None, id=None):
         # pylint: disable=too-many-branches
+
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
@@ -1076,7 +1078,10 @@ class Operator(abc.ABC):
         # check that the number of wires given corresponds to required number
         if self.num_wires in {AllWires, AnyWires}:
             if (
-                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase))
+                not isinstance(
+                    self,
+                    (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase, qml.Identity),
+                )
                 and len(qml.wires.Wires(wires)) == 0
             ):
                 raise ValueError(
@@ -1814,6 +1819,7 @@ class Channel(Operation, abc.ABC):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
 
     @staticmethod
@@ -2048,19 +2054,26 @@ class Tensor(Observable):
         return cls(*data)
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
-        wires = [op.wires for op in args]
-        if len(wires) != len(set(wires)):
-            warnings.warn(
-                "Tensor object acts on overlapping wires; in some PennyLane functions this will lead to undefined behaviour",
-                UserWarning,
-            )
-
         self._eigvals_cache = None
         self.obs: List[Observable] = []
         self._args = args
         self._batch_size = None
         self._pauli_rep = None
         self.queue(init=True)
+
+        wires = [op.wires for op in self.obs]
+        if len(wires) != len(set(wires)):
+            warnings.warn(
+                "Tensor object acts on overlapping wires; in some PennyLane functions this will "
+                "lead to undefined behaviour",
+                UserWarning,
+            )
+
+        # Queue before updating pauli_rep because self.queue updates self.obs
+        if all(prs := [o.pauli_rep for o in self.obs]):
+            self._pauli_rep = functools.reduce(lambda a, b: a @ b, prs)
+        else:
+            self._pauli_rep = None
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the operator is represented in diagrams and drawings.
@@ -2097,7 +2110,6 @@ class Tensor(Observable):
 
     def queue(self, context=QueuingManager, init=False):  # pylint: disable=arguments-differ
         constituents = self._args if init else self.obs
-
         for o in constituents:
             if init:
                 if isinstance(o, Tensor):
@@ -2118,6 +2130,7 @@ class Tensor(Observable):
         copied_op.obs = self.obs.copy()
         copied_op._eigvals_cache = self._eigvals_cache
         copied_op._batch_size = self._batch_size
+        copied_op._pauli_rep = self._pauli_rep
         return copied_op
 
     def __repr__(self):
@@ -2225,37 +2238,17 @@ class Tensor(Observable):
         if isinstance(other, qml.Hamiltonian):
             return other.__rmatmul__(self)
 
-        if isinstance(other, Tensor):
-            self.obs.extend(other.obs)
+        if isinstance(other, Observable):
+            return Tensor(self, other)
 
-        elif isinstance(other, Observable):
-            self.obs.append(other)
-
-        elif isinstance(other, Operator):
+        if isinstance(other, Operator):
             return qml.prod(*self.obs, other)
 
-        else:
-            return NotImplemented
-
-        wires = [op.wires for op in self.obs]
-        if len(wires) != len(set(wires)):
-            warnings.warn(
-                "Tensor object acts on overlapping wires; in some PennyLane functions this will lead to undefined behaviour",
-                UserWarning,
-            )
-
-        if QueuingManager.recording() and self not in QueuingManager.active_context():
-            QueuingManager.append(self)
-
-        QueuingManager.remove(other)
-
-        return self
+        return NotImplemented
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
-            self.obs[:0] = [other]
-            QueuingManager.remove(other)
-            return self
+            return Tensor(other, self)
 
         return NotImplemented
 
@@ -2546,6 +2539,9 @@ class Tensor(Observable):
         new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
         new_op._eigvals_cache = self._eigvals_cache
         new_op._batch_size = self._batch_size
+        new_op._pauli_rep = (
+            self._pauli_rep.map_wires(wire_map) if self.pauli_rep is not None else None
+        )
         return new_op
 
 
@@ -2805,6 +2801,7 @@ class CVObservable(CV, Observable):
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
 
@@ -3030,7 +3027,9 @@ def convert_to_opmath(op):
         Operator: An operator using the new arithmetic operations, if relevant
     """
     if isinstance(op, qml.Hamiltonian):
-        return qml.dot(*op.terms())
+        c, ops = op.terms()
+        ops = tuple(convert_to_opmath(o) for o in ops)
+        return qml.dot(c, ops)
     if isinstance(op, Tensor):
         return qml.prod(*op.obs)
     return op
