@@ -18,7 +18,7 @@ jobs:
           python-version: 3.9
 
       - name: Install dependencies
-        run: pip install black pylint
+        run: pip install black pylint==2.7.4
 
       - uses: actions/checkout@v2
 

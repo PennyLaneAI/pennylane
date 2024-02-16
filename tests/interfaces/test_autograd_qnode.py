@@ -1273,10 +1273,10 @@ class TestQubitIntegration:
         assert np.allclose(g[1], expected_g[1], atol=tol, rtol=0)
 
         def jac_fn_a(*args):
-            jac_fn(*args)[0]
+            return jac_fn(*args)[0]
 
         def jac_fn_b(*args):
-            jac_fn(*args)[1]
+            return jac_fn(*args)[1]
 
         hess_a = qml.jacobian(jac_fn_a)(a, b)
         hess_b = qml.jacobian(jac_fn_b)(a, b)
