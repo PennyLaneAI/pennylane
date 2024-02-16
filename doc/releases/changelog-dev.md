@@ -95,6 +95,7 @@
   defined in PennyLane through the use of [stim](https://github.com/quantumlib/Stim) as a backend.
   [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
   [(#4954)](https://github.com/PennyLaneAI/pennylane/pull/4954)
+  [(#5144)](https://github.com/PennyLaneAI/pennylane/pull/5144)
 
   Given a circuit with only Clifford gates, one can use this device to obtain the usual range
   of PennyLane [measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html)
@@ -300,6 +301,10 @@
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
   [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
+* An error message provides clearer instructions for installing PennyLane-Qiskit if the `qml.from_qiskit` 
+  function fails because the Qiskit converter is missing.
+  [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
+
 <h3>Breaking changes 💔</h3>
 
 * The entry point convention registering compilers with PennyLane has changed.
@@ -377,6 +382,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* Replacing `map_batch_transform` in the source code with the method `_batch_transform` 
+  implemented in `TransformDispatcher`.
+  [(#5212)](https://github.com/PennyLaneAI/pennylane/pull/5212)
+
 * `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
@@ -435,6 +444,9 @@
 
 * A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
+
+* A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions was added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
+  [(#5137)](https://github.com/PennyLaneAI/pennylane/pull/5137)
 
 * Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
 
@@ -521,6 +533,12 @@
 * `PauliSentence.__matmul__` can handle `PauliWord` instances now.
   [(#5208)](https://github.com/PennyLaneAI/pennylane/pull/5208)
 
+* Make `CompositeOp.eigendecomposition` jit-compatible.
+  [(#5207)](https://github.com/PennyLaneAI/pennylane/pull/5207)
+
+* `QubitDensityMatrix` now works with jax-jit on the `default.mixed` device.
+  [(#5203)](https://github.com/PennyLaneAI/pennylane/pull/5203)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -538,6 +556,7 @@ Eugenio Gigante,
 Diego Guala,
 David Ittah,
 Soran Jahangiri,
+Jacky Jiang,
 Korbinian Kottmann,
 Christina Lee,
 Xiaoran Li,
