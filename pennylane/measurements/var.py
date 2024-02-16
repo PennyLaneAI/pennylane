@@ -26,7 +26,7 @@ from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
 
 
-def _var_op(op, argname=None):
+def _var_op(op: Operator, argname=None):
     if argname is not None and argname != "op":
         warnings.warn(
             f"var got argument '{argname}' of type {type(op)}. Using argument as op", UserWarning
@@ -38,7 +38,7 @@ def _var_op(op, argname=None):
     return VarianceMP(obs=op)
 
 
-def _var_mv(mv, argname=None):
+def _var_mv(mv: MeasurementValue, argname=None):
     if argname is not None and argname != "mv":
         warnings.warn(
             f"var got argument '{argname}' of type {type(mv)}. Using argument as mv", UserWarning

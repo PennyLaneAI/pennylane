@@ -686,7 +686,7 @@ class TestMidCircuitMeasurements:
             qml.Hadamard(0)
             m0 = qml.measure(0)
             qml.Hadamard(0)
-            return mp(op=m0)
+            return mp(mv=m0)
 
         drawing = qml.draw(circ)()
         expected_drawing = (
@@ -713,7 +713,7 @@ class TestMidCircuitMeasurements:
             qml.Hadamard(1)
             m0 = qml.measure(0)
             m1 = qml.measure(1)
-            return mp(op=m0 + m1)
+            return mp(mv=m0 + m1)
 
         drawing = qml.draw(circ)()
         expected_drawing = (

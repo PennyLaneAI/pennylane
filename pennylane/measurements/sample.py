@@ -16,7 +16,7 @@ This module contains the qml.sample measurement.
 """
 import functools
 import warnings
-from typing import Sequence, Tuple, Optional, Union
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -26,7 +26,7 @@ from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def _sample_op(op, argname=None):
+def _sample_op(op: Operator, argname=None):
     if argname is not None and argname != "op":
         warnings.warn(
             f"sample got argument '{argname}' of type {type(op)}. Using argument as op", UserWarning
@@ -37,7 +37,7 @@ def _sample_op(op, argname=None):
     return SampleMP(obs=op)
 
 
-def _sample_mv(mv, argname=None):
+def _sample_mv(mv: Union[MeasurementValue, Sequence[MeasurementValue]], argname=None):
     if argname is not None and argname != "mv":
         warnings.warn(
             f"sample got argument '{argname}' of type {type(mv)}. Using argument as mv", UserWarning
@@ -55,7 +55,7 @@ def _sample_mv(mv, argname=None):
     return SampleMP(mv=mv)
 
 
-def _sample_wires(wires, argname=None):
+def _sample_wires(wires: Sequence[Union[int, str]], argname=None):
     if argname is not None and argname != "wires":
         warnings.warn(
             f"sample got argument '{argname}' of type {type(wires)}. Using argument as wires",

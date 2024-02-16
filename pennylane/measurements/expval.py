@@ -15,7 +15,7 @@
 This module contains the qml.expval measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -25,7 +25,7 @@ from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
-def _expval_op(op, argname=None):
+def _expval_op(op: Operator, argname=None):
     if argname is not None and argname != "op":
         warnings.warn(
             f"expval got argument '{argname}' of type {type(op)}. Using argument as op", UserWarning
@@ -43,7 +43,7 @@ def _expval_op(op, argname=None):
     return ExpectationMP(obs=op)
 
 
-def _expval_mv(mv, argname=None):
+def _expval_mv(mv: MeasurementValue, argname=None):
     if argname is not None and argname != "mv":
         warnings.warn(
             f"expval got argument '{argname}' of type {type(mv)}. Using argument as mv", UserWarning

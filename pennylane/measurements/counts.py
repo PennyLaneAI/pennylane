@@ -15,7 +15,7 @@
 This module contains the qml.counts measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 import numpy as np
 
 import pennylane as qml
@@ -26,7 +26,7 @@ from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def _counts_op(op, argname=None, all_outcomes=False):
+def _counts_op(op: Operator, argname=None, all_outcomes=False):
     if argname is not None and argname != "op":
         warnings.warn(
             f"counts got argument '{argname}' of type {type(op)}. Using argument as op", UserWarning
@@ -37,7 +37,9 @@ def _counts_op(op, argname=None, all_outcomes=False):
     return CountsMP(obs=op, all_outcomes=all_outcomes)
 
 
-def _counts_mv(mv, argname=None, all_outcomes=False):
+def _counts_mv(
+    mv: Union[MeasurementValue, Sequence[MeasurementValue]], argname=None, all_outcomes=False
+):
     if argname is not None and argname != "mv":
         warnings.warn(
             f"counts got argument '{argname}' of type {type(mv)}. Using argument as mv", UserWarning
@@ -55,7 +57,7 @@ def _counts_mv(mv, argname=None, all_outcomes=False):
     return CountsMP(mv=mv, all_outcomes=all_outcomes)
 
 
-def _counts_wires(wires, argname=None, all_outcomes=False):
+def _counts_wires(wires: Sequence[Union[int, str]], argname=None, all_outcomes=False):
     if argname is not None and argname != "wires":
         warnings.warn(
             f"counts got argument '{argname}' of type {type(wires)}. Using argument as wires",

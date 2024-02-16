@@ -14,7 +14,7 @@
 """
 This module contains the qml.probs measurement.
 """
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Union
 from warnings import warn
 
 import numpy as np
@@ -26,7 +26,7 @@ from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
-def _probs_op(op, argname=None):
+def _probs_op(op: Operator, argname=None):
     if argname is not None and argname != "op":
         warn(
             f"probs got argument '{argname}' of type {type(op)}. Using argument as op", UserWarning
@@ -48,7 +48,7 @@ def _probs_op(op, argname=None):
     return ProbabilityMP(obs=op)
 
 
-def _probs_mv(mv, argname=None):
+def _probs_mv(mv: Union[MeasurementValue, Sequence[MeasurementValue]], argname=None):
     if argname is not None and argname != "mv":
         warn(
             f"probs got argument '{argname}' of type {type(mv)}. Using argument as mv", UserWarning
@@ -78,7 +78,7 @@ def _probs_mv(mv, argname=None):
     )
 
 
-def _probs_wires(wires, argname=None):
+def _probs_wires(wires: Sequence[Union[int, str]], argname=None):
     if argname is not None and argname != "wires":
         warn(
             f"probs got argument '{argname}' of type {type(wires)}. Using argument as wires",
