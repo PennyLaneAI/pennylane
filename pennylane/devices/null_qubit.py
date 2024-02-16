@@ -183,11 +183,21 @@ class NullQubit(Device):
             return tuple(zip(*results))
         return results
 
-    @staticmethod
-    def _derivatives(circuit, interface):
-        derivatives = ((math.asarray(0.0, like=interface),) * len(circuit.trainable_params)) * len(
-            circuit.measurements
+    def _derivatives(self, circuit, interface):
+        shots = circuit.shots
+        obj_with_wires = self if self.wires else circuit
+        n = len(circuit.trainable_params)
+        derivatives = tuple(
+            (
+                math.zeros_like(
+                    null_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
+                ),
+            )
+            * n
+            for mp in circuit.measurements
         )
+        if n == 1:
+            derivatives = tuple(d[0] for d in derivatives)
         return derivatives[0] if len(derivatives) == 1 else derivatives
 
     @staticmethod

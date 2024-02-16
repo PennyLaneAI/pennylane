@@ -1046,6 +1046,65 @@ class TestIntegration:
         assert circuit() == expected
 
 
+class TestJacobian:
+    """Test that the jacobian of circuits can be computed."""
+
+    @staticmethod
+    @qml.qnode(NullQubit())
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.probs(wires=[0]), qml.expval(qml.PauliZ(0))
+
+    def test_jacobian_autograd(self):
+        """Test the jacobian with autograd."""
+
+        @qml.qnode(NullQubit())
+        def circuit(x, mp):
+            qml.RX(x, wires=0)
+            return qml.apply(mp)
+
+        x = qml.numpy.array(0.1)
+        probs_jac = qml.jacobian(circuit)(x, qml.probs(wires=[0]))
+        expval_jac = qml.jacobian(circuit)(x, qml.expval(qml.PauliZ(0)))
+        assert np.array_equal(probs_jac, np.zeros(2))
+        assert np.array_equal(expval_jac, 0.0)
+
+    @pytest.mark.jax
+    def test_jacobian_jax(self):
+        """Test the jacobian with jax."""
+        import jax
+        from jax import numpy as jnp
+
+        x = jnp.array(0.1)
+        probs_jac, expval_jac = jax.jacobian(self.circuit)(x)
+        assert np.array_equal(probs_jac, np.zeros(2))
+        assert np.array_equal(expval_jac, 0.0)
+
+    @pytest.mark.tf
+    def test_jacobian_tf(self):
+        """Test the jacobian with tf."""
+        import tensorflow as tf
+
+        x = tf.Variable(0.1)
+        with tf.GradientTape(persistent=True) as tape:
+            res = self.circuit(x)
+
+        probs_jac = tape.jacobian(res[0], x)
+        expval_jac = tape.jacobian(res[1], x)
+        assert np.array_equal(probs_jac, np.zeros(2))
+        assert np.array_equal(expval_jac, 0.0)
+
+    @pytest.mark.torch
+    def test_jacobian_torch(self):
+        """Test the jacobian with torch."""
+        import torch
+
+        x = torch.tensor(0.1, requires_grad=True)
+        probs_jac, expval_jac = torch.autograd.functional.jacobian(self.circuit, x)
+        assert np.array_equal(probs_jac, np.zeros(2))
+        assert np.array_equal(expval_jac, 0.0)
+
+
 @pytest.mark.parametrize("shots", [None, 100, [(100, 3)]])
 @pytest.mark.parametrize("x", [1.1, [1.1, 2.2]])
 @pytest.mark.parametrize(
