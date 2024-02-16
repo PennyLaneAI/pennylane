@@ -70,7 +70,7 @@ class I(CVObservable, Operation):
         if isinstance(wire, str):
             return f"I('{wire}')"
         return f"I({wire})"
-    
+
     @property
     def name(self):
         return "Identity"
