@@ -18,7 +18,7 @@ jobs:
           python-version: 3.9
 
       - name: Install dependencies
-        run: pip install black
+        run: pip install black pylint
 
       - uses: actions/checkout@v2
 
@@ -26,3 +26,6 @@ jobs:
         run: |
           black -l 100 pennylane/ --check
           black -l 100 tests/ --check
+
+      - run: pylint --rcfile .pylintrc pennylane/**/*.py
+      - run: pylint --rcfile tests/.pylintrc tests/**/*.py
