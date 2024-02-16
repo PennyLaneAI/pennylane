@@ -249,7 +249,7 @@ def _matrix_transform(
             U = matrix(op, wire_order=wire_order)
             # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
             # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
-            result = qml.math.matmul(*qml.math.coerce([U, result], like=interface))
+            result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
 
         return result
 
