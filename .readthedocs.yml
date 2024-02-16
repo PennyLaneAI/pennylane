@@ -13,7 +13,6 @@ build:
     - graphviz
   jobs:
     post_install:
-      - git update-index --assume-unchanged environment.yml docs/conf.py
       - git checkout master
       - pip freeze > .github/stable/doc.txt
       - cat .github/stable/doc.txt
