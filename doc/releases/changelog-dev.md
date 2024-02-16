@@ -319,6 +319,9 @@
 
 <h4>Other improvements</h4>
 
+* The `QSVT` operation now has a `data` property.
+  [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
+
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
@@ -513,9 +516,6 @@
 * Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
 
 <h3>Bug fixes 🐛</h3>
-
-* `qml.matrix` now properly handles mixed NumPy and JAX operations.
-  [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
 
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
   [(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
