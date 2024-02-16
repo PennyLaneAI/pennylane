@@ -42,6 +42,12 @@
   using the `@qml.defer_measurements` transform, so the above circuit would have required thousands
   of qubits to simulate.
 
+* The `default.qubit` device now supports mid-circuit measurements without using the deferred measurement
+  principle when using finite shots. The native execution mode comprises all features supported with `qml.defer_measurements`, including
+  classical control, collecting statistics, and post-selection. This PR notably introduces support for
+  post-selection, measurement value lists, and composite measurements.
+  [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
+
 <h4>Work easily and efficiently with operators 🔧</h4>
 
 * Over the past few releases, PennyLane's approach to operator arithmetic has been overhauled.
@@ -207,14 +213,6 @@
   (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
   ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
   ```
-
-<h3>Improvements 🛠</h3>
-
-* The `default.qubit` device now supports mid-circuit measurements without using the deferred measurement
-  principle when using finite shots. The native execution mode comprises all features supported with `qml.defer_measurements`, including
-  classical control, collecting statistics, and post-selection. This PR notably introduces support for
-  post-selection, measurement value lists, and composite measurements.
-  [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
