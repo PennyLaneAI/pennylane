@@ -873,7 +873,9 @@ def norm(tensor, like=None, **kwargs):
 @multi_dispatch(argnum=[0])
 def svd(tensor, like=None, **kwargs):
     """Compute the singular value decomposition of a tensor in each interface.
+
     For a matrix A, the singular value decomposition consist of three matrices U, S and Vh, such that:
+
 
     .. math::
 
