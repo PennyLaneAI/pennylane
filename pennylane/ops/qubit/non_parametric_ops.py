@@ -216,6 +216,10 @@ class X(Observable, Operation):
         if isinstance(wire, str):
             return f"X('{wire}')"
         return f"X({wire})"
+    
+    @property
+    def name(self):
+        return "PauliX"
 
     @staticmethod
     @lru_cache()
@@ -383,6 +387,10 @@ class Y(Observable, Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
+    
+    @property
+    def name(self):
+        return "PauliY"
 
     @staticmethod
     @lru_cache()
@@ -547,6 +555,10 @@ class Z(Observable, Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
+    
+    @property
+    def name(self):
+        return "PauliZ"
 
     @staticmethod
     @lru_cache()

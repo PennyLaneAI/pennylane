@@ -70,6 +70,10 @@ class I(CVObservable, Operation):
         if isinstance(wire, str):
             return f"I('{wire}')"
         return f"I({wire})"
+    
+    @property
+    def name(self):
+        return "Identity"
 
     @staticmethod
     def compute_eigvals(n_wires=1):  # pylint: disable=arguments-differ
