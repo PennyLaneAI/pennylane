@@ -290,9 +290,12 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     # has a limit of 8 dimensions if same indices are used
     matrix = cast(matrix, dtype=c_dtype)
     if qml.math.ndim(matrix) == 2:
+        is_batched = False
         batch_dim, dim = 1, matrix.shape[1]
     else:
+        is_batched = True
         batch_dim, dim = matrix.shape[:2]
+
 
     if get_interface(matrix) in ["autograd", "tensorflow"]:
         return _batched_partial_trace_nonrep_indices(matrix, indices, batch_dim, dim)
