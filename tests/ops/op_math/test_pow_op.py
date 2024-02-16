@@ -468,8 +468,7 @@ class TestSimplify:
         final_op = qml.CH([1, 0], id=3)
         simplified_op = pow_op.simplify()
 
-        # TODO: uncomment this check when all controlled operations inherit from ControlledOp
-        # assert isinstance(simplified_op, ControlledOp)
+        assert isinstance(simplified_op, ControlledOp)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
