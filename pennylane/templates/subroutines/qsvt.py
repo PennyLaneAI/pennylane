@@ -308,7 +308,7 @@ class QSVT(Operation):
         return [self._hyperparameters["UA"], *self._hyperparameters["projectors"]]
 
     @staticmethod
-    def compute_decomposition(*_data, UA, projectors, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(*_data, UA, projectors, **kwargs):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         The :class:`~.QSVT` is decomposed into alternating block encoding
@@ -338,7 +338,6 @@ class QSVT(Operation):
             UA (Operator): the block encoding circuit, specified as a :class:`~.Operator`
             projectors (list[Operator]): a list of projector-controlled phase
                 shift circuits that implement the desired polynomial
-            wires (Iterable): wires that the template acts on
 
         Returns:
             list[.Operator]: decomposition of the operator
