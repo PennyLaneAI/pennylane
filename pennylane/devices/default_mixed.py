@@ -537,7 +537,7 @@ class DefaultMixed(QubitDevice):
         if dm_dim != state.shape[0]:
             raise ValueError("Density matrix must be of length (2**wires, 2**wires)")
 
-        if not qnp.allclose(
+        if not qml.math.is_abstract(state) and not qnp.allclose(
             qnp.trace(qnp.reshape(state, (state_dim, state_dim))), 1.0, atol=tolerance
         ):
             raise ValueError("Trace of density matrix is not equal one.")

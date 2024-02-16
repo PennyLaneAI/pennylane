@@ -61,6 +61,11 @@ class ApproxTimeEvolution(Operation):
     this decomposition is exact for any value of :math:`n` when each term of the Hamiltonian
     commutes with every other term.
 
+    .. warning::
+
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
+        due to the order in which those observables are stored.
+
     .. note::
 
        This template uses the :class:`~.PauliRot` operation in order to implement
