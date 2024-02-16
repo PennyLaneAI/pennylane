@@ -525,6 +525,10 @@ def mitigate_with_zne(
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
+
+        # content of `results` must be modified in this post-processing function
+        results = list(results)
+
         for i, tape in enumerate(out_tapes):
             # stack the results if there are multiple measurements
             # this will not create ragged arrays since only expval measurements are allowed

@@ -54,6 +54,7 @@ from .preprocess import (
     validate_multiprocessing_workers,
     validate_device_wires,
     validate_adjoint_trainable_params,
+    null_postprocessing,
 )
 
 has_stim = True
@@ -66,7 +67,7 @@ Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTape_or_Batch = Union[QuantumTape, Sequence[QuantumTape]]
 
 # Updated observable list
-_MEAS_OBSERVABLES = {
+_OBSERVABLES_MAP = {
     "PauliX",
     "PauliY",
     "PauliZ",
@@ -79,8 +80,8 @@ _MEAS_OBSERVABLES = {
     "Prod",
 }
 
-# Clifford gates
-_GATE_OPERATIONS = {
+# Clifford gates and error channels
+_OPERATIONS_MAP = {
     "Identity": "I",
     "PauliX": "X",
     "PauliY": "Y",
@@ -101,28 +102,49 @@ _GATE_OPERATIONS = {
     "StatePrep": None,
     "Snapshot": None,
     "Barrier": None,
+    "PauliError": "CORRELATED_ERROR",
+    "BitFlip": "X_ERROR",
+    "PhaseFlip": "Z_ERROR",
+    "DepolarizingChannel": "DEPOLARIZE1",
 }
 
 
 def operation_stopping_condition(op: qml.operation.Operator) -> bool:
     """Specifies whether an operation is accepted by ``DefaultClifford``."""
-    return op.name in _GATE_OPERATIONS
+    return op.name in _OPERATIONS_MAP
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether an observable is accepted by ``DefaultClifford``."""
-    return obs.name in _MEAS_OBSERVABLES
+    return obs.name in _OBSERVABLES_MAP
+
+
+@qml.transform
+def _validate_channels(tape, name="device"):
+    """Validates the channels for a circuit."""
+    if not tape.shots and any(isinstance(op, qml.operation.Channel) for op in tape.operations):
+        raise qml.DeviceError(f"Channel not supported on {name} without finite shots.")
+
+    return (tape,), null_postprocessing
 
 
 def _pl_op_to_stim(op):
     """Convert PennyLane operation to a Stim operation"""
     try:
-        stim_op = _GATE_OPERATIONS[op.name]
+        stim_op = _OPERATIONS_MAP[op.name]
+        stim_tg = map(str, op.wires)
     except KeyError as e:
         raise qml.DeviceError(
             f"Operator {op} not supported on default.clifford and does not provide a decomposition."
         ) from e
-    return stim_op, " ".join(map(str, op.wires))
+
+    # Check if the operation is noisy
+    if isinstance(op, qml.operation.Channel):
+        stim_op += f"({op.parameters[-1]})"  # get the probability
+        if op.name == "PauliError":
+            stim_tg = [pauli + wire for pauli, wire in zip(op.parameters[0], stim_tg)]
+
+    return stim_op, " ".join(stim_tg)
 
 
 def _pl_obs_to_linear_comb(meas_op):
@@ -141,12 +163,19 @@ def _pl_obs_to_linear_comb(meas_op):
             f"default.clifford doesn't support expectation value calculation with {type(meas_op).__name__} at the moment."
         )
 
-    coeffs = np.array(list(meas_rep.values()))
-    paulis = [
-        ("".join(pw.values()), list(pw.keys())) if pw.values() else ("I", meas_obs.wires[:1])
-        for pw in meas_rep
-    ]
-
+    coeffs, paulis = np.array(list(meas_rep.values())), []
+    meas_op_wires = list(meas_op.wires)
+    for pw in meas_rep:
+        p_wire, p_word = pw.keys(), pw.values()
+        if not p_word:
+            # empty pauli word correspond to identity
+            r_wire, r_word = meas_op_wires[:1], "I"
+        else:
+            # reorder the wires based on original meas_op
+            # reorder the pauli terms based on above.
+            r_wire = sorted(p_wire, key=meas_op_wires.index)
+            r_word = "".join(map(pw.get, r_wire))
+        paulis.append((r_word, r_wire))
     return coeffs, paulis
 
 
@@ -308,6 +337,36 @@ class DefaultClifford(Device):
         tensor(0.0, requires_grad=True)
 
     .. details::
+        :title: Error Channels
+        :href: clifford-errors
+
+        This device supports the finite-shot execution of quantum circuits with
+        the following error channels that add Pauli noise, allowing for one to perform
+        any sampling-based measurements.
+
+        - *Multi-qubit Pauli errors:* :mod:`qml.PauliError <pennylane.PauliError>`
+        - *Single-qubit depolarization errors:* :mod:`qml.DepolarizingChannel <pennylane.DepolarizingChannel>`
+        - *Single-qubit flip errors:* :mod:`qml.BitFlip <pennylane.BitFlip>` and :mod:`qml.PhaseFlip <pennylane.PhaseFlip>`
+
+        .. code-block:: python
+
+            import pennylane as qml
+            import numpy as np
+            dev = qml.device("default.clifford", shots=1024, seed=42)
+
+            num_wires = 3
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(wires=[0])
+                for idx in range(num_wires):
+                    qml.CNOT(wires=[idx, idx+1])
+                qml.BitFlip(0.2, wires=[1])
+                return qml.counts()
+
+        >>> circuit()
+        {'0000': 417, '0100': 95, '1011': 104, '1111': 408}
+
+    .. details::
         :title: Tracking
         :href: clifford-tracking
 
@@ -416,6 +475,7 @@ class DefaultClifford(Device):
             transform_program.add_transform(
                 decompose, stopping_condition=operation_stopping_condition, name=self.name
             )
+            transform_program.add_transform(_validate_channels, name=self.name)
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
@@ -855,7 +915,7 @@ class DefaultClifford(Device):
         diagonalizing_ops = [] if not meas.obs else meas.obs.diagonalizing_gates()
         for diag_op in diagonalizing_ops:
             # Check if it is Clifford
-            if diag_op.name not in _GATE_OPERATIONS:  # pragma: no cover
+            if diag_op.name not in _OPERATIONS_MAP:  # pragma: no cover
                 raise ValueError(
                     f"Currently, we only support observables whose diagonalizing gates are Clifford, got {diag_op}"
                 )
