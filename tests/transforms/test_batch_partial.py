@@ -14,7 +14,7 @@
 """
 Unit tests for the batch partial transform.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,unnecessary-lambda-assignment
 import re
 import pytest
 

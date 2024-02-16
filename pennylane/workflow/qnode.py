@@ -35,9 +35,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-
-
-
 def _convert_to_interface(res, interface):
     """
     Recursively convert res to the given interface.

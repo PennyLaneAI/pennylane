@@ -338,7 +338,7 @@ class RotosolveOptimizer:
         else:
             self.substep_optimizer = substep_optimizer
 
-    def step_and_cost(
+    def step_and_cost(  # pylint:disable=too-many-arguments
         self,
         objective_fn,
         *args,
@@ -499,7 +499,7 @@ class RotosolveOptimizer:
 
         return args, fun_at_zero
 
-    def step(
+    def step(  # pylint:disable=too-many-arguments
         self,
         objective_fn,
         *args,

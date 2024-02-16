@@ -280,7 +280,8 @@ def test_meas_probs_large():
 
     dev_c = qml.device("default.clifford", seed=24)
 
-    single_op = lambda idx: [qml.PauliX, qml.PauliY, qml.Hadamard, qml.PauliZ][idx]
+    def single_op(idx):
+        return [qml.PauliX, qml.PauliY, qml.Hadamard, qml.PauliZ][idx]
 
     def circuit_fn2(meas):
         for wire in range(16):
