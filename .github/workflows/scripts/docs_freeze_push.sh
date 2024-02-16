@@ -1,8 +1,12 @@
 DEPS_BRANCH="timmy-deps-test"
+git fetch origin master
 git checkout master
 git restore .
+git pull
 touch .github/stable/doc.txt
 pip freeze | grep -v "file:///" > .github/stable/doc.txt
+ls
+git status
 git diff --quiet
 if [ $? -eq 0 ]; then
     echo no changes, exiting
