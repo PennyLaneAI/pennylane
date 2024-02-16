@@ -296,7 +296,6 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
         is_batched = True
         batch_dim, dim = matrix.shape[:2]
 
-
     if get_interface(matrix) in ["autograd", "tensorflow"]:
         return _batched_partial_trace_nonrep_indices(matrix, indices, batch_dim, dim)
 
