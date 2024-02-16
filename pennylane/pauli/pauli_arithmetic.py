@@ -252,6 +252,9 @@ class PauliWord(dict):
         Returns:
             PauliSentence: coeff * new_word
         """
+        if isinstance(other, PauliSentence):
+            return PauliSentence({self: 1.0}) @ other
+
         new_word, coeff = self._matmul(other)
         return PauliSentence({new_word: coeff})
 
@@ -682,6 +685,9 @@ class PauliSentence(dict):
     def __matmul__(self, other):
         """Matrix / tensor product between two PauliSentences by iterating over each sentence and multiplying
         the Pauli words pair-wise"""
+        if isinstance(other, PauliWord):
+            other = PauliSentence({other: 1.0})
+
         final_ps = PauliSentence()
 
         if len(self) == 0 or len(other) == 0:
