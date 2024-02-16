@@ -299,6 +299,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Caching of executions is now turned off by default when `max_diff == 1`, as the classical overhead cost
+  outweighs the probability that duplicate circuits exists.
+
 * The entry point convention registering compilers with PennyLane has changed.
   [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
 
