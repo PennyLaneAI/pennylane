@@ -397,6 +397,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* Replacing `map_batch_transform` in the source code with the method `_batch_transform` 
+  implemented in `TransformDispatcher`.
+  [(#5212)](https://github.com/PennyLaneAI/pennylane/pull/5212)
+
 * `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
