@@ -373,7 +373,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* Replacing `map_batch_transform` in the source code with the method `_batch_transform` 
+* Replacing `map_batch_transform` in the source code with the method `_batch_transform`
   implemented in `TransformDispatcher`.
   [(#5212)](https://github.com/PennyLaneAI/pennylane/pull/5212)
 
@@ -444,7 +444,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * `qml.matrix` now properly handles mixed NumPy and JAX operations.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/5110)
+  [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
 
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
   [(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
