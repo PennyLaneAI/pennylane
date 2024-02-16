@@ -261,12 +261,12 @@ class TestQSVT:
         [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
     )
     def test_QSVT_jax_with_identity(self, input_matrix, angles, wires):
-        """Test that applying the identity operation before the qsvt function
-        does not affect the matrix for jax.
+        """Test that applying the identity operation before the qsvt function in
+        a JIT context does not affect the matrix for jax.
 
-        The primary purpose of this test is to ensure that qml.matrix() can
-        multiply a NumPy matrix by a JAX matrix when the inferred interface is
-        NumPy (i.e., the default interface when no parameters are given).
+        The main purpose of this test is to ensure that the types of the block
+        encoding and projector-controlled phase shift data in a QSVT instance
+        are taken into account when inferring the backend of a QuantumScript.
         """
         import jax
 
