@@ -168,13 +168,10 @@
         [1, 0, 0, 1, 1]])
   ```
 
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
-
-* Added new error tracking and propagation functionality.
-  [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
-  [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
-
+  The `default.clifford` device also supports the `PauliError`, `DepolarizingChannel`, `BitFlip` and
+  `PhaseFlip`
+  [noise channels](https://docs.pennylane.ai/en/latest/introduction/operations.html#noisy-channels)
+  when operating in finite-shot mode.
 
 <h3>Improvements 🛠</h3>
 
@@ -367,9 +364,17 @@
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
   [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
-* An error message provides clearer instructions for installing PennyLane-Qiskit if the `qml.from_qiskit`
-  function fails because the Qiskit converter is missing.
-  [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
+* Added new error tracking and propagation functionality.
+  [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
+  [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
+
+* Replacing `map_batch_transform` in the source code with the method `_batch_transform`
+  implemented in `TransformDispatcher`.
+  [(#5212)](https://github.com/PennyLaneAI/pennylane/pull/5212)
+
+* `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
+  when working in the tape paradigm.
+  [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
 <h3>Breaking changes 💔</h3>
 
@@ -416,8 +421,8 @@
   (with potentially negative eigenvalues) has been implemented.
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
-* Controlled operators with a custom controlled version decomposes like how their
-  controlled counterpart decomposes, as opposed to decomposing into their controlled version.
+* Controlled operators with a custom controlled version decomposes like how their controlled
+  counterpart decomposes, as opposed to decomposing into their controlled version.
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
 
@@ -447,14 +452,6 @@
   [(#5097)](https://github.com/PennyLaneAI/pennylane/pull/5097)
 
 <h3>Deprecations 👋</h3>
-
-* Replacing `map_batch_transform` in the source code with the method `_batch_transform`
-  implemented in `TransformDispatcher`.
-  [(#5212)](https://github.com/PennyLaneAI/pennylane/pull/5212)
-
-* `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
-  when working in the tape paradigm.
-  [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
   module and will be removed from the Operator class in an upcoming release.
@@ -519,7 +516,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
-  [(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
+[(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
 
 * The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
   [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
@@ -610,7 +607,6 @@
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
-Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
 Thomas Bromley,
