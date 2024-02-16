@@ -3,7 +3,7 @@ on:
 - pull_request
 
 jobs:
-  black:
+  black-pylint:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,5 +27,10 @@ jobs:
           black -l 100 pennylane/ --check
           black -l 100 tests/ --check
 
-      - run: pylint --rcfile .pylintrc pennylane/**/*.py
-      - run: pylint --rcfile tests/.pylintrc tests/**/*.py
+      - name: Run Pylint (source files)
+        if: always()
+        run: pylint --rcfile .pylintrc pennylane/**/*.py
+
+      - name: Run Pylint (test files)
+        if: always()
+        run: pylint --rcfile tests/.pylintrc tests/**/*.py
