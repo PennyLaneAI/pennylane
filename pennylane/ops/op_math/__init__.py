@@ -64,6 +64,12 @@ Controlled Operator Classes
     ~ControlledQubitUnitary
     ~CY
     ~CZ
+    ~CH
+    ~CCZ
+    ~CSWAP
+    ~CNOT
+    ~Toffoli
+    ~MultiControlledX
     ~CRX
     ~CRY
     ~CRZ
@@ -109,6 +115,11 @@ from .controlled_ops import (
     CRZ,
     CY,
     CZ,
+    CH,
+    CCZ,
+    CSWAP,
+    CNOT,
+    Toffoli,
     MultiControlledX,
 )
 from .decompositions import one_qubit_decomposition, two_qubit_decomposition, sk_decomposition
@@ -125,6 +136,11 @@ controlled_qubit_ops = {
     "ControlledQubitUnitary",
     "CY",
     "CZ",
+    "CH",
+    "CCZ",
+    "CSWAP",
+    "CNOT",
+    "Toffoli",
     "MultiControlledX",
     "CRX",
     "CRY",
