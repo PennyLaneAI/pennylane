@@ -358,6 +358,13 @@ class TestQSVT:
         assert op.label() == "QSVT"
         assert op.label(base_label="custom_label") == "custom_label"
 
+    def test_data(self):
+        """Test that the data property gets and sets the correct values"""
+        op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        assert op.data == (1, 2, 3)
+        op.data = [4, 5, 6]
+        assert op.data == (4, 5, 6)
+
 
 class Testqsvt:
     """Test the qml.qsvt function."""
