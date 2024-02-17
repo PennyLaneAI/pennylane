@@ -42,7 +42,7 @@ class Reflection(SymbolicOp, Operation):
 
     **Example**
 
-    The reflection :math:`-\mathbb{I} + 2|+\rangle \langle +|` applied to the state :math:`|1\rangle` would be as follows:
+    This example shows how to apply the reflection :math:`-\mathbb{I} + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
 
     .. code-block::
 
