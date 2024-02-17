@@ -14,7 +14,6 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
-import pennylane as qml
 from pennylane.ops import Controlled, Conditional
 from pennylane.measurements import MeasurementProcess, MidMeasureMP, MeasurementValue
 
@@ -96,12 +95,6 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
     return {wire: ind for ind, wire in enumerate(wire_order)}
 
 
-def _is_controlled(op):
-    """Checks whether an operation is a controlled operation."""
-    # TODO: remove the other ones once they all inherit from Controlled [sc-37951]
-    return isinstance(op, (Controlled, qml.CCZ, qml.CSWAP, qml.CH, qml.CNOT, qml.Toffoli))
-
-
 def unwrap_controls(op):
     """Unwraps nested controlled operations for drawing.
 
@@ -129,7 +122,7 @@ def unwrap_controls(op):
 
         while hasattr(next_ctrl, "base"):
 
-            if _is_controlled(next_ctrl.base):
+            if isinstance(next_ctrl.base, Controlled):
                 base_control_wires = getattr(next_ctrl.base, "control_wires", [])
                 control_wires += base_control_wires
 
