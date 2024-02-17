@@ -109,13 +109,13 @@ class Reflection(SymbolicOp, Operation):
     def has_matrix(self):
         return False
 
-    def decomposition(self):
+    def compute_decomposition(self, base, wires):
         wires = qml.wires.Wires(self.reflection_wires)
 
         ops = []
 
         ops.append(qml.GlobalPhase(np.pi))
-        ops.append(qml.adjoint(self.U))
+        ops.append(qml.adjoint(base))
 
         if len(wires) > 1:
             ops.append(qml.PauliX(wires=wires[-1]))
@@ -133,6 +133,6 @@ class Reflection(SymbolicOp, Operation):
             ops.append(qml.PhaseShift(self.alpha, wires=wires))
             ops.append(qml.PauliX(wires=wires))
 
-        ops.append(self.U)
+        ops.append(base)
 
         return ops
