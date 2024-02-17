@@ -106,7 +106,7 @@ class TestIntegration:
         qml.RX(-2, wires=0)
         qml.CRX(1, wires=[0, 1])
         qml.Reflection(hadamards(range(3)), alpha)
-        return qml.expval(qml.PauliZ(0))
+        return qml.probs(wires=3)
 
     x = np.array(0.25)
 
@@ -143,7 +143,7 @@ class TestIntegration:
         qnode = qml.QNode(self.circuit, dev, interface=None)
 
         res = qnode(self.x)
-        assert res.shape == (16,)
+        assert res.shape == (8,)
         assert np.allclose(res, self.exp_result, atol=0.002)
 
     def test_lightning_qubit(self):
@@ -152,7 +152,7 @@ class TestIntegration:
         qnode = qml.QNode(self.circuit, dev)
 
         res = qnode(self.x)
-        assert res.shape == (16,)
+        assert res.shape == (8,)
         assert np.allclose(res, self.exp_result, atol=0.002)
 
     @pytest.mark.autograd
@@ -164,7 +164,7 @@ class TestIntegration:
 
         x = qml.numpy.array(self.x, requires_grad=True)
         res = qnode(x)
-        assert qml.math.shape(res) == (16,)
+        assert qml.math.shape(res) == (8,)
         assert np.allclose(res, self.exp_result, atol=0.002)
 
     @pytest.mark.jax
@@ -185,7 +185,7 @@ class TestIntegration:
 
         x = jax.numpy.array(self.x)
         res = qnode(x)
-        assert qml.math.shape(res) == (16,)
+        assert qml.math.shape(res) == (8,)
         assert np.allclose(res, self.exp_result, atol=0.005)
 
         jac_fn = jax.jacobian(qnode)
@@ -193,7 +193,7 @@ class TestIntegration:
             jac_fn = jax.jit(jac_fn)
 
         jac = jac_fn(x)
-        assert jac.shape == (16,)
+        assert jac.shape == (8,)
         assert np.allclose(jac, self.exp_jac, atol=0.006)
 
     @pytest.mark.torch
@@ -209,11 +209,11 @@ class TestIntegration:
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
-        assert qml.math.shape(res) == (16,)
+        assert qml.math.shape(res) == (8,)
         assert qml.math.allclose(res, self.exp_result, atol=0.002)
 
         jac = torch.autograd.functional.jacobian(qnode, x)
-        assert qml.math.shape(jac) == (16,)
+        assert qml.math.shape(jac) == (8,)
         assert qml.math.allclose(jac, self.exp_jac, atol=0.006)
 
     @pytest.mark.tf
@@ -232,11 +232,11 @@ class TestIntegration:
         with tf.GradientTape() as tape:
             res = qnode(x)
 
-        assert qml.math.shape(res) == (16,)
+        assert qml.math.shape(res) == (8,)
         assert qml.math.allclose(res, self.exp_result, atol=0.002)
 
         jac = tape.gradient(res, x)
-        assert qml.math.shape(jac) == (16,)
+        assert qml.math.shape(jac) == (8,)
 
 
 def test_correct_queueing():
