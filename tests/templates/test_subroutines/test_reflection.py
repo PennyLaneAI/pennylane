@@ -106,7 +106,7 @@ class TestIntegration:
         qml.RX(-2, wires=0)
         qml.CRX(1, wires=[0, 1])
         qml.Reflection(hadamards(range(3)), alpha)
-        return qml.probs(wires=3)
+        return qml.probs(wires=range(3))
 
     x = np.array(0.25)
 
