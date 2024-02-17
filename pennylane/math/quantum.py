@@ -266,7 +266,6 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
     >>> partial_trace(x, indices=[0])
     array([[1, 0], [0, 0]])
-    
     We can also pass a batch of matrices ``x`` to the function and return the partial trace of each matrix with respect to each matrix's 0th index.
     >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
     [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
