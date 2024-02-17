@@ -275,7 +275,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
 
     The partial trace can also be computed with respect to multiple indices within different frameworks such as TensorFlow and PyTorch.
     >>> x = tf.Variable([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-                        [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
+    [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
     >>> partial_trace(x, indices=[1])
     <tf.Tensor: shape=(2, 2, 2), dtype=complex128, numpy=
     array([[[1.+0.j, 0.+0.j],
@@ -283,6 +283,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
 
         [[1.+0.j, 0.+0.j],
             [0.+0.j, 0.+0.j]]])>
+    
     """
     # Autograd does not support same indices sum in backprop, and tensorflow
     # has a limit of 8 dimensions if same indices are used
