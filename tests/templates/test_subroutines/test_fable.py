@@ -23,6 +23,7 @@ from pennylane import numpy as pnp
 
 
 def generate_FABLE_circuit(A, tol):
+    """Circuit that manually creates FABLE gates for tests."""
     alphas = qml.math.arccos(A).flatten()
     thetas = compute_theta(alphas)
 
@@ -97,6 +98,7 @@ class TestFable:
         assert qml.equal(op, new_op)
 
     def test_fable_real(self, input_matrix):
+        """Test that FABLE produces the right circuit given a real-valued matrix"""
         ancilla = ["ancilla"]
         s = int(np.log2(np.array(input_matrix).shape[0]))
         wires_i = [f"i{index}" for index in range(s)]
