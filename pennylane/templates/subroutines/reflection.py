@@ -23,8 +23,12 @@ from pennylane.ops import SymbolicOp
 
 
 class Reflection(SymbolicOp, Operation):
-    r"""Reflection(U, alpha = np.pi, reflection_wires = None)
-    Apply a :math:`\alpha`-reflection over the state :math:`|\Psi\rangle = U|0\rangle`.
+    r"""An operation that applies a reflection on a state :math:`|\Psi\rangle.
+    This operator is useful in algorithms such as `Amplitude Amplification <https://arxiv.org/abs/quant-ph/0005055>`__
+    or `Oblivious Amplitude Amplification <https://arxiv.org/abs/1312.1414>`__.
+
+    Given an :class:`~.Operator` :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`,  and a reflection angle :math:`\alpha`,
+    this template creates the operation:
 
     .. math::
 
@@ -32,7 +36,7 @@ class Reflection(SymbolicOp, Operation):
 
 
     Args:
-        U (qml.ops.op_math.prod.Prod): the product of operations that generate the state :math:`|\Psi\rangle`.
+        U (Operator): The operator that generate the state :math:`|\Psi\rangle`.
         alpha (float): the reflection angle. Default is :math:`\pi`.
         reflection_wires (Any or Iterable[Any]): Subsystem of wires on which to reflect. The default is None and the reflection will be applied on the U wires.
 
@@ -81,7 +85,7 @@ class Reflection(SymbolicOp, Operation):
 
             U(\mathbb{I} - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes \mathbb{I}^{n-m}})U^{\dagger},
 
-        where :math:`m` is the number of reflection wires and :math:`n` is the total number of wires.
+        where :math:`m` is the number of reflection wires and `math:`n` is the total number of wires.
 
     """
 
