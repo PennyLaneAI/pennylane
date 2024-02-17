@@ -16,6 +16,8 @@ Stores classes and logic to define and track algorithmic error in a quantum work
 """
 from abc import ABC, abstractmethod
 
+from pennylane.operation import Operation
+
 
 class AlgorithmicError(ABC):
     """Abstract base class representing an abstract type of error.
@@ -57,3 +59,21 @@ class AlgorithmicError(ABC):
             approximation.
         """
         raise NotImplementedError
+
+
+class ErrorOperation(Operation):
+    r"""Base class that represents quantum operations which carry some form of algorithmic error.
+
+    .. note::
+        Child classes must implement the :func:`~.ErrorOperation.error` method which computes
+        the error of the operation.
+    """
+
+    @property
+    @abstractmethod
+    def error(self) -> AlgorithmicError:
+        """Computes the error of the operation.
+
+        Returns:
+            AlgorithmicError: The error.
+        """
