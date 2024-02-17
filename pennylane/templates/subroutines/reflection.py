@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ class Reflection(SymbolicOp, Operation):
 
     **Example**
 
-    The reflection :math:`-\mathbb{I} + 2|+\rangle \langle +|` applied to the state :math:`|1\rangle` would be as follows:
+    This example shows how to apply the reflection :math:`-\mathbb{I} + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
 
     .. code-block::
 
