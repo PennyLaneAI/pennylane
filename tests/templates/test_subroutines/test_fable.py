@@ -18,6 +18,52 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.templates.subroutines.fable import FABLE
+from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
+from pennylane import numpy as pnp
+
+
+def generate_FABLE_circuit(A, tol):
+    alphas = qml.math.arccos(A).flatten()
+    thetas = compute_theta(alphas)
+
+    ancilla = ["ancilla"]
+    s = int(qml.math.log2(qml.math.shape(A)[0]))
+    wires_i = [f"i{index}" for index in range(s)]
+    wires_j = [f"j{index}" for index in range(s)]
+
+    code = gray_code(2 * qml.math.sqrt(len(A)))
+    n_selections = len(code)
+
+    control_wires = [
+        int(qml.math.log2(int(code[i], 2) ^ int(code[(i + 1) % n_selections], 2)))
+        for i in range(n_selections)
+    ]
+
+    wire_map = dict(enumerate(wires_j + wires_i))
+
+    for w in wires_i:
+        qml.Hadamard(w)
+
+    nots = {}
+    for theta, control_index in zip(thetas, control_wires):
+        if abs(2 * theta) > tol:
+            for c_wire in nots:
+                qml.CNOT(wires=[c_wire] + ancilla)
+            qml.RY(2 * theta, wires=ancilla)
+            nots = {}
+        if wire_map[control_index] in nots:
+            del nots[wire_map[control_index]]
+        else:
+            nots[wire_map[control_index]] = 1
+
+    for c_wire in nots:
+        qml.CNOT([c_wire] + ancilla)
+
+    for w_i, w_j in zip(wires_i, wires_j):
+        qml.SWAP(wires=[w_i, w_j])
+
+    for w in wires_i:
+        qml.Hadamard(w)
 
 
 class TestFable:
@@ -72,27 +118,6 @@ class TestFable:
         )
         assert np.allclose(input_matrix, expected)
 
-    @pytest.mark.jax
-    def test_fable_jax(self, input_matrix):
-        """Test that the Fable operator matrix is correct for jax."""
-        import jax.numpy as jnp
-
-        ancilla = ["ancilla"]
-        s = int(np.log2(np.array(input_matrix).shape[0]))
-        wires_i = [f"i{index}" for index in range(s)]
-        wires_j = [f"j{index}" for index in range(s)]
-        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
-
-        jax_matrix = jnp.array(input_matrix)
-        op = FABLE(jax_matrix, 0)
-
-        M = (
-            len(jax_matrix)
-            * qml.matrix(op, wire_order=wire_order).real[0 : len(jax_matrix), 0 : len(jax_matrix)]
-        )
-        assert np.allclose(M, jax_matrix)
-        assert qml.math.get_interface(M) == "jax"
-
     def test_fable_imaginary_error(self, input_matrix):
         """Test if a ValueError is raised when imaginary values are passed in."""
         imaginary_matrix = input_matrix.astype(np.complex128)
@@ -123,6 +148,7 @@ class TestFable:
         with pytest.warns(Warning, match="The input matrix should be of shape NxN"):
             FABLE(non_square_matrix, tol=0.01)
 
+    @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_non_square(self):
         """Test that non-square NxM matrices get padded with zeroes to reach NxN size."""
         non_square_matrix = np.array(
@@ -149,6 +175,7 @@ class TestFable:
         with pytest.warns(Warning, match="The input matrix should be of shape NxN"):
             FABLE(two_by_three_array, tol=0.01)
 
+    @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_not_power(self):
         """Test that matrices with dimensions N that are not a power of 2 get padded."""
         two_by_three_array = np.array(
@@ -174,6 +201,16 @@ class TestFable:
         assert qml.math.allclose(qml.matrix(circuit_default), qml.matrix(circuit_jax))
         assert qml.math.get_interface(qml.matrix(circuit_jax)) == "jax"
 
+    @pytest.mark.autograd
+    def test_autograd(self, input_matrix):
+        """Test that the Fable operator matrix is correct for autograd."""
+        circuit_default = FABLE(input_matrix, 0)
+        grad_matrix = pnp.array(input_matrix)
+        circuit_grad = FABLE(grad_matrix, 0)
+
+        assert qml.math.allclose(qml.matrix(circuit_default), qml.matrix(circuit_grad))
+        assert qml.math.get_interface(qml.matrix(circuit_grad)) == "autograd"
+
     @pytest.mark.jax
     def test_fable_grad_jax(self, input_matrix):
         """Test that BlockEncode is differentiable when using jax."""
@@ -182,6 +219,8 @@ class TestFable:
 
         dev = qml.device("default.qubit")
 
+        input_jax = jnp.array(input_matrix)
+
         @qml.qnode(dev, diff_method="backprop")
         def circuit_default(input_matrix):
             FABLE(input_matrix)
@@ -189,9 +228,38 @@ class TestFable:
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
-            FABLE(jnp.array(input_matrix))
+            generate_FABLE_circuit(input_matrix, 0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        assert np.allclose(
-            jax.grad(circuit_default)(input_matrix), jax.grad(circuit_jax)(input_matrix)
-        )
+        grad_fn = jax.grad(circuit_default)
+        grads = grad_fn(input_jax)
+
+        grad_fn2 = jax.grad(circuit_jax)
+        grads2 = grad_fn2(input_jax)
+
+        assert qml.math.allclose(grads, grads2)
+
+    @pytest.mark.autograd
+    def test_fable_autograd(self, input_matrix):
+        """Test that BlockEncode is differentiable when using autograd."""
+        dev = qml.device("default.qubit")
+
+        input_autograd = pnp.array(input_matrix)
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit_default(input_matrix):
+            FABLE(input_matrix)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit_autograd(input_matrix):
+            generate_FABLE_circuit(input_matrix, 0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        grad_fn = qml.grad(circuit_default)
+        grads = grad_fn(input_autograd)
+
+        grad_fn2 = qml.grad(circuit_autograd)
+        grads2 = grad_fn2(input_autograd)
+
+        assert qml.math.allclose(grads, grads2)
