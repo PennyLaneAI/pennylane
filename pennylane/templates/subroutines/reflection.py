@@ -109,6 +109,7 @@ class Reflection(SymbolicOp, Operation):
     def has_matrix(self):
         return False
 
+    # pylint:disable=arguments-differ
     def compute_decomposition(self, base, wires):
         wires = qml.wires.Wires(self.reflection_wires)
 
