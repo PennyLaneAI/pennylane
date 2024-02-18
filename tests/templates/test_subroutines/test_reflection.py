@@ -183,7 +183,7 @@ class TestIntegration:
         if use_jit:
             qnode = jax.jit(qnode)
 
-        x = jax.numpy.array(self.x)
+        x = jax.numpy.array(float(self.x))
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
         assert np.allclose(res, self.exp_result, atol=0.005)
