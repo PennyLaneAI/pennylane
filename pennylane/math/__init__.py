@@ -69,6 +69,7 @@ from .quantum import (
     dm_from_state_vector,
     marginal_prob,
     mutual_info,
+    partial_trace,
     purity,
     reduce_dm,
     reduce_statevector,
@@ -78,7 +79,6 @@ from .quantum import (
     max_entropy,
     min_entropy,
     trace_distance,
-    partial_trace,
 )
 from .fidelity import fidelity, fidelity_statevector
 from .utils import (
@@ -167,6 +167,7 @@ __all__ = [
     "multi_dispatch",
     "mutual_info",
     "ones_like",
+    "partial_trace",
     "purity",
     "reduce_dm",
     "reduce_statevector",
@@ -180,5 +181,4 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "where",
-    "partial_trace",
 ]
