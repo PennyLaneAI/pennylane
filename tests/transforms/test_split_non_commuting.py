@@ -293,6 +293,41 @@ class TestUnittestSplitNonCommuting:
         assert qml.equal(split[1].measurements[0], meas_type_2())
         assert qml.equal(split[1].measurements[1], meas_type_2(wires=[0, 1]))
 
+    @pytest.mark.parametrize("batch_type", (tuple, list))
+    def test_batch_of_tapes(self, batch_type):
+        """Test that `split_non_commuting` can transform a batch of tapes"""
+
+        # create a batch with two simple tapes
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(1.2, 0)], [qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.X(1))]
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.RY(0.5, 0)], [qml.expval(qml.Z(0)), qml.expval(qml.Y(0))]
+        )
+        batch = batch_type([tape1, tape2])
+
+        # test transform on the batch
+        new_batch, post_proc_fn = split_non_commuting(batch)
+
+        # test that transform has been applied correctly on the batch by explicitly comparing with splitted tapes
+        tp1 = qml.tape.QuantumScript([qml.RX(1.2, 0)], [qml.expval(qml.X(0)), qml.expval(qml.X(1))])
+        tp2 = qml.tape.QuantumScript([qml.RX(1.2, 0)], [qml.expval(qml.Y(0))])
+        tp3 = qml.tape.QuantumScript([qml.RY(0.5, 0)], [qml.expval(qml.Z(0))])
+        tp4 = qml.tape.QuantumScript([qml.RY(0.5, 0)], [qml.expval(qml.Y(0))])
+
+        assert all(qml.equal(tapeA, tapeB) for tapeA, tapeB in zip(new_batch, [tp1, tp2, tp3, tp4]))
+
+        # test postprocessing function applied to the transformed batch
+        assert all(
+            qml.equal(tapeA, tapeB)
+            for sublist1, sublist2 in zip(post_proc_fn(new_batch), ((tp1, tp2), (tp3, tp4)))
+            for tapeA, tapeB in zip(sublist1, sublist2)
+        )
+
+        # final (double) check: test postprocessing function on a fictitious results
+        result = ("tp1", "tp2", "tp3", "tp4")
+        assert post_proc_fn(result) == (("tp1", "tp2"), ("tp3", "tp4"))
+
 
 # measurements that require shots=True
 required_shot_meas_fn = [qml.sample, qml.counts]
