@@ -101,7 +101,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
         w = o.wires.labels if wires is None else wires.indices(o.wires)
         p = marginal_prob(prob, w)
 
-        res = dot(eigvals ** 2, p) - (dot(eigvals, p)) ** 2
+        res = dot(eigvals**2, p) - (dot(eigvals, p)) ** 2
         variances.append(res)
 
     cov = diag(variances)
@@ -289,7 +289,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
 
         [[1.+0.j, 0.+0.j],
             [0.+0.j, 0.+0.j]]])>
-    
+
     """
     # Autograd does not support same indices sum in backprop, and tensorflow
     # has a limit of 8 dimensions if same indices are used
@@ -326,7 +326,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        matrix, (batch_dim, 2 ** number_wires_sub, 2 ** number_wires_sub)
+        matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
     )
     return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 
@@ -382,7 +382,7 @@ def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        matrix, (batch_dim, 2 ** number_wires_sub, 2 ** number_wires_sub)
+        matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
     )
     return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 
