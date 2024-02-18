@@ -258,6 +258,8 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     Returns:
         tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
 
+    .. seealso:: :func:`pennylane.math.reduce_dm`, and :func:`pennylane.math.reduce_statevector`
+
     **Example**
 
     We can compute the partial trace of the matrix ``x`` with respect to its 0th index.
@@ -275,7 +277,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     >>> partial_trace(x, indices=[0])
     array([[[1, 0], [0, 0]], [[0, 0], [0, 1]]])
 
-    The partial trace can also be computed with respect to multiple indices within different frameworks such as TensorFlow and PyTorch.
+    The partial trace can also be computed with respect to multiple indices within different frameworks such as TensorFlow.
 
     >>> x = tf.Variable([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
     ... [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
