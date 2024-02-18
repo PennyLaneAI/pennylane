@@ -23,7 +23,7 @@ from pennylane.ops import SymbolicOp
 
 
 class Reflection(SymbolicOp, Operation):
-    r"""An operation that applies a reflection on a state :math:`|\Psi\rangle.
+    r"""An operation that applies a reflection on a state :math:`|\Psi\rangle`.
     This operator is useful in algorithms such as `Amplitude Amplification <https://arxiv.org/abs/quant-ph/0005055>`__
     or `Oblivious Amplitude Amplification <https://arxiv.org/abs/1312.1414>`__.
 
@@ -85,7 +85,7 @@ class Reflection(SymbolicOp, Operation):
 
             U(\mathbb{I} - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes \mathbb{I}^{n-m}})U^{\dagger},
 
-        where :math:`m` is the number of reflection wires and `math:`n` is the total number of wires.
+        where :math:`m` is the number of reflection wires and :math:`n` is the total number of wires.
 
     """
 
