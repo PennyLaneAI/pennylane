@@ -81,7 +81,8 @@ def _pw_prefactor_tensor(observable: Tensor):
     raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
-@_pauli_word_prefactor.register
+@_pauli_word_prefactor.register(Hamiltonian)
+@_pauli_word_prefactor.register(LinearCombination)
 def _pw_prefactor_ham(observable: Union[Hamiltonian, LinearCombination]):
     if is_pauli_word(observable):
         return observable.coeffs[0]

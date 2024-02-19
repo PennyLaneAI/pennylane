@@ -421,7 +421,8 @@ def _(op: SProd):
     return ps
 
 
-@_pauli_sentence.register
+@_pauli_sentence.register(Hamiltonian)
+@_pauli_sentence.register(LinearCombination)
 def _(op: Union[Hamiltonian, LinearCombination]):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")

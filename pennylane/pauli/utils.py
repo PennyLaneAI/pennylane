@@ -130,7 +130,8 @@ def _is_pw_tensor(observable: Tensor):
     return set(observable.name).issubset(pauli_word_names)
 
 
-@_is_pauli_word.register
+@_is_pauli_word.register(Hamiltonian)
+@_is_pauli_word.register(LinearCombination)
 def _is_pw_ham(observable: Union[Hamiltonian, LinearCombination]):
     return False if len(observable.ops) != 1 else is_pauli_word(observable.ops[0])
 
