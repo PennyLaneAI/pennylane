@@ -35,29 +35,35 @@ def commutator(op1, op2, pauli=False):
 
     You can compute commutators between operators in PennyLane.
 
-    >>> qml.commutator(qml.X(0), qml.Y(0))
+    >>> qml.commutator(X(0), Y(0))
     2j * Z(0)
 
-    >>> op1 = qml.X(0) @ qml.X(1)
-    >>> op2 = qml.Y(0) @ qml.Y(1)
+    >>> op1 = X(0) @ X(1)
+    >>> op2 = Y(0) @ Y(1)
     >>> qml.commutator(op1, op2)
     0 * I()
 
     We can return a :class:`~PauliSentence` instance by setting ``pauli=True``.
 
-    >>> op1 = qml.PauliX(0) @ qml.PauliX(1)
-    >>> op2 = qml.PauliY(0) + qml.PauliY(1)
-    >>> qml.commutator(op1, op2, pauli=True)
+    >>> op1 = X(0) @ X(1)
+    >>> op2 = Y(0) + Y(1)
+    >>> res = qml.commutator(op1, op2, pauli=True)
+    >>> res
     2j * X(1) @ Z(0)
     + 2j * Z(1) @ X(0)
+    >>> isinstance(res, PauliSentence)
+    True
 
     We can also input :class:`~PauliWord` and :class:`~PauliSentence` instances.
 
     >>> op1 = PauliWord({0:"X", 1:"X"})
     >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
-    >>> qml.commutator(op1, op2, pauli=True)
+    >>> res = qml.commutator(op1, op2, pauli=True)
+    >>> res
     2j * Z(0) @ X(1)
     + 2j * X(0) @ Z(1)
+    >>> isinstance(res, PauliSentence)
+    True
 
     Note that when ``pauli=False``, even if Pauli operators are used
     as inputs, ``qml.commutator`` returns Operators.
@@ -70,7 +76,6 @@ def commutator(op1, op2, pauli=False):
 
     It is worth noting that computing commutators with Paulis is typically faster.
     Internally, ``qml.commutator`` uses the ``op.pauli_rep`` whenever that is available for both operators.
-
 
     .. details::
         :title: Usage Details
