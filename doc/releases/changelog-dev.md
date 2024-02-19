@@ -356,6 +356,16 @@
 * Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
+ 
+ * `expectation_value` was added to `math` to calculate the expectation value of a matrix for pure states.
+  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
+
+  ```pycon
+  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
+  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
+  >>> qml.math.expectation_value(operator_matrix, state_vector)
+  tensor(-2.23711432e-17+0.j, requires_grad=True)
+  ```
 
 * Users can specify a list of PennyLane `measurements` they would want as terminal measurements
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
@@ -608,6 +618,7 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Ludmila Botelho,
 Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
