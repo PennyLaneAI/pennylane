@@ -25,11 +25,10 @@ from typing import List
 import numpy as np
 import scipy
 
-
 import pennylane as qml
 from pennylane.operation import Observable, Tensor
-from ..qubit.hamiltonian import Hamiltonian
 from pennylane.wires import Wires
+from ..qubit.hamiltonian import Hamiltonian
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
