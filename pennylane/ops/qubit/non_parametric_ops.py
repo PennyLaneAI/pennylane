@@ -163,7 +163,7 @@ class Hadamard(Observable, Operation):
         ]
 
     def _controlled(self, wire):
-        return CH(wires=Wires(wire) + self.wires)
+        return qml.CH(wires=Wires(wire) + self.wires)
 
     def adjoint(self):
         return Hadamard(wires=self.wires)
@@ -176,8 +176,8 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-class PauliX(Observable, Operation):
-    r"""PauliX(wires)
+class X(Observable, Operation):
+    r"""X(wires)
     The Pauli X operator
 
     .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
@@ -204,6 +204,7 @@ class PauliX(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
+        self.__class__.__name__ = "PauliX"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
@@ -217,6 +218,10 @@ class PauliX(Observable, Operation):
             return f"X('{wire}')"
         return f"X({wire})"
 
+    @property
+    def name(self):
+        return "PauliX"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -225,7 +230,7 @@ class PauliX(Observable, Operation):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.PauliX.matrix`
+        .. seealso:: :meth:`~.X.matrix`
 
 
         Returns:
@@ -257,7 +262,7 @@ class PauliX(Observable, Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.PauliX.eigvals`
+        .. seealso:: :meth:`~.X.eigvals`
 
         Returns:
             array: eigenvalues
@@ -280,7 +285,7 @@ class PauliX(Observable, Operation):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.PauliX.diagonalizing_gates`.
+        .. seealso:: :meth:`~.X.diagonalizing_gates`.
 
         Args:
            wires (Iterable[Any], Wires): wires that the operator acts on
@@ -301,7 +306,7 @@ class PauliX(Observable, Operation):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-        .. seealso:: :meth:`~.PauliX.decomposition`.
+        .. seealso:: :meth:`~.X.decomposition`.
 
         Args:
             wires (Any, Wires): Wire that the operator acts on.
@@ -324,7 +329,7 @@ class PauliX(Observable, Operation):
         ]
 
     def adjoint(self):
-        return PauliX(wires=self.wires)
+        return X(wires=self.wires)
 
     def pow(self, z):
         z_mod2 = z % 2
@@ -333,18 +338,18 @@ class PauliX(Observable, Operation):
         return super().pow(z_mod2)
 
     def _controlled(self, wire):
-        return CNOT(wires=Wires(wire) + self.wires)
+        return qml.CNOT(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
-X = PauliX
+PauliX = X
 
 
-class PauliY(Observable, Operation):
-    r"""PauliY(wires)
+class Y(Observable, Operation):
+    r"""Y(wires)
     The Pauli Y operator
 
     .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
@@ -371,6 +376,7 @@ class PauliY(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
+        self.__class__.__name__ = "PauliY"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
@@ -384,6 +390,10 @@ class PauliY(Observable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
+    @property
+    def name(self):
+        return "PauliY"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -392,7 +402,7 @@ class PauliY(Observable, Operation):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.PauliY.matrix`
+        .. seealso:: :meth:`~.Y.matrix`
 
         Returns:
             ndarray: matrix
@@ -423,7 +433,7 @@ class PauliY(Observable, Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.PauliY.eigvals`
+        .. seealso:: :meth:`~.Y.eigvals`
 
         Returns:
             array: eigenvalues
@@ -446,7 +456,7 @@ class PauliY(Observable, Operation):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.PauliY.diagonalizing_gates`.
+        .. seealso:: :meth:`~.Y.diagonalizing_gates`.
 
         Args:
             wires (Iterable[Any], Wires): wires that the operator acts on
@@ -459,7 +469,7 @@ class PauliY(Observable, Operation):
         [Z(0), S(wires=[0]), Hadamard(wires=[0])]
         """
         return [
-            PauliZ(wires=wires),
+            Z(wires=wires),
             S(wires=wires),
             Hadamard(wires=wires),
         ]
@@ -470,7 +480,7 @@ class PauliY(Observable, Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        .. seealso:: :meth:`~.PauliY.decomposition`.
+        .. seealso:: :meth:`~.Y.decomposition`.
 
         Args:
             wires (Any, Wires): Single wire that the operator acts on.
@@ -493,7 +503,7 @@ class PauliY(Observable, Operation):
         ]
 
     def adjoint(self):
-        return PauliY(wires=self.wires)
+        return Y(wires=self.wires)
 
     def pow(self, z):
         return super().pow(z % 2)
@@ -506,11 +516,11 @@ class PauliY(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
-Y = PauliY
+PauliY = Y
 
 
-class PauliZ(Observable, Operation):
-    r"""PauliZ(wires)
+class Z(Observable, Operation):
+    r"""Z(wires)
     The Pauli Z operator
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
@@ -535,6 +545,7 @@ class PauliZ(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
+        self.__class__.__name__ = "PauliZ"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
@@ -548,6 +559,10 @@ class PauliZ(Observable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
 
+    @property
+    def name(self):
+        return "PauliZ"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -556,7 +571,7 @@ class PauliZ(Observable, Operation):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.PauliZ.matrix`
+        .. seealso:: :meth:`~.Z.matrix`
 
         Returns:
             ndarray: matrix
@@ -587,7 +602,7 @@ class PauliZ(Observable, Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.PauliZ.eigvals`
+        .. seealso:: :meth:`~.Z.eigvals`
 
         Returns:
             array: eigenvalues
@@ -610,7 +625,7 @@ class PauliZ(Observable, Operation):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.PauliZ.diagonalizing_gates`.
+        .. seealso:: :meth:`~.Z.diagonalizing_gates`.
 
         Args:
             wires (Iterable[Any] or Wires): wires that the operator acts on
@@ -631,7 +646,7 @@ class PauliZ(Observable, Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        .. seealso:: :meth:`~.PauliZ.decomposition`.
+        .. seealso:: :meth:`~.Z.decomposition`.
 
         Args:
             wires (Any, Wires): Single wire that the operator acts on.
@@ -648,7 +663,7 @@ class PauliZ(Observable, Operation):
         return [qml.PhaseShift(np.pi, wires=wires)]
 
     def adjoint(self):
-        return PauliZ(wires=self.wires)
+        return Z(wires=self.wires)
 
     def pow(self, z):
         z_mod2 = z % 2
@@ -672,7 +687,7 @@ class PauliZ(Observable, Operation):
         return [np.pi, 0.0, 0.0]
 
 
-Z = PauliZ
+PauliZ = Z
 
 
 class S(Operation):
@@ -776,7 +791,7 @@ class S(Operation):
             0: lambda op: [],
             0.5: lambda op: [T(wires=op.wires)],
             1: lambda op: [copy(op)],
-            2: lambda op: [PauliZ(wires=op.wires)],
+            2: lambda op: [Z(wires=op.wires)],
         }
         return pow_map.get(z_mod4, lambda op: [qml.PhaseShift(np.pi * z_mod4 / 2, wires=op.wires)])(
             self
@@ -888,7 +903,7 @@ class T(Operation):
             0: lambda op: [],
             1: lambda op: [copy(op)],
             2: lambda op: [S(wires=op.wires)],
-            4: lambda op: [PauliZ(wires=op.wires)],
+            4: lambda op: [Z(wires=op.wires)],
         }
         return pow_map.get(z_mod8, lambda op: [qml.PhaseShift(np.pi * z_mod8 / 4, wires=op.wires)])(
             self
@@ -1004,194 +1019,12 @@ class SX(Operation):
     def pow(self, z):
         z_mod4 = z % 4
         if z_mod4 == 2:
-            return [PauliX(wires=self.wires)]
+            return [X(wires=self.wires)]
         return super().pow(z_mod4)
 
     def single_qubit_rot_angles(self):
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
-
-
-class CNOT(Operation):
-    r"""CNOT(wires)
-    The controlled-NOT operator
-
-    .. math:: CNOT = \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0\\
-            0 & 0 & 0 & 1\\
-            0 & 0 & 1 & 0
-        \end{bmatrix}.
-
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
-    **Details:**
-
-    * Number of wires: 2
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int]): the wires the operation acts on
-    """
-
-    num_wires = 2
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    basis = "X"
-
-    batch_size = None
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "X"
-
-    @staticmethod
-    @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.CNOT.matrix`
-
-
-        Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.CNOT.compute_matrix())
-        [[1 0 0 0]
-         [0 1 0 0]
-         [0 0 0 1]
-         [0 0 1 0]]
-        """
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-
-    def adjoint(self):
-        return CNOT(wires=self.wires)
-
-    def pow(self, z):
-        return super().pow(z % 2)
-
-    def _controlled(self, wire):
-        return Toffoli(wires=wire + self.wires)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[0])
-
-    @property
-    def is_hermitian(self):
-        return True
-
-
-class CH(Operation):
-    r"""CH(wires)
-    The controlled-Hadamard operator
-
-    .. math:: CH = \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0 \\
-            0 & 0 & \frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} \\
-            0 & 0 & \frac{1}{\sqrt{2}} & -\frac{1}{\sqrt{2}}
-        \end{bmatrix}.
-
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
-    **Details:**
-
-    * Number of wires: 2
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int]): the wires the operation acts on
-    """
-
-    num_wires = 2
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    basis = "Hadamard"
-
-    batch_size = None
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "H"
-
-    @staticmethod
-    @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.CH.matrix`
-
-
-        Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.CH.compute_matrix())
-        [[ 1.          0.          0.          0.        ]
-         [ 0.          1.          0.          0.        ]
-         [ 0.          0.          0.70710678  0.70710678]
-         [ 0.          0.          0.70710678 -0.70710678]]
-        """
-        return np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, INV_SQRT2, INV_SQRT2],
-                [0, 0, INV_SQRT2, -INV_SQRT2],
-            ]
-        )
-
-    @staticmethod
-    def compute_decomposition(wires):
-        r"""Representation of the operator as a product of other operators (static method).
-
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CH.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qml.CH.compute_decomposition([0, 1]))
-        [qml.RY(-0.78539816339, wires=[1]), CZ(wires=[0, 1]), qml.RY(0.78539816339, wires=[1])]
-
-        """
-        return [
-            qml.RY(-np.pi / 4, wires=wires[1]),
-            qml.CZ(wires=wires),
-            qml.RY(+np.pi / 4, wires=wires[1]),
-        ]
-
-    def adjoint(self):
-        return CH(wires=self.wires)
-
-    def pow(self, z):
-        return super().pow(z % 2)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[0])
-
-    @property
-    def is_hermitian(self):
-        return True
 
 
 class SWAP(Operation):
@@ -1277,7 +1110,7 @@ class SWAP(Operation):
         return SWAP(wires=self.wires)
 
     def _controlled(self, wire):
-        return CSWAP(wires=wire + self.wires)
+        return qml.CSWAP(wires=wire + self.wires)
 
     @property
     def is_hermitian(self):
@@ -1398,8 +1231,8 @@ class ECR(Operation):
         """
         pi = np.pi
         return [
-            PauliZ(wires=[wires[0]]),
-            CNOT(wires=[wires[0], wires[1]]),
+            Z(wires=[wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
             SX(wires=[wires[1]]),
             qml.RX(pi / 2, wires=[wires[0]]),
             qml.RY(pi / 2, wires=[wires[0]]),
@@ -1518,8 +1351,8 @@ class ISWAP(Operation):
             S(wires=wires[0]),
             S(wires=wires[1]),
             Hadamard(wires=wires[0]),
-            CNOT(wires=[wires[0], wires[1]]),
-            CNOT(wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
             Hadamard(wires=wires[1]),
         ]
 
@@ -1648,14 +1481,14 @@ class SISWAP(Operation):
         return [
             SX(wires=wires[0]),
             qml.RZ(np.pi / 2, wires=wires[0]),
-            CNOT(wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
             SX(wires=wires[0]),
             qml.RZ(7 * np.pi / 4, wires=wires[0]),
             SX(wires=wires[0]),
             qml.RZ(np.pi / 2, wires=wires[0]),
             SX(wires=wires[1]),
             qml.RZ(7 * np.pi / 4, wires=wires[1]),
-            CNOT(wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
             SX(wires=wires[0]),
             SX(wires=wires[1]),
         ]
@@ -1666,410 +1499,3 @@ class SISWAP(Operation):
 
 
 SQISW = SISWAP
-
-
-class CSWAP(Operation):
-    r"""CSWAP(wires)
-    The controlled-swap operator
-
-    .. math:: CSWAP = \begin{bmatrix}
-            1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
-            0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
-            0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
-            0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
-            0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
-            0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
-            0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
-        \end{bmatrix}.
-
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
-    **Details:**
-
-    * Number of wires: 3
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int]): the wires the operation acts on
-    """
-
-    is_self_inverse = True
-    num_wires = 3
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    batch_size = None
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "SWAP"
-
-    @staticmethod
-    @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.CSWAP.matrix`
-
-        Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.CSWAP.compute_matrix())
-        [[1 0 0 0 0 0 0 0]
-         [0 1 0 0 0 0 0 0]
-         [0 0 1 0 0 0 0 0]
-         [0 0 0 1 0 0 0 0]
-         [0 0 0 0 1 0 0 0]
-         [0 0 0 0 0 0 1 0]
-         [0 0 0 0 0 1 0 0]
-         [0 0 0 0 0 0 0 1]]
-        """
-        return np.array(
-            [
-                [1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1],
-            ]
-        )
-
-    @staticmethod
-    def compute_decomposition(wires):
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CSWAP.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qml.CSWAP.compute_decomposition((0,1,2)))
-        [Toffoli(wires=[0, 2, 1]), Toffoli(wires=[0, 1, 2]), Toffoli(wires=[0, 2, 1])]
-
-        """
-        decomp_ops = [
-            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
-            qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
-            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
-        ]
-        return decomp_ops
-
-    def pow(self, z):
-        return super().pow(z % 2)
-
-    def adjoint(self):
-        return CSWAP(wires=self.wires)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[0])
-
-    @property
-    def is_hermitian(self):
-        return True
-
-
-class CCZ(Operation):
-    r"""CCZ(wires)
-    CCZ (controlled-controlled-Z) gate.
-
-    .. math::
-
-        CCZ =
-        \begin{pmatrix}
-        1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-        0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
-        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
-        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0\\
-        0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
-        0 & 0 & 0 & 0 & 0 & 1 & 0 & 0\\
-        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
-        0 & 0 & 0 & 0 & 0 & 0 & 0 & -1
-        \end{pmatrix}
-
-    **Details:**
-
-    * Number of wires: 3
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int]): the subsystem the gate acts on
-    """
-
-    num_wires = 3
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    basis = "Z"
-
-    batch_size = None
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "Z"
-
-    @staticmethod
-    @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.CCZ.matrix`
-
-
-        Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.CCZ.compute_matrix())
-        [[1 0 0 0 0 0 0 0]
-         [0 1 0 0 0 0 0 0]
-         [0 0 1 0 0 0 0 0]
-         [0 0 0 1 0 0 0 0]
-         [0 0 0 0 1 0 0 0]
-         [0 0 0 0 0 1 0 0]
-         [0 0 0 0 0 0 1 0]
-         [0 0 0 0 0 0 0 -1]]
-        """
-        return np.array(
-            [
-                [1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 0, 0, 0, -1],
-            ]
-        )
-
-    @staticmethod
-    def compute_decomposition(wires):
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.Toffoli.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qml.CCZ.compute_decomposition((0,1,2))
-        [CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        T(wires=[1]),
-        CNOT(wires=[0, 1]),
-        Hadamard(wires=[2]),
-        T(wires=[0]),
-        Adjoint(T)(wires=[1]),
-        CNOT(wires=[0, 1]),
-        Hadamard(wires=[2]),]
-
-        """
-        return [
-            CNOT(wires=[wires[1], wires[2]]),
-            qml.adjoint(T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            T(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            qml.adjoint(T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            T(wires=wires[2]),
-            T(wires=wires[1]),
-            CNOT(wires=[wires[0], wires[1]]),
-            Hadamard(wires=wires[2]),
-            T(wires=wires[0]),
-            qml.adjoint(T(wires=wires[1])),
-            CNOT(wires=[wires[0], wires[1]]),
-            Hadamard(wires=wires[2]),
-        ]
-
-    def adjoint(self):
-        return CCZ(wires=self.wires)
-
-    def pow(self, z):
-        return super().pow(z % 2)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[:2])
-
-    @property
-    def is_hermitian(self):
-        return True
-
-
-class Toffoli(Operation):
-    r"""Toffoli(wires)
-    Toffoli (controlled-controlled-X) gate.
-
-    .. math::
-
-        Toffoli =
-        \begin{pmatrix}
-        1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-        0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
-        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
-        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0\\
-        0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
-        0 & 0 & 0 & 0 & 0 & 1 & 0 & 0\\
-        0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
-        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
-        \end{pmatrix}
-
-    **Details:**
-
-    * Number of wires: 3
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int]): the subsystem the gate acts on
-    """
-
-    num_wires = 3
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    basis = "X"
-
-    batch_size = None
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "X"
-
-    @staticmethod
-    @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.Toffoli.matrix`
-
-
-        Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.Toffoli.compute_matrix())
-        [[1 0 0 0 0 0 0 0]
-         [0 1 0 0 0 0 0 0]
-         [0 0 1 0 0 0 0 0]
-         [0 0 0 1 0 0 0 0]
-         [0 0 0 0 1 0 0 0]
-         [0 0 0 0 0 1 0 0]
-         [0 0 0 0 0 0 0 1]
-         [0 0 0 0 0 0 1 0]]
-        """
-        return np.array(
-            [
-                [1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1],
-                [0, 0, 0, 0, 0, 0, 1, 0],
-            ]
-        )
-
-    @staticmethod
-    def compute_decomposition(wires):
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.Toffoli.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qml.Toffoli.compute_decomposition((0,1,2))
-        [Hadamard(wires=[2]),
-        CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        T(wires=[1]),
-        CNOT(wires=[0, 1]),
-        Hadamard(wires=[2]),
-        T(wires=[0]),
-        Adjoint(T)(wires=[1]),
-        CNOT(wires=[0, 1])]
-
-        """
-        return [
-            Hadamard(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            qml.adjoint(T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            T(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            qml.adjoint(T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            T(wires=wires[2]),
-            T(wires=wires[1]),
-            CNOT(wires=[wires[0], wires[1]]),
-            Hadamard(wires=wires[2]),
-            T(wires=wires[0]),
-            qml.adjoint(T(wires=wires[1])),
-            CNOT(wires=[wires[0], wires[1]]),
-        ]
-
-    def adjoint(self):
-        return Toffoli(wires=self.wires)
-
-    def pow(self, z):
-        return super().pow(z % 2)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[:2])
-
-    @property
-    def is_hermitian(self):
-        return True

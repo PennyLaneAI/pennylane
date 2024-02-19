@@ -19,6 +19,7 @@ from itertools import product
 from typing import Sequence, Callable
 
 import pennylane as qml
+from pennylane.ops import Adjoint
 from pennylane.queuing import QueuingManager
 from pennylane.transforms.core import transform
 from pennylane.tape import QuantumTape
@@ -130,7 +131,10 @@ def check_clifford_t(op, use_decomposition=False):
         Bool that represents whether the provided operator is Clifford+T or not.
     """
     # Get the base operation for an adjointed operation
-    base = getattr(op, "base", None)
+    if isinstance(op, Adjoint):
+        base = op.base
+    else:
+        base = None
 
     # Save time and check from the pre-computed list
     if isinstance(op, _CLIFFORD_T_GATES) or isinstance(base, _CLIFFORD_T_GATES):
