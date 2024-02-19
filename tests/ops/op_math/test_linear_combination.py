@@ -917,7 +917,7 @@ class TestLinearCombination:
 
     def test_LinearCombination_tensor_matmul(self):
         """Tests that a LinearCombination can be multiplied by a tensor."""
-        H = qml.PauliX(0) + qml.PauliY(0)
+        H = qml.LinearCombination([1., 1.], [qml.PauliX(0), qml.PauliY(0)])
         t = qml.PauliZ(1) @ qml.PauliZ(2)
         out = H @ t
 
