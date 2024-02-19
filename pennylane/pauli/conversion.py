@@ -21,7 +21,7 @@ from typing import Union, Tuple
 
 import pennylane as qml
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import Hamiltonian, LinearCombination, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
@@ -357,7 +357,7 @@ def is_pauli_sentence(op):
     """Returns True of the operator is a PauliSentence and False otherwise."""
     if op.pauli_rep is not None:
         return True
-    if isinstance(op, Hamiltonian):
+    if isinstance(op, (Hamiltonian, LinearCombination)):
         return all(is_pauli_word(o) for o in op.ops)
     return False
 
@@ -412,7 +412,7 @@ def _(op: SProd):
 
 
 @_pauli_sentence.register
-def _(op: Hamiltonian):
+def _(op: Union[Hamiltonian, LinearCombination]):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 

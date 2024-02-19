@@ -29,7 +29,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd
+from pennylane.ops import Hamiltonian, LinearCombination, Identity, PauliX, PauliY, PauliZ, Prod, SProd
 from pennylane.tape import OperationRecorder
 from pennylane.wires import Wires
 
@@ -122,7 +122,7 @@ def _is_pw_tensor(observable: Tensor):
 
 
 @_is_pauli_word.register
-def _is_pw_ham(observable: Hamiltonian):
+def _is_pw_ham(observable: Union[Hamiltonian, LinearCombination]):
     return False if len(observable.ops) != 1 else is_pauli_word(observable.ops[0])
 
 
