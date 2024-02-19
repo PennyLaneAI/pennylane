@@ -29,7 +29,16 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, LinearCombination, Identity, PauliX, PauliY, PauliZ, Prod, SProd
+from pennylane.ops import (
+    Hamiltonian,
+    LinearCombination,
+    Identity,
+    PauliX,
+    PauliY,
+    PauliZ,
+    Prod,
+    SProd,
+)
 from pennylane.tape import OperationRecorder
 from pennylane.wires import Wires
 

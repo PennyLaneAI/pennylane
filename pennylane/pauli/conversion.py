@@ -21,7 +21,17 @@ from typing import Union, Tuple
 
 import pennylane as qml
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, LinearCombination, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import (
+    Hamiltonian,
+    LinearCombination,
+    Identity,
+    PauliX,
+    PauliY,
+    PauliZ,
+    Prod,
+    SProd,
+    Sum,
+)
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
