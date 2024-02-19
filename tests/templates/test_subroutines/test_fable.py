@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for FABLE.
+Unit tests for the FABLE template.
 """
 import pytest
 import numpy as np
@@ -215,7 +215,7 @@ class TestFable:
 
     @pytest.mark.jax
     def test_fable_grad_jax(self, input_matrix):
-        """Test that BlockEncode is differentiable when using jax."""
+        """Test that FABLE is differentiable when using jax."""
         import jax
         import jax.numpy as jnp
 
@@ -243,7 +243,7 @@ class TestFable:
 
     @pytest.mark.autograd
     def test_fable_autograd(self, input_matrix):
-        """Test that BlockEncode is differentiable when using autograd."""
+        """Test that FABLE is differentiable when using autograd."""
         dev = qml.device("default.qubit")
 
         input_autograd = pnp.array(input_matrix)
