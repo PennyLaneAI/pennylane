@@ -60,7 +60,7 @@ all_available_obs = qml.ops._qubit__obs__.copy()  # pylint: disable=protected-ac
 # Note that the identity is not technically a qubit observable
 all_available_obs |= {"Identity"}
 
-if not set(all_obs) == all_available_obs:
+if not set(all_obs) == all_available_obs | {"LinearCombination"}:
     raise ValueError(
         "A qubit observable has been added that is not being tested in the "
         "device test suite. Please add to the obs dictionary in "
