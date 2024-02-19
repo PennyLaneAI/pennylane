@@ -411,6 +411,19 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert qml.equal(prod_op, expected)
         assert prod_op.wires == Wires([1, 0])
 
+    def test_qfunc_single_operator(self):
+        """Test prod initialization with qfunc that queues a single operator."""
+
+        def qfunc():
+            qml.S(0)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            out = prod(qfunc)()
+
+        assert len(q) == 1
+        assert q.queue[0] == qml.S(0)
+        assert out == qml.S(0)
+
     def test_qfunc_init_accepts_args_kwargs(self):
         """Tests that prod preserves args when wrapping qfuncs."""
 
@@ -933,6 +946,16 @@ class TestProperties:
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
+
+    @pytest.mark.jax
+    def test_eigvals_jax_jit(self):
+        """Assert computing the eigvals of a Prod is compatible with jax-jit."""
+        import jax
+
+        def f(t1, t2):
+            return qml.prod(qml.RX(t1, 0), qml.RX(t2, 0)).eigvals()
+
+        assert qml.math.allclose(f(0.5, 1.0), jax.jit(f)(0.5, 1.0))
 
     # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
