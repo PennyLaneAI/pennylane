@@ -10,8 +10,6 @@
   function fails because the Qiskit converter is missing.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
 
-<h4>Work easily and efficiently with Pauli operators 🔧</h4>
-
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
 * When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
