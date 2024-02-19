@@ -111,7 +111,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
         return ProbabilityMP(obs=op)
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, (qml.Hamiltonian, qml.LinearCombination)):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
     if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
