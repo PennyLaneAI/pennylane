@@ -744,8 +744,7 @@ class Device(abc.ABC):
             the sequence of circuits to be executed, and a post-processing function
             to be applied to the list of evaluated circuit results.
         """
-        supports_hamiltonian = self.supports_observable("Hamiltonian") or self.supports_observable(
-            "LinearCombination"
+        supports_hamiltonian = self.supports_observable("Hamiltonian")
         )
         supports_sum = self.supports_observable("Sum")
         finite_shots = self.shots is not None
