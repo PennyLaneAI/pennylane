@@ -619,7 +619,9 @@ class LinearCombination(Observable):
                 (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
             }
 
-        raise ValueError("Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor.")
+        raise ValueError(
+            "Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor."
+        )
 
     def __matmul__(self, H):
         r"""The tensor product operation between a LinearCombination and a LinearCombination/Tensor/Observable."""

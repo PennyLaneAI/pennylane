@@ -108,7 +108,9 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
     num_executions = 0
     num_shots = 0
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, (qml.Hamiltonian, qml.LinearCombination)):
+        if isinstance(group[0], ExpectationMP) and isinstance(
+            group[0].obs, (qml.Hamiltonian, qml.LinearCombination)
+        ):
             indices = group[0].obs.grouping_indices
             H_executions = len(indices) if indices else len(group[0].obs.ops)
             num_executions += H_executions
@@ -184,7 +186,9 @@ def measure_with_samples(
 
     all_res = []
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, (Hamiltonian, LinearCombination)):
+        if isinstance(group[0], ExpectationMP) and isinstance(
+            group[0].obs, (Hamiltonian, LinearCombination)
+        ):
             measure_fn = _measure_hamiltonian_with_samples
         elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
             measure_fn = _measure_sum_with_samples
