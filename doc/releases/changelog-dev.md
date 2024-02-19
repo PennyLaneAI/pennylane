@@ -12,12 +12,6 @@
 
 <h4>Work easily and efficiently with Pauli operators 🔧</h4>
 
-* New `qml.commutator` function that allows to compute commutators between
-  `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
-  [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
-  [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
-  [(#5098)](https://github.com/PennyLaneAI/pennylane/pull/5098)
-
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
 * When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
@@ -133,7 +127,7 @@
     ```
 
   * A new `qml.commutator` function is now available that allows you to compute commutators between
-    operators:
+    `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
     [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
     [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
     [(#5098)](https://github.com/PennyLaneAI/pennylane/pull/5098)
