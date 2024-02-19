@@ -745,7 +745,7 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
-        )
+
         supports_sum = self.supports_observable("Sum")
         finite_shots = self.shots is not None
         grouping_known = all(

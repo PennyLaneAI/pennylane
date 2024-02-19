@@ -198,7 +198,8 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
     return Pow(bind_new_parameters(op.base, params), op.scalar)
 
 
-@bind_new_parameters.register
+@bind_new_parameters.register(qml.Hamiltonian)
+@bind_new_parameters.register(qml.LinearCombination)
 def bind_new_parameters_hamiltonian(
     op: Union[qml.Hamiltonian, qml.LinearCombination], params: Sequence[TensorLike]
 ):
