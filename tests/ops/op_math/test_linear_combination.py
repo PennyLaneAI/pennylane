@@ -1044,8 +1044,8 @@ class TestLinearCombination:
 
     def test_LinearCombination_no_empty_wire_list_error(self):
         """Test that empty LinearCombination does not raise an empty wire error."""
-        LinearCombination = qml.LinearCombination([], [])
-        assert isinstance(LinearCombination, qml.LinearCombination)
+        lincomb = qml.LinearCombination([], [])
+        assert isinstance(lincomb, qml.LinearCombination)
 
     def test_map_wires(self):
         """Test the map_wires method."""
