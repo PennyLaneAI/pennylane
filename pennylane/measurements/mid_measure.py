@@ -400,6 +400,11 @@ class MeasurementValue(Generic[T]):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
 
+    def concretize(self, measurements: dict):
+        """Returns a concrete value from a dictionary of hashes with concrete values."""
+        values = tuple(measurements[meas] for meas in self.measurements)
+        return self.processing_fn(*values)
+
     def _merge(self, other: "MeasurementValue"):
         """Merge two measurement values"""
 

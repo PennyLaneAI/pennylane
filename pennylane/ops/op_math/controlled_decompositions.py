@@ -193,9 +193,9 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     decomp = []
 
-    if not qml.math.isclose(0.0, phi, atol=1e-8, rtol=0):
+    if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
         decomp.append(qml.RZ(phi, wires=target_wire))
-    if not qml.math.isclose(0.0, theta / 2, atol=1e-8, rtol=0):
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
         decomp.extend(
             [
                 qml.RY(theta / 2, wires=target_wire),
@@ -205,10 +205,10 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         )
     else:
         decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
-    if not qml.math.isclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
+    if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
         decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
     decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
-    if not qml.math.isclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
+    if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
         decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
 
     return decomp
