@@ -358,7 +358,7 @@
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
 
-* The function `partial_trace` has been refactored to be public-facing for computing the partial trace of matrices other than density matrices.
+* Added a `partial_trace` function to `pennylane.math` for matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
 
 * Users can specify a list of PennyLane `measurements` they would want as terminal measurements
