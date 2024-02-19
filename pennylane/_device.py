@@ -744,7 +744,9 @@ class Device(abc.ABC):
             the sequence of circuits to be executed, and a post-processing function
             to be applied to the list of evaluated circuit results.
         """
-        supports_hamiltonian = self.supports_observable("Hamiltonian") or self.supports_observable("LinearCombination")
+        supports_hamiltonian = self.supports_observable("Hamiltonian") or self.supports_observable(
+            "LinearCombination"
+        )
         supports_sum = self.supports_observable("Sum")
         finite_shots = self.shots is not None
         grouping_known = all(
@@ -755,7 +757,9 @@ class Device(abc.ABC):
         # device property present in braket plugin
         use_grouping = getattr(self, "use_grouping", True)
 
-        hamiltonian_in_obs = any(isinstance(obs, (Hamiltonian, LinearCombination)) for obs in circuit.observables)
+        hamiltonian_in_obs = any(
+            isinstance(obs, (Hamiltonian, LinearCombination)) for obs in circuit.observables
+        )
         expval_sum_in_obs = any(
             isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
         )
