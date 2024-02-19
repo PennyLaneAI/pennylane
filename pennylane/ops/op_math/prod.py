@@ -477,7 +477,7 @@ class Prod(CompositeOp):
     def coeffs(self):
         r"""``coeffs`` in ``coeffs, ops = op.terms()``"""
         warnings.warn(
-            "op.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         coeffs, _ = self.terms()
@@ -487,7 +487,7 @@ class Prod(CompositeOp):
     def ops(self):
         r"""``ops`` in ``coeffs, ops = op.terms()``"""
         warnings.warn(
-            "op.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
+            "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         _, ops = self.terms()
