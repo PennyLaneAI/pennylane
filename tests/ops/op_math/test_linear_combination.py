@@ -23,8 +23,7 @@ import pytest
 import scipy
 
 import pennylane as qml
-from pennylane import numpy as pnp
-from pennylane.ops import LinearCombination
+from pennylane import numpy as pnp, LinearCombination
 from pennylane.wires import Wires
 
 # Make test data in different interfaces, if installed
@@ -131,26 +130,24 @@ invalid_LinearCombinations = [
 
 simplify_LinearCombinations = [
     (
-        LinearCombination(
-            [1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]
-        ),
-        LinearCombination([2, 1], [qml.PauliX(0), qml.PauliX(1)]),
+        qml.LinearCombination([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
+        qml.LinearCombination([2, 1], [qml.PauliX(0), qml.PauliX(1)]),
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [-1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]
         ),
-        LinearCombination([1], [qml.PauliX(1)]),
+        qml.LinearCombination([1], [qml.PauliX(1)]),
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1, 0.5],
             [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Identity(2) @ qml.PauliX(0)],
         ),
-        LinearCombination([1.5], [qml.PauliX(0) @ qml.PauliY(1)]),
+        qml.LinearCombination([1.5], [qml.PauliX(0) @ qml.PauliY(1)]),
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1, 1, 0.5],
             [
                 qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"),
@@ -158,53 +155,53 @@ simplify_LinearCombinations = [
                 qml.PauliY(1.3) @ qml.Identity(-0.9) @ qml.PauliX("b"),
             ],
         ),
-        LinearCombination(
+        qml.LinearCombination(
             [1, 1.5],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"), qml.PauliX("b") @ qml.PauliY(1.3)],
         ),
     ),
     # Simplifies to zero LinearCombination
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1, -0.5, -0.5], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(0)]
         ),
-        LinearCombination([], []),
+        qml.LinearCombination([], []),
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1, -1],
             [qml.PauliX(4) @ qml.Identity(0) @ qml.PauliX(1), qml.PauliX(4) @ qml.PauliX(1)],
         ),
-        LinearCombination([], []),
+        qml.LinearCombination([], []),
     ),
     (
-        LinearCombination([0], [qml.Identity(0)]),
-        LinearCombination([0], [qml.Identity(0)]),
+        qml.LinearCombination([0], [qml.Identity(0)]),
+        qml.LinearCombination([0], [qml.Identity(0)]),
     ),
 ]
 
 equal_LinearCombinations = [
     (
-        LinearCombination([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0)]),
-        LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
         True,
     ),
     (
-        LinearCombination([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]),
-        LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]),
         True,
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0), qml.Identity(1)]
         ),
-        LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
         False,
     ),
-    (LinearCombination([1], [qml.PauliZ(0) @ qml.PauliX(1)]), qml.PauliZ(0) @ qml.PauliX(1), True),
-    (LinearCombination([1], [qml.PauliZ(0)]), qml.PauliZ(0), True),
+    (qml.LinearCombination([1], [qml.PauliZ(0) @ qml.PauliX(1)]), qml.PauliZ(0) @ qml.PauliX(1), True),
+    (qml.LinearCombination([1], [qml.PauliZ(0)]), qml.PauliZ(0), True),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1, 1, 1],
             [
                 qml.Hermitian(np.array([[1, 0], [0, -1]]), "b") @ qml.Identity(7),
@@ -212,90 +209,86 @@ equal_LinearCombinations = [
                 qml.Identity(1.2),
             ],
         ),
-        LinearCombination(
+        qml.LinearCombination(
             [1, 1, 1],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(3), qml.Identity(1.2)],
         ),
         True,
     ),
     (
-        LinearCombination([1, 1], [qml.PauliZ(3) @ qml.Identity(1.2), qml.PauliZ(3)]),
-        LinearCombination([2], [qml.PauliZ(3)]),
+        qml.LinearCombination([1, 1], [qml.PauliZ(3) @ qml.Identity(1.2), qml.PauliZ(3)]),
+        qml.LinearCombination([2], [qml.PauliZ(3)]),
         True,
     ),
 ]
 
 add_LinearCombinations = [
     (
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        LinearCombination([0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
-        LinearCombination(
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
+        qml.LinearCombination(
             [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
         ),
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]
         ),
-        LinearCombination(
+        qml.LinearCombination(
             [0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]
         ),
-        LinearCombination(
+        qml.LinearCombination(
             [1.6, 0.2, 2.3, 0.5],
             [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2), qml.PauliX(0)],
         ),
     ),
     (
-        LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        LinearCombination(
-            [0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
-        LinearCombination(
-            [1.5, 1.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([1.5, 1.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
     ),
     (
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
         qml.PauliX(0) @ qml.Identity(1),
-        LinearCombination([2, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([2, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]
         ),
         qml.Hadamard(1),
-        LinearCombination(
+        qml.LinearCombination(
             [1.3, 1.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]
         ),
     ),
     (
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
         qml.PauliX("b") @ qml.Identity(5),
-        LinearCombination([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
+        qml.LinearCombination([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
-        LinearCombination((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
-        LinearCombination(
+        qml.LinearCombination((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
+        qml.LinearCombination(
             np.array([0.5, 0.3, 1]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
         ),
-        LinearCombination(
+        qml.LinearCombination(
             (1.5, 1.2, 1.1, 0.3),
             np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]),
         ),
     ),
     # Case where the 1st LinearCombination doesn't contain all wires
     (
-        LinearCombination([1.23, -3.45], [qml.PauliX(0), qml.PauliY(1)]),
-        LinearCombination([6.78], [qml.PauliZ(2)]),
-        LinearCombination([1.23, -3.45, 6.78], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
+        qml.LinearCombination([1.23, -3.45], [qml.PauliX(0), qml.PauliY(1)]),
+        qml.LinearCombination([6.78], [qml.PauliZ(2)]),
+        qml.LinearCombination([1.23, -3.45, 6.78], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
     ),
 ]
 
 add_zero_LinearCombinations = [
-    LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-    LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-    LinearCombination(
+    qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    qml.LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+    qml.LinearCombination(
         [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
     ),
 ]
@@ -303,18 +296,18 @@ add_zero_LinearCombinations = [
 iadd_zero_LinearCombinations = [
     # identical LinearCombinations
     (
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
     ),
     (
-        LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
         ),
-        LinearCombination(
+        qml.LinearCombination(
             [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
         ),
     ),
@@ -322,106 +315,102 @@ iadd_zero_LinearCombinations = [
 
 sub_LinearCombinations = [
     (
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        LinearCombination([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
-        LinearCombination(
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
+        qml.LinearCombination(
             [0.5, 1.2, -1.5, -0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
         ),
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1.3, 0.2, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]
         ),
-        LinearCombination(
+        qml.LinearCombination(
             [0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]
         ),
-        LinearCombination(
+        qml.LinearCombination(
             [1, 0.2, -0.5], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(0)]
         ),
     ),
     (
-        LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        LinearCombination(
-            [0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
-        LinearCombination(
-            [0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
     ),
     (
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
         qml.PauliX(0) @ qml.Identity(1),
-        LinearCombination([1.2, 0.1], [qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([1.2, 0.1], [qml.PauliZ(1), qml.PauliX(2)]),
     ),
     (
-        LinearCombination(
+        qml.LinearCombination(
             [1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]
         ),
         qml.Hadamard(1),
-        LinearCombination(
+        qml.LinearCombination(
             [1.3, -0.8, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]
         ),
     ),
     (
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
         qml.PauliX("b") @ qml.Identity(1),
-        LinearCombination([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
+        qml.LinearCombination([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
     # The result is the zero LinearCombination
     (
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        LinearCombination([], []),
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([], []),
     ),
     (
-        LinearCombination([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
-        LinearCombination([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
-        LinearCombination([], []),
+        qml.LinearCombination([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
+        qml.LinearCombination([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
+        qml.LinearCombination([], []),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
-        LinearCombination((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
-        LinearCombination(
+        qml.LinearCombination((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
+        qml.LinearCombination(
             np.array([0.5, 0.3, 1.6]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
         ),
-        LinearCombination(
+        qml.LinearCombination(
             (0.5, 1.2, -1.5, -0.3),
             np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]),
         ),
     ),
     # Case where the 1st LinearCombination doesn't contain all wires
     (
-        LinearCombination([1.23, -3.45], [qml.PauliX(0), qml.PauliY(1)]),
-        LinearCombination([6.78], [qml.PauliZ(2)]),
-        LinearCombination([1.23, -3.45, -6.78], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
+        qml.LinearCombination([1.23, -3.45], [qml.PauliX(0), qml.PauliY(1)]),
+        qml.LinearCombination([6.78], [qml.PauliZ(2)]),
+        qml.LinearCombination([1.23, -3.45, -6.78], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
     ),
 ]
 
 mul_LinearCombinations = [
     (
         0.5,
-        LinearCombination(
+        qml.LinearCombination(
             [1, 2], [qml.PauliX(0), qml.PauliZ(1)]
         ),  # Case where the types of the coefficient and the scalar differ
-        LinearCombination([0.5, 1.0], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.LinearCombination([0.5, 1.0], [qml.PauliX(0), qml.PauliZ(1)]),
     ),
     (
         3,
-        LinearCombination([1.5, 0.5], [qml.PauliX(0), qml.PauliZ(1)]),
-        LinearCombination([4.5, 1.5], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.LinearCombination([1.5, 0.5], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.LinearCombination([4.5, 1.5], [qml.PauliX(0), qml.PauliZ(1)]),
     ),
     (
         -1.3,
-        LinearCombination([1, -0.3], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]),
-        LinearCombination([-1.3, 0.39], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]),
+        qml.LinearCombination([1, -0.3], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]),
+        qml.LinearCombination([-1.3, 0.39], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]),
     ),
     (
         -1.3,
-        LinearCombination(
+        qml.LinearCombination(
             [1, -0.3],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)],
         ),
-        LinearCombination(
+        qml.LinearCombination(
             [-1.3, 0.39],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)],
         ),
@@ -429,27 +418,27 @@ mul_LinearCombinations = [
     # The result is the zero LinearCombination
     (
         0,
-        LinearCombination([1], [qml.PauliX(0)]),
-        LinearCombination([0], [qml.PauliX(0)]),
+        qml.LinearCombination([1], [qml.PauliX(0)]),
+        qml.LinearCombination([0], [qml.PauliX(0)]),
     ),
     (
         0,
-        LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        LinearCombination([0, 0, 0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.LinearCombination([0, 0, 0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
         3,
-        LinearCombination((1.5, 0.5), (qml.PauliX(0), qml.PauliZ(1))),
-        LinearCombination(np.array([4.5, 1.5]), np.array([qml.PauliX(0), qml.PauliZ(1)])),
+        qml.LinearCombination((1.5, 0.5), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.LinearCombination(np.array([4.5, 1.5]), np.array([qml.PauliX(0), qml.PauliZ(1)])),
     ),
 ]
 
 matmul_LinearCombinations = [
     (
-        LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
-        LinearCombination([0.5, 0.5], [qml.PauliZ(2), qml.PauliZ(3)]),
-        LinearCombination(
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.LinearCombination([0.5, 0.5], [qml.PauliZ(2), qml.PauliZ(3)]),
+        qml.LinearCombination(
             [0.5, 0.5, 0.5, 0.5],
             [
                 qml.PauliX(0) @ qml.PauliZ(2),
@@ -460,9 +449,9 @@ matmul_LinearCombinations = [
         ),
     ),
     (
-        LinearCombination([0.5, 0.25], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)]),
-        LinearCombination([1, 1], [qml.PauliX(3) @ qml.PauliZ(2), qml.PauliZ(2)]),
-        LinearCombination(
+        qml.LinearCombination([0.5, 0.25], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(3) @ qml.PauliZ(2), qml.PauliZ(2)]),
+        qml.LinearCombination(
             [0.5, 0.5, 0.25, 0.25],
             [
                 qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3) @ qml.PauliZ(2),
@@ -473,9 +462,9 @@ matmul_LinearCombinations = [
         ),
     ),
     (
-        LinearCombination([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        LinearCombination([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
-        LinearCombination(
+        qml.LinearCombination([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
+        qml.LinearCombination(
             [2, 2, 2, 2],
             [
                 qml.PauliX("b") @ qml.PauliZ(1.2),
@@ -486,15 +475,15 @@ matmul_LinearCombinations = [
         ),
     ),
     (
-        LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
         qml.PauliX(2),
-        LinearCombination([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)]),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
-        LinearCombination((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
-        LinearCombination(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
-        LinearCombination(
+        qml.LinearCombination((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.LinearCombination(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
+        qml.LinearCombination(
             (0.5, 0.5, 0.5, 0.5),
             np.array(
                 [
@@ -510,9 +499,9 @@ matmul_LinearCombinations = [
 
 rmatmul_LinearCombinations = [
     (
-        LinearCombination([0.5, 0.5], [qml.PauliZ(2), qml.PauliZ(3)]),
-        LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
-        LinearCombination(
+        qml.LinearCombination([0.5, 0.5], [qml.PauliZ(2), qml.PauliZ(3)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.LinearCombination(
             [0.5, 0.5, 0.5, 0.5],
             [
                 qml.PauliX(0) @ qml.PauliZ(2),
@@ -523,9 +512,9 @@ rmatmul_LinearCombinations = [
         ),
     ),
     (
-        LinearCombination([1, 1], [qml.PauliX(3) @ qml.PauliZ(2), qml.PauliZ(2)]),
-        LinearCombination([0.5, 0.25], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)]),
-        LinearCombination(
+        qml.LinearCombination([1, 1], [qml.PauliX(3) @ qml.PauliZ(2), qml.PauliZ(2)]),
+        qml.LinearCombination([0.5, 0.25], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)]),
+        qml.LinearCombination(
             [0.5, 0.5, 0.25, 0.25],
             [
                 qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3) @ qml.PauliZ(2),
@@ -536,9 +525,9 @@ rmatmul_LinearCombinations = [
         ),
     ),
     (
-        LinearCombination([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
-        LinearCombination([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        LinearCombination(
+        qml.LinearCombination([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
+        qml.LinearCombination([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination(
             [2, 2, 2, 2],
             [
                 qml.PauliX("b") @ qml.PauliZ(1.2),
@@ -549,15 +538,15 @@ rmatmul_LinearCombinations = [
         ),
     ),
     (
-        LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
         qml.PauliX(2),
-        LinearCombination([1, 1], [qml.PauliX(2) @ qml.PauliX(0), qml.PauliX(2) @ qml.PauliZ(1)]),
+        qml.LinearCombination([1, 1], [qml.PauliX(2) @ qml.PauliX(0), qml.PauliX(2) @ qml.PauliZ(1)]),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
-        LinearCombination(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
-        LinearCombination((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
-        LinearCombination(
+        qml.LinearCombination(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
+        qml.LinearCombination((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.LinearCombination(
             (0.5, 0.5, 0.5, 0.5),
             np.array(
                 [
@@ -609,7 +598,7 @@ big_LinearCombination_ops = [
     qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
 ]
 
-big_LinearCombination = LinearCombination(big_LinearCombination_coeffs, big_LinearCombination_ops)
+big_LinearCombination = qml.LinearCombination(big_LinearCombination_coeffs, big_LinearCombination_ops)
 
 big_LinearCombination_grad = (
     np.array(
@@ -655,7 +644,7 @@ class TestLinearCombination:
     def test_LinearCombination_valid_init(self, coeffs, ops):
         """Tests that the LinearCombination object is created with
         the correct attributes"""
-        H = LinearCombination(coeffs, ops)
+        H = qml.LinearCombination(coeffs, ops)
         assert np.allclose(H.terms()[0], coeffs)
         assert H.terms()[1] == list(ops)
 
@@ -664,7 +653,7 @@ class TestLinearCombination:
         """Tests that an exception is raised when giving an invalid
         combination of coefficients and ops"""
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
-            LinearCombination(coeffs, ops)
+            qml.LinearCombination(coeffs, ops)
 
     @pytest.mark.parametrize(
         "obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]]
@@ -675,7 +664,7 @@ class TestLinearCombination:
         coeffs = [0.1, 0.2]
 
         with pytest.raises(ValueError, match="observables are not valid"):
-            LinearCombination(coeffs, obs)
+            qml.LinearCombination(coeffs, obs)
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
@@ -701,12 +690,12 @@ class TestLinearCombination:
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     def test_LinearCombination_wires(self, coeffs, ops):
         """Tests that the LinearCombination object has correct wires."""
-        H = LinearCombination(coeffs, ops)
+        H = qml.LinearCombination(coeffs, ops)
         assert set(H.wires) == set(w for op in H.ops for w in op.wires)
 
     def test_label(self):
         """Tests the label method of LinearCombination when <=3 coefficients."""
-        H = LinearCombination((-0.8,), (qml.PauliZ(0),))
+        H = qml.LinearCombination((-0.8,), (qml.PauliZ(0),))
         assert H.label() == "𝓗"
         assert H.label(decimals=2) == "𝓗\n(-0.80)"
 
@@ -721,12 +710,10 @@ class TestLinearCombination:
         assert H.label() == "𝓗"
         assert H.label(decimals=2) == "𝓗"
 
-    @pytest.mark.parametrize(
-        "terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_str)
-    )
+    @pytest.mark.parametrize("terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_str))
     def test_LinearCombination_str(self, terms, string):
         """Tests that the __str__ function for printing is correct"""
-        H = LinearCombination(*terms)
+        H = qml.LinearCombination(*terms)
         assert H.__str__() == string
 
     @patch("builtins.print")
@@ -741,21 +728,19 @@ class TestLinearCombination:
     def test_big_LinearCombination_ipython_display(self, mock_print):
         """Test that the ipython_display method prints __repr__ when H has more than 15 terms."""
         # pylint: disable=protected-access
-        H = LinearCombination([1] * 16, [qml.PauliX(i) for i in range(16)])
+        H = qml.LinearCombination([1] * 16, [qml.PauliX(i) for i in range(16)])
         H._ipython_display_()
         mock_print.assert_called_with(repr(H))
 
-    @pytest.mark.parametrize(
-        "terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_repr)
-    )
+    @pytest.mark.parametrize("terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_repr))
     def test_LinearCombination_repr(self, terms, string):
         """Tests that the __repr__ function for printing is correct"""
-        H = LinearCombination(*terms)
+        H = qml.LinearCombination(*terms)
         assert H.__repr__() == string
 
     def test_LinearCombination_name(self):
         """Tests the name property of the LinearCombination class"""
-        H = LinearCombination([], [])
+        H = qml.LinearCombination([], [])
         assert H.name == "LinearCombination"
 
     @pytest.mark.parametrize(("old_H", "new_H"), simplify_LinearCombinations)
@@ -773,7 +758,7 @@ class TestLinearCombination:
             b = qml.PauliY(wires=1)
             c = qml.Identity(wires=2)
             d = b @ c
-            H = LinearCombination([1.0, 2.0], [a, d])
+            H = qml.LinearCombination([1.0, 2.0], [a, d])
             H.simplify()
 
         # check that H is simplified
@@ -785,7 +770,7 @@ class TestLinearCombination:
         """Tests the obs_data method"""
         # pylint: disable=protected-access
 
-        H = LinearCombination(
+        H = qml.LinearCombination(
             [1, 1, 0.5],
             [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(2) @ qml.Identity(1)],
         )
@@ -803,7 +788,7 @@ class TestLinearCombination:
     def test_data_gell_mann(self):
         """Tests that the obs_data method for LinearCombinations with qml.GellMann
         observables includes the Gell-Mann index."""
-        H = LinearCombination(
+        H = qml.LinearCombination(
             [1, -1, 0.5],
             [
                 qml.GellMann(wires=0, index=3),
@@ -827,14 +812,10 @@ class TestLinearCombination:
     def test_compare_gell_mann(self):
         """Tests that the compare method returns the correct result for LinearCombinations
         with qml.GellMann present."""
-        H1 = LinearCombination([1], [qml.GellMann(wires=2, index=2)])
-        H2 = LinearCombination(
-            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)]
-        )
-        H3 = LinearCombination([1], [qml.GellMann(wires=2, index=1)])
-        H4 = LinearCombination(
-            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)]
-        )
+        H1 = qml.LinearCombination([1], [qml.GellMann(wires=2, index=2)])
+        H2 = qml.LinearCombination([1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)])
+        H3 = qml.LinearCombination([1], [qml.GellMann(wires=2, index=1)])
+        H4 = qml.LinearCombination([1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)])
 
         assert H1.compare(qml.GellMann(wires=2, index=2)) is True
         assert H1.compare(qml.GellMann(wires=2, index=1)) is False
@@ -846,7 +827,7 @@ class TestLinearCombination:
     def test_LinearCombination_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
-        H = LinearCombination([1], [qml.PauliZ(0)])
+        H = qml.LinearCombination([1], [qml.PauliZ(0)])
         with pytest.raises(
             ValueError,
             match=r"Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor.",
@@ -896,7 +877,7 @@ class TestLinearCombination:
         t = qml.PauliZ(1) @ qml.PauliZ(2)
         out = H @ t
 
-        expected = LinearCombination(
+        expected = qml.LinearCombination(
             [1, 1],
             [
                 qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
@@ -918,11 +899,9 @@ class TestLinearCombination:
     def test_LinearCombination_same_wires(self):
         """Test if a ValueError is raised when multiplication between LinearCombinations acting on the
         same wires is attempted"""
-        h1 = LinearCombination([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+        h1 = qml.LinearCombination([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
 
-        with pytest.raises(
-            ValueError, match="LinearCombinations can only be multiplied together if"
-        ):
+        with pytest.raises(ValueError, match="LinearCombinations can only be multiplied together if"):
             _ = h1 @ h1
 
     @pytest.mark.parametrize(("H1", "H2", "H"), add_LinearCombinations)
@@ -957,7 +936,7 @@ class TestLinearCombination:
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""
-        H = LinearCombination([1], [qml.PauliZ(0)])
+        H = qml.LinearCombination([1], [qml.PauliZ(0)])
         A = [[1, 0], [0, -1]]
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = H @ A
@@ -997,7 +976,7 @@ class TestLinearCombination:
 
         with qml.queuing.AnnotatedQueue() as q:
             m = qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
                 )
             )
@@ -1009,7 +988,7 @@ class TestLinearCombination:
         """Tests that the terms representation is returned correctly."""
         coeffs = pnp.array([1.0, 2.0], requires_grad=True)
         ops = [qml.PauliX(0), qml.PauliZ(1)]
-        h = LinearCombination(coeffs, ops)
+        h = qml.LinearCombination(coeffs, ops)
         c, o = h.terms()
         assert isinstance(c, Iterable)
         assert isinstance(o, list)
@@ -1019,14 +998,14 @@ class TestLinearCombination:
 
     def test_LinearCombination_no_empty_wire_list_error(self):
         """Test that empty LinearCombination does not raise an empty wire error."""
-        LinearCombination = LinearCombination([], [])
+        LinearCombination = qml.LinearCombination([], [])
         assert isinstance(LinearCombination, qml.LinearCombination)
 
     def test_map_wires(self):
         """Test the map_wires method."""
         coeffs = pnp.array([1.0, 2.0, -3.0], requires_grad=True)
         ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)]
-        h = LinearCombination(coeffs, ops)
+        h = qml.LinearCombination(coeffs, ops)
         wire_map = {0: 10, 1: 11, 2: 12}
         mapped_h = h.map_wires(wire_map=wire_map)
         final_obs = [qml.PauliX(10), qml.PauliZ(11), qml.PauliY(12)]
@@ -1043,9 +1022,7 @@ class TestLinearCombination:
         tensor = qml.PauliX(0) @ qml.PauliX(1)
         herm = qml.Hermitian([[1, 0], [0, 1]], wires=4)
 
-        ham = LinearCombination([1.0, 1.0], [tensor, qml.PauliX(2)]) @ LinearCombination(
-            [1.0], [herm]
-        )
+        ham = qml.LinearCombination([1.0, 1.0], [tensor, qml.PauliX(2)]) @ qml.LinearCombination([1.0], [herm])
         assert isinstance(ham, qml.LinearCombination)
 
 
@@ -1055,15 +1032,15 @@ class TestLinearCombinationCoefficients:
     @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
     def test_creation_different_coeff_types(self, coeffs):
         """Check that LinearCombination's coefficients and data attributes are set correctly."""
-        H = LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
+        H = qml.LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
         assert np.allclose(coeffs, H.coeffs)
         assert np.allclose([coeffs[i] for i in range(qml.math.shape(coeffs)[0])], H.data)
 
     @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
     def test_simplify(self, coeffs):
         """Test that simplify works with different coefficient types."""
-        H1 = LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
-        H2 = LinearCombination(coeffs, [qml.PauliX(0), qml.Identity(0) @ qml.PauliZ(1)])
+        H1 = qml.LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
+        H2 = qml.LinearCombination(coeffs, [qml.PauliX(0), qml.Identity(0) @ qml.PauliZ(1)])
         H2.simplify()
         assert H1.compare(H2)
         assert H1.data == H2.data
@@ -1078,11 +1055,11 @@ class TestLinearCombinationArithmeticTF:
         """Tests equality"""
         coeffs = tf.Variable([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = tf.Variable([-1.6, 0.5])
         obs2 = [qml.PauliY(1), qml.PauliX(0)]
-        H2 = LinearCombination(coeffs2, obs2)
+        H2 = qml.LinearCombination(coeffs2, obs2)
 
         assert H1.compare(H2)
 
@@ -1090,13 +1067,13 @@ class TestLinearCombinationArithmeticTF:
         """Tests that LinearCombinations are added correctly"""
         coeffs = tf.Variable([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = tf.Variable([0.5, -0.4])
-        H2 = LinearCombination(coeffs2, obs)
+        H2 = qml.LinearCombination(coeffs2, obs)
 
         coeffs_expected = tf.Variable([1.0, -2.0])
-        H = LinearCombination(coeffs_expected, obs)
+        H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
 
@@ -1107,13 +1084,13 @@ class TestLinearCombinationArithmeticTF:
         """Tests that LinearCombinations are subtracted correctly"""
         coeffs = tf.Variable([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = tf.Variable([0.5, -0.4])
-        H2 = LinearCombination(coeffs2, obs)
+        H2 = qml.LinearCombination(coeffs2, obs)
 
         coeffs_expected = tf.Variable([0.5, -1.6])
-        H = LinearCombination(coeffs_expected, obs)
+        H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 - H2)
 
@@ -1124,11 +1101,11 @@ class TestLinearCombinationArithmeticTF:
         """Tests that LinearCombinations are tensored correctly"""
         coeffs = tf.Variable([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = tf.Variable([-1.0, -2.0])
         obs2 = [qml.PauliX(2), qml.PauliY(3)]
-        H2 = LinearCombination(coeffs2, obs2)
+        H2 = qml.LinearCombination(coeffs2, obs2)
 
         coeffs_expected = tf.Variable([-4.0, -2.0, -2.0, -1.0])
         obs_expected = [
@@ -1137,7 +1114,7 @@ class TestLinearCombinationArithmeticTF:
             qml.PauliX(2) @ qml.PauliY(1),
             qml.PauliX(0) @ qml.PauliX(2),
         ]
-        H = LinearCombination(coeffs_expected, obs_expected)
+        H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
 
@@ -1151,11 +1128,11 @@ class TestLinearCombinationArithmeticTorch:
         """Tests equality"""
         coeffs = torch.tensor([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = torch.tensor([-1.6, 0.5])
         obs2 = [qml.PauliY(1), qml.PauliX(0)]
-        H2 = LinearCombination(coeffs2, obs2)
+        H2 = qml.LinearCombination(coeffs2, obs2)
 
         assert H1.compare(H2)
 
@@ -1164,13 +1141,13 @@ class TestLinearCombinationArithmeticTorch:
         """Tests that LinearCombinations are added correctly"""
         coeffs = torch.tensor([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = torch.tensor([0.5, -0.4])
-        H2 = LinearCombination(coeffs2, obs)
+        H2 = qml.LinearCombination(coeffs2, obs)
 
         coeffs_expected = torch.tensor([1.0, -2.0])
-        H = LinearCombination(coeffs_expected, obs)
+        H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
 
@@ -1182,13 +1159,13 @@ class TestLinearCombinationArithmeticTorch:
         """Tests that LinearCombinations are subtracted correctly"""
         coeffs = torch.tensor([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = torch.tensor([0.5, -0.4])
-        H2 = LinearCombination(coeffs2, obs)
+        H2 = qml.LinearCombination(coeffs2, obs)
 
         coeffs_expected = torch.tensor([0.5, -1.6])
-        H = LinearCombination(coeffs_expected, obs)
+        H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 - H2)
 
@@ -1200,11 +1177,11 @@ class TestLinearCombinationArithmeticTorch:
         """Tests that LinearCombinations are tensored correctly"""
         coeffs = torch.tensor([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = torch.tensor([-1.0, -2.0])
         obs2 = [qml.PauliX(2), qml.PauliY(3)]
-        H2 = LinearCombination(coeffs2, obs2)
+        H2 = qml.LinearCombination(coeffs2, obs2)
 
         coeffs_expected = torch.tensor([-4.0, -2.0, -2.0, -1.0])
         obs_expected = [
@@ -1213,7 +1190,7 @@ class TestLinearCombinationArithmeticTorch:
             qml.PauliX(2) @ qml.PauliY(1),
             qml.PauliX(0) @ qml.PauliX(2),
         ]
-        H = LinearCombination(coeffs_expected, obs_expected)
+        H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
 
@@ -1227,11 +1204,11 @@ class TestLinearCombinationArithmeticAutograd:
         """Tests equality"""
         coeffs = pnp.array([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = pnp.array([-1.6, 0.5])
         obs2 = [qml.PauliY(1), qml.PauliX(0)]
-        H2 = LinearCombination(coeffs2, obs2)
+        H2 = qml.LinearCombination(coeffs2, obs2)
 
         assert H1.compare(H2)
 
@@ -1240,13 +1217,13 @@ class TestLinearCombinationArithmeticAutograd:
         """Tests that LinearCombinations are added correctly"""
         coeffs = pnp.array([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = pnp.array([0.5, -0.4])
-        H2 = LinearCombination(coeffs2, obs)
+        H2 = qml.LinearCombination(coeffs2, obs)
 
         coeffs_expected = pnp.array([1.0, -2.0])
-        H = LinearCombination(coeffs_expected, obs)
+        H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
 
@@ -1258,13 +1235,13 @@ class TestLinearCombinationArithmeticAutograd:
         """Tests that LinearCombinations are subtracted correctly"""
         coeffs = pnp.array([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = pnp.array([0.5, -0.4])
-        H2 = LinearCombination(coeffs2, obs)
+        H2 = qml.LinearCombination(coeffs2, obs)
 
         coeffs_expected = pnp.array([0.5, -1.6])
-        H = LinearCombination(coeffs_expected, obs)
+        H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 - H2)
 
@@ -1276,11 +1253,11 @@ class TestLinearCombinationArithmeticAutograd:
         """Tests that LinearCombinations are tensored correctly"""
         coeffs = pnp.array([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = pnp.array([-1.0, -2.0])
         obs2 = [qml.PauliX(2), qml.PauliY(3)]
-        H2 = LinearCombination(coeffs2, obs2)
+        H2 = qml.LinearCombination(coeffs2, obs2)
 
         coeffs_expected = pnp.array([-4.0, -2.0, -2.0, -1.0])
         obs_expected = [
@@ -1289,7 +1266,7 @@ class TestLinearCombinationArithmeticAutograd:
             qml.PauliX(2) @ qml.PauliY(1),
             qml.PauliX(0) @ qml.PauliX(2),
         ]
-        H = LinearCombination(coeffs_expected, obs_expected)
+        H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
 
@@ -1423,7 +1400,7 @@ class TestLinearCombinationSparseMatrix:
     )
     def test_sparse_matrix(self, coeffs, obs, wires, ref_matrix):
         """Tests that sparse_LinearCombination returns a correct sparse matrix"""
-        H = LinearCombination(coeffs, obs)
+        H = qml.LinearCombination(coeffs, obs)
 
         sparse_matrix = H.sparse_matrix(wire_order=wires)
 
@@ -1437,7 +1414,7 @@ class TestLinearCombinationSparseMatrix:
             qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]),
             qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]),
         ]
-        H = LinearCombination(coeffs, obs)
+        H = qml.LinearCombination(coeffs, obs)
 
         sparse_matrix = H.sparse_matrix()
 
@@ -1447,7 +1424,7 @@ class TestLinearCombinationSparseMatrix:
         """Tests that an error is thrown if the observables are themselves constructed from multi-qubit
         operations."""
         with pytest.raises(ValueError, match="Can only sparsify LinearCombinations"):
-            H = LinearCombination(
+            H = qml.LinearCombination(
                 [0.1], [qml.PauliZ("c") @ qml.Hermitian(np.eye(4), wires=["a", "b"])]
             )
             H.sparse_matrix(wire_order=["a", "c", "b"])
@@ -1462,11 +1439,11 @@ class TestLinearCombinationArithmeticJax:
         """Tests equality"""
         coeffs = jnp.array([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = jnp.array([-1.6, 0.5])
         obs2 = [qml.PauliY(1), qml.PauliX(0)]
-        H2 = LinearCombination(coeffs2, obs2)
+        H2 = qml.LinearCombination(coeffs2, obs2)
 
         assert H1.compare(H2)
 
@@ -1474,13 +1451,13 @@ class TestLinearCombinationArithmeticJax:
         """Tests that LinearCombinations are added correctly"""
         coeffs = jnp.array([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = jnp.array([0.5, -0.4])
-        H2 = LinearCombination(coeffs2, obs)
+        H2 = qml.LinearCombination(coeffs2, obs)
 
         coeffs_expected = jnp.array([1.0, -2.0])
-        H = LinearCombination(coeffs_expected, obs)
+        H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
 
@@ -1492,13 +1469,13 @@ class TestLinearCombinationArithmeticJax:
 
         coeffs = jnp.array([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = jnp.array([0.5, -0.4])
-        H2 = LinearCombination(coeffs2, obs)
+        H2 = qml.LinearCombination(coeffs2, obs)
 
         coeffs_expected = jnp.array([0.5, -1.6])
-        H = LinearCombination(coeffs_expected, obs)
+        H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 - H2)
 
@@ -1509,11 +1486,11 @@ class TestLinearCombinationArithmeticJax:
         """Tests that LinearCombinations are tensored correctly"""
         coeffs = jnp.array([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = LinearCombination(coeffs, obs)
+        H1 = qml.LinearCombination(coeffs, obs)
 
         coeffs2 = jnp.array([-1.0, -2.0])
         obs2 = [qml.PauliX(2), qml.PauliY(3)]
-        H2 = LinearCombination(coeffs2, obs2)
+        H2 = qml.LinearCombination(coeffs2, obs2)
 
         coeffs_expected = jnp.array([-4.0, -2.0, -2.0, -1.0])
         obs_expected = [
@@ -1522,7 +1499,7 @@ class TestLinearCombinationArithmeticJax:
             qml.PauliX(2) @ qml.PauliY(1),
             qml.PauliX(0) @ qml.PauliX(2),
         ]
-        H = LinearCombination(coeffs_expected, obs_expected)
+        H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
 
@@ -1535,7 +1512,7 @@ class TestGrouping:
 
         obs = [qml.PauliZ(1), qml.PauliZ(0), qml.Identity(0)]
 
-        H = LinearCombination([1.0, 1.0, 1.0], obs, grouping_type="qwc")
+        H = qml.LinearCombination([1.0, 1.0, 1.0], obs, grouping_type="qwc")
         assert H.grouping_indices == ((0, 1, 2),)
 
     def test_grouping_is_correct_kwarg(self):
@@ -1546,7 +1523,7 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        H = LinearCombination(coeffs, obs, grouping_type="qwc")
+        H = qml.LinearCombination(coeffs, obs, grouping_type="qwc")
         assert H.grouping_indices == ((0, 1), (2,))
 
     def test_grouping_is_correct_compute_grouping(self):
@@ -1557,20 +1534,20 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        H = LinearCombination(coeffs, obs, grouping_type="qwc")
+        H = qml.LinearCombination(coeffs, obs, grouping_type="qwc")
         H.compute_grouping()
         assert H.grouping_indices == ((0, 1), (2,))
 
     def test_set_grouping(self):
         """Test that we can set grouping indices."""
-        H = LinearCombination([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)])
+        H = qml.LinearCombination([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)])
         H.grouping_indices = [[0, 1], [2]]
 
         assert H.grouping_indices == ((0, 1), (2,))
 
     def test_set_grouping_error(self):
         """Test that grouping indices are validated."""
-        H = LinearCombination([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)])
+        H = qml.LinearCombination([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)])
 
         with pytest.raises(ValueError, match="The grouped index value"):
             H.grouping_indices = [[3, 1], [2]]
@@ -1586,7 +1563,7 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        H = LinearCombination(coeffs, obs, grouping_type="qwc")
+        H = qml.LinearCombination(coeffs, obs, grouping_type="qwc")
         assert H.grouping_indices == ((0,), (1,), (2,))
 
     def test_grouping_is_reset_when_simplifying(self):
@@ -1594,7 +1571,7 @@ class TestGrouping:
         obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
         coeffs = [1.0, 2.0, 3.0]
 
-        H = LinearCombination(coeffs, obs, grouping_type="qwc")
+        H = qml.LinearCombination(coeffs, obs, grouping_type="qwc")
         assert H.grouping_indices is not None
 
         H.simplify()
@@ -1609,7 +1586,7 @@ class TestGrouping:
         coeffs = [1.0, 2.0, 3.0]
 
         with qml.queuing.AnnotatedQueue() as q:
-            H = LinearCombination(coeffs, obs, grouping_type="qwc")
+            H = qml.LinearCombination(coeffs, obs, grouping_type="qwc")
 
         assert q.queue == [H]
 
@@ -1623,11 +1600,11 @@ class TestGrouping:
         coeffs = [1.0, 2.0, 3.0]
 
         # compute grouping during construction
-        H2 = LinearCombination(coeffs, obs, grouping_type="qwc", method="lf")
+        H2 = qml.LinearCombination(coeffs, obs, grouping_type="qwc", method="lf")
         assert H2.grouping_indices == ((2, 1), (0,))
 
         # compute grouping separately
-        H3 = LinearCombination(coeffs, obs, grouping_type=None)
+        H3 = qml.LinearCombination(coeffs, obs, grouping_type=None)
         H3.compute_grouping(method="lf")
         assert H3.grouping_indices == ((2, 1), (0,))
 
@@ -1640,7 +1617,7 @@ class TestLinearCombinationEvaluation:
         """Check that manually splitting a LinearCombination expectation has the same
         result as passing the LinearCombination as an observable"""
         device = qml.device("default.qubit", wires=2)
-        H = LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
+        H = qml.LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
 
         @qml.qnode(device, interface=interface)
         def circuit():
@@ -1672,7 +1649,7 @@ class TestLinearCombinationEvaluation:
         def circuit():
             qml.RY(0.1, wires=0)
             return qml.expval(
-                LinearCombination([1.0, 2.0], [qml.PauliX(1), qml.PauliX(1)], simplify=True)
+                qml.LinearCombination([1.0, 2.0], [qml.PauliX(1), qml.PauliX(1)], simplify=True)
             )
 
         circuit()
@@ -1698,7 +1675,7 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
@@ -1735,7 +1712,7 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                 )
@@ -1772,7 +1749,7 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
@@ -1808,7 +1785,7 @@ class TestLinearCombinationDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+            return qml.expval(qml.LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         grad_fn = qml.grad(circuit)
         grad = grad_fn(coeffs, param)
@@ -1842,7 +1819,7 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
@@ -1878,7 +1855,7 @@ class TestLinearCombinationDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+            return qml.expval(qml.LinearCombination(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         grad_fn = jax.grad(circuit, argnums=(1))
         grad = grad_fn(coeffs, param)
@@ -1911,7 +1888,7 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
@@ -1955,7 +1932,7 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                 )
@@ -1998,7 +1975,7 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
@@ -2042,7 +2019,7 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                 )
@@ -2083,7 +2060,7 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                LinearCombination(
+                qml.LinearCombination(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                 )

@@ -76,6 +76,7 @@ _MEAS_OBSERVABLES = {
     "Identity",
     "Projector",
     "Hamiltonian",
+    "LinearCombination",
     "Sum",
     "SProd",
     "Prod",

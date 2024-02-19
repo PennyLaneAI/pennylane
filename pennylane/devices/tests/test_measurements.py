@@ -50,6 +50,7 @@ obs = {
     ],
     "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
     "Hamiltonian": qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)]),
+    "LinearCombination": qml.LinearCombination([1, 1], [qml.PauliZ(0), qml.PauliX(0)]),
 }
 
 all_obs = obs.keys()
@@ -151,7 +152,8 @@ class TestSupportedObservables:
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
-    def test_hamiltonian_diff(self, device_kwargs, tol):
+    @pytest.mark.parametrize("ham_constructor", [qml.Hamiltonian, qml.LinearCombination])
+    def test_hamiltonian_diff(self, ham_constructor, device_kwargs, tol):
         """Tests a simple VQE gradient using parameter-shift rules."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
@@ -163,7 +165,7 @@ class TestHamiltonianSupport:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
+                ham_constructor(
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                 )

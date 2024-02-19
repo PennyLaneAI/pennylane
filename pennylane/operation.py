@@ -1080,7 +1080,7 @@ class Operator(abc.ABC):
             if (
                 not isinstance(
                     self,
-                    (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase, qml.Identity),
+                    (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.LinearCombination, qml.GlobalPhase, qml.Identity),
                 )
                 and len(qml.wires.Wires(wires)) == 0
             ):

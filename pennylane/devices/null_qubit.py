@@ -132,6 +132,7 @@ class NullQubit(QubitDevice):
         "Projector",
         "SparseHamiltonian",
         "Hamiltonian",
+        "LinearCombination",
         "Sum",
         "SProd",
         "Prod",
