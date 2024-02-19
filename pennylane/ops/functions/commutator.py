@@ -102,7 +102,7 @@ def commutator(op1, op2, pauli=False):
 
     """
 
-    both_have_pauli_rep = not op1.pauli_rep is None and not op2.pauli_rep is None
+    both_have_pauli_rep = op1.pauli_rep is not None and op2.pauli_rep is not None
 
     if pauli or both_have_pauli_rep:
         if not isinstance(op1, PauliSentence):
