@@ -365,7 +365,8 @@ def simulate_tree_mcm(
     if circuit_next is None:
         return measurements
 
-    samples = measurements
+    # For 1-shot measurements as 1-D arrays
+    samples = measurements.reshape((-1)) if measurements.ndim == 0 else measurements
     update_mcm_samples(op, samples, mcm_active, mcm_samples)
 
     # Define ``branch_measurement`` here to capture ``op``, ``rng``, ``prng_key``, ``debugger``, ``interface``
