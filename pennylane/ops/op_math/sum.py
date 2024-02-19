@@ -20,11 +20,13 @@ from copy import copy
 from typing import List
 
 import pennylane as qml
-from pennylane import math, Hamiltonian, LinearCombination
+from pennylane import math
 from pennylane.operation import Operator, convert_to_opmath
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
+from .linear_combination import LinearCombination
+from ..qubit.hamiltonian import Hamiltonian
 
 
 def sum(*summands, id=None, lazy=True):

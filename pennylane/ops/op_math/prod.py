@@ -25,7 +25,6 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane import Hamiltonian, LinearCombination
 from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
@@ -36,6 +35,8 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .composite import CompositeOp
+from .linear_combination import LinearCombination
+from ..qubit.hamiltonian import Hamiltonian
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for

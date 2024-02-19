@@ -22,7 +22,6 @@ from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
-from pennylane import Hamiltonian, LinearCombination
 from pennylane.math import expand_matrix
 from pennylane.operation import (
     AnyWires,
@@ -35,9 +34,11 @@ from pennylane.operation import (
 )
 from pennylane.wires import Wires
 
+from .linear_combination import LinearCombination
 from .sprod import SProd
 from .sum import Sum
 from .symbolicop import ScalarSymbolicOp
+from ..qubit.hamiltonian import Hamiltonian
 
 
 def exp(op, coeff=1, num_steps=None, id=None):
