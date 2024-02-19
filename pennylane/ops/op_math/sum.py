@@ -210,7 +210,10 @@ class Sum(CompositeOp):
             tensor_like: matrix representation
         """
         gen = (
-            (qml.matrix(op) if isinstance(op, (Hamiltonian, LinearCombination)) else op.matrix(), op.wires)
+            (
+                qml.matrix(op) if isinstance(op, (Hamiltonian, LinearCombination)) else op.matrix(),
+                op.wires,
+            )
             for op in self
         )
 

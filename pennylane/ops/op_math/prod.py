@@ -285,7 +285,14 @@ class Prod(CompositeOp):
         batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
             gen = (
-                (qml.matrix(op) if isinstance(op, (Hamiltonian, LinearCombination)) else op.matrix(), op.wires)
+                (
+                    (
+                        qml.matrix(op)
+                        if isinstance(op, (Hamiltonian, LinearCombination))
+                        else op.matrix()
+                    ),
+                    op.wires,
+                )
                 for op in ops
             )
 

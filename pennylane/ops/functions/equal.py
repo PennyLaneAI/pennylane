@@ -28,7 +28,16 @@ from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, LinearCombination, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
+from pennylane.ops import (
+    Hamiltonian,
+    LinearCombination,
+    Controlled,
+    Pow,
+    Adjoint,
+    Exp,
+    SProd,
+    CompositeOp,
+)
 from pennylane.templates.subroutines import ControlledSequence
 from pennylane.tape import QuantumTape
 

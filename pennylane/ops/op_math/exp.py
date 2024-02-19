@@ -280,7 +280,11 @@ class Exp(ScalarSymbolicOp, Operation):
 
         if self.num_steps is not None and isinstance(base, (Hamiltonian, LinearCombination, Sum)):
             # Apply trotter decomposition
-            coeffs = base.coeffs if isinstance(base, (Hamiltonian, LinearCombination)) else [1] * len(base)
+            coeffs = (
+                base.coeffs
+                if isinstance(base, (Hamiltonian, LinearCombination))
+                else [1] * len(base)
+            )
             coeffs = [c * coeff for c in coeffs]
             ops = base.ops if isinstance(base, (Hamiltonian, LinearCombination)) else base.operands
             return self._trotter_decomposition(ops, coeffs)
