@@ -17,7 +17,6 @@ Unit tests for the dot function
 import pytest
 
 import pennylane as qml
-from pennylane import X
 from pennylane.ops import Hamiltonian, Prod, SProd, Sum
 from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
 
@@ -46,20 +45,6 @@ XX, YY, ZZ = PauliWord({0: "X", 1: "X"}), PauliWord({0: "Y", 1: "Y"}), PauliWord
 H1 = X0 + Y0 + Z0
 H2 = XX + YY + ZZ
 H3 = 1.0 * X0 + 2.0 * Y0 + 3.0 * Z0
-
-
-def test_legacy_ops():
-    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
-    H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="op.ops is deprecated and"):
-        _ = H.ops
-
-
-def test_legacy_coeffs():
-    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
-    H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="op.coeffs is deprecated and"):
-        _ = H.coeffs
 
 
 class TestDotSum:
