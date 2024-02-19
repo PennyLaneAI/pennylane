@@ -152,7 +152,7 @@ class CompositeOp(Operator):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self)
+        return all(op.has_matrix or isinstance(op, (qml.Hamiltonian, qml.LinearCombination)) for op in self)
 
     def eigvals(self):
         """Return the eigenvalues of the specified operator.

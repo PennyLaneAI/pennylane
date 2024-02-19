@@ -21,14 +21,14 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import Hamiltonian, SProd, Prod, Sum
+from pennylane.ops import Hamiltonian, LinearCombination, SProd, Prod, Sum
 
 
 def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~.Hamiltonian`."""
     wires = op.wires
 
-    if isinstance(gen, qml.Hamiltonian):
+    if isinstance(gen, (Hamiltonian, LinearCombination)):
         H = gen
 
     elif isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
@@ -62,7 +62,7 @@ def _generator_prefactor(gen):
     if isinstance(gen, Prod):
         gen = qml.simplify(gen)
 
-    if isinstance(gen, Hamiltonian):
+    if isinstance(gen, (Hamiltonian, LinearCombination)):
         gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
 
     if isinstance(gen, Sum):

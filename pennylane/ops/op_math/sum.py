@@ -20,9 +20,8 @@ from copy import copy
 from typing import List
 
 import pennylane as qml
-from pennylane import math
+from pennylane import math, Hamiltonian, LinearCombination
 from pennylane.operation import Operator, convert_to_opmath
-from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
@@ -211,7 +210,7 @@ class Sum(CompositeOp):
             tensor_like: matrix representation
         """
         gen = (
-            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+            (qml.matrix(op) if isinstance(op, (Hamiltonian, LinearCombination)) else op.matrix(), op.wires)
             for op in self
         )
 

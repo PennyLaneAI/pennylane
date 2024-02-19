@@ -25,11 +25,11 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
+from pennylane import Hamiltonian, LinearCombination
 from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
-from pennylane.ops.qubit import Hamiltonian
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -285,7 +285,7 @@ class Prod(CompositeOp):
         batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
             gen = (
-                (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+                (qml.matrix(op) if isinstance(op, (Hamiltonian, LinearCombination)) else op.matrix(), op.wires)
                 for op in ops
             )
 

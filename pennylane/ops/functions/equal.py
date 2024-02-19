@@ -28,7 +28,7 @@ from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
+from pennylane.ops import Hamiltonian, LinearCombination, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 from pennylane.templates.subroutines import ControlledSequence
 from pennylane.tape import QuantumTape
 
@@ -151,7 +151,7 @@ def equal(
     if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
         return False
 
-    if isinstance(op2, (Hamiltonian, Tensor)):
+    if isinstance(op2, (Hamiltonian, LinearCombination, Tensor)):
         return _equal(op2, op1)
 
     return _equal(
@@ -362,7 +362,7 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     if not isinstance(op2, Observable):
         return False
 
-    if isinstance(op2, Hamiltonian):
+    if isinstance(op2, (Hamiltonian, LinearCombination)):
         return op2.compare(op1)
 
     if isinstance(op2, Tensor):
