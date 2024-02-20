@@ -112,17 +112,17 @@ class Reflection(SymbolicOp, Operation):
     @property
     def U(self):
         """The generator operation."""
-        return self.parameters["U"]
+        return self.hyperparameters["U"]
 
     @property
     def alpha(self):
         """The alpha angle for the operation."""
-        return self.parameters["alpha"]
+        return self.hyperparameters["alpha"]
 
     @property
     def reflection_wires(self):
         """The reflection wires for the operation."""
-        return self.parameters["reflection_wires"]
+        return self.hyperparameters["reflection_wires"]
 
     # pylint:disable=arguments-differ
     @staticmethod
