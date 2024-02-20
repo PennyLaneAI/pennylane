@@ -70,7 +70,7 @@ class LinearCombination(Observable):
         coeffs (tensor_like): coefficients of the LinearCombination expression
         observables (Iterable[Observable]): observables in the LinearCombination expression, of same length as coeffs
         simplify (bool): Specifies whether the LinearCombination is simplified upon initialization
-                         (like-terms are combined). The default value is `False`.
+            (like-terms are combined). The default value is `False`.
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
             LinearCombination are executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -325,6 +325,8 @@ class LinearCombination(Observable):
             value (list[list[int]]): List of lists of indexes of the observables in ``self.ops``. Each sublist
                 represents a group of commuting observables.
         """
+        if value is None:
+            return
 
         if (
             not isinstance(value, Iterable)
@@ -761,17 +763,7 @@ class LinearCombination(Observable):
         Returns:
             .LinearCombination: new LinearCombination
         """
-        cls = self.__class__
-        new_op = cls.__new__(cls)
-        new_op.data = copy(self.data)
-        new_op._wires = Wires(  # pylint: disable=protected-access
-            [wire_map.get(wire, wire) for wire in self.wires]
-        )
-        new_op._ops = [  # pylint: disable=protected-access
-            op.map_wires(wire_map) for op in self.ops
-        ]
-        for attr, value in vars(self).items():
-            if attr not in {"data", "_wires", "_ops"}:
-                setattr(new_op, attr, value)
-        new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
+        new_ops = tuple(op.map_wires(wire_map) for op in self.ops)
+        new_op = LinearCombination(self.data, new_ops)
+        new_op.grouping_indices = self._grouping_indices
         return new_op
