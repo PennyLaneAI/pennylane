@@ -357,6 +357,10 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
+
+* Added a `partial_trace` function to `pennylane.math` for matrices.
+  [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
+
 * Users can specify a list of PennyLane `measurements` they would want as terminal measurements
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
   [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
@@ -611,6 +615,7 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Trenten Babcock,
 Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
