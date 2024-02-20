@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -223,7 +223,7 @@ class TestIntegration:
 
 def test_correct_queueing():
     """Test that the AmplitudeAmplification operator is correctly queued in the circuit"""
-    dev = qml.device("default.qubit", wires=2)
+    dev = qml.device("default.qubit")
 
     @qml.qnode(dev)
     def circuit1():
