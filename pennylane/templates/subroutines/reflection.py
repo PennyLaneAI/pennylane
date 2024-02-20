@@ -36,7 +36,7 @@ class Reflection(SymbolicOp, Operation):
 
 
     Args:
-        U (Operator): The operator that generate the state :math:`|\Psi\rangle`.
+        U (Operator): The operator that generates the state :math:`|\Psi\rangle`.
         alpha (float): the reflection angle. Default is :math:`\pi`.
         reflection_wires (Any or Iterable[Any]): Subsystem of wires on which to reflect. The default is None and the reflection will be applied on the U wires.
 
