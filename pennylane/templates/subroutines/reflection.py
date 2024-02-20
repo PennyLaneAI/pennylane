@@ -90,7 +90,6 @@ class Reflection(SymbolicOp, Operation):
     """
 
     def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
-
         wires = U.wires
 
         if reflection_wires is None:
@@ -98,12 +97,12 @@ class Reflection(SymbolicOp, Operation):
         else:
             reflection_wires = reflection_wires
 
-        if not set(self.reflection_wires).issubset(set(U.wires)):
+        if not set(reflection_wires).issubset(set(U.wires)):
             raise ValueError("The reflection wires must be a subset of the operation wires.")
 
         self._name = "Reflection"
 
-        super().__init__(base=U, alpha = alpha, wires = wires, reflection_wires = reflection_wires,  id=id)
+        super().__init__(base=U, alpha=alpha, wires=wires, reflection_wires=reflection_wires, id=id)
 
     @property
     def has_matrix(self):
