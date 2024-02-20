@@ -1063,7 +1063,7 @@ class TestLinearCombination:
             assert qml.equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
-    
+
     def test_map_wires_grouping(self):
         """Test the map_wires method."""
         coeffs = pnp.array([1.0, 2.0, -3.0], requires_grad=True)
