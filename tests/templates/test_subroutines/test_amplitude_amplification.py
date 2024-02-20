@@ -213,7 +213,7 @@ class TestIntegration:
 
     def test_lightning_qubit(self):
         """Test that the QNode executes with the Lightning Qubit simulator."""
-        dev = qml.device("lightning.qubit", wires=3)
+        dev = qml.device("lightning.qubit", wires=4)
         qnode = qml.QNode(self.circuit, dev)
 
         res = qnode()
