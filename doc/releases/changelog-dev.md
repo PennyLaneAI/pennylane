@@ -610,7 +610,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-
 Abhishek Abhishek,
 Guillermo Alonso,
 Utkarsh Azad,
