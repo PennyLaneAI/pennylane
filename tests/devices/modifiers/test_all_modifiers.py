@@ -14,7 +14,7 @@
 """
 Tests that apply to all device modifiers or act on a combination of them together.
 """
-# pylint: disable=unused-argument, too-few-public-methods
+# pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring, no-member
 import pytest
 
 import pennylane as qml
