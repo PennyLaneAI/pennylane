@@ -122,7 +122,7 @@ def unwrap_controls(op):
 
         while hasattr(next_ctrl, "base"):
 
-            if _is_controlled(next_ctrl.base):
+            if isinstance(next_ctrl.base, Controlled):
                 base_control_wires = getattr(next_ctrl.base, "control_wires", [])
                 control_wires += base_control_wires
 
