@@ -510,7 +510,7 @@ def map_batch_transform(
         tape_counts.append(len(new_tapes))
 
     def processing_fn(res: ResultBatch) -> ResultBatch:
-        """Applies a batch of post-procesing functions to results.
+        """Applies a batch of post-processing functions to results.
 
         Args:
             res (ResultBatch): the results of executing a batch of circuits
