@@ -94,8 +94,6 @@ class Reflection(SymbolicOp, Operation):
 
         if reflection_wires is None:
             reflection_wires = U.wires
-        else:
-            reflection_wires = reflection_wires
 
         if not set(reflection_wires).issubset(set(U.wires)):
             raise ValueError("The reflection wires must be a subset of the operation wires.")
