@@ -90,17 +90,19 @@ class Reflection(SymbolicOp, Operation):
     """
 
     def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
-        self.wires = U.wires
-
         if reflection_wires is None:
             reflection_wires = U.wires
 
         if not set(reflection_wires).issubset(set(U.wires)):
             raise ValueError("The reflection wires must be a subset of the operation wires.")
 
+        self.hyperparameters["reflection_wires"] = reflection_wires
+        self.hyperparameters["alpha"] = alpha
+        self.hyperparameters["base"] = U
+
         self._name = "Reflection"
 
-        super().__init__(base=U, alpha=alpha, reflection_wires=reflection_wires, id=id)
+        super().__init__(base=U, id=id)
 
     @property
     def has_matrix(self):
@@ -108,7 +110,7 @@ class Reflection(SymbolicOp, Operation):
 
     # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(base, alpha, reflection_wires):
+    def compute_decomposition(*_, base, alpha, reflection_wires, **__):
         wires = qml.wires.Wires(reflection_wires)
 
         ops = []
