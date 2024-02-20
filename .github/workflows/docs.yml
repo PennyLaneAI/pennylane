@@ -19,7 +19,7 @@ on:
 - pull_request
 
 env:
-  DEPS_BRANCH: timmy-deps-test
+  DEPS_BRANCH: bot/stable-deps-update
 
 jobs:
   sphinx:
