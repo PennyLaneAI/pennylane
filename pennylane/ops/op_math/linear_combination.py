@@ -223,6 +223,23 @@ class LinearCombination(Observable):
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
+        with qml.QueuingManager().stop_recording():
+            self._operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
+        self._pauli_rep = self._build_pauli_rep()
+
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the LinearCombination of operators."""
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+            new_rep = qml.pauli.PauliSentence()
+            for operand_rep in operand_pauli_reps:
+                for pw, coeff in operand_rep.items():
+                    new_rep[pw] += coeff
+            return new_rep
+        return None
+    
+    @property
+    def operands(self):
+        return self._operands
 
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
