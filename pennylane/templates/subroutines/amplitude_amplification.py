@@ -113,7 +113,7 @@ class AmplitudeAmplification(Operation):
         self.hyperparameters["O"] = O
         self.hyperparameters["iters"] = iters
         self.hyperparameters["fixed_point"] = fixed_point
-        self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
+        self.hyperparameters["work_wire"] = work_wire
         self.hyperparameters["reflection_wires"] = qml.wires.Wires(reflection_wires)
 
         super().__init__(wires=wires)
