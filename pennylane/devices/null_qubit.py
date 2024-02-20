@@ -79,7 +79,10 @@ def _null_measurement(mp, obj_with_wires, shots, batch_size, interface):
 def _(mp: ClassicalShadowMP, obj_with_wires, shots, batch_size, interface):
     shapes = [mp.shape(obj_with_wires, Shots(s)) for s in shots]
     if batch_size is not None:
-        shapes = [(batch_size,) + shape for shape in shapes]
+        # shapes = [(batch_size,) + shape for shape in shapes]
+        raise ValueError(
+            "Parameter broadcasting is not supported with null.qubit and qml.classical_shadow"
+        )
     results = tuple(math.zeros(shape, like=interface, dtype=np.int8) for shape in shapes)
     return results if shots.has_partitioned_shots else results[0]
 
@@ -280,7 +283,7 @@ class NullQubit(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",
                 circuits,

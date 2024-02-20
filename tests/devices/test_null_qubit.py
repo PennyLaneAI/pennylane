@@ -74,6 +74,7 @@ def test_tracking():
     config = ExecutionConfig(gradient_method="device")
 
     with qml.Tracker(dev) as tracker:
+        dev.execute(qs)
         dev.compute_derivatives(qs, config)
         dev.execute_and_compute_derivatives([qs] * 2, config)
         dev.compute_jvp([qs] * 3, [(0,)] * 3, config)
@@ -82,7 +83,10 @@ def test_tracking():
         dev.execute_and_compute_vjp([qs] * 6, [(0,)] * 6, config)
 
     assert tracker.history == {
-        "executions": [2, 4, 6],
+        "batches": [1],
+        "results": [np.array(0)],
+        "simulations": [1],
+        "executions": [1, 2, 4, 6],
         "derivatives": [1, 2],
         "derivative_batches": [1],
         "execute_and_derivative_batches": [1],
@@ -101,7 +105,7 @@ def test_tracking():
                 depth=2,
             )
         ]
-        * 12,
+        * 13,
     }
 
 
@@ -1000,6 +1004,15 @@ class TestClassicalShadows:
         for r, s in zip(res, shots):
             assert np.array_equal(r, np.zeros((2, s, n_qubits)))
             assert r.dtype == np.int8
+
+    def test_batching_not_supported(self):
+        """Test that classical_shadow does not work with batching."""
+        dev = NullQubit()
+
+        ops = [qml.RX([1.1, 2.2], 0)]
+        qs = qml.tape.QuantumScript(ops, [qml.classical_shadow([0])], shots=100)
+        with pytest.raises(ValueError, match="broadcasting is not supported"):
+            _ = dev.execute(qs)
 
 
 @pytest.mark.parametrize("n_wires", [1, 2, 3])
