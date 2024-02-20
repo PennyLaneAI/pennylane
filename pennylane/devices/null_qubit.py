@@ -123,12 +123,12 @@ def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots, batch_size, inte
 
 class NullQubit(Device):
     """Null qubit device for PennyLane. This device performs no operations involved in numerical calculations.
-       Instead the time spent in execution is dominated by support (or setting up) operations, like tape creation etc.
+    Instead the time spent in execution is dominated by support (or setting up) operations, like tape creation etc.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+            (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
 
@@ -152,7 +152,7 @@ class NullQubit(Device):
      (array(0.), array([1., 0., 0., 0.])))
 
 
-    This device currently supports trivial derivatives:
+    This device currently supports (trivial) derivatives:
 
     >>> from pennylane.devices import ExecutionConfig
     >>> dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
