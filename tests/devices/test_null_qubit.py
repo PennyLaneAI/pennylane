@@ -1055,6 +1055,31 @@ class TestIntegration:
 
         assert circuit() == expected
 
+    @pytest.mark.parametrize(
+        "diff_method", ["device", "adjoint", "backprop", "finite-diff", "parameter-shift"]
+    )
+    def test_expected_shape_all_methods(self, diff_method):
+        """Test that the gradient shape is as expected with all diff methods."""
+        n_wires = 4
+
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=5, n_wires=n_wires)
+        rng = np.random.default_rng(seed=1239594)
+        params = qml.numpy.array(rng.random(shape))
+        dev = qml.device("null.qubit")
+
+        diff_method = "device"
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(params):
+            qml.StronglyEntanglingLayers(params, wires=range(n_wires))
+            return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+
+        def cost(params):
+            out = circuit(params)
+            return qml.math.sum(out)
+
+        assert np.array_equal(qml.grad(cost)(params), np.zeros(shape))
+
 
 class TestJacobian:
     """Test that the jacobian of circuits can be computed."""
