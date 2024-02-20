@@ -517,6 +517,7 @@
 
 * The docstring of `qml.sample` has been updated to advise the use of single-shot expectations
   instead when differentiating a circuit.
+  [(#5237)](https://github.com/PennyLaneAI/pennylane/pull/5237)
 
 <h3>Bug fixes 🐛</h3>
 
