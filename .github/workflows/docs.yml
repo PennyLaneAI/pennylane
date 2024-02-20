@@ -34,6 +34,7 @@ jobs:
 
     - name: Prepare local repo
       run: |
+        git fetch
         git config user.name "GitHub Actions Bot"
         git config user.email "<>"
         if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
