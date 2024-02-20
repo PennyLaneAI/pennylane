@@ -32,7 +32,7 @@ class Reflection(SymbolicOp, Operation):
 
     .. math::
 
-        \text{Reflection}(U, \alpha) = -\mathbb{I} + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
+        \text{Reflection}(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
 
 
     Args:
@@ -42,7 +42,7 @@ class Reflection(SymbolicOp, Operation):
 
     **Example**
 
-    This example shows how to apply the reflection :math:`-\mathbb{I} + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
+    This example shows how to apply the reflection :math:`-I` + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
 
     .. code-block::
 
@@ -75,7 +75,7 @@ class Reflection(SymbolicOp, Operation):
 
         .. math::
 
-            \text{Reflection}(U, \alpha) = -\mathbb{I} + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-\mathbb{I} + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^{\dagger}.
+            \text{Reflection}(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-I + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^{\dagger}.
 
         The central block is obtained through a PhaseShift controlled operator.
 
@@ -83,7 +83,7 @@ class Reflection(SymbolicOp, Operation):
 
         .. math::
 
-            U(\mathbb{I} - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes \mathbb{I}^{n-m}})U^{\dagger},
+            U(I - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes I^{n-m})U^{\dagger},
 
         where :math:`m` is the number of reflection wires and :math:`n` is the total number of wires.
 
