@@ -121,32 +121,32 @@ class AmplitudeAmplification(Operation):
     @property
     def U(self):
         """The generator operation."""
-        return self.parameters["U"]
+        return self.hyperparameters["U"]
 
     @property
     def O(self):
         """The oracle operation."""
-        return self.parameters["O"]
+        return self.hyperparameters["O"]
 
     @property
     def iters(self):
         """The number of iterations."""
-        return self.parameters["iters"]
+        return self.hyperparameters["iters"]
 
     @property
     def fixed_point(self):
         """Whether to use the fixed-point amplitude amplification algorithm."""
-        return self.parameters["fixed_point"]
+        return self.hyperparameters["fixed_point"]
 
     @property
     def work_wire(self):
         """The auxiliary wire to use for the fixed-point amplitude amplification algorithm."""
-        return self.parameters["work_wire"]
+        return self.hyperparameters["work_wire"]
 
     @property
     def reflection_wires(self):
         """The wires on which the reflection is performed."""
-        return self.parameters["reflection_wires"]
+        return self.hyperparameters["reflection_wires"]
 
     # pylint:disable=arguments-differ
     @staticmethod
