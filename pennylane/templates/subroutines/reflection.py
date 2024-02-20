@@ -24,8 +24,8 @@ from pennylane.ops import SymbolicOp
 
 class Reflection(SymbolicOp, Operation):
     r"""An operation that applies a reflection on a state :math:`|\Psi\rangle`.
-    This operator is useful in algorithms such as `Amplitude Amplification <https://arxiv.org/abs/quant-ph/0005055>`__
-    or `Oblivious Amplitude Amplification <https://arxiv.org/abs/1312.1414>`__.
+    This operator is useful in algorithms such as `amplitude amplification <https://arxiv.org/abs/quant-ph/0005055>`__
+    or `oblivious amplitude amplification <https://arxiv.org/abs/1312.1414>`__.
 
     Given an :class:`~.Operator` :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`,  and a reflection angle :math:`\alpha`,
     this template creates the operation:
