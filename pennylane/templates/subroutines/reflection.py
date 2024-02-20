@@ -24,8 +24,8 @@ from pennylane.ops import SymbolicOp
 
 class Reflection(SymbolicOp, Operation):
     r"""An operation that applies a reflection along a state :math:`|\Psi\rangle`.
-    This operator is useful in algorithms such as `Amplitude Amplification <https://arxiv.org/abs/quant-ph/0005055>`__
-    or `Oblivious Amplitude Amplification <https://arxiv.org/abs/1312.1414>`__.
+    This operator is useful in algorithms such as `amplitude amplification <https://arxiv.org/abs/quant-ph/0005055>`__
+    or `oblivious amplitude amplification <https://arxiv.org/abs/1312.1414>`__.
 
     Given an :class:`~.Operator` :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`,  and a reflection angle :math:`\alpha`,
     this template creates the operation:
@@ -36,7 +36,7 @@ class Reflection(SymbolicOp, Operation):
 
 
     Args:
-        U (Operator): The operator that generate the state :math:`|\Psi\rangle`.
+        U (Operator): The operator that generates the state :math:`|\Psi\rangle`.
         alpha (float): the reflection angle. Default is :math:`\pi`.
         reflection_wires (Any or Iterable[Any]): Subsystem of wires on which to reflect. The default is None and the reflection will be applied on the U wires.
 
