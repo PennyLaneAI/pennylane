@@ -106,18 +106,22 @@ class Reflection(SymbolicOp, Operation):
 
     @property
     def has_matrix(self):
+        """True if the operation has a defined matrix representation."""
         return False
 
     @property
     def U(self):
+        """The generator operation."""
         return self.parameters["U"]
 
     @property
     def alpha(self):
+        """The alpha angle for the operation."""
         return self.parameters["alpha"]
 
     @property
     def reflection_wires(self):
+        """The reflection wires for the operation."""
         return self.parameters["reflection_wires"]
 
     # pylint:disable=arguments-differ
@@ -128,7 +132,7 @@ class Reflection(SymbolicOp, Operation):
         ops = []
 
         ops.append(qml.GlobalPhase(np.pi))
-        ops.append(qml.adjoint(base))
+        ops.append(qml.adjoint(U))
 
         if len(wires) > 1:
             ops.append(qml.PauliX(wires=wires[-1]))
@@ -146,6 +150,6 @@ class Reflection(SymbolicOp, Operation):
             ops.append(qml.PhaseShift(alpha, wires=wires))
             ops.append(qml.PauliX(wires=wires))
 
-        ops.append(base)
+        ops.append(U)
 
         return ops
