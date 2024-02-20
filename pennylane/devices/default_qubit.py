@@ -33,7 +33,7 @@ from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 
 from . import Device
-from .modifiers import convert_single_circuit_to_batch, simulator_tracking
+from .modifiers import single_tape_support, simulator_tracking
 from .preprocess import (
     decompose,
     mid_circuit_measurements,
@@ -207,7 +207,7 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None
 
 
 @simulator_tracking
-@convert_single_circuit_to_batch
+@single_tape_support
 class DefaultQubit(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 

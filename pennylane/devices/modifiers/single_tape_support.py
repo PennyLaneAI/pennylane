@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Defines the ``convert_single_circuit_to_batch`` device modifier.
+"""Defines the ``single_tape_support`` device modifier.
 
 """
 from functools import wraps
@@ -139,7 +139,7 @@ def _make_execute_and_compute_vjp(batch_execute_and_compute_vjp):
 
 
 # pylint: disable=protected-access
-def convert_single_circuit_to_batch(cls: type) -> type:
+def single_tape_support(cls: type) -> type:
     """Modifies all functions to accept single tapes in addition to batches. This allows the definition
     of the device class to purely focus on executing batches.
 
@@ -151,7 +151,7 @@ def convert_single_circuit_to_batch(cls: type) -> type:
 
     .. code-block:: python
 
-        @convert_single_circuit_to_batch
+        @single_tape_support
         class MyDevice(qml.devices.Device):
 
             def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
@@ -169,14 +169,12 @@ def convert_single_circuit_to_batch(cls: type) -> type:
 
     """
     if not issubclass(cls, Device):
-        raise ValueError(
-            "convert_single_circuit_to_batch only accepts subclasses of pennylane.devices.Device"
-        )
+        raise ValueError("single_tape_support only accepts subclasses of pennylane.devices.Device")
 
     if hasattr(cls, "_applied_modifiers"):
-        cls._applied_modifiers.append(convert_single_circuit_to_batch)
+        cls._applied_modifiers.append(single_tape_support)
     else:
-        cls._applied_modifiers = [convert_single_circuit_to_batch]
+        cls._applied_modifiers = [single_tape_support]
 
     # execute must be defined
     cls.execute = _make_execute(cls.execute)

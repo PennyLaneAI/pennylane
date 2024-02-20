@@ -46,7 +46,7 @@ from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 
 from .default_qubit import accepted_sample_measurement
-from .modifiers import convert_single_circuit_to_batch, simulator_tracking
+from .modifiers import single_tape_support, simulator_tracking
 from .preprocess import (
     decompose,
     validate_observables,
@@ -181,7 +181,7 @@ def _pl_obs_to_linear_comb(meas_op):
 
 # pylint:disable = too-many-instance-attributes
 @simulator_tracking
-@convert_single_circuit_to_batch
+@single_tape_support
 class DefaultClifford(Device):
     r"""A PennyLane device for fast simulation of Clifford circuits using
     `stim <https://github.com/quantumlib/stim/>`_.

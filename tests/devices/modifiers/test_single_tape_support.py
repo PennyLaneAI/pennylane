@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests the `convert_single_circuit_to_batch` device modifier.
+Tests the `single_tape_support` device modifier.
 
 """
 
 import pennylane as qml
 
-from pennylane.devices.modifiers import convert_single_circuit_to_batch
+from pennylane.devices.modifiers import single_tape_support
 
 
 def test_wraps_execute():
     """Test that execute now accepts a single circuit."""
 
-    @convert_single_circuit_to_batch
+    @single_tape_support
     class DummyDev(qml.devices.Device):
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
@@ -37,7 +37,7 @@ def test_wraps_execute():
 def test_wraps_compute_derivatives():
     """Test that compute_derivatives now accepts a single circuit."""
 
-    @convert_single_circuit_to_batch
+    @single_tape_support
     class DummyDev(qml.devices.Device):
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
@@ -55,7 +55,7 @@ def test_wraps_compute_derivatives():
 def test_wraps_execute_and_compute_derivatives():
     """Test that execute_and_compute_derivatives now accepts a single circuit."""
 
-    @convert_single_circuit_to_batch
+    @single_tape_support
     class DummyDev(qml.devices.Device):
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
@@ -74,7 +74,7 @@ def test_wraps_execute_and_compute_derivatives():
 def test_wraps_compute_jvp():
     """Test that compute_jvp now accepts a single circuit."""
 
-    @convert_single_circuit_to_batch
+    @single_tape_support
     class DummyDev(qml.devices.Device):
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
@@ -94,7 +94,7 @@ def test_wraps_compute_jvp():
 def test_wraps_execute_and_compute_jvp():
     """Test that execute_and_compute_jvp now accepts a single circuit."""
 
-    @convert_single_circuit_to_batch
+    @single_tape_support
     class DummyDev(qml.devices.Device):
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
@@ -114,7 +114,7 @@ def test_wraps_execute_and_compute_jvp():
 def test_wraps_compute_vjp():
     """Test that compute_vjp now accepts a single circuit."""
 
-    @convert_single_circuit_to_batch
+    @single_tape_support
     class DummyDev(qml.devices.Device):
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
@@ -134,7 +134,7 @@ def test_wraps_compute_vjp():
 def test_wraps_execute_and_compute_vjp():
     """Test that execute_and_compute_vjp now accepts a single circuit."""
 
-    @convert_single_circuit_to_batch
+    @single_tape_support
     class DummyDev(qml.devices.Device):
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)

@@ -14,7 +14,7 @@
 """
 Tests for qml.devices.modifiers.simulator_tracking.
 """
-
+# pylint: disable=unused-argument, too-few-public-methods
 import pennylane as qml
 
 from pennylane.devices.modifiers import simulator_tracking

@@ -29,12 +29,12 @@ pytestmark = pytest.mark.external
 
 # pylint: disable=protected-access
 def test_applied_modifiers():
-    """Test that defualt qubit has the `convert_single_circuit_to_batch` and `simulator_tracking`
+    """Test that defualt qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = qml.device("default.clifford")
     assert dev._applied_modifiers == [
-        qml.devices.modifiers.convert_single_circuit_to_batch,
+        qml.devices.modifiers.single_tape_support,
         qml.devices.modifiers.simulator_tracking,
     ]
 

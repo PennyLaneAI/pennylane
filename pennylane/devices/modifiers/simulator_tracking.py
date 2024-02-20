@@ -198,7 +198,7 @@ def simulator_tracking(cls: type) -> type:
     .. code-block:: python
 
         @simulator_tracking
-        @convert_single_circuit_to_batch
+        @single_tape_support
         class MyDevice(qml.devices.Device):
 
             def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):

@@ -14,12 +14,13 @@
 """
 Tests that apply to all device modifiers or act on a combination of them together.
 """
+# pylint: disable=unused-argument, too-few-public-methods
 import pytest
 
 import pennylane as qml
 
 from pennylane.devices import Device
-from pennylane.devices.modifiers import simulator_tracking, convert_single_circuit_to_batch
+from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 
 
 # pylint: disable=protected-access
@@ -27,12 +28,12 @@ def test_chained_modifiers():
     """Test that modifiers can be stacked together."""
 
     @simulator_tracking
-    @convert_single_circuit_to_batch
+    @single_tape_support
     class DummyDev(qml.devices.Device):
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
 
-    assert DummyDev._applied_modifiers == [convert_single_circuit_to_batch, simulator_tracking]
+    assert DummyDev._applied_modifiers == [single_tape_support, simulator_tracking]
 
     tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))], shots=50)
     dev = DummyDev()
@@ -52,7 +53,7 @@ def test_chained_modifiers():
     assert dev.tracker.history["shots"] == [50]
 
 
-@pytest.mark.parametrize("modifier", (simulator_tracking, convert_single_circuit_to_batch))
+@pytest.mark.parametrize("modifier", (simulator_tracking, single_tape_support))
 class TestModifierDefaultBeahviour:
     """Test generic behavior for device modifiers."""
 

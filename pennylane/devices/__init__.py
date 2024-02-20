@@ -94,7 +94,7 @@ The ``modifiers`` allow for the easy addition of default behavior to a device.
 .. autosummary::
     :toctree: api
 
-    convert_single_circuit_to_batch
+    single_tape_support
     simulator_tracking
 
 For example with a custom device we can add simulator-style tracking and the ability
@@ -103,7 +103,7 @@ to handle a single circuit. See the documentation for each modifier for more det
 .. code-block:: python
 
     @simulator_tracking
-    @convert_single_circuit_to_batch
+    @single_tape_support
     class MyDevice(qml.devices.Device):
 
         def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
