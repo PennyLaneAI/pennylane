@@ -42,7 +42,7 @@ from pennylane.measurements import (
     DensityMatrixMP,
 )
 
-from . import Device
+from . import Device, DefaultQubit
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qubit.sampling import get_num_shots_and_executions
 
@@ -212,13 +212,15 @@ class NullQubit(Device):
     def preprocess(
         self, execution_config=DefaultExecutionConfig
     ) -> Tuple[TransformProgram, ExecutionConfig]:
+        program, _ = DefaultQubit().preprocess(execution_config)
         updated_values = {}
-        if execution_config.gradient_method == "best":
+        if execution_config.gradient_method in ["best", "adjoint"]:
             updated_values["gradient_method"] = "device"
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = execution_config.gradient_method in {
                 "best",
                 "device",
+                "adjoint",
                 "backprop",
             }
         if execution_config.use_device_jacobian_product is None:
@@ -227,7 +229,7 @@ class NullQubit(Device):
             )
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
-        return TransformProgram(), replace(execution_config, **updated_values)
+        return program, replace(execution_config, **updated_values)
 
     def execute(
         self,
@@ -282,18 +284,21 @@ class NullQubit(Device):
         return execution_config is None or execution_config.gradient_method in (
             "device",
             "backprop",
+            "adjoint",
         )
 
     def supports_vjp(self, execution_config=None, circuit=None):
         return execution_config is None or execution_config.gradient_method in (
             "device",
             "backprop",
+            "adjoint",
         )
 
     def supports_jvp(self, execution_config=None, circuit=None):
         return execution_config is None or execution_config.gradient_method in (
             "device",
             "backprop",
+            "adjoint",
         )
 
     def compute_derivatives(

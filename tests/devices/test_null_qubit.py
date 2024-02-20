@@ -88,7 +88,7 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True
 
-    @pytest.mark.parametrize("gradient_method", ["parameter-shift", "finite-diff", "adjoint", None])
+    @pytest.mark.parametrize("gradient_method", ["parameter-shift", "finite-diff", None])
     def test_doesnt_support_other_gradient_methods(self, gradient_method):
         """Test that NullQubit currently does not support other gradient methods natively."""
         dev = NullQubit()
@@ -96,6 +96,16 @@ class TestSupportsDerivatives:
         assert dev.supports_derivatives(config) is False
         assert dev.supports_jvp(config) is False
         assert dev.supports_vjp(config) is False
+
+    def test_swaps_adjoint_to_mean_device(self):
+        """Test that null.qubit interprets 'adjoint' as device derivatives."""
+        dev = NullQubit()
+        config = ExecutionConfig(gradient_method="adjoint")
+        _, config = dev.preprocess(config)
+        assert config.gradient_method == "device"
+        assert dev.supports_derivatives(config) is True
+        assert dev.supports_jvp(config) is True
+        assert dev.supports_vjp(config) is True
 
 
 class TestBasicCircuit:
