@@ -221,11 +221,11 @@ class TestPreprocessing:
         batch, _ = program((tape1,))
         assert batch[0].circuit == tape1.circuit
 
-        tape2 = qml.tape.QuantumScript([MatOp(1.2, wires=0)])
+        tape2 = qml.tape.QuantumScript([MatOp(qml.numpy.array(1.2), wires=0)])
         batch, _ = program((tape2,))
         assert batch[0].circuit != tape2.circuit
 
-        tape3 = qml.tape.QuantumScript([MatOp(1.2, 2.3, wires=0)])
+        tape3 = qml.tape.QuantumScript([MatOp(qml.numpy.array(1.2), qml.numpy.array(2.3), wires=0)])
         batch, _ = program((tape2,))
         assert batch[0].circuit != tape3.circuit
 
@@ -240,7 +240,7 @@ class TestPreprocessing:
             def has_matrix(self):
                 return True
 
-        tape4 = qml.tape.QuantumScript([CustomOpWithGenerator(1.2, wires=0)])
+        tape4 = qml.tape.QuantumScript([CustomOpWithGenerator(qml.numpy.array(1.2), wires=0)])
         batch, _ = program((tape4,))
         assert batch[0].circuit == tape4.circuit
 
