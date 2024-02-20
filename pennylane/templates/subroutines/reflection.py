@@ -90,7 +90,7 @@ class Reflection(SymbolicOp, Operation):
     """
 
     def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
-        wires = U.wires
+        self.wires = U.wires
 
         if reflection_wires is None:
             reflection_wires = U.wires
@@ -102,7 +102,7 @@ class Reflection(SymbolicOp, Operation):
 
         self._name = "Reflection"
 
-        super().__init__(base=U, alpha=alpha, wires=wires, reflection_wires=reflection_wires, id=id)
+        super().__init__(base=U, alpha=alpha, reflection_wires=reflection_wires, id=id)
 
     @property
     def has_matrix(self):
