@@ -451,6 +451,36 @@ class TestSample:
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
 
+    def test_sample_allowed_with_parameter_shift(self):
+        """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
+        dev = qml.device("default.qubit", shots=10)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.sample(qml.PauliX(0))
+
+        angle = qml.numpy.array(0.1)
+        res = qml.jacobian(circuit)(angle)
+        assert qml.math.shape(res) == (10,)
+        assert all(r in {-1, 0, 1} for r in np.round(res, 13))
+
+    @pytest.mark.jax
+    def test_sample_fails_with_jax_jacobian(self):
+        """Test that qml.sample raises an error with parameter-shift and jax."""
+        import jax
+
+        dev = qml.device("default.qubit", shots=10)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.sample(qml.PauliX(0))
+
+        angle = jax.numpy.array(0.1)
+        with pytest.raises(TypeError, match=r"got int64\[10\] and float64\[10\] respectively"):
+            _ = jax.jacobian(circuit)(angle)
+
 
 @pytest.mark.jax
 @pytest.mark.parametrize("samples", (1, 10))
