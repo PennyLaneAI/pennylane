@@ -298,7 +298,6 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
 
         qnode._update_gradient_fn(tape=initial_tape)
-        print(qnode.gradient_fn)
         program = get_transform_program(qnode, level=level)
         return program((initial_tape,))
 
