@@ -173,16 +173,8 @@
   [noise channels](https://docs.pennylane.ai/en/latest/introduction/operations.html#noisy-channels)
   when operating in finite-shot mode.
 
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
-
-* Added new error tracking and propagation functionality.
-  [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
-  [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
-
 * Added new SpectralNormError class to the new error tracking functionality.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
-
 
 <h3>Improvements 🛠</h3>
 
