@@ -601,7 +601,7 @@
 
 * `QubitDensityMatrix` now works with jax-jit on the `default.mixed` device.
   [(#5203)](https://github.com/PennyLaneAI/pennylane/pull/5203)
-  [()](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#5236)](https://github.com/PennyLaneAI/pennylane/pull/5236)
 
 <h3>Contributors ✍️</h3>
 
