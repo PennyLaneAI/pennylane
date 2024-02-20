@@ -90,28 +90,29 @@ class Reflection(SymbolicOp, Operation):
     """
 
     def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
-        self.U = U
-        self.alpha = alpha
+
+        wires = U.wires
 
         if reflection_wires is None:
-            self.reflection_wires = U.wires
+            reflection_wires = U.wires
         else:
-            self.reflection_wires = reflection_wires
+            reflection_wires = reflection_wires
 
         if not set(self.reflection_wires).issubset(set(U.wires)):
             raise ValueError("The reflection wires must be a subset of the operation wires.")
 
         self._name = "Reflection"
 
-        super().__init__(base=U, id=id)
+        super().__init__(base=U, alpha = alpha, wires = wires, reflection_wires = reflection_wires,  id=id)
 
     @property
     def has_matrix(self):
         return False
 
     # pylint:disable=arguments-differ
-    def compute_decomposition(self, base, wires):
-        wires = qml.wires.Wires(self.reflection_wires)
+    @staticmethod
+    def compute_decomposition(base, alpha, reflection_wires):
+        wires = qml.wires.Wires(reflection_wires)
 
         ops = []
 
@@ -122,7 +123,7 @@ class Reflection(SymbolicOp, Operation):
             ops.append(qml.PauliX(wires=wires[-1]))
             ops.append(
                 qml.ctrl(
-                    qml.PhaseShift(self.alpha, wires=wires[-1]),
+                    qml.PhaseShift(alpha, wires=wires[-1]),
                     control=wires[:-1],
                     control_values=[0] * (len(wires) - 1),
                 )
@@ -131,7 +132,7 @@ class Reflection(SymbolicOp, Operation):
 
         else:
             ops.append(qml.PauliX(wires=wires))
-            ops.append(qml.PhaseShift(self.alpha, wires=wires))
+            ops.append(qml.PhaseShift(alpha, wires=wires))
             ops.append(qml.PauliX(wires=wires))
 
         ops.append(base)
