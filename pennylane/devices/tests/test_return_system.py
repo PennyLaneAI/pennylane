@@ -34,7 +34,6 @@ class TestIntegrationMultipleReturns:
     measurements.
     """
 
-    @pytest.mark.tier1
     def test_multiple_expval(self, device):
         """Return multiple expvals."""
         n_wires = 2
@@ -58,7 +57,6 @@ class TestIntegrationMultipleReturns:
 
         assert isinstance(res[1], (float, np.ndarray))
 
-    @pytest.mark.tier0
     def test_multiple_var(self, device):
         """Return multiple vars."""
         n_wires = 2
@@ -82,7 +80,6 @@ class TestIntegrationMultipleReturns:
 
         assert isinstance(res[1], (float, np.ndarray))
 
-    @pytest.mark.tier1
     def test_multiple_prob(self, device):
         """Return multiple probs."""
 
@@ -105,7 +102,6 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == (2**1,)
 
-    @pytest.mark.tier1
     def test_mix_meas(self, device):
         """Return multiple different measurements."""
         n_wires = 2

@@ -44,7 +44,6 @@ def make_simple_circuit_expval(device, wires):
 class TestWiresIntegration:
     """Test that the device integrates with PennyLane's wire management."""
 
-    @pytest.mark.tier1
     @pytest.mark.parametrize(
         "wires1, wires2",
         [

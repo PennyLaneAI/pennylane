@@ -27,7 +27,6 @@ pytestmark = pytest.mark.skip_unsupported
 class TestComparison:
     """Test that a device different to default.qubit gives the same result"""
 
-    @pytest.mark.tier0
     def test_hermitian_expectation(self, device, tol, benchmark):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         n_wires = 2
@@ -80,7 +79,6 @@ class TestComparison:
         assert pnp.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
         assert pnp.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     @pytest.mark.parametrize(
         "state",
         [
@@ -141,7 +139,6 @@ class TestComparison:
         assert pnp.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
         assert pnp.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
 
-    @pytest.mark.tier1
     def test_pauliz_expectation_analytic(self, device, tol):
         """Test that the tensor product of PauliZ expectation value is correct"""
         n_wires = 2
@@ -180,7 +177,6 @@ class TestComparison:
         assert pnp.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
         assert pnp.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
 
-    @pytest.mark.tier1
     @pytest.mark.parametrize("ret", ["expval", "var"])
     def test_random_circuit(self, device, tol, ret):
         """Compare the result of a random circuit to default.qubit"""
@@ -220,7 +216,6 @@ class TestComparison:
         assert pnp.allclose(qnode(weights), qnode_def(weights), atol=tol(dev.shots))
         assert pnp.allclose(grad(weights), grad_def(weights), atol=tol(dev.shots))
 
-    @pytest.mark.tier1
     def test_four_qubit_random_circuit(self, device, tol):
         """Compare a four-qubit random circuit with lots of different gates to default.qubit"""
         n_wires = 4

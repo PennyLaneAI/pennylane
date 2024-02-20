@@ -100,7 +100,6 @@ def sub_routine(label_map):
 class TestSupportedObservables:
     """Test that the device can implement all observables that it supports."""
 
-    @pytest.mark.tier1
     @pytest.mark.parametrize("observable", all_obs)
     def test_supported_observables_can_be_implemented(self, device_kwargs, observable):
         """Test that the device can implement all its supported observables."""
@@ -128,7 +127,6 @@ class TestSupportedObservables:
         else:
             assert isinstance(circuit(obs[observable]), (float, np.ndarray))
 
-    @pytest.mark.tier1
     def test_tensor_observables_can_be_implemented(self, device_kwargs):
         """Test that the device can implement a simple tensor observable.
         This test is skipped for devices that do not support tensor observables."""
@@ -154,7 +152,6 @@ class TestSupportedObservables:
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
-    @pytest.mark.tier0
     def test_hamiltonian_diff(self, device_kwargs, tol):
         """Tests a simple VQE gradient using parameter-shift rules."""
         device_kwargs["wires"] = 1
@@ -205,7 +202,6 @@ class TestHamiltonianSupport:
 class TestExpval:
     """Test expectation values"""
 
-    @pytest.mark.tier1
     def test_identity_expectation(self, device, tol):
         """Test that identity expectation value (i.e. the trace) is 1."""
         n_wires = 2
@@ -224,7 +220,6 @@ class TestExpval:
         res = circuit()
         assert np.allclose(res, np.array([1, 1]), atol=tol(dev.shots))
 
-    @pytest.mark.tier1
     def test_pauliz_expectation(self, device, tol):
         """Test that PauliZ expectation value is correct"""
         n_wires = 2
@@ -244,7 +239,6 @@ class TestExpval:
         expected = np.array([np.cos(theta), np.cos(theta) * np.cos(phi)])
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier1
     def test_paulix_expectation(self, device, tol):
         """Test that PauliX expectation value is correct"""
         n_wires = 2
@@ -264,7 +258,6 @@ class TestExpval:
         expected = np.array([np.sin(theta) * np.sin(phi), np.sin(phi)])
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier1
     def test_pauliy_expectation(self, device, tol):
         """Test that PauliY expectation value is correct"""
         n_wires = 2
@@ -284,7 +277,6 @@ class TestExpval:
         expected = np.array([0.0, -np.cos(theta) * np.sin(phi)])
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier1
     def test_hadamard_expectation(self, device, tol):
         """Test that Hadamard expectation value is correct"""
         n_wires = 2
@@ -306,7 +298,6 @@ class TestExpval:
         ) / np.sqrt(2)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     def test_hermitian_expectation(self, device, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
         n_wires = 2
@@ -336,7 +327,6 @@ class TestExpval:
 
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     def test_projector_expectation(self, device, tol):
         """Test that arbitrary Projector expectation values are correct"""
         n_wires = 2
@@ -375,7 +365,6 @@ class TestExpval:
         assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
         assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     def test_multi_mode_hermitian_expectation(self, device, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         n_wires = 2
@@ -421,7 +410,6 @@ class TestExpval:
 class TestTensorExpval:
     """Test tensor expectation values"""
 
-    @pytest.mark.tier1
     def test_paulix_pauliy(self, device, tol, skip_if):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
@@ -447,7 +435,6 @@ class TestTensorExpval:
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier1
     def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
@@ -478,7 +465,6 @@ class TestTensorExpval:
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst)),
     )
-    @pytest.mark.tier1
     def test_wire_order_in_tensor_prod_observables(
         self, device, base_obs, permuted_obs, tol, skip_if
     ):
@@ -507,7 +493,6 @@ class TestTensorExpval:
 
         assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
 
-    @pytest.mark.tier1
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
         """Test that when given a tensor observable the expectation value is the same regardless of how the
@@ -545,7 +530,6 @@ class TestTensorExpval:
             rtol=0,
         )
 
-    @pytest.mark.tier0
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
@@ -588,7 +572,6 @@ class TestTensorExpval:
         )
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     def test_projector(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Projector works correctly"""
         n_wires = 3
@@ -641,7 +624,6 @@ class TestTensorExpval:
         assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
         assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     def test_sparse_hamiltonian_expval(self, device, tol):
         """Test that expectation values of sparse Hamiltonians are properly calculated."""
         n_wires = 4
@@ -680,7 +662,6 @@ class TestTensorExpval:
 class TestSample:
     """Tests for the sample return type."""
 
-    @pytest.mark.tier1
     def test_sample_values(self, device, tol):
         """Tests if the samples returned by sample have
         the correct values
@@ -701,7 +682,6 @@ class TestSample:
         # res should only contain 1 and -1
         assert np.allclose(res**2, 1, atol=tol(False))
 
-    @pytest.mark.tier0
     def test_sample_values_hermitian(self, device, tol):
         """Tests if the samples of a Hermitian observable returned by sample have
         the correct values
@@ -738,7 +718,6 @@ class TestSample:
             np.var(res), 0.25 * (np.sin(theta) - 4 * np.cos(theta)) ** 2, atol=tol(False)
         )
 
-    @pytest.mark.tier0
     def test_sample_values_projector(self, device, tol):
         """Tests if the samples of a Projector observable returned by sample have
         the correct values
@@ -787,7 +766,6 @@ class TestSample:
         assert np.allclose(np.mean(res), expected, atol=tol(False))
         assert np.allclose(np.var(res), expected - (expected) ** 2, atol=tol(False))
 
-    @pytest.mark.tier0
     def test_sample_values_hermitian_multi_qubit(self, device, tol):
         """Tests if the samples of a multi-qubit Hermitian observable returned by sample have
         the correct values
@@ -837,7 +815,6 @@ class TestSample:
         ) / 32
         assert np.allclose(np.mean(res), expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     def test_sample_values_projector_multi_qubit(self, device, tol):
         """Tests if the samples of a multi-qubit Projector observable returned by sample have
         the correct values
@@ -898,7 +875,6 @@ class TestSample:
 class TestTensorSample:
     """Test tensor sample values."""
 
-    @pytest.mark.tier1
     def test_paulix_pauliy(self, device, tol, skip_if):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
@@ -943,7 +919,6 @@ class TestTensorSample:
         ) / 16
         assert np.allclose(var, expected, atol=tol(False))
 
-    @pytest.mark.tier1
     def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
@@ -988,7 +963,6 @@ class TestTensorSample:
         ) / 4
         assert np.allclose(var, expected, atol=tol(False))
 
-    @pytest.mark.tier0
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
@@ -1083,7 +1057,6 @@ class TestTensorSample:
         )
         assert np.allclose(var, expected, atol=tol(False))
 
-    @pytest.mark.tier0
     def test_projector(self, device, tol, skip_if):  # pylint: disable=too-many-statements
         """Test that a tensor product involving qml.Projector works correctly"""
         n_wires = 3
@@ -1222,7 +1195,6 @@ class TestTensorSample:
 class TestVar:
     """Tests for the variance return type"""
 
-    @pytest.mark.tier1
     def test_var(self, device, tol):
         """Tests if the samples returned by sample have
         the correct values
@@ -1244,7 +1216,6 @@ class TestVar:
         expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     def test_var_hermitian(self, device, tol):
         """Tests if the samples of a Hermitian observable returned by sample have
         the correct values
@@ -1281,7 +1252,6 @@ class TestVar:
 
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     def test_var_projector(self, device, tol):
         """Tests if the samples of a Projector observable returned by sample have
         the correct values
@@ -1346,7 +1316,6 @@ class TestVar:
 class TestTensorVar:
     """Test tensor variance measurements."""
 
-    @pytest.mark.tier1
     def test_paulix_pauliy(self, device, tol, skip_if):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
@@ -1379,7 +1348,6 @@ class TestTensorVar:
         ) / 16
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier1
     def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
@@ -1411,7 +1379,7 @@ class TestTensorVar:
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     # pylint: disable=too-many-arguments
-    @pytest.mark.tier1
+
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst)),
@@ -1444,7 +1412,6 @@ class TestTensorVar:
 
         assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
 
-    @pytest.mark.tier1
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
         """Test that when given a tensor observable the variance is the same regardless of how the
@@ -1481,7 +1448,6 @@ class TestTensorVar:
             rtol=0,
         )
 
-    @pytest.mark.tier0
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
@@ -1554,7 +1520,6 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.tier0
     def test_projector(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Projector works correctly"""
         n_wires = 3
@@ -1656,7 +1621,6 @@ def _skip_test_for_braket(dev):
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""
 
-    @pytest.mark.tier0
     def test_custom_sample_measurement(self, device):
         """Test the execution of a custom sampled measurement."""
 
@@ -1680,7 +1644,6 @@ class TestSampleMeasurement:
         res = circuit()
         assert qml.math.allequal(res, [1, 1])
 
-    @pytest.mark.tier0
     def test_sample_measurement_without_shots(self, device):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
         dev = device(2)
@@ -1729,7 +1692,6 @@ class TestSampleMeasurement:
 class TestStateMeasurement:
     """Tests for the SampleMeasurement class."""
 
-    @pytest.mark.tier0
     def test_custom_state_measurement(self, device):
         """Test the execution of a custom state measurement."""
         dev = device(2)
@@ -1751,7 +1713,6 @@ class TestStateMeasurement:
 
         assert circuit() == 1
 
-    @pytest.mark.tier0
     def test_sample_measurement_with_shots(self, device):
         """Test that executing a state measurement with shots raises a warning."""
         dev = device(2)
@@ -1781,7 +1742,6 @@ class TestStateMeasurement:
             with pytest.raises(qml.DeviceError):
                 circuit()
 
-    @pytest.mark.tier0
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
         dev = device(2)
@@ -1804,7 +1764,6 @@ class TestStateMeasurement:
 class TestCustomMeasurement:
     """Tests for the CustomMeasurement class."""
 
-    @pytest.mark.tier0
     def test_custom_measurement(self, device):
         """Test the execution of a custom measurement."""
         dev = device(2)
@@ -1825,7 +1784,6 @@ class TestCustomMeasurement:
 
         assert circuit() == 1
 
-    @pytest.mark.tier0
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
         dev = device(2)

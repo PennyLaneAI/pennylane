@@ -21,7 +21,6 @@ import pennylane as qml
 class TestTracker:
     """Tests that the device uses a tracker attribute properly"""
 
-    @pytest.mark.tier2
     def test_tracker_initialization(self, device):
         """Tests a tracker instance is assigned at initialization."""
 
@@ -32,7 +31,6 @@ class TestTracker:
 
         assert isinstance(dev.tracker, qml.Tracker)
 
-    @pytest.mark.tier1
     def test_tracker_updated_in_execution_mode(self, device):
         """Tests that device update and records during tracking mode"""
 
