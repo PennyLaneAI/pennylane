@@ -875,8 +875,6 @@ def svd(tensor, like=None, **kwargs):
     """Compute the singular value decomposition of a tensor in each interface.
 
     For a matrix A, the singular value decomposition consist of three matrices U, S and Vh, such that:
-
-
     .. math::
 
         A = U . Diag(S) . Vh
