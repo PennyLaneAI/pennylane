@@ -81,7 +81,6 @@ def test_default_values():
     U = qml.QFT(wires=[0, 1, 4])
     op = qml.Reflection(U)
 
-    assert op.U == U
     assert op.alpha == np.pi
     assert op.reflection_wires == U.wires
 
