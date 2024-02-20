@@ -22,18 +22,35 @@ from pennylane.operation import Operation
 import pennylane as qml
 
 
-class AmplitudeAmplification(Operation):
-    r"""AmplitudeAmplification(U, O, iters=1, fixed_point=False, work_wire=None)
+def get_fixed_point_angles(iters):
+    """
+    Returns the angles needed for the fixed-point amplitude amplification algorithm.
+    """
+    gamma = 0.95
 
+    alphas = [
+        2 * np.arctan(1 / (np.tan(2 * np.pi * j / iters) * np.sqrt(1 - gamma**2)))
+        for j in range(1, iters // 2 + 1)
+    ]
+    betas = [-alphas[-j] for j in range(1, iters // 2 + 1)]
+    return alphas[: iters // 2], betas[: iters // 2]
+
+
+class AmplitudeAmplification(Operation):
+    r"""Operator that carries out the Amplitude Amplification subroutine.
     Given a state :math:`|\Psi\rangle = \alpha |\psi\rangle + \beta|\psi^{\perp}}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\psi\rangle`.
 
     .. math::
 
             \text{AmplitudeAmplification}(U, O)|\Psi\rangle \sim |\psi\rangle
 
+    The main idea of this operator is based on the `amplitude amplification <https://arxiv.org/abs/quant-ph/0005055>`__ paper.
+    With the corresponding flag it is possible to work with advanced techniques such as `fixed-point quantum search <https://arxiv.org/abs/quant-ph/0005055>`__.
+    It also allows the use of `oblivious amplitude amplification <https://arxiv.org/abs/1312.1414>`__ by reflecting on a subset of the wires.
+
     Args:
-        U (qml.ops.op_math.prod.Prod): the product of operations that generate the state :math:`|\Psi\rangle`.
-        O (qml.ops.op_math.prod.Prod): the oracle that flips the sign of the state :math:`|\psi\rangle` and do nothing to the state :math:`|\psi^{\perp}\rangle`.
+        U (Operator): Operator that generate the state :math:`|\Psi\rangle`.
+        O (Operator): The oracle that flips the sign of the state :math:`|\psi\rangle` and do nothing to the state :math:`|\psi^{\perp}\rangle`.
         iters (int): the number of iterations of the amplitude amplification subroutine. Default is 1.
         fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm. Default is False.
         work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm. Default is None.
@@ -63,7 +80,7 @@ class AmplitudeAmplification(Operation):
         def circuit():
 
           generator(wires = range(3))
-          qml.AmpAmp(U, O, iters = 5, fixed_point=True, work_wire=3)
+          qml.AmplitudeAmplification(U, O, iters = 5, fixed_point=True, work_wire=3)
 
           return qml.probs(wires = range(3))
 
@@ -75,19 +92,10 @@ class AmplitudeAmplification(Operation):
     """
 
     def __init__(self, U, O, iters=1, fixed_point=False, work_wire=None, reflection_wires=None):
-        self.U = U
-        self.O = O
-        self.work_wire = work_wire
-        self.fixed_point = fixed_point
-        self.n_iterations = iters
-
         if reflection_wires is None:
-            self.reflection_wires = U.wires
-        else:
-            self.reflection_wires = reflection_wires
+            reflection_wires = U.wires
 
-        self.gamma = 0.95
-
+        self.operations = [U, O]
         self.queue()
 
         if fixed_point and work_wire is None:
@@ -97,50 +105,76 @@ class AmplitudeAmplification(Operation):
             raise ValueError("work_wire must be different from the wires of U.")
 
         if fixed_point:
-            super().__init__(wires=U.wires + qml.wires.Wires(work_wire))
+            wires = U.wires + qml.wires.Wires(work_wire)
         else:
-            super().__init__(wires=U.wires)
+            wires = U.wires
 
-    def decomposition(self):
+        self.hyperparameters["U"] = U
+        self.hyperparameters["O"] = O
+        self.hyperparameters["iters"] = iters
+        self.hyperparameters["fixed_point"] = fixed_point
+        self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
+        self.hyperparameters["reflection_wires"] = qml.wires.Wires(reflection_wires)
+
+        super().__init__(wires=wires)
+
+    @property
+    def U(self):
+        """The generator operation."""
+        return self.parameters["U"]
+
+    @property
+    def O(self):
+        """The oracle operation."""
+        return self.parameters["O"]
+
+    @property
+    def iters(self):
+        """The number of iterations."""
+        return self.parameters["iters"]
+
+    @property
+    def fixed_point(self):
+        """Whether to use the fixed-point amplitude amplification algorithm."""
+        return self.parameters["fixed_point"]
+
+    @property
+    def work_wire(self):
+        """The auxiliary wire to use for the fixed-point amplitude amplification algorithm."""
+        return self.parameters["work_wire"]
+
+    @property
+    def reflection_wires(self):
+        """The wires on which the reflection is performed."""
+        return self.parameters["reflection_wires"]
+
+    # pylint:disable=arguments-differ
+    @staticmethod
+    def compute_decomposition(*_, U, O, iters, fixed_point, work_wire, reflection_wires, **__):
         ops = []
 
-        if self.fixed_point:
-            alphas, betas = self.get_fixed_point_angles()
+        if fixed_point:
+            alphas, betas = get_fixed_point_angles(iters)
 
-            for iter in range(self.n_iterations // 2):
-                ops.append(qml.Hadamard(wires=self.work_wire))
-                ops.append(qml.ctrl(self.O, control=self.work_wire))
-                ops.append(qml.Hadamard(wires=self.work_wire))
-                ops.append(qml.PhaseShift(betas[iter], wires=self.work_wire))
-                ops.append(qml.Hadamard(wires=self.work_wire))
-                ops.append(qml.ctrl(self.O, control=self.work_wire))
-                ops.append(qml.Hadamard(wires=self.work_wire))
+            for iter in range(iters // 2):
+                ops.append(qml.Hadamard(wires=work_wire))
+                ops.append(qml.ctrl(O, control=work_wire))
+                ops.append(qml.Hadamard(wires=work_wire))
+                ops.append(qml.PhaseShift(betas[iter], wires=work_wire))
+                ops.append(qml.Hadamard(wires=work_wire))
+                ops.append(qml.ctrl(O, control=work_wire))
+                ops.append(qml.Hadamard(wires=work_wire))
 
-                ops.append(
-                    qml.Reflection(self.U, -alphas[iter], reflection_wires=self.reflection_wires)
-                )
+                ops.append(qml.Reflection(U, -alphas[iter], reflection_wires=reflection_wires))
         else:
-            for _ in range(self.n_iterations):
-                ops.append(self.O)
-                ops.append(qml.Reflection(self.U, np.pi, reflection_wires=self.reflection_wires))
+            for _ in range(iters):
+                ops.append(O)
+                ops.append(qml.Reflection(U, np.pi, reflection_wires=reflection_wires))
 
         return ops
 
-    def get_fixed_point_angles(self):
-        """
-        Returns the angles needed for the fixed-point amplitude amplification algorithm.
-        """
-        n_iterations = self.n_iterations
-
-        alphas = [
-            2 * np.arctan(1 / (np.tan(2 * np.pi * j / n_iterations) * np.sqrt(1 - self.gamma**2)))
-            for j in range(1, n_iterations // 2 + 1)
-        ]
-        betas = [-alphas[-j] for j in range(1, n_iterations // 2 + 1)]
-        return alphas[: n_iterations // 2], betas[: n_iterations // 2]
-
     def queue(self, context=qml.QueuingManager):
-        for op in [self.U, self.O]:
+        for op in self.operations:
             context.remove(op)
         context.append(self)
         return self
