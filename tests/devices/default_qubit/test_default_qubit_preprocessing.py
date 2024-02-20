@@ -17,6 +17,7 @@ import pytest
 
 import numpy as np
 
+from pennylane import numpy as pnp
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
@@ -812,3 +813,15 @@ class TestAdjointDiffTapeValidation:
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
         assert qs_valid.trainable_params == [0, 1, 2, 3]
         assert qs.shots == qs_valid.shots
+
+    def test_untrainable_operations(self):
+        """Tests that a parameterized QubitUnitary that is not trainable is not expanded"""
+
+        @qml.qnode(qml.device("default.qubit", wires=3), diff_method="adjoint")
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.QubitUnitary(np.eye(8), [0, 1, 2])
+            return qml.expval(qml.PauliZ(2))
+
+        x = pnp.array(1.1, requires_grad=True)
+        assert qml.jacobian(circuit)(x) == 0
