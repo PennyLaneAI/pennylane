@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The null.qubit device is a no-op device for benchmarking PennyLane's
-auxiliary functionality outside direct circuit evaluations.
+The null.qubit device is a no-op device, useful for resource estimation, and for
+benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
 # pylint:disable=unused-argument
 
@@ -136,7 +136,51 @@ class NullQubit(Device):
 
     .. code-block:: python
 
-        # TODO
+        qs = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.CNOT([0, 1])],
+            [qml.expval(qml.PauliZ(0)), qml.probs()],
+        )
+        qscripts = [qs, qs, qs]
+
+    >>> dev = NullQubit()
+    >>> program, execution_config = dev.preprocess()
+    >>> new_batch, post_processing_fn = program(qscripts)
+    >>> results = dev.execute(new_batch, execution_config=execution_config)
+    >>> post_processing_fn(results)
+    ((array(0.), array([1., 0., 0., 0.])),
+     (array(0.), array([1., 0., 0., 0.])),
+     (array(0.), array([1., 0., 0., 0.])))
+
+
+    This device currently supports trivial derivatives:
+
+    >>> from pennylane.devices import ExecutionConfig
+    >>> dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
+    True
+
+    This device can be used to track resource usage:
+
+    .. code-block:: python
+
+        n_layers = 5
+        n_wires = 10
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.StronglyEntanglingLayers(params, wires=range(n_wires))
+            return qml.state()
+
+        params = np.random.random(shape)
+
+        with qml.Tracker(nq) as tracker:
+            res = circuit(params)
+
+    >>> res, tracker.history["resources"]
+    (tensor([1., 0., 0., ..., 0., 0., 0.], requires_grad=True),
+     [Resources(num_wires=10, num_gates=100, gate_types=defaultdict(<class 'int'>,
+      {'Rot': 50, 'CNOT': 50}), gate_sizes=defaultdict(<class 'int'>, {1: 50, 2: 50}),
+      depth=28, shots=Shots(total_shots=None, shot_vector=()))])
 
     .. details::
         :title: Tracking

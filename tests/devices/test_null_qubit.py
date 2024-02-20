@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
+from collections import defaultdict as dd
 import pytest
 
 import numpy as np
@@ -61,6 +62,47 @@ def test_debugger_attribute():
 
     assert hasattr(dev, "_debugger")
     assert dev._debugger is None
+
+
+def test_tracking():
+    """Test some tracking values for null.qubit"""
+
+    qs = qml.tape.QuantumScript(
+        [qml.Hadamard(0), qml.FlipSign([1, 0], [0, 1])], [qml.expval(qml.PauliZ(0))]
+    )
+    dev = NullQubit()
+    config = ExecutionConfig(gradient_method="device")
+
+    with qml.Tracker(dev) as tracker:
+        dev.compute_derivatives(qs, config)
+        dev.execute_and_compute_derivatives([qs] * 2, config)
+        dev.compute_jvp([qs] * 3, [(0,)] * 3, config)
+        dev.execute_and_compute_jvp([qs] * 4, [(0,)] * 4, config)
+        dev.compute_vjp([qs] * 5, [(0,)] * 5, config)
+        dev.execute_and_compute_vjp([qs] * 6, [(0,)] * 6, config)
+
+    assert tracker.history == {
+        "executions": [2, 4, 6],
+        "derivatives": [1, 2],
+        "derivative_batches": [1],
+        "execute_and_derivative_batches": [1],
+        "jvps": [3, 4],
+        "jvp_batches": [1],
+        "execute_and_jvp_batches": [1],
+        "vjps": [5, 6],
+        "vjp_batches": [1],
+        "execute_and_vjp_batches": [1],
+        "resources": [
+            qml.resource.Resources(
+                num_wires=2,
+                num_gates=2,
+                gate_types=dd(int, {"Hadamard": 1, "FlipSign": 1}),
+                gate_sizes=dd(int, {1: 1, 2: 1}),
+                depth=2,
+            )
+        ]
+        * 12,
+    }
 
 
 class TestSupportsDerivatives:
