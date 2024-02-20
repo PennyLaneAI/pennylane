@@ -17,6 +17,7 @@ Tests for the LinearCombination class.
 # pylint: disable=too-many-public-methods
 from collections.abc import Iterable
 from unittest.mock import patch
+from copy import copy
 
 import numpy as np
 import pytest
@@ -1047,7 +1048,7 @@ class TestLinearCombination:
         lincomb = qml.LinearCombination([], [])
         assert isinstance(lincomb, qml.LinearCombination)
 
-    def test_map_wires(self):
+    def test_map_wires_no_grouping(self):
         """Test the map_wires method."""
         coeffs = pnp.array([1.0, 2.0, -3.0], requires_grad=True)
         ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)]
@@ -1062,6 +1063,24 @@ class TestLinearCombination:
             assert qml.equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
+    
+    def test_map_wires_grouping(self):
+        """Test the map_wires method."""
+        coeffs = pnp.array([1.0, 2.0, -3.0], requires_grad=True)
+        ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)]
+        h = qml.LinearCombination(coeffs, ops, grouping_type="qwc")
+        group_indices_before = copy(h.grouping_indices)
+        wire_map = {0: 10, 1: 11, 2: 12}
+        mapped_h = h.map_wires(wire_map=wire_map)
+        final_obs = [qml.PauliX(10), qml.PauliZ(11), qml.PauliY(12)]
+        assert h is not mapped_h
+        assert h.wires == Wires([0, 1, 2])
+        assert mapped_h.wires == Wires([10, 11, 12])
+        for obs1, obs2 in zip(mapped_h.ops, final_obs):
+            assert qml.equal(obs1, obs2)
+        for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
+            assert coeff1 == coeff2
+        assert group_indices_before == mapped_h.grouping_indices
 
     def test_hermitian_tensor_prod(self):
         """Test that the tensor product of a LinearCombination with Hermitian observable works."""
