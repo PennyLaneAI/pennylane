@@ -26,19 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-
-    - name: Setup Python Environment
-      id: venv
-      run: |
-        if [ ! -d ".venv" ]; then python3 -m venv .venv; fi
-        source .venv/bin/activate
-        echo "location=${{ github.workspace }}/.venv" >> $GITHUB_OUTPUT
-        echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
-
     - uses: PennyLaneAI/sphinx-action@master
       with:
         docs-folder: "doc/"
-        pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf && pip3 install aiohttp fsspec h5py"
+        pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf && pip3 install aiohttp fsspec h5py && pip freeze > .github/stable/doc.txt"
         build-command: "sphinx-build -b html . _build -W --keep-going"
 
     - name: Prepare local repo
@@ -54,21 +45,16 @@ jobs:
           git checkout -b "${{ env.DEPS_BRANCH }}"
         fi
 
-    - name: Freeze dependencies
-      run: |
-        source ${{ steps.venv.outputs.location }}/bin/activate
-        pip freeze > .github/stable/doc.txt
-        cat .github/stable/doc.txt
-
     - name: Determine if changes have been made
       id: changed
       run: |
+        git status
+        cat .github/stable/doc.txt
         echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
 
     - name: Stage changes
       if: steps.changed.outputs.has_changes != '0'
       run: |
-        git branch
         git add .github/stable/doc.txt
         git commit -m "Update stable docs dependencies"
         git push -f --set-upstream origin "${{ env.DEPS_BRANCH }}"
