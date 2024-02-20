@@ -98,7 +98,7 @@ class Reflection(SymbolicOp, Operation):
 
         self.hyperparameters["reflection_wires"] = reflection_wires
         self.hyperparameters["alpha"] = alpha
-        self.hyperparameters["base"] = U
+        self.hyperparameters["U"] = U
 
         self._name = "Reflection"
 
@@ -108,9 +108,21 @@ class Reflection(SymbolicOp, Operation):
     def has_matrix(self):
         return False
 
+    @property
+    def U(self):
+        return self.parameters["U"]
+
+    @property
+    def alpha(self):
+        return self.parameters["alpha"]
+
+    @property
+    def reflection_wires(self):
+        return self.parameters["reflection_wires"]
+
     # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(*_, base, alpha, reflection_wires, **__):
+    def compute_decomposition(*_, U, alpha, reflection_wires, **__):
         wires = qml.wires.Wires(reflection_wires)
 
         ops = []
