@@ -29,7 +29,7 @@ jobs:
     - uses: PennyLaneAI/sphinx-action@master
       with:
         docs-folder: "doc/"
-        pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . && pip3 install openfermionpyscf && pip3 install aiohttp fsspec h5py && pip freeze > .github/stable/doc.txt && cat .github/stable/doc.txt"
+        pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . && pip3 install openfermionpyscf && pip3 install aiohttp fsspec h5py && pip freeze | grep -v 'file:///' > .github/stable/doc.txt"
         build-command: "sphinx-build -b html . _build -W --keep-going"
 
     - name: Prepare local repo
@@ -37,6 +37,7 @@ jobs:
         git fetch
         git config user.name "GitHub Actions Bot"
         git config user.email "<>"
+        git stash push .github/stable/doc.txt
         if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
           git checkout "${{ env.DEPS_BRANCH }}"
         else
@@ -44,12 +45,12 @@ jobs:
           git pull
           git checkout -b "${{ env.DEPS_BRANCH }}"
         fi
+        rm .github/stable/doc.txt || true
+        git stash pop
 
     - name: Determine if changes have been made
       id: changed
       run: |
-        git status
-        cat .github/stable/doc.txt
         echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
 
     - name: Stage changes
