@@ -132,15 +132,11 @@ invalid_LinearCombinations = [
 
 simplify_LinearCombinations = [
     (
-        qml.LinearCombination(
-            [1, 1, 1], [X(0) @ qml.Identity(1), X(0), X(1)]
-        ),
+        qml.LinearCombination([1, 1, 1], [X(0) @ qml.Identity(1), X(0), X(1)]),
         qml.LinearCombination([2, 1], [X(0), X(1)]),
     ),
     (
-        qml.LinearCombination(
-            [-1, 1, 1], [X(0) @ qml.Identity(1), X(0), X(1)]
-        ),
+        qml.LinearCombination([-1, 1, 1], [X(0) @ qml.Identity(1), X(0), X(1)]),
         qml.LinearCombination([1], [X(1)]),
     ),
     (
@@ -166,9 +162,7 @@ simplify_LinearCombinations = [
     ),
     # Simplifies to zero LinearCombination
     (
-        qml.LinearCombination(
-            [1, -0.5, -0.5], [X(0) @ qml.Identity(1), X(0), X(0)]
-        ),
+        qml.LinearCombination([1, -0.5, -0.5], [X(0) @ qml.Identity(1), X(0), X(0)]),
         qml.LinearCombination([], []),
     ),
     (
@@ -191,18 +185,12 @@ equal_LinearCombinations = [
         True,
     ),
     (
-        qml.LinearCombination(
-            [1, 1], [X(0) @ qml.Identity(1), Y(2) @ Z(0)]
-        ),
-        qml.LinearCombination(
-            [1, 1], [X(0), Z(0) @ Y(2) @ qml.Identity(1)]
-        ),
+        qml.LinearCombination([1, 1], [X(0) @ qml.Identity(1), Y(2) @ Z(0)]),
+        qml.LinearCombination([1, 1], [X(0), Z(0) @ Y(2) @ qml.Identity(1)]),
         True,
     ),
     (
-        qml.LinearCombination(
-            [1, 1, 1], [X(0) @ qml.Identity(1), Z(0), qml.Identity(1)]
-        ),
+        qml.LinearCombination([1, 1, 1], [X(0) @ qml.Identity(1), Z(0), qml.Identity(1)]),
         qml.LinearCombination([1, 1], [X(0), Z(0)]),
         False,
     ),
@@ -238,32 +226,20 @@ add_LinearCombinations = [
     (
         qml.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
         qml.LinearCombination([0.5, 0.3, 1], [X(0), X(1), X(2)]),
-        qml.LinearCombination(
-            [1.5, 1.2, 1.1, 0.3], [X(0), Z(1), X(2), X(1)]
-        ),
+        qml.LinearCombination([1.5, 1.2, 1.1, 0.3], [X(0), Z(1), X(2), X(1)]),
     ),
     (
-        qml.LinearCombination(
-            [1.3, 0.2, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]
-        ),
-        qml.LinearCombination(
-            [0.5, 0.3, 1.6], [X(0), X(1) @ X(0), X(2)]
-        ),
+        qml.LinearCombination([1.3, 0.2, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]),
+        qml.LinearCombination([0.5, 0.3, 1.6], [X(0), X(1) @ X(0), X(2)]),
         qml.LinearCombination(
             [1.6, 0.2, 2.3, 0.5],
             [X(0) @ X(1), qml.Hadamard(1), X(2), X(0)],
         ),
     ),
     (
-        qml.LinearCombination(
-            [1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
-        qml.LinearCombination(
-            [0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
-        qml.LinearCombination(
-            [1.5, 1.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
+        qml.LinearCombination([1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([1.5, 1.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
     ),
     (
         qml.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
@@ -271,13 +247,9 @@ add_LinearCombinations = [
         qml.LinearCombination([2, 1.2, 0.1], [X(0), Z(1), X(2)]),
     ),
     (
-        qml.LinearCombination(
-            [1.3, 0.2, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]
-        ),
+        qml.LinearCombination([1.3, 0.2, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]),
         qml.Hadamard(1),
-        qml.LinearCombination(
-            [1.3, 1.2, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]
-        ),
+        qml.LinearCombination([1.3, 1.2, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]),
     ),
     (
         qml.LinearCombination([1, 1.2, 0.1], [X("b"), Z(3.1), X(1.6)]),
@@ -287,9 +259,7 @@ add_LinearCombinations = [
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
         qml.LinearCombination((1, 1.2, 0.1), (X(0), Z(1), X(2))),
-        qml.LinearCombination(
-            np.array([0.5, 0.3, 1]), np.array([X(0), X(1), X(2)])
-        ),
+        qml.LinearCombination(np.array([0.5, 0.3, 1]), np.array([X(0), X(1), X(2)])),
         qml.LinearCombination(
             (1.5, 1.2, 1.1, 0.3),
             np.array([X(0), Z(1), X(2), X(1)]),
@@ -306,9 +276,7 @@ add_LinearCombinations = [
 add_zero_LinearCombinations = [
     qml.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
     qml.LinearCombination([1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-    qml.LinearCombination(
-        [1.5, 1.2, 1.1, 0.3], [X(0), Z(1), X(2), X(1)]
-    ),
+    qml.LinearCombination([1.5, 1.2, 1.1, 0.3], [X(0), Z(1), X(2), X(1)]),
 ]
 
 iadd_zero_LinearCombinations = [
@@ -318,20 +286,12 @@ iadd_zero_LinearCombinations = [
         qml.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
     ),
     (
-        qml.LinearCombination(
-            [1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
-        qml.LinearCombination(
-            [1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
+        qml.LinearCombination([1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
     ),
     (
-        qml.LinearCombination(
-            [1.5, 1.2, 1.1, 0.3], [X(0), Z(1), X(2), X(1)]
-        ),
-        qml.LinearCombination(
-            [1.5, 1.2, 1.1, 0.3], [X(0), Z(1), X(2), X(1)]
-        ),
+        qml.LinearCombination([1.5, 1.2, 1.1, 0.3], [X(0), Z(1), X(2), X(1)]),
+        qml.LinearCombination([1.5, 1.2, 1.1, 0.3], [X(0), Z(1), X(2), X(1)]),
     ),
 ]
 
@@ -339,31 +299,17 @@ sub_LinearCombinations = [
     (
         qml.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
         qml.LinearCombination([0.5, 0.3, 1.6], [X(0), X(1), X(2)]),
-        qml.LinearCombination(
-            [0.5, 1.2, -1.5, -0.3], [X(0), Z(1), X(2), X(1)]
-        ),
+        qml.LinearCombination([0.5, 1.2, -1.5, -0.3], [X(0), Z(1), X(2), X(1)]),
     ),
     (
-        qml.LinearCombination(
-            [1.3, 0.2, 1], [X(0) @ X(1), qml.Hadamard(1), X(2)]
-        ),
-        qml.LinearCombination(
-            [0.5, 0.3, 1], [X(0), X(1) @ X(0), X(2)]
-        ),
-        qml.LinearCombination(
-            [1, 0.2, -0.5], [X(0) @ X(1), qml.Hadamard(1), X(0)]
-        ),
+        qml.LinearCombination([1.3, 0.2, 1], [X(0) @ X(1), qml.Hadamard(1), X(2)]),
+        qml.LinearCombination([0.5, 0.3, 1], [X(0), X(1) @ X(0), X(2)]),
+        qml.LinearCombination([1, 0.2, -0.5], [X(0) @ X(1), qml.Hadamard(1), X(0)]),
     ),
     (
-        qml.LinearCombination(
-            [1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
-        qml.LinearCombination(
-            [0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
-        qml.LinearCombination(
-            [0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
+        qml.LinearCombination([1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.LinearCombination([0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
     ),
     (
         qml.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
@@ -371,13 +317,9 @@ sub_LinearCombinations = [
         qml.LinearCombination([1.2, 0.1], [Z(1), X(2)]),
     ),
     (
-        qml.LinearCombination(
-            [1.3, 0.2, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]
-        ),
+        qml.LinearCombination([1.3, 0.2, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]),
         qml.Hadamard(1),
-        qml.LinearCombination(
-            [1.3, -0.8, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]
-        ),
+        qml.LinearCombination([1.3, -0.8, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]),
     ),
     (
         qml.LinearCombination([1, 1.2, 0.1], [X("b"), Z(3.1), X(1.6)]),
@@ -398,9 +340,7 @@ sub_LinearCombinations = [
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
         qml.LinearCombination((1, 1.2, 0.1), (X(0), Z(1), X(2))),
-        qml.LinearCombination(
-            np.array([0.5, 0.3, 1.6]), np.array([X(0), X(1), X(2)])
-        ),
+        qml.LinearCombination(np.array([0.5, 0.3, 1.6]), np.array([X(0), X(1), X(2)])),
         qml.LinearCombination(
             (0.5, 1.2, -1.5, -0.3),
             np.array([X(0), Z(1), X(2), X(1)]),
@@ -490,9 +430,7 @@ matmul_LinearCombinations = [
         ),
     ),
     (
-        qml.LinearCombination(
-            [1, 1], [X("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
+        qml.LinearCombination([1, 1], [X("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
         qml.LinearCombination([2, 2], [Z(1.2), Y("c")]),
         qml.LinearCombination(
             [2, 2, 2, 2],
@@ -507,9 +445,7 @@ matmul_LinearCombinations = [
     (
         qml.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2),
-        qml.LinearCombination(
-            [1, 1], [X(0) @ X(2), Z(1) @ X(2)]
-        ),
+        qml.LinearCombination([1, 1], [X(0) @ X(2), Z(1) @ X(2)]),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
@@ -558,9 +494,7 @@ rmatmul_LinearCombinations = [
     ),
     (
         qml.LinearCombination([2, 2], [Z(1.2), Y("c")]),
-        qml.LinearCombination(
-            [1, 1], [X("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
-        ),
+        qml.LinearCombination([1, 1], [X("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
         qml.LinearCombination(
             [2, 2, 2, 2],
             [
@@ -574,9 +508,7 @@ rmatmul_LinearCombinations = [
     (
         qml.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2),
-        qml.LinearCombination(
-            [1, 1], [X(2) @ X(0), X(2) @ Z(1)]
-        ),
+        qml.LinearCombination([1, 1], [X(2) @ X(0), X(2) @ Z(1)]),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
@@ -693,9 +625,7 @@ class TestLinearCombination:
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
             qml.LinearCombination(coeffs, ops)
 
-    @pytest.mark.parametrize(
-        "obs", [[X(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, Z(0)]]
-    )
+    @pytest.mark.parametrize("obs", [[X(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, Z(0)]])
     def test_LinearCombination_invalid_observables(self, obs):
         """Tests that an exception is raised when
         a complex LinearCombination is given"""
@@ -739,12 +669,7 @@ class TestLinearCombination:
 
     def test_label_many_coefficients(self):
         """Tests the label method of LinearCombination when >3 coefficients."""
-        H = (
-            0.1 * X(0)
-            + 0.1 * Y(1)
-            + 0.3 * Z(0) @ X(1)
-            + 0.4 * X(3)
-        )
+        H = 0.1 * X(0) + 0.1 * Y(1) + 0.3 * Z(0) @ X(1) + 0.4 * X(3)
         assert H.label() == "𝓗"
         assert H.label(decimals=2) == "𝓗"
 
@@ -1023,11 +948,7 @@ class TestLinearCombination:
         """Tests that LinearCombination are queued correctly when components are instantiated inside the recording context."""
 
         with qml.queuing.AnnotatedQueue() as q:
-            m = qml.expval(
-                qml.LinearCombination(
-                    [1, 3, 1], [X(1), Z(0) @ Z(2), Z(1)]
-                )
-            )
+            m = qml.expval(qml.LinearCombination([1, 3, 1], [X(1), Z(0) @ Z(2), Z(1)]))
 
         assert len(q.queue) == 1
         assert q.queue[0] is m
@@ -1112,17 +1033,16 @@ class TestLinearCombinationCoefficients:
         H2.simplify()
         assert H1.compare(H2)
         assert H1.data == H2.data
-    
+
     def test_pauli_rep(self):
         """Test the Pauli representation is as expected"""
         op = qml.LinearCombination([1.1, 2.2], [X(0), Z(0)])
         assert op.pauli_rep is not None
-        assert op.pauli_rep == PauliSentence({PauliWord({0:"X"}): 1.1, PauliWord({0:"Z"}): 2.2})
-    
+        assert op.pauli_rep == PauliSentence({PauliWord({0: "X"}): 1.1, PauliWord({0: "Z"}): 2.2})
+
     def test_operands(self):
         op = qml.LinearCombination([1.1, 2.2], [X(0), Z(0)])
         assert op.operands == [qml.s_prod(1.1, X(0)), qml.s_prod(2.2, Z(0))]
-
 
 
 @pytest.mark.tf
@@ -1503,9 +1423,7 @@ class TestLinearCombinationSparseMatrix:
         """Tests that an error is thrown if the observables are themselves constructed from multi-qubit
         operations."""
         with pytest.raises(ValueError, match="Can only sparsify LinearCombinations"):
-            H = qml.LinearCombination(
-                [0.1], [Z("c") @ qml.Hermitian(np.eye(4), wires=["a", "b"])]
-            )
+            H = qml.LinearCombination([0.1], [Z("c") @ qml.Hermitian(np.eye(4), wires=["a", "b"])])
             H.sparse_matrix(wire_order=["a", "c", "b"])
 
 
@@ -1727,9 +1645,7 @@ class TestLinearCombinationEvaluation:
         @qml.qnode(device)
         def circuit():
             qml.RY(0.1, wires=0)
-            return qml.expval(
-                qml.LinearCombination([1.0, 2.0], [X(1), X(1)], simplify=True)
-            )
+            return qml.expval(qml.LinearCombination([1.0, 2.0], [X(1), X(1)], simplify=True))
 
         circuit()
         pars = circuit.qtape.get_parameters(trainable_only=False)

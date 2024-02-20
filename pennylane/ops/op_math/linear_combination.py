@@ -236,7 +236,7 @@ class LinearCombination(Observable):
                     new_rep[pw] += coeff
             return new_rep
         return None
-    
+
     @property
     def operands(self):
         return self._operands
