@@ -924,10 +924,11 @@ def molecular_hamiltonian(
         geometry_dhf = qml.numpy.array(coordinates)
         geometry_hf = coordinates.flatten()
 
+    if wires:
+        wires_new = qml.qchem.convert._process_wires(wires)
+        wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
+
     if method == "dhf":
-        if wires:
-            wires_new = qml.qchem.convert._process_wires(wires)
-            wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
 
         if mapping != "jordan_wigner":
             raise ValueError(
@@ -986,22 +987,16 @@ def molecular_hamiltonian(
 
         hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
 
-        if wires:
-            wires_new = qml.qchem.convert._process_wires(wires)
-            wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
-
-            if active_new_opmath():
+        if active_new_opmath():
+            if wires:
                 h_pl = qml.jordan_wigner(hf, wire_map=wires_map)
             else:
-                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map).hamiltonian()
-                h_pl = simplify(qml.Hamiltonian(np.real(h_pl.coeffs), h_pl.ops))
-
-            return h_pl, len(h_pl.wires)
-
-        if active_new_opmath():
-            h_pl = qml.jordan_wigner(hf)
+                h_pl = qml.jordan_wigner(hf)
         else:
-            h_pl = qml.jordan_wigner(hf, ps=True).hamiltonian()
+            if wires:
+                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map).hamiltonian()
+            else:
+                h_pl = qml.jordan_wigner(hf, ps=True).hamiltonian()
             h_pl = simplify(qml.Hamiltonian(np.real(h_pl.coeffs), h_pl.ops))
 
         return h_pl, len(h_pl.wires)
@@ -1041,6 +1036,7 @@ def _pyscf_integrals(
         for i, symbol in enumerate(symbols)
     ]
 
+    # create the Mole object
     mol = pyscf.gto.Mole()
     mol.atom = geometry
     mol.basis = basis
@@ -1048,27 +1044,33 @@ def _pyscf_integrals(
     mol.spin = mult - 1
     mol.verbose = 0
 
+    # initialize the molecule
     mol_pyscf = mol.build()
+
+    # run HF calculations
     if mult == 1:
         molhf = pyscf.scf.RHF(mol_pyscf)
     else:
         molhf = pyscf.scf.ROHF(mol_pyscf)
     _ = molhf.kernel()
 
+    # compute atomic and molecular orbitals
+    one_ao = mol_pyscf.intor_symmetric("int1e_kin") + mol_pyscf.intor_symmetric("int1e_nuc")
+    two_ao = mol_pyscf.intor("int2e_sph")
+    one_mo = np.einsum("pi,pq,qj->ij", molhf.mo_coeff, one_ao, molhf.mo_coeff, optimize=True)
+    two_mo = pyscf.ao2mo.incore.full(two_ao, molhf.mo_coeff)
+
+    core_constant = np.array([molhf.energy_nuc()])
+
+    # convert the two-electron integral tensor to the physicists’ notation
+    two_mo = np.swapaxes(two_mo, 1, 3)
+
+    # define the active space and recompute the integrals
     core, active = qml.qchem.active_space(
         mol.nelectron, mol.nao, mult, active_electrons, active_orbitals
     )
 
-    one_ao = mol_pyscf.intor_symmetric("int1e_kin") + mol_pyscf.intor_symmetric("int1e_nuc")
-    two_ao = mol_pyscf.intor("int2e_sph")
-    one_mo = np.einsum("pi,pq,qj->ij", molhf.mo_coeff, one_ao, molhf.mo_coeff)
-    two_mo = pyscf.ao2mo.incore.full(two_ao, molhf.mo_coeff)
-
-    core_constant = np.array([molhf.energy_nuc()])
-    two_mo = np.swapaxes(two_mo, 1, 3)
-
     if core and active:
-
         for i in core:
             core_constant = core_constant + 2 * one_mo[i][i]
             for j in core:
@@ -1077,7 +1079,7 @@ def _pyscf_integrals(
         for p in active:
             for q in active:
                 for i in core:
-                    one_mo = one_mo + (2 * two_mo[i][p][q][i] - two_mo[i][p][i][q])
+                    one_mo[p, q] = one_mo[p, q] + (2 * two_mo[i][p][q][i] - two_mo[i][p][i][q])
 
         one_mo = one_mo[qml.math.ix_(active, active)]
         two_mo = two_mo[qml.math.ix_(active, active, active, active)]
