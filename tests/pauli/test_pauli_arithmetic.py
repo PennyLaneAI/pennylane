@@ -159,7 +159,7 @@ class TestPauliWord:
     def test_pauli_rep(self):
         """Test trivial pauli_rep property"""
         pw = PauliWord({0: "I", 1: "X", 2: Y})
-        assert pw.pauli_rep == pw
+        assert pw.pauli_rep == PauliSentence({pw: 1})
 
     def test_set_items(self):
         """Test that setting items raises an error"""
