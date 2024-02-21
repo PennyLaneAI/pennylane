@@ -97,7 +97,8 @@ class Sum(CompositeOp):
     .. note::
 
         This operator supports batched operands:
-        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
@@ -109,14 +110,14 @@ class Sum(CompositeOp):
 
     **Example**
 
-    >>> summed_op = Sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op = Sum(qml.X(0), qml.Z(0))
     >>> summed_op
-    PauliX(wires=[0]) + PauliZ(wires=[0])
+    X(0) + Z(0)
     >>> qml.matrix(summed_op)
     array([[ 1,  1],
            [ 1, -1]])
     >>> summed_op.terms()
-    ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
+    ([1.0, 1.0], (X(0), Z(0)))
 
     .. details::
         :title: Usage Details
@@ -124,7 +125,7 @@ class Sum(CompositeOp):
         We can combine parameterized operators, and support sums between operators acting on
         different wires.
 
-        >>> summed_op = Sum(qml.RZ(1.23, wires=0), qml.Identity(wires=1))
+        >>> summed_op = Sum(qml.RZ(1.23, wires=0), qml.I(wires=1))
         >>> summed_op.matrix()
         array([[1.81677345-0.57695852j, 0.        +0.j        ,
                 0.        +0.j        , 0.        +0.j        ],
@@ -141,7 +142,7 @@ class Sum(CompositeOp):
 
         .. code-block:: python
 
-            sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
+            sum_op = Sum(qml.X(0), qml.Z(1))
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev, diff_method="best")
