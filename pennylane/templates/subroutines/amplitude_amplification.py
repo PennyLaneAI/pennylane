@@ -184,6 +184,7 @@ class AmplitudeAmplification(Operation):
 
         return ops
 
+    # pylint: disable=protected-access
     def queue(self, context=qml.QueuingManager):
         for op in [self.hyperparameters["U"], self.hyperparameters["O"]]:
             context.remove(op)
