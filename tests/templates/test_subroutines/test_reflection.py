@@ -275,3 +275,23 @@ def test_correct_queueing():
 
     assert np.allclose(circuit1(), circuit2())
     assert np.allclose(circuit1(), circuit3())
+
+
+@pytest.mark.parametrize(
+    "state", [[1 / np.sqrt(3), np.sqrt(2 / 3)], [1 / np.sqrt(4), np.sqrt(3 / 4)]]
+)
+def test_correct_reflection(state):
+    """Test that the Reflection operator is correctly applied to the state."""
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.StatePrep(state, wires=0)
+        qml.Reflection(U=qml.Hadamard(wires=0))
+        return qml.state()
+
+    output = circuit()
+    expected = np.array(output[::-1])
+
+    assert np.allclose(state, expected)
