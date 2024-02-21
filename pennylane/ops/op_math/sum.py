@@ -349,7 +349,12 @@ class Sum(CompositeOp):
 
     @property
     def coeffs(self):
-        r"""``coeffs`` in ``coeffs, ops = op.terms()``"""
+        r"""
+        Scalar coefficients of the operator when flattened out.
+        
+        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
+        
+        ..seealso:: :attr:`Sum.ops`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
             "Sum.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
@@ -359,7 +364,12 @@ class Sum(CompositeOp):
 
     @property
     def ops(self):
-        r"""``ops`` in ``coeffs, ops = op.terms()``"""
+        r"""
+        Operator terms without scalar coefficients of the operator when flattened out.
+        
+        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
+        
+        ..seealso:: :attr:`Sum.coeffs`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
             "Sum.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
