@@ -114,10 +114,8 @@ class TestInitialization:
             assert op.wires == U.wires + qml.wires.Wires(work_wire)
         else:
             assert op.wires == U.wires
-        assert op.U == U
-        assert op.O == O
+
         assert op.iters == iters
-        assert op.fixed_point == fixed_point
         assert op.work_wire == work_wire
 
 
@@ -236,3 +234,19 @@ def test_correct_queueing():
 
     assert np.allclose(circuit1(), circuit2())
     assert np.allclose(circuit1(), circuit3())
+
+
+def test_flatten_and_unflatten():
+    """Test the _flatten and _unflatten methods for AmplitudeAmplification."""
+
+    op = qml.AmplitudeAmplification(qml.RX(0.25, wires=0), qml.PauliZ(0))
+    data, metadata = op._flatten()
+
+    assert len(data) == 2
+    assert len(metadata) == 4
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+    assert hash(metadata)

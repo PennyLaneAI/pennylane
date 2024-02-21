@@ -39,6 +39,7 @@ def get_fixed_point_angles(iters):
 
 class AmplitudeAmplification(Operation):
     r"""Operator that carries out the Amplitude Amplification subroutine.
+
     Given a state :math:`|\Psi\rangle = \alpha |\psi\rangle + \beta|\psi^{\perp}}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\psi\rangle`.
 
     .. math::
@@ -77,7 +78,6 @@ class AmplitudeAmplification(Operation):
 
         dev = qml.device("default.qubit")
 
-
         @qml.qnode(dev)
         def circuit():
 
@@ -93,12 +93,29 @@ class AmplitudeAmplification(Operation):
 
     """
 
+    def _flatten(self):
+        data = (self.hyperparameters["U"], self.hyperparameters["O"])
+        metadata = tuple(
+            value for key, value in self.hyperparameters.items() if key not in ["O", "U"]
+        )
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        U, O = (data[0], data[1])
+        return cls(
+            U,
+            O,
+            iters=metadata[0],
+            fixed_point=metadata[1],
+            work_wire=metadata[2],
+            reflection_wires=metadata[3],
+        )
+
     def __init__(self, U, O, iters=1, fixed_point=False, work_wire=None, reflection_wires=None):
+        self._name = "AmplitudeAmplification"
         if reflection_wires is None:
             reflection_wires = U.wires
-
-        self.operations = [U, O]
-        self.queue()
 
         if fixed_point and work_wire is None:
             raise qml.wires.WireError("work_wire must be specified if fixed_point == True.")
@@ -121,24 +138,9 @@ class AmplitudeAmplification(Operation):
         super().__init__(wires=wires)
 
     @property
-    def U(self):
-        """The generator operation."""
-        return self.hyperparameters["U"]
-
-    @property
-    def O(self):
-        """The oracle operation."""
-        return self.hyperparameters["O"]
-
-    @property
     def iters(self):
         """The number of iterations."""
         return self.hyperparameters["iters"]
-
-    @property
-    def fixed_point(self):
-        """Whether to use the fixed-point amplitude amplification algorithm."""
-        return self.hyperparameters["fixed_point"]
 
     @property
     def work_wire(self):
@@ -152,7 +154,14 @@ class AmplitudeAmplification(Operation):
 
     # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(*_, U, O, iters, fixed_point, work_wire, reflection_wires, **__):
+    def compute_decomposition(*parameters, **hyperparameters):
+        U = hyperparameters["U"]
+        O = hyperparameters["O"]
+        iters = hyperparameters["iters"]
+        fixed_point = hyperparameters["fixed_point"]
+        work_wire = hyperparameters["work_wire"]
+        reflection_wires = hyperparameters["reflection_wires"]
+
         ops = []
 
         if fixed_point:
@@ -176,7 +185,7 @@ class AmplitudeAmplification(Operation):
         return ops
 
     def queue(self, context=qml.QueuingManager):
-        for op in self.operations:
+        for op in [self.hyperparameters["U"], self.hyperparameters["O"]]:
             context.remove(op)
         context.append(self)
         return self
