@@ -19,10 +19,10 @@ This submodule contains the template for the Reflection operation.
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.ops import SymbolicOp
+from pennylane.queuing import QueuingManager
 
 
-class Reflection(SymbolicOp, Operation):
+class Reflection(Operation):
     r"""An operation that applies a reflection along a state :math:`|\Psi\rangle`.
     This operator is useful in algorithms such as `amplitude amplification <https://arxiv.org/abs/quant-ph/0005055>`__
     or `oblivious amplitude amplification <https://arxiv.org/abs/1312.1414>`__.
@@ -89,45 +89,67 @@ class Reflection(SymbolicOp, Operation):
 
     """
 
+    def _flatten(self):
+        data = (self.hyperparameters["base"], self.parameters[0])
+        metadata = tuple(
+            (key, value) for key, value in self.hyperparameters.items() if key != "base"
+        )
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        U, alpha = (data[0], data[1])
+        return cls(U, alpha=alpha, **metadata)
+
     def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
+        self._name = "Reflection"
+        wires = U.wires
+
         if reflection_wires is None:
             reflection_wires = U.wires
 
         if not set(reflection_wires).issubset(set(U.wires)):
             raise ValueError("The reflection wires must be a subset of the operation wires.")
 
-        self.hyperparameters["reflection_wires"] = reflection_wires
-        self.hyperparameters["alpha"] = alpha
-        self.hyperparameters["U"] = U
+        self._hyperparameters = {
+            "reflection_wires": reflection_wires,
+            "base": U,
+        }
 
-        self._name = "Reflection"
+        super().__init__(alpha, wires=wires, id=id)
 
-        super().__init__(base=U, id=id)
-
-    @property
-    def has_matrix(self):
-        """True if the operation has a defined matrix representation."""
-        return False
+    # @property
+    # def has_matrix(self):
+    #     """True if the operation has a defined matrix representation."""
+    #     return False
 
     @property
     def U(self):
         """The generator operation."""
-        return self.hyperparameters["U"]
+        return self.hyperparameters["base"]
 
     @property
     def alpha(self):
         """The alpha angle for the operation."""
-        return self.hyperparameters["alpha"]
+        return self.parameters[0]
 
     @property
     def reflection_wires(self):
         """The reflection wires for the operation."""
         return self.hyperparameters["reflection_wires"]
 
-    # pylint:disable=arguments-differ
+    def queue(self, context=QueuingManager):
+        context.remove(self.U)
+        context.append(self)
+        return self
+
     @staticmethod
-    def compute_decomposition(*_, U, alpha, reflection_wires, **__):
-        wires = qml.wires.Wires(reflection_wires)
+    def compute_decomposition(*parameters, wires=None, **hyperparameters):
+        alpha = parameters[0]
+        U = hyperparameters["base"]
+        reflection_wires = hyperparameters["reflection_wires"]
+
+        wires = qml.wires.Wires(reflection_wires) if reflection_wires is not None else wires
 
         ops = []
 
