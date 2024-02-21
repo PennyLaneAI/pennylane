@@ -279,6 +279,10 @@
 * `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
   [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
 
+* Adds `qml.devices.modifiers.simulator_tracking` and `qml.devices.modifiers.single_tape_support`
+  to add basic default behavior onto a device class.
+  [(#5200)](https://github.com/PennyLaneAI/pennylane/pull/5200)
+
 * `qml.dot` now returns a `Sum` class even when all the coefficients match.
   [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
 
