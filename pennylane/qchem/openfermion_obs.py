@@ -989,15 +989,15 @@ def molecular_hamiltonian(
 
         if active_new_opmath():
             if wires:
-                h_pl = qml.jordan_wigner(hf, wire_map=wires_map)
+                h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
             else:
-                h_pl = qml.jordan_wigner(hf)
+                h_pl = qml.jordan_wigner(hf, tol=1.0e-10).simplify()
         else:
             if wires:
-                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map).hamiltonian()
+                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
             else:
-                h_pl = qml.jordan_wigner(hf, ps=True).hamiltonian()
-            h_pl = simplify(qml.Hamiltonian(np.real(h_pl.coeffs), h_pl.ops))
+                h_pl = qml.jordan_wigner(hf, ps=True, tol=1.0e-10).hamiltonian()
+            h_pl = simplify(h_pl)
 
         return h_pl, len(h_pl.wires)
 
