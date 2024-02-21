@@ -66,25 +66,30 @@ def prod(*ops, id=None, lazy=True):
 
         This operator supports batched operands:
 
-        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Prod`
 
     **Example**
 
-    >>> prod_op = prod(qml.PauliX(0), qml.PauliZ(0))
+    >>> prod_op = prod(qml.X(0), qml.Z(0))
     >>> prod_op
-    PauliX(wires=[0]) @ PauliZ(wires=[0])
+    X(0) @ Z(0)
     >>> prod_op.matrix()
     array([[ 0, -1],
            [ 1,  0]])
+    >>> prod_op.simplify()
+    -1j * Y(0)
+    >>> prod_op.terms()
+    ([-1j], [Y(0)])
+
 
     You can also create a prod operator by passing a qfunc to prod, like the following:
 
@@ -144,14 +149,16 @@ class Prod(CompositeOp):
 
     **Example**
 
-    >>> prop_op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=0))
-    >>> prop_op
-    PauliX(wires=[0]) @ PauliZ(wires=[0])
-    >>> qml.matrix(prop_op)
-    array([[ 0,  -1],
-           [ 1,   0]])
-    >>> prop_op.terms()
-    ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+    >>> prod_op = Prod(qml.X(0), qml.PauliZ(1))
+    >>> prod_op
+    X(0) @ Z(1)
+    >>> qml.matrix(prod_op, wire_order=prod_op.wires)
+    array([[ 0,  0,  1,  0],
+           [ 0,  0,  0, -1],
+           [ 1,  0,  0,  0],
+           [ 0, -1,  0,  0]])
+    >>> prod_op.terms()
+    ([1.0], [Z(1) @ X(0)])
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
@@ -159,9 +166,9 @@ class Prod(CompositeOp):
         first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
-    >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
+    >>> op = Prod(qml.X(0), qml.PauliZ(1))
     >>> op.decomposition()
-    [PauliZ(wires=[1]), PauliX(wires=[0])]
+    [Z(1), X(0)]
 
     .. details::
         :title: Usage Details
@@ -215,6 +222,13 @@ class Prod(CompositeOp):
         >>> weights = np.array([0.1], requires_grad=True)
         >>> qml.grad(circuit)(weights)
         array([-0.07059289])
+
+        Note that the :meth:`~Prod.terms` method always simplifies and flattens the operands.
+
+        >>> op = qml.ops.Prod(qml.X(0), qml.sum(qml.Y(0), qml.Z(1)))
+        >>> op.terms()
+        ([1j, 1.0], [Z(0), Z(1) @ X(0)])
+
     """
 
     _op_symbol = "@"
