@@ -91,15 +91,13 @@ class Reflection(Operation):
 
     def _flatten(self):
         data = (self.hyperparameters["base"], self.parameters[0])
-        metadata = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "base"
-        )
+        metadata = tuple(value for key, value in self.hyperparameters.items() if key != "base")
         return data, metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
         U, alpha = (data[0], data[1])
-        return cls(U, alpha=alpha, **metadata)
+        return cls(U, alpha=alpha, reflection_wires=metadata[0])
 
     def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
         self._name = "Reflection"
@@ -119,11 +117,6 @@ class Reflection(Operation):
         super().__init__(alpha, wires=wires, id=id)
 
     @property
-    def U(self):
-        """The generator operation."""
-        return self.hyperparameters["base"]
-
-    @property
     def alpha(self):
         """The alpha angle for the operation."""
         return self.parameters[0]
@@ -134,7 +127,7 @@ class Reflection(Operation):
         return self.hyperparameters["reflection_wires"]
 
     def queue(self, context=QueuingManager):
-        context.remove(self.U)
+        context.remove(self.hyperparameters["base"])
         context.append(self)
         return self
 

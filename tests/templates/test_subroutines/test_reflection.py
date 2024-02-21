@@ -295,3 +295,19 @@ def test_correct_reflection(state):
     expected = np.array(output[::-1])
 
     assert np.allclose(state, expected)
+
+
+def test_flatten_and_unflatten():
+    """Test the _flatten and _unflatten methods for Reflection."""
+
+    op = qml.Reflection(qml.RX(0.25, wires=0), alpha=0.5)
+    data, metadata = op._flatten()
+
+    assert len(data) == 2
+    assert len(metadata) == 1
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+    assert hash(metadata)
