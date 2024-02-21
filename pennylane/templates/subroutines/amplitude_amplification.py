@@ -38,7 +38,7 @@ def get_fixed_point_angles(iters):
 
 
 class AmplitudeAmplification(Operation):
-    r"""Operator that carries out the Amplitude Amplification subroutine.
+    r"""Applies amplitude amplification.
 
     Given a state :math:`|\Psi\rangle = \alpha |\psi\rangle + \beta|\psi^{\perp}}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\psi\rangle`.
 
@@ -89,7 +89,8 @@ class AmplitudeAmplification(Operation):
     .. code-block:: pycon
 
         >>> print(np.round(circuit(),3))
-        [0.001 0.001 0.994 0.001 0.001 0.001 0.001 0.001]
+        [0.009 0.009 0.94  0.009 0.009 0.009 0.009 0.009]
+
 
     """
 
@@ -136,21 +137,6 @@ class AmplitudeAmplification(Operation):
         self.hyperparameters["reflection_wires"] = qml.wires.Wires(reflection_wires)
 
         super().__init__(wires=wires)
-
-    @property
-    def iters(self):
-        """The number of iterations."""
-        return self.hyperparameters["iters"]
-
-    @property
-    def work_wire(self):
-        """The auxiliary wire to use for the fixed-point amplitude amplification algorithm."""
-        return self.hyperparameters["work_wire"]
-
-    @property
-    def reflection_wires(self):
-        """The wires on which the reflection is performed."""
-        return self.hyperparameters["reflection_wires"]
 
     # pylint:disable=arguments-differ
     @staticmethod

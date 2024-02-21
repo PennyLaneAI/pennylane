@@ -97,27 +97,6 @@ class TestInitialization:
             except TypeError:
                 assert False  # test should fail if an error was raised when we expect it not to
 
-    @pytest.mark.parametrize(
-        "U, O, iters, fixed_point, work_wire",
-        (
-            (generator(wires=range(3)), oracle([0, 1], wires=range(3)), 1, True, 3),
-            (generator(wires=range(2)), oracle([0, 1], wires=range(2)), 2, False, 2),
-            (generator(wires=range(4)), oracle([0, 1], wires=range(4)), 3, True, 5),
-        ),
-    )
-    def test_init_correctly(self, U, O, iters, fixed_point, work_wire):
-        """Test that all of the attributes are initalized correctly."""
-
-        op = qml.AmplitudeAmplification(U, O, iters, fixed_point, work_wire)
-
-        if fixed_point:
-            assert op.wires == U.wires + qml.wires.Wires(work_wire)
-        else:
-            assert op.wires == U.wires
-
-        assert op.iters == iters
-        assert op.work_wire == work_wire
-
 
 @pytest.mark.parametrize(
     "n_wires, items, iters",
@@ -250,3 +229,24 @@ def test_flatten_and_unflatten():
     assert op is not new_op
 
     assert hash(metadata)
+
+def test_amplification():
+    """Test that AmplitudeAmplification amplifies a marked element."""
+
+    U = generator(wires=range(3))
+    O = oracle([2], wires=range(3))
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit():
+        generator(wires=range(3))
+        qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
+
+        return qml.probs(wires=range(3))
+
+    res = np.round(circuit(),3)
+    print("res", res)
+    expected = np.array([0.009, 0.009, 0.94, 0.009, 0.009, 0.009, 0.009, 0.009])
+
+    assert np.allclose(res, expected)
