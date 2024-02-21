@@ -230,6 +230,8 @@ def test_flatten_and_unflatten():
 
     assert hash(metadata)
 
+
+# pylint: disable=protected-access
 def test_amplification():
     """Test that AmplitudeAmplification amplifies a marked element."""
 
@@ -245,7 +247,7 @@ def test_amplification():
 
         return qml.probs(wires=range(3))
 
-    res = np.round(circuit(),3)
+    res = np.round(circuit(), 3)
     print("res", res)
     expected = np.array([0.009, 0.009, 0.94, 0.009, 0.009, 0.009, 0.009, 0.009])
 
