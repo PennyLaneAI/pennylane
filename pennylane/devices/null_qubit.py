@@ -26,9 +26,10 @@ import logging
 import numpy as np
 from pennylane import math
 from pennylane.devices.execution_config import ExecutionConfig
+from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.measurements import (
@@ -44,7 +45,6 @@ from pennylane.measurements import (
 
 from . import Device, DefaultQubit
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
-from .qubit.sampling import get_num_shots_and_executions
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -124,6 +124,8 @@ def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots, batch_size, inte
     return (result,) * shots.num_copies if shots.has_partitioned_shots else result
 
 
+@simulator_tracking
+@single_tape_support
 class NullQubit(Device):
     """Null qubit device for PennyLane. This device performs no operations involved in numerical calculations.
     Instead the time spent in execution is dominated by support (or setting up) operations, like tape creation etc.
@@ -176,7 +178,7 @@ class NullQubit(Device):
 
         params = np.random.random(shape)
 
-        with qml.Tracker(nq) as tracker:
+        with qml.Tracker(dev) as tracker:
             res = circuit(params)
 
     >>> res, tracker.history["resources"]
@@ -292,40 +294,9 @@ class NullQubit(Device):
                 ),
             )
 
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        results = tuple(
+        return tuple(
             self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
-
-        if self.tracker.active:
-            self.tracker.update(batches=1)
-            self.tracker.record()
-            for c, res in zip(circuits, results):
-                qpu_executions, shots = get_num_shots_and_executions(c)
-                if isinstance(res, Number):
-                    res = np.array(res)
-                if c.shots:
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        shots=shots,
-                        resources=c.specs["resources"],
-                    )
-                else:
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        resources=c.specs["resources"],
-                    )
-                self.tracker.record()
-
-        return results[0] if is_single_circuit else results
 
     def supports_derivatives(self, execution_config=None, circuit=None):
         return execution_config is None or execution_config.gradient_method in (
@@ -353,40 +324,15 @@ class NullQubit(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
-            self.tracker.record()
-
-        res = tuple(
+        return tuple(
             self._derivatives(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
-        return res[0] if is_single_circuit else res
 
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_derivative_batches=1,
-                executions=len(circuits),
-                derivatives=len(circuits),
-            )
-            self.tracker.record()
-
         results = tuple(
             self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
@@ -394,7 +340,7 @@ class NullQubit(Device):
             self._derivatives(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
 
-        return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
+        return results, jacs
 
     def compute_jvp(
         self,
@@ -402,18 +348,7 @@ class NullQubit(Device):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            self.tracker.update(jvp_batches=1, jvps=len(circuits))
-            self.tracker.record()
-
-        res = tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
-
-        return res[0] if is_single_circuit else res
+        return tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
 
     def execute_and_compute_jvp(
         self,
@@ -421,25 +356,12 @@ class NullQubit(Device):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_jvp_batches=1, executions=len(circuits), jvps=len(circuits)
-            )
-            self.tracker.record()
-
         results = tuple(
             self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
         jvps = tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
 
-        return (results[0], jvps[0]) if is_single_circuit else (results, jvps)
+        return results, jvps
 
     def compute_vjp(
         self,
@@ -447,18 +369,7 @@ class NullQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            self.tracker.update(vjp_batches=1, vjps=len(circuits))
-            self.tracker.record()
-
-        res = tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
-
-        return res[0] if is_single_circuit else res
+        return tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
 
     def execute_and_compute_vjp(
         self,
@@ -466,21 +377,8 @@ class NullQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_vjp_batches=1, executions=len(circuits), vjps=len(circuits)
-            )
-            self.tracker.record()
-
         results = tuple(
             self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
         vjps = tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
-        return (results[0], vjps[0]) if is_single_circuit else (results, vjps)
+        return results, vjps
