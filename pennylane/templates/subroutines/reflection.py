@@ -23,7 +23,8 @@ from pennylane.queuing import QueuingManager
 
 
 class Reflection(Operation):
-    r"""An operation that applies a reflection along a state :math:`|\Psi\rangle`.
+    r"""Applies a reflection about a state :math:`|\Psi\rangle`.
+
     This operator is useful in algorithms such as `amplitude amplification <https://arxiv.org/abs/quant-ph/0005055>`__
     or `oblivious amplitude amplification <https://arxiv.org/abs/1312.1414>`__.
 
@@ -42,7 +43,7 @@ class Reflection(Operation):
 
     **Example**
 
-    This example shows how to apply the reflection :math:`-I` + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
+    This example shows how to apply the reflection :math:`-I + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
 
     .. code-block::
 
@@ -58,7 +59,7 @@ class Reflection(Operation):
         def circuit():
 
             # Initialize to the state |1>
-            qml.qml.PauliX(wires=0)
+            qml.PauliX(wires=0)
 
             # Apply the reflection
             qml.Reflection(U)
