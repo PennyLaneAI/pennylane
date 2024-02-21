@@ -27,6 +27,18 @@ stim = pytest.importorskip("stim")
 pytestmark = pytest.mark.external
 
 
+# pylint: disable=protected-access
+def test_applied_modifiers():
+    """Test that defualt qubit has the `single_tape_support` and `simulator_tracking`
+    modifiers applied.
+    """
+    dev = qml.device("default.clifford")
+    assert dev._applied_modifiers == [
+        qml.devices.modifiers.single_tape_support,
+        qml.devices.modifiers.simulator_tracking,
+    ]
+
+
 def circuit_1():
     """Circuit 1 with Clifford gates."""
     qml.GlobalPhase(np.pi)
@@ -457,6 +469,7 @@ def test_tracker():
         "batches": 2,
         "simulations": 2,
         "executions": 2,
+        "results": 0.0,
     }
     assert np.allclose(tracker.history.pop("results")[0], 0.0)
     assert tracker.history.pop("resources")[0] == qml.resource.Resources(

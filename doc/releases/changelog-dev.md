@@ -279,6 +279,10 @@
 * `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
   [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
 
+* Adds `qml.devices.modifiers.simulator_tracking` and `qml.devices.modifiers.single_tape_support`
+  to add basic default behavior onto a device class.
+  [(#5200)](https://github.com/PennyLaneAI/pennylane/pull/5200)
+
 * `qml.dot` now returns a `Sum` class even when all the coefficients match.
   [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
 
@@ -356,6 +360,10 @@
 * Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
+
+
+* Added a `partial_trace` function to `pennylane.math` for matrices.
+  [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
 
 * Users can specify a list of PennyLane `measurements` they would want as terminal measurements
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
@@ -512,8 +520,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `ctrl_decomp_zyz` is now differentiable.
+  [(#5198)](https://github.com/PennyLaneAI/pennylane/pull/5198)
+
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
-[(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
+  [(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
 
 * The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
   [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
@@ -605,6 +616,7 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Trenten Babcock,
 Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
