@@ -252,19 +252,22 @@ class TestControlledDecompositionZYZ:
                 ],
             ),
             (
-                qml.ops.SProd(1.23, qml.PauliX(0)),  # type: ignore
+                qml.s_prod(1j, qml.PauliX(0)),
                 [
-                    qml.RZ(np.pi / 2, wires=0),
+                    qml.RZ(7 * np.pi / 2, wires=0),
                     qml.RY(np.pi / 2, wires=0),
                     qml.CNOT(wires=[1, 0]),
                     qml.RY(-np.pi / 2, wires=0),
                     qml.RZ(-2 * np.pi, wires=0),
                     qml.CNOT(wires=[1, 0]),
-                    qml.RZ(3 * np.pi / 2, wires=0),
+                    qml.RZ(-3 * np.pi / 2, wires=0),
                 ],
             ),
             (
-                qml.ops.Sum(qml.PauliX(0), qml.PauliX(0)),  # type: ignore
+                (
+                    qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
+                    + qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
+                ),
                 [
                     qml.RZ(np.pi / 2, wires=0),
                     qml.RY(np.pi / 2, wires=0),
