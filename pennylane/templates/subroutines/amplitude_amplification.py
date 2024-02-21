@@ -25,7 +25,7 @@ import pennylane as qml
 def get_fixed_point_angles(iters):
     """
     Returns the angles needed for the fixed-point amplitude amplification algorithm.
-    This is extracted from the equation (11) of the paper `fixed-point quantum search <https://arxiv.org/pdf/1409.3305.pdf>`__.
+    This is extracted from the equation (11) of  `arXiv:1409.3305v2 <https://arxiv.org/abs/1409.3305>`__.
     """
     gamma = 0.95
 
