@@ -322,6 +322,7 @@ class Sum(CompositeOp):
          [X(0), X(1), Y(1) @ Y(0)])
 
         Note that this method disentangles nested structures of ``Sum`` instances like so.
+
         >>> op = 0.5 * X(0) + (2. * (X(1) + 3. * X(2)))
         >>> print(op)
         (0.5*(PauliX(wires=[0]))) + (2.0*((0.5*(PauliX(wires=[1]))) + (3.0*(PauliX(wires=[2])))))
