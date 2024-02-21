@@ -18,11 +18,10 @@ name: "Documentation check"
 on:
 - pull_request
 
-env:
-  DEPS_BRANCH: bot/stable-deps-update
-
 jobs:
   sphinx:
+    env:
+      DEPS_BRANCH: bot/stable-deps-update
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
