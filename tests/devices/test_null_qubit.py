@@ -1136,19 +1136,23 @@ class TestIntegration:
         assert np.array_equal(qml.grad(cost)(params), np.zeros(shape))
 
 
+@pytest.mark.parametrize("method", ["device", "parameter-shift"])
 class TestJacobian:
     """Test that the jacobian of circuits can be computed."""
 
     @staticmethod
-    @qml.qnode(NullQubit())
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.probs(wires=[0]), qml.expval(qml.PauliZ(0))
+    def get_circuit(method):
+        @qml.qnode(NullQubit(), diff_method=method)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.probs(wires=[0]), qml.expval(qml.PauliZ(0))
 
-    def test_jacobian_autograd(self):
+        return circuit
+
+    def test_jacobian_autograd(self, method):
         """Test the jacobian with autograd."""
 
-        @qml.qnode(NullQubit())
+        @qml.qnode(NullQubit(), diff_method=method)
         def circuit(x, mp):
             qml.RX(x, wires=0)
             return qml.apply(mp)
@@ -1160,37 +1164,39 @@ class TestJacobian:
         assert np.array_equal(expval_jac, 0.0)
 
     @pytest.mark.jax
-    def test_jacobian_jax(self):
+    def test_jacobian_jax(self, method):
         """Test the jacobian with jax."""
         import jax
         from jax import numpy as jnp
 
         x = jnp.array(0.1)
-        probs_jac, expval_jac = jax.jacobian(self.circuit)(x)
+        probs_jac, expval_jac = jax.jacobian(self.get_circuit(method))(x)
         assert np.array_equal(probs_jac, np.zeros(2))
         assert np.array_equal(expval_jac, 0.0)
 
     @pytest.mark.tf
-    def test_jacobian_tf(self):
+    def test_jacobian_tf(self, method):
         """Test the jacobian with tf."""
         import tensorflow as tf
 
         x = tf.Variable(0.1)
         with tf.GradientTape(persistent=True) as tape:
-            res = self.circuit(x)
+            res = self.get_circuit(method)(x)
 
         probs_jac = tape.jacobian(res[0], x)
-        expval_jac = tape.jacobian(res[1], x)
         assert np.array_equal(probs_jac, np.zeros(2))
+        if method == "parameter-shift":
+            pytest.xfail(reason="TF panics when computing the second jacobian here.")
+        expval_jac = tape.jacobian(res[1], x)
         assert np.array_equal(expval_jac, 0.0)
 
     @pytest.mark.torch
-    def test_jacobian_torch(self):
+    def test_jacobian_torch(self, method):
         """Test the jacobian with torch."""
         import torch
 
         x = torch.tensor(0.1, requires_grad=True)
-        probs_jac, expval_jac = torch.autograd.functional.jacobian(self.circuit, x)
+        probs_jac, expval_jac = torch.autograd.functional.jacobian(self.get_circuit(method), x)
         assert np.array_equal(probs_jac, np.zeros(2))
         assert np.array_equal(expval_jac, 0.0)
 
