@@ -296,6 +296,7 @@ def test_correct_reflection(state):
 
     assert np.allclose(state, expected)
 
+
 # pylint: disable=protected-access
 def test_flatten_and_unflatten():
     """Test the _flatten and _unflatten methods for Reflection."""
