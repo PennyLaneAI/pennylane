@@ -477,9 +477,9 @@ class Prod(CompositeOp):
     def coeffs(self):
         r"""
         Scalar coefficients of the operator when flattened out.
-        
+
         This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
-        
+
         ..seealso:: :attr:`Prod.ops`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
             "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
@@ -492,9 +492,9 @@ class Prod(CompositeOp):
     def ops(self):
         r"""
         Operator terms without scalar coefficients of the operator when flattened out.
-        
+
         This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
-        
+
         ..seealso:: :attr:`Prod.coeffs`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
             "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
