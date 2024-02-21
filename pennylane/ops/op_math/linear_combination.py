@@ -221,7 +221,10 @@ class LinearCombination(Observable):
         self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
 
         if simplify:
-            self = self.simplify()
+            simplified = self.simplify()
+            self._coeffs = simplified.coeffs
+            self._ops = simplified.ops
+            self.data = simplified.coeffs
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():
                 self._grouping_indices = _compute_grouping_indices(
@@ -488,6 +491,7 @@ class LinearCombination(Observable):
             if len(pr) == 0:
                 return LinearCombination([], [], _pauli_rep=pr)
 
+            # collect coefficients and ops
             coeffs = []
             ops = []
 
@@ -496,12 +500,13 @@ class LinearCombination(Observable):
                 ops.append(pw_op)
                 coeffs.append(coeff)
 
-            return LinearCombination(coeffs, ops, _pauli_rep=pr)
+            res = LinearCombination(coeffs, ops, _pauli_rep=pr)
+            return res
 
         # Fallback on logic from Sum when there is no pauli_rep
         # LinearCombination is not intended for this scenario though
         if len(self.ops) == 1:
-            return LinearCombination(self.coeffs, self.ops, simplify=True)
+            return LinearCombination(self.coeffs, [self.ops[0].simplify()])
         op_as_sum = qml.sum(*self.operands)
         op_as_sum = op_as_sum.simplify()
         return LinearCombination(*op_as_sum.terms())
@@ -695,7 +700,11 @@ class LinearCombination(Observable):
         if isinstance(H, (LinearCombination, Hamiltonian)):
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
-            return qml.LinearCombination(coeffs, ops, simplify=True)
+            if (pr1 := self.pauli_rep) is not None and (pr2 := H.pauli_rep) is not None:
+                _pauli_rep = pr1 + pr2
+            else:
+                _pauli_rep = None
+            return qml.LinearCombination(coeffs, ops, simplify=True, _pauli_rep=_pauli_rep)
 
         if isinstance(H, (Tensor, Observable)):
             coeffs = qml.math.concatenate(
