@@ -26,7 +26,7 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.operation import Observable, Tensor
+from pennylane.operation import Observable, Tensor, Operator
 from pennylane.wires import Wires
 from ..qubit.hamiltonian import Hamiltonian
 
@@ -178,10 +178,11 @@ class LinearCombination(Observable):
     def __init__(
         self,
         coeffs,
-        observables: List[Observable],
+        observables: List[Operator],
         simplify=False,
         grouping_type=None,
         method="rlf",
+        _pauli_rep=None,
         id=None,
     ):
         if qml.math.shape(coeffs)[0] != len(observables):
@@ -190,11 +191,11 @@ class LinearCombination(Observable):
                 "number of coefficients and operators does not match."
             )
 
-        for obs in observables:
-            if not isinstance(obs, Observable):
-                raise ValueError(
-                    "Could not create circuits. Some or all observables are not valid."
-                )
+        # for obs in observables:
+        #     if not isinstance(obs, Observable):
+        #         raise ValueError(
+        #             "Could not create circuits. Some or all observables are not valid."
+        #         )
 
         self._coeffs = coeffs
         self._ops = list(observables)
@@ -209,13 +210,6 @@ class LinearCombination(Observable):
         # commuting observables, since recomputation is costly
         self._grouping_indices = None
 
-        if simplify:
-            self.simplify()
-        if grouping_type is not None:
-            with qml.QueuingManager.stop_recording():
-                self._grouping_indices = _compute_grouping_indices(
-                    self.ops, grouping_type=grouping_type, method=method
-                )
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
 
@@ -225,7 +219,15 @@ class LinearCombination(Observable):
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
         with qml.QueuingManager().stop_recording():
             self._operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
-        self._pauli_rep = self._build_pauli_rep()
+        self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
+
+        if simplify:
+            self = self.simplify()
+        if grouping_type is not None:
+            with qml.QueuingManager.stop_recording():
+                self._grouping_indices = _compute_grouping_indices(
+                    self.ops, grouping_type=grouping_type, method=method
+                )
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the LinearCombination of operators."""
@@ -465,12 +467,11 @@ class LinearCombination(Observable):
 
         **Example**
 
-        >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
+        >>> ops = [qml.Y(2), 0.5 * qml.X(0) @ qml.I(1), qml.X(0)]
         >>> H = qml.LinearCombination([1, 1, -2], ops)
         >>> H.simplify()
         >>> print(H)
-          (-1) [X0]
-        + (1) [Y2]
+        Y(2) + -1.5 * X(0)
 
         .. warning::
 
@@ -478,40 +479,33 @@ class LinearCombination(Observable):
             the observables it refers to are updated.
         """
 
-        # Todo: make simplify return a new operation, so
-        # it does not mutate this one
+        if len(self.ops)==0:
+            return self
 
-        new_coeffs = []
-        new_ops = []
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            pr.simplify()
+            wire_order = self.wires
+            if len(pr) == 0:
+                return LinearCombination([], [], _pauli_rep=pr)
 
-        for i in range(len(self.ops)):  # pylint: disable=consider-using-enumerate
-            op = self.ops[i]
-            c = self.coeffs[i]
-            op = op if isinstance(op, Tensor) else Tensor(op)
+            coeffs = []
+            ops = []
 
-            ind = next((j for j, o in enumerate(new_ops) if op.compare(o)), None)
-            if ind is not None:
-                new_coeffs[ind] += c
-                if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
-                    del new_coeffs[ind]
-                    del new_ops[ind]
-            else:
-                new_ops.append(op.prune())
-                new_coeffs.append(c)
+            for pw, coeff in pr.items():
+                pw_op = pw.operation(wire_order=wire_order)
+                ops.append(pw_op)
+                coeffs.append(coeff)
 
-        # hotfix: We `self.data`, since `self.parameters` returns a copy of the data and is now returned in
-        # self.terms(). To be improved soon.
-        self.data = tuple(new_coeffs)
-        # hotfix: We overwrite the hyperparameter entry, which is now returned in self.terms().
-        # To be improved soon.
-        self.hyperparameters["ops"] = new_ops
+            return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
-        self._coeffs = qml.math.stack(new_coeffs) if new_coeffs else []
-        self._ops = new_ops
-        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
-        # reset grouping, since the indices refer to the old observables and coefficients
-        self._grouping_indices = None
-        return self
+        # Fallback on logic from Sum when there is no pauli_rep
+        # LinearCombination is not intended for this scenario though
+        if len(self.ops)==1:
+            return LinearCombination(self.coeffs, self.ops, simplify=True)
+        op_as_sum = qml.sum(*self.operands)
+        op_as_sum = op_as_sum.simplify()
+        return LinearCombination(*op_as_sum.terms())
 
     def __str__(self):
         def wires_print(ob: Observable):
@@ -626,14 +620,19 @@ class LinearCombination(Observable):
         >>> ob1.compare(ob2)
         False
         """
+        pr1 = self.pauli_rep
+        pr2 = other.pauli_rep
+        if pr1 and pr2:
+            return pr1 == pr2
+
         if isinstance(other, (LinearCombination, Hamiltonian)):
-            self.simplify()
-            other.simplify()
-            return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
+            op1 = self.simplify()
+            op2 = other.simplify()
+            return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
 
         if isinstance(other, (Tensor, Observable)):
-            self.simplify()
-            return self._obs_data() == {
+            op1 = self.simplify()
+            return op1._obs_data() == {
                 (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
             }
 
@@ -735,16 +734,15 @@ class LinearCombination(Observable):
         if isinstance(H, (LinearCombination, Hamiltonian)):
             self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
             self._ops.extend(H.ops.copy())
-            self.simplify()
-            return self
-
+            res = self.simplify()
+            return res
         if isinstance(H, (Tensor, Observable)):
             self._coeffs = qml.math.concatenate(
                 [self._coeffs, qml.math.cast_like([1.0], self._coeffs)], axis=0
             )
             self._ops.append(H)
-            self.simplify()
-            return self
+            res = self.simplify()
+            return res
 
         return NotImplemented
 
