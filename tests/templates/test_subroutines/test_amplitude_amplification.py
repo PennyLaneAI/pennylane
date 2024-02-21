@@ -215,6 +215,7 @@ def test_correct_queueing():
     assert np.allclose(circuit1(), circuit3())
 
 
+# pylint: disable=protected-access
 def test_flatten_and_unflatten():
     """Test the _flatten and _unflatten methods for AmplitudeAmplification."""
 
@@ -231,7 +232,6 @@ def test_flatten_and_unflatten():
     assert hash(metadata)
 
 
-# pylint: disable=protected-access
 def test_amplification():
     """Test that AmplitudeAmplification amplifies a marked element."""
 
