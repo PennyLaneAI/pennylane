@@ -20,7 +20,7 @@ execnet==2.0.2
 filelock==3.13.1
 flaky==3.7.0
 fonttools==4.49.0
-future==0.18.3
+future==1.0.0
 identify==2.5.35
 idna==3.6
 importlib-metadata==7.0.1
