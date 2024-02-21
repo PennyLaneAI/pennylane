@@ -19,7 +19,7 @@ exceptiongroup==1.2.0
 execnet==2.0.2
 filelock==3.13.1
 flaky==3.7.0
-fonttools==4.48.1
+fonttools==4.49.0
 future==0.18.3
 identify==2.5.34
 idna==3.6
@@ -29,7 +29,7 @@ iniconfig==2.0.0
 jax==0.4.23
 jaxlib==0.4.23
 kiwisolver==1.4.5
-matplotlib==3.8.2
+matplotlib==3.8.3
 ml-dtypes==0.3.2
 mypy-extensions==1.0.0
 networkx==3.2.1
