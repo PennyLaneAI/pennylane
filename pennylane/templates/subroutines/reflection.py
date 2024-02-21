@@ -58,7 +58,7 @@ class Reflection(Operation):
         def circuit():
 
             # Initialize to the state |1>
-            qml.qml.PauliX(wires=0)
+            qml.PauliX(wires=0)
 
             # Apply the reflection
             qml.Reflection(U)
