@@ -167,25 +167,30 @@ class NullQubit(Device):
 
     .. code-block:: python
 
-        n_layers = 5
-        n_wires = 10
+        n_layers = 50
+        n_wires = 100
         shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(params):
             qml.StronglyEntanglingLayers(params, wires=range(n_wires))
-            return qml.state()
+            return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         params = np.random.random(shape)
 
         with qml.Tracker(dev) as tracker:
-            res = circuit(params)
+            circuit(params)
 
-    >>> res, tracker.history["resources"]
-    (tensor([1., 0., 0., ..., 0., 0., 0.], requires_grad=True),
-     [Resources(num_wires=10, num_gates=100, gate_types=defaultdict(<class 'int'>,
-      {'Rot': 50, 'CNOT': 50}), gate_sizes=defaultdict(<class 'int'>, {1: 50, 2: 50}),
-      depth=28, shots=Shots(total_shots=None, shot_vector=()))])
+    >>> tracker.history["resources"][0]
+    wires: 100
+    gates: 10000
+    depth: 502
+    shots: Shots(total=None)
+    gate_types:
+    {'Rot': 5000, 'CNOT': 5000}
+    gate_sizes:
+    {1: 5000, 2: 5000}
+
 
     .. details::
         :title: Tracking
