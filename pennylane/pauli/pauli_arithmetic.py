@@ -195,7 +195,7 @@ class PauliWord(dict):
     @property
     def pauli_rep(self):
         """Trivial pauli_rep"""
-        return PauliSentence({self: 1.})
+        return PauliSentence({self: 1.0})
 
     def __reduce__(self):
         """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
