@@ -41,6 +41,9 @@ obs = {
     "PauliX": qml.PauliX(wires=[0]),
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
+    "X": qml.X(wires=[0]),
+    "Y": qml.Y(wires=[0]),
+    "Z": qml.Z(wires=[0]),
     "Projector": [
         qml.Projector(np.array([1]), wires=[0]),
         qml.Projector(np.array([0, 1]), wires=[0]),

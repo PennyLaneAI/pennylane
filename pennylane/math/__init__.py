@@ -34,7 +34,7 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, reduce_matrices
+from .matrix_manipulation import expand_matrix, reduce_matrices, get_batch_size
 from .multi_dispatch import (
     add,
     array,
@@ -69,6 +69,7 @@ from .quantum import (
     dm_from_state_vector,
     marginal_prob,
     mutual_info,
+    partial_trace,
     purity,
     reduce_dm,
     reduce_statevector,
@@ -76,6 +77,7 @@ from .quantum import (
     sqrt_matrix,
     vn_entropy,
     max_entropy,
+    min_entropy,
     trace_distance,
 )
 from .fidelity import fidelity, fidelity_statevector
@@ -85,6 +87,7 @@ from .utils import (
     cast,
     cast_like,
     convert_like,
+    get_deep_interface,
     get_interface,
     in_backprop,
     is_abstract,
@@ -152,6 +155,7 @@ __all__ = [
     "frobenius_inner_product",
     "get_dtype_name",
     "get_interface",
+    "get_deep_interface",
     "get_trainable_indices",
     "in_backprop",
     "is_abstract",
@@ -159,9 +163,11 @@ __all__ = [
     "iscomplex",
     "marginal_prob",
     "max_entropy",
+    "min_entropy",
     "multi_dispatch",
     "mutual_info",
     "ones_like",
+    "partial_trace",
     "purity",
     "reduce_dm",
     "reduce_statevector",

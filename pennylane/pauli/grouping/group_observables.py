@@ -20,6 +20,7 @@ from copy import copy
 import numpy as np
 import pennylane as qml
 
+from pennylane.ops import Prod, SProd
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,
@@ -229,7 +230,18 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     pauli_grouping = PauliGroupingStrategy(
         observables, grouping_type=grouping_type, graph_colourer=method
     )
-    partitioned_paulis = pauli_grouping.colour_pauli_graph()
+
+    temp_opmath = not qml.operation.active_new_opmath() and any(
+        isinstance(o, (Prod, SProd)) for o in observables
+    )
+    if temp_opmath:
+        qml.operation.enable_new_opmath()
+
+    try:
+        partitioned_paulis = pauli_grouping.colour_pauli_graph()
+    finally:
+        if temp_opmath:
+            qml.operation.disable_new_opmath()
 
     if coefficients is None:
         return partitioned_paulis
@@ -246,15 +258,11 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
         indices = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
-            for observable in observables:
+            for ind, observable in enumerate(observables):
                 if are_identical_pauli_words(pauli_word, observable):
-                    for ind, obs in enumerate(observables):
-                        if obs is not observable:
-                            continue
-                        indices.append(coeff_indices[ind])
-                        observables.pop(ind)
-                        coeff_indices.pop(ind)
-                        break
+                    indices.append(coeff_indices[ind])
+                    observables.pop(ind)
+                    coeff_indices.pop(ind)
                     break
 
         # add a tensor of coefficients to the grouped coefficients

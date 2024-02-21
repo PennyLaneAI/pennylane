@@ -298,6 +298,7 @@ class SingleExcitationMinus(Operation):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -427,6 +428,7 @@ class SingleExcitationPlus(Operation):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -580,6 +582,7 @@ class DoubleExcitation(Operation):
 
         circuit(0.1)
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -761,6 +764,7 @@ class DoubleExcitationPlus(Operation):
         wires (Sequence[int]): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -842,6 +846,7 @@ class DoubleExcitationMinus(Operation):
         wires (Sequence[int]): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -948,6 +953,7 @@ class OrbitalRotation(Operation):
                 0.99750208+0.j,  0.        +0.j,  0.        +0.j,
                 0.        +0.j])
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 

@@ -65,7 +65,7 @@ Finally, the tests can be invoked within a Python session via the :func:`~.test_
 function:
 
 >>> from pennylane.devices.tests import test_device
->>> test_device("default.qubit")
+>>> test_device("default.qubit.legacy")
 
 For more details on the available arguments, see the :func:`~.test_device` documentation.
 
@@ -120,7 +120,7 @@ def test_device(
     **Example**
 
     >>> from pennylane.devices.tests import test_device
-    >>> test_device("default.qubit")
+    >>> test_device("default.qubit.legacy")
     ================================ test session starts =======================================
     platform linux -- Python 3.7.7, pytest-5.4.2, py-1.8.1, pluggy-0.13.1
     rootdir: /home/josh/xanadu/pennylane/pennylane/devices/tests, inifile: pytest.ini

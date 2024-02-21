@@ -16,6 +16,7 @@
 # pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
 
 import pytest
+import numpy as onp
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -260,8 +261,8 @@ class TestStateReconstruction:
 
         with monkeypatch.context() as m:
             # don't run the actual state computation since we only want the warning
-            m.setattr(np, "einsum", lambda *args, **kwargs: None)
-            m.setattr(np, "reshape", lambda *args, **kwargs: None)
+            m.setattr(onp, "einsum", lambda *args, **kwargs: None)
+            m.setattr(onp, "reshape", lambda *args, **kwargs: None)
 
             with pytest.warns(UserWarning, match=msg):
                 shadow.global_snapshots()

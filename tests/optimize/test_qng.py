@@ -42,7 +42,7 @@ class TestExceptions:
 
         with pytest.raises(
             ValueError,
-            match="The objective function must either be encoded as a single QNode or an ExpvalCost object",
+            match="The objective function must be encoded as a single QNode.",
         ):
             opt.step(cost, params)
 
@@ -114,15 +114,18 @@ class TestOptimize:
         opt = qml.QNGOptimizer(stepsize=0.01)
 
         # With autograd gradient function
-        grad_fn = qml.grad(circuit)
-        step1, cost1 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
-        step2 = opt.step(circuit, var, grad_fn=grad_fn)
+        grad_fn1 = qml.grad(circuit)
+        step1, cost1 = opt.step_and_cost(circuit, var, grad_fn=grad_fn1)
+        step2 = opt.step(circuit, var, grad_fn=grad_fn1)
 
         # With more custom gradient function, forward has to be computed explicitly.
-        grad_fn = lambda param: np.array(qml.grad(circuit)(param))
-        step3, cost2 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
-        opt.step(circuit, var, grad_fn=grad_fn)
-        expected_step = var - opt.stepsize * 4 * grad_fn(var)
+        def grad_fn2(param):
+            return np.array(qml.grad(circuit)(param))
+
+        # grad_fn = lambda param: np.array(qml.grad(circuit)(param))
+        step3, cost2 = opt.step_and_cost(circuit, var, grad_fn=grad_fn2)
+        opt.step(circuit, var, grad_fn=grad_fn2)
+        expected_step = var - opt.stepsize * 4 * grad_fn2(var)
         expected_cost = circuit(var)
 
         for step in [step1, step2, step3, step3]:
@@ -147,15 +150,17 @@ class TestOptimize:
         opt = qml.QNGOptimizer(stepsize=0.01)
 
         # With autograd gradient function
-        grad_fn = qml.grad(circuit)
-        step1, cost1 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
-        step2 = opt.step(circuit, *var, grad_fn=grad_fn)
+        grad_fn1 = qml.grad(circuit)
+        step1, cost1 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn1)
+        step2 = opt.step(circuit, *var, grad_fn=grad_fn1)
 
         # With more custom gradient function, forward has to be computed explicitly.
-        grad_fn = lambda params_0, params_1: np.array(qml.grad(circuit)(params_0, params_1))
-        step3, cost2 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
-        opt.step(circuit, *var, grad_fn=grad_fn)
-        expected_step = var - opt.stepsize * 4 * grad_fn(*var)
+        def grad_fn2(params_0, params_1):
+            return np.array(qml.grad(circuit)(params_0, params_1))
+
+        step3, cost2 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn2)
+        opt.step(circuit, *var, grad_fn=grad_fn2)
+        expected_step = var - opt.stepsize * 4 * grad_fn2(*var)
         expected_cost = circuit(*var)
 
         for step in [step1, step2, step3, step3]:

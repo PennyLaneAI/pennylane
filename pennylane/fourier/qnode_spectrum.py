@@ -389,7 +389,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        jac_fn = qml.transforms.classical_jacobian(
+        jac_fn = qml.gradients.classical_jacobian(
             qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
         )
         # Compute classical Jacobian and assert preprocessing is linear

@@ -33,7 +33,7 @@ class TestMergeAmplitudeEmbedding:
             qml.AmplitudeEmbedding([0.0, 1.0], wires=1)
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=0)
-            qml.state()
+            return qml.state()
 
         transformed_qfunc = merge_amplitude_embedding(qfunc)
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
@@ -43,6 +43,22 @@ class TestMergeAmplitudeEmbedding:
         # Check that the solution is as expected.
         dev = qml.device("default.qubit", wires=2)
         assert np.allclose(qml.QNode(transformed_qfunc, dev)()[-1], 1)
+
+    def test_multi_amplitude_embedding_qnode(self):
+        """Test that the transformation is working correctly by joining two AmplitudeEmbedding."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @merge_amplitude_embedding
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.AmplitudeEmbedding([0.0, 1.0], wires=0)
+            qml.AmplitudeEmbedding([0.0, 1.0], wires=1)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.state()
+
+        assert qml.math.allclose(circuit(), np.array([1, -1, -1, 1]) / 2)
 
     def test_repeated_qubit(self):
         """Check that AmplitudeEmbedding cannot be applied if the qubit has already been used."""
@@ -77,8 +93,8 @@ class TestMergeAmplitudeEmbedding:
         """Test that merging preserves the batch dimension"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
         @qml.transforms.merge_amplitude_embedding
+        @qml.qnode(dev)
         def qnode():
             qml.AmplitudeEmbedding([[1, 0], [0, 1]], wires=0)
             qml.AmplitudeEmbedding([1, 0], wires=1)
@@ -153,9 +169,6 @@ class TestMergeAmplitudeEmbeddingInterfaces:
     def test_merge_amplitude_embedding_jax(self):
         """Test QNode in JAX interface."""
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         def qfunc(amplitude):
             qml.AmplitudeEmbedding(amplitude, wires=0)

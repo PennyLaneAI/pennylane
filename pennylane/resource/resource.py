@@ -55,6 +55,7 @@ class Resources:
         gate_sizes:
         {1: 1, 2: 1}
     """
+
     num_wires: int = 0
     num_gates: int = 0
     gate_types: dict = field(default_factory=dict)

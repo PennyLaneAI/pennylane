@@ -174,8 +174,9 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     to the plotting function:
 
     >>> import matplotlib.pyplot as plt
+    >>> from pennylane.fourier.visualize import violin
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-    >>> violinplt(coeffs, n_inputs, ax, show_freqs=True)
+    >>> violin(coeffs, n_inputs, ax, show_freqs=True)
 
     .. image:: ../../_static/fourier_vis_violin.png
         :align: center
@@ -279,6 +280,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
     to the plotting function:
 
     >>> import matplotlib.pyplot as plt
+    >>> from pennylane.fourier.visualize import box
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
     >>> box(coeffs, n_inputs, ax, show_freqs=True)
 
@@ -391,6 +393,7 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     to the plotting function:
 
     >>> import matplotlib.pyplot as plt
+    >>> from pennylane.fourier.visualize import bar
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
     >>> bar(coeffs, n_inputs, ax, colour_dict={"real" : "red", "imag" : "blue"})
 
@@ -498,6 +501,7 @@ def panel(coeffs, n_inputs, ax, colour=None):
     degree 2, we need a 5x5 grid.
 
     >>> import matplotlib.pyplot as plt
+    >>> from pennylane.fourier.visualize import panel
     >>> fig, ax = plt.subplots(5, 5, figsize=(12, 10), sharex=True, sharey=True)
     >>> panel(coeffs, n_inputs, ax)
 
@@ -630,6 +634,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
     .. code-block:: python
 
         import matplotlib.pyplot as plt
+        from pennylane.fourier.visualize import radial_box
 
         fig, ax = plt.subplots(
             1, 2, sharex=True, sharey=True,

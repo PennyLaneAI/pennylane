@@ -88,6 +88,7 @@ class FlipSign(Operation):
                 raise ValueError(
                     "expected an integer equal or greater than zero for basic flipping state"
                 )
+        n = tuple(n)
 
         if len(wires) != len(n):
             raise ValueError(

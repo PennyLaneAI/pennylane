@@ -15,6 +15,8 @@
 Tests for the :class:`pennylane.data.data_manger.FolderMapView` class.
 """
 
+import re
+
 import pytest
 
 from pennylane.data.data_manager import DEFAULT, FULL, DataPath
@@ -125,6 +127,38 @@ class TestFolderMapView:
                     ),
                 ],
             ),
+            (
+                {"missing_default": DEFAULT, "molname": "O2", "basis": FULL, "bondlength": ["0.6"]},
+                [
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.6"},
+                        "qchem/O2/STO-3G/0.6.h5",
+                    ),
+                ],
+            ),
+            (
+                {
+                    "missing_default": DEFAULT,
+                    "molname": "O2",
+                    "basis": FULL,
+                    "bondlength": ["0.6", "200"],
+                },
+                [
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.6"},
+                        "qchem/O2/STO-3G/0.6.h5",
+                    ),
+                ],
+            ),
+            (
+                {"missing_default": FULL, "molname": "O2", "bondlength": ["0.6"]},
+                [
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.6"},
+                        "qchem/O2/STO-3G/0.6.h5",
+                    ),
+                ],
+            ),
         ],
     )
     def test_find(self, foldermap, kwds, expect):  # pylint: disable=redefined-outer-name
@@ -155,14 +189,36 @@ class TestFolderMapView:
         with pytest.raises(ValueError, match="No default available for parameter 'molname'"):
             FolderMapView(FOLDERMAP).find("qchem")
 
-    def test_find_invalid_parameter(self):
+    @pytest.mark.parametrize(
+        "arg, error_fmt", [("Z3", repr(["Z3"])), (("Z3", "Z4"), repr(["Z3", "Z4"]))]
+    )
+    def test_find_invalid_parameter(self, arg, error_fmt):
         """Test that a ValueError is raised when a parameter provided
         does not exist."""
 
         with pytest.raises(
-            ValueError, match=r"molname 'Z3' is not available. Available values are: \['O2', 'H2'\]"
+            ValueError,
+            match=re.escape(
+                f"molname value(s) {error_fmt} are not available. Available values are: ['O2', 'H2']"
+            ),
         ):
-            FolderMapView(FOLDERMAP).find("qchem", molname="Z3")
+            FolderMapView(FOLDERMAP).find("qchem", molname=arg)
+
+    @pytest.mark.parametrize("basis", [FULL, DEFAULT])
+    def test_find_invalid_parameters_after_full_default(self, basis):
+        """Test that a ValueError is raised when a parameter provided
+        does not exist, after a 'full' or 'default' parameter has been provided for a
+        higher-priority parameter."""
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"bondlength value\(s\) \['0.20', '200'\] are not available. Available values are: \['0.5', '0.6'\]"
+            ),
+        ):
+            FolderMapView(FOLDERMAP).find(
+                "qchem", molname="O2", basis=basis, bondlength=["0.20", "200"]
+            )
 
     @pytest.mark.parametrize(
         "init, key, expect",

@@ -1,0 +1,69 @@
+name: Benchmarks
+on:
+  pull_request:
+  workflow_call:
+    inputs:
+      ref_branch:
+        description: The PennyLane reference branch for benchmarks
+        required: false
+        type: string
+        default: 'add-pytest-benchmarks'
+      branch:
+        description: The PennyLane branch to run benchmarks with
+        required: false
+        type: string
+        default: 'master'
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+    # If needed, this workflow will create a cached benchmark reference.
+    # This reference will be used for comparative analyses with all PRs benchmarks.
+    reference-benchmarks:
+      if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
+
+      uses: ./.github/workflows/interface-unit-tests.yml
+      with:
+        # If running by workflow call, will check by provided ref_branch, if not will default to 'add-pytest-benchmarks'.
+        branch: ${{ inputs.ref_branch || 'add-pytest-benchmarks' }}
+
+        pipeline_mode: 'reference-benchmarks'
+
+        # Run a 'lightened' version of the CI on Pull Requests by default
+        # Unless the label `ci:run-full-test-suite` is attached to the PR.
+        # Always runs the full suite for push events.
+        run_lightened_ci: >-
+          ${{
+            github.event_name == 'pull_request'
+            && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
+            || false
+          }}
+
+        skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
+
+    benchmarks:
+      if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
+
+      uses: ./.github/workflows/interface-unit-tests.yml
+      needs: reference-benchmarks
+      with:
+        # If running by workflow call, will check by provided branch, if not will default to github.ref.
+        branch: ${{ inputs.branch || github.ref }}
+
+
+        pipeline_mode: 'benchmarks'
+
+        # Run a 'lightened' version of the CI on Pull Requests by default
+        # Unless the label `ci:run-full-test-suite` is attached to the PR.
+        # Always runs the full suite for push events.
+        run_lightened_ci: >-
+          ${{
+            github.event_name == 'pull_request'
+            && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
+            || false
+          }}
+
+        skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
+

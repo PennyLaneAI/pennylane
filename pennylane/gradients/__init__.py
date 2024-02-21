@@ -49,16 +49,20 @@ Gradient transforms
     spsa_grad
     hadamard_grad
     stoch_pulse_grad
-    pulse_generator
+    pulse_odegen
 
-Custom gradients
-^^^^^^^^^^^^^^^^
+Metric tensors
+^^^^^^^^^^^^^^
+.. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api
 
-    gradient_transform
-    hessian_transform
+    metric_tensor
+    adjoint_metric_tensor
+
+.. currentmodule:: pennylane.gradients
+
 
 Utility functions
 ^^^^^^^^^^^^^^^^^
@@ -80,6 +84,7 @@ Utility functions
     compute_jvp_multi
     batch_jvp
     jvp
+    classical_jacobian
 
 
 Registering autodifferentiation gradients
@@ -131,7 +136,10 @@ for each QNode will be used.
 Transforming QNodes
 -------------------
 
-Alternatively, quantum gradient transforms can be applied manually to QNodes.
+Alternatively, quantum gradient transforms can be applied manually to QNodes. This is not
+recommended because PennyLane must compute the classical Jacobian of the parameters and multiply it with
+the quantum Jacobian, we recommend using the ``diff_method`` kwargs with your favorite machine learning
+framework.
 
 .. code-block:: python
 
@@ -149,8 +157,9 @@ Alternatively, quantum gradient transforms can be applied manually to QNodes.
 >>> circuit(weights)
 tensor([0.9658079, 0.0341921], requires_grad=True)
 >>> qml.gradients.param_shift(circuit)(weights)
-tensor([[-0.04673668, -0.09442394, -0.14409127],
-        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+(tensor([-0.04673668,  0.04673668], requires_grad=True),
+ tensor([-0.09442394,  0.09442394], requires_grad=True),
+ tensor([-0.14409127,  0.14409127], requires_grad=True))
 
 Comparing this to autodifferentiation:
 
@@ -291,7 +300,9 @@ the gradient:
 
 >>> dev = qml.device("default.qubit", wires=2)
 >>> fn(qml.execute(gradient_tapes, dev, None))
-(array(-0.09347337), array(-0.18884787), array(-0.28818254))
+(tensor(-0.09347337, requires_grad=True),
+ tensor(-0.18884787, requires_grad=True),
+ tensor(-0.28818254, requires_grad=True))
 
 Note that the post-processing function ``fn`` returned by the
 gradient transform is applied to the flat list of results returned
@@ -301,13 +312,13 @@ from executing the gradient tapes.
 Custom gradient transforms
 --------------------------
 
-Using the :class:`~.gradient_transform` decorator, custom gradient transforms
+Using the :func:`qml.transform <pennylane.transform>` decorator, custom gradient transforms
 can be created:
 
 .. code-block:: python
 
-    @gradient_transform
-    def my_custom_gradient(tape, **kwargs):
+    @transform
+    def my_custom_gradient(tape: qml.tape.QuantumTape, **kwargs) -> (Sequence[qml.tape.QuantumTape], Callable):
         ...
         return gradient_tapes, processing_fn
 
@@ -315,11 +326,9 @@ Once created, a custom gradient transform can be applied directly
 to QNodes, or registered as the quantum gradient transform to use
 during autodifferentiation.
 
-For more details, please see the :class:`~.gradient_transform`
+For more details, please see the :func:`qml.transform <pennylane.transform>`
 documentation.
 """
-import pennylane as qml
-
 from . import parameter_shift
 from . import parameter_shift_cv
 from . import parameter_shift_hessian
@@ -327,7 +336,7 @@ from . import finite_difference
 from . import spsa_gradient
 from . import hadamard_gradient
 from . import pulse_gradient
-from . import pulse_generator_gradient
+from . import pulse_gradient_odegen
 
 from .gradient_transform import gradient_transform, SUPPORTED_GRADIENT_KWARGS
 from .hessian_transform import hessian_transform
@@ -340,7 +349,10 @@ from .jvp import batch_jvp, jvp, compute_jvp_multi, compute_jvp_single
 from .spsa_gradient import spsa_grad
 from .hadamard_gradient import hadamard_grad
 from .pulse_gradient import stoch_pulse_grad
-from .pulse_generator_gradient import pulse_generator
+from .pulse_gradient_odegen import pulse_odegen
+from .adjoint_metric_tensor import adjoint_metric_tensor
+from .metric_tensor import metric_tensor
+from .classical_jacobian import classical_jacobian
 
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device when using broadcasting.
+Unit tests for the :class:`pennylane.devices.DefaultQubitLegacy` device when using broadcasting.
 """
 from itertools import product
 
@@ -53,7 +53,7 @@ from gate_data import (
 
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qubit import DefaultQubit
+from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
@@ -462,7 +462,7 @@ class TestApplyBroadcasted:
         with pytest.raises(
             DeviceError,
             match="Operation StatePrep cannot be used after other Operations have already been applied "
-            "on a default.qubit device.",
+            "on a default.qubit.legacy device.",
         ):
             qubit_device_2_wires.apply([qml.RZ(0.5, wires=[0]), vec])
 
@@ -491,7 +491,7 @@ class TestApplyBroadcasted:
         with pytest.raises(
             DeviceError,
             match="Operation BasisState cannot be used after other Operations have already been applied "
-            "on a default.qubit device.",
+            "on a default.qubit.legacy device.",
         ):
             qubit_device_2_wires.apply([vec])
 
@@ -766,7 +766,7 @@ class TestSampleBroadcasted:
 
 
 class TestDefaultQubitIntegrationBroadcasted:
-    """Integration tests for default.qubit. This test ensures it integrates
+    """Integration tests for default.qubit.legacy. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
@@ -1616,7 +1616,7 @@ class TestWiresIntegrationBroadcasted:
 
 class TestApplyOpsBroadcasted:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
-    gates in DefaultQubit."""
+    gates in DefaultQubitLegacy."""
 
     broadcasted_state = np.arange(2**4 * 3, dtype=np.complex128).reshape((3, 2, 2, 2, 2))
     dev = qml.device("default.qubit.legacy", wires=4)
@@ -1710,7 +1710,7 @@ class TestStateVectorBroadcasted:
 
     def test_full_subsystem_broadcasted(self, mocker):
         """Test applying a state vector to the full subsystem"""
-        dev = DefaultQubit(wires=["a", "b", "c"])
+        dev = DefaultQubitLegacy(wires=["a", "b", "c"])
         state = np.array([[0, 1, 1, 0, 1, 1, 0, 0], [1, 0, 0, 0, 1, 0, 1, 1]]) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
@@ -1723,7 +1723,7 @@ class TestStateVectorBroadcasted:
     def test_partial_subsystem_broadcasted(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
-        dev = DefaultQubit(wires=["a", "b", "c"])
+        dev = DefaultQubitLegacy(wires=["a", "b", "c"])
         state = np.array([[0, 1, 1, 0], [1, 0, 1, 0], [1, 1, 0, 0]]) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
@@ -1743,7 +1743,7 @@ class TestApplyOperationBroadcasted:
         """Tests that if we provide an operation that has an internal
         implementation, then we use that specific implementation.
 
-        This test provides a new internal function that `default.qubit` uses to
+        This test provides a new internal function that `default.qubit.legacy` uses to
         apply `PauliX` (rather than redefining the gate itself).
         """
         dev = qml.device("default.qubit.legacy", wires=1)
@@ -1923,7 +1923,7 @@ class TestHamiltonianSupportBroadcasted:
         assert spy.call_count == 2
 
 
-original_capabilities = qml.devices.DefaultQubit.capabilities()
+original_capabilities = qml.devices.DefaultQubitLegacy.capabilities()
 
 
 @pytest.fixture(scope="function", name="mock_default_qubit")
@@ -1938,10 +1938,10 @@ def mock_default_qubit_fixture(monkeypatch):
         return capabilities
 
     with monkeypatch.context() as m:
-        m.setattr(qml.devices.DefaultQubit, "capabilities", overwrite_support)
+        m.setattr(qml.devices.DefaultQubitLegacy, "capabilities", overwrite_support)
 
         def get_default_qubit(wires=1, shots=None):
-            dev = qml.devices.DefaultQubit(wires=wires, shots=shots)
+            dev = qml.devices.DefaultQubitLegacy(wires=wires, shots=shots)
             return dev
 
         yield get_default_qubit

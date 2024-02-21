@@ -62,6 +62,15 @@ def second_valid_transform(
     return [tape1, tape2], fn
 
 
+def informative_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """A valid informative transform"""
+
+    def fn(results):
+        return len(results[0].operations)
+
+    return [tape], fn
+
+
 class TestUtilityHelpers:
     """test the private functions used in post processing."""
 
@@ -123,6 +132,43 @@ class TestTransformProgramDunders:
         for elem in transform_program:
             assert isinstance(elem, TransformContainer)
             assert elem.transform is first_valid_transform
+
+    def test_getitem(self):
+        """Tests for the getitem dunder."""
+
+        t0 = TransformContainer(transform=first_valid_transform)
+        t1 = TransformContainer(transform=second_valid_transform)
+        t2 = TransformContainer(transform=informative_transform)
+        program = TransformProgram([t0, t1, t2])
+
+        assert program[0] == t0
+        assert program[1] == t1
+        assert program[2] == t2
+
+        assert program[:2] == TransformProgram([t0, t1])
+        assert program[::-1] == TransformProgram([t2, t1, t0])
+
+    def test_contains(self):
+        """Test that we can check whether a transform or transform container exists in a transform."""
+
+        t0 = TransformContainer(transform=first_valid_transform)
+        t1 = TransformContainer(transform=second_valid_transform)
+        t2 = TransformContainer(transform=informative_transform)
+        program = TransformProgram([t0, t1, t2])
+
+        assert t0 in program
+        assert t1 in program
+        assert t2 in program
+        assert qml.compile not in program
+
+        assert t0 in program
+        assert t1 in program
+        assert t2 in program
+
+        t_not = TransformContainer(transform=qml.compile)
+        assert t_not not in program
+
+        assert "a" not in program
 
     def test_add_single_programs(self):
         """Test adding two transform programs"""
@@ -187,6 +233,62 @@ class TestTransformProgramDunders:
         assert isinstance(transform_program[4], TransformContainer)
         assert transform_program[4].transform is second_valid_transform
 
+    def test_add_both_final_transform_programs(self):
+        """Test that an error is raised if two programs are added when both have
+        terminal transforms"""
+        transform1 = TransformContainer(transform=first_valid_transform)
+        transform2 = TransformContainer(transform=second_valid_transform, final_transform=True)
+
+        transform_program1 = TransformProgram()
+        transform_program1.push_back(transform1)
+        transform_program1.push_back(transform2)
+
+        transform_program2 = TransformProgram()
+        transform_program2.push_back(transform1)
+        transform_program2.push_back(transform2)
+
+        with pytest.raises(
+            TransformError, match="The transform program already has a terminal transform"
+        ):
+            _ = transform_program1 + transform_program2
+
+    def test_add_programs_with_one_final_transform(self):
+        """Test that transform programs are added correctly when one of them has a terminal
+        transform."""
+        transform1 = TransformContainer(transform=first_valid_transform)
+        transform2 = TransformContainer(transform=second_valid_transform, final_transform=True)
+
+        transform_program1 = TransformProgram()
+        transform_program1.push_back(transform1)
+
+        transform_program2 = TransformProgram()
+        transform_program2.push_back(transform1)
+        transform_program2.push_back(transform2)
+
+        merged_program1 = transform_program1 + transform_program2
+        assert len(merged_program1) == 3
+
+        assert isinstance(merged_program1[0], TransformContainer)
+        assert merged_program1[0].transform is first_valid_transform
+
+        assert isinstance(merged_program1[1], TransformContainer)
+        assert merged_program1[1].transform is first_valid_transform
+
+        assert isinstance(merged_program1[2], TransformContainer)
+        assert merged_program1[2].transform is second_valid_transform
+
+        merged_program2 = transform_program2 + transform_program1
+        assert len(merged_program2) == 3
+
+        assert isinstance(merged_program2[0], TransformContainer)
+        assert merged_program2[0].transform is first_valid_transform
+
+        assert isinstance(merged_program2[1], TransformContainer)
+        assert merged_program2[1].transform is first_valid_transform
+
+        assert isinstance(merged_program2[2], TransformContainer)
+        assert merged_program2[2].transform is second_valid_transform
+
     def test_repr_program(self):
         """Test the string representation of a program."""
         transform_program = TransformProgram()
@@ -206,6 +308,35 @@ class TestTransformProgramDunders:
             + str(second_valid_transform.__name__)
             + ")"
         )
+
+    def test_equality(self):
+        """Tests that we can compare TransformProgram objects with the '==' and '!=' operators."""
+        t1 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t2 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t3 = TransformContainer(
+            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
+        )
+
+        p1 = TransformProgram([t1, t3])
+        p2 = TransformProgram([t2, t3])
+        p3 = TransformProgram([t3, t2])
+
+        # test for equality of identical objects
+        assert p1 == p2
+        # test for inequality of different objects
+        assert p1 != p3
+        assert p1 != t1
+
+        # Test inequality with different transforms
+        t4 = TransformContainer(
+            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (2, 3)]}
+        )
+        p4 = TransformProgram([t1, t4])
+        assert p1 != p4
 
 
 class TestTransformProgram:
@@ -400,20 +531,33 @@ class TestTransformProgram:
         assert transform_program[1].transform is first_valid_transform
 
     def test_valid_transforms(self):
-        """Test that that it is only possible to create valid transforms."""
+        """Test adding transforms to a program with a terminal transform."""
         transform_program = TransformProgram()
         transform1 = TransformContainer(transform=first_valid_transform, is_informative=True)
         transform_program.push_back(transform1)
 
+        t_normal = TransformContainer(transform=second_valid_transform)
+        transform_program.push_back(t_normal)
+        print(transform_program)
+        assert len(transform_program) == 2
+        assert transform_program[0] is t_normal
+        assert transform_program[1] is transform1
+
+        t_normal2 = TransformContainer(transform=first_valid_transform)
+        transform_program.push_back(t_normal2)
+        assert transform_program[0] is t_normal
+        assert transform_program[1] is t_normal2
+        assert transform_program[2] is transform1
+
         with pytest.raises(
-            TransformError, match="The transform program already has an informative transform."
+            TransformError, match="The transform program already has a terminal transform."
         ):
             transform_program.push_back(transform1)
 
-        transform2 = TransformContainer(transform=second_valid_transform, is_informative=False)
+        transform2 = TransformContainer(transform=second_valid_transform, final_transform=True)
 
         with pytest.raises(
-            TransformError, match="The transform program already has an informative transform."
+            TransformError, match="The transform program already has a terminal transform."
         ):
             transform_program.push_back(transform2)
 
@@ -434,32 +578,6 @@ class TestTransformProgramCall:
 
         obj = [1, 2, 3, "b"]
         assert null_postprocessing(obj) is obj
-
-    def test_informative_transforms_not_supported(self):
-        """Test that a program with an informative raises a `NotImplementedError` on call."""
-        my_transform = TransformContainer(first_valid_transform, is_informative=True)
-        prog = TransformProgram((my_transform,))
-        batch = (qml.tape.QuantumScript([], [qml.state()]),)
-
-        with pytest.raises(
-            NotImplementedError, match="Informative transforms are not yet supported."
-        ):
-            prog(batch)
-
-    def test_cotransform_support_notimplemented(self):
-        """Test that a transform with a cotransform raises a not implemented error."""
-
-        my_transform = TransformContainer(
-            first_valid_transform, classical_cotransform=lambda res: res
-        )
-
-        prog = TransformProgram((my_transform,))
-
-        batch = (qml.tape.QuantumScript([], [qml.state()]),)
-        with pytest.raises(
-            NotImplementedError, match="cotransforms are not yet integrated with TransformProgram"
-        ):
-            prog(batch)
 
     def test_single_transform_program(self):
         """Basic test with a single transform that only modifies the tape but not the results."""
@@ -553,7 +671,7 @@ class TestTransformProgramCall:
         assert postprocessing1.keywords["slices"] == [slice(0, 1)]
 
         results = (1.0,)
-        expected = (3.0,)  # 2.0 *1.0 + 1.0
+        expected = (3.0,)  # 2.0 * 1.0 + 1.0
         assert fn(results) == expected
 
         # Test reverse direction
@@ -675,6 +793,44 @@ class TestTransformProgramIntegration:
         assert len(program) == 2
         assert program[0].transform is first_valid_transform
         assert program[1].transform is first_valid_transform
+
+    def test_qnode_integration_informative_transform(self):
+        """Test the integration with QNode with two transforms, one of which is
+        informative."""
+        dispatched_transform_1 = transform(first_valid_transform)
+        dispatched_transform_2 = transform(informative_transform, is_informative=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(device=dev)
+        def qnode_circuit(a):
+            """QNode circuit."""
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=0)
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0))
+
+        program = new_qnode.transform_program
+        transformed_qnode_rep = repr(program)
+        assert (
+            transformed_qnode_rep
+            == "TransformProgram("
+            + str(first_valid_transform.__name__)
+            + ", "
+            + str(informative_transform.__name__)
+            + ")"
+        )
+
+        assert not program.is_empty()
+        assert len(program) == 2
+        assert program[0].transform is first_valid_transform
+        assert program[1].transform is informative_transform
+
+        result = new_qnode(0.1)
+        assert result == (3,)
 
     def test_qnode_integration_different_transforms(self):
         """Test the integration with QNode with two different transforms."""

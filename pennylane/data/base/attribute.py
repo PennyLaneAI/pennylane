@@ -65,11 +65,11 @@ class AttributeInfo(MutableMapping):
         py_type: Optional[str] = None,
         **kwargs: Any,
     ):
-        ...
+        pass
 
     @overload
     def __init__(self):  # need at least two overloads when using @overload
-        ...
+        pass
 
     def __init__(self, attrs_bind: Optional[typing.MutableMapping[str, Any]] = None, **kwargs: Any):
         object.__setattr__(self, "attrs_bind", attrs_bind if attrs_bind is not None else {})

@@ -19,11 +19,10 @@ This module contains the functions needed for tapering qubits using symmetries.
 import functools
 import itertools
 
-import numpy
+import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import active_new_opmath
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence, simplify
 from pennylane.pauli.utils import _binary_matrix_from_pws
@@ -140,7 +139,7 @@ def symmetry_generators(h):
     **Example**
 
     >>> symbols = ["H", "H"]
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> coordinates = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
     >>> t = symmetry_generators(H)
     >>> t
@@ -259,7 +258,7 @@ def clifford(generators, paulixops):
     for i, t in enumerate(generators):
         cliff.append(pauli_sentence(1 / 2**0.5 * (paulixops[i] + t)))
 
-    u = functools.reduce(lambda p, q: p * q, cliff)
+    u = functools.reduce(lambda p, q: p @ q, cliff)
 
     return u.operation() if active_new_opmath() else u.hamiltonian()
 
@@ -297,10 +296,10 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
 
     ts_ps = qml.pauli.PauliSentence()
     for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
-        ts_ps += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
+        ts_ps += ps_u @ ps @ ps_u  # helps restrict the peak memory usage for u @ h @ u
 
     wireset = ps_u.wires + ps_h.wires
-    wiremap = dict(zip(wireset, range(len(wireset) + 1)))
+    wiremap = dict(zip(list(wireset.toset()), range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulixops]
 
     o = []
@@ -436,8 +435,8 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
     perm = []
     for tau in generators:
-        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires])
-        coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
+        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires.toset()])
+        coeff = -1 if np.logical_xor.reduce(np.logical_and(symmstr, hf_str)) else 1
         perm.append(coeff)
 
     return perm
@@ -468,7 +467,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     >>> symbols = ['He', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
     >>> mol = qml.qchem.Molecule(symbols, geometry, charge=1)
-    >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+    >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge=1)
     >>> n_elec = mol.n_electrons
     >>> generators = qml.qchem.symmetry_generators(H)
     >>> paulixops = qml.qchem.paulix_ops(generators, 4)
@@ -486,7 +485,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
             ps = qml.jordan_wigner(qml.FermiC(idx), ps=True)
         else:
             ps = PauliSentence({PauliWord({idx: "I"}): 1.0})
-        ferm_ps *= ps
+        ferm_ps @= ps
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)
@@ -650,14 +649,14 @@ def taper_operation(
 
     >>> symbols, geometry = ['He', 'H'], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
     >>> mol = qchem.Molecule(symbols, geometry, charge=1)
-    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
+    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry, charge=1)
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
     >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
     ...                                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
     >>> tap_op(3.14159)
-    [Exp(1.570795j PauliY)]
+    [Exp(1.5707949999999993j PauliY), Exp(0j Identity)]
 
     The obtained tapered operation function can then be used within a :class:`~.pennylane.QNode`:
 

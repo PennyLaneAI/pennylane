@@ -163,10 +163,11 @@ class TestOps:
 
         assert np.allclose(res, np.zeros(wires**2))
 
-    def test_full_subsystem(self, mocker):
+    @pytest.mark.parametrize("dtype", [tf.float32, tf.float64, tf.complex128])
+    def test_full_subsystem(self, mocker, dtype):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.0
+        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=dtype) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
@@ -174,14 +175,15 @@ class TestOps:
 
         state = np.outer(state, np.conj(state))
 
-        assert np.all(tf.reshape(dev._state, (-1,)) == tf.reshape(state, (-1,)))
+        assert qml.math.allclose(tf.reshape(dev._state, (-1,)), tf.reshape(state, (-1,)))
         spy.assert_not_called()
 
-    def test_partial_subsystem(self, mocker):
+    @pytest.mark.parametrize("dtype", [tf.float32, tf.float64, tf.complex128])
+    def test_partial_subsystem(self, mocker, dtype):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.0)
+        state = tf.constant([1, 0, 1, 0], dtype=dtype) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
@@ -189,7 +191,7 @@ class TestOps:
 
         state = np.kron(np.outer(state, np.conj(state)), np.array([[1, 0], [0, 0]]))
 
-        assert np.all(tf.reshape(dev._state, (8, 8)) == state)
+        assert qml.math.allclose(tf.reshape(dev._state, (8, 8)), state)
         spy.assert_called()
 
 

@@ -60,6 +60,7 @@ Operator to Operator functions
     ~pennylane.map_wires
     ~pennylane.dot
     ~pennylane.evolve
+    ~pennylane.iterative_qpe
 
 These operator functions act on operators to produce new operators.
 

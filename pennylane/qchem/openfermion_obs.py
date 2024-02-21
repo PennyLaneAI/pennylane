@@ -547,13 +547,13 @@ def dipole_of(
 
     >>> symbols = ["H", "H", "H"]
     >>> coordinates = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
-    >>> dip_obs = dipole(symbols, coordinates, charge=1)
+    >>> dipole_obs = dipole_of(symbols, coordinates, charge=1)
     >>> print(dipole_obs)
     [<Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=1, wires=[0]>]
 
-    >>> print(dip_obs[0]) # x-component of D
+    >>> print(dipole_obs[0]) # x-component of D
     (0.24190977644628117) [Z4]
     + (0.24190977644628117) [Z5]
     + (0.4781123173263878) [Z0]

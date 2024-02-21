@@ -16,7 +16,7 @@ This module contains the qml.bind_new_parameters function.
 """
 # pylint: disable=missing-docstring
 
-from typing import Sequence
+from typing import Sequence, Union
 import copy
 from functools import singledispatch
 
@@ -111,6 +111,30 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
     return op.__class__(*new_operands)
 
 
+@bind_new_parameters.register(qml.CY)
+@bind_new_parameters.register(qml.CZ)
+@bind_new_parameters.register(qml.CH)
+@bind_new_parameters.register(qml.CCZ)
+@bind_new_parameters.register(qml.CSWAP)
+@bind_new_parameters.register(qml.CNOT)
+@bind_new_parameters.register(qml.Toffoli)
+@bind_new_parameters.register(qml.MultiControlledX)
+def bind_new_parameters_copy(op, params: Sequence[TensorLike]):  # pylint:disable=unused-argument
+    return copy.copy(op)
+
+
+@bind_new_parameters.register(qml.CRX)
+@bind_new_parameters.register(qml.CRY)
+@bind_new_parameters.register(qml.CRZ)
+@bind_new_parameters.register(qml.CRot)
+@bind_new_parameters.register(qml.ControlledPhaseShift)
+def bind_new_parameters_parametric_controlled_ops(
+    op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot, qml.ControlledPhaseShift],
+    params: Sequence[TensorLike],
+):
+    return op.__class__(*params, wires=op.wires)
+
+
 @bind_new_parameters.register
 def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]):
     new_base = bind_new_parameters(op.base, params)
@@ -118,6 +142,14 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]
     _ = new_hyperparameters.pop("base")
 
     return op.__class__(new_base, **new_hyperparameters)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_controlled_sequence(
+    op: qml.ControlledSequence, params: Sequence[TensorLike]
+):
+    new_base = bind_new_parameters(op.base, params)
+    return op.__class__(new_base, control=op.control)
 
 
 @bind_new_parameters.register

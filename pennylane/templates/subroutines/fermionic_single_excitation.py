@@ -15,8 +15,8 @@ r"""
 Contains the FermionicSingleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import Operation, AnyWires
 from pennylane.ops import RZ, RX, CNOT, Hadamard
 

@@ -136,7 +136,6 @@ class TestIntegration:
 
     diff_methods = ["backprop", "finite-diff"]
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize("shots", [1000, [1, 10, 10, 1000]])
     def test_finite_shots_error(self, shots):
         """Test an error is raised when using shot vectors with vn_entropy."""
@@ -148,7 +147,9 @@ class TestIntegration:
             qml.CRX(x, wires=[0, 1])
             return qml.vn_entropy(wires=[0])
 
-        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
+        with pytest.raises(
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+        ):
             circuit(0.5)
 
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -392,7 +393,6 @@ class TestIntegration:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_qnode_entropy_custom_wires(self):
         """Test that entropy can be returned with custom wires."""
 

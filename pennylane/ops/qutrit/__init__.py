@@ -28,7 +28,7 @@ from .state_preparation import *
 from ..identity import Identity
 
 # TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
-ops = {
+__ops__ = {
     "Identity",
     "QutritUnitary",
     "ControlledQutritUnitary",
@@ -43,9 +43,9 @@ ops = {
     "QutritBasisState",
 }
 
-obs = {
+__obs__ = {
     "THermitian",
     "GellMann",
 }
 
-__all__ = list(ops | obs)
+__all__ = list(__ops__ | __obs__)

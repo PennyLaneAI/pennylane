@@ -56,7 +56,7 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
 
     >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit_entropy)(param)
-    0.6232252401402305
+    tensor(0.62322524, requires_grad=True)
 
     .. note::
 
@@ -82,6 +82,10 @@ class VnEntropyMP(StateMeasurement):
             where the instance has to be identified
         log_base (float): Base for the logarithm.
     """
+
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires), ("log_base", self.log_base))
+        return (None, None), metadata
 
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(

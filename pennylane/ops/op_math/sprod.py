@@ -20,7 +20,7 @@ from copy import copy
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
@@ -72,6 +72,7 @@ def s_prod(scalar, operator, lazy=True, id=None):
     array([[ 0., 2.],
            [ 2., 0.]])
     """
+    operator = convert_to_opmath(operator)
     if lazy or not isinstance(operator, SProd):
         return SProd(scalar, operator, id=id)
 
@@ -127,6 +128,7 @@ class SProd(ScalarSymbolicOp):
         (array(-0.68362956), array(0.21683382))
 
     """
+
     _name = "SProd"
 
     def _flatten(self):
@@ -136,10 +138,16 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(self, scalar: Union[int, float, complex], base: Operator, id=None):
+    def __init__(
+        self, scalar: Union[int, float, complex], base: Operator, id=None, _pauli_rep=None
+    ):
         super().__init__(base=base, scalar=scalar, id=id)
 
-        if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
+        if _pauli_rep:
+            self._pauli_rep = _pauli_rep
+        elif (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+            self.batch_size is None
+        ):
             scalar = copy(self.scalar)
             if qnp.get_interface(scalar) == "tensorflow" and not scalar.dtype.is_complex:
                 scalar = qnp.cast(scalar, "complex128")
@@ -151,7 +159,9 @@ class SProd(ScalarSymbolicOp):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"{self.scalar}*({self.base})"
+        if isinstance(self.base, qml.ops.CompositeOp):
+            return f"{self.scalar} * ({self.base})"
+        return f"{self.scalar} * {self.base}"
 
     def label(self, decimals=None, base_label=None, cache=None):
         """The label produced for the SProd op."""
@@ -244,8 +254,8 @@ class SProd(ScalarSymbolicOp):
         Returns:
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
         """
-        if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+        if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
         mat = self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
         mat.eliminate_zeros()
         return mat
@@ -293,7 +303,7 @@ class SProd(ScalarSymbolicOp):
             .Operator: simplified operator
         """
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 

@@ -654,3 +654,23 @@ def test_providing_wire_map_fermi_word_to_ps(wire_map, ops):
     op.simplify()
 
     assert ps == op
+
+
+fs1 = FermiSentence({fw1: 1})
+
+
+@pytest.mark.parametrize(
+    "fermi_op, qubit_op_data, tol",
+    (
+        (fw1, (-0.25j, (0.25 + 0j), (0.25 + 0j), 0.25j), None),
+        (fw1, (-0.25j, 0.25, 0.25, 0.25j), 0.0),
+        (fw1, (-0.25j, 0.25, 0.25, 0.25j), 1.0e-12),
+        (fs1, (-0.25j, (0.25 + 0j), (0.25 + 0j), 0.25j), None),
+        (fs1, (-0.25j, 0.25, 0.25, 0.25j), 0.0),
+        (fs1, (-0.25j, 0.25, 0.25, 0.25j), 1.0e-12),
+    ),
+)
+def test_jordan_wigner_tolerance(fermi_op, qubit_op_data, tol):
+    """Test that jordan_wigner properly removes negligible imaginary components"""
+    op = jordan_wigner(fermi_op, tol=tol)
+    assert isinstance(op.data[1], type(qubit_op_data[1]))

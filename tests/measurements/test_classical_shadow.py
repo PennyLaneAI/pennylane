@@ -340,18 +340,16 @@ class TestClassicalShadow:
         ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
         assert np.allclose(ratios2, 1 / 2, atol=1e-1)
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_shots_none_error(self, wires, seed):
         """Test that an error is raised when a device with shots=None is used
         to obtain classical shadows"""
         circuit = get_circuit(wires, None, seed)
 
-        msg = "Analytic circuits must only contain StateMeasurements"
+        msg = "not accepted for analytic simulation on default.qubit"
         with pytest.raises(qml.DeviceError, match=msg):
             circuit()
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize("shots", shots_list)
     def test_multi_measurement_error(self, wires, shots):
         """Test that an error is raised when classical shadows is returned
@@ -458,18 +456,16 @@ class TestExpvalMeasurement:
         assert copied_res.k == res.k
         assert copied_res.seed == res.seed
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_shots_none_error(self):
         """Test that an error is raised when a device with shots=None is used
         to obtain classical shadows"""
         circuit = hadamard_circuit(2, None)
         H = qml.PauliZ(0)
 
-        msg = "Analytic circuits must only contain StateMeasurements"
+        msg = "not accepted for analytic simulation on default.qubit"
         with pytest.raises(qml.DeviceError, match=msg):
             _ = circuit(H, k=10)
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_multi_measurement_allowed(self):
         """Test that no error is raised when classical shadows is returned
         with other measurement processes"""

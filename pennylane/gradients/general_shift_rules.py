@@ -20,6 +20,7 @@ import numbers
 import warnings
 
 import numpy as np
+from scipy.linalg import solve as linalg_solve
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
@@ -77,7 +78,7 @@ def process_shifts(rule, tol=1e-10, batch_duplicates=True):
             rule = np.hstack([np.stack(coeffs)[:, np.newaxis], unique_mods])
 
     # sort columns according to abs(shift)
-    return rule[np.argsort(np.abs(rule[:, -1]))]
+    return rule[np.argsort(np.abs(rule[:, -1]), kind="stable")]
 
 
 @functools.lru_cache(maxsize=None)
@@ -178,7 +179,7 @@ def _get_shift_rule(frequencies, shifts=None):
                 "may give unstable results for the parameter shift rules."
             )
 
-        coeffs = -2 * np.linalg.solve(sin_matrix.T, frequencies)
+        coeffs = -2 * linalg_solve(sin_matrix.T, frequencies)
 
     coeffs = np.concatenate((coeffs, -coeffs))
     shifts = np.concatenate((shifts, -shifts))  # pylint: disable=invalid-unary-operand-type

@@ -390,6 +390,7 @@ class SpecialUnitary(Operation):
         the number of qubits to which we can apply a ``SpecialUnitary`` gate in practice.
 
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -421,6 +422,9 @@ class SpecialUnitary(Operation):
             )
 
         super().__init__(theta, wires=wires, id=id)
+
+    def _flatten(self):
+        return self.data, (self.wires, ())
 
     @staticmethod
     def compute_matrix(theta, num_wires):
@@ -718,7 +722,7 @@ class TmpPauliRot(PauliRot):
             This operation is used in a differentiation pipeline of :class:`~.SpecialUnitary`
             and most likely should not be created manually by users.
         """
-        if qml.math.isclose(theta, theta * 0):
+        if qml.math.isclose(theta, theta * 0) and not qml.math.requires_grad(theta):
             return []
         return [PauliRot(theta, pauli_word, wires)]
 

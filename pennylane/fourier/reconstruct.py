@@ -448,7 +448,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     reconstructions:
 
     >>> tracker.totals
-    {'executions': 15}
+    {'batches': 15, 'simulations': 15, 'executions': 15}
 
     The example above used that we already knew the frequency spectra of the
     QNode of interest. However, this is in general not the case and we may need

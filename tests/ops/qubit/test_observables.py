@@ -214,11 +214,8 @@ class TestHermitian:
         """Tests that an error is raised if the input to Hermitian is ragged."""
         ham = [[1, 0], [0, 1, 2]]
 
-        with pytest.warns(
-            np.VisibleDeprecationWarning, match="Creating an ndarray from ragged nested sequences"
-        ):
-            with pytest.raises(ValueError, match="must be a square matrix"):
-                qml.Hermitian(ham, wires=0)
+        with pytest.raises(ValueError, match="The requested array has an inhomogeneous shape"):
+            qml.Hermitian(ham, wires=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigegendecomposition_single_wire(self, observable, eigvals, eigvecs, tol):
@@ -473,6 +470,8 @@ class TestProjector:
         second_projector = qml.Projector(basis_state, wires)
         assert qml.equal(second_projector, basis_state_projector)
 
+        qml.ops.functions.assert_valid(basis_state_projector)
+
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when input is a state vector."""
         state_vector = np.array([1, 1, 1, 1]) / 2
@@ -482,6 +481,8 @@ class TestProjector:
 
         second_projector = qml.Projector(state_vector, wires)
         assert qml.equal(second_projector, state_vector_projector)
+
+        qml.ops.functions.assert_valid(state_vector_projector)
 
     def test_pow_zero(self):
         """Assert that the projector raised to zero is an empty list."""
@@ -635,6 +636,19 @@ class TestBasisStateProjector:
         res_static = BasisStateProjector.compute_matrix(basis_state)
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "dev", (qml.device("default.qubit"), qml.device("default.qubit.legacy", wires=1))
+    )
+    def test_integration_batched_state(self, dev):
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Projector([0], wires=0))
+
+        x = np.array([0.4, 0.8, 1.2])
+        res = circuit(x)
+        assert qml.math.allclose(res, np.cos(x / 2) ** 2)
 
 
 class TestStateVectorProjector:

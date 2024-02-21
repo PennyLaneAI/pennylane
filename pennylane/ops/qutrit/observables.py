@@ -197,6 +197,7 @@ class GellMann(Observable):
     1: ──TShift─────────╰TAdd─┤
 
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters the operator depends on"""

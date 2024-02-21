@@ -19,6 +19,9 @@ from importlib import import_module
 import autoray as ar
 import numpy as np
 import semantic_version
+from scipy.linalg import block_diag as _scipy_block_diag
+
+from .utils import get_deep_interface
 
 
 def _i(name):
@@ -35,8 +38,22 @@ def _i(name):
 
 # ------------------------------- Builtins -------------------------------- #
 
-ar.register_function("builtins", "ndim", lambda x: np.ndim(np.array(x)))
-ar.register_function("builtins", "shape", lambda x: np.array(x).shape)
+
+def _builtins_ndim(x):
+    interface = get_deep_interface(x)
+    x = ar.numpy.asarray(x, like=interface)
+    return ar.ndim(x)
+
+
+def _builtins_shape(x):
+    interface = get_deep_interface(x)
+    x = ar.numpy.asarray(x, like=interface)
+    return ar.shape(x)
+
+
+ar.register_function("builtins", "ndim", _builtins_ndim)
+ar.register_function("builtins", "shape", _builtins_shape)
+
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
@@ -50,7 +67,6 @@ ar.register_function("scipy", "ndim", np.ndim)
 
 
 # -------------------------------- NumPy --------------------------------- #
-from scipy.linalg import block_diag as _scipy_block_diag
 
 ar.register_function("numpy", "flatten", lambda x: x.flatten())
 ar.register_function("numpy", "coerce", lambda x: x)
@@ -219,6 +235,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arcsin"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arccos"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "mod"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
@@ -247,9 +264,14 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
-ar.register_function(
-    "tensorflow", "asarray", lambda x, **kwargs: _i("tf").convert_to_tensor(x, **kwargs)
-)
+
+def _tf_convert_to_tensor(x, **kwargs):
+    if isinstance(x, _i("tf").Tensor) and "dtype" in kwargs:
+        return _i("tf").cast(x, **kwargs)
+    return _i("tf").convert_to_tensor(x, **kwargs)
+
+
+ar.register_function("tensorflow", "asarray", _tf_convert_to_tensor)
 ar.register_function(
     "tensorflow",
     "hstack",
@@ -258,6 +280,22 @@ ar.register_function(
 
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
+ar.register_function(
+    "tensorflow",
+    "full",
+    lambda shape, fill_value, **kwargs: _i("tf").fill(
+        shape if isinstance(shape, (tuple, list)) else (shape), fill_value, **kwargs
+    ),
+)
+ar.register_function(
+    "tensorflow",
+    "isnan",
+    lambda tensor, **kwargs: _i("tf").math.is_nan(_i("tf").math.real(tensor), **kwargs)
+    | _i("tf").math.is_nan(_i("tf").math.imag(tensor), **kwargs),
+)
+ar.register_function(
+    "tensorflow", "any", lambda tensor, **kwargs: _i("tf").reduce_any(tensor, **kwargs)
+)
 ar.register_function(
     "tensorflow",
     "sqrt",
@@ -303,13 +341,7 @@ ar.register_function("tensorflow", "round", _round_tf)
 
 
 def _ndim_tf(tensor):
-    try:
-        ndim = _i("tf").experimental.numpy.ndim(tensor)
-        if ndim is None:
-            return len(tensor.shape)
-        return ndim
-    except AttributeError:
-        return len(tensor.shape)
+    return len(tensor.shape)
 
 
 ar.register_function("tensorflow", "ndim", _ndim_tf)
@@ -454,15 +486,7 @@ ar.register_function(
     "vander",
     lambda *args, **kwargs: _i("tf").experimental.numpy.vander(*args, **kwargs),
 )
-
-
-def _pad_tf(tensor, paddings, mode="CONSTANT", constant_values=0, name=None):
-    if ar.ndim(paddings) == 1:
-        paddings = (paddings,)
-    return _i("tf").pad(tensor, paddings, mode=mode, constant_values=constant_values, name=name)
-
-
-ar.register_function("tensorflow", "pad", _pad_tf)
+ar.register_function("tensorflow", "size", lambda x: _i("tf").size(x))
 
 
 # -------------------------------- Torch --------------------------------- #
@@ -509,6 +533,7 @@ ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsquee
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 ar.register_function("torch", "equal", lambda x, y: _i("torch").eq(x, y))
+ar.register_function("torch", "mod", lambda x, y: x % y)
 
 ar.register_function(
     "torch",
@@ -559,6 +584,8 @@ def _take_torch(tensor, indices, axis=None, **_):
 
         return torch.index_select(tensor, dim=axis, index=indices)
 
+    if axis == -1:
+        return tensor[..., indices]
     fancy_indices = [slice(None)] * axis + [indices]
     return tensor[fancy_indices]
 

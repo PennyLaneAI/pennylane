@@ -66,7 +66,7 @@ def _process_jacs(jac, qhess):
     return tuple(hess) if len(hess) > 1 else hess[0]
 
 
-class hessian_transform(qml.batch_transform):
+class hessian_transform(qml.batch_transform):  # pragma: no cover
     """Decorator for defining quantum Hessian transforms.
 
     Quantum Hessian transforms are a specific case of :class:`~.batch_transform`s,
@@ -162,7 +162,7 @@ class hessian_transform(qml.batch_transform):
         old_interface = qnode.interface
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-        cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
+        cjac_fn = qml.gradients.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
 
         def hessian_wrapper(*args, **kwargs):  # pylint: disable=too-many-branches
             if argnums is not None:
@@ -196,7 +196,7 @@ class hessian_transform(qml.batch_transform):
             kwargs.pop("shots", False)
 
             if argnums is None and qml.math.get_interface(*args) == "jax":
-                cjac = qml.transforms.classical_jacobian(
+                cjac = qml.gradients.classical_jacobian(
                     qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
                 )(*args, **kwargs)
             else:

@@ -27,6 +27,17 @@ Expectation Value Functions
     ~estimate_error
     ~estimate_shots
 
+Circuit specifications
+----------------------
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~specs
+
+
 Quantum Phase Estimation Resources
 ----------------------------------
 
@@ -37,6 +48,17 @@ Quantum Phase Estimation Resources
 
     ~FirstQuantization
     ~DoubleFactorization
+
+Error Tracking
+--------------
+
+.. currentmodule:: pennylane.resource
+
+.. autosummary::
+    :toctree: api
+
+    ~AlgorithmicError
+    ~ErrorOperation
 
 Resource Classes
 ----------------
@@ -100,3 +122,5 @@ from .resource import Resources, ResourcesOperation
 from .first_quantization import FirstQuantization
 from .second_quantization import DoubleFactorization
 from .measurement import estimate_error, estimate_shots
+from .specs import specs
+from .error import AlgorithmicError, ErrorOperation

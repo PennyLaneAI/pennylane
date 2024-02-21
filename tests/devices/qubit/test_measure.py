@@ -24,6 +24,7 @@ from pennylane.devices.qubit.measure import (
     measure,
     state_diagonalizing_gates,
     csr_dot_products,
+    full_dot_products,
     get_measurement_function,
     sum_of_terms_method,
 )
@@ -61,6 +62,11 @@ class TestMeasurementDispatch:
         """Test that the state_diagonalizing gates are used when there's an observable has diagonalizing
         gates and allows the measurement to be efficiently computed with them."""
         assert get_measurement_function(m, state=1) is state_diagonalizing_gates
+
+    def test_hermitian_full_dot_product(self):
+        """Test that the expectation value of a hermitian uses the full dot products method."""
+        mp = qml.expval(qml.Hermitian(np.eye(2), wires=0))
+        assert get_measurement_function(mp, state=1) is full_dot_products
 
     def test_hamiltonian_sparse_method(self):
         """Check that the sparse expectation value method is used if the state is numpy."""
@@ -122,10 +128,14 @@ class TestMeasurements:
                 ),
                 0.5 * np.sin(0.123) + 2 * np.cos(0.123),
             ),
+            (
+                qml.Hermitian(-0.5 * qml.PauliY(0).matrix() + 2 * qml.PauliZ(0).matrix(), wires=0),
+                0.5 * np.sin(0.123) + 2 * np.cos(0.123),
+            ),
         ],
     )
     def test_hamiltonian_expval(self, obs, expected):
-        """Test that the `measure_hamiltonian_expval` function works correctly."""
+        """Test that measurements of hamiltonian/ sparse hamiltonian/ hermitians work correctly."""
         # Create RX(0.123)|0> state
         state = np.array([np.cos(0.123 / 2), -1j * np.sin(0.123 / 2)])
         res = measure(qml.expval(obs), state)
@@ -163,6 +173,22 @@ class TestMeasurements:
 
         res = simulate(qs)
         assert np.allclose(res, expected)
+
+    @pytest.mark.jax
+    def test_op_math_observable_jit_compatible(self):
+        import jax
+
+        dev = qml.device("default.qubit", wires=4)
+
+        O1 = qml.X(0)
+        O2 = qml.X(0)
+
+        @qml.qnode(dev, interface="jax")
+        def qnode(t1, t2):
+            return qml.expval(qml.prod(O1, qml.RX(t1, 0), O2, qml.RX(t2, 0)))
+
+        t1, t2 = 0.5, 1.0
+        assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
 
 
 class TestBroadcasting:
@@ -236,6 +262,125 @@ class TestBroadcasting:
         assert np.allclose(res, expected)
 
 
+class TestNaNMeasurements:
+    """Tests for state vectors containing nan values."""
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.expval(
+                qml.Hamiltonian(
+                    [1.0, 2.0, 3.0, 4.0],
+                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
+                )
+            ),
+            qml.expval(
+                qml.dot(
+                    [1.0, 2.0, 3.0, 4.0],
+                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
+                )
+            ),
+            qml.var(qml.PauliZ(0)),
+            qml.var(
+                qml.dot(
+                    [1.0, 2.0, 3.0, 4.0],
+                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
+                )
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    def test_nan_float_result(self, mp, interface):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((2, 2), np.NaN, like=interface)
+        res = measure(mp, state, is_state_batched=False)
+
+        assert qml.math.ndim(res) == 0
+        assert qml.math.isnan(res)
+        assert qml.math.get_interface(res) == interface
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.expval(
+                qml.Hamiltonian(
+                    [1.0, 2.0, 3.0, 4.0],
+                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
+                )
+            ),
+            qml.expval(
+                qml.dot(
+                    [1.0, 2.0, 3.0, 4.0],
+                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
+                )
+            ),
+            qml.var(qml.PauliZ(0)),
+            qml.var(
+                qml.dot(
+                    [1.0, 2.0, 3.0, 4.0],
+                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
+                )
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_nan_float_result_jax(self, mp, use_jit):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((2, 2), np.NaN, like="jax")
+        if use_jit:
+            import jax
+
+            res = jax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
+        else:
+            res = measure(mp, state, is_state_batched=False)
+
+        assert qml.math.ndim(res) == 0
+
+        assert qml.math.isnan(res)
+        assert qml.math.get_interface(res) == "jax"
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "mp", [qml.probs(wires=0), qml.probs(op=qml.PauliZ(0)), qml.probs(wires=[0, 1])]
+    )
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    def test_nan_probs(self, mp, interface):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((2, 2), np.NaN, like=interface)
+        res = measure(mp, state, is_state_batched=False)
+
+        assert qml.math.shape(res) == (2 ** len(mp.wires),)
+        assert qml.math.all(qml.math.isnan(res))
+        assert qml.math.get_interface(res) == interface
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "mp", [qml.probs(wires=0), qml.probs(op=qml.PauliZ(0)), qml.probs(wires=[0, 1])]
+    )
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_nan_probs_jax(self, mp, use_jit):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((2, 2), np.NaN, like="jax")
+        if use_jit:
+            import jax
+
+            res = jax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
+        else:
+            res = measure(mp, state, is_state_batched=False)
+
+        assert qml.math.shape(res) == (2 ** len(mp.wires),)
+        assert qml.math.all(qml.math.isnan(res))
+        assert qml.math.get_interface(res) == "jax"
+
+
 class TestSumOfTermsDifferentiability:
     @staticmethod
     def f(scale, coeffs, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
@@ -289,9 +434,8 @@ class TestSumOfTermsDifferentiability:
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)  # otherwise output is too noisy
+        jax.config.update("jax_enable_x64", True)
 
         x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
         coeffs = (5.2, 6.7)

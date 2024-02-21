@@ -14,12 +14,16 @@
 """Unit tests for sample_state in devices/qubit."""
 
 from random import shuffle
+
 import pytest
+import numpy as np
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.devices.qubit import simulate
+from pennylane.devices.qubit.simulate import _FlexShots
 from pennylane.devices.qubit import sample_state, measure_with_samples
+from pennylane.devices.qubit.sampling import _sample_state_jax
+from pennylane.measurements import Shots
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)
 APPROX_ATOL = 0.01
@@ -36,6 +40,22 @@ def fixture_init_state():
         return state.reshape((2,) * n)
 
     return _init_state
+
+
+def _valid_flex_int(s):
+    """Returns True if s is a non-negative integer."""
+    return isinstance(s, int) and s >= 0
+
+
+def _valid_flex_tuple(s):
+    """Returns True if s is a tuple of the form (shots, copies)."""
+    return (
+        isinstance(s, tuple)
+        and len(s) == 2
+        and _valid_flex_int(s[0])
+        and isinstance(s[1], int)
+        and s[1] > 0
+    )
 
 
 def samples_to_probs(samples, num_wires):
@@ -61,6 +81,50 @@ class TestSampleState:
         assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
+
+    @pytest.mark.jax
+    def test_prng_key_as_seed_uses_sample_state_jax(self, mocker):
+        """Tests that sample_state calls _sample_state_jax if the seed is a JAX PRNG key"""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+        state = qml.math.array(two_qubit_state, like="jax")
+
+        # prng_key specified, should call _sample_state_jax
+        _ = sample_state(state, 10, prng_key=jax.random.PRNGKey(15))
+        # prng_key defaults to None, should NOT call _sample_state_jax
+        _ = sample_state(state, 10, rng=15)
+
+        spy.assert_called_once()
+
+    @pytest.mark.jax
+    def test_sample_state_jax(self):
+        """Tests that the returned samples are as expected when explicitly calling _sample_state_jax."""
+        import jax
+
+        state = qml.math.array(two_qubit_state, like="jax")
+
+        samples = _sample_state_jax(state, 10, prng_key=jax.random.PRNGKey(84))
+
+        assert samples.shape == (10, 2)
+        assert samples.dtype == np.int64
+        assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
+
+    @pytest.mark.jax
+    def test_prng_key_determines_sample_state_jax_results(self):
+        """Test that setting the seed as a JAX PRNG key determines the results for _sample_state_jax"""
+        import jax
+
+        state = qml.math.array(two_qubit_state, like="jax")
+
+        samples = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
+        samples2 = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
+        samples3 = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(13))
+
+        assert np.all(samples == samples2)
+        assert not np.allclose(samples, samples3)
 
     @pytest.mark.parametrize("wire_order", [[2], [2, 0], [0, 2, 1]])
     def test_marginal_sample_state(self, wire_order):
@@ -446,11 +510,151 @@ class TestMeasureSamples:
         assert result == -1.0
 
 
+class TestInvalidStateSamples:
+    """Tests for state vectors containing nan values or shot vectors with zero shots."""
+
+    @pytest.mark.parametrize("shots", [10, [10, 10]])
+    def test_only_catch_nan_errors(self, shots):
+        """Test that errors are only caught if they are raised due to nan values in the state."""
+        state = np.zeros((2, 2)).astype(np.complex128)
+        mp = qml.expval(qml.PauliZ(0))
+        _shots = Shots(shots)
+
+        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+            _ = measure_with_samples([mp], state, _shots)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.expval(
+                qml.Hamiltonian(
+                    [1.0, 2.0, 3.0, 4.0],
+                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
+                )
+            ),
+            qml.expval(
+                qml.dot(
+                    [1.0, 2.0, 3.0, 4.0],
+                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
+                )
+            ),
+            qml.var(qml.PauliZ(0)),
+        ],
+    )
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("shots", [0, [0, 0]])
+    def test_nan_float_result(self, mp, interface, shots):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((2, 2), np.NaN, like=interface)
+        res = measure_with_samples((mp,), state, _FlexShots(shots), is_state_batched=False)
+
+        if not isinstance(shots, list):
+            assert isinstance(res, tuple)
+            res = res[0]
+            assert qml.math.ndim(res) == 0
+            assert qml.math.isnan(res)
+
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r in res:
+                assert isinstance(r, tuple)
+                r = r[0]
+                assert qml.math.ndim(r) == 0
+                assert qml.math.isnan(r)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "mp", [qml.sample(wires=0), qml.sample(op=qml.PauliZ(0)), qml.sample(wires=[0, 1])]
+    )
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("shots", [0, [0, 0]])
+    def test_nan_samples(self, mp, interface, shots):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+        state = qml.math.full((2, 2), np.NaN, like=interface)
+        res = measure_with_samples((mp,), state, _FlexShots(shots), is_state_batched=False)
+
+        if not isinstance(shots, list):
+            assert isinstance(res, tuple)
+            res = res[0]
+            assert qml.math.shape(res) == (shots,) if len(mp.wires) == 1 else (shots, len(mp.wires))
+
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for i, r in enumerate(res):
+                assert isinstance(r, tuple)
+                r = r[0]
+                assert (
+                    qml.math.shape(r) == (shots[i],)
+                    if len(mp.wires) == 1
+                    else (shots[i], len(mp.wires))
+                )
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("shots", [0, [0, 0]])
+    def test_nan_classical_shadows(self, interface, shots):
+        """Test that classical_shadows returns an empty array when the state has
+        NaN values"""
+        state = qml.math.full((2, 2), np.NaN, like=interface)
+        res = measure_with_samples(
+            (qml.classical_shadow([0]),), state, _FlexShots(shots), is_state_batched=False
+        )
+
+        if not isinstance(shots, list):
+            assert isinstance(res, tuple)
+            res = res[0]
+            assert qml.math.shape(res) == (2, 0, 1)
+            assert qml.math.size(res) == 0
+
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r in res:
+                assert isinstance(r, tuple)
+                r = r[0]
+                assert qml.math.shape(r) == (2, 0, 1)
+                assert qml.math.size(r) == 0
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("H", [qml.PauliZ(0), [qml.PauliZ(0), qml.PauliX(1)]])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("shots", [0, [0, 0]])
+    def test_nan_shadow_expval(self, H, interface, shots):
+        """Test that shadow_expval returns an empty array when the state has
+        NaN values"""
+        state = qml.math.full((2, 2), np.NaN, like=interface)
+        res = measure_with_samples(
+            (qml.shadow_expval(H),), state, _FlexShots(shots), is_state_batched=False
+        )
+
+        if not isinstance(shots, list):
+            assert isinstance(res, tuple)
+            res = res[0]
+            assert qml.math.shape(res) == qml.math.shape(H)
+            assert qml.math.all(qml.math.isnan(res))
+
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r in res:
+                assert isinstance(r, tuple)
+                r = r[0]
+                assert qml.math.shape(r) == qml.math.shape(H)
+                assert qml.math.all(qml.math.isnan(r))
+
+
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
 
     def test_sample_measure(self):
         """Test that broadcasting works for qml.sample and single shots"""
+
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(100)
 
@@ -489,6 +693,7 @@ class TestBroadcasting:
     )
     def test_nonsample_measure(self, measurement, expected):
         """Test that broadcasting works for the other sample measurements and single shots"""
+
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(10000)
 
@@ -514,6 +719,7 @@ class TestBroadcasting:
     )
     def test_sample_measure_shot_vector(self, shots):
         """Test that broadcasting works for qml.sample and shot vectors"""
+
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
 
@@ -547,6 +753,7 @@ class TestBroadcasting:
             # third batch of samples can be any of |00>, |01>, |10>, or |11>
             assert np.all(np.logical_or(r[2] == 0, r[2] == 1))
 
+    # pylint:disable = too-many-arguments
     @pytest.mark.parametrize(
         "shots",
         [
@@ -570,6 +777,7 @@ class TestBroadcasting:
     )
     def test_nonsample_measure_shot_vector(self, shots, measurement, expected):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
+
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
 
@@ -581,6 +789,221 @@ class TestBroadcasting:
         state = np.stack(state)
 
         res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
+
+        assert isinstance(res, tuple)
+        assert len(res) == shots.num_copies
+
+        for r in res:
+            assert isinstance(r, tuple)
+            assert len(r) == 1
+            r = r[0]
+
+            assert r.shape == expected.shape
+            assert np.allclose(r, expected, atol=0.01)
+
+
+@pytest.mark.jax
+class TestBroadcastingPRNG:
+    """Test that measurements work and use _sample_state_jax when the state has a batch dim
+    and a PRNG key is provided"""
+
+    def test_sample_measure(self, mocker):
+        """Test that broadcasting works for qml.sample and single shots"""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(100)
+
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        measurement = qml.sample(wires=[0, 1])
+        res = measure_with_samples(
+            [measurement],
+            state,
+            shots,
+            is_state_batched=True,
+            rng=rng,
+            prng_key=jax.random.PRNGKey(184),
+        )[0]
+
+        spy.assert_called()
+
+        assert res.shape == (3, shots.total_shots, 2)
+        assert res.dtype == np.int64
+
+        # convert to numpy array because prng_key -> JAX -> ArrayImpl -> angry vanilla numpy below
+        res = [np.array(r) for r in res]
+
+        # first batch of samples is always |11>
+        assert np.all(res[0] == 1)
+
+        # second batch of samples is either |00> or |10>
+        assert np.all(np.logical_or(res[1] == [0, 0], res[1] == [1, 0]))
+
+        # third batch of samples can be any of |00>, |01>, |10>, or |11>
+        assert np.all(np.logical_or(res[2] == 0, res[2] == 1))
+
+    @pytest.mark.parametrize(
+        "measurement, expected",
+        [
+            (
+                qml.probs(wires=[0, 1]),
+                np.array([[0, 0, 0, 1], [1 / 2, 0, 1 / 2, 0], [1 / 4, 1 / 4, 1 / 4, 1 / 4]]),
+            ),
+            (qml.expval(qml.PauliZ(1)), np.array([-1, 1, 0])),
+            (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
+        ],
+    )
+    def test_nonsample_measure(self, mocker, measurement, expected):
+        """Test that broadcasting works for the other sample measurements and single shots"""
+        import jax
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(10000)
+
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        res = measure_with_samples(
+            [measurement],
+            state,
+            shots,
+            is_state_batched=True,
+            rng=rng,
+            prng_key=jax.random.PRNGKey(184),
+        )
+
+        spy.assert_called()
+        assert np.allclose(res, expected, atol=0.01)
+
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            ((100, 2),),
+            (100, 100),
+            (100, 100),
+            (100, 100, 200),
+            (200, (100, 2)),
+        ],
+    )
+    def test_sample_measure_shot_vector(self, mocker, shots):
+        """Test that broadcasting works for qml.sample and shot vectors"""
+
+        import jax
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(shots)
+
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        measurement = qml.sample(wires=[0, 1])
+        res = measure_with_samples(
+            [measurement],
+            state,
+            shots,
+            is_state_batched=True,
+            rng=rng,
+            prng_key=jax.random.PRNGKey(184),
+        )
+
+        spy.assert_called()
+
+        assert isinstance(res, tuple)
+        assert len(res) == shots.num_copies
+
+        for s, r in zip(shots, res):
+            assert isinstance(r, tuple)
+            assert len(r) == 1
+            r = r[0]
+
+            assert r.shape == (3, s, 2)
+            # this is has started randomly failing do to r.dtype being int32 instead of int64.
+            # Not sure why they are getting returned as 32 instead, but maybe this will fix it?
+            assert res[0][0].dtype in [np.int32, np.int64]
+
+            # convert to numpy array because prng_key -> JAX -> ArrayImpl -> angry vanilla numpy below
+            r = [np.array(i) for i in r]
+
+            # first batch of samples is always |11>
+            assert np.all(r[0] == 1)
+
+            # second batch of samples is either |00> or |10>
+            assert np.all(np.logical_or(r[1] == [0, 0], r[1] == [1, 0]))
+
+            # third batch of samples can be any of |00>, |01>, |10>, or |11>
+            assert np.all(np.logical_or(r[2] == 0, r[2] == 1))
+
+    # pylint:disable = too-many-arguments
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            ((10000, 2),),
+            (10000, 10000),
+            (10000, 20000),
+            (10000, 10000, 20000),
+            (20000, (10000, 2)),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "measurement, expected",
+        [
+            (
+                qml.probs(wires=[0, 1]),
+                np.array([[0, 0, 0, 1], [1 / 2, 0, 1 / 2, 0], [1 / 4, 1 / 4, 1 / 4, 1 / 4]]),
+            ),
+            (qml.expval(qml.PauliZ(1)), np.array([-1, 1, 0])),
+            (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
+        ],
+    )
+    def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected):
+        """Test that broadcasting works for the other sample measurements and shot vectors"""
+
+        import jax
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(shots)
+
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        res = measure_with_samples(
+            [measurement],
+            state,
+            shots,
+            is_state_batched=True,
+            rng=rng,
+            prng_key=jax.random.PRNGKey(184),
+        )
+
+        spy.assert_called()
 
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies

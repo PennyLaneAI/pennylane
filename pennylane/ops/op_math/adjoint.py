@@ -21,6 +21,8 @@ from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
+from pennylane.compiler import compiler
+from pennylane.compiler.compiler import CompileError
 
 from .symbolicop import SymbolicOp
 
@@ -28,6 +30,7 @@ from .symbolicop import SymbolicOp
 # pylint: disable=no-member
 def adjoint(fn, lazy=True):
     """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
+    :func:`~.qjit` compatible.
 
     Args:
         fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
@@ -36,6 +39,7 @@ def adjoint(fn, lazy=True):
     Keyword Args:
         lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a ``Adjoint`` class
             and handled later. If ``lazy=False``, operation-specific adjoint decompositions are first attempted.
+            Setting ``lazy=False`` is not supported when used with :func:`~.qjit`.
 
     Returns:
         (function or :class:`~.operation.Operator`): If an Operator is provided, returns an Operator that is the adjoint.
@@ -44,7 +48,17 @@ def adjoint(fn, lazy=True):
 
     .. note::
 
-        The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and observables may have different adjoint and inverse operators.
+        The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and
+        observables may have different adjoint and inverse operators.
+
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        See :func:`catalyst.adjoint` for more details.
+
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
 
     .. note::
 
@@ -101,6 +115,34 @@ def adjoint(fn, lazy=True):
     >>> print(qml.draw(circuit)(0.2))
     0: ──RX(0.20)──SX──SX†──RX(0.20)†─┤  <Z>
 
+    **Example with compiler**
+
+    The adjoint used in a compilation context can be applied on control flow.
+
+    .. code-block:: python
+
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def workflow(theta, n, wires):
+            def func():
+                @qml.for_loop(0, n, 1)
+                def loop_fn(i):
+                    qml.RX(theta, wires=wires)
+
+                loop_fn()
+            qml.adjoint(func)()
+            return qml.probs()
+
+    >>> workflow(jnp.pi/2, 3, 0)
+    array([0.5, 0.5])
+
+    .. warning::
+
+        The Catalyst adjoint function does not support performing the adjoint
+        of quantum functions that contain mid-circuit measurements.
+
     .. details::
         :title: Lazy Evaluation
 
@@ -117,6 +159,12 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
+    if active_jit := compiler.active_compiler():
+        if lazy is False:
+            raise CompileError("Setting lazy=False is not supported with qjit.")
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if not callable(fn):
@@ -239,10 +287,6 @@ class Adjoint(SymbolicOp):
 
     def __repr__(self):
         return f"Adjoint({self.base})"
-
-    # pylint: disable=protected-access
-    def _check_batching(self, params):
-        self.base._check_batching(params)
 
     @property
     def ndim_params(self):

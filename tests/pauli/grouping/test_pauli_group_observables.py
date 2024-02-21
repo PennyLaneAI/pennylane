@@ -18,6 +18,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane.operation import Tensor
 from pennylane.pauli import are_identical_pauli_words
 from pennylane.pauli.grouping.group_observables import PauliGroupingStrategy, group_observables
 from pennylane import numpy as pnp
@@ -131,6 +132,13 @@ class TestPauliGroupingStrategy:
 observables_list = [
     [PauliX(0) @ PauliZ(1), PauliY(2) @ PauliZ(1), PauliX(1), PauliY(0), PauliZ(1) @ PauliZ(2)],
     [
+        qml.s_prod(1.5, qml.prod(PauliX(0), PauliZ(1))),
+        qml.prod(PauliY(2), PauliZ(1)),
+        PauliX(1),
+        PauliY(0),
+        qml.prod(PauliZ(1), PauliZ(2)),
+    ],
+    [
         Identity(1) @ Identity(0),
         PauliX(1) @ PauliY(0) @ Identity(2),
         PauliZ(2),
@@ -139,10 +147,24 @@ observables_list = [
         PauliX(0) @ PauliX(1),
     ],
     [
+        qml.prod(Identity(1), Identity(0)),
+        qml.prod(PauliX(1), PauliY(0), Identity(2)),
+        PauliZ(2),
+        qml.s_prod(-2.0, Identity(0)),
+        qml.prod(PauliZ(2), Identity(0)),
+        qml.prod(PauliX(0), PauliX(1)),
+    ],
+    [
         PauliX("a") @ Identity("b"),
         PauliX("a") @ PauliZ("b"),
         PauliX("b") @ PauliZ("a"),
         PauliZ("a") @ PauliZ("b") @ PauliZ("c"),
+    ],
+    [
+        qml.prod(PauliX("a"), Identity("b")),
+        qml.s_prod(0.5, qml.prod(PauliX("a"), PauliZ("b"))),
+        qml.s_prod(0.5, qml.prod(PauliX("b"), PauliZ("a"))),
+        qml.prod(PauliZ("a"), PauliZ("b") @ PauliZ("c")),
     ],
     [PauliX([(0, 0)]), PauliZ([(0, 0)])],
 ]
@@ -152,6 +174,21 @@ qwc_sols = [
         [PauliX(wires=[1]), PauliY(wires=[0])],
         [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
         [PauliZ(wires=[1]) @ PauliZ(wires=[2])],
+    ],
+    [
+        [PauliX(wires=[1]), PauliY(wires=[0])],
+        [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
+        [PauliZ(wires=[1]) @ PauliZ(wires=[2])],
+    ],
+    [
+        [
+            Identity(wires=[1]),
+            PauliX(wires=[1]) @ PauliY(wires=[0]),
+            PauliZ(wires=[2]),
+            Identity(wires=[1]),
+            PauliZ(wires=[2]),
+        ],
+        [PauliX(wires=[1]) @ PauliX(wires=[0])],
     ],
     [
         [
@@ -168,10 +205,20 @@ qwc_sols = [
         [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
         [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
     ],
+    [
+        [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
+        [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
+        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
+    ],
     [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
 ]
 
 commuting_sols = [
+    [
+        [PauliX(wires=[1]), PauliY(wires=[0])],
+        [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
+        [PauliZ(wires=[1]) @ PauliZ(wires=[2])],
+    ],
     [
         [PauliX(wires=[1]), PauliY(wires=[0])],
         [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
@@ -186,6 +233,21 @@ commuting_sols = [
             PauliZ(wires=[2]),
         ],
         [PauliX(wires=[1]) @ PauliX(wires=[0])],
+    ],
+    [
+        [
+            Identity(wires=[1]),
+            PauliX(wires=[1]) @ PauliY(wires=[0]),
+            PauliZ(wires=[2]),
+            Identity(wires=[1]),
+            PauliZ(wires=[2]),
+        ],
+        [PauliX(wires=[1]) @ PauliX(wires=[0])],
+    ],
+    [
+        [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
+        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
+        [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
     [
         [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
@@ -205,11 +267,33 @@ anticommuting_sols = [
         ],
     ],
     [
+        [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliY(wires=[0])],
+        [
+            PauliZ(wires=[1]) @ PauliY(wires=[2]),
+            PauliX(wires=[1]),
+            PauliZ(wires=[1]) @ PauliZ(wires=[2]),
+        ],
+    ],
+    [
         [Identity(wires=[1])],
         [PauliZ(wires=[2])],
         [Identity(wires=[1])],
         [PauliZ(wires=[2])],
         [PauliX(wires=[1]) @ PauliY(wires=[0]), PauliX(wires=[1]) @ PauliX(wires=[0])],
+    ],
+    [
+        [Identity(wires=[1])],
+        [PauliZ(wires=[2])],
+        [Identity(wires=[1])],
+        [PauliZ(wires=[2])],
+        [PauliX(wires=[1]) @ PauliY(wires=[0]), PauliX(wires=[1]) @ PauliX(wires=[0])],
+    ],
+    [
+        [
+            PauliX(wires=["a"]) @ PauliZ(wires=["b"]),
+            PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"]),
+        ],
+        [PauliX(wires=["a"]), PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
     [
         [
@@ -308,6 +392,33 @@ class TestGroupObservables:
         coeffs = [1.0, 2.0]
         _, grouped_coeffs = group_observables(obs, coeffs)
         assert isinstance(grouped_coeffs[0], list)
+
+    def test_return_new_opmath(self):
+        """Test that using new opmath causes grouped observables to have Prods instead of
+        Tensors"""
+        old_observables = [
+            Tensor(PauliX(0), PauliZ(1)),
+            Tensor(PauliY(2), PauliZ(1)),
+            Tensor(PauliZ(1), PauliZ(2)),
+        ]
+        new_observables = [
+            qml.prod(PauliX(0), PauliZ(1)),
+            qml.prod(PauliY(2), PauliZ(1)),
+            qml.s_prod(1.5, qml.prod(PauliZ(1), PauliZ(2))),
+        ]
+        mixed_observables = [
+            Tensor(PauliX(0), PauliZ(1)),
+            qml.prod(PauliY(2), PauliZ(1)),
+            qml.s_prod(1.5, qml.prod(PauliZ(1), PauliZ(2))),
+        ]
+
+        old_groups = group_observables(old_observables)
+        new_groups = group_observables(new_observables)
+        mixed_groups = group_observables(mixed_observables)
+
+        assert all(isinstance(o, Tensor) for g in old_groups for o in g)
+        assert all(isinstance(o, qml.ops.Prod) for g in new_groups for o in g)
+        assert all(isinstance(o, qml.ops.Prod) for g in mixed_groups for o in g)
 
 
 class TestDifferentiable:

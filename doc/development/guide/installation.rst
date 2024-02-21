@@ -18,12 +18,10 @@ be installed alongside PennyLane:
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 * `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ >= 2.7
-* `autoray <https://github.com/jcmgray/autoray>`__
+* `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.1
 
 The following Python packages are optional:
 
-* `dask["parallel"] <https://dask.org/>`_, for parallel QNodeCollection execution
-* `tensornetwork <https://github.com/google/TensorNetwork>`_ >= 0.3, for the ``default.tensor`` plugin
 * `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qml.qchem`` module
 
 If you currently do not have Python 3 installed, we recommend

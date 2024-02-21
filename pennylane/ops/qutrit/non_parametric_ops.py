@@ -20,6 +20,7 @@ import numpy as np
 
 from pennylane.operation import Operation, AdjointUndefinedError
 from pennylane.wires import Wires
+from .parametric_ops import validate_subspace
 
 OMEGA = np.exp(2 * np.pi * 1j / 3)
 ZETA = OMEGA ** (1 / 3)  # ZETA will be used as a phase for later non-parametric operations
@@ -46,6 +47,7 @@ class TShift(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -127,6 +129,7 @@ class TClock(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -216,6 +219,7 @@ class TAdd(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -322,6 +326,7 @@ class TSWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -458,6 +463,7 @@ class THadamard(Operation):
            [ 0. -0.57735027j,  0.5+0.28867513j, -0.5+0.28867513j],
            [ 0. -0.57735027j, -0.5+0.28867513j,  0.5+0.28867513j]])
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -466,7 +472,7 @@ class THadamard(Operation):
         return base_label or "TH"
 
     def __init__(self, wires, subspace=None):
-        self._subspace = Operation.validate_subspace(subspace) if subspace is not None else None
+        self._subspace = validate_subspace(subspace) if subspace is not None else None
         self._hyperparameters = {
             "subspace": self.subspace,
         }

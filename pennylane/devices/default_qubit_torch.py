@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a PyTorch implementation of the :class:`~.DefaultQubit`
+"""This module contains a PyTorch implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
 import warnings
@@ -31,14 +31,14 @@ except ImportError as e:  # pragma: no cover
 
 import numpy as np
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-from . import DefaultQubit
+from . import DefaultQubitLegacy
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-class DefaultQubitTorch(DefaultQubit):
-    """Simulator plugin based on ``"default.qubit"``, written using PyTorch.
+class DefaultQubitTorch(DefaultQubitLegacy):
+    """Simulator plugin based on ``"default.qubit.legacy"``, written using PyTorch.
 
     **Short name:** ``default.qubit.torch``
 
@@ -218,9 +218,7 @@ class DefaultQubitTorch(DefaultQubit):
                 ),
             )
 
-        ops_and_obs = circuit.operations + circuit.observables
-
-        par_torch_device = self._get_parameter_torch_device(ops_and_obs)
+        par_torch_device = self._get_parameter_torch_device(circuit.operations)
 
         if not self._torch_device_specified:
             self._torch_device = par_torch_device

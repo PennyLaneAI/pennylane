@@ -21,6 +21,14 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+def test_standard_validity():
+    """Run standard checks with the assert_valid function."""
+
+    weights = np.array([[0.1, -2.1, 1.4]])
+    op = qml.RandomLayers(weights, wires=(0, 1))
+    qml.ops.functions.assert_valid(op)
+
+
 def test_hyperparameters():
     """Test that the hyperparmaeters are set as expected."""
     weights = np.array([[0.1, -2.1, 1.4]])
@@ -136,17 +144,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.RandomLayers(weights, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.RandomLayers(weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:

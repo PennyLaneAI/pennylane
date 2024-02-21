@@ -24,6 +24,14 @@ class ApproxTimeEvolution(Operation):
     r"""Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
     of Pauli gates.
 
+    .. note::
+
+        We recommend using :class:`~.TrotterProduct` as the more general operation for approximate
+        matrix exponentiation. One can recover the behaviour of :class:`~.ApproxTimeEvolution` by
+        taking the adjoint:
+
+        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
     .. math:: U(t) \ = \ e^{-i H t},
@@ -53,6 +61,11 @@ class ApproxTimeEvolution(Operation):
     this decomposition is exact for any value of :math:`n` when each term of the Hamiltonian
     commutes with every other term.
 
+    .. warning::
+
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
+        due to the order in which those observables are stored.
+
     .. note::
 
        This template uses the :class:`~.PauliRot` operation in order to implement
@@ -69,6 +82,8 @@ class ApproxTimeEvolution(Operation):
            :class:`~.PauliZ`, and :class:`~.Identity`).
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
+
+    .. seealso:: :class:`~.TrotterProduct`.
 
     .. details::
         :title: Usage Details

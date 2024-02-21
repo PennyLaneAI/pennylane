@@ -114,7 +114,7 @@ class TestMitigateWithZNE:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
 
         n_wires = 2
         n_layers = 2
@@ -178,6 +178,30 @@ class TestMitigateWithZNE:
 
         assert args[0][0] == scale_factors
         assert np.allclose(args[0][1], np.mean(np.reshape(random_results, (3, 2)), axis=1))
+
+    def test_braodcasting(self):
+        """Tests that mitigate_with_zne supports batch arguments"""
+
+        batch_size = 2
+
+        @qml.qnode(dev_noisy)
+        def original_qnode(inputs):
+            qml.AmplitudeEmbedding(features=inputs, wires=range(2), normalize=True)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
+
+        expanded_qnode = qml.transforms.broadcast_expand(original_qnode)
+
+        mitigated_qnode_orig = qml.transforms.mitigate_with_zne(
+            original_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+        )
+        mitigated_qnode_expanded = qml.transforms.mitigate_with_zne(
+            expanded_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+        )
+        rng = np.random.default_rng(seed=18954959)
+        inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
+        result_orig = mitigated_qnode_orig(inputs)
+        result_expanded = mitigated_qnode_expanded(inputs)
+        assert qml.math.allclose(result_orig, result_expanded)
 
 
 @pytest.fixture
@@ -443,7 +467,7 @@ noise_gate = qml.PhaseDamping
 
 # Load devices
 dev_ideal = qml.device("default.mixed", wires=2)
-dev_noisy = qml.transforms.insert(noise_gate, 0.05)(dev_ideal)
+dev_noisy = qml.transforms.insert(dev_ideal, noise_gate, 0.05)
 
 out_ideal = np.sqrt(2) / 2 + np.sqrt(2)
 grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]

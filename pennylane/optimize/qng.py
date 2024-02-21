@@ -14,7 +14,7 @@
 """Quantum natural gradient optimizer"""
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 import pennylane as qml
 from pennylane.utils import _flatten, unflatten
@@ -178,11 +178,11 @@ class QNGOptimizer(GradientDescentOptimizer):
             prior to the step
         """
         # pylint: disable=arguments-differ
-        if not isinstance(qnode, (qml.QNode, qml.ExpvalCost)) and metric_tensor_fn is None:
+        if not isinstance(qnode, qml.QNode) and metric_tensor_fn is None:
             raise ValueError(
-                "The objective function must either be encoded as a single QNode or "
-                "an ExpvalCost object for the natural gradient to be automatically computed. "
-                "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
+                "The objective function must be encoded as a single QNode for the natural gradient "
+                "to be automatically computed. Otherwise, metric_tensor_fn must be explicitly "
+                "provided to the optimizer."
             )
 
         if recompute_tensor or self.metric_tensor is None:
@@ -200,7 +200,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             )
 
         g, forward = self.compute_grad(qnode, args, kwargs, grad_fn=grad_fn)
-        new_args = np.array(self.apply_grad(g, args), requires_grad=True)
+        new_args = pnp.array(self.apply_grad(g, args), requires_grad=True)
 
         if forward is None:
             forward = qnode(*args, **kwargs)
@@ -272,7 +272,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
-        grad_flat = np.array(list(_flatten(grad)))
-        x_flat = np.array(list(_flatten(args)))
-        x_new_flat = x_flat - self.stepsize * np.linalg.solve(self.metric_tensor, grad_flat)
+        grad_flat = pnp.array(list(_flatten(grad)))
+        x_flat = pnp.array(list(_flatten(args)))
+        x_new_flat = x_flat - self.stepsize * pnp.linalg.solve(self.metric_tensor, grad_flat)
         return unflatten(x_new_flat, args)

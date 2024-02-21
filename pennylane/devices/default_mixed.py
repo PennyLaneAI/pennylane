@@ -23,6 +23,7 @@ import functools
 import itertools
 from collections import defaultdict
 from string import ascii_letters as ABC
+import numpy as np
 
 import pennylane as qml
 import pennylane.math as qnp
@@ -34,7 +35,6 @@ from pennylane import (
     StatePrep,
     Snapshot,
 )
-from pennylane import numpy as np
 from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP, PurityMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
@@ -52,12 +52,12 @@ class DefaultMixed(QubitDevice):
     .. warning::
 
         The API of ``DefaultMixed`` will be updated soon to follow a new device interface described
-        in :class:`pennylane.devices.experimental.Device`.
+        in :class:`pennylane.devices.Device`.
 
         This change will not alter device behaviour for most workflows, but may have implications for
         plugin developers and users who directly interact with device methods. Please consult
-        :class:`pennylane.devices.experimental.Device` and the implementation in
-        :class:`pennylane.devices.experimental.DefaultQubit2` for more information on what the new
+        :class:`pennylane.devices.Device` and the implementation in
+        :class:`pennylane.devices.DefaultQubit` for more information on what the new
         interface will look like and be prepared to make updates in a coming release. If you have any
         feedback on these changes, please create an
         `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
@@ -537,7 +537,7 @@ class DefaultMixed(QubitDevice):
         if dm_dim != state.shape[0]:
             raise ValueError("Density matrix must be of length (2**wires, 2**wires)")
 
-        if not qnp.allclose(
+        if not qml.math.is_abstract(state) and not qnp.allclose(
             qnp.trace(qnp.reshape(state, (state_dim, state_dim))), 1.0, atol=tolerance
         ):
             raise ValueError("Trace of density matrix is not equal one.")
@@ -652,7 +652,7 @@ class DefaultMixed(QubitDevice):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
+            circuit (QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported

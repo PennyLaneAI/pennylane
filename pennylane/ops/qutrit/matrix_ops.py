@@ -185,6 +185,7 @@ class ControlledQutritUnitary(QutritUnitary):
 
     >>> qml.ControlledQutritUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='012')
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 

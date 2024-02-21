@@ -510,7 +510,7 @@ class TestPauliSentence:
     @pytest.mark.parametrize("op, ps", operator_ps)
     def test_operator_private_ps(self, op, ps):
         """Test that a correct pauli sentence is computed when passing an arithmetic operator and not
-        relying on the saved op._pauli_rep attribute."""
+        relying on the saved op.pauli_rep attribute."""
         assert qml.pauli.conversion._pauli_sentence(op) == ps  # pylint: disable=protected-access
 
     error_ps = (
@@ -527,3 +527,25 @@ class TestPauliSentence:
             ValueError, match="Op must be a linear combination of Pauli operators only, got:"
         ):
             pauli_sentence(op)
+
+    words = (
+        PauliWord({0: "X"}),
+        PauliWord({0: "X", 1: "Y"}),
+        PauliWord({"a": "X", 0: "Y"}),
+    )
+
+    @pytest.mark.parametrize("pw", words)
+    def test_trivial_pauli_word(self, pw):
+        """Test that trivially pauli_sentence(pw) returns a PauliSentence with the pw and coeff 1"""
+        res = pauli_sentence(pw)
+        assert res == PauliSentence({pw: 1.0})
+
+    @pytest.mark.parametrize("pw1", words)
+    @pytest.mark.parametrize("pw2", words)
+    def test_trivial_pauli_sentence(self, pw1, pw2):
+        """Test that trivially pauli_sentence(ps) returns the pauli sentence"""
+        ps1 = PauliSentence({pw1: 1.0})
+        ps2 = PauliSentence({pw2: 1.0})
+        ps = 0.5 * ps1 + (-0.5) * ps2
+        res = pauli_sentence(ps)
+        assert res == ps

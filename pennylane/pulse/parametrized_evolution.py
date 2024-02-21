@@ -452,6 +452,11 @@ class ParametrizedEvolution(Operation):
         # subtract an additional 1 because the full time evolution is not being returned.
         self._batch_size = self.t.shape[0]
 
+    def map_wires(self, wire_map):
+        mapped_op = super().map_wires(wire_map)
+        mapped_op.H = self.H.map_wires(wire_map)
+        return mapped_op
+
     @property
     def hash(self):
         """int: Integer hash that uniquely represents the operator."""
@@ -465,6 +470,35 @@ class ParametrizedEvolution(Operation):
                 self.H,
                 str(self.odeint_kwargs.values()),
             )
+        )
+
+    def _flatten(self):
+        data = self.data
+        odeint_kwargs_tuples = tuple((key, value) for key, value in self.odeint_kwargs.items())
+        t = self.t if self.t is None else tuple(self.t)
+        metadata = (
+            t,
+            self.H,
+            self.hyperparameters["return_intermediate"],
+            self.hyperparameters["complementary"],
+            self.dense,
+            odeint_kwargs_tuples,
+        )
+
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        t, H, return_intermediate, complementary, dense, odeint_kwargs = metadata
+
+        return cls(
+            H,
+            None if len(data) == 0 else data,
+            t,
+            return_intermediate=return_intermediate,
+            complementary=complementary,
+            dense=dense,
+            **dict(odeint_kwargs),
         )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method

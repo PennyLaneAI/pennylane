@@ -82,7 +82,7 @@ def _pw_prefactor_ham(observable: Hamiltonian):
 @_pauli_word_prefactor.register(Prod)
 @_pauli_word_prefactor.register(SProd)
 def _pw_prefactor_prod_sprod(observable: Union[Prod, SProd]):
-    ps = observable._pauli_rep  # pylint:disable=protected-access
+    ps = observable.pauli_rep
     if ps is not None and len(ps) == 1:
         return list(ps.values())[0]
 

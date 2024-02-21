@@ -15,10 +15,29 @@
 Tests for the Select template.
 """
 # pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
+import copy
 import pytest
 import numpy as np
 from pennylane import numpy as pnp
 import pennylane as qml
+
+
+def test_standard_checks():
+    """Run standard validity tests."""
+    ops = [qml.PauliX(0), qml.PauliY(0)]
+    control = [1]
+
+    op = qml.Select(ops, control)
+    qml.ops.functions.assert_valid(op)
+
+
+def test_repr():
+    """Test the repr method."""
+    ops = [qml.PauliX(0), qml.PauliY(0)]
+    control = [1]
+
+    op = qml.Select(ops, control)
+    assert repr(op) == "Select(ops=(X(0), Y(0)), control=<Wires = [1]>)"
 
 
 class TestSelect:
@@ -205,6 +224,14 @@ class TestSelect:
         assert op.control == new_op.control
         assert op.target_wires == new_op.target_wires
         assert op is not new_op
+
+    def test_copy(self):
+        """Test that the copy function of Select works correctly."""
+        ops = [qml.PauliX(wires=2), qml.RX(0.2, wires=3), qml.PauliY(wires=2), qml.SWAP([2, 3])]
+        op = qml.Select(ops, control=[0, 1])
+        op_copy = copy.copy(op)
+
+        assert qml.equal(op, op_copy)
 
 
 class TestErrorMessages:

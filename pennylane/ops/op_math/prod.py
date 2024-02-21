@@ -25,7 +25,7 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -94,6 +94,7 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
     """
+    ops = tuple(convert_to_opmath(op) for op in ops)
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
             return ops[0]
@@ -106,6 +107,10 @@ def prod(*ops, id=None, lazy=True):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
+            if len(qs.operations) == 1:
+                if qml.QueuingManager.recording():
+                    qml.apply(qs[0])
+                return qs[0]
             return prod(*qs.operations[::-1], id=id, lazy=lazy)
 
         return wrapper
@@ -214,9 +219,6 @@ class Prod(CompositeOp):
     _op_symbol = "@"
     _math_op = math.prod
 
-    def terms(self):  # is this method necessary for this class?
-        return [1.0], [self]
-
     @property
     def is_hermitian(self):
         """Check if the product operator is hermitian.
@@ -308,8 +310,8 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+        if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)
@@ -353,12 +355,8 @@ class Prod(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
-        if all(
-            operand_pauli_reps := [
-                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
-            ]
-        ):
-            return reduce(lambda a, b: a * b, operand_pauli_reps)
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+            return reduce(lambda a, b: a @ b, operand_pauli_reps)
         return None
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
@@ -377,8 +375,13 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
+        r"""
+        Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
+        :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator
+        or pure product of single PL operators.
+        """
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 
@@ -424,6 +427,50 @@ class Prod(CompositeOp):
             op_list[j + 1] = key_op
 
         return op_list
+
+    def terms(self):
+        r"""Representation of the operator as a linear combination of other operators.
+
+        .. math:: O = \sum_i c_i O_i
+
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
+
+        ** Example **
+
+        >>> qml.operation.enable_new_opmath()
+        >>> op = X(0) @ (0.5 * X(1) + X(2))
+        >>> op.terms()
+        ([0.5, 1.0],
+         [X(1) @ X(0),
+          X(2) @ X(0)])
+
+        """
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            ops = [pauli.operation() for pauli in pr.keys()]
+            return list(pr.values()), ops
+
+        global_phase, factors = self._simplify_factors(factors=self.operands)
+
+        factors = list(itertools.product(*factors))
+
+        factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
+
+        # harvest coeffs and ops
+        coeffs = []
+        ops = []
+        for factor in factors:
+            if isinstance(factor, SProd):
+                coeffs.append(global_phase * factor.scalar)
+                ops.append(factor.base)
+            else:
+                coeffs.append(global_phase)
+                ops.append(factor)
+        return coeffs, ops
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:

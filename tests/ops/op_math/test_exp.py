@@ -99,6 +99,12 @@ class TestInitialization:
         op = constructor(DummyOp(1), 2.312)
         assert op.has_diagonalizing_gates is value
 
+    def test_base_is_not_operator_error(self, constructor):
+        """Test that Exp raises an error if a base is provided that is not an Operator"""
+
+        with pytest.raises(TypeError, match="base is expected to be of type Operator"):
+            constructor(2, qml.PauliX(0))
+
 
 class TestProperties:
     """Test of the properties of the Exp class."""
@@ -160,10 +166,11 @@ class TestProperties:
     def test_different_batch_sizes_raises_error(self):
         """Test that using different batch sizes for base and scalar raises an error."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Exp(base, np.array([0.1, 1.2, 2.3, 3.4]))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = Exp(base, np.array([0.1, 1.2, 2.3, 3.4]))
+            _ = op.batch_size
 
 
 class TestMatrix:
@@ -451,7 +458,8 @@ class TestDecomposition:
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
-    def test_generator_decomposition(self, op_name):
+    @pytest.mark.parametrize("str_wires", (True, False))
+    def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
         op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
@@ -474,6 +482,9 @@ class TestDecomposition:
             if op_class.num_wires in {AnyWires, AllWires}
             else list(range(op_class.num_wires))
         )
+        if str_wires:
+            alphabet = ("a", "b", "c", "d", "e", "f", "g")
+            wires = [alphabet[w] for w in wires]
 
         # PauliRot and PCPhase each have an extra required arg
         if op_class is qml.PauliRot:
@@ -642,14 +653,14 @@ class TestMiscMethods:
         t = qml.PauliX(0) @ qml.PauliX(1)
         isingxx = Exp(t, 0.25j)
 
-        assert repr(isingxx) == "Exp(0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
+        assert repr(isingxx) == "Exp(0.25j X(0) @ X(1))"
 
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qml.S(0) @ qml.PauliX(0)
-        op = qml.ops.Exp(base, 3)
+        op = qml.ops.Exp(base, 3)  # pylint:disable=no-member
 
-        assert repr(op) == "Exp(3 S(wires=[0]) @ PauliX(wires=[0]))"
+        assert repr(op) == "Exp(3 S(wires=[0]) @ X(0))"
 
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are the same as the base diagonalizing gates."""
@@ -797,7 +808,7 @@ class TestIntegration:
         res = circuit(phi)
         assert qml.math.allclose(res, torch.cos(phi))
 
-        res.backward()
+        res.backward()  # pylint:disable=no-member
         assert qml.math.allclose(phi.grad, -torch.sin(phi))
 
     @pytest.mark.autograd
@@ -840,7 +851,7 @@ class TestIntegration:
     def test_autograd_measurement(self):
         """Test exp in a measurement with gradient and autograd."""
 
-        x = qml.numpy.array(2)
+        x = qml.numpy.array(2.0)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
@@ -872,7 +883,7 @@ class TestIntegration:
         expected = 0.5 * (torch.exp(x) + torch.exp(-x))
         assert qml.math.allclose(res, expected)
 
-        res.backward()
+        res.backward()  # pylint:disable=no-member
         expected_grad = 0.5 * (torch.exp(x) - torch.exp(-x))
         assert qml.math.allclose(x.grad, expected_grad)
 
@@ -901,9 +912,10 @@ class TestIntegration:
     @pytest.mark.tf
     def test_tf_measurement(self):
         """Test Exp in a measurement with gradient and tensorflow."""
+        # pylint:disable=invalid-unary-operand-type
         import tensorflow as tf
 
-        x = tf.Variable(2.0)
+        x = tf.Variable(2.0, dtype=tf.float64)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
@@ -1011,7 +1023,7 @@ class TestDifferentiation:
         op2 = Evolution(base_op, 1)
 
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            op1.parameter_frequencies()
+            _ = op1.parameter_frequencies
 
         assert op2.parameter_frequencies == [(4.0,)]
 

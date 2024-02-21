@@ -29,10 +29,11 @@ def _preprocess(args, depth):
     """
 
     for arg in args:
-        # TODO: handle ragged arrays without warnings
-        if shape(arg)[0] != depth:
+        # some TF objects don't have len
+        arg_depth = len(arg) if hasattr(arg, "__len__") else shape(arg)[0]
+        if arg_depth != depth:
             raise ValueError(
-                f"Each positional argument must have length matching 'depth'; expected {depth} got {len(arg)}"
+                f"Each positional argument must have length matching 'depth'; expected {depth} got {arg_depth}"
             )
 
 

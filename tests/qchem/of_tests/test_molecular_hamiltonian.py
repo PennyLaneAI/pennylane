@@ -321,8 +321,18 @@ def test_custom_wiremap_hamiltonian_pyscf(
 )
 def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir, op_arithmetic):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+
+    wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
+
     if op_arithmetic:
         enable_new_opmath()
+
+    hamiltonian_ref, _ = qchem.molecular_hamiltonian(
+        symbols=symbols,
+        coordinates=geometry,
+        args=args,
+        outpath=tmpdir.strpath,
+    )
 
     hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
@@ -332,7 +342,9 @@ def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir
         outpath=tmpdir.strpath,
     )
 
-    assert list(hamiltonian.wires) == list(wiremap)
+    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
+
+    assert wiremap_calc == wiremap_dict
 
     if op_arithmetic:
         disable_new_opmath()

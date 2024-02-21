@@ -109,7 +109,6 @@ class TestIntegration:
         res = circuit()
         assert np.allclose(res, expected, atol=1e-6)
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize("shots", [1000, [1, 10, 10, 1000]])
     def test_finite_shots_error(self, shots):
         """Test an error is raised when using shot vectors with mutual_info."""
@@ -121,7 +120,9 @@ class TestIntegration:
             qml.CRX(x, wires=[0, 1])
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
+        with pytest.raises(
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+        ):
             circuit(0.5)
 
     diff_methods = ["backprop", "finite-diff"]
@@ -491,7 +492,6 @@ class TestIntegration:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             circuit(params)
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", [np.array([0.0, 0.0]), np.array([0.3, 0.4])])

@@ -22,7 +22,7 @@ from pennylane.operation import Operation, AnyWires
 class QAOAEmbedding(Operation):
     r"""
     Encodes :math:`N` features into :math:`n>N` qubits, using a layered, trainable quantum
-    circuit that is inspired by the QAOA ansatz.
+    circuit that is inspired by the QAOA ansatz proposed by `Killoran et al. (2020) <https://arxiv.org/abs/2001.03622>`_.
 
     A single layer applies two circuits or "Hamiltonians": The first encodes the features, and the second is
     a variational ansatz inspired by a 1-dimensional Ising model. The feature-encoding circuit associates features with

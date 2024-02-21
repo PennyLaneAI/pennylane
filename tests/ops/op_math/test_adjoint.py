@@ -28,6 +28,13 @@ class PlainOperator(qml.operation.Operator):
     """just an operator."""
 
 
+@pytest.mark.parametrize("target", (qml.PauliZ(0), qml.Rot(1.2, 2.3, 3.4, wires=0)))
+def test_basic_validity(target):
+    """Run basic operator validity fucntions."""
+    op = qml.adjoint(target)
+    qml.ops.functions.assert_valid(op)
+
+
 class TestInheritanceMixins:
     """Test inheritance structure and mixin addition through dynamic __new__ method."""
 
@@ -91,7 +98,6 @@ class TestInheritanceMixins:
         assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
 
         # check the dir
-        assert "return_type" in dir(ob)
         assert "grad_recipe" not in dir(ob)
 
     @pytest.mark.parametrize(

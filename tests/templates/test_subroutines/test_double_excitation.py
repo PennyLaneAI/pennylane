@@ -20,6 +20,15 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    weight = 0.5
+    wires1 = qml.wires.Wires((0, 1))
+    wires2 = qml.wires.Wires((2, 3, 4))
+    op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
+    qml.ops.functions.assert_valid(op)
+
+
 # pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
@@ -242,17 +251,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.FermionicDoubleExcitation(0.4, wires1=[0, 2], wires2=[1, 4, 3])
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.FermionicDoubleExcitation(0.4, wires1=["z", "k"], wires2=["a", "s", "t"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
