@@ -1768,14 +1768,19 @@ class TestCustomMeasurement:
         """Test the execution of a custom measurement."""
         dev = device(2)
         _skip_test_for_braket(dev)
-        if dev.name == "default.qubit":
-            pytest.xfail("need to add support for this.")
 
         class MyMeasurement(MeasurementTransform):
             """Dummy measurement transform."""
 
             def process(self, tape, device):
                 return 1
+
+        if isinstance(dev, qml.devices.Device):
+            tape = qml.tape.QuantumScript([], [MyMeasurement()])
+            try:
+                dev.preprocess()[0]((tape,))
+            except Exception:  # pylint: disable=broad-exception-caught
+                pytest.xfail("Device does not support custom measurement transforms.")
 
         @qml.qnode(dev)
         def circuit():
