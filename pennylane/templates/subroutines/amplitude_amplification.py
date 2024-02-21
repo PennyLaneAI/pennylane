@@ -154,7 +154,7 @@ class AmplitudeAmplification(Operation):
 
     # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(*parameters, **hyperparameters):
+    def compute_decomposition(*_, **hyperparameters):
         U = hyperparameters["U"]
         O = hyperparameters["O"]
         iters = hyperparameters["iters"]
