@@ -210,7 +210,6 @@ class LinearCombination(Observable):
         # commuting observables, since recomputation is costly
         self._grouping_indices = None
 
-
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
 
         # create the operator using each coefficient as a separate parameter;
@@ -479,7 +478,7 @@ class LinearCombination(Observable):
             the observables it refers to are updated.
         """
 
-        if len(self.ops)==0:
+        if len(self.ops) == 0:
             return self
 
         # try using pauli_rep:
@@ -501,7 +500,7 @@ class LinearCombination(Observable):
 
         # Fallback on logic from Sum when there is no pauli_rep
         # LinearCombination is not intended for this scenario though
-        if len(self.ops)==1:
+        if len(self.ops) == 1:
             return LinearCombination(self.coeffs, self.ops, simplify=True)
         op_as_sum = qml.sum(*self.operands)
         op_as_sum = op_as_sum.simplify()

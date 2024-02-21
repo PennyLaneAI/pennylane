@@ -1006,7 +1006,7 @@ class PauliSentence(dict):
         for pw, coeff in items:
             if abs(coeff) <= tol:
                 del self[pw]
-        if len(self)==0:
+        if len(self) == 0:
             self = PauliSentence({})
 
     def map_wires(self, wire_map: dict) -> "PauliSentence":
