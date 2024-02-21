@@ -42,7 +42,7 @@ class Reflection(Operation):
 
     **Example**
 
-    This example shows how to apply the reflection :math:`-I` + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
+    This example shows how to apply the reflection :math:`-I + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
 
     .. code-block::
 
