@@ -624,7 +624,6 @@ class TestExecutingBatches:
         assert np.array_equal(g1, np.zeros(4))
 
 
-@pytest.mark.slow
 class TestSumOfTermsDifferentiability:
     """Basically a copy of the `qubit.simulate` test but using the device instead."""
 
