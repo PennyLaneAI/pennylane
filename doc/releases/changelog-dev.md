@@ -279,6 +279,10 @@
 * `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
   [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
 
+* Adds `qml.devices.modifiers.simulator_tracking` and `qml.devices.modifiers.single_tape_support`
+  to add basic default behavior onto a device class.
+  [(#5200)](https://github.com/PennyLaneAI/pennylane/pull/5200)
+
 * `qml.dot` now returns a `Sum` class even when all the coefficients match.
   [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
 
@@ -359,6 +363,9 @@
 
 * `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs` have been added for feature parity with `qml.Hamiltonian` but will be deprecated in the future.
   [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
+
+* Added a `partial_trace` function to `pennylane.math` for matrices.
+  [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
 
 * Users can specify a list of PennyLane `measurements` they would want as terminal measurements
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
@@ -614,6 +621,7 @@ This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
 Utkarsh Azad,
+Trenten Babcock,
 Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
