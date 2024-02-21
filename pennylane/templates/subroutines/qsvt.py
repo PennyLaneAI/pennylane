@@ -296,6 +296,8 @@ class QSVT(Operation):
 
     @data.setter
     def data(self, new_data):
+        # We need to check if ``new_data`` is empty because ``Operator.__init__()``  will attempt to
+        # assign the QSVT data to an empty tuple (since no positional arguments are provided).
         if new_data:
             for op in self._operators:
                 if op.num_params > 0:
