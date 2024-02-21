@@ -112,16 +112,11 @@ class Reflection(Operation):
             raise ValueError("The reflection wires must be a subset of the operation wires.")
 
         self._hyperparameters = {
-            "reflection_wires": reflection_wires,
             "base": U,
+            "reflection_wires": reflection_wires,
         }
 
         super().__init__(alpha, wires=wires, id=id)
-
-    # @property
-    # def has_matrix(self):
-    #     """True if the operation has a defined matrix representation."""
-    #     return False
 
     @property
     def U(self):
