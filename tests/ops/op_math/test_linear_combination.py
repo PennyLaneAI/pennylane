@@ -1048,7 +1048,6 @@ class TestLinearCombinationArithmeticTF:
 
         assert H.compare(H1 + H2)
 
-
     def test_LinearCombination_sub(self):
         """Tests that LinearCombinations are subtracted correctly"""
         coeffs = tf.Variable([1.0, -2.0])
@@ -1062,7 +1061,6 @@ class TestLinearCombinationArithmeticTF:
         H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 - H2)
-
 
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
@@ -1117,7 +1115,6 @@ class TestLinearCombinationArithmeticTorch:
         H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
-
 
     @pytest.mark.torch
     def test_LinearCombination_sub(self):
@@ -1191,7 +1188,6 @@ class TestLinearCombinationArithmeticAutograd:
         H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
-
 
     @pytest.mark.autograd
     def test_LinearCombination_sub(self):
@@ -1418,7 +1414,6 @@ class TestLinearCombinationArithmeticJax:
         H = qml.LinearCombination(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
-
 
     def test_LinearCombination_sub(self):
         """Tests that LinearCombinations are subtracted correctly"""
