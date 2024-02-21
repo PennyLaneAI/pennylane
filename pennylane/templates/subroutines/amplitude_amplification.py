@@ -25,6 +25,7 @@ import pennylane as qml
 def get_fixed_point_angles(iters):
     """
     Returns the angles needed for the fixed-point amplitude amplification algorithm.
+    This is extracted from the equation (11) of the paper `fixed-point quantum search <https://arxiv.org/pdf/1409.3305.pdf>`__.
     """
     gamma = 0.95
 
@@ -54,6 +55,7 @@ class AmplitudeAmplification(Operation):
         iters (int): the number of iterations of the amplitude amplification subroutine. Default is 1.
         fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm. Default is False.
         work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm. Default is None.
+        reflection_wires (Wires): the wires to reflect on. Default is the wires of U.
 
     Raises:
         ValueError: work_wire must be specified if fixed_point == True.
