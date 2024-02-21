@@ -6,7 +6,7 @@
 
 <h4>Easy to import circuits 💾</h4>
 
-* An error message provides clearer instructions for installing PennyLane-Qiskit if the `qml.from_qiskit` 
+* An error message provides clearer instructions for installing PennyLane-Qiskit if the `qml.from_qiskit`
   function fails because the Qiskit converter is missing.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
 
@@ -75,13 +75,13 @@
     [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
     [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
     [(#5027)](https://github.com/PennyLaneAI/pennylane/pull/5027)
-  
+
     ```pycon
     >>> op = X(0) + Y(0)
     >>> type(op.pauli_rep)
     pennylane.pauli.pauli_arithmetic.PauliSentence
     ```
-    
+
     The `PauliWord` and `PauliSentence` objects in the
     [pauli](https://docs.pennylane.ai/en/stable/code/qml_pauli.html#classes) module provide an
     efficient representation and can be combined using basic arithmetic like addition, products, and
@@ -99,7 +99,7 @@
     >>> 0.5 * (X(0) + Y(1))
     0.5 * (X(0) + Y(1))
     ```
-    
+
     Sums with many terms are broken up into multiple lines, but can still be copied back as valid
     code:
 
@@ -111,13 +111,13 @@
       + 0.8 * (X(2) @ X(3))
     )
     ```
-  
+
   * The `Sum` and `Prod` classes have been updated to reach feature parity with `Hamiltonian`
     and `Tensor`, respectively. This includes support for grouping via the `pauli` module:
     [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
     [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
     [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
-    
+
     ```pycon
     >>> obs = [X(0) @ Y(1), Z(0), Y(0) @ Z(1), Y(1)]
     >>> qml.pauli.group_observables(obs)
@@ -167,7 +167,7 @@
         [0, 0, 0, 1, 0],
         [1, 0, 0, 1, 1]])
   ```
-  
+
   The `default.clifford` device also supports the `PauliError`, `DepolarizingChannel`, `BitFlip` and
   `PhaseFlip`
   [noise channels](https://docs.pennylane.ai/en/latest/introduction/operations.html#noisy-channels)
@@ -244,12 +244,12 @@
 
   * You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g.
     `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
-  
+
   * You can now intuitively add together
     `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
     For example, `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
     sentence `ps1 = PauliSentence({pw1: 3.})`.
-  
+
   * You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each
     other. For example `ps1 - pw1 - 1`.
 
@@ -269,6 +269,9 @@
     2j * Z(0) @ X(1)
     + 2j * X(0) @ Z(1)
     ```
+
+* Controlled composite operations can be decomposed using ZYZ rotations.
+  [(#5242)](https://github.com/PennyLaneAI/pennylane/pull/5242)
 
 * Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and `SProd` operations
   convert `Hamiltonian` and `Tensor` operands to `Sum` and `Prod` types, respectively. This helps
@@ -361,11 +364,11 @@
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
   [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
-* Added new error tracking and propagation functionality. 
+* Added new error tracking and propagation functionality.
   [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
   [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
 
-* Replacing `map_batch_transform` in the source code with the method `_batch_transform` 
+* Replacing `map_batch_transform` in the source code with the method `_batch_transform`
   implemented in `TransformDispatcher`.
   [(#5212)](https://github.com/PennyLaneAI/pennylane/pull/5212)
 
@@ -381,15 +384,15 @@
   To allow for packages to register multiple compilers with PennyLane,
   the `entry_points` convention under the designated group name
   `pennylane.compilers` has been modified.
-  
+
   Previously, compilers would register `qjit` (JIT decorator),
   `ops` (compiler-specific operations), and `context` (for tracing and
   program capture).
-  
+
   Now, compilers must register `compiler_name.qjit`, `compiler_name.ops`,
   and `compiler_name.context`, where `compiler_name` is replaced
   by the name of the provided compiler.
-  
+
   For more information, please see the
   [documentation on adding compilers](https://docs.pennylane.ai/en/stable/code/qml_compiler.html#adding-a-compiler).
 
@@ -607,6 +610,7 @@
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
+Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
 Thomas Bromley,
