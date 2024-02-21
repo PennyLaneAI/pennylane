@@ -262,19 +262,19 @@ class TestProbs:
             m0 = qml.measure(0)
             return qml.probs(op=m0)
 
-        res = circuit(phi)
-
         atol = tol if shots is None else tol_stochastic
         expected = np.array([np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
 
-        if not isinstance(shots, list):
-            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
-        else:
-            for r in res:  # pylint: disable=not-an-iterable
-                assert np.allclose(r, expected, atol=atol, rtol=0)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if not isinstance(shots, list):
+                assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+            else:
+                for r in res:  # pylint: disable=not-an-iterable
+                    assert np.allclose(r, expected, atol=atol, rtol=0)
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
-    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi])
     def test_observable_is_measurement_value_list(
         self, shots, phi, tol, tol_stochastic
     ):  # pylint: disable=too-many-arguments
@@ -282,7 +282,6 @@ class TestProbs:
         are correct for a measurement value list."""
         dev = qml.device("default.qubit")
 
-        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)

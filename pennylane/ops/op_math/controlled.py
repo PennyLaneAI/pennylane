@@ -267,16 +267,6 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
             wires=control + op.wires, control_values=control_values, work_wires=work_wires
         )
 
-    # TODO: remove special handling of CNOT and Toffoli when they inherit from Controlled
-    if isinstance(op, qml.CNOT):
-        return qml.MultiControlledX(
-            wires=control + op.wires, control_values=control_values + [1], work_wires=work_wires
-        )
-    if isinstance(op, qml.Toffoli):
-        return qml.MultiControlledX(
-            wires=control + op.wires, control_values=control_values + [1, 1], work_wires=work_wires
-        )
-
     work_wires = work_wires or []
     return qml.MultiControlledX(
         wires=control + op.wires,
@@ -542,7 +532,7 @@ class Controlled(SymbolicOp):
     def label(self, decimals=None, base_label=None, cache=None):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
-    def matrix(self, wire_order=None):
+    def _compute_matrix_from_base(self):
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
 
@@ -562,17 +552,19 @@ class Controlled(SymbolicOp):
 
         shape = qml.math.shape(base_matrix)
         if len(shape) == 3:  # stack if batching
-            canonical_matrix = qml.math.stack(
+            return qml.math.stack(
                 [qml.math.block_diag([left_pad, _U, right_pad]) for _U in base_matrix]
             )
+
+        return qmlmath.block_diag([left_pad, base_matrix, right_pad])
+
+    def matrix(self, wire_order=None):
+        if self.compute_matrix is not Operator.compute_matrix:
+            canonical_matrix = self.compute_matrix(*self.data)
         else:
-            canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
+            canonical_matrix = self._compute_matrix_from_base()
 
-        if wire_order is None or self.wires == Wires(wire_order):
-            return qml.math.expand_matrix(
-                canonical_matrix, wires=self.active_wires, wire_order=self.wires
-            )
-
+        wire_order = wire_order or self.wires
         return qml.math.expand_matrix(
             canonical_matrix, wires=self.active_wires, wire_order=wire_order
         )
@@ -622,11 +614,11 @@ class Controlled(SymbolicOp):
 
     @property
     def has_decomposition(self):
+        if self.compute_decomposition is not Operator.compute_decomposition:
+            return True
         if not all(self.control_values):
             return True
         if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
-            return True
-        if isinstance(self.base, _get_pauli_x_based_ops()):
             return True
         if _is_single_qubit_special_unitary(self.base):
             return True
@@ -636,6 +628,10 @@ class Controlled(SymbolicOp):
         return False
 
     def decomposition(self):
+
+        if self.compute_decomposition is not Operator.compute_decomposition:
+            return self.compute_decomposition(*self.data, self.wires)
+
         if all(self.control_values):
             decomp = _decompose_no_control_values(self)
             if decomp is None:

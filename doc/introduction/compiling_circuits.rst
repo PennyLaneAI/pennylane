@@ -236,7 +236,7 @@ We define the custom decompositions like so, and pass them to a device:
 
 .. code-block:: python
 
-    def custom_cnot(wires):
+    def custom_cnot(wires, **_):
         return [
             qml.Hadamard(wires=wires[1]),
             qml.CZ(wires=[wires[0], wires[1]]),
@@ -247,6 +247,8 @@ We define the custom decompositions like so, and pass them to a device:
 
     decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
     decomp_qnode = qml.QNode(circuit, decomp_dev)
+
+Note that custom decomposition functions should accept keyword arguments even when it is not used.
 
 Now when we draw or run a QNode on this device, the gates will be expanded
 according to our specifications:

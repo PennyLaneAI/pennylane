@@ -133,6 +133,41 @@ class TestControlledDecompositionZYZ:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
+    def test_decomposition_circuit_gradient(self, control_wires, tol):
+        """Tests that the controlled decomposition of a single-qubit operation
+        behaves as expected in a quantum circuit"""
+        n_qubits = 4
+        np.random.seed(1337)
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+        init_state = np.random.rand(2**n_qubits) + 1.0j * np.random.rand(2**n_qubits)
+        init_state /= np.sqrt(np.dot(np.conj(init_state), init_state))
+        init_state = np.array(init_state)
+        target_wires = [0]
+        control_values = [True] * len(control_wires)
+
+        def circuit(p):
+            qml.StatePrep(init_state, wires=range(n_qubits))
+            qml.ctrl(
+                qml.Rot(*p, wires=target_wires),
+                control_wires,
+                control_values=control_values,
+            )
+            return qml.probs(wires=target_wires)
+
+        circ_ad = qml.QNode(circuit, dev, diff_method="adjoint")
+        circ_bp = qml.QNode(circuit, dev, diff_method="backprop")
+        par = qml.numpy.array([0.1234, 0.235, 0.5678])
+        jac_ad = qml.jacobian(circ_ad)(par)
+        jac_bp = qml.jacobian(circ_bp)(par)
+
+        # different methods must agree
+        assert jac_ad.size == 2 * 3
+        assert np.allclose(jac_ad.shape, [2, 3])
+        assert np.allclose(jac_ad.shape, jac_bp.shape)
+        assert np.allclose(jac_ad, jac_bp, atol=tol, rtol=0)
+
     @pytest.mark.parametrize("op", su2_ops)
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
     def test_decomposition_matrix(self, op, control_wires, tol):
