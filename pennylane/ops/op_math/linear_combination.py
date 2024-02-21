@@ -622,7 +622,7 @@ class LinearCombination(Observable):
         """
         pr1 = self.pauli_rep
         pr2 = other.pauli_rep
-        if pr1 and pr2:
+        if pr1 is not None and pr2 is not None:
             return pr1 == pr2
 
         if isinstance(other, (LinearCombination, Hamiltonian)):
@@ -724,41 +724,6 @@ class LinearCombination(Observable):
         r"""The subtraction operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
         if isinstance(H, (LinearCombination, Hamiltonian, Tensor, Observable)):
             return self + (-1 * H)
-        return NotImplemented
-
-    def __iadd__(self, H):
-        r"""The inplace addition operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
-        if isinstance(H, numbers.Number) and H == 0:
-            return self
-
-        if isinstance(H, (LinearCombination, Hamiltonian)):
-            self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
-            self._ops.extend(H.ops.copy())
-            res = self.simplify()
-            return res
-        if isinstance(H, (Tensor, Observable)):
-            self._coeffs = qml.math.concatenate(
-                [self._coeffs, qml.math.cast_like([1.0], self._coeffs)], axis=0
-            )
-            self._ops.append(H)
-            res = self.simplify()
-            return res
-
-        return NotImplemented
-
-    def __imul__(self, a):
-        r"""The inplace scalar multiplication operation between a scalar and a LinearCombination."""
-        if isinstance(a, (int, float)):
-            self._coeffs = qml.math.multiply(a, self._coeffs)
-            return self
-
-        return NotImplemented
-
-    def __isub__(self, H):
-        r"""The inplace subtraction operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
-        if isinstance(H, (LinearCombination, Hamiltonian, Tensor, Observable)):
-            self.__iadd__(H.__mul__(-1))
-            return self
         return NotImplemented
 
     def queue(self, context=qml.QueuingManager):

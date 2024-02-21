@@ -174,7 +174,7 @@ simplify_LinearCombinations = [
     ),
     (
         qml.LinearCombination([0], [qml.Identity(0)]),
-        qml.LinearCombination([0], [qml.Identity(0)]),
+        qml.LinearCombination([], []),
     ),
 ]
 
@@ -879,36 +879,6 @@ class TestLinearCombination:
         ):
             _ = h1 @ h1
 
-    @pytest.mark.parametrize(("H1", "H2", "H"), add_LinearCombinations)
-    def test_LinearCombination_iadd(self, H1, H2, H):
-        """Tests that LinearCombinations are added inline correctly"""
-        H1 += H2
-        assert H.compare(H1)
-        assert H.wires == H1.wires
-
-    @pytest.mark.parametrize(("H1", "H2"), iadd_zero_LinearCombinations)
-    def test_LinearCombination_iadd_zero(self, H1, H2):
-        """Tests in-place addition between LinearCombinations and zero"""
-        H1 += 0
-        assert H1.compare(H2)
-        H1 += 0.0
-        assert H1.compare(H2)
-        H1 += 0e1
-        assert H1.compare(H2)
-
-    @pytest.mark.parametrize(("coeff", "H", "res"), mul_LinearCombinations)
-    def test_LinearCombination_imul(self, coeff, H, res):
-        """Tests that scalars and LinearCombinations are multiplied inline correctly"""
-        H *= coeff
-        assert res.compare(H)
-
-    @pytest.mark.parametrize(("H1", "H2", "H"), sub_LinearCombinations)
-    def test_LinearCombination_isub(self, H1, H2, H):
-        """Tests that LinearCombinations are subtracted inline correctly"""
-        H1 -= H2
-        assert H.compare(H1)
-        assert H.wires == H1.wires
-
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""
         H = qml.LinearCombination([1], [Z(0)])
@@ -1032,7 +1002,7 @@ class TestLinearCombinationCoefficients:
         """Test that simplify works with different coefficient types."""
         H1 = qml.LinearCombination(coeffs, [X(0), Z(1)])
         H2 = qml.LinearCombination(coeffs, [X(0), qml.Identity(0) @ Z(1)])
-        H2.simplify()
+        H2 = H2.simplify()
         assert H1.compare(H2)
         assert H1.data == H2.data
 
@@ -1573,7 +1543,7 @@ class TestGrouping:
         H = qml.LinearCombination(coeffs, obs, grouping_type="qwc")
         assert H.grouping_indices is not None
 
-        H.simplify()
+        H = H.simplify()
         assert H.grouping_indices is None
 
     def test_grouping_does_not_alter_queue(self):
