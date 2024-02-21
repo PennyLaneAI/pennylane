@@ -354,7 +354,7 @@ class Sum(CompositeOp):
 
         This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
 
-        ..seealso:: :attr:`Sum.ops`, :class:`~Sum.pauli_rep`"""
+        .. seealso:: :attr:`~Sum.ops`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
             "Sum.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
@@ -369,7 +369,7 @@ class Sum(CompositeOp):
 
         This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
 
-        ..seealso:: :attr:`Sum.coeffs`, :class:`~Sum.pauli_rep`"""
+        .. seealso:: :attr:`~Sum.coeffs`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
             "Sum.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
