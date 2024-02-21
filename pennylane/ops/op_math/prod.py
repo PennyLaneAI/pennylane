@@ -440,7 +440,7 @@ class Prod(CompositeOp):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
 
-        ** Example **
+        **Example**
 
         >>> qml.operation.enable_new_opmath()
         >>> op = X(0) @ (0.5 * X(1) + X(2))
