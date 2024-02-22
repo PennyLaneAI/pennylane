@@ -28,6 +28,8 @@ from pennylane import numpy as pnp, LinearCombination, X, Y, Z
 from pennylane.wires import Wires
 from pennylane.pauli import PauliWord, PauliSentence
 
+qml.operation.enable_new_opmath()
+
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
     ([-0.05, 0.17], 1.7, "autograd"),

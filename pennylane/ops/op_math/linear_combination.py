@@ -204,7 +204,7 @@ class LinearCombination(Observable):
         # ideally only use parameters for coeffs, and hyperparameters for ops
         self._hyperparameters = {"ops": self._ops}
 
-        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in self._ops], sort=True)
 
         # attribute to store indices used to form groups of
         # commuting observables, since recomputation is costly
