@@ -237,6 +237,7 @@ class LinearCombination(Observable):
             new_rep = qml.pauli.PauliSentence()
             for operand_rep in operand_pauli_reps:
                 for pw, coeff in operand_rep.items():
+                    print(coeff)
                     new_rep[pw] += coeff
             return new_rep
         return None
@@ -486,10 +487,12 @@ class LinearCombination(Observable):
 
         # try using pauli_rep:
         if pr := self.pauli_rep:
+            print(pr.values())
             pr.simplify()
+            print(pr.values())
             wire_order = self.wires
             if len(pr) == 0:
-                return LinearCombination([], [], _pauli_rep=pr)
+                return LinearCombination([], [], _pauli_rep = pr)
 
             # collect coefficients and ops
             coeffs = []
@@ -500,13 +503,13 @@ class LinearCombination(Observable):
                 ops.append(pw_op)
                 coeffs.append(coeff)
 
-            res = LinearCombination(coeffs, ops, _pauli_rep=pr)
+            res = LinearCombination(coeffs, ops, _pauli_rep = pr)
             return res
 
-        # Fallback on logic from Sum when there is no pauli_rep
-        # LinearCombination is not intended for this scenario though
         if len(self.ops) == 1:
-            return LinearCombination(self.coeffs, [self.ops[0].simplify()])
+            return LinearCombination(self.coeffs, [self.ops[0].simplify()], _pauli_rep = pr)
+        
+        # Fallback on logic from Sum when there is no pauli_rep
         op_as_sum = qml.sum(*self.operands)
         op_as_sum = op_as_sum.simplify()
         return LinearCombination(*op_as_sum.terms())
