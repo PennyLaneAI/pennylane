@@ -531,7 +531,12 @@
 * A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions was added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
   [(#5137)](https://github.com/PennyLaneAI/pennylane/pull/5137)
 
-* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
+* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template.
+  [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
+
+* The docstring of `qml.sample` has been updated to advise the use of single-shot expectations
+  instead when differentiating a circuit.
+  [(#5237)](https://github.com/PennyLaneAI/pennylane/pull/5237)
 
 <h3>Bug fixes 🐛</h3>
 
