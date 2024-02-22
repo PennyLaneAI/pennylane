@@ -176,8 +176,8 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-class PauliX(Observable, Operation):
-    r"""PauliX(wires)
+class X(Observable, Operation):
+    r"""X(wires)
     The Pauli X operator
 
     .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
@@ -204,6 +204,7 @@ class PauliX(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
+        self.__class__.__name__ = "PauliX"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
@@ -217,6 +218,10 @@ class PauliX(Observable, Operation):
             return f"X('{wire}')"
         return f"X({wire})"
 
+    @property
+    def name(self):
+        return "PauliX"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -225,7 +230,7 @@ class PauliX(Observable, Operation):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.PauliX.matrix`
+        .. seealso:: :meth:`~.X.matrix`
 
 
         Returns:
@@ -233,7 +238,7 @@ class PauliX(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliX.compute_matrix())
+        >>> print(qml.X.compute_matrix())
         [[0 1]
          [1 0]]
         """
@@ -257,14 +262,14 @@ class PauliX(Observable, Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.PauliX.eigvals`
+        .. seealso:: :meth:`~.X.eigvals`
 
         Returns:
             array: eigenvalues
 
         **Example**
 
-        >>> print(qml.PauliX.compute_eigvals())
+        >>> print(qml.X.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -280,7 +285,7 @@ class PauliX(Observable, Operation):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.PauliX.diagonalizing_gates`.
+        .. seealso:: :meth:`~.X.diagonalizing_gates`.
 
         Args:
            wires (Iterable[Any], Wires): wires that the operator acts on
@@ -289,7 +294,7 @@ class PauliX(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliX.compute_diagonalizing_gates(wires=[0]))
+        >>> print(qml.X.compute_diagonalizing_gates(wires=[0]))
         [Hadamard(wires=[0])]
         """
         return [Hadamard(wires=wires)]
@@ -301,7 +306,7 @@ class PauliX(Observable, Operation):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-        .. seealso:: :meth:`~.PauliX.decomposition`.
+        .. seealso:: :meth:`~.X.decomposition`.
 
         Args:
             wires (Any, Wires): Wire that the operator acts on.
@@ -311,7 +316,7 @@ class PauliX(Observable, Operation):
 
         **Example:**
 
-        >>> print(qml.PauliX.compute_decomposition(0))
+        >>> print(qml.X.compute_decomposition(0))
         [PhaseShift(1.5707963267948966, wires=[0]),
         RX(3.141592653589793, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0])]
@@ -324,7 +329,7 @@ class PauliX(Observable, Operation):
         ]
 
     def adjoint(self):
-        return PauliX(wires=self.wires)
+        return X(wires=self.wires)
 
     def pow(self, z):
         z_mod2 = z % 2
@@ -340,11 +345,26 @@ class PauliX(Observable, Operation):
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
-X = PauliX
+PauliX = X
+r"""
+An alias of the Pauli X operator :class:`~X`.
+
+.. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
+
+.. seealso:: :class:`~X`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
 
 
-class PauliY(Observable, Operation):
-    r"""PauliY(wires)
+class Y(Observable, Operation):
+    r"""Y(wires)
     The Pauli Y operator
 
     .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
@@ -371,6 +391,7 @@ class PauliY(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
+        self.__class__.__name__ = "PauliY"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
@@ -384,6 +405,10 @@ class PauliY(Observable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
+    @property
+    def name(self):
+        return "PauliY"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -392,14 +417,14 @@ class PauliY(Observable, Operation):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.PauliY.matrix`
+        .. seealso:: :meth:`~.Y.matrix`
 
         Returns:
             ndarray: matrix
 
         **Example**
 
-        >>> print(qml.PauliY.compute_matrix())
+        >>> print(qml.Y.compute_matrix())
         [[ 0.+0.j -0.-1.j]
          [ 0.+1.j  0.+0.j]]
         """
@@ -423,14 +448,14 @@ class PauliY(Observable, Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.PauliY.eigvals`
+        .. seealso:: :meth:`~.Y.eigvals`
 
         Returns:
             array: eigenvalues
 
         **Example**
 
-        >>> print(qml.PauliY.compute_eigvals())
+        >>> print(qml.Y.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -446,7 +471,7 @@ class PauliY(Observable, Operation):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.PauliY.diagonalizing_gates`.
+        .. seealso:: :meth:`~.Y.diagonalizing_gates`.
 
         Args:
             wires (Iterable[Any], Wires): wires that the operator acts on
@@ -455,11 +480,11 @@ class PauliY(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliY.compute_diagonalizing_gates(wires=[0]))
-        [PauliZ(wires=[0]), S(wires=[0]), Hadamard(wires=[0])]
+        >>> print(qml.Y.compute_diagonalizing_gates(wires=[0]))
+        [Z(0), S(wires=[0]), Hadamard(wires=[0])]
         """
         return [
-            PauliZ(wires=wires),
+            Z(wires=wires),
             S(wires=wires),
             Hadamard(wires=wires),
         ]
@@ -470,7 +495,7 @@ class PauliY(Observable, Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        .. seealso:: :meth:`~.PauliY.decomposition`.
+        .. seealso:: :meth:`~.Y.decomposition`.
 
         Args:
             wires (Any, Wires): Single wire that the operator acts on.
@@ -480,7 +505,7 @@ class PauliY(Observable, Operation):
 
         **Example:**
 
-        >>> print(qml.PauliY.compute_decomposition(0))
+        >>> print(qml.Y.compute_decomposition(0))
         [PhaseShift(1.5707963267948966, wires=[0]),
         RY(3.141592653589793, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0])]
@@ -493,7 +518,7 @@ class PauliY(Observable, Operation):
         ]
 
     def adjoint(self):
-        return PauliY(wires=self.wires)
+        return Y(wires=self.wires)
 
     def pow(self, z):
         return super().pow(z % 2)
@@ -506,11 +531,26 @@ class PauliY(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
-Y = PauliY
+PauliY = Y
+r"""
+An alias of the Pauli Y operator :class:`~Y`.
+
+.. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
+
+.. seealso:: :class:`~Y`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
 
 
-class PauliZ(Observable, Operation):
-    r"""PauliZ(wires)
+class Z(Observable, Operation):
+    r"""Z(wires)
     The Pauli Z operator
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
@@ -535,6 +575,7 @@ class PauliZ(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
+        self.__class__.__name__ = "PauliZ"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
@@ -548,6 +589,10 @@ class PauliZ(Observable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
 
+    @property
+    def name(self):
+        return "PauliZ"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -556,14 +601,14 @@ class PauliZ(Observable, Operation):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.PauliZ.matrix`
+        .. seealso:: :meth:`~.Z.matrix`
 
         Returns:
             ndarray: matrix
 
         **Example**
 
-        >>> print(qml.PauliZ.compute_matrix())
+        >>> print(qml.Z.compute_matrix())
         [[ 1  0]
          [ 0 -1]]
         """
@@ -587,14 +632,14 @@ class PauliZ(Observable, Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.PauliZ.eigvals`
+        .. seealso:: :meth:`~.Z.eigvals`
 
         Returns:
             array: eigenvalues
 
         **Example**
 
-        >>> print(qml.PauliZ.compute_eigvals())
+        >>> print(qml.Z.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -610,7 +655,7 @@ class PauliZ(Observable, Operation):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.PauliZ.diagonalizing_gates`.
+        .. seealso:: :meth:`~.Z.diagonalizing_gates`.
 
         Args:
             wires (Iterable[Any] or Wires): wires that the operator acts on
@@ -620,7 +665,7 @@ class PauliZ(Observable, Operation):
 
         **Example**
 
-        >>> print(qml.PauliZ.compute_diagonalizing_gates(wires=[0]))
+        >>> print(qml.Z.compute_diagonalizing_gates(wires=[0]))
         []
         """
         return []
@@ -631,7 +676,7 @@ class PauliZ(Observable, Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        .. seealso:: :meth:`~.PauliZ.decomposition`.
+        .. seealso:: :meth:`~.Z.decomposition`.
 
         Args:
             wires (Any, Wires): Single wire that the operator acts on.
@@ -641,14 +686,14 @@ class PauliZ(Observable, Operation):
 
         **Example:**
 
-        >>> print(qml.PauliZ.compute_decomposition(0))
+        >>> print(qml.Z.compute_decomposition(0))
         [PhaseShift(3.141592653589793, wires=[0])]
 
         """
         return [qml.PhaseShift(np.pi, wires=wires)]
 
     def adjoint(self):
-        return PauliZ(wires=self.wires)
+        return Z(wires=self.wires)
 
     def pow(self, z):
         z_mod2 = z % 2
@@ -672,7 +717,22 @@ class PauliZ(Observable, Operation):
         return [np.pi, 0.0, 0.0]
 
 
-Z = PauliZ
+PauliZ = Z
+r"""
+An alias of the Pauli Z operator :class:`~Z`.
+
+.. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
+
+.. seealso:: :class:`~Z`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
 
 
 class S(Operation):
@@ -776,7 +836,7 @@ class S(Operation):
             0: lambda op: [],
             0.5: lambda op: [T(wires=op.wires)],
             1: lambda op: [copy(op)],
-            2: lambda op: [PauliZ(wires=op.wires)],
+            2: lambda op: [Z(wires=op.wires)],
         }
         return pow_map.get(z_mod4, lambda op: [qml.PhaseShift(np.pi * z_mod4 / 2, wires=op.wires)])(
             self
@@ -888,7 +948,7 @@ class T(Operation):
             0: lambda op: [],
             1: lambda op: [copy(op)],
             2: lambda op: [S(wires=op.wires)],
-            4: lambda op: [PauliZ(wires=op.wires)],
+            4: lambda op: [Z(wires=op.wires)],
         }
         return pow_map.get(z_mod8, lambda op: [qml.PhaseShift(np.pi * z_mod8 / 4, wires=op.wires)])(
             self
@@ -1004,7 +1064,7 @@ class SX(Operation):
     def pow(self, z):
         z_mod4 = z % 4
         if z_mod4 == 2:
-            return [PauliX(wires=self.wires)]
+            return [X(wires=self.wires)]
         return super().pow(z_mod4)
 
     def single_qubit_rot_angles(self):
@@ -1206,7 +1266,7 @@ class ECR(Operation):
            >>> print(qml.ECR.compute_decomposition((0,1)))
 
 
-        [PauliZ(wires=[0]),
+        [Z(0),
          CNOT(wires=[0, 1]),
          SX(wires=[1]),
          RX(1.5707963267948966, wires=[0]),
@@ -1216,7 +1276,7 @@ class ECR(Operation):
         """
         pi = np.pi
         return [
-            PauliZ(wires=[wires[0]]),
+            Z(wires=[wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             SX(wires=[wires[1]]),
             qml.RX(pi / 2, wires=[wires[0]]),

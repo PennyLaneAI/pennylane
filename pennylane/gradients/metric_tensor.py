@@ -208,7 +208,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
             qml.CNOT(wires=[0, 1])
             qml.RZ(weights[2], wires=1)
             qml.RZ(weights[3], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1)), qml.expval(qml.Y(1))
 
     We can use the ``metric_tensor`` transform to generate a new function that returns the
     metric tensor of this QNode:
@@ -263,7 +263,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
         ...     qml.CNOT(wires=(0,1)),
         ...     qml.PhaseShift(params[2], wires=1),
         ...     ]
-        >>> measurements = [qml.expval(qml.PauliX(0))]
+        >>> measurements = [qml.expval(qml.X(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> tapes, fn = qml.metric_tensor(tape)
         >>> tapes
@@ -328,7 +328,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
             ...     qml.CNOT(wires=[0, 1])
             ...     qml.RZ(weights[2], wires=1)
             ...     qml.RZ(weights[3], wires=0)
-            ...     return qml.expval(qml.PauliZ(0))
+            ...     return qml.expval(qml.Z(0))
 
             >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
             >>> mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
@@ -624,7 +624,7 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
                 # Controlled-generator operation of second diff'ed op
                 qml.apply(gen_op_j)
                 # Measure X on auxiliary wire
-                qml.expval(qml.PauliX(aux_wire))
+                qml.expval(qml.X(aux_wire))
 
             tapes.append(qml.tape.QuantumScript.from_queue(q))
             # Memorize to which metric entry this tape belongs

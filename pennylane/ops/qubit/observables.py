@@ -233,7 +233,7 @@ class SparseHamiltonian(Observable):
 
     >>> wires = range(20)
     >>> coeffs = [1 for _ in wires]
-    >>> observables = [qml.PauliZ(i) for i in wires]
+    >>> observables = [qml.Z(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = H.sparse_matrix()
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
