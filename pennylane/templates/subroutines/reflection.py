@@ -25,9 +25,6 @@ from pennylane.queuing import QueuingManager
 class Reflection(Operation):
     r"""Apply a reflection about a state :math:`|\Psi\rangle`.
 
-    This operator is an important component of quantum algorithms such as amplitude amplification [`arXiv:quant-ph/0005055 <https://arxiv.org/abs/quant-ph/0005055>`__]
-    and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__].
-
     Given an operator :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`  and a reflection angle :math:`\alpha`,
     this template creates the operation:
 
@@ -35,6 +32,8 @@ class Reflection(Operation):
 
        R(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
 
+    This operator is an important component of quantum algorithms such as amplitude amplification [`arXiv:quant-ph/0005055 <https://arxiv.org/abs/quant-ph/0005055>`__]
+    and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__].
 
     Args:
         U (Operator): The operator that generates the state :math:`|\Psi\rangle`.
@@ -65,7 +64,9 @@ class Reflection(Operation):
 
             return qml.state()
 
-        circuit()
+        >>> circuit()
+        tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
+
 
 
     .. details::
@@ -77,7 +78,7 @@ class Reflection(Operation):
 
             \text{Reflection}(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-I + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^{\dagger}.
 
-        The central block is obtained through a PhaseShift controlled operator.
+        The central block is obtained through a :class:`~.PhaseShift` controlled operator.
 
         In the case of specifying the reflection wires, the operator would have the following expression.
 

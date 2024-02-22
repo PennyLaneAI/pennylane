@@ -110,7 +110,7 @@ class TestIntegration:
 
     x = np.array(0.25)
 
-    # not calculated analytically, we are only ensuring that the results are consistent accross interfaces
+    # obtained with autograd, we are only ensuring that the results are consistent accross interfaces
 
     exp_result = np.array(
         [
