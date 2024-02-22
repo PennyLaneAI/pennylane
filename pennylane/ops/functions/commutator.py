@@ -35,44 +35,47 @@ def commutator(op1, op2, pauli=False):
 
     You can compute commutators between operators in PennyLane.
 
-    >>> qml.commutator(qml.X(0), qml.Y(0))
+    >>> qml.commutator(X(0), Y(0))
     2j * Z(0)
 
-    >>> op1 = qml.X(0) @ qml.X(1)
-    >>> op2 = qml.Y(0) @ qml.Y(1)
+    >>> op1 = X(0) @ X(1)
+    >>> op2 = Y(0) @ Y(1)
     >>> qml.commutator(op1, op2)
-    0 * Identity(wires=[0, 1])
+    0 * I()
 
     We can return a :class:`~PauliSentence` instance by setting ``pauli=True``.
 
-    >>> op1 = qml.X(0) @ qml.X(1)
-    >>> op2 = qml.Y(0) + qml.Y(1)
-    >>> qml.commutator(op1, op2, pauli=True)
+    >>> op1 = X(0) @ X(1)
+    >>> op2 = Y(0) + Y(1)
+    >>> res = qml.commutator(op1, op2, pauli=True)
+    >>> res
     2j * X(1) @ Z(0)
     + 2j * Z(1) @ X(0)
+    >>> isinstance(res, PauliSentence)
+    True
 
     We can also input :class:`~PauliWord` and :class:`~PauliSentence` instances.
 
     >>> op1 = PauliWord({0:"X", 1:"X"})
     >>> op2 = PauliWord({0:"Y"}) + PauliWord({1:"Y"})
-    >>> qml.commutator(op1, op2, pauli=True)
+    >>> res = qml.commutator(op1, op2, pauli=True)
+    >>> res
     2j * Z(0) @ X(1)
     + 2j * X(0) @ Z(1)
+    >>> isinstance(res, PauliSentence)
+    True
 
     Note that when ``pauli=False``, even if Pauli operators are used
     as inputs, ``qml.commutator`` returns Operators.
 
-    >>> qml.commutator(op1, op2, pauli=False)
+    >>> res = qml.commutator(op1, op2, pauli=False)
+    >>> res
     2j * (Z(0) @ X(1)) + 2j * (X(0) @ Z(1))
+    >>> isinstance(res, qml.operation.Operator))
+    True
 
-
-    It is also worth highlighting that computing commutators with Paulis is typically faster.
-    So whenever all input operators have a pauli representation, we recommend using `pauli=True`.
-    The result can then still be transformed into a PennyLane operator.
-
-    >>> res = qml.commutator(qml.X(0), qml.Y(0), pauli=True)
-    >>> res.operation()
-
+    It is worth noting that computing commutators with Paulis is typically faster.
+    Internally, ``qml.commutator`` uses the ``op.pauli_rep`` whenever that is available for both operators.
 
     .. details::
         :title: Usage Details
@@ -101,13 +104,18 @@ def commutator(op1, op2, pauli=False):
         or insert an extra ``stop_recording()`` context (see :class:`~QueuingManager`).
 
     """
-    if pauli:
+
+    both_have_pauli_rep = op1.pauli_rep is not None and op2.pauli_rep is not None
+
+    if pauli or both_have_pauli_rep:
         if not isinstance(op1, PauliSentence):
             op1 = qml.pauli.pauli_sentence(op1)
         if not isinstance(op2, PauliSentence):
             op2 = qml.pauli.pauli_sentence(op2)
-        return op1.commutator(op2)
+        res = op1.commutator(op2)
+        return res if pauli else res.operation(wire_order=res.wires)
 
+    # If no pauli processing is possible, use operator arithmetic
     with qml.QueuingManager.stop_recording():
         if isinstance(op1, (PauliWord, PauliSentence)):
             op1 = op1.operation()
