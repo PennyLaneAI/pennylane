@@ -1648,7 +1648,7 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
         dev = device(2)
 
-        if bool(dev.shots):
+        if dev.shots:
             pytest.skip("If shots!=None no error is raised.")
 
         class MyMeasurement(SampleMeasurement):
