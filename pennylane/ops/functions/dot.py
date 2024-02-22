@@ -86,8 +86,10 @@ def dot(
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
     >>> ops = [qml.X(0), qml.Y(0)]
     >>> qml.dot(coeffs, ops)
-      (<lambda>(params_0, t)*(X(0)))
-    + (<lambda>(params_1, t)*(Y(0)))
+    (
+        <lambda>(params_0, t) * X(0)
+      + <lambda>(params_1, t) * Y(0)
+    )
     """
 
     if len(coeffs) != len(ops):

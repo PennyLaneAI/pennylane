@@ -19,6 +19,7 @@ from copy import copy
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.ops import Sum
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -259,17 +260,17 @@ class ParametrizedHamiltonian:
         terms = []
 
         for coeff, op in zip(self.coeffs_fixed, self.ops_fixed):
-            term = f"({coeff}*({op}))"
+            term = f"{coeff} * {op}"
             terms.append(term)
 
         for i, (coeff, op) in enumerate(zip(self.coeffs_parametrized, self.ops_parametrized)):
-            if callable(coeff) and hasattr(coeff, "__name__"):
-                term = f"({coeff.__name__}(params_{i}, t)*({op}))"
-            elif hasattr(coeff, "__class__") and hasattr(coeff.__class__, "__name__"):
-                term = f"({coeff.__class__.__name__}(params_{i}, t)*({op}))"
+            op_repr = f"({op})" if isinstance(op, Sum) else str(op)
+            named_coeff = coeff if callable(coeff) and hasattr(coeff, "__name__") else type(coeff)
+            term = f"{named_coeff.__name__}(params_{i}, t) * {op_repr}"
             terms.append(term)
 
-        return "  " + "\n+ ".join(terms)
+        res = "\n  + ".join(terms)
+        return f"(\n    {res}\n)"
 
     def map_wires(self, wire_map):
         """Returns a copy of the current ParametrizedHamiltonian with its wires changed according
