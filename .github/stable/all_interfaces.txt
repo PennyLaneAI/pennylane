@@ -29,7 +29,7 @@ gast==0.5.4
 google-auth==2.28.1
 google-auth-oauthlib==1.2.0
 google-pasta==0.2.0
-grpcio==1.60.1
+grpcio==1.62.0
 h5py==3.10.0
 identify==2.5.35
 idna==3.6
@@ -98,7 +98,7 @@ tomli==2.0.1
 torch==2.2.0+rocm5.7
 typing_extensions==4.9.0
 urllib3==2.2.1
-virtualenv==20.25.0
+virtualenv==20.25.1
 Werkzeug==3.0.1
 wrapt==1.14.1
 zipp==3.17.0

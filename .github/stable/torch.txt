@@ -69,5 +69,5 @@ tomli==2.0.1
 torch==2.2.0+rocm5.7
 typing_extensions==4.9.0
 urllib3==2.2.1
-virtualenv==20.25.0
+virtualenv==20.25.1
 zipp==3.17.0
