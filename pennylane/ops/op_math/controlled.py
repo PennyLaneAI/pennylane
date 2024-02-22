@@ -127,12 +127,11 @@ def ctrl(op, control, control_values=None, work_wires=None):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
-    else:
-        return _ctrl(op, control, control_values=control_values, work_wires=work_wires)
+    return _ctrl(op, control, control_values=control_values, work_wires=work_wires)
 
 
 def _ctrl(op, control, control_values=None, work_wires=None):
-    """ Default `qml.ctrl` implementation """
+    """Default `qml.ctrl` implementation"""
 
     control = qml.wires.Wires(control)
     if isinstance(control_values, (int, bool)):
