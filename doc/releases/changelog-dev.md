@@ -125,9 +125,10 @@
     ```
 
   * A new `qml.commutator` function is now available that allows you to compute commutators between
-    operators:
+    `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
     [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
     [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
+    [(#5098)](https://github.com/PennyLaneAI/pennylane/pull/5098)
 
     ```pycon
     >>> qml.commutator(X(0), Y(0))
@@ -356,6 +357,9 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
+* String representations of `ParametrizedHamiltonian` have been updated to match the style of other PL operators.
+  [(#5215)](https://github.com/PennyLaneAI/pennylane/pull/5215)
+
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
@@ -367,6 +371,8 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs` have been added for feature parity with `qml.Hamiltonian` but will be deprecated in the future.
+  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
 
 * Added a `partial_trace` function to `pennylane.math` for matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
@@ -496,6 +502,9 @@
   functionality can be achieved using newer features in the `pauli` module.
   [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
 
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` will be deprecated in the future.
+  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
+
 <h3>Documentation 📝</h3>
 
 * The module documentation for `pennylane.tape` now explains the difference between `QuantumTape` and `QuantumScript`.
@@ -615,6 +624,9 @@
 
 * `QubitDensityMatrix` now works with jax-jit on the `default.mixed` device.
   [(#5203)](https://github.com/PennyLaneAI/pennylane/pull/5203)
+
+* When a QNode specifies `diff_method="adjoint"`, `default.qubit` no longer tries to decompose non-trainable operations with non-scalar parameters such as `QubitUnitary`.
+  [(#5233)](https://github.com/PennyLaneAI/pennylane/pull/5233)
 
 <h3>Contributors ✍️</h3>
 

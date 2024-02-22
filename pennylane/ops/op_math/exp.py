@@ -78,13 +78,13 @@ def exp(op, coeff=1, num_steps=None, id=None):
     This symbolic operator can be used to make general rotation operators:
 
     >>> x = np.array(1.23)
-    >>> op = qml.exp( qml.PauliX(0), -0.5j * x)
+    >>> op = qml.exp(qml.X(0), -0.5j * x)
     >>> qml.math.allclose(op.matrix(), qml.RX(x, wires=0).matrix())
     True
 
     This can even be used for more complicated generators:
 
-    >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+    >>> t = qml.X(0) @ qml.X(1) + qml.Y(0) @ qml.Y(1)
     >>> isingxy = qml.exp(t, 0.25j * x)
     >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
     True
@@ -95,15 +95,15 @@ def exp(op, coeff=1, num_steps=None, id=None):
 
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     qml.exp(qml.PauliX(0), -0.5j * x)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     qml.exp(qml.X(0), -0.5j * x)
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit)(1.23))
     0: ──Exp─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
 
-    >>> obs = qml.exp(qml.PauliZ(0), 3)
+    >>> obs = qml.exp(qml.Z(0), 3)
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit():
     ...     return qml.expval(obs)
@@ -130,13 +130,13 @@ class Exp(ScalarSymbolicOp, Operation):
     This symbolic operator can be used to make general rotation operators:
 
     >>> x = np.array(1.23)
-    >>> op = Exp( qml.PauliX(0), -0.5j * x)
+    >>> op = Exp( qml.X(0), -0.5j * x)
     >>> qml.math.allclose(op.matrix(), qml.RX(x, wires=0).matrix())
     True
 
     This can even be used for more complicated generators:
 
-    >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+    >>> t = qml.X(0) @ qml.X(1) + qml.Y(0) @ qml.Y(1)
     >>> isingxy = Exp(t, 0.25j * x)
     >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
     True
@@ -147,15 +147,15 @@ class Exp(ScalarSymbolicOp, Operation):
 
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     Exp(qml.PauliX(0), -0.5j * x)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     Exp(qml.X(0), -0.5j * x)
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit)(1.23))
     0: ──Exp─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
 
-    >>> obs = Exp(qml.PauliZ(0), 3)
+    >>> obs = Exp(qml.Z(0), 3)
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit():
     ...     return qml.expval(obs)
@@ -438,10 +438,10 @@ class Exp(ScalarSymbolicOp, Operation):
             \quad \Longrightarrow \quad
             e^{c \mathbf{M}} \mathbf{v} = e^{c \lambda} \mathbf{v}
 
-        >>> obs = Exp(qml.PauliX(0), 3)
+        >>> obs = Exp(qml.X(0), 3)
         >>> qml.eigvals(obs)
         array([20.08553692,  0.04978707])
-        >>> np.exp(3 * qml.eigvals(qml.PauliX(0)))
+        >>> np.exp(3 * qml.eigvals(qml.X(0)))
         tensor([20.08553692,  0.04978707], requires_grad=True)
 
         """

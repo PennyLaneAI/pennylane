@@ -81,8 +81,8 @@ class SPSAOptimizer:
     For VQE/VQE-like problems, the objective function can be the following:
 
     >>> coeffs = [0.2, -0.543, 0.4514]
-    >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2),
-    ...             qml.PauliX(3) @ qml.PauliZ(1)]
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2),
+    ...             qml.X(3) @ qml.Z(1)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> num_qubits = 4
     >>> dev = qml.device("default.qubit", wires=num_qubits)
@@ -118,7 +118,7 @@ class SPSAOptimizer:
     ... def layer_fn_spsa(inputs, weights):
     ...     qml.AngleEmbedding(inputs, wires=range(n_qubits))
     ...     qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
-    ...     return qml.expval(qml.PauliZ(wires=0))
+    ...     return qml.expval(qml.Z(0))
     ...
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
     ... def fn(params, tensor_in, tensor_out):

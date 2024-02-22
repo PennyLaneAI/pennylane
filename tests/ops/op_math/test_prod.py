@@ -89,6 +89,20 @@ ops_hermitian_status = (  # computed manually
 )
 
 
+def test_legacy_ops():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
+        _ = H.ops
+
+
+def test_legacy_coeffs():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
+        _ = H.coeffs
+
+
 # currently failing due to has_diagonalizing_gates logic
 @pytest.mark.xfail  # TODO: fix with story 49608
 def test_basic_validity():

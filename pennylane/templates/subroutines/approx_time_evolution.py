@@ -101,13 +101,13 @@ class ApproxTimeEvolution(Operation):
             dev = qml.device('default.qubit', wires=n_wires)
 
             coeffs = [1, 1]
-            obs = [qml.PauliX(0), qml.PauliX(1)]
+            obs = [qml.X(0), qml.X(1)]
             hamiltonian = qml.Hamiltonian(coeffs, obs)
 
             @qml.qnode(dev)
             def circuit(time):
                 ApproxTimeEvolution(hamiltonian, time, 1)
-                return [qml.expval(qml.PauliZ(wires=i)) for i in wires]
+                return [qml.expval(qml.Z(i)) for i in wires]
 
         >>> circuit(1)
         tensor([-0.41614684 -0.41614684], requires_grad=True)
@@ -173,7 +173,7 @@ class ApproxTimeEvolution(Operation):
             num_qubits = 2
 
             hamiltonian = qml.Hamiltonian(
-                [0.1, 0.2, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0), qml.PauliX(1)]
+                [0.1, 0.2, 0.3], [qml.Z(0) @ qml.Z(1), qml.X(0), qml.X(1)]
             )
 
             evolution_time = 0.5

@@ -110,7 +110,7 @@ def insert(
             qml.CNOT(wires=[0, 1])
             qml.RY(y, wires=0)
             qml.RX(z, wires=1)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
     Executions of this circuit will differ from the noise-free value:
 
@@ -148,7 +148,7 @@ def insert(
                 qml.CNOT(wires=[0, 1])
                 qml.RY(y, wires=0)
                 qml.RX(z, wires=1)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                return qml.expval(qml.Z(0) @ qml.Z(1))
 
         To check this, let's print out the circuit:
 
@@ -169,7 +169,7 @@ def insert(
                 qml.RY(0.5, wires=0),
                 qml.RX(0.6, wires=1)
             ]
-            measurements = [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))]
+            measurements = [qml.expval(qml.Z(0) @ qml.Z(1))]
             tape = qml.tape.QuantumTape(ops, measurements)
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
@@ -194,7 +194,7 @@ def insert(
                 qml.CNOT(wires=[0, 1])
                 qml.RY(y, wires=0)
                 qml.RX(z, wires=1)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                return qml.expval(qml.Z(0) @ qml.Z(1))
 
             qnode = qml.QNode(f, dev)
 
