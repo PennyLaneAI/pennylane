@@ -365,6 +365,8 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs` have been added for feature parity with `qml.Hamiltonian` but will be deprecated in the future.
+  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
 
 * Added a `partial_trace` function to `pennylane.math` for matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
@@ -493,6 +495,9 @@
   `pauli` module have been deprecated, as they are no longer used anywhere and the same
   functionality can be achieved using newer features in the `pauli` module.
   [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
+
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` will be deprecated in the future.
+  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
 
 <h3>Documentation 📝</h3>
 
