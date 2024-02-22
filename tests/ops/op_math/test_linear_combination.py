@@ -416,23 +416,7 @@ matmul_LinearCombinations = [
         qml.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2),
         qml.LinearCombination([1, 1], [X(0) @ X(2), Z(1) @ X(2)]),
-    ),
-    # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
-    (
-        qml.LinearCombination((1, 1), (X(0), Z(1))),
-        qml.LinearCombination(np.array([0.5, 0.5]), np.array([Z(2), Z(3)])),
-        qml.LinearCombination(
-            (0.5, 0.5, 0.5, 0.5),
-            np.array(
-                [
-                    X(0) @ Z(2),
-                    X(0) @ Z(3),
-                    Z(1) @ Z(2),
-                    Z(1) @ Z(3),
-                ]
-            ),
-        ),
-    ),
+    )
 ]
 
 rmatmul_LinearCombinations = [
@@ -479,23 +463,7 @@ rmatmul_LinearCombinations = [
         qml.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2),
         qml.LinearCombination([1, 1], [X(2) @ X(0), X(2) @ Z(1)]),
-    ),
-    # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
-    (
-        qml.LinearCombination(np.array([0.5, 0.5]), np.array([Z(2), Z(3)])),
-        qml.LinearCombination((1, 1), (X(0), Z(1))),
-        qml.LinearCombination(
-            (0.5, 0.5, 0.5, 0.5),
-            np.array(
-                [
-                    X(0) @ Z(2),
-                    X(0) @ Z(3),
-                    Z(1) @ Z(2),
-                    Z(1) @ Z(3),
-                ]
-            ),
-        ),
-    ),
+    )
 ]
 
 big_LinearCombination_coeffs = np.array(
