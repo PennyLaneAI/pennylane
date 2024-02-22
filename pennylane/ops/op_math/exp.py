@@ -78,7 +78,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
     This symbolic operator can be used to make general rotation operators:
 
     >>> x = np.array(1.23)
-    >>> op = qml.exp( qml.X(0), -0.5j * x)
+    >>> op = qml.exp(qml.X(0), -0.5j * x)
     >>> qml.math.allclose(op.matrix(), qml.RX(x, wires=0).matrix())
     True
 
