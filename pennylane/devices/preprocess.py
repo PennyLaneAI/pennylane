@@ -127,22 +127,23 @@ def validate_device_wires(
     Raises:
         WireError: if the tape has a wire not present in the provided wires.
     """
-    if wires:
-        if extra_wires := set(tape.wires) - set(wires):
-            raise WireError(
-                f"Cannot run circuit(s) on {name} as they contain wires "
-                f"not found on the device: {extra_wires}"
-            )
-        measurements = tape.measurements.copy()
-        modified = False
-        for m_idx, mp in enumerate(measurements):
-            if not mp.obs and not mp.wires:
-                modified = True
-                new_mp = copy(mp)
-                new_mp._wires = wires  # pylint:disable=protected-access
-                measurements[m_idx] = new_mp
-        if modified:
-            tape = type(tape)(tape.operations, measurements, shots=tape.shots)
+    if wires is None:
+        wires = tape.wires
+    elif extra_wires := set(tape.wires) - set(wires):
+        raise WireError(
+            f"Cannot run circuit(s) on {name} as they contain wires "
+            f"not found on the device: {extra_wires}"
+        )
+    measurements = tape.measurements.copy()
+    modified = False
+    for m_idx, mp in enumerate(measurements):
+        if not mp.obs and not mp.wires:
+            modified = True
+            new_mp = copy(mp)
+            new_mp._wires = wires  # pylint:disable=protected-access
+            measurements[m_idx] = new_mp
+    if modified:
+        tape = type(tape)(tape.operations, measurements, shots=tape.shots)
 
     return (tape,), null_postprocessing
 

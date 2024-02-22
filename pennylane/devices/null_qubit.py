@@ -256,17 +256,30 @@ class NullQubit(Device):
 
     @staticmethod
     def _vjp(circuit, interface):
-        return (math.asarray(0.0, like=interface),) * len(circuit.trainable_params)
+        batch_size = circuit.batch_size
+        n = len(circuit.trainable_params)
+        res_shape = (n,) if batch_size is None else (n, batch_size)
+        return math.zeros(res_shape, like=interface)
 
     @staticmethod
     def _jvp(circuit, interface):
         jvps = (math.asarray(0.0, like=interface),) * len(circuit.measurements)
         return jvps[0] if len(jvps) == 1 else jvps
 
+    @staticmethod
+    def _setup_execution_config(execution_config: ExecutionConfig) -> ExecutionConfig:
+        """No-op function to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
+        return execution_config
+
+    @property
+    def _max_workers(self):
+        """No-op property to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
+        return None
+
     def preprocess(
         self, execution_config=DefaultExecutionConfig
     ) -> Tuple[TransformProgram, ExecutionConfig]:
-        program, _ = DefaultQubit().preprocess(execution_config)
+        program, _ = DefaultQubit.preprocess(self, execution_config)
         updated_values = {}
         if execution_config.gradient_method in ["best", "adjoint"]:
             updated_values["gradient_method"] = "device"
