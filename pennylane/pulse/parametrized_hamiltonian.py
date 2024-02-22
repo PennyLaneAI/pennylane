@@ -19,6 +19,7 @@ from copy import copy
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.ops import Sum
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -68,7 +69,7 @@ class ParametrizedHamiltonian:
         f1 = lambda p, t: p[0] * jnp.sin(p[1] * t)
         f2 = lambda p, t: p * t
         coeffs = [2., f1, f2]
-        observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+        observables =  [qml.X(0), qml.Y(0), qml.Z(0)]
         H = qml.dot(coeffs, observables)
 
     The resulting object can be passed parameters, and will return an :class:`~.Operator` representing the
@@ -82,7 +83,11 @@ class ParametrizedHamiltonian:
         params = [p1, p2]  # p1 is passed to f1, and p2 to f2
 
     >>> H(params, t=1.)
-    (2.0*(PauliX(wires=[0]))) + ((0.8414709568023682*(PauliY(wires=[0]))) + (1.0*(PauliZ(wires=[0]))))
+    (
+        2.0 * X(0)
+      + 0.8414709848078965 * Y(0)
+      + 1.0 * Z(0)
+    )
 
     .. note::
         To be able to compute the time evolution of the Hamiltonian with :func:`~.pennylane.evolve`,
@@ -93,9 +98,9 @@ class ParametrizedHamiltonian:
     parameters to obtain an :class:`~.Operator`:
 
     >>> H.H_fixed()
-    2.0*(PauliX(wires=[0]))
+    2.0 * X(0)
     >>> H.H_parametrized([[1.2, 2.3], 4.5], 0.5)
-    (1.095316767692566*(PauliY(wires=[0]))) + (2.25*(PauliZ(wires=[0])))
+    1.095316728312625 * Y(0) + 2.25 * Z(0)
 
 
     .. details::
@@ -112,7 +117,7 @@ class ParametrizedHamiltonian:
             def f2(p, t):
                 return p * jnp.cos(t)
 
-            H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
+            H = 2 * qml.X(0) + f1 * qml.Y(0) + f2 * qml.Z(0)
 
         .. note::
             Whichever method is used for initializing a :class:`~.ParametrizedHamiltonian`, the terms defined with fixed
@@ -125,7 +130,11 @@ class ParametrizedHamiltonian:
 
             >>> params = [[4.6, 2.3], 1.2]
             >>> H(params, t=0.5)
-            (2*(PauliX(wires=[0]))) + ((3.212763786315918*(PauliY(wires=[0]))) + (1.0530991554260254*(PauliZ(wires=[0]))))
+            (
+                2 * X(0)
+              + 3.212763940260521 * Y(0)
+              + 1.0530990742684472 * Z(0)
+            )
 
             Internally we are computing ``f1([4.6, 2.3], 0.5)`` and ``f2(1.2, 0.5)``.
 
@@ -192,19 +201,24 @@ class ParametrizedHamiltonian:
         .. code-block:: python3
 
             coeffs = [lambda p, t: jnp.sin(p*t) for _ in range(2)]
-            ops = [qml.PauliX(0), qml.PauliY(1)]
+            ops = [qml.X(0), qml.Y(1)]
             H1 = qml.dot(coeffs, ops)
 
             def f1(p, t): return t + p
             def f2(p, t): return p[0] * jnp.sin(p[1] * t**2)
-            H2 = f1 * qml.PauliY(0) + f2 * qml.PauliX(1)
+            H2 = f1 * qml.Y(0) + f2 * qml.X(1)
 
             params1 = [2., 3.]
             params2 = [4., [5., 6.]]
 
         >>> H3 = H2 + H1
         >>> H3([4., [5., 6.], 2., 3.], t=1)
-        (((5.0*(PauliY(wires=[0]))) + (-1.3970774909946293*(PauliX(wires=[1])))) + (0.9092974268256817*(PauliX(wires=[0])))) + (0.1411200080598672*(PauliY(wires=[1])))
+        (
+            5.0 * Y(0)
+          + -1.3970774909946293 * X(1)
+          + 0.9092974268256817 * X(0)
+          + 0.1411200080598672 * Y(1)
+        )
 
     """
 
@@ -246,17 +260,17 @@ class ParametrizedHamiltonian:
         terms = []
 
         for coeff, op in zip(self.coeffs_fixed, self.ops_fixed):
-            term = f"({coeff}*({op}))"
+            term = f"{coeff} * {op}"
             terms.append(term)
 
         for i, (coeff, op) in enumerate(zip(self.coeffs_parametrized, self.ops_parametrized)):
-            if callable(coeff) and hasattr(coeff, "__name__"):
-                term = f"({coeff.__name__}(params_{i}, t)*({op}))"
-            elif hasattr(coeff, "__class__") and hasattr(coeff.__class__, "__name__"):
-                term = f"({coeff.__class__.__name__}(params_{i}, t)*({op}))"
+            op_repr = f"({op})" if isinstance(op, Sum) else str(op)
+            named_coeff = coeff if callable(coeff) and hasattr(coeff, "__name__") else type(coeff)
+            term = f"{named_coeff.__name__}(params_{i}, t) * {op_repr}"
             terms.append(term)
 
-        return "  " + "\n+ ".join(terms)
+        res = "\n  + ".join(terms)
+        return f"(\n    {res}\n)"
 
     def map_wires(self, wire_map):
         """Returns a copy of the current ParametrizedHamiltonian with its wires changed according

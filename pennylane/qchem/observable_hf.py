@@ -129,10 +129,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> print(qubit_observable(s))
-    (-0.775j*(PauliY(wires=[0]) @ PauliX(wires=[1])))
-    + ((0.775+0j)*(PauliY(wires=[0]) @ PauliY(wires=[1])))
-    + ((0.775+0j)*(PauliX(wires=[0]) @ PauliX(wires=[1])))
-    + (0.775j*(PauliX(wires=[0]) @ PauliY(wires=[1])))
+    -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
     """
     h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
     h.simplify(tol=cutoff)

@@ -98,7 +98,7 @@ used in a quantum circuit with custom operations without execution.
         qml.RZ(theta, wires=0)
         qml.CNOT(wires=[0,1])
         MyCustomAlgorithm(wires=[1, 2])
-        return qml.expval(qml.PauliZ(wires=1))
+        return qml.expval(qml.Z(1))
 
     x = np.array(1.23, requires_grad=True)
 

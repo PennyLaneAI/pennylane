@@ -321,7 +321,7 @@ class CY(ControlledOp):
 
     def __init__(self, wires, id=None):
         control_wire, wire = wires
-        super().__init__(qml.PauliY(wire), control_wire, id=id)
+        super().__init__(qml.Y(wire), control_wire, id=id)
 
     @staticmethod
     @lru_cache()
@@ -421,7 +421,7 @@ class CZ(ControlledOp):
 
     def __init__(self, wires, id=None):
         control_wire, wire = wires
-        super().__init__(qml.PauliZ(wires=wire), control_wire, id=id)
+        super().__init__(qml.Z(wires=wire), control_wire, id=id)
 
     @staticmethod
     @lru_cache()
@@ -1046,7 +1046,7 @@ class MultiControlledX(ControlledOp):
         control_values = _check_and_convert_control_values(control_values, control_wires)
 
         super().__init__(
-            qml.PauliX(wires=wires),
+            qml.X(wires),
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -1095,7 +1095,7 @@ class MultiControlledX(ControlledOp):
         control_values = _check_and_convert_control_values(control_values, control_wires)
         padding_left = sum(2**i * int(val) for i, val in enumerate(reversed(control_values))) * 2
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
-        return block_diag(np.eye(padding_left), qml.PauliX.compute_matrix(), np.eye(padding_right))
+        return block_diag(np.eye(padding_left), qml.X.compute_matrix(), np.eye(padding_right))
 
     def matrix(self, wire_order=None):
         canonical_matrix = self.compute_matrix(self.control_wires, self.control_values)
@@ -1149,7 +1149,7 @@ class MultiControlledX(ControlledOp):
                 "At least one work wire is required to decompose operation: MultiControlledX"
             )
 
-        flips1 = [qml.PauliX(wires=w) for w, val in zip(control_wires, control_values) if not val]
+        flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
         if len(control_wires) == 1:
             decomp = [qml.CNOT(wires=wires)]
@@ -1158,7 +1158,7 @@ class MultiControlledX(ControlledOp):
         else:
             decomp = decompose_mcx(control_wires, target_wire, work_wires)
 
-        flips2 = [qml.PauliX(wires=w) for w, val in zip(control_wires, control_values) if not val]
+        flips2 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
         return flips1 + decomp + flips2
 

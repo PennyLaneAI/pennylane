@@ -158,7 +158,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
             qml.Hadamard(wires=1)
             m_0 = qml.measure(1)
             qml.cond(m_0, qml.RY)(par, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     The ``defer_measurements`` transform allows executing such quantum
     functions without having to perform mid-circuit measurements:
@@ -252,7 +252,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
                             # We know that the measured wire will be in the |1> state if
                             # postselected |1>. So we can just apply a PauliX instead of
                             # a CNOT to reset
-                            new_operations.append(qml.PauliX(op.wires[0]))
+                            new_operations.append(qml.X(op.wires[0]))
 
                 cur_wire += 1
             else:

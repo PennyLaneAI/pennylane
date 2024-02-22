@@ -169,7 +169,11 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return op.num_params == 0 or (op.num_params == 1 and op.has_generator)
+    return (
+        op.num_params == 0
+        or not qml.operation.is_trainable(op)
+        or (op.num_params == 1 and op.has_generator)
+    )
 
 
 def adjoint_observables(obs: qml.operation.Operator) -> bool:
@@ -245,7 +249,7 @@ class DefaultQubit(Device):
         for i in range(num_qscripts):
             params = rng.random(shape)
             op = qml.StronglyEntanglingLayers(params, wires=range(n_wires))
-            qs = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+            qs = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))])
             qscripts.append(qs)
 
     >>> dev = DefaultQubit()
@@ -273,7 +277,7 @@ class DefaultQubit(Device):
 
         @jax.jit
         def f(x):
-            qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
             program, execution_config = dev.preprocess()
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)

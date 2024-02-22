@@ -16,10 +16,11 @@ This submodule defines functions to decompose controlled operations
 """
 
 from copy import copy
+from typing import Tuple
 import numpy as np
 import numpy.linalg as npl
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Operation, Operator
 from pennylane.wires import Wires
 from pennylane import math
 
@@ -184,12 +185,25 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     target_wire = target_operation.wires
 
-    try:
-        phi, theta, omega = target_operation.single_qubit_rot_angles()
-    except NotImplementedError:
+    def get_single_qubit_rot_angles_via_matrix() -> Tuple[float, float, float]:
+        """Returns a triplet of angles representing the single-qubit decomposition
+        of the matrix of the target operation using ZYZ rotations.
+        """
         with qml.QueuingManager.stop_recording():
-            zyz_decomp = qml.ops.one_qubit_decomposition(qml.matrix(target_operation), target_wire)
-        phi, theta, omega = [gate.parameters[0] for gate in zyz_decomp]
+            zyz_decomp = qml.ops.one_qubit_decomposition(
+                qml.matrix(target_operation),
+                wire=target_wire,
+                rotations="ZYZ",
+            )
+        return tuple(gate.parameters[0] for gate in zyz_decomp)  # type: ignore
+
+    if isinstance(target_operation, Operation):
+        try:
+            phi, theta, omega = target_operation.single_qubit_rot_angles()
+        except NotImplementedError:
+            phi, theta, omega = get_single_qubit_rot_angles_via_matrix()
+    else:
+        phi, theta, omega = get_single_qubit_rot_angles_via_matrix()
 
     decomp = []
 
@@ -199,12 +213,12 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         decomp.extend(
             [
                 qml.RY(theta / 2, wires=target_wire),
-                qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires),
+                qml.ctrl(qml.X(target_wire), control=control_wires),
                 qml.RY(-theta / 2, wires=target_wire),
             ]
         )
     else:
-        decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
+        decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
     if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
         decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
     decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
@@ -256,9 +270,9 @@ def _ctrl_decomp_bisect_od(
 
     def component():
         return [
-            qml.ctrl(qml.PauliX(wires=target_wire), control=control_k1, work_wires=control_k2),
+            qml.ctrl(qml.X(target_wire), control=control_k1, work_wires=control_k2),
             qml.QubitUnitary(a, target_wire),
-            qml.ctrl(qml.PauliX(wires=target_wire), control=control_k2, work_wires=control_k1),
+            qml.ctrl(qml.X(target_wire), control=control_k2, work_wires=control_k1),
             qml.adjoint(qml.QubitUnitary(a, target_wire)),
         ]
 
@@ -333,7 +347,7 @@ def _ctrl_decomp_bisect_general(
     Returns:
         list[Operation]: the decomposed operations
     """
-    x_matrix = qml.PauliX.compute_matrix()
+    x_matrix = qml.X.compute_matrix()
     h_matrix = qml.Hadamard.compute_matrix()
     alternate_h_matrix = x_matrix @ h_matrix @ x_matrix
 
@@ -350,9 +364,9 @@ def _ctrl_decomp_bisect_general(
 
     component = [
         qml.QubitUnitary(c2t, target_wire),
-        qml.ctrl(qml.PauliX(wires=target_wire), control=control_k2, work_wires=control_k1),
+        qml.ctrl(qml.X(target_wire), control=control_k2, work_wires=control_k1),
         qml.adjoint(qml.QubitUnitary(c1, target_wire)),
-        qml.ctrl(qml.PauliX(wires=target_wire), control=control_k1, work_wires=control_k2),
+        qml.ctrl(qml.X(target_wire), control=control_k1, work_wires=control_k2),
     ]
 
     od_decomp = _ctrl_decomp_bisect_od(d, target_wire, control_wires)
@@ -505,10 +519,10 @@ def _decompose_mcx_with_one_worker(control_wires, target_wire, work_wire):
     second_part = control_wires[partition:]
 
     gates = [
-        qml.ctrl(qml.PauliX(work_wire), control=first_part, work_wires=second_part + target_wire),
-        qml.ctrl(qml.PauliX(target_wire), control=second_part + work_wire, work_wires=first_part),
-        qml.ctrl(qml.PauliX(work_wire), control=first_part, work_wires=second_part + target_wire),
-        qml.ctrl(qml.PauliX(target_wire), control=second_part + work_wire, work_wires=first_part),
+        qml.ctrl(qml.X(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qml.ctrl(qml.X(target_wire), control=second_part + work_wire, work_wires=first_part),
+        qml.ctrl(qml.X(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qml.ctrl(qml.X(target_wire), control=second_part + work_wire, work_wires=first_part),
     ]
 
     return gates
