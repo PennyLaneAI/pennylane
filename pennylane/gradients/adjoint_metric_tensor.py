@@ -105,7 +105,7 @@ def adjoint_metric_tensor(
             qml.CNOT(wires=[0, 1])
             qml.RZ(weights[2], wires=1)
             qml.RZ(weights[3], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1)), qml.expval(qml.Y(1))
 
     We can use the ``adjoint_metric_tensor`` transform to generate a new function
     that returns the metric tensor of this QNode:

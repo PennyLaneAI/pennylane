@@ -183,7 +183,7 @@ def spsa_grad(
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.gradients.spsa_grad(circuit)(params)
     ((tensor(-0.19280803, requires_grad=True),
@@ -237,7 +237,7 @@ def spsa_grad(
         function, which together define the gradient are directly returned:
 
         >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
-        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.spsa_grad(tape)
         >>> gradient_tapes
@@ -252,7 +252,7 @@ def spsa_grad(
 
         >>> tape = qml.tape.QuantumScript(
         ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-        ...     [qml.expval(qml.PauliZ(0))],
+        ...     [qml.expval(qml.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
         >>> qml.gradients.spsa_grad(tape, argnum=1)
@@ -276,7 +276,7 @@ def spsa_grad(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.spsa_grad(circuit, h=1e-2)(params)
         (((array(0.), array(0.), array(0.)), (array(0.), array(0.), array(0.))),

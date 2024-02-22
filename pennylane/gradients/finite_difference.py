@@ -259,7 +259,7 @@ def finite_diff(
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.jacobian(circuit)(params)
     array([-0.38751725, -0.18884792, -0.38355708])
@@ -276,7 +276,7 @@ def finite_diff(
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
     (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
@@ -296,7 +296,7 @@ def finite_diff(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.finite_diff(circuit)(params)
         ((tensor(-0.38751724, requires_grad=True),
@@ -312,7 +312,7 @@ def finite_diff(
         function, which together define the gradient are directly returned:
 
         >>> ops = [qml.RX(p, wires=0) for p in params]
-        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
         >>> gradient_tapes
@@ -329,7 +329,7 @@ def finite_diff(
 
         >>> tape = qml.tape.QuantumScript(
         ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-        ...     [qml.expval(qml.PauliZ(0))],
+        ...     [qml.expval(qml.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
         >>> qml.gradients.finite_diff(tape, argnum=1)
@@ -356,7 +356,7 @@ def finite_diff(
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.finite_diff(circuit, h=10e-2)(params)
         (((array(-2.), array(-2.), array(0.)), (array(3.6), array(3.6), array(0.))),

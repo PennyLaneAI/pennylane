@@ -509,7 +509,7 @@ def execute(
 
         def cost_fn(params, x):
             ops1 = [qml.RX(params[0], wires=0), qml.RY(params[1], wires=0)]
-            measurements1 = [qml.expval(qml.PauliZ(0))]
+            measurements1 = [qml.expval(qml.Z(0))]
             tape1 = qml.tape.QuantumTape(ops1, measurements1)
 
             ops2 = [

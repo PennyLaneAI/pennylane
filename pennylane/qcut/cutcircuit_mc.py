@@ -225,7 +225,7 @@ def cut_circuit_mc(
             ops = [
                 qml.Hadamard(wires=0),
                 qml.CNOT(wires=[0, 1]),
-                qml.PauliX(wires=1),
+                qml.X(1),
                 qml.WireCut(wires=1),
                 qml.CNOT(wires=[1, 2]),
             ]
@@ -252,7 +252,7 @@ def cut_circuit_mc(
             ops = [
                 qml.Hadamard(wires=0),
                 qml.CNOT(wires=[0, 1]),
-                qml.PauliX(wires=1),
+                qml.X(1),
                 qml.CNOT(wires=[1, 2]),
             ]
             measurements = [qml.sample(wires=[0, 1, 2])]
@@ -568,15 +568,15 @@ def _identity(wire):
 
 
 def _pauliX(wire):
-    return qml.sample(qml.PauliX(wires=wire))
+    return qml.sample(qml.X(wire))
 
 
 def _pauliY(wire):
-    return qml.sample(qml.PauliY(wires=wire))
+    return qml.sample(qml.Y(wire))
 
 
 def _pauliZ(wire):
-    return qml.sample(qml.PauliZ(wires=wire))
+    return qml.sample(qml.Z(wire))
 
 
 MC_MEASUREMENTS = [

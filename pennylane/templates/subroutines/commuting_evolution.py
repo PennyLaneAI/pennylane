@@ -89,15 +89,15 @@ class CommutingEvolution(Operation):
             dev = qml.device('default.qubit', wires=n_wires)
 
             coeffs = [1, -1]
-            obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
+            obs = [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.X(1)]
             hamiltonian = qml.Hamiltonian(coeffs, obs)
             frequencies = (2, 4)
 
             @qml.qnode(dev)
             def circuit(time):
-                qml.PauliX(0)
+                qml.X(0)
                 qml.CommutingEvolution(hamiltonian, time, frequencies)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         >>> circuit(1)
         0.6536436208636115

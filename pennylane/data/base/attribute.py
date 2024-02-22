@@ -431,7 +431,7 @@ def attribute(
 
     **Example**
 
-    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
     >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
     >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
     ...     hamiltonian,
