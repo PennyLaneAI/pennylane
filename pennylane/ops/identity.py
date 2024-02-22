@@ -199,7 +199,7 @@ class I(CVObservable, Operation):
 
 Identity = I
 r"""
-The identity observable :math:`\I`.
+An alias of the identity observable :class:`~I`.
 
 The expectation of this observable
 

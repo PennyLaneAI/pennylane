@@ -347,7 +347,7 @@ class X(Observable, Operation):
 
 PauliX = X
 r"""
-The Pauli X operator
+An alias of the Pauli X operator :class:`~X`.
 
 .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
 
@@ -533,7 +533,7 @@ class Y(Observable, Operation):
 
 PauliY = Y
 r"""
-The Pauli Y operator
+An alias of the Pauli Y operator :class:`~Y`.
 
 .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
 
@@ -719,7 +719,7 @@ class Z(Observable, Operation):
 
 PauliZ = Z
 r"""
-The Pauli Z operator
+An alias of the Pauli Z operator :class:`~Z`.
 
 .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
 
