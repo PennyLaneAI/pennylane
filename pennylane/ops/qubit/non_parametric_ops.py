@@ -346,6 +346,21 @@ class X(Observable, Operation):
 
 
 PauliX = X
+r"""
+The Pauli X operator
+
+.. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
+
+.. seealso:: :class:`~X`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
 
 
 class Y(Observable, Operation):
@@ -517,6 +532,21 @@ class Y(Observable, Operation):
 
 
 PauliY = Y
+r"""
+The Pauli Y operator
+
+.. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
+
+.. seealso:: :class:`~Y`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
 
 
 class Z(Observable, Operation):
@@ -688,6 +718,21 @@ class Z(Observable, Operation):
 
 
 PauliZ = Z
+r"""
+The Pauli Z operator
+
+.. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
+
+.. seealso:: :class:`~Z`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
 
 
 class S(Operation):

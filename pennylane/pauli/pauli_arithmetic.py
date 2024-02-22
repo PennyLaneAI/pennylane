@@ -192,6 +192,11 @@ class PauliWord(dict):
                 del mapping[wire]
         super().__init__(mapping)
 
+    @property
+    def pauli_rep(self):
+        """Trivial pauli_rep"""
+        return PauliSentence({self: 1.0})
+
     def __reduce__(self):
         """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
         would cause __setitem__ to be called, which is forbidden on PauliWord.
@@ -592,6 +597,11 @@ class PauliSentence(dict):
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
+
+    @property
+    def pauli_rep(self):
+        """Trivial pauli_rep"""
+        return self
 
     def __missing__(self, key):
         """If the PauliWord is not in the sentence then the coefficient

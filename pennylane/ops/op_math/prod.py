@@ -16,6 +16,7 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 import itertools
+import warnings
 from copy import copy
 from functools import reduce, wraps
 from itertools import combinations
@@ -84,6 +85,11 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op.matrix()
     array([[ 0, -1],
            [ 1,  0]])
+    >>> prod_op.simplify()
+    -1j * Y(0)
+    >>> prod_op.terms()
+    ([-1j], [Y(0)])
+
 
     You can also create a prod operator by passing a qfunc to prod, like the following:
 
@@ -143,14 +149,16 @@ class Prod(CompositeOp):
 
     **Example**
 
-    >>> prop_op = Prod(qml.X(0), qml.Z(0))
-    >>> prop_op
-    X(0) @ Z(0)
-    >>> qml.matrix(prop_op)
-    array([[ 0,  -1],
-           [ 1,   0]])
-    >>> prop_op.terms()
-    ([1.0], [X(0) @ Z(0)])
+    >>> prod_op = Prod(qml.X(0), qml.PauliZ(1))
+    >>> prod_op
+    X(0) @ Z(1)
+    >>> qml.matrix(prod_op, wire_order=prod_op.wires)
+    array([[ 0,  0,  1,  0],
+           [ 0,  0,  0, -1],
+           [ 1,  0,  0,  0],
+           [ 0, -1,  0,  0]])
+    >>> prod_op.terms()
+    ([1.0], [Z(1) @ X(0)])
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
@@ -214,6 +222,13 @@ class Prod(CompositeOp):
         >>> weights = np.array([0.1], requires_grad=True)
         >>> qml.grad(circuit)(weights)
         array([-0.07059289])
+
+        Note that the :meth:`~Prod.terms` method always simplifies and flattens the operands.
+
+        >>> op = qml.ops.Prod(qml.X(0), qml.sum(qml.Y(0), qml.Z(1)))
+        >>> op.terms()
+        ([1j, 1.0], [Z(0), Z(1) @ X(0)])
+
     """
 
     _op_symbol = "@"
@@ -439,7 +454,7 @@ class Prod(CompositeOp):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
 
-        ** Example **
+        **Example**
 
         >>> qml.operation.enable_new_opmath()
         >>> op = X(0) @ (0.5 * X(1) + X(2))
@@ -471,6 +486,36 @@ class Prod(CompositeOp):
                 coeffs.append(global_phase)
                 ops.append(factor)
         return coeffs, ops
+
+    @property
+    def coeffs(self):
+        r"""
+        Scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
+
+        .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
+        warnings.warn(
+            "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        coeffs, _ = self.terms()
+        return coeffs
+
+    @property
+    def ops(self):
+        r"""
+        Operator terms without scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
+
+        .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
+        warnings.warn(
+            "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        _, ops = self.terms()
+        return ops
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:

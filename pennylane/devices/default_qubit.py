@@ -169,7 +169,11 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return op.num_params == 0 or (op.num_params == 1 and op.has_generator)
+    return (
+        op.num_params == 0
+        or not qml.operation.is_trainable(op)
+        or (op.num_params == 1 and op.has_generator)
+    )
 
 
 def adjoint_observables(obs: qml.operation.Operator) -> bool:
