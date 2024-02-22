@@ -40,14 +40,14 @@ def get_fixed_point_angles(iters):
 class AmplitudeAmplification(Operation):
     r"""Applies amplitude amplification.
 
-    Given a state :math:`|\Psi\rangle = \alpha |\psi\rangle + \beta|\psi^{\perp}}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\psi\rangle`.
+    Given a state :math:`|\Psi\rangle = \alpha |\phi\rangle + \beta|\phi^{\perp}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\phi\rangle`.
 
     .. math::
 
-            \text{AmplitudeAmplification}(U, O)|\Psi\rangle \sim |\psi\rangle
+            \text{AmplitudeAmplification}(U, O)|\Psi\rangle \sim |\phi\rangle
 
     The implementation of the amplitude amplification algorithm is based on `arXiv:quant-ph/0005055 <https://arxiv.org/abs/quant-ph/0005055>`__ paper.
-    The template also allows to work with advanced techniques such as fixed-point quantum search [` <https://arxiv.org/abs/quant-ph/0005055>`__] and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__] by reflecting on a subset of the wires.
+    The template also allows to work with advanced techniques such as fixed-point quantum search [`arXiv:1409.3305 <https://arxiv.org/abs/1409.3305>`__] and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__] by reflecting on a subset of the wires.
 
     Args:
         U (Operator): Operator that generate the state :math:`|\Psi\rangle`.
