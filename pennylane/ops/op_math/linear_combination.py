@@ -26,7 +26,7 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.operation import Observable, Tensor, Operator
+from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
 from pennylane.wires import Wires
 from ..qubit.hamiltonian import Hamiltonian
 
@@ -198,7 +198,7 @@ class LinearCombination(Observable):
         #         )
 
         self._coeffs = coeffs
-        self._ops = list(observables)
+        self._ops = [convert_to_opmath(op) for op in observables]
 
         # TODO: avoid having multiple ways to store ops and coeffs,
         # ideally only use parameters for coeffs, and hyperparameters for ops
@@ -212,12 +212,11 @@ class LinearCombination(Observable):
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
 
-        # create the operator using each coefficient as a separate parameter;
-        # this causes H.data to be a list of tensor scalars,
-        # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
+
         with qml.QueuingManager().stop_recording():
             self._operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
+
         self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
 
         if simplify:
