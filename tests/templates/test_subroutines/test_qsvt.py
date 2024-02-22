@@ -15,6 +15,8 @@
 Tests for the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
+from copy import copy
+
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
@@ -364,6 +366,13 @@ class TestQSVT:
         assert op.data == (1, 2, 3)
         op.data = [4, 5, 6]
         assert op.data == (4, 5, 6)
+
+    def test_copy(self):
+        """Test that a QSVT operator can be copied."""
+        op1 = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        op2 = copy(op1)
+        assert id(op1) != id(op2)
+        assert qml.equal(op1, op2)
 
 
 class Testqsvt:
