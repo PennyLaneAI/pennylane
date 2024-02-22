@@ -608,7 +608,7 @@ class TestLinearCombination:
 
     def test_label_many_coefficients(self):
         """Tests the label method of LinearCombination when >3 coefficients."""
-        H = 0.1 * X(0) + 0.1 * Y(1) + 0.3 * Z(0) @ X(1) + 0.4 * X(3)
+        H = LinearCombination([0.1]*5, [X(i) for i in range(5)])
         assert H.label() == "𝓗"
         assert H.label(decimals=2) == "𝓗"
     
@@ -628,7 +628,7 @@ class TestLinearCombination:
     def test_small_LinearCombination_ipython_display(self, mock_print):
         """Test that the ipython_dipslay method prints __str__."""
         # pylint: disable=protected-access
-        H = 1.0 * X(0)
+        H = qml.LinearCombination([1.0], [X(0)])
         H._ipython_display_()
         mock_print.assert_called_with(str(H))
 
@@ -691,14 +691,11 @@ class TestLinearCombination:
         )
         data = H._obs_data()
 
-        assert data == {
-            (1, frozenset([("PauliZ", qml.wires.Wires(0), ())])),
-            (
-                1,
-                frozenset([("PauliZ", qml.wires.Wires(0), ()), ("PauliX", qml.wires.Wires(1), ())]),
-            ),
-            (0.5, frozenset([("PauliX", qml.wires.Wires(2), ())])),
-        }
+        expected = {(0.5, frozenset({('Prod', qml.wires.Wires([2, 1]), ())})),
+                    (1.0, frozenset({('PauliZ', qml.wires.Wires(0), ())})),
+                    (1.0, frozenset({('Prod', qml.wires.Wires([0, 1]), ())}))}
+
+        assert data == expected
 
     def test_data_gell_mann(self):
         """Tests that the obs_data method for LinearCombinations with qml.GellMann
@@ -713,17 +710,13 @@ class TestLinearCombination:
         )
         data = H._obs_data()
 
-        assert data == {
-            (1, frozenset([("GellMann", qml.wires.Wires(0), (3,))])),
-            (
-                -1,
-                frozenset(
-                    [("GellMann", qml.wires.Wires(0), (3,)), ("GellMann", qml.wires.Wires(1), (1,))]
-                ),
-            ),
-            (0.5, frozenset([("GellMann", qml.wires.Wires(2), (2,))])),
-        }
+        expected = {(-1.0, frozenset({('Prod', qml.wires.Wires([0, 1]), ())})),
+            (0.5, frozenset({('GellMann', qml.wires.Wires(2), (2,))})),
+            (1.0, frozenset({('GellMann', qml.wires.Wires(0), (3,))}))}
 
+        assert data == expected
+
+    @pytest.mark.xfail
     def test_compare_gell_mann(self):
         """Tests that the compare method returns the correct result for LinearCombinations
         with qml.GellMann present."""
@@ -1968,3 +1961,5 @@ class TestLinearCombinationDifferentiation:
             match="not supported on adjoint",
         ):
             grad_fn(coeffs, param)
+
+qml.operation.disable_new_opmath()

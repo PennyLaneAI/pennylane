@@ -614,6 +614,8 @@ class LinearCombination(Observable):
         """
 
         if (pr1 := self.pauli_rep) and (pr2 := other.pauli_rep):
+            pr1.simplify()
+            pr2.simplify()
             return pr1 == pr2
 
         if isinstance(other, (LinearCombination, Hamiltonian)):
