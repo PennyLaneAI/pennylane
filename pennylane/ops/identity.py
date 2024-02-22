@@ -198,6 +198,24 @@ class I(CVObservable, Operation):
 
 
 Identity = I
+r"""
+The identity observable :math:`\I`.
+
+The expectation of this observable
+
+.. math::
+    E[\I] = \text{Tr}(\I \rho)
+
+.. seealso:: :class:`~I`
+
+Args:
+    wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+    id (str): custom label given to an operator instance,
+        can be useful for some applications where the instance has to be identified.
+
+Corresponds to the trace of the quantum state, which in exact
+simulators should always be equal to 1.
+"""
 
 
 class GlobalPhase(Operation):
