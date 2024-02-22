@@ -33,7 +33,7 @@ class Reflection(Operation):
 
     .. math::
 
-        \text{Reflection}(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
+       R(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
 
 
     Args:
