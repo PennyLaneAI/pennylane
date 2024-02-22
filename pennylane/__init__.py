@@ -273,7 +273,7 @@ def device(name, *args, **kwargs):
         @qml.qnode(dev)
         def circuit(a):
           qml.RX(a, wires=0)
-          return qml.sample(qml.PauliZ(wires=0))
+          return qml.sample(qml.Z(0))
 
     >>> circuit(0.8)  # 10 samples are returned
     array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
@@ -321,7 +321,7 @@ def device(name, *args, **kwargs):
         @qml.qnode(dev, expansion_strategy="device")
         def run_cnot():
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliX(wires=1))
+            return qml.expval(qml.X(1))
 
     >>> print(qml.draw(run_cnot)())
     0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤

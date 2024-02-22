@@ -1045,7 +1045,7 @@ class QubitDevice(Device):
             # are the same for different executions with the same seed
             rng = np.random.RandomState(seed)
             recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+            obs_list = [qml.X, qml.Y, qml.Z]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
 
