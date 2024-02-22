@@ -89,38 +89,6 @@ valid_LinearCombinations = [
     ((0.7 + 0j, 0 + 1.3j), (X(0), Y(1))),
 ]
 
-valid_LinearCombinations_str = [
-    "  (1.0) [Hermitian0,1]",
-    "  (-0.8) [Z0]",
-    "  (0.6) [X0 X1]",
-    "  (-1.6) [Y1]\n+ (0.5) [X0]",
-    "  (-1.6) [Y1]\n+ (0.5) [X1]",
-    "  (-1.6) [Yb]\n+ (0.5) [Xa]",
-    "  (-0.4) [Hermitian2]\n+ (0.333) [Z2]\n+ (1.1) [X0]",
-    "  (0.15) [Z1]\n+ (-0.4) [Hermitian0,2]",
-    "  (1.5) [Z0]\n+ (2.0) [Y2]",
-    "  (0.5) [Y0]\n+ (-0.1) [Hermitian0,1]",
-    "  (0.5) [X0]\n+ (1.2) [X0 X1]",
-    "  ((0.5+1.2j)) [X0]\n+ ((1.2+0.5j)) [Y1]",
-    "  (1.3j) [Y1]\n+ ((0.7+0j)) [X0]",
-]
-
-valid_LinearCombinations_repr = [
-    "<LinearCombination: terms=1, wires=[0, 1]>",
-    "<LinearCombination: terms=1, wires=[0]>",
-    "<LinearCombination: terms=1, wires=[0, 1]>",
-    "<LinearCombination: terms=2, wires=[0, 1]>",
-    "<LinearCombination: terms=2, wires=[1]>",
-    "<LinearCombination: terms=2, wires=['a', 'b']>",
-    "<LinearCombination: terms=3, wires=[0, 2]>",
-    "<LinearCombination: terms=2, wires=[0, 1, 2]>",
-    "<LinearCombination: terms=2, wires=[0, 2]>",
-    "<LinearCombination: terms=2, wires=[0, 1]>",
-    "<LinearCombination: terms=2, wires=[0, 1]>",
-    "<LinearCombination: terms=2, wires=[0, 1]>",
-    "<LinearCombination: terms=2, wires=[0, 1]>",
-]
-
 invalid_LinearCombinations = [
     ((), (Z(0),)),
     ((), (Z(0), Y(1))),
@@ -673,14 +641,18 @@ class TestLinearCombination:
         H = 0.1 * X(0) + 0.1 * Y(1) + 0.3 * Z(0) @ X(1) + 0.4 * X(3)
         assert H.label() == "𝓗"
         assert H.label(decimals=2) == "𝓗"
+    
+    LINEARCOMBINATION_STR = (
+        (qml.LinearCombination([0.5, 0.5], [X(0), X(1)]), '0.5 * X(0) + 0.5 * X(1)'),
+        (qml.LinearCombination([0.5, 0.5], [qml.prod(X(0), X(1)), qml.prod(X(1), X(2))]), '0.5 * (X(0) @ X(1)) + 0.5 * (X(1) @ X(2))')
+    )
 
     @pytest.mark.parametrize(
-        "terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_str)
+        "op, string", LINEARCOMBINATION_STR
     )
-    def test_LinearCombination_str(self, terms, string):
+    def test_LinearCombination_str(self, op, string):
         """Tests that the __str__ function for printing is correct"""
-        H = qml.LinearCombination(*terms)
-        assert H.__str__() == string
+        assert str(op) == string
 
     @patch("builtins.print")
     def test_small_LinearCombination_ipython_display(self, mock_print):
@@ -697,14 +669,19 @@ class TestLinearCombination:
         H = qml.LinearCombination([1] * 16, [X(i) for i in range(16)])
         H._ipython_display_()
         mock_print.assert_called_with(repr(H))
+    
+    LINEARCOMBINATION_REPR = (
+        (qml.LinearCombination([0.5, 0.5], [X(0), X(1)]), '0.5 * X(0) + 0.5 * X(1)'),
+        (qml.LinearCombination([0.5, 0.5], [qml.prod(X(0), X(1)), qml.prod(X(1), X(2))]), '0.5 * (X(0) @ X(1)) + 0.5 * (X(1) @ X(2))'),
+        (qml.LinearCombination(range(15), [qml.prod(X(i), X(i+1)) for i in range(15)]), '(\n    0 * (X(0) @ X(1))\n  + 1 * (X(1) @ X(2))\n  + 2 * (X(2) @ X(3))\n  + 3 * (X(3) @ X(4))\n  + 4 * (X(4) @ X(5))\n  + 5 * (X(5) @ X(6))\n  + 6 * (X(6) @ X(7))\n  + 7 * (X(7) @ X(8))\n  + 8 * (X(8) @ X(9))\n  + 9 * (X(9) @ X(10))\n  + 10 * (X(10) @ X(11))\n  + 11 * (X(11) @ X(12))\n  + 12 * (X(12) @ X(13))\n  + 13 * (X(13) @ X(14))\n  + 14 * (X(14) @ X(15))\n)')
+    )
 
     @pytest.mark.parametrize(
-        "terms, string", zip(valid_LinearCombinations, valid_LinearCombinations_repr)
+        "op, string", LINEARCOMBINATION_REPR
     )
-    def test_LinearCombination_repr(self, terms, string):
+    def test_LinearCombination_repr(self, op, string):
         """Tests that the __repr__ function for printing is correct"""
-        H = qml.LinearCombination(*terms)
-        assert H.__repr__() == string
+        assert repr(op) == string
 
     def test_LinearCombination_name(self):
         """Tests the name property of the LinearCombination class"""

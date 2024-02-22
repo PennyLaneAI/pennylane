@@ -514,32 +514,19 @@ class LinearCombination(Observable):
         return LinearCombination(*op_as_sum.terms())
 
     def __str__(self):
-        def wires_print(ob: Observable):
-            """Function that formats the wires."""
-            return ",".join(map(str, ob.wires.tolist()))
-
-        list_of_coeffs = self.data  # list of scalar tensors
-        paired_coeff_obs = list(zip(list_of_coeffs, self.ops))
-        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), qml.math.real(pair[0])))
-
-        terms_ls = []
-
-        for coeff, obs in paired_coeff_obs:
-            if isinstance(obs, Tensor):
-                obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
-                ob_str = " ".join(obs_strs)
-            elif isinstance(obs, Observable):
-                ob_str = f"{OBS_MAP.get(obs.name, obs.name)}{wires_print(obs)}"
-
-            term_str = f"({coeff}) [{ob_str}]"
-
-            terms_ls.append(term_str)
-
-        return "  " + "\n+ ".join(terms_ls)
+        """String representation of the PauliSentence."""
+        ops = self.operands
+        return " + ".join(f"{str(op)}" if i == 0 else f"{str(op)}" for i, op in enumerate(ops))
 
     def __repr__(self):
-        # Constructor-call-like representation
-        return f"<LinearCombination: terms={qml.math.shape(self.coeffs)[0]}, wires={self.wires.tolist()}>"
+        """Terminal representation for PauliSentence"""
+        # post-processing the flat str() representation
+        # We have to do it like this due to the possible
+        # nesting of Sums, e.g. X(0) + X(1) + X(2) is a sum(sum(X(0), X(1)), X(2))
+        if len(main_string := str(self)) > 50:
+            main_string = main_string.replace(" + ", "\n  + ")
+            return f"(\n    {main_string}\n)"
+        return main_string
 
     def _ipython_display_(self):  # pragma: no-cover
         """Displays __str__ in ipython instead of __repr__
