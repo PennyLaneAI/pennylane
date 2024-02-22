@@ -79,7 +79,7 @@ class Reflection(Operation):
 
         The central block is obtained through a PhaseShift controlled operator.
 
-        In the case of specifying the reflection wires,  the operator would have the following expression.
+        In the case of specifying the reflection wires, the operator would have the following expression.
 
         .. math::
 
