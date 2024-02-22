@@ -380,7 +380,7 @@ class PauliWord(dict):
 
         You can also compute the commutator with other operator types if they have a Pauli representation.
 
-        >>> pw.commutator(qml.PauliY(0))
+        >>> pw.commutator(qml.Y(0))
         2j * Z(0)
         """
         if isinstance(other, PauliWord):
@@ -778,7 +778,7 @@ class PauliSentence(dict):
 
         You can also compute the commutator with other operator types if they have a Pauli representation.
 
-        >>> ps1.commutator(qml.PauliY(0))
+        >>> ps1.commutator(qml.Y(0))
         2j * Z(0)"""
         final_ps = PauliSentence()
 

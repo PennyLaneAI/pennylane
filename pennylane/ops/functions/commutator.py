@@ -85,11 +85,11 @@ def commutator(op1, op2, pauli=False):
         .. code-block:: python3
 
             with qml.tape.QuantumTape() as tape:
-                a = qml.PauliX(0)      # gets recorded
+                a = qml.X(0)      # gets recorded
                 b = PauliWord({0:"Y"}) # does not get recorded
                 comm = qml.commutator(a, b) # does not get recorded
 
-        In this example, we obtain ``tape.operations = [qml.PauliX(0)]``. When desired, we can still record the result of
+        In this example, we obtain ``tape.operations = [qml.X(0)]``. When desired, we can still record the result of
         the commutator by using :func:`~apply`, i.e. ``qml.apply(comm)`` inside the recording context.
 
         A peculiarity worth repeating is how in a recording context every created operator is recorded.
@@ -97,7 +97,7 @@ def commutator(op1, op2, pauli=False):
         .. code-block:: python3
 
             with qml.tape.QuantumTape() as tape:
-                comm = qml.commutator(qml.PauliX(0), qml.PauliY(0))
+                comm = qml.commutator(qml.X(0), qml.Y(0))
 
         In this example, both :class:`~PauliX` and :class:`PauliY` get recorded because they were created inside the
         recording context. To avoid this, create the input to ``qml.commutator`` outside the recording context / qnode
