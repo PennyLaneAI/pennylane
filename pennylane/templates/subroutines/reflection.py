@@ -84,7 +84,7 @@ class Reflection(Operation):
 
         .. math::
 
-            U(I - (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes I^{n-m})U^{\dagger},
+            U(-I + (1 - e^{i\alpha}) |0\rangle^{\otimes m} \langle 0|^{\otimes m}\otimes I^{n-m})U^{\dagger},
 
         where :math:`m` is the number of reflection wires and :math:`n` is the total number of wires.
 
