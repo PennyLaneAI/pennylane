@@ -55,7 +55,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     Consider the following ansatz and observable list:
 
-    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(2)]
+    >>> obs_list = [qml.X(0) @ qml.Z(1), qml.Y(2)]
     >>> ansatz = qml.templates.StronglyEntanglingLayers
 
     We can construct a QNode to output the probability distribution in the shared eigenbasis of the

@@ -114,6 +114,20 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
+def test_legacy_ops():
+    """Test that PennyLaneDepcreationWarning is raised when Sum.ops is called"""
+    H = qml.sum(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Sum.ops is deprecated and"):
+        _ = H.ops
+
+
+def test_legacy_coeffs():
+    """Test that PennyLaneDepcreationWarning is raised when Sum.ops is called"""
+    H = qml.sum(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Sum.coeffs is deprecated and"):
+        _ = H.coeffs
+
+
 class TestInitialization:
     """Test the initialization."""
 

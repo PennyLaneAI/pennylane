@@ -236,7 +236,7 @@ class PauliRot(Operation):
     >>> @qml.qnode(dev)
     ... def example_circuit():
     ...     qml.PauliRot(0.5, 'X',  wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(example_circuit())
     0.8775825618903724
     """
@@ -1673,15 +1673,15 @@ class CPhaseShift00(Operation):
         **Example:**
 
         >>> qml.CPhaseShift00.compute_decomposition(1.234, wires=(0,1))
-        [PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        [X(0),
+        X(1),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PauliX(wires=[1]),
-        PauliX(wires=[0])]
+        X(1),
+        X(0)]
 
         """
         decomp_ops = [
@@ -1857,13 +1857,13 @@ class CPhaseShift01(Operation):
         **Example:**
 
         >>> qml.CPhaseShift01.compute_decomposition(1.234, wires=(0,1))
-        [PauliX(wires=[0]),
+        [X(0),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PauliX(wires=[0])]
+        X(0)]
 
         """
         decomp_ops = [
@@ -2036,13 +2036,13 @@ class CPhaseShift10(Operation):
         **Example:**
 
         >>> qml.CPhaseShift10.compute_decomposition(1.234, wires=(0,1))
-        [PauliX(wires=[1]),
+        [X(1),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PauliX(wires=[1])]
+        X(1)]
 
         """
         decomp_ops = [

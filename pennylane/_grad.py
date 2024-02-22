@@ -288,7 +288,7 @@ def jacobian(func, argnum=None, method=None, h=None):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.RZ(z, wires=0)
-            return tuple(qml.expval(qml.PauliZ(w)) for w in dev.wires)
+            return tuple(qml.expval(qml.Z(w)) for w in dev.wires)
 
         x = np.array(0.2, requires_grad=True)
         y = np.array(0.9, requires_grad=True)
@@ -318,7 +318,7 @@ def jacobian(func, argnum=None, method=None, h=None):
             qml.RX(x[0], wires=0)
             qml.RY(y[0, 3], wires=1)
             qml.RX(x[1], wires=2)
-            return [qml.expval(qml.PauliZ(w)) for w in [0, 1, 2]]
+            return [qml.expval(qml.Z(w)) for w in [0, 1, 2]]
 
         x = np.array([0.1, 0.5], requires_grad=True)
         y = np.array([[-0.3, 1.2, 0.1, 0.9], [-0.2, -3.1, 0.5, -0.7]], requires_grad=True)
@@ -596,7 +596,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
         def circuit(n, params):
             qml.RX(params[n, 0], wires=n)
             qml.RY(params[n, 1], wires=n)
-            return qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(1))
 
         @qml.qjit
         def workflow(primals, tangents):

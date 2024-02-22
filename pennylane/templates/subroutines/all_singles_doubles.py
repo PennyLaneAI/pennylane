@@ -105,7 +105,7 @@ class AllSinglesDoubles(Operation):
             @qml.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
                 qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             # Evaluate the QNode for a given set of parameters
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))
