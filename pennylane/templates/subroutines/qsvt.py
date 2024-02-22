@@ -308,8 +308,17 @@ class QSVT(Operation):
         # Override Operator.__copy__() to avoid setting the "data" property before the new instance
         # is assigned hyper-parameters since QSVT data is derived from the hyper-parameters.
         clone = QSVT.__new__(QSVT)
+
+        # Ensure the operators in the hyper-parameters are copied instead of aliased.
+        clone._hyperparameters = {
+            "UA": copy.copy(self._hyperparameters["UA"]),
+            "projectors": list(map(copy.copy, self._hyperparameters["projectors"])),
+        }
+
         for attr, value in vars(self).items():
-            setattr(clone, attr, value)
+            if attr != "_hyperparameters":
+                setattr(clone, attr, value)
+
         return clone
 
     @property

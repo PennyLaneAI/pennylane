@@ -369,10 +369,17 @@ class TestQSVT:
 
     def test_copy(self):
         """Test that a QSVT operator can be copied."""
-        op1 = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
-        op2 = copy(op1)
-        assert id(op1) != id(op2)
-        assert qml.equal(op1, op2)
+        orig_op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        copy_op = copy(orig_op)
+        assert qml.equal(orig_op, copy_op)
+
+        # Ensure the (nested) operations are copied instead of aliased.
+        assert id(orig_op) != id(copy_op)
+        assert id(orig_op.hyperparameters["UA"]) != id(copy_op.hyperparameters["UA"])
+
+        orig_projectors = orig_op.hyperparameters["projectors"]
+        copy_projectors = copy_op.hyperparameters["projectors"]
+        assert all(id(p1) != id(p2) for p1, p2 in zip(orig_projectors, copy_projectors))
 
 
 class Testqsvt:
