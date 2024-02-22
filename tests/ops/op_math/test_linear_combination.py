@@ -807,7 +807,7 @@ class TestLinearCombination:
     @pytest.mark.parametrize(("H1", "H2", "H"), rmatmul_LinearCombinations)
     def test_LinearCombination_rmatmul(self, H1, H2, H):
         """Tests that LinearCombinations are tensored correctly when using __rmatmul__"""
-        assert H.compare(H1.__rmatmul__(H2))
+        assert H.compare(H1 @ H2)
 
     def test_LinearCombination_same_wires(self):
         """Test if a ValueError is raised when multiplication between LinearCombinations acting on the
@@ -1175,7 +1175,7 @@ class TestLinearCombinationSparseMatrix:
         [
             (
                 [1, -0.45],
-                [Z(0) @ Z(1), Y(0) @ Z(1)],
+                [qml.prod(Z(0), Z(1)), qml.prod(Y(0), Z(1))],
                 None,
                 np.array(
                     [
@@ -1188,7 +1188,7 @@ class TestLinearCombinationSparseMatrix:
             ),
             (
                 [0.1],
-                [Z("b") @ X("a")],
+                [qml.prod(Z("b"), X("a"))],
                 ["a", "c", "b"],
                 np.array(
                     [
@@ -1278,9 +1278,9 @@ class TestLinearCombinationSparseMatrix:
             (
                 [0.21, -0.78, 0.52],
                 [
-                    Z(0) @ Z(1),
-                    X(0) @ Z(1),
-                    Y(0) @ Z(1),
+                    qml.prod(Z(0), Z(1)),
+                    qml.prod(X(0), Z(1)),
+                    qml.prod(Y(0), Z(1)),
                 ],
                 None,
                 np.array(
