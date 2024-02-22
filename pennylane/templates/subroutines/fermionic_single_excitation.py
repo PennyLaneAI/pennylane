@@ -105,7 +105,7 @@ class FermionicSingleExcitation(Operation):
             @qml.qnode(dev)
             def circuit(weight, wires=None):
                 qml.FermionicSingleExcitation(weight, wires=wires)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             weight = 0.56
             print(circuit(weight, wires=[0, 1, 2]))

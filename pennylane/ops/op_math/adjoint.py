@@ -83,7 +83,7 @@ def adjoint(fn, lazy=True):
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit2(y):
     ...     qml.adjoint(qml.RY(y, wires=0))
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit2)("y"))
     0: ──RY(y)†─┤  <Z>
     >>> print(qml.draw(circuit2, expansion_strategy="device")(0.1))
@@ -107,7 +107,7 @@ def adjoint(fn, lazy=True):
         def circuit(a):
             my_ops(a, wire=0)
             qml.adjoint(my_ops)(a, wire=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     Printing this out, we can see that the inverse quantum
     function has indeed been applied:
@@ -151,8 +151,8 @@ def adjoint(fn, lazy=True):
         an :meth:`.Operator.adjoint` method is the object wrapped with the :class:`~.ops.op_math.Adjoint`
         wrapper class.
 
-        >>> qml.adjoint(qml.PauliZ(0), lazy=False)
-        PauliZ(wires=[0])
+        >>> qml.adjoint(qml.Z(0), lazy=False)
+        Z(0)
         >>> qml.adjoint(qml.RX, lazy=False)(1.0, wires=0)
         RX(-1.0, wires=[0])
         >>> qml.adjoint(qml.S, lazy=False)(0)
@@ -220,7 +220,7 @@ class Adjoint(SymbolicOp):
     array([[1.-0.j, 0.-0.j],
        [0.-0.j, 0.-1.j]])
     >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
-    (PauliX(wires=[0]), 0.5)
+    (X(0), 0.5)
     >>> Adjoint(qml.RX(1.234, wires=0)).data
     (1.234,)
 
@@ -242,13 +242,13 @@ class Adjoint(SymbolicOp):
         If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
         well.
 
-        >>> op = Adjoint(1.0 * qml.PauliX(0))
+        >>> op = Adjoint(1.0 * qml.X(0))
         >>> isinstance(op, qml.operation.Observable)
         True
         >>> isinstance(op, qml.operation.Operation)
         False
-        >>> Adjoint(qml.PauliX(0)) @ qml.PauliY(1)
-        Adjoint(PauliX)(wires=[0]) @ PauliY(wires=[1])
+        >>> Adjoint(qml.X(0)) @ qml.Y(1)
+        (Adjoint(X(0))) @ Y(1)
 
     """
 

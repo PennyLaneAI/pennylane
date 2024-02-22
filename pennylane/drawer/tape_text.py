@@ -274,8 +274,8 @@ def tape_text(
             qml.Toffoli(wires=(0, 1, "aux"))
         ]
         measurements = [
-            qml.expval(qml.PauliZ("aux")),
-            qml.var(qml.PauliZ(0) @ qml.PauliZ(1)),
+            qml.expval(qml.Z("aux")),
+            qml.var(qml.Z(0) @ qml.Z(1)),
             qml.probs(wires=(0, 1, 2, "aux"))
         ]
         tape = qml.tape.QuantumTape(ops, measurements)
@@ -407,7 +407,7 @@ def tape_text(
 
         with qml.tape.QuantumTape() as tape:
             with qml.tape.QuantumTape() as tape_inner:
-                qml.PauliX(0)
+                qml.X(0)
 
         cache = {'tape_offset': 3}
         print(qml.drawer.tape_text(tape, cache=cache))

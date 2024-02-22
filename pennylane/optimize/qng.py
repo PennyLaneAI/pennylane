@@ -100,7 +100,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
-    ...     return qml.expval(qml.PauliX(0) + qml.PauliX(1))
+    ...     return qml.expval(qml.X(0) + qml.X(1))
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` function:

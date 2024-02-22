@@ -124,7 +124,7 @@ def autograd_execute(
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
     >>> jpc = DeviceDerivatives(qml.device('default.qubit'), config)
     >>> def f(x):
-    ...     tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+    ...     tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
     ...     batch = (tape, )
     ...     return autograd_execute(batch, execute_fn, jpc)
     >>> qml.grad(f)(qml.numpy.array(0.1))

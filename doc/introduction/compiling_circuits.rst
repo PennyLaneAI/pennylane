@@ -44,11 +44,11 @@ RX(11.336370614359172, wires=[0])
 >>> qml.simplify(qml.ops.Pow(qml.RX(1, 0), 3))
 RX(3.0, wires=[0])
 >>> qml.simplify(qml.sum(qml.PauliY(3), qml.PauliY(3)))
-2*(PauliY(wires=[3]))
+2 * Y(3)
 >>> qml.simplify(qml.RX(1, 0) @ qml.RX(1, 0))
 RX(2.0, wires=[0])
 >>> qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
--1j*(PauliY(wires=[0]))
+-1j * Y(0)
 
 Now lets simplify a nested operator:
 
@@ -56,7 +56,7 @@ Now lets simplify a nested operator:
 >>> prod1 = qml.PauliX(0) @ sum_op
 >>> nested_op = prod1 @ qml.RX(1, 0)
 >>> qml.simplify(nested_op)
-(PauliX(wires=[0]) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
+(X(0) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
 
 Several simplifications steps are happening here. First of all, the nested products are removed:
 
@@ -151,9 +151,9 @@ For example, take the following decorated quantum function:
         qml.CNOT(wires=[1, 0])
         qml.RZ(-z, wires=2)
         qml.RX(y, wires=2)
-        qml.PauliY(wires=2)
+        qml.Y(wires=2)
         qml.CZ(wires=[1, 2])
-        return qml.expval(qml.PauliZ(wires=0))
+        return qml.expval(qml.Z(wires=0))
 
 The default behaviour of :func:`~.pennylane.compile` applies a sequence of three
 transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylane.transforms.cancel_inverses`,
@@ -189,9 +189,9 @@ controlled gates and cancel adjacent inverses, we could do:
         qml.CNOT(wires=[1, 0])
         qml.RZ(-z, wires=2)
         qml.RX(y, wires=2)
-        qml.PauliY(wires=2)
+        qml.Y(wires=2)
         qml.CZ(wires=[1, 2])
-        return qml.expval(qml.PauliZ(wires=0))
+        return qml.expval(qml.Z(wires=0))
 
 >>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
 0: ──H──RX(0.40)──RX(0.20)────────────────────────────┤  <Z>
@@ -337,8 +337,7 @@ observables and coefficients:
 >>> coeffs = [1.43, 4.21, 0.97]
 >>> obs_groupings, coeffs_groupings = qml.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
 >>> obs_groupings
-[[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
- [PauliY(wires=[0])]]
+[[Z(1), X(0) @ X(1)], [Y(0)]]
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
