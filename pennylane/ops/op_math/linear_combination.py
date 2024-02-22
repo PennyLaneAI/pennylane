@@ -237,7 +237,6 @@ class LinearCombination(Observable):
             new_rep = qml.pauli.PauliSentence()
             for operand_rep in operand_pauli_reps:
                 for pw, coeff in operand_rep.items():
-                    print(coeff)
                     new_rep[pw] += coeff
             return new_rep
         return None
@@ -627,9 +626,8 @@ class LinearCombination(Observable):
         >>> ob1.compare(ob2)
         False
         """
-        pr1 = self.pauli_rep
-        pr2 = other.pauli_rep
-        if pr1 is not None and pr2 is not None:
+
+        if (pr1 := self.pauli_rep) and (pr2 := other.pauli_rep):
             return pr1 == pr2
 
         if isinstance(other, (LinearCombination, Hamiltonian)):
