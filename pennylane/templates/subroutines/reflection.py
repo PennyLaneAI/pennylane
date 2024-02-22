@@ -28,7 +28,7 @@ class Reflection(Operation):
     This operator is an important component of quantum algorithms such as amplitude amplification [`arXiv:quant-ph/0005055 <https://arxiv.org/abs/quant-ph/0005055>`__]
     and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__].
 
-    Given an :class:`~.Operator` :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`,  and a reflection angle :math:`\alpha`,
+    Given an operator :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`  and a reflection angle :math:`\alpha`,
     this template creates the operation:
 
     .. math::
