@@ -51,7 +51,7 @@ class AmplitudeAmplification(Operation):
 
     Args:
         U (Operator): Operator that generate the state :math:`|\Psi\rangle`.
-        O (Operator): The oracle that flips the sign of the state :math:`|\psi\rangle` and do nothing to the state :math:`|\psi^{\perp}\rangle`.
+        O (Operator): The oracle that flips the sign of the state :math:`|\phi\rangle` and do nothing to the state :math:`|\phi^{\perp}\rangle`.
         iters (int): the number of iterations of the amplitude amplification subroutine. Default is 1.
         fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm. Default is False.
         work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm. Default is None.
