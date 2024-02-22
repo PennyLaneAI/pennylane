@@ -625,6 +625,9 @@
 * When a QNode specifies `diff_method="adjoint"`, `default.qubit` no longer tries to decompose non-trainable operations with non-scalar parameters such as `QubitUnitary`.
   [(#5233)](https://github.com/PennyLaneAI/pennylane/pull/5233)
 
+* We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
+  [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
