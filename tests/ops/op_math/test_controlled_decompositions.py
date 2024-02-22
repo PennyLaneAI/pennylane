@@ -241,6 +241,50 @@ class TestControlledDecompositionZYZ:
         assert len(decomp) == 5
         assert decomp == expected
 
+    @pytest.mark.parametrize(
+        "composite_op, want_decomp",
+        [
+            (
+                qml.ops.Prod(qml.PauliX(0), qml.PauliX(0)),  # type: ignore
+                [
+                    qml.CNOT(wires=[1, 0]),
+                    qml.CNOT(wires=[1, 0]),
+                ],
+            ),
+            (
+                qml.s_prod(1j, qml.PauliX(0)),
+                [
+                    qml.RZ(7 * np.pi / 2, wires=0),
+                    qml.RY(np.pi / 2, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RY(-np.pi / 2, wires=0),
+                    qml.RZ(-2 * np.pi, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RZ(-3 * np.pi / 2, wires=0),
+                ],
+            ),
+            (
+                (
+                    qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
+                    + qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
+                ),
+                [
+                    qml.RZ(np.pi / 2, wires=0),
+                    qml.RY(np.pi / 2, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RY(-np.pi / 2, wires=0),
+                    qml.RZ(-2 * np.pi, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RZ(3 * np.pi / 2, wires=0),
+                ],
+            ),
+        ],
+    )
+    def test_composite_ops(self, composite_op, want_decomp):
+        """Test that ZYZ decomposition is used for composite operators."""
+        have_decomp = ctrl_decomp_zyz(composite_op, 1)
+        assert have_decomp == want_decomp
+
     @pytest.mark.parametrize("test_expand", [False, True])
     def test_zyz_decomp_no_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
