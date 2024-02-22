@@ -271,6 +271,9 @@
     + 2j * X(0) @ Z(1)
     ```
 
+* Controlled composite operations can be decomposed using ZYZ rotations.
+  [(#5242)](https://github.com/PennyLaneAI/pennylane/pull/5242)
+
 * Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and `SProd` operations
   convert `Hamiltonian` and `Tensor` operands to `Sum` and `Prod` types, respectively. This helps
   avoid the mixing of incompatible operator types.
@@ -630,6 +633,7 @@
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
+Mikhail Andrenkov,
 Utkarsh Azad,
 Trenten Babcock,
 Gabriel Bottrill,
