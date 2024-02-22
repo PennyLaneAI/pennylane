@@ -125,9 +125,10 @@
     ```
 
   * A new `qml.commutator` function is now available that allows you to compute commutators between
-    operators:
+    `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
     [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
     [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
+    [(#5098)](https://github.com/PennyLaneAI/pennylane/pull/5098)
 
     ```pycon
     >>> qml.commutator(X(0), Y(0))

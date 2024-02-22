@@ -175,8 +175,18 @@ class TestcommPauli:
         assert res == true_res
         assert isinstance(res, PauliSentence)
 
+    def test_consistency_with_native_pauli_comms(self):
+        """Test consistent behavior between native comms in PauliWord and PauliSentence and qml.commutor"""
+        op1 = qml.PauliX(0) @ qml.PauliX(1)
+        op2 = qml.PauliY(0) + qml.PauliY(1)
+        res1 = qml.commutator(op1, op2, pauli=True)
+        res2 = PauliWord({0: "X", 1: "X"}).commutator(PauliWord({0: "Y"}) + PauliWord({1: "Y"}))
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert res1 == res2
 
-class TestcommPauliFalseSimplify:
+
+class TestcommPauliFalse:
     """Test qml.comm for pauli=False (default behavior)"""
 
     data_pauli_relations_ops = (
@@ -225,12 +235,12 @@ class TestcommPauliFalseSimplify:
         assert isinstance(res, Operator)
         assert isinstance(res, SProd)
 
-    def test_consistency_with_native_pauli_comms(self):
-        """Test consistent behavior between native comms in PauliWord and PauliSentence and qml.commutor"""
+    def test_paulis_used_when_ever_possible(self, mocker):
+        """Test that pauli_rep is used whenever possible even when ``pauli=False``"""
+        spy = mocker.spy(PauliSentence, "operation")
         op1 = qml.PauliX(0) @ qml.PauliX(1)
         op2 = qml.PauliY(0) + qml.PauliY(1)
-        res1 = qml.commutator(op1, op2, pauli=True)
-        res2 = PauliWord({0: "X", 1: "X"}).commutator(PauliWord({0: "Y"}) + PauliWord({1: "Y"}))
-        assert isinstance(res1, PauliSentence)
-        assert isinstance(res2, PauliSentence)
-        assert res1 == res2
+        res = qml.commutator(op1, op2, pauli=False)
+        spy.assert_called()
+
+        assert isinstance(res, Operator)
