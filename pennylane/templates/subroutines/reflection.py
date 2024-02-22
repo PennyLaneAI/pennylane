@@ -54,7 +54,6 @@ class Reflection(Operation):
         U = generator(wires=0)
 
         dev = qml.device('default.qubit')
-
         @qml.qnode(dev)
         def circuit():
 
