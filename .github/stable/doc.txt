@@ -58,7 +58,7 @@ openfermion==1.6.1
 openfermionpyscf==0.5
 opt-einsum==3.3.0
 packaging==23.2
-pandas==2.2.0
+pandas==2.2.1
 PennyLane-Lightning==0.34.0
 pennylane-sphinx-theme==0.5.4
 pillow==10.2.0
