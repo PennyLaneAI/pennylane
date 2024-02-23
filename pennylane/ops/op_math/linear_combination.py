@@ -637,52 +637,10 @@ class LinearCombination(Observable):
     
     def __matmul__(self, other):
         """The product operation between Operator objects."""
-        return qml.prod(self, other) if isinstance(other, Operator) else NotImplemented
+        if isinstance(other, Operator):
+            return qml.prod(self, other)
 
-    # def __matmul__(self, H):
-    #     r"""The tensor product operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
-    #     coeffs1 = copy(self.coeffs)
-    #     ops1 = self.ops.copy()
-
-    #     if isinstance(H, (LinearCombination, Hamiltonian)):
-    #         shared_wires = Wires.shared_wires([self.wires, H.wires])
-    #         if len(shared_wires) > 0:
-    #             raise ValueError(
-    #                 "LinearCombinations can only be multiplied together if they act on "
-    #                 "different sets of wires"
-    #             )
-
-    #         coeffs2 = H.coeffs
-    #         ops2 = H.ops
-
-    #         coeffs = qml.math.kron(coeffs1, coeffs2)
-    #         ops_list = itertools.product(ops1, ops2)
-    #         terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
-    #         return qml.LinearCombination(coeffs, terms, simplify=True)
-
-    #     if isinstance(H, (Tensor, Observable)):
-    #         terms = [op @ copy(H) for op in ops1]
-
-    #         return qml.LinearCombination(coeffs1, terms, simplify=True)
-
-    #     return NotImplemented
-
-    # def __rmatmul__(self, H):
-    #     r"""The tensor product operation (from the right) between a LinearCombination and
-    #     a LinearCombination/Tensor/Observable (ie. LinearCombination.__rmul__(H) = H @ LinearCombination).
-    #     """
-    #     if isinstance(H, (LinearCombination, Hamiltonian)):  # can't be accessed by '@'
-    #         return H.__matmul__(self)
-
-    #     coeffs1 = copy(self.coeffs)
-    #     ops1 = self.ops.copy()
-
-    #     if isinstance(H, (Tensor, Observable)):
-    #         terms = [copy(H) @ op for op in ops1]
-
-    #         return qml.LinearCombination(coeffs1, terms, simplify=True)
-
-    #     return NotImplemented
+        return NotImplemented
 
     def __add__(self, H):
         r"""The addition operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
