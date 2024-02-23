@@ -329,6 +329,7 @@
 
 * The `QSVT` operation now determines its `data` from the block encoding and projector operator data.
   [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
+  [(#5248)](https://github.com/PennyLaneAI/pennylane/pull/5248)
 
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
@@ -397,6 +398,10 @@
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
 <h3>Breaking changes 💔</h3>
+
+* Caching of executions is now turned off by default when `max_diff == 1`, as the classical overhead cost
+  outweighs the probability that duplicate circuits exists.
+  [(#5243)](https://github.com/PennyLaneAI/pennylane/pull/5243)
 
 * The entry point convention registering compilers with PennyLane has changed.
   [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
