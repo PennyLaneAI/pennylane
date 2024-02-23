@@ -387,6 +387,10 @@
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
+* `qml.ctrl` is now a simple wrapper that either calls PennyLane's built in `create_controlled_op`
+  or uses the Catalyst implementation.
+  [(#5247)](https://github.com/PennyLaneAI/pennylane/pull/5247)
+
 <h3>Breaking changes 💔</h3>
 
 * The entry point convention registering compilers with PennyLane has changed.
