@@ -1276,13 +1276,6 @@ class TestLinearCombinationSparseMatrix:
 
         assert isinstance(sparse_matrix, scipy.sparse.csr_matrix)
 
-    def test_observable_error(self):
-        """Tests that an error is thrown if the observables are themselves constructed from multi-qubit
-        operations."""
-        with pytest.raises(ValueError, match="Can only sparsify LinearCombinations"):
-            H = qml.LinearCombination([0.1], [Z("c") @ qml.Hermitian(np.eye(4), wires=["a", "b"])])
-            H.sparse_matrix(wire_order=["a", "c", "b"])
-
 
 @pytest.mark.jax
 class TestLinearCombinationArithmeticJax:

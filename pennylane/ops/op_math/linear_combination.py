@@ -415,62 +415,13 @@ class LinearCombination(Observable):
             return pr.to_mat(wire_order=wires, format="csr")
 
         # fallback logic when there is no pauli_rep
-        n = len(wires)
-        matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+        gen = ((op.sparse_matrix(), op.wires) for op in self.operands)
 
-        coeffs = qml.math.toarray(self.data)
+        reduced_mat, sum_wires = qml.math.reduce_matrices(gen, reduce_func=qml.math.add)
 
-        temp_mats = []
-        for coeff, op in zip(coeffs, self.ops):
-            obs = []
-            print(op)
-            if isinstance(op, (qml.ops.Sum, qml.ops.Prod)):
-                for o in op:
-                    if len(o.wires) > 1:
-                        # todo: deal with operations created from multi-qubit operations such as Hermitian
-                        raise ValueError(
-                            f"Can only sparsify LinearCombinations whose constituent observables consist of "
-                            f"(tensor products of) single-qubit operators; got {op}."
-                        )
-                    obs.append(o.matrix())
-            else:
-                obs.append(op.matrix())
+        wire_order = wire_order or self.wires
 
-            # Array to store the single-wire observables which will be Kronecker producted together
-            mat = []
-            # i_count tracks the number of consecutive single-wire identity matrices encountered
-            # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
-            i_count = 0
-            for wire_lab in wires:
-                if wire_lab in op.wires:
-                    if i_count > 0:
-                        mat.append(scipy.sparse.eye(2**i_count, format="coo"))
-                    i_count = 0
-                    idx = op.wires.index(wire_lab)
-                    # obs is an array storing the single-wire observables which
-                    # make up the full LinearCombination term
-                    sp_obs = scipy.sparse.coo_matrix(obs[idx])
-                    mat.append(sp_obs)
-                else:
-                    i_count += 1
-
-            if i_count > 0:
-                mat.append(scipy.sparse.eye(2**i_count, format="coo"))
-
-            red_mat = (
-                functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
-            )
-
-            temp_mats.append(red_mat.tocsr())
-            # Value of 100 arrived at empirically to balance time savings vs memory use. At this point
-            # the `temp_mats` are summed into the final result and the temporary storage array is
-            # cleared.
-            if (len(temp_mats) % 100) == 0:
-                matrix += sum(temp_mats)
-                temp_mats = []
-
-        matrix += sum(temp_mats)
-        return matrix
+        return qml.math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def simplify(self):
         r"""Simplifies the LinearCombination by combining like-terms.
