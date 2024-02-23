@@ -160,7 +160,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         raise e
 
 
-def from_qiskit_op(qiskit_op, params = None, wires = None):
+def from_qiskit_op(qiskit_op, params=None, wires=None):
     """Loads Qiskit SparsePauliOp objects by using the converter in the PennyLane-Qiskit plugin.
 
     Args:
