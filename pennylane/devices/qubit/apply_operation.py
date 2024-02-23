@@ -196,7 +196,7 @@ def apply_operation(
     >>> state
     tensor([[1., 0.],
         [0., 0.]], requires_grad=True)
-    >>> apply_operation(qml.PauliX(0), state)
+    >>> apply_operation(qml.X(0), state)
     tensor([[0., 0.],
         [1., 0.]], requires_grad=True)
 
@@ -277,7 +277,7 @@ def apply_mid_measure(
     state = state / state_norm
     if op.reset and sample == 1:
         state = apply_operation(
-            qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
+            qml.X(wire), state, is_state_batched=is_state_batched, debugger=debugger
         )
     return state
 
@@ -297,14 +297,14 @@ def apply_global_phase(
 
 
 @apply_operation.register
-def apply_paulix(op: qml.PauliX, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
     axis = op.wires[0] + is_state_batched
     return math.roll(state, 1, axis)
 
 
 @apply_operation.register
-def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply pauliz to state."""
 
     axis = op.wires[0] + is_state_batched

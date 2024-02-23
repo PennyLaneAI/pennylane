@@ -196,7 +196,7 @@ def active_compiler() -> Optional[str]:
                 qml.RX(phi, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(np.pi, np.pi / 2)
     1.0
@@ -238,7 +238,7 @@ def active() -> bool:
                 qml.RX(phi, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(np.pi, np.pi / 2)
     1.0

@@ -142,7 +142,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
     0.1 [X0] +
     0.2 [Y0 Z2]
     >>> _openfermion_to_pennylane(q_op, wires=['w0','w1','w2','extra_wire'])
-    (tensor([0.1, 0.2], requires_grad=False), [PauliX(wires=['w0']), PauliY(wires=['w0']) @ PauliZ(wires=['w2'])])
+    (tensor([0.1, 0.2], requires_grad=False), [X('w0'), Y('w0') @ Z('w2')])
 
     If the new op-math is active, the list of operators will be cast as :class:`~.Prod` instances instead of
     :class:`~.Tensor` instances when appropriate.
@@ -157,7 +157,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
         return np.array([0.0]), [qml.Identity(wires[0])]
 
-    xyz2pauli = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
+    xyz2pauli = {"X": qml.X, "Y": qml.Y, "Z": qml.Z}
 
     def _get_op(term, wires):
         """A function to compute the PL operator associated with the term string."""
@@ -218,10 +218,10 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
 
     >>> coeffs = np.array([0.1, 0.2, 0.3, 0.4])
     >>> ops = [
-    ...     qml.operation.Tensor(qml.PauliX(wires=['w0'])),
-    ...     qml.operation.Tensor(qml.PauliY(wires=['w0']), qml.PauliZ(wires=['w2'])),
-    ...     qml.sum(qml.PauliZ(wires=['w0']), qml.s_prod(-0.5, qml.PauliX(wires=['w0']))),
-    ...     qml.prod(qml.PauliX(wires=['w0']), qml.PauliZ(wires=['w1'])),
+    ...     qml.operation.Tensor(qml.X('w0')),
+    ...     qml.operation.Tensor(qml.Y('w0'), qml.Z('w2')),
+    ...     qml.sum(qml.Z('w0'), qml.s_prod(-0.5, qml.X('w0'))),
+    ...     qml.prod(qml.X('w0'), qml.Z('w1')),
     ... ]
     >>> _pennylane_to_openfermion(coeffs, ops, wires=Wires(['w0', 'w1', 'w2']))
     (-0.05+0j) [X0] +
@@ -338,7 +338,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
     >>> qml.operation.enable_new_opmath()
     >>> h_pl = import_operator(h_of, format='openfermion')
     >>> print(h_pl)
-    (-0.0548*(PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]))) + (0.14297*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
+    (-0.0548 * X(0 @ X(1) @ Y(2) @ Y(3))) + (0.14297 * Z(0 @ Z(1)))
     """
     if format not in ["openfermion"]:
         raise TypeError(f"Converter does not exist for {format} format.")

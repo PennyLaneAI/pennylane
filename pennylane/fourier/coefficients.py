@@ -95,7 +95,7 @@ def coefficients(
             qml.RY(inpt[1], wires='a')
             qml.Rot(*weights[1], wires='a')
 
-            return qml.expval(qml.PauliZ(wires='a'))
+            return qml.expval(qml.Z('a'))
 
     .. note::
 
@@ -146,7 +146,7 @@ def coefficients(
             qml.RX(inpt[0], wires=0)
             qml.RY(inpt[0], wires=1)
             qml.CNOT(wires=[1, 0])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     One can work out by hand that the Fourier coefficients are :math:`c_0 = 0.5, c_1 = c_{-1} = 0,`
     and :math:`c_2 = c_{-2} = 0.25`. Suppose we would like only to obtain the coefficients

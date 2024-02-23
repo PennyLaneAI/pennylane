@@ -122,7 +122,7 @@ compiled in the first call.
         qml.Hadamard(wires=0)
         qml.RX(theta, wires=1)
         qml.CNOT(wires=[0,1])
-        return qml.expval(qml.PauliZ(wires=1))
+        return qml.expval(qml.Z(1))
 
 >>> circuit(0.5)  # the first call, compilation occurs here
 array(0.)
@@ -164,7 +164,7 @@ rather than in Python at compile time. You can enable this feature via the
         else:
             qml.T(wires=0)
 
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
 >>> circuit(3)
 array(0.)
