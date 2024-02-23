@@ -95,8 +95,8 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
 
 
 def from_qiskit(quantum_circuit, measurements=None):
-    """Loads Qiskit QuantumCircuit objects by using the converter in the
-    PennyLane-Qiskit plugin.
+    """Loads Qiskit `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`_
+    objects by using the converter in the PennyLane-Qiskit plugin.
 
     **Example:**
 
@@ -120,7 +120,7 @@ def from_qiskit(quantum_circuit, measurements=None):
             overrides the terminal measurements that may be present in the input circuit.
 
     Returns:
-        function: the PennyLane template created based on the QuantumCircuit object
+        function: the PennyLane template created based on the ``QuantumCircuit`` object
 
     .. details::
         :title: Usage Details
