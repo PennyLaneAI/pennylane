@@ -9,7 +9,7 @@ charset-normalizer==3.3.2
 clarabel==0.6.0
 click==8.1.7
 contourpy==1.2.0
-coverage==7.4.2
+coverage==7.4.3
 cvxopt==1.3.2
 cvxpy==1.4.2
 cycler==0.12.1
@@ -38,7 +38,7 @@ numpy==1.26.4
 osqp==0.6.5
 packaging==23.2
 pathspec==0.12.1
-PennyLane_Lightning==0.35.0.dev17
+PennyLane_Lightning==0.35.0.dev
 pillow==10.2.0
 platformdirs==4.2.0
 pluggy==1.4.0
