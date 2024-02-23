@@ -1656,7 +1656,7 @@ class TestSampleMeasurement:
             qml.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        with pytest.raises(Exception):
+        with pytest.raises((ValueError, qml.DeviceError)):
             circuit()
 
     def test_method_overriden_by_device(self, device):

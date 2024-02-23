@@ -324,6 +324,9 @@
 
 <h4>Other improvements</h4>
 
+* The `pl-device-test` suite is now compatible with the `qml.devices.Device` interface.
+  [(#5229)](https://github.com/PennyLaneAI/pennylane/pull/5229)
+
 * The `QSVT` operation now determines its `data` from the block encoding and projector operator data.
   [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
 

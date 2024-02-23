@@ -252,13 +252,12 @@ class TestComparison:
         ]
 
         layers = 3
-        pnp.random.seed(1967)
-        gates_per_layers = [pnp.random.permutation(gates).numpy() for _ in range(layers)]
+        rng = pnp.random.default_rng(1967)
+        gates_per_layers = [rng.permutation(gates).numpy() for _ in range(layers)]
 
         def circuit():
             """4-qubit circuit with layers of randomly selected gates and random connections for
             multi-qubit gates."""
-            pnp.random.seed(1967)
             for gates in gates_per_layers:
                 for gate in gates:
                     qml.apply(gate)
