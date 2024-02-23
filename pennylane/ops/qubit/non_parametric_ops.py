@@ -204,7 +204,6 @@ class X(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
-        self.__class__.__name__ = "PauliX"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
@@ -345,6 +344,8 @@ class X(Observable, Operation):
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
+X.__name__ = "PauliX"
+
 PauliX = X
 r"""
 An alias of the Pauli X operator :class:`~X`.
@@ -391,7 +392,6 @@ class Y(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
-        self.__class__.__name__ = "PauliY"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
@@ -531,6 +531,8 @@ class Y(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
+Y.__name__ = "PauliY"
+
 PauliY = Y
 r"""
 An alias of the Pauli Y operator :class:`~Y`.
@@ -575,7 +577,6 @@ class Z(Observable, Operation):
     _queue_category = "_ops"
 
     def __init__(self, *params, wires=None, id=None):
-        self.__class__.__name__ = "PauliZ"
         super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
@@ -716,6 +717,8 @@ class Z(Observable, Operation):
         # Z = RZ(\pi) RY(0) RZ(0)
         return [np.pi, 0.0, 0.0]
 
+
+Z.__name__ = "PauliZ"
 
 PauliZ = Z
 r"""
