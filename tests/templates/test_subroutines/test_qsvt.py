@@ -379,7 +379,7 @@ class TestQSVT:
 
         orig_projectors = orig_op.hyperparameters["projectors"]
         copy_projectors = copy_op.hyperparameters["projectors"]
-        assert all(id(p1) != id(p2) for p1, p2 in zip(orig_projectors, copy_projectors))
+        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
 
 
 class Testqsvt:
