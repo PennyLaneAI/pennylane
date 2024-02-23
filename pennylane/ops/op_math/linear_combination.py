@@ -634,7 +634,7 @@ class LinearCombination(Observable):
         raise ValueError(
             "Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor."
         )
-    
+
     def __matmul__(self, other):
         """The product operation between Operator objects."""
         if isinstance(other, Operator):

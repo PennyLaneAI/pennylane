@@ -403,7 +403,7 @@ matmul_LinearCombinations = [
         qml.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2),
         qml.LinearCombination([1, 1], [X(0) @ X(2), Z(1) @ X(2)]),
-    )
+    ),
 ]
 
 rmatmul_LinearCombinations = [
@@ -437,7 +437,7 @@ rmatmul_LinearCombinations = [
         qml.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2),
         qml.LinearCombination([1, 1], [X(2) @ X(0), X(2) @ Z(1)]),
-    )
+    ),
 ]
 
 big_LinearCombination_coeffs = np.array(
@@ -582,18 +582,19 @@ class TestLinearCombination:
 
     def test_label_many_coefficients(self):
         """Tests the label method of LinearCombination when >3 coefficients."""
-        H = LinearCombination([0.1]*5, [X(i) for i in range(5)])
+        H = LinearCombination([0.1] * 5, [X(i) for i in range(5)])
         assert H.label() == "𝓗"
         assert H.label(decimals=2) == "𝓗"
-    
+
     LINEARCOMBINATION_STR = (
-        (qml.LinearCombination([0.5, 0.5], [X(0), X(1)]), '0.5 * X(0) + 0.5 * X(1)'),
-        (qml.LinearCombination([0.5, 0.5], [qml.prod(X(0), X(1)), qml.prod(X(1), X(2))]), '0.5 * (X(0) @ X(1)) + 0.5 * (X(1) @ X(2))')
+        (qml.LinearCombination([0.5, 0.5], [X(0), X(1)]), "0.5 * X(0) + 0.5 * X(1)"),
+        (
+            qml.LinearCombination([0.5, 0.5], [qml.prod(X(0), X(1)), qml.prod(X(1), X(2))]),
+            "0.5 * (X(0) @ X(1)) + 0.5 * (X(1) @ X(2))",
+        ),
     )
 
-    @pytest.mark.parametrize(
-        "op, string", LINEARCOMBINATION_STR
-    )
+    @pytest.mark.parametrize("op, string", LINEARCOMBINATION_STR)
     def test_LinearCombination_str(self, op, string):
         """Tests that the __str__ function for printing is correct"""
         assert str(op) == string
@@ -613,16 +614,20 @@ class TestLinearCombination:
         H = qml.LinearCombination([1] * 16, [X(i) for i in range(16)])
         H._ipython_display_()
         mock_print.assert_called_with(repr(H))
-    
+
     LINEARCOMBINATION_REPR = (
-        (qml.LinearCombination([0.5, 0.5], [X(0), X(1)]), '0.5 * X(0) + 0.5 * X(1)'),
-        (qml.LinearCombination([0.5, 0.5], [qml.prod(X(0), X(1)), qml.prod(X(1), X(2))]), '0.5 * (X(0) @ X(1)) + 0.5 * (X(1) @ X(2))'),
-        (qml.LinearCombination(range(15), [qml.prod(X(i), X(i+1)) for i in range(15)]), '(\n    0 * (X(0) @ X(1))\n  + 1 * (X(1) @ X(2))\n  + 2 * (X(2) @ X(3))\n  + 3 * (X(3) @ X(4))\n  + 4 * (X(4) @ X(5))\n  + 5 * (X(5) @ X(6))\n  + 6 * (X(6) @ X(7))\n  + 7 * (X(7) @ X(8))\n  + 8 * (X(8) @ X(9))\n  + 9 * (X(9) @ X(10))\n  + 10 * (X(10) @ X(11))\n  + 11 * (X(11) @ X(12))\n  + 12 * (X(12) @ X(13))\n  + 13 * (X(13) @ X(14))\n  + 14 * (X(14) @ X(15))\n)')
+        (qml.LinearCombination([0.5, 0.5], [X(0), X(1)]), "0.5 * X(0) + 0.5 * X(1)"),
+        (
+            qml.LinearCombination([0.5, 0.5], [qml.prod(X(0), X(1)), qml.prod(X(1), X(2))]),
+            "0.5 * (X(0) @ X(1)) + 0.5 * (X(1) @ X(2))",
+        ),
+        (
+            qml.LinearCombination(range(15), [qml.prod(X(i), X(i + 1)) for i in range(15)]),
+            "(\n    0 * (X(0) @ X(1))\n  + 1 * (X(1) @ X(2))\n  + 2 * (X(2) @ X(3))\n  + 3 * (X(3) @ X(4))\n  + 4 * (X(4) @ X(5))\n  + 5 * (X(5) @ X(6))\n  + 6 * (X(6) @ X(7))\n  + 7 * (X(7) @ X(8))\n  + 8 * (X(8) @ X(9))\n  + 9 * (X(9) @ X(10))\n  + 10 * (X(10) @ X(11))\n  + 11 * (X(11) @ X(12))\n  + 12 * (X(12) @ X(13))\n  + 13 * (X(13) @ X(14))\n  + 14 * (X(14) @ X(15))\n)",
+        ),
     )
 
-    @pytest.mark.parametrize(
-        "op, string", LINEARCOMBINATION_REPR
-    )
+    @pytest.mark.parametrize("op, string", LINEARCOMBINATION_REPR)
     def test_LinearCombination_repr(self, op, string):
         """Tests that the __repr__ function for printing is correct"""
         assert repr(op) == string
@@ -665,9 +670,11 @@ class TestLinearCombination:
         )
         data = H._obs_data()
 
-        expected = {(0.5, frozenset({('Prod', qml.wires.Wires([2, 1]), ())})),
-                    (1.0, frozenset({('PauliZ', qml.wires.Wires(0), ())})),
-                    (1.0, frozenset({('Prod', qml.wires.Wires([0, 1]), ())}))}
+        expected = {
+            (0.5, frozenset({("Prod", qml.wires.Wires([2, 1]), ())})),
+            (1.0, frozenset({("PauliZ", qml.wires.Wires(0), ())})),
+            (1.0, frozenset({("Prod", qml.wires.Wires([0, 1]), ())})),
+        }
 
         assert data == expected
 
@@ -684,9 +691,11 @@ class TestLinearCombination:
         )
         data = H._obs_data()
 
-        expected = {(-1.0, frozenset({('Prod', qml.wires.Wires([0, 1]), ())})),
-            (0.5, frozenset({('GellMann', qml.wires.Wires(2), (2,))})),
-            (1.0, frozenset({('GellMann', qml.wires.Wires(0), (3,))}))}
+        expected = {
+            (-1.0, frozenset({("Prod", qml.wires.Wires([0, 1]), ())})),
+            (0.5, frozenset({("GellMann", qml.wires.Wires(2), (2,))})),
+            (1.0, frozenset({("GellMann", qml.wires.Wires(0), (3,))})),
+        }
 
         assert data == expected
 
@@ -881,7 +890,7 @@ class TestLinearCombination:
             assert coeff1 == coeff2
         assert group_indices_before == mapped_h.grouping_indices
 
-    @pytest.mark.xfail # TODO
+    @pytest.mark.xfail  # TODO
     def test_hermitian_tensor_prod(self):
         """Test that the tensor product of a LinearCombination with Hermitian observable works."""
         tensor = X(0) @ X(1)
@@ -1927,5 +1936,6 @@ class TestLinearCombinationDifferentiation:
             match="not supported on adjoint",
         ):
             grad_fn(coeffs, param)
+
 
 qml.operation.disable_new_opmath()
