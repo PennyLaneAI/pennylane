@@ -113,7 +113,7 @@ def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"
         tape (QuantumTape): the tape who's output we want to determine
         device (Device): the device used to execute the tape.
 
-    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliX(0)), qml.probs(0)])
+    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.X(0)), qml.probs(0)])
     >>> dev = qml.devices.DefaultQubit()
     >>> _jac_shape_dtype_struct(tape, dev)
     (ShapeDtypeStruct(shape=(), dtype=float64),

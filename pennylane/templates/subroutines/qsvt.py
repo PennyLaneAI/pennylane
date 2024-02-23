@@ -101,7 +101,7 @@ def qsvt(A, angles, wires, convention=None):
     >>> @qml.qnode(dev)
     ... def example_circuit(A):
     ...     qml.qsvt(A, angles, wires=[0, 1])
-    ...     return qml.expval(qml.PauliZ(wires=0))
+    ...     return qml.expval(qml.Z(0))
 
     The resulting circuit implements QSVT.
 
@@ -213,7 +213,7 @@ class QSVT(Operation):
     >>> @qml.qnode(dev)
     >>> def example_circuit():
     ...    qml.QSVT(block_encode, shifts)
-    ...    return qml.expval(qml.PauliZ(wires=0))
+    ...    return qml.expval(qml.Z(0))
 
     The resulting circuit implements QSVT.
 
@@ -238,7 +238,7 @@ class QSVT(Operation):
     >>> @qml.qnode(dev)
     >>> def example_circuit():
     ...     qml.QSVT(block_encoding, phase_shifts)
-    ...     return qml.expval(qml.PauliZ(wires=0))
+    ...     return qml.expval(qml.Z(0))
     >>>
     >>> example_circuit()
     tensor(0.54030231, requires_grad=True)
@@ -303,6 +303,23 @@ class QSVT(Operation):
                 if op.num_params > 0:
                     op.data = new_data[: op.num_params]
                     new_data = new_data[op.num_params :]
+
+    def __copy__(self):
+        # Override Operator.__copy__() to avoid setting the "data" property before the new instance
+        # is assigned hyper-parameters since QSVT data is derived from the hyper-parameters.
+        clone = QSVT.__new__(QSVT)
+
+        # Ensure the operators in the hyper-parameters are copied instead of aliased.
+        clone._hyperparameters = {
+            "UA": copy.copy(self._hyperparameters["UA"]),
+            "projectors": list(map(copy.copy, self._hyperparameters["projectors"])),
+        }
+
+        for attr, value in vars(self).items():
+            if attr != "_hyperparameters":
+                setattr(clone, attr, value)
+
+        return clone
 
     @property
     def _operators(self) -> list[qml.operation.Operator]:

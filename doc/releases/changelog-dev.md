@@ -271,6 +271,9 @@
     + 2j * X(0) @ Z(1)
     ```
 
+* Controlled composite operations can be decomposed using ZYZ rotations.
+  [(#5242)](https://github.com/PennyLaneAI/pennylane/pull/5242)
+
 * Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and `SProd` operations
   convert `Hamiltonian` and `Tensor` operands to `Sum` and `Prod` types, respectively. This helps
   avoid the mixing of incompatible operator types.
@@ -323,6 +326,7 @@
 
 * The `QSVT` operation now determines its `data` from the block encoding and projector operator data.
   [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
+  [(#5248)](https://github.com/PennyLaneAI/pennylane/pull/5248)
 
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
@@ -353,6 +357,9 @@
 * CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
+
+* String representations of `ParametrizedHamiltonian` have been updated to match the style of other PL operators.
+  [(#5215)](https://github.com/PennyLaneAI/pennylane/pull/5215)
 
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
@@ -392,6 +399,10 @@
   [(#5247)](https://github.com/PennyLaneAI/pennylane/pull/5247)
 
 <h3>Breaking changes 💔</h3>
+
+* Caching of executions is now turned off by default when `max_diff == 1`, as the classical overhead cost
+  outweighs the probability that duplicate circuits exists.
+  [(#5243)](https://github.com/PennyLaneAI/pennylane/pull/5243)
 
 * The entry point convention registering compilers with PennyLane has changed.
   [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
@@ -529,7 +540,12 @@
 * A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions was added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
   [(#5137)](https://github.com/PennyLaneAI/pennylane/pull/5137)
 
-* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
+* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template.
+  [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
+
+* The docstring of `qml.sample` has been updated to advise the use of single-shot expectations
+  instead when differentiating a circuit.
+  [(#5237)](https://github.com/PennyLaneAI/pennylane/pull/5237)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -626,11 +642,15 @@
 * When a QNode specifies `diff_method="adjoint"`, `default.qubit` no longer tries to decompose non-trainable operations with non-scalar parameters such as `QubitUnitary`.
   [(#5233)](https://github.com/PennyLaneAI/pennylane/pull/5233)
 
+* The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the init after causing problems with datasets. Now happens globally.
+  [(#5252)](https://github.com/PennyLaneAI/pennylane/pull/5252)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
+Mikhail Andrenkov,
 Utkarsh Azad,
 Trenten Babcock,
 Gabriel Bottrill,

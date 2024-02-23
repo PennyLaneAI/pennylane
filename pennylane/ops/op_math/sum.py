@@ -47,22 +47,22 @@ def sum(*summands, id=None, lazy=True):
 
         This operator supports batched operands:
 
-        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Sum`
 
     **Example**
 
-    >>> summed_op = qml.sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op = qml.sum(qml.X(0), qml.Z(0))
     >>> summed_op
-    PauliX(wires=[0]) + PauliZ(wires=[0])
+    X(0) + Z(0)
     >>> summed_op.matrix()
     array([[ 1,  1],
            [ 1, -1]])
@@ -103,7 +103,7 @@ class Sum(CompositeOp):
         (3, 4, 4)
 
         But it doesn't support batching of operators:
-        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :func:`~.ops.op_math.sum`

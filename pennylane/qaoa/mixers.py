@@ -61,7 +61,7 @@ def x_mixer(wires: Union[Iterable, Wires]):
     wires = Wires(wires)
 
     coeffs = [1 for w in wires]
-    obs = [qml.PauliX(w) for w in wires]
+    obs = [qml.X(w) for w in wires]
 
     H = qml.Hamiltonian(coeffs, obs)
     # store the valuable information that all observables are in one commuting group
@@ -131,8 +131,8 @@ def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
 
     obs = []
     for node1, node2 in edges:
-        obs.append(qml.PauliX(get_nvalue(node1)) @ qml.PauliX(get_nvalue(node2)))
-        obs.append(qml.PauliY(get_nvalue(node1)) @ qml.PauliY(get_nvalue(node2)))
+        obs.append(qml.X(get_nvalue(node1)) @ qml.X(get_nvalue(node2)))
+        obs.append(qml.Y(get_nvalue(node1)) @ qml.Y(get_nvalue(node2)))
 
     return qml.Hamiltonian(coeffs, obs)
 
@@ -222,8 +222,8 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
         neighbours = sorted(graph.neighbors(i)) if is_rx else list(graph.neighbors(i))
         degree = len(neighbours)
 
-        n_terms = [[qml.PauliX(get_nvalue(i))]] + [
-            [qml.Identity(get_nvalue(n)), qml.PauliZ(get_nvalue(n))] for n in neighbours
+        n_terms = [[qml.X(get_nvalue(i))]] + [
+            [qml.Identity(get_nvalue(n)), qml.Z(get_nvalue(n))] for n in neighbours
         ]
         n_coeffs = [[1, sign] for n in neighbours]
 

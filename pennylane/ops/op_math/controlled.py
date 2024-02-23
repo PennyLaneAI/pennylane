@@ -68,9 +68,9 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
         @qml.qnode(qml.device('default.qubit', wires=range(4)))
         def circuit(x):
-            qml.PauliX(2)
+            qml.X(2)
             qml.ctrl(qml.RX, (1,2,3), control_values=(0,1,0))(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)("x"))
     0: ────╭RX(x)─┤  <Z>
@@ -183,7 +183,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
         flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
         op_control_values = None if flip_control_on_zero else control_values
         if flip_control_on_zero:
-            _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
+            _ = [qml.X(w) for w, val in zip(control, control_values) if not val]
 
         _ = [
             ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
@@ -191,7 +191,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
         ]
 
         if flip_control_on_zero:
-            _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
+            _ = [qml.X(w) for w, val in zip(control, control_values) if not val]
 
         if qml.QueuingManager.recording():
             _ = [qml.apply(m) for m in qscript.measurements]
@@ -232,7 +232,7 @@ def _get_pauli_x_based_ops():
     This is placed inside a function to avoid circular imports.
 
     """
-    return qml.PauliX, qml.CNOT, qml.Toffoli, qml.MultiControlledX
+    return qml.X, qml.CNOT, qml.Toffoli, qml.MultiControlledX
 
 
 def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=None):
@@ -644,7 +644,7 @@ class Controlled(SymbolicOp):
             return decomp
 
         # We need to add paulis to flip some control wires
-        d = [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
+        d = [qml.X(w) for w, val in zip(self.control_wires, self.control_values) if not val]
 
         decomp = _decompose_no_control_values(self)
         if decomp is None:
@@ -654,7 +654,7 @@ class Controlled(SymbolicOp):
         else:
             d += decomp
 
-        d += [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
+        d += [qml.X(w) for w, val in zip(self.control_wires, self.control_values) if not val]
         return d
 
     # pylint: disable=arguments-renamed, invalid-overridden-method

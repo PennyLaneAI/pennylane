@@ -77,6 +77,26 @@ def test_copy():
     assert copied_qn.expansion_strategy == qn.expansion_strategy
 
 
+class TestInitialization:
+    def test_cache_initialization_maxdiff_1(self):
+        """Test that when max_diff = 1, the cache initializes to false."""
+
+        @qml.qnode(qml.device("default.qubit"), max_diff=1)
+        def f():
+            return qml.state()
+
+        assert f.execute_kwargs["cache"] is False
+
+    def test_cache_initialization_maxdiff_2(self):
+        """Test that when max_diff = 2, the cache initialization to True."""
+
+        @qml.qnode(qml.device("default.qubit"), max_diff=2)
+        def f():
+            return qml.state()
+
+        assert f.execute_kwargs["cache"] is True
+
+
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
