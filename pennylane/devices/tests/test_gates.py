@@ -359,7 +359,6 @@ class TestSupportedGates:
         dev = qml.device(**device_kwargs)
 
         if isinstance(dev, qml.Device):
-            assert hasattr(dev, "operations")
             if operation not in dev.operations:
                 pytest.skip("operation not supported.")
         else:
