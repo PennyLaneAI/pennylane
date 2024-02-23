@@ -31,7 +31,7 @@ class TestExtractTensors:
     def test_empty_terable(self):
         """Test that an empty iterable returns nothing"""
         res = list(np.extract_tensors([]))
-        assert not res
+        assert res == []
 
     def test_iterable_with_strings(self):
         """Test that strings are not treated as a sequence"""
@@ -85,12 +85,12 @@ class TestTensor:
     def test_string_representation(self, capsys):
         """Test the string representation is correct"""
         x = np.tensor([0, 1, 2])
-        print(repr(x))
+        print(x.__repr__())
         captured = capsys.readouterr()
         assert "tensor([0, 1, 2], requires_grad=True)" in captured.out
 
         x.requires_grad = False
-        print(repr(x))
+        print(x.__repr__())
         captured = capsys.readouterr()
         assert "tensor([0, 1, 2], requires_grad=False)" in captured.out
 

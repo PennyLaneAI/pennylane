@@ -1985,7 +1985,7 @@ class TestJIT:
         res = jax.jit(circ)(p, U)
         assert np.allclose(res, -np.cos(p), atol=tol, rtol=0)
 
-        jac_fn = jax.jit(jax.grad(circ, argnums=0))
+        jac_fn = jax.jit(jax.grad(circ, argnums=(0)))
         res = jac_fn(p, U)
         assert np.allclose(res, np.sin(p), atol=tol, rtol=0)
 

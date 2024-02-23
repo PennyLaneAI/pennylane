@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the quantum_monte_carlo transform"""
-# pylint:disable=unnecessary-lambda-assignment
 import itertools
 
 import numpy as np

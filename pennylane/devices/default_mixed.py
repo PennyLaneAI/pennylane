@@ -176,7 +176,7 @@ class DefaultMixed(QubitDevice):
         res = qnp.cast(array, dtype=dtype)
         return res
 
-    def __init__(  # pylint:disable=too-many-arguments
+    def __init__(
         self,
         wires,
         *,

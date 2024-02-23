@@ -65,11 +65,8 @@ def same_tape(tape1, tape2):
 class TestMitigateWithZNE:
     """Tests for the mitigate_with_zne function"""
 
-    def folding(*_, **__):  # pylint:disable=no-method-argument
-        return tape_base
-
-    def extrapolate(*_, **__):  # pylint:disable=no-method-argument
-        return [3.141]
+    folding = lambda *args, **kwargs: tape_base
+    extrapolate = lambda *args, **kwargs: [3.141]
 
     def test_folding_call(self, mocker):
         """Tests that arguments are passed to the folding function as expected"""

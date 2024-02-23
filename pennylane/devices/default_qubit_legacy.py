@@ -203,7 +203,7 @@ class DefaultQubitLegacy(QubitDevice):
         "Evolution",
     }
 
-    def __init__(  # pylint:disable=too-many-arguments
+    def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)

@@ -15,7 +15,6 @@
 Unit tests for the ``RotoselectOptimizer``.
 """
 import itertools as it
-from functools import partial
 
 import numpy as onp
 import pytest
@@ -102,7 +101,7 @@ class TestRotoselectOptimizer:
             X_1 = circuit_2(params, generators=generators)
             return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
-        f_best_gen = partial(cost_fn, generators=optimal_generators)
+        f_best_gen = lambda x: cost_fn(x, optimal_generators)
         optimal_x_start = x_start.copy()
 
         # after four steps the optimzer should find the optimal generators/x_start values

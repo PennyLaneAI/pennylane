@@ -111,7 +111,7 @@ class TestDecomposition:
         linear combination of Pauli matrices"""
         decomposed_coeff, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
 
-        linear_comb = sum(decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs))
+        linear_comb = sum([decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs)])
         assert np.allclose(hamiltonian, linear_comb)
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
@@ -228,7 +228,10 @@ class TestPhasedDecomposition:
         n = range(int(np.log2(len(hamiltonian))))
 
         linear_comb = sum(
-            decomposed_coeff[i] * qml.matrix(o, wire_order=n) for i, o in enumerate(decomposed_obs)
+            [
+                decomposed_coeff[i] * qml.matrix(o, wire_order=n)
+                for i, o in enumerate(decomposed_obs)
+            ]
         )
         assert np.allclose(hamiltonian, linear_comb)
 
@@ -257,8 +260,10 @@ class TestPhasedDecomposition:
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
         linear_comb = sum(
-            decomposed_coeff[i] * qml.matrix(o, wire_order=range(num_qubits))
-            for i, o in enumerate(decomposed_obs)
+            [
+                decomposed_coeff[i] * qml.matrix(o, wire_order=range(num_qubits))
+                for i, o in enumerate(decomposed_obs)
+            ]
         )
         assert np.allclose(matrix, linear_comb[: shape[0], : shape[1]])
 
@@ -354,7 +359,7 @@ class TestPhasedDecomposition:
             grad_numpy = qml.grad(circuit)(qml.numpy.array(matrix))
 
             # Jax Interface
-            grad_jax = jax.grad(circuit, argnums=0)(jax.numpy.array(matrix))
+            grad_jax = jax.grad(circuit, argnums=(0))(jax.numpy.array(matrix))
 
             # PyTorch Interface
             A = torch.tensor(matrix, requires_grad=True)

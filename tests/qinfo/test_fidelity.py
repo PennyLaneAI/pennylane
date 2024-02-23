@@ -120,7 +120,7 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(all_args1=np.pi)
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(all_args1=(np.pi))
         assert qml.math.allclose(fid, 0.0)
 
     @pytest.mark.parametrize("device", devices)

@@ -267,7 +267,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     return drawer.fig, drawer.ax
 
 
-def tape_mpl(  # pylint:disable=too-many-arguments
+def tape_mpl(
     tape, wire_order=None, show_all_wires=False, decimals=None, style=None, *, fig=None, **kwargs
 ):
     """Produces a matplotlib graphic from a tape.

@@ -479,8 +479,8 @@ class TestCompileInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode, argnums=1)(x, params),
-            jax.grad(transformed_qnode, argnums=1)(x, params),
+            jax.grad(original_qnode, argnums=(1))(x, params),
+            jax.grad(transformed_qnode, argnums=(1))(x, params),
             atol=1e-7,
         )
 

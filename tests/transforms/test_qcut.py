@@ -752,7 +752,7 @@ class TestReplaceWireCut:
             if get_name(op.obj) == "MeasureNode":
                 assert order == {"order": 0}
                 pred = list(g.pred[op])
-                assert not pred
+                assert pred == []
             elif get_name(op.obj) == "PrepareNode":
                 assert order == {"order": 0}
 
@@ -785,7 +785,7 @@ class TestReplaceWireCut:
             elif get_name(op.obj) == "PrepareNode":
                 assert order == {"order": 3}
                 succ = list(g.succ[op])
-                assert not succ
+                assert succ == []
 
     def test_multi_wire_wirecut_successor_and_predecessor(self):
         """

@@ -14,7 +14,7 @@
 """
 Unit tests for the :func:`pennylane.math.is_independent` function.
 """
-# pylint: disable=too-few-public-methods,unnecessary-lambda-assignment
+# pylint: disable=too-few-public-methods
 import pytest
 
 import numpy as np

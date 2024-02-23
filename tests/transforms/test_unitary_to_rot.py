@@ -700,7 +700,7 @@ class TestTwoQubitUnitaryDifferentiability:
         # 1 normal operations + 18 for the first decomp and 6 for the second
         assert len(transformed_qnode.qtape.operations) == 25
 
-        original_grad = jax.grad(original_qnode, argnums=0)(x)
-        transformed_grad = jax.grad(transformed_qnode, argnums=0)(x)
+        original_grad = jax.grad(original_qnode, argnums=(0))(x)
+        transformed_grad = jax.grad(transformed_qnode, argnums=(0))(x)
 
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-6)

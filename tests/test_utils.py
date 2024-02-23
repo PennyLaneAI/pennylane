@@ -66,10 +66,7 @@ class TestFlatten:
         """Tests that unflatten raises an error if the given model is not supported"""
 
         with pytest.raises(TypeError, match="Unsupported type in the model"):
-
-            def model(x):  # not a valid model for unflatten
-                return x
-
+            model = lambda x: x  # not a valid model for unflatten
             pu.unflatten(flat_dummy_array, model)
 
     def test_unflatten_error_too_many_elements(self):

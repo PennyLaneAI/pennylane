@@ -161,16 +161,16 @@ class TestResources:
             4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots((10, 10))
         )  # diff shots
 
-        assert r1 == r1  # pylint:disable=comparison-with-itself
-        assert r1 == r2
-        assert r1 == r3
+        assert r1.__eq__(r1)
+        assert r1.__eq__(r2)
+        assert r1.__eq__(r3)
 
-        assert r1 != r4
-        assert r1 != r5
-        assert r1 != r6
-        assert r1 != r7
-        assert r1 != r8
-        assert r1 != r9
+        assert not r1.__eq__(r4)
+        assert not r1.__eq__(r5)
+        assert not r1.__eq__(r6)
+        assert not r1.__eq__(r7)
+        assert not r1.__eq__(r8)
+        assert not r1.__eq__(r9)
 
     @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
     def test_ipython_display(self, r, rep, capsys):

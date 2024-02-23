@@ -63,10 +63,8 @@ INVSQ2 = 1 / math.sqrt(2)
 T_PHASE = np.exp(1j * np.pi / 4)
 T_PHASE_C = np.exp(-1j * np.pi / 4)
 
-
 # Variant of diag that does not take the diagonal of a 2d array, but broadcasts diag.
-def diag(x):
-    return np.array([np.diag(_x) for _x in x]) if np.ndim(x) == 2 else np.diag(x)
+diag = lambda x: np.array([np.diag(_x) for _x in x]) if np.ndim(x) == 2 else np.diag(x)
 
 
 def mat_vec(mat, vec, par=None, inv=False):
@@ -1753,9 +1751,7 @@ class TestApplyOperationBroadcasted:
         test_state = np.array([[1, 0], [INVSQ2, INVSQ2], [0, 1]])
         # Create a dummy operation
         expected_test_output = np.ones(1)
-
-        def supported_gate_application(*_, **__):
-            return expected_test_output
+        supported_gate_application = lambda *args, **kwargs: expected_test_output
 
         with monkeypatch.context() as m:
             # Set the internal ops implementations dict
@@ -1779,10 +1775,7 @@ class TestApplyOperationBroadcasted:
 
         # Set the internal _apply_diagonal_unitary
         history = []
-
-        def mock_apply_diag(state, matrix, wires):
-            history.append((state, matrix, wires))
-
+        mock_apply_diag = lambda state, matrix, wires: history.append((state, matrix, wires))
         with monkeypatch.context() as m:
             m.setattr(dev, "_apply_diagonal_unitary", mock_apply_diag)
             assert dev._apply_diagonal_unitary == mock_apply_diag
@@ -1822,10 +1815,7 @@ class TestApplyOperationBroadcasted:
 
         # Set the internal _apply_unitary_einsum
         history = []
-
-        def mock_apply_einsum(state, matrix, wires):
-            history.append((state, matrix, wires))
-
+        mock_apply_einsum = lambda state, matrix, wires: history.append((state, matrix, wires))
         with monkeypatch.context() as m:
             m.setattr(dev, "_apply_unitary_einsum", mock_apply_einsum)
 
@@ -1864,9 +1854,7 @@ class TestApplyOperationBroadcasted:
 
         # Set the internal _apply_unitary_tensordot
         history = []
-
-        def mock_apply_tensordot(state, matrix, wires):
-            history.append((state, matrix, wires))
+        mock_apply_tensordot = lambda state, matrix, wires: history.append((state, matrix, wires))
 
         with monkeypatch.context() as m:
             m.setattr(dev, "_apply_unitary", mock_apply_tensordot)

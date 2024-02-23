@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the autograd interface with a QNode"""
-# pylint: disable=too-many-arguments,too-few-public-methods,use-dict-literal
+# pylint: disable=too-many-arguments,too-few-public-methods
 import autograd
 import autograd.numpy as anp
 import pytest
@@ -1272,12 +1272,8 @@ class TestQubitIntegration:
         assert g[1].shape == (2,)
         assert np.allclose(g[1], expected_g[1], atol=tol, rtol=0)
 
-        def jac_fn_a(*args):
-            return jac_fn(*args)[0]
-
-        def jac_fn_b(*args):
-            return jac_fn(*args)[1]
-
+        jac_fn_a = lambda *args: jac_fn(*args)[0]
+        jac_fn_b = lambda *args: jac_fn(*args)[1]
         hess_a = qml.jacobian(jac_fn_a)(a, b)
         hess_b = qml.jacobian(jac_fn_b)(a, b)
         assert isinstance(hess_a, tuple) and len(hess_a) == 2

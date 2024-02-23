@@ -13,7 +13,6 @@
 # limitations under the License.
 """Integration tests for using the JAX-Python interface with a QNode"""
 # pylint: disable=too-many-arguments,too-few-public-methods,too-many-public-methods
-# pylint: disable=use-dict-literal
 import pytest
 
 import pennylane as qml

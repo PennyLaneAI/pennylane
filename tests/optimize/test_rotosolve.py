@@ -59,10 +59,7 @@ def test_error_missing_frequency_info():
     """Test that an error is raised if neither nums_frequency nor spectra is given."""
 
     opt = RotosolveOptimizer()
-
-    def fun(x):
-        return x
-
+    fun = lambda x: x
     x = np.array(0.5, requires_grad=True)
 
     with pytest.raises(ValueError, match="Neither the number of frequencies nor the"):
@@ -74,10 +71,7 @@ def test_no_error_missing_frequency_info_untrainable():
     is given for a parameter not marked as trainable."""
 
     opt = RotosolveOptimizer()
-
-    def fun(x, _):
-        return x
-
+    fun = lambda x, y: x
     x = np.array(0.5, requires_grad=True)
     y = np.array(0.1, requires_grad=False)
     nums_frequency = {"x": {(): 1}}
@@ -107,10 +101,7 @@ def test_error_no_trainable_args():
     """Test that an error is raised if none of the arguments is trainable."""
 
     opt = RotosolveOptimizer()
-
-    def fun(_, __, ___):
-        return 1.0
-
+    fun = lambda x, y, z: 1.0
     x = np.arange(4, requires_grad=False)
 
     with pytest.raises(ValueError, match="Found no parameters to optimize."):

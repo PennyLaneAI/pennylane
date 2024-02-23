@@ -302,7 +302,7 @@ class TestCliffordCompile:
 
         [tape], _ = qml.clifford_t_decomposition(tape)
 
-        assert not any(isinstance(op, qml.GlobalPhase) for op in tape.operations)
+        assert not sum([isinstance(op, qml.GlobalPhase) for op in tape.operations])
 
     def test_raise_with_decomposition_method(self):
         """Test that exception is correctly raise when using incorrect decomposing method"""
