@@ -1773,7 +1773,7 @@ class TestCustomMeasurement:
             tape = qml.tape.QuantumScript([], [MyMeasurement()])
             try:
                 dev.preprocess()[0]((tape,))
-            except Exception:  # pylint: disable=broad-exception-caught
+            except qml.DeviceError:
                 pytest.xfail("Device does not support custom measurement transforms.")
 
         @qml.qnode(dev)
