@@ -18,9 +18,6 @@ PennyLane templates.
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
-from typing import Any, Sequence, Union
-
-from pennylane.operation import Operator
 
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
@@ -163,11 +160,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         raise e
 
 
-def from_qiskit_op(
-    qiskit_op,
-    params: Any = None,
-    wires: Union[Sequence, None] = None,
-) -> Operator:
+def from_qiskit_op(qiskit_op, params = None, wires = None):
     """Loads Qiskit SparsePauliOp objects by using the converter in the PennyLane-Qiskit plugin.
 
     Args:
