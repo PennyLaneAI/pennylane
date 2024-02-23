@@ -1691,7 +1691,7 @@ class TestStateMeasurement:
         dev = device(2)
         _skip_test_for_braket(dev)
 
-        if bool(dev.shots):
+        if dev.shots:
             pytest.skip("Some plugins don't update state information when shots is not None.")
 
         class MyMeasurement(StateMeasurement):
