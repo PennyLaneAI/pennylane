@@ -62,7 +62,7 @@ def commutation_dag(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             qml.Hadamard(wires=2)
             qml.CRZ(z, wires=[2, 0])
             qml.RY(-y, wires=1)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     The commutation dag can be returned by using the following code:
 

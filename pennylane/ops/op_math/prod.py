@@ -16,6 +16,7 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 import itertools
+import warnings
 from copy import copy
 from functools import reduce, wraps
 from itertools import combinations
@@ -65,25 +66,30 @@ def prod(*ops, id=None, lazy=True):
 
         This operator supports batched operands:
 
-        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Prod`
 
     **Example**
 
-    >>> prod_op = prod(qml.PauliX(0), qml.PauliZ(0))
+    >>> prod_op = prod(qml.X(0), qml.Z(0))
     >>> prod_op
-    PauliX(wires=[0]) @ PauliZ(wires=[0])
+    X(0) @ Z(0)
     >>> prod_op.matrix()
     array([[ 0, -1],
            [ 1,  0]])
+    >>> prod_op.simplify()
+    -1j * Y(0)
+    >>> prod_op.terms()
+    ([-1j], [Y(0)])
+
 
     You can also create a prod operator by passing a qfunc to prod, like the following:
 
@@ -143,14 +149,16 @@ class Prod(CompositeOp):
 
     **Example**
 
-    >>> prop_op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=0))
-    >>> prop_op
-    PauliX(wires=[0]) @ PauliZ(wires=[0])
-    >>> qml.matrix(prop_op)
-    array([[ 0,  -1],
-           [ 1,   0]])
-    >>> prop_op.terms()
-    ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+    >>> prod_op = Prod(qml.X(0), qml.PauliZ(1))
+    >>> prod_op
+    X(0) @ Z(1)
+    >>> qml.matrix(prod_op, wire_order=prod_op.wires)
+    array([[ 0,  0,  1,  0],
+           [ 0,  0,  0, -1],
+           [ 1,  0,  0,  0],
+           [ 0, -1,  0,  0]])
+    >>> prod_op.terms()
+    ([1.0], [Z(1) @ X(0)])
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
@@ -158,9 +166,9 @@ class Prod(CompositeOp):
         first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
-    >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
+    >>> op = Prod(qml.X(0), qml.Z(1))
     >>> op.decomposition()
-    [PauliZ(wires=[1]), PauliX(wires=[0])]
+    [Z(1), X(0)]
 
     .. details::
         :title: Usage Details
@@ -168,7 +176,7 @@ class Prod(CompositeOp):
         The Prod operator represents both matrix composition and tensor products
         between operators.
 
-        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.PauliX(wires=0), qml.PauliZ(wires=1))
+        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.X(0), qml.Z(1))
         >>> prod_op.matrix()
         array([[ 0.        +0.j        ,  0.        +0.j        ,
                  0.81677345-0.57695852j,  0.        +0.j        ],
@@ -188,8 +196,8 @@ class Prod(CompositeOp):
 
             @qml.qnode(dev)
             def circuit(theta):
-                qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
-                return qml.expval(qml.PauliZ(1))
+                qml.prod(qml.Z(0), qml.RX(theta, 1))
+                return qml.expval(qml.Z(1))
 
         >>> par = np.array(1.23, requires_grad=True)
         >>> circuit(par)
@@ -203,7 +211,7 @@ class Prod(CompositeOp):
 
         .. code-block:: python
 
-            prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+            prod_op = Prod(qml.Z(0), qml.Hadamard(wires=1))
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
@@ -214,6 +222,13 @@ class Prod(CompositeOp):
         >>> weights = np.array([0.1], requires_grad=True)
         >>> qml.grad(circuit)(weights)
         array([-0.07059289])
+
+        Note that the :meth:`~Prod.terms` method always simplifies and flattens the operands.
+
+        >>> op = qml.ops.Prod(qml.X(0), qml.sum(qml.Y(0), qml.Z(1)))
+        >>> op.terms()
+        ([1j, 1.0], [Z(0), Z(1) @ X(0)])
+
     """
 
     _op_symbol = "@"
@@ -439,7 +454,7 @@ class Prod(CompositeOp):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
 
-        ** Example **
+        **Example**
 
         >>> qml.operation.enable_new_opmath()
         >>> op = X(0) @ (0.5 * X(1) + X(2))
@@ -471,6 +486,36 @@ class Prod(CompositeOp):
                 coeffs.append(global_phase)
                 ops.append(factor)
         return coeffs, ops
+
+    @property
+    def coeffs(self):
+        r"""
+        Scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
+
+        .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
+        warnings.warn(
+            "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        coeffs, _ = self.terms()
+        return coeffs
+
+    @property
+    def ops(self):
+        r"""
+        Operator terms without scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
+
+        .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
+        warnings.warn(
+            "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        _, ops = self.terms()
+        return ops
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
@@ -551,7 +596,7 @@ class _ProductFactorsGrouping:
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
                 factor = factor.base
-            if isinstance(factor, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
+            if isinstance(factor, (qml.Identity, qml.X, qml.Y, qml.Z)):
                 self._add_pauli_factor(factor=factor, wires=wires)
                 self._remove_non_pauli_factors(wires=wires)
             else:

@@ -41,7 +41,7 @@ class TestTracker:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circ():
-            return qml.expval(qml.PauliX(wires=[0]))
+            return qml.expval(qml.X(0))
 
         dev.tracker.active = False
         with dev.tracker:

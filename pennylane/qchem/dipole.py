@@ -290,15 +290,15 @@ def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None):
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> dipole_moment(mol)(*args)[2].ops
-    [Identity(wires=[0]),
-     PauliZ(wires=[0]),
-     PauliY(wires=[0]) @ PauliZ(wires=[1]) @ PauliY(wires=[2]),
-     PauliX(wires=[0]) @ PauliZ(wires=[1]) @ PauliX(wires=[2]),
-     PauliZ(wires=[1]),
-     PauliY(wires=[1]) @ PauliZ(wires=[2]) @ PauliY(wires=[3]),
-     PauliX(wires=[1]) @ PauliZ(wires=[2]) @ PauliX(wires=[3]),
-     PauliZ(wires=[2]),
-     PauliZ(wires=[3])]
+    [I(0),
+     Z(0),
+     Y(0) @ Z(1) @ Y(2),
+     X(0) @ Z(1) @ X(2),
+     Z(1),
+     Y(1) @ Z(2) @ Y(3),
+     X(1) @ Z(2) @ X(3),
+     Z(2),
+     Z(3)]
     """
 
     def _dipole(*args):

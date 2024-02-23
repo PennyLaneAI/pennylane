@@ -121,8 +121,8 @@ class TestCapabilities:
 
             @qml.qnode(dev)
             def circuit():
-                qml.PauliX(wires=0)
-                return qml.expval(qml.PauliZ(wires=0))
+                qml.X(0)
+                return qml.expval(qml.Z(0))
 
         else:
 
@@ -200,7 +200,7 @@ class TestCapabilities:
         def circuit():
             """Model agnostic quantum function with tensor observable"""
             if cap["model"] == "qubit":
-                qml.PauliX(wires=0)
+                qml.X(0)
             else:
                 qml.QuadX(wires=0)
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
@@ -221,7 +221,7 @@ class TestCapabilities:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(wires=0)
+            qml.X(0)
             return qml.state()
 
         if not cap.get("returns_state"):
@@ -262,7 +262,7 @@ class TestCapabilities:
         @qml.qnode(dev)
         def circuit():
             if cap["model"] == "qubit":
-                qml.PauliX(wires=0)
+                qml.X(0)
             else:
                 qml.QuadX(wires=0)
             return qml.probs(wires=0)

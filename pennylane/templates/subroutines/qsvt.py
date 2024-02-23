@@ -101,7 +101,7 @@ def qsvt(A, angles, wires, convention=None):
     >>> @qml.qnode(dev)
     ... def example_circuit(A):
     ...     qml.qsvt(A, angles, wires=[0, 1])
-    ...     return qml.expval(qml.PauliZ(wires=0))
+    ...     return qml.expval(qml.Z(0))
 
     The resulting circuit implements QSVT.
 
@@ -213,7 +213,7 @@ class QSVT(Operation):
     >>> @qml.qnode(dev)
     >>> def example_circuit():
     ...    qml.QSVT(block_encode, shifts)
-    ...    return qml.expval(qml.PauliZ(wires=0))
+    ...    return qml.expval(qml.Z(0))
 
     The resulting circuit implements QSVT.
 
@@ -238,7 +238,7 @@ class QSVT(Operation):
     >>> @qml.qnode(dev)
     >>> def example_circuit():
     ...     qml.QSVT(block_encoding, phase_shifts)
-    ...     return qml.expval(qml.PauliZ(wires=0))
+    ...     return qml.expval(qml.Z(0))
     >>>
     >>> example_circuit()
     tensor(0.54030231, requires_grad=True)
@@ -284,9 +284,34 @@ class QSVT(Operation):
         total_wires = ua_wires.union(proj_wires)
         super().__init__(wires=total_wires, id=id)
 
+    @property
+    def data(self):
+        r"""Flattened list of operator data in this QSVT operation.
+
+        This ensures that the backend of a ``QuantumScript`` which contains a
+        ``QSVT`` operation can be inferred with respect to the types of the
+        ``QSVT`` block encoding and projector-controlled phase shift data.
+        """
+        return tuple(datum for op in self._operators for datum in op.data)
+
+    @data.setter
+    def data(self, new_data):
+        # We need to check if ``new_data`` is empty because ``Operator.__init__()``  will attempt to
+        # assign the QSVT data to an empty tuple (since no positional arguments are provided).
+        if new_data:
+            for op in self._operators:
+                if op.num_params > 0:
+                    op.data = new_data[: op.num_params]
+                    new_data = new_data[op.num_params :]
+
+    @property
+    def _operators(self) -> list[qml.operation.Operator]:
+        """Flattened list of operators that compose this QSVT operation."""
+        return [self._hyperparameters["UA"], *self._hyperparameters["projectors"]]
+
     @staticmethod
     def compute_decomposition(
-        UA, projectors, **hyperparameters
+        *_data, UA, projectors, **_kwargs
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -317,7 +342,6 @@ class QSVT(Operation):
             UA (Operator): the block encoding circuit, specified as a :class:`~.Operator`
             projectors (list[Operator]): a list of projector-controlled phase
                 shift circuits that implement the desired polynomial
-            wires (Iterable): wires that the template acts on
 
         Returns:
             list[.Operator]: decomposition of the operator

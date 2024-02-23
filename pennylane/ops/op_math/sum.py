@@ -15,6 +15,7 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+import warnings
 import itertools
 from copy import copy
 from typing import List
@@ -46,22 +47,22 @@ def sum(*summands, id=None, lazy=True):
 
         This operator supports batched operands:
 
-        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Sum`
 
     **Example**
 
-    >>> summed_op = qml.sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op = qml.sum(qml.X(0), qml.Z(0))
     >>> summed_op
-    PauliX(wires=[0]) + PauliZ(wires=[0])
+    X(0) + Z(0)
     >>> summed_op.matrix()
     array([[ 1,  1],
            [ 1, -1]])
@@ -96,26 +97,27 @@ class Sum(CompositeOp):
     .. note::
 
         This operator supports batched operands:
-        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
-        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :func:`~.ops.op_math.sum`
 
     **Example**
 
-    >>> summed_op = Sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op = Sum(qml.X(0), qml.Z(0))
     >>> summed_op
-    PauliX(wires=[0]) + PauliZ(wires=[0])
+    X(0) + Z(0)
     >>> qml.matrix(summed_op)
     array([[ 1,  1],
            [ 1, -1]])
     >>> summed_op.terms()
-    ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
+    ([1.0, 1.0], (X(0), Z(0)))
 
     .. details::
         :title: Usage Details
@@ -123,7 +125,7 @@ class Sum(CompositeOp):
         We can combine parameterized operators, and support sums between operators acting on
         different wires.
 
-        >>> summed_op = Sum(qml.RZ(1.23, wires=0), qml.Identity(wires=1))
+        >>> summed_op = Sum(qml.RZ(1.23, wires=0), qml.I(wires=1))
         >>> summed_op.matrix()
         array([[1.81677345-0.57695852j, 0.        +0.j        ,
                 0.        +0.j        , 0.        +0.j        ],
@@ -140,7 +142,7 @@ class Sum(CompositeOp):
 
         .. code-block:: python
 
-            sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
+            sum_op = Sum(qml.X(0), qml.Z(1))
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev, diff_method="best")
@@ -321,6 +323,7 @@ class Sum(CompositeOp):
          [X(0), X(1), Y(1) @ Y(0)])
 
         Note that this method disentangles nested structures of ``Sum`` instances like so.
+
         >>> op = 0.5 * X(0) + (2. * (X(1) + 3. * X(2)))
         >>> print(op)
         (0.5*(PauliX(wires=[0]))) + (2.0*((0.5*(PauliX(wires=[1]))) + (3.0*(PauliX(wires=[2])))))
@@ -345,6 +348,36 @@ class Sum(CompositeOp):
                 coeffs.append(1.0)
                 ops.append(factor)
         return coeffs, ops
+
+    @property
+    def coeffs(self):
+        r"""
+        Scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
+
+        .. seealso:: :attr:`~Sum.ops`, :class:`~Sum.pauli_rep`"""
+        warnings.warn(
+            "Sum.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        coeffs, _ = self.terms()
+        return coeffs
+
+    @property
+    def ops(self):
+        r"""
+        Operator terms without scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
+
+        .. seealso:: :attr:`~Sum.coeffs`, :class:`~Sum.pauli_rep`"""
+        warnings.warn(
+            "Sum.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        _, ops = self.terms()
+        return ops
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:

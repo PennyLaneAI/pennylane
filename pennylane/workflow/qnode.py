@@ -210,13 +210,13 @@ class QNode:
     >>> @qml.qnode(dev)
     ... def circuit(x):
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
 
     or by instantiating the class directly:
 
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> dev = qml.device("default.qubit", wires=1)
     >>> qnode = qml.QNode(circuit, dev)
 
@@ -240,7 +240,7 @@ class QNode:
         >>> @qml.qnode(dev)
         ... def circuit(x):
         ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
 
         If we want to execute it at multiple values ``x``,
         we may pass those as a one-dimensional array to the QNode:
@@ -340,7 +340,7 @@ class QNode:
                 qml.RY(y, wires=1)
                 qml.RX(x, wires=2)
                 qml.RY(y, wires=3)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(3))
+                return qml.expval(qml.Z(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3))
 
 
             x = np.array([0.4, 2.1, -1.3])
@@ -387,7 +387,7 @@ class QNode:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[1], wires=1)
                 qml.RZ(x[2], wires=1)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+                return qml.expval(qml.Z(0) @ qml.X(1))
 
             x = np.array([[1, 2], [3, 4], [5, 6]])
 

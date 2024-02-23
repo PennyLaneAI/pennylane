@@ -41,9 +41,9 @@ def pauli_word_prefactor(observable):
 
     >>> pauli_word_prefactor(qml.Identity(0))
     1
-    >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(1))
+    >>> pauli_word_prefactor(qml.X(0) @ qml.Y(1))
     1
-    >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(0))
+    >>> pauli_word_prefactor(qml.X(0) @ qml.Y(0))
     1j
     """
     return _pauli_word_prefactor(observable)

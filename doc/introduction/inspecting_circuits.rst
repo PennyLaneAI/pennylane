@@ -228,11 +228,11 @@ Using the above example, we get:
 <class 'networkx.classes.multidigraph.MultiDiGraph'>
 >>> for k, v in g2.adjacency():
 ...    print(k, v)
-Hadamard(wires=[0]) {expval(PauliZ(wires=[0])): {0: {'wire': 0}}}
+Hadamard(wires=[0]) {expval(Z(0)): {0: {'wire': 0}}}
 CNOT(wires=[1, 2]) {CNOT(wires=[2, 3]): {0: {'wire': 2}}, CNOT(wires=[3, 1]): {0: {'wire': 1}}}
 CNOT(wires=[2, 3]) {CNOT(wires=[3, 1]): {0: {'wire': 3}}}
 CNOT(wires=[3, 1]) {}
-expval(PauliZ(wires=[0])) {}
+expval(Z(0)) {}
 
 DAG of non-commuting ops
 ~~~~~~~~~~~~~~~~~~~~~~~~

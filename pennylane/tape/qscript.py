@@ -106,7 +106,7 @@ class QuantumScript:
                qml.CNOT((0,"a")),
                qml.RX(0.133, "a")]
 
-        qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
 
     >>> list(qscript)
     [BasisState(array([1, 1]), wires=[0, "a"]),
@@ -114,7 +114,7 @@ class QuantumScript:
     RY(0.543, wires=[0]),
     CNOT(wires=[0, 'a']),
     RX(0.133, wires=['a']),
-    expval(PauliZ(wires=[0]))]
+    expval(Z(0))]
     >>> qscript.operations
     [BasisState(array([1, 1]), wires=[0, "a"]),
     RX(0.432, wires=[0]),
@@ -122,7 +122,7 @@ class QuantumScript:
     CNOT(wires=[0, 'a']),
     RX(0.133, wires=['a'])]
     >>> qscript.measurements
-    [expval(PauliZ(wires=[0]))]
+    [expval(Z(0))]
 
     Iterating over the quantum script can be done by:
 
@@ -133,7 +133,7 @@ class QuantumScript:
     RY(0.543, wires=[0])
     CNOT(wires=[0, 'a'])
     RX(0.133, wires=['a'])
-    expval(PauliZ(wires=[0]))'
+    expval(Z(0))'
 
     Quantum scripts also support indexing and length determination:
 
@@ -154,16 +154,16 @@ class QuantumScript:
     stored in a :class:`pennylane.measurements.Shots` object:
 
     >>> s_vec = [1, 1, 2, 2, 2]
-    >>> qscript = QuantumScript([qml.Hadamard(0)], [qml.expval(qml.PauliZ(0))], shots=s_vec)
+    >>> qscript = QuantumScript([qml.Hadamard(0)], [qml.expval(qml.Z(0))], shots=s_vec)
     >>> qscript.shots.shot_vector
     (ShotCopies(1 shots x 2), ShotCopies(2 shots x 3))
 
     ``ops`` and ``measurements`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
 
-    >>> qscript = QuantumScript((qml.PauliX(i) for i in range(3)))
+    >>> qscript = QuantumScript((qml.X(i) for i in range(3)))
     >>> qscript.circuit
-    [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])]
+    [X(0), X(1), X(2)]
 
     """
 
@@ -272,7 +272,7 @@ class QuantumScript:
             list[.Operator]: quantum operations
 
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.operations
         [StatePrep([0, 1], wires=[0]), RX(0.432, wires=[0])]
         """
@@ -288,9 +288,9 @@ class QuantumScript:
         **Example**
 
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.observables
-        [expval(PauliZ(wires=[0]))]
+        [expval(Z(0))]
         """
         # TODO: modify this property once devices
         # have been refactored to accept and understand recieving
@@ -315,9 +315,9 @@ class QuantumScript:
         **Example**
 
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.measurements
-        [expval(PauliZ(wires=[0]))]
+        [expval(Z(0))]
         """
         return self._measurements
 
@@ -538,7 +538,7 @@ class QuantumScript:
 
         >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
         ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.trainable_params
         [0, 1, 2]
         >>> qscript.trainable_params = [0] # set only the first parameter as trainable
@@ -601,7 +601,7 @@ class QuantumScript:
 
         >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
         ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
 
         By default, all parameters are trainable and will be returned:
 
@@ -663,7 +663,7 @@ class QuantumScript:
 
         >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
         ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
 
         A new tape can be created by passing new parameters along with the indices
         to be updated. To modify all parameters in the above qscript:
@@ -754,7 +754,7 @@ class QuantumScript:
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.shape(dev)
             (4,)
-            >>> m = [qml.state(), qml.expval(qml.PauliZ(0)), qml.probs((0,1))]
+            >>> m = [qml.state(), qml.expval(qml.Z(0)), qml.probs((0,1))]
             >>> qs = QuantumScript(measurements=m)
             >>> qs.shape(dev)
             ((4,), (), (4,))
@@ -901,8 +901,8 @@ class QuantumScript:
 
         >>> new_qscript = qscript.expand(depth=2)
         >>> new_qscript.operations
-        [PauliX(wires=[0]),
-        PauliX(wires=['a']),
+        [X(0),
+        X('a'),
         RZ(0.543, wires=[0]),
         RY(0.1, wires=[0]),
         RZ(0.4, wires=[0]),
@@ -941,7 +941,7 @@ class QuantumScript:
         quantum circuit:
 
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.graph
         <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
@@ -972,7 +972,7 @@ class QuantumScript:
         **Example**
          >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
          ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0, 1))]
-         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
+         >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0) @ qml.Z(1))])
 
         Asking for the specs produces a dictionary of useful information about the circuit:
 
@@ -1147,19 +1147,19 @@ class QuantumScript:
 
         **Example:**
 
-        >>> circuit = qml.tape.QuantumScript([qml.PauliX("a")], [qml.expval(qml.PauliZ("b"))])
+        >>> circuit = qml.tape.QuantumScript([qml.X("a")], [qml.expval(qml.Z("b"))])
         >>> circuit.map_to_standard_wires().circuit
-        [PauliX(wires=[0]), expval(PauliZ(wires=[1]))]
+        [X(0), expval(Z(1))]
 
         If any measured wires are not in any operations, they will be mapped last:
 
-        >>> circuit = qml.tape.QuantumScript([qml.PauliX(1)], [qml.probs(wires=[0, 1])])
+        >>> circuit = qml.tape.QuantumScript([qml.X(1)], [qml.probs(wires=[0, 1])])
         >>> circuit.map_to_standard_wires().circuit
-        [PauliX(wires=[0]), probs(wires=[1, 0])]
+        [X(0), probs(wires=[1, 0])]
 
         If no wire-mapping is needed, then the returned circuit *is* the inputted circuit:
 
-        >>> circuit = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(1))])
+        >>> circuit = qml.tape.QuantumScript([qml.X(0)], [qml.expval(qml.Z(1))])
         >>> circuit.map_to_standard_wires() is circuit
         True
 
