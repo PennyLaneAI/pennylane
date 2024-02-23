@@ -10,6 +10,9 @@
   function fails because the Qiskit converter is missing.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
 
+* A Qiskit `SparsePauliOp` can be converted into a PennyLane `Operator` using `qml.from_qiskit_op`.
+  [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
+
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
 * When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
@@ -396,6 +399,10 @@
 * `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
+
+* `qml.ctrl` is now a simple wrapper that either calls PennyLane's built in `create_controlled_op`
+  or uses the Catalyst implementation.
+  [(#5247)](https://github.com/PennyLaneAI/pennylane/pull/5247)
 
 <h3>Breaking changes 💔</h3>
 
