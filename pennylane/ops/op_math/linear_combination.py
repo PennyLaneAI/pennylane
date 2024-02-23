@@ -412,9 +412,9 @@ class LinearCombination(Observable):
             wires = wire_order
 
         if pr := self.pauli_rep:
-            return pr.to_mat(wire_order=wires, format="sparse")
+            return pr.to_mat(wire_order=wires, format="csr")
 
-        # Old fallback logic when there is no pauli_rep
+        # fallback logic when there is no pauli_rep
         n = len(wires)
         matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
