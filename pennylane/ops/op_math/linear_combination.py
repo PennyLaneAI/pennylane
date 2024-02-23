@@ -410,7 +410,7 @@ class LinearCombination(Observable):
             wires = self.wires
         else:
             wires = wire_order
-        
+
         if pr := self.pauli_rep:
             return pr.to_mat(wire_order=wires, format="sparse")
 
