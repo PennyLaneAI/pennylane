@@ -397,6 +397,10 @@
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
+* `qml.ctrl` is now a simple wrapper that either calls PennyLane's built in `create_controlled_op`
+  or uses the Catalyst implementation.
+  [(#5247)](https://github.com/PennyLaneAI/pennylane/pull/5247)
+
 <h3>Breaking changes 💔</h3>
 
 * Caching of executions is now turned off by default when `max_diff == 1`, as the classical overhead cost
