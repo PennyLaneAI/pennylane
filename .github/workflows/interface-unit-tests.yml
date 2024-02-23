@@ -496,6 +496,10 @@ jobs:
         config:
           - device: default.qubit.legacy
             shots: None
+          - device: default.qubit
+            shots: None
+          - device: default.qubit
+            shots: 10000
           - device: default.qubit.legacy
             shots: 10000
           # - device: default.qubit.tf
