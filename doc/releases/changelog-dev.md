@@ -393,6 +393,9 @@
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
+* Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
+  [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
+
 <h3>Breaking changes 💔</h3>
 
 * The entry point convention registering compilers with PennyLane has changed.

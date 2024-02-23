@@ -111,11 +111,12 @@ def _(mp: CountsMP, obj_with_wires, shots, batch_size, interface):
     return results[0] if len(results) == 1 else results
 
 
+null_measurement.register(DensityMatrixMP)(_null_measurement)
+
+
 @null_measurement.register(StateMP)
 @null_measurement.register(ProbabilityMP)
 def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots, batch_size, interface):
-    if isinstance(mp, DensityMatrixMP):
-        return _null_measurement(mp, obj_with_wires, shots, batch_size, interface)
     wires = mp.wires or obj_with_wires.wires
     state = [1.0] + [0.0] * (2 ** len(wires) - 1)
     if batch_size is not None:
