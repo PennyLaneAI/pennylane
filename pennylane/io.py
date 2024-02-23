@@ -161,13 +161,13 @@ def from_qiskit(quantum_circuit, measurements=None):
 
 
 def from_qiskit_op(qiskit_op, params=None, wires=None):
-    """Loads a Qiskit `SparsePauliOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>_
+    """Loads a Qiskit `SparsePauliOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>`_
     instance into a PennyLane :class:`Operator`.
 
     Args:
         qiskit_op (qiskit.quantum_info.SparsePauliOp): the ``SparsePauliOp`` to be converted
         params (Any): optional assignment of coefficient values for the ``SparsePauliOp``; see the
-            `Qiskit documentation <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp#assign_parameters>`__
+            `Qiskit documentation <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp#assign_parameters>`_
             to learn more about the expected format of these parameters
         wires (Sequence | None): optional assignment of wires for the converted ``SparsePauliOp``;
             if the original ``SparsePauliOp`` acted on :math:`N` qubits, then this must be a
@@ -182,7 +182,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         enumerated from left to right, while the Qiskit convention is to enumerate from right to
         left. This means a ``SparsePauliOp`` term defined by the string ``"XYZ"`` applies ``Z`` on
         wire 0, ``Y`` on wire 1, and ``X`` on wire 2. For more details, see the
-        `String representation <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.Pauli>`__
+        `String representation <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.Pauli>`_
         section of the Qiskit documentation for the ``Pauli`` class.
 
     **Example**
