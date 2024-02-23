@@ -358,6 +358,24 @@ class TestUnittestSplitNonCommuting:
         result = ("tp1", "tp2", "tp3", "tp4")
         assert post_proc_fn(result) == (("tp1", "tp2"), ("tp3", "tp4"))
 
+    def test_sprod_support(self):
+        """Test that split_non_commuting works with scalar product pauli words."""
+
+        ob1 = 2.0 * qml.prod(qml.X(0), qml.X(1))
+        ob2 = 3.0 * qml.prod(qml.Y(0), qml.Y(1))
+        ob3 = qml.s_prod(4.0, qml.X(1))
+
+        tape = qml.tape.QuantumScript([], [qml.expval(o) for o in [ob1, ob2, ob3]])
+        batch, fn = qml.transforms.split_non_commuting(tape)
+
+        tape0 = qml.tape.QuantumScript([], [qml.expval(ob2)])
+        assert qml.equal(tape0, batch[0])
+        tape1 = qml.tape.QuantumScript([], [qml.expval(ob1), qml.expval(ob3)])
+        assert qml.equal(tape1, batch[1])
+
+        in_res = (1.0, (2.0, 3.0))
+        assert fn(in_res) == (2.0, 1.0, 3.0)
+
 
 # measurements that require shots=True
 required_shot_meas_fn = [qml.sample, qml.counts]
