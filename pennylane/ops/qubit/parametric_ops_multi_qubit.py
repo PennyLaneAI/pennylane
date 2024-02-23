@@ -774,7 +774,7 @@ class IsingXX(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
+        return qml.s_prod(-0.5, qml.prod(PauliX(wires=self.wires[0]), PauliX(wires=self.wires[1])))
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -910,7 +910,7 @@ class IsingYY(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
+        return qml.s_prod(-0.5, qml.prod(PauliY(wires=self.wires[0]), PauliY(wires=self.wires[1])))
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -1053,7 +1053,7 @@ class IsingZZ(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
+        return qml.s_prod(-0.5, qml.prod(PauliZ(wires=self.wires[0]), PauliZ(wires=self.wires[1])))
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -1236,9 +1236,12 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return 0.25 * (
-            PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
-            + PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
+        return qml.s_prod(
+            0.25,
+            qml.sum(
+                qml.prod(PauliX(wires=self.wires[0]), PauliX(wires=self.wires[1])),
+                qml.prod(PauliY(wires=self.wires[0]), PauliY(wires=self.wires[1])),
+            ),
         )
 
     def __init__(self, phi, wires, id=None):
