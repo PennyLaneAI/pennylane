@@ -32,9 +32,9 @@ class TestIdentity:
 
         new_op = Identity._unflatten(*op._flatten())
         assert qml.equal(op, new_op)
-    
+
     def test_class_name(self):
-        """Test the class name of either I and Identity is by default 'Identity' """
+        """Test the class name of either I and Identity is by default 'Identity'"""
         assert qml.I.__name__ == "Identity"
         assert qml.Identity.__name__ == "Identity"
 

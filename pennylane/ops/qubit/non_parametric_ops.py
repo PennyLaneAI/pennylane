@@ -343,6 +343,7 @@ class X(Observable, Operation):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
         return [np.pi / 2, np.pi, -np.pi / 2]
 
+
 X.__name__ = "PauliX"
 
 PauliX = X
@@ -529,6 +530,7 @@ class Y(Observable, Operation):
         # Y = RZ(0) RY(\pi) RZ(0)
         return [0.0, np.pi, 0.0]
 
+
 Y.__name__ = "PauliY"
 
 PauliY = Y
@@ -714,6 +716,7 @@ class Z(Observable, Operation):
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
         return [np.pi, 0.0, 0.0]
+
 
 Z.__name__ = "PauliZ"
 
