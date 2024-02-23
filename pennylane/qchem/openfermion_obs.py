@@ -924,6 +924,8 @@ def molecular_hamiltonian(
         geometry_dhf = qml.numpy.array(coordinates)
         geometry_hf = coordinates.flatten()
 
+    wires_map = None
+
     if wires:
         wires_new = qml.qchem.convert._process_wires(wires)
         wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
@@ -988,15 +990,10 @@ def molecular_hamiltonian(
         hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
 
         if active_new_opmath():
-            if wires:
-                h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
-            else:
-                h_pl = qml.jordan_wigner(hf, tol=1.0e-10).simplify()
+            h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
+
         else:
-            if wires:
-                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
-            else:
-                h_pl = qml.jordan_wigner(hf, ps=True, tol=1.0e-10).hamiltonian()
+            h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
             h_pl = simplify(h_pl)
 
         return h_pl, len(h_pl.wires)
