@@ -96,8 +96,8 @@ class JacobianProductCalculator(abc.ABC):
 
         For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0))])
         >>> batch = (tape0, tape1)
         >>> tangents0 = (1.5, )
         >>> tangents1 = (2.0, )
@@ -136,8 +136,8 @@ class JacobianProductCalculator(abc.ABC):
 
         For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> dy0 = (0.5, )
         >>> dy1 = (2.0, 3.0)
@@ -170,8 +170,8 @@ class JacobianProductCalculator(abc.ABC):
 
         For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> jpc.compute_jacobian(batch)
         (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
@@ -194,8 +194,8 @@ class JacobianProductCalculator(abc.ABC):
 
         For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> results, jacs = jpc.execute_and_compute_jacobian(batch)
         >>> results
@@ -368,7 +368,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     When a forward pass with :meth:`~.execute_and_cache_jacobian` is called, both the results and the jacobian for the object are stored.
 
-    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.Z(0))])
     >>> batch = (tape, )
     >>> with device.tracker:
     ...     results = jpc.execute_and_cache_jacobian(batch )
@@ -494,8 +494,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0))])
         >>> batch = (tape0, tape1)
         >>> tangents0 = (1.5, )
         >>> tangents1 = (2.0, )
@@ -539,8 +539,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> dy0 = (0.5, )
         >>> dy1 = (2.0, 3.0)
@@ -587,8 +587,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> jpc.compute_jacobian(batch)
         (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
@@ -702,7 +702,7 @@ class LightningVJPs(DeviceDerivatives):
 
     >>> dev = qml.device('lightning.qubit', wires=5)
     >>> jpc = LightningVJPs(dev, gradient_kwargs={"use_device_state": True, "method": "adjoint_jacobian"})
-    >>> tape = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> tape = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0))])
     >>> dev.batch_execute((tape,))
     [array(0.36235775)]
     >>> jpc.compute_vjp((tape,), (0.5,) )

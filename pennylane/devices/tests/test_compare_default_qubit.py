@@ -166,7 +166,7 @@ class TestComparison:
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
@@ -205,7 +205,7 @@ class TestComparison:
 
         def circuit(weights):
             RandomLayers(weights, wires=range(n_wires))
-            return ret_type(qml.PauliZ(wires=0) @ qml.PauliX(wires=1))
+            return ret_type(qml.Z(0) @ qml.X(1))
 
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
@@ -229,9 +229,9 @@ class TestComparison:
             pytest.skip("Device is in non-analytical mode.")
 
         gates = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
+            qml.X(0),
+            qml.Y(1),
+            qml.Z(2),
             qml.S(wires=3),
             qml.T(wires=0),
             qml.RX(2.3, wires=1),
@@ -262,7 +262,7 @@ class TestComparison:
             for gates in gates_per_layers:
                 for gate in gates:
                     qml.apply(gate)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
