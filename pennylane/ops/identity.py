@@ -55,7 +55,6 @@ class I(CVObservable, Operation):
         return tuple(), (self.wires, tuple())
 
     def __init__(self, wires=None, id=None):
-        self.__class__.__name__ = "Identity"
         super().__init__(wires=[] if wires is None else wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
@@ -196,6 +195,7 @@ class I(CVObservable, Operation):
     def pow(self, _):
         return [I(wires=self.wires)]
 
+I.__name__ = "Identity"
 
 Identity = I
 r"""
