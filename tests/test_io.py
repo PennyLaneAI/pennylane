@@ -149,7 +149,6 @@ class TestLoad:
             (qml.from_qiskit_op, "qiskit_op", ("Op",), {"params": [1, 2], "wires": [3, 4]}),
         ],
     )
-    # pylint: disable-next=too-many-arguments
     def test_convenience_function_arguments(
         self,
         method,
@@ -157,7 +156,7 @@ class TestLoad:
         mock_plugin_converters,
         args,
         kwargs,
-    ):
+    ):  # pylint: disable=too-many-arguments
         """Test that the convenience load functions access the correct entry point and forward their
         arguments correctly.
         """
