@@ -98,9 +98,9 @@ are callables. The callables defining the parameterized coefficients must have t
     f2 = lambda p, t: p[0] * jnp.cos(p[1]* t ** 2)
 
     # defining the operations for the three terms in the Hamiltonian
-    XX = qml.PauliX(0) @ qml.PauliX(1)
-    YY = qml.PauliY(0) @ qml.PauliY(1)
-    ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
+    XX = qml.X(0) @ qml.X(1)
+    YY = qml.Y(0) @ qml.Y(1)
+    ZZ = qml.Z(0) @ qml.Z(1)
 
 
 
@@ -134,13 +134,19 @@ The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`
 parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
 >>> H1
-  (2*(PauliX(wires=[0]) @ PauliX(wires=[1])))
-+ (<lambda>(params_0, t)*(PauliY(wires=[0]) @ PauliY(wires=[1])))
-+ (<lambda>(params_1, t)*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
+(
+    2 * X(0) @ X(1)
+  + <lambda>(params_0, t) * Y(0) @ Y(1)
+  + <lambda>(params_1, t) * Z(0) @ Z(1)
+)
 
 >>> params = [1.2, [2.3, 3.4]]  # f1 takes a single parameter, f2 takes 2
 >>> H1(params, t=0.5)
-(2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+(
+    2 * (X(0) @ X(1))
+  + -0.2876553231625218 * (Y(0) @ Y(1))
+  + 1.517961235535459 * (Z(0) @ Z(1))
+)
 
 
 When passing parameters, ensure that the order of the coefficient functions and the order of
@@ -178,7 +184,7 @@ can be created using the :func:`~.pennylane.evolve` function:
     from jax import numpy as jnp
 
     f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
-    H = 2 * qml.PauliX(0) + f1 * qml.PauliY(1)
+    H = 2 * qml.X(0) + f1 * qml.Y(1)
     ev = qml.evolve(H)
 
 >>> ev
@@ -221,7 +227,7 @@ following :class:`~.ParametrizedHamiltonian`:
         from jax import numpy as jnp
 
         f1 = lambda p, t: jnp.sin(p * t)
-        H = f1 * qml.PauliY(0)
+        H = f1 * qml.Y(0)
 
 
 Now we can execute the evolution of this Hamiltonian in a QNode and compute its gradient:
@@ -236,7 +242,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
     @qml.qnode(dev, interface="jax")
     def circuit(params):
         qml.evolve(H)(params, t=[0, 10])
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
 >>> params = [1.2]
 >>> circuit(params)

@@ -41,7 +41,7 @@ class TestTracker:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circ():
-            return qml.expval(qml.PauliX(wires=[0]))
+            return qml.expval(qml.X(0))
 
         spy_update = mocker.spy(dev.tracker, "update")
         spy_record = mocker.spy(dev.tracker, "record")
@@ -68,7 +68,7 @@ class TestTracker:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circ():
-            return qml.expval(qml.PauliX(wires=[0]))
+            return qml.expval(qml.X(0))
 
         spy_update = mocker.spy(dev.tracker, "update")
         spy_record = mocker.spy(dev.tracker, "record")

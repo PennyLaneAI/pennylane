@@ -52,29 +52,29 @@ def dot(
     **Example**
 
     >>> coeffs = np.array([1.1, 2.2])
-    >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+    >>> ops = [qml.X(0), qml.Y(0)]
     >>> qml.dot(coeffs, ops)
-    (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+    1.1 * X(0) + 2.2 * Y(0)
     >>> qml.dot(coeffs, ops, pauli=True)
     1.1 * X(0)
     + 2.2 * Y(0)
 
     Note that additions of the same operator are not executed by default.
 
-    >>> qml.dot([1., 1.], [qml.PauliX(0), qml.PauliX(0)])
-    PauliX(wires=[0]) + PauliX(wires=[0])
+    >>> qml.dot([1., 1.], [qml.X(0), qml.X(0)])
+    X(0) + X(0)
 
     You can obtain a cleaner version by simplifying the resulting expression.
 
-    >>> qml.dot([1., 1.], [qml.PauliX(0), qml.PauliX(0)]).simplify()
-    2.0*(PauliX(wires=[0]))
+    >>> qml.dot([1., 1.], [qml.X(0), qml.X(0)]).simplify()
+    2.0 * X(0)
 
     ``pauli=True`` can be used to construct a more efficient, simplified version of the operator.
     Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
     specialized representation can be converted to an operator:
 
-    >>> qml.dot([1, 2], [qml.PauliX(0), qml.PauliX(0)], pauli=True).operation()
-    3.0*(PauliX(wires=[0]))
+    >>> qml.dot([1, 2], [qml.X(0), qml.X(0)], pauli=True).operation()
+    3.0 * X(0)
 
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
     than using ``pauli=False``, but it only works for pauli words
@@ -84,10 +84,12 @@ def dot(
     :class:`~.ParametrizedHamiltonian`:
 
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
-    >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+    >>> ops = [qml.X(0), qml.Y(0)]
     >>> qml.dot(coeffs, ops)
-      (<lambda>(params_0, t)*(PauliX(wires=[0])))
-    + (<lambda>(params_1, t)*(PauliY(wires=[0])))
+    (
+        <lambda>(params_0, t) * X(0)
+      + <lambda>(params_1, t) * Y(0)
+    )
     """
 
     if len(coeffs) != len(ops):
