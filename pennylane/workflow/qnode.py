@@ -183,8 +183,9 @@ class QNode:
             Only applies if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
-        cache=None (None or bool or dict or Cache): Whether to cache evalulations.
-            ``None`` indicates to cache only when ``max_diff > 1``. This can result in
+        cache="auto" (str or bool or dict or Cache): Whether to cache evalulations.
+
+            ``"auto"`` indicates to cache only when ``max_diff > 1``. This can result in
             a reduction in quantum evaluations during higher order gradient computations.
             If ``True``, a cache with corresponding ``cachesize`` is created for each batch
             execution. If ``False``, no caching is used. You may also pass your own cache
@@ -416,7 +417,7 @@ class QNode:
         expansion_strategy="gradient",
         max_expansion=10,
         grad_on_execution="best",
-        cache=None,
+        cache="auto",
         cachesize=10000,
         max_diff=1,
         device_vjp=False,
@@ -484,7 +485,7 @@ class QNode:
         self.diff_method = diff_method
         self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
-        cache = (max_diff > 1) if cache is None else cache
+        cache = (max_diff > 1) if cache == "auto" else cache
 
         # execution keyword arguments
         self.execute_kwargs = {
