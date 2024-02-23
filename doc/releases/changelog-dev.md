@@ -636,6 +636,9 @@
 * When a QNode specifies `diff_method="adjoint"`, `default.qubit` no longer tries to decompose non-trainable operations with non-scalar parameters such as `QubitUnitary`.
   [(#5233)](https://github.com/PennyLaneAI/pennylane/pull/5233)
 
+* The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the init after causing problems with datasets. Now happens globally.
+  [(#5252)](https://github.com/PennyLaneAI/pennylane/pull/5252)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
