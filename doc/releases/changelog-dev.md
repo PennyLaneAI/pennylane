@@ -271,6 +271,9 @@
     + 2j * X(0) @ Z(1)
     ```
 
+* Controlled composite operations can be decomposed using ZYZ rotations.
+  [(#5242)](https://github.com/PennyLaneAI/pennylane/pull/5242)
+
 * Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and `SProd` operations
   convert `Hamiltonian` and `Tensor` operands to `Sum` and `Prod` types, respectively. This helps
   avoid the mixing of incompatible operator types.
@@ -528,7 +531,12 @@
 * A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions was added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
   [(#5137)](https://github.com/PennyLaneAI/pennylane/pull/5137)
 
-* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template. [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
+* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template.
+  [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
+
+* The docstring of `qml.sample` has been updated to advise the use of single-shot expectations
+  instead when differentiating a circuit.
+  [(#5237)](https://github.com/PennyLaneAI/pennylane/pull/5237)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -630,6 +638,7 @@
 This release contains contributions from (in alphabetical order):
 
 Abhishek Abhishek,
+Mikhail Andrenkov,
 Utkarsh Azad,
 Trenten Babcock,
 Gabriel Bottrill,
