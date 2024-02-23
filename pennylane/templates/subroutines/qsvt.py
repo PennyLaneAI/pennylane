@@ -101,7 +101,7 @@ def qsvt(A, angles, wires, convention=None):
     >>> @qml.qnode(dev)
     ... def example_circuit(A):
     ...     qml.qsvt(A, angles, wires=[0, 1])
-    ...     return qml.expval(qml.PauliZ(wires=0))
+    ...     return qml.expval(qml.Z(0))
 
     The resulting circuit implements QSVT.
 
@@ -213,7 +213,7 @@ class QSVT(Operation):
     >>> @qml.qnode(dev)
     >>> def example_circuit():
     ...    qml.QSVT(block_encode, shifts)
-    ...    return qml.expval(qml.PauliZ(wires=0))
+    ...    return qml.expval(qml.Z(0))
 
     The resulting circuit implements QSVT.
 
@@ -238,7 +238,7 @@ class QSVT(Operation):
     >>> @qml.qnode(dev)
     >>> def example_circuit():
     ...     qml.QSVT(block_encoding, phase_shifts)
-    ...     return qml.expval(qml.PauliZ(wires=0))
+    ...     return qml.expval(qml.Z(0))
     >>>
     >>> example_circuit()
     tensor(0.54030231, requires_grad=True)

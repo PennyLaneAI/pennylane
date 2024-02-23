@@ -155,7 +155,7 @@ class MERA(Operation):
             @qml.qnode(dev)
             def circuit(template_weights):
                 qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.PauliZ(wires=1))
+                return qml.expval(qml.Z(1))
 
         It may be necessary to reorder the wires to see the MERA architecture clearly:
 
