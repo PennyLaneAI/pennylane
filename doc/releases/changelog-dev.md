@@ -9,6 +9,7 @@
 * An error message provides clearer instructions for installing PennyLane-Qiskit if the `qml.from_qiskit`
   function fails because the Qiskit converter is missing.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
+
 * A Qiskit `SparsePauliOp` can be converted into a PennyLane `Operator` using `qml.from_qiskit_op`.
   [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
 
