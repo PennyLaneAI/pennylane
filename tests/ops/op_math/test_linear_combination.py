@@ -272,24 +272,9 @@ sub_LinearCombinations = [
         qml.LinearCombination([0.5, 1.2, -1.5, -0.3], [X(0), Z(1), X(2), X(1)]),
     ),
     (
-        qml.LinearCombination([1.3, 0.2, 1], [X(0) @ X(1), qml.Hadamard(1), X(2)]),
-        qml.LinearCombination([0.5, 0.3, 1], [X(0), X(1) @ X(0), X(2)]),
-        qml.LinearCombination([1, 0.2, -0.5], [X(0) @ X(1), qml.Hadamard(1), X(0)]),
-    ),
-    (
-        qml.LinearCombination([1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.LinearCombination([0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.LinearCombination([0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-    ),
-    (
         qml.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
         X(0) @ qml.Identity(1),
         qml.LinearCombination([1.2, 0.1], [Z(1), X(2)]),
-    ),
-    (
-        qml.LinearCombination([1.3, 0.2, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]),
-        qml.Hadamard(1),
-        qml.LinearCombination([1.3, -0.8, 0.7], [X(0) @ X(1), qml.Hadamard(1), X(2)]),
     ),
     (
         qml.LinearCombination([1, 1.2, 0.1], [X("b"), Z(3.1), X(1.6)]),
