@@ -148,7 +148,7 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rpds-py==0.18.0
 rsa==4.9
-rustworkx==0.14.0
+rustworkx==0.14.1
 scipy==1.11.4
 scs==3.2.4.post1
 semantic-version==2.10.0
