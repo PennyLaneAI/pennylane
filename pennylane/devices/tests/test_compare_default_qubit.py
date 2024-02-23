@@ -17,7 +17,7 @@ import pytest
 from flaky import flaky
 
 import pennylane as qml
-from pennylane import numpy as np  # Import from PennyLane to mirror the standard approach in demos
+from pennylane import numpy as pnp  # Import from PennyLane to mirror the standard approach in demos
 from pennylane.templates.layers import RandomLayers
 
 pytestmark = pytest.mark.skip_unsupported
@@ -31,28 +31,28 @@ class TestComparison:
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
-        dev_def = qml.device("default.qubit", wires=n_wires)
+        dev_def = qml.device("default.qubit")
 
-        if dev.shots is not None:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
-        if "Hermitian" not in dev.observables:
+        if isinstance(dev, qml.Device) and "Hermitian" not in dev.observables:
             pytest.skip("Device does not support the Hermitian observable.")
 
-        if dev.name == dev_def.name:
+        if dev.name == "default.qubit":
             pytest.skip("Device is default.qubit.")
 
         theta = 0.432
         phi = 0.123
-        A_ = np.array(
+        A_ = pnp.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
                 [-3, 2 + 1j, 0, -4 + 3j],
                 [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
+            ],
+            requires_grad=False,
         )
-        A_.requires_grad = False
 
         def circuit(theta, phi):
             qml.RX(theta, wires=[0])
@@ -76,8 +76,8 @@ class TestComparison:
 
         qnode_res, qnode_def_res, grad_res, grad_def_res = benchmark(workload)
 
-        assert np.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
-        assert np.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
+        assert pnp.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
+        assert pnp.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
 
     @pytest.mark.parametrize(
         "state",
@@ -90,10 +90,10 @@ class TestComparison:
             [0, 1, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1],
-            np.array([1, 1, 0, 0]) / np.sqrt(2),
-            np.array([0, 1, 0, 1]) / np.sqrt(2),
-            np.array([1, 1, 1, 0]) / np.sqrt(3),
-            np.array([1, 1, 1, 1]) / 2,
+            pnp.array([1, 1, 0, 0]) / pnp.sqrt(2),
+            pnp.array([0, 1, 0, 1]) / pnp.sqrt(2),
+            pnp.array([1, 1, 1, 0]) / pnp.sqrt(3),
+            pnp.array([1, 1, 1, 1]) / 2,
         ],
     )
     def test_projector_expectation(self, device, state, tol, benchmark):
@@ -102,13 +102,13 @@ class TestComparison:
         dev = device(n_wires)
         dev_def = qml.device("default.qubit", wires=n_wires)
 
-        if dev.shots is not None:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
-        if "Projector" not in dev.observables:
+        if isinstance(dev, qml.Device) and "Projector" not in dev.observables:
             pytest.skip("Device does not support the Projector observable.")
 
-        if dev.name == dev_def.name:
+        if dev.name == "default.qubit":
             pytest.skip("Device is default.qubit.")
 
         theta = 0.432
@@ -136,8 +136,8 @@ class TestComparison:
 
         qnode_res, qnode_def_res, grad_res, grad_def_res = benchmark(workload)
 
-        assert np.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
-        assert np.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
+        assert pnp.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
+        assert pnp.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
 
     def test_pauliz_expectation_analytic(self, device, tol):
         """Test that the tensor product of PauliZ expectation value is correct"""
@@ -148,7 +148,7 @@ class TestComparison:
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        supports_tensor = (
+        supports_tensor = isinstance(dev, qml.devices.Device) or (
             "supports_tensor_observables" in dev.capabilities()
             and dev.capabilities()["supports_tensor_observables"]
         )
@@ -156,7 +156,7 @@ class TestComparison:
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
 
-        if dev.shots is not None:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
         theta = 0.432
@@ -174,8 +174,8 @@ class TestComparison:
         grad_def = qml.grad(qnode_def, argnum=[0, 1])
         grad = qml.grad(qnode, argnum=[0, 1])
 
-        assert np.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
-        assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
+        assert pnp.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
+        assert pnp.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
 
     @pytest.mark.parametrize("ret", ["expval", "var"])
     def test_random_circuit(self, device, tol, ret):
@@ -187,7 +187,7 @@ class TestComparison:
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        supports_tensor = (
+        supports_tensor = isinstance(dev, qml.devices.Device) or (
             "supports_tensor_observables" in dev.capabilities()
             and dev.capabilities()["supports_tensor_observables"]
         )
@@ -195,11 +195,11 @@ class TestComparison:
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
 
-        if dev.shots is not None:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
-        n_layers = np.random.randint(1, 5)
-        weights = 2 * np.pi * np.random.rand(n_layers, 1)
+        n_layers = pnp.random.randint(1, 5)
+        weights = 2 * pnp.pi * pnp.random.rand(n_layers, 1)
 
         ret_type = getattr(qml, ret)
 
@@ -213,19 +213,19 @@ class TestComparison:
         grad_def = qml.grad(qnode_def, argnum=0)
         grad = qml.grad(qnode, argnum=0)
 
-        assert np.allclose(qnode(weights), qnode_def(weights), atol=tol(dev.shots))
-        assert np.allclose(grad(weights), grad_def(weights), atol=tol(dev.shots))
+        assert pnp.allclose(qnode(weights), qnode_def(weights), atol=tol(dev.shots))
+        assert pnp.allclose(grad(weights), grad_def(weights), atol=tol(dev.shots))
 
     def test_four_qubit_random_circuit(self, device, tol):
         """Compare a four-qubit random circuit with lots of different gates to default.qubit"""
         n_wires = 4
         dev = device(n_wires)
-        dev_def = qml.device("default.qubit", wires=n_wires)
+        dev_def = qml.device("default.qubit")
 
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        if dev.shots is not None:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
         gates = [
@@ -252,13 +252,12 @@ class TestComparison:
         ]
 
         layers = 3
-        np.random.seed(1967)
-        gates_per_layers = [np.random.permutation(gates).numpy() for _ in range(layers)]
+        rng = pnp.random.default_rng(1967)
+        gates_per_layers = [rng.permutation(gates).numpy() for _ in range(layers)]
 
         def circuit():
             """4-qubit circuit with layers of randomly selected gates and random connections for
             multi-qubit gates."""
-            np.random.seed(1967)
             for gates in gates_per_layers:
                 for gate in gates:
                     qml.apply(gate)
@@ -267,4 +266,4 @@ class TestComparison:
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
 
-        assert np.allclose(qnode(), qnode_def(), atol=tol(dev.shots))
+        assert pnp.allclose(qnode(), qnode_def(), atol=tol(dev.shots))
