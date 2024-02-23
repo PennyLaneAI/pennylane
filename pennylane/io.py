@@ -180,8 +180,10 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
 
         The wire ordering convention differs between PennyLane and Qiskit: PennyLane wires are
         enumerated from left to right, while the Qiskit convention is to enumerate from right to
-        left. A ``SparsePauliOp`` term defined by the string ``"XYZ"`` applies ``Z`` on wire 0,
-        ``Y`` on wire 1, and ``X`` on wire 2.
+        left. This means a ``SparsePauliOp`` term defined by the string ``"XYZ"`` applies ``Z`` on
+        wire 0, ``Y`` on wire 1, and ``X`` on wire 2. For more details, see the
+        `String representation <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.Pauli>`__
+        section of the Qiskit documentation for the ``Pauli`` class.
 
     **Example**
 
