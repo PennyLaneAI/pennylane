@@ -30,7 +30,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd
-from pennylane.tape import OperationRecorder
 from pennylane.wires import Wires
 
 # To make this quicker later on
@@ -1192,16 +1191,17 @@ def qwc_rotation(pauli_operators):
             f"All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
             f" instead got pauli_operators = {pauli_operators}."
         )
-    with OperationRecorder() as rec:
+    ops = []
+    with qml.QueuingManager.stop_recording():
         for pauli in pauli_operators:
             if isinstance(pauli, qml.X):
-                qml.RY(-np.pi / 2, wires=pauli.wires)
+                ops.append(qml.RY(-np.pi / 2, wires=pauli.wires))
 
             elif isinstance(pauli, qml.Y):
-                qml.RX(np.pi / 2, wires=pauli.wires)
+                ops.append(qml.RX(np.pi / 2, wires=pauli.wires))
 
     # known issue with pylint recognizing @property members
-    return rec.queue  # pylint:disable=no-member
+    return ops  # pylint:disable=no-member
 
 
 def diagonalize_pauli_word(pauli_word):
@@ -1248,6 +1248,7 @@ def diagonalize_pauli_word(pauli_word):
     return diag_term
 
 
+@qml.QueuingManager.stop_recording()
 def diagonalize_qwc_pauli_words(
     qwc_grouping,
 ):  # pylint: disable=too-many-branches, isinstance-second-argument-not-valid-type
@@ -1280,41 +1281,42 @@ def diagonalize_qwc_pauli_words(
       Z(1) @ Z(3)])
     """
 
-    if not are_pauli_words_qwc(qwc_grouping):
-        raise ValueError("The list of Pauli words are not qubit-wise commuting.")
-
-    if not all(
-        isinstance(op, (Tensor, PauliX, PauliY, PauliZ, Identity, SProd, Prod))
-        for op in qwc_grouping
-    ):
-        raise ValueError("This function only supports Tensor products of pauli ops.")
-
-    pauli_operators = []
-    diag_terms = []
-
-    paulis_with_identity = (qml.X, qml.Y, qml.Z, qml.Identity)
+    full_pauli_word = {}
+    new_ops = []
     for term in qwc_grouping:
-        diag_terms.append(diagonalize_pauli_word(term))
+        pauli_rep = term.pauli_rep
+        if pauli_rep is None or len(pauli_rep) > 1:
+            raise ValueError("This function only supports pauli words.")
+        pw = next(iter(pauli_rep))
+        for wire, pauli_type in pw.items():
+            if wire in full_pauli_word:
+                if full_pauli_word[wire] != pauli_type:
+                    raise ValueError("The list of Pauli words are not qubit-wise commuting")
+            else:
+                full_pauli_word[wire] = pauli_type
+
         if isinstance(term, Tensor):
-            for sigma in term.obs:
-                if sigma.name != "Identity":
-                    if not any(
-                        are_identical_pauli_words(sigma, existing_pauli)
-                        for existing_pauli in pauli_operators
-                    ):
-                        pauli_operators.append(sigma)
-        elif isinstance(term, paulis_with_identity):
-            sigma = term
-            if sigma.name != "Identity":
-                if not any(
-                    are_identical_pauli_words(sigma, existing_pauli)
-                    for existing_pauli in pauli_operators
-                ):
-                    pauli_operators.append(sigma)
+            components = [qml.Z(w) for w in pw]
+            new_ops.append(Tensor(*components) if len(components) > 1 else components[0])
+        elif isinstance(term, (qml.Z, qml.I)):
+            new_ops.append(term)
+        elif isinstance(term, (qml.X, qml.Y)):
+            new_ops.append(qml.Z(term.wires[0]))
+        else:  # operator arithmetic
+            prod_term = qml.prod(*(qml.Z(w) for w in pw))
+            coeff = pauli_rep[pw]
+            if qml.math.allclose(coeff, 1):
+                new_ops.append(coeff * prod_term)
+            else:
+                new_ops.append(prod_term)
 
-    unitary = qwc_rotation(pauli_operators)
-
-    return unitary, diag_terms
+    diag_gates = []
+    for w, pauli_type in full_pauli_word.items():
+        if pauli_type == "X":
+            diag_gates.append(qml.RY(-np.pi / 2, wires=w))
+        elif pauli_type == "Y":
+            diag_gates.append(qml.RX(np.pi / 2, wires=w))
+    return diag_gates, new_ops
 
 
 def diagonalize_qwc_groupings(qwc_groupings):
