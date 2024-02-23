@@ -374,8 +374,8 @@ class TestQSVT:
         assert qml.equal(orig_op, copy_op)
 
         # Ensure the (nested) operations are copied instead of aliased.
-        assert id(orig_op) != id(copy_op)
-        assert id(orig_op.hyperparameters["UA"]) != id(copy_op.hyperparameters["UA"])
+        assert orig_op is not copy_op
+        assert orig_op.hyperparameters["UA"] is not copy_op.hyperparameters["UA"]
 
         orig_projectors = orig_op.hyperparameters["projectors"]
         copy_projectors = copy_op.hyperparameters["projectors"]
