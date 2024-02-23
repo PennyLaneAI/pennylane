@@ -161,7 +161,8 @@ def from_qiskit(quantum_circuit, measurements=None):
 
 
 def from_qiskit_op(qiskit_op, params=None, wires=None):
-    """Loads Qiskit SparsePauliOp objects by using the converter in the PennyLane-Qiskit plugin.
+    """Loads a Qiskit `SparsePauliOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>_
+    instance into a PennyLane :class:`Operator`.
 
     Args:
         qiskit_op (qiskit.quantum_info.SparsePauliOp): the SparsePauliOp to be converted
