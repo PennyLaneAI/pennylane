@@ -184,7 +184,6 @@ class QNode:
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
         cache="auto" (str or bool or dict or Cache): Whether to cache evalulations.
-
             ``"auto"`` indicates to cache only when ``max_diff > 1``. This can result in
             a reduction in quantum evaluations during higher order gradient computations.
             If ``True``, a cache with corresponding ``cachesize`` is created for each batch
