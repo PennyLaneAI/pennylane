@@ -51,7 +51,7 @@ opt-einsum==3.3.0
 osqp==0.6.5
 packaging==23.2
 pathspec==0.12.1
-PennyLane_Lightning==0.35.0.dev16
+PennyLane_Lightning==0.35.0.dev17
 pillow==10.2.0
 platformdirs==4.2.0
 pluggy==1.4.0
