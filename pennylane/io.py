@@ -165,13 +165,13 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
     instance into a PennyLane :class:`Operator`.
 
     Args:
-        qiskit_op (qiskit.quantum_info.SparsePauliOp): the SparsePauliOp to be converted
-        params (Any): optional assignment of coefficient values for the SparsePauliOp; see the
+        qiskit_op (qiskit.quantum_info.SparsePauliOp): the ``SparsePauliOp`` to be converted
+        params (Any): optional assignment of coefficient values for the ``SparsePauliOp``; see the
             `Qiskit documentation <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp#assign_parameters>`__
             to learn more about the expected format of these parameters
-        wires (Sequence | None): optional assignment of wires for the converted SparsePauliOp; if
-            the original SparsePauliOp acted on :math:`N` qubits, then this must be a sequence of
-            length :math:`N`
+        wires (Sequence | None): optional assignment of wires for the converted ``SparsePauliOp``;
+            if the original ``SparsePauliOp`` acted on :math:`N` qubits, then this must be a
+            sequence of length :math:`N`
 
     Returns:
         Operator: The equivalent PennyLane operator.
