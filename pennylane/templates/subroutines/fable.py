@@ -28,11 +28,6 @@ class FABLE(Operation):
     
     The FABLE method allows to simplify block encoding circuits without reducing accuracy, for matrices of specific structure [`arXiv:2205.00081 <https://arxiv.org/abs/2205.00081>`_].
 
-    **Details:**
-
-    * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 1
-    * Gradient recipe: None
 
     Args:
         A (tensor_like): an :math:`(N \times N)` matrix to be encoded, where N should have dimension equal to 2^n where n is an integer.
