@@ -342,6 +342,7 @@ class CountsMP(SampleMeasurement):
 
         return outcome_dicts if batched else outcome_dicts[0]
 
+    # pylint: disable=redefined-outer-name
     def process_counts(self, counts: dict, wire_order: Wires) -> dict:
         mapped_counts = self._map_counts(counts, wire_order)
         if self.all_outcomes:
