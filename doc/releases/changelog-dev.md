@@ -179,8 +179,9 @@
 
 <h3>Improvements 🛠</h3>
 
-* Implemented the method `process_counts` in `ExpectationMp`.
-  [(#5241)](https://github.com/PennyLaneAI/pennylane/issues/5241)
+* Implemented the method `process_counts` in 
+  * `ExpectationMp` [(#5241)](https://github.com/PennyLaneAI/pennylane/issues/5241)
+  * `VarianceMP` [(#5244)](https://github.com/PennyLaneAI/pennylane/issues/5244)
 
 <h4>Faster gradients with VJPs and other performance improvements</h4>
 
