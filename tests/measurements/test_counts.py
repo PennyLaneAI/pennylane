@@ -918,3 +918,12 @@ class TestProcessCounts:
         actual = qml.counts(wires=wires, all_outcomes=False).process_counts(counts, wire_order)
 
         assert actual == expected
+
+    def test_process_count_returns_same_count_dictionary(self):
+        """Test process_count returns same dictionary when all_outcomes=True and wire_order is same"""
+        expected = {"0": 1, "1": 0}
+        wires = qml.wires.Wires(0)
+
+        actual = qml.counts(wires=wires, all_outcomes=True).process_counts(expected, wires)
+
+        assert actual == expected
