@@ -69,8 +69,8 @@ class FABLE(Operation):
     [ 0.99675093  0.99675093  0.83514837  0.83514837]]
 
     .. note::
-        By default it is assumed the matrix is an NxN square matrix, where N is a power of 2. However, for matrices of arbitrary size,
-        we add zeros to reach the correct dimension. It is also assumed that the value of the input matrix are within [-1, 1]. Apply a subnormalization factor if needed.
+        By default it is assumed that the matrix is an NxN square matrix, where N is a power of 2. However, for matrices of arbitrary size,
+        we add zeros to reach the correct dimension. It is also assumed that the values of the input matrix are within [-1, 1]. Apply a subnormalization factor if needed.
     """
 
     num_wires = AnyWires
