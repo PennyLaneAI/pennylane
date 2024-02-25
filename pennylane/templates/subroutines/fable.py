@@ -24,8 +24,9 @@ from pennylane.wires import Wires
 
 class FABLE(Operation):
     r"""
-    Constructs a unitary using the FABLE technique<https://arxiv.org/abs/2205.00081>, which can simplify circuits without
-    reducing accuracy for matrices of specific structure.
+    Construct a unitary with the fast approximate block encoding method. 
+    
+    The FABLE method allows to simplify block encoding circuits without reducing accuracy, for matrices of specific structure [`arXiv:2205.00081 <https://arxiv.org/abs/2205.00081>`_].
 
     **Details:**
 
