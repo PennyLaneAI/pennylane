@@ -179,6 +179,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Implemented the method `process_counts` in `ExpectationMp`.
+  [(#5241)](https://github.com/PennyLaneAI/pennylane/issues/5241)
+
 <h4>Faster gradients with VJPs and other performance improvements</h4>
 
 * Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
@@ -683,4 +686,5 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Alex Preciado,
 Matthew Silverman,
-Jay Soni.
+Jay Soni,
+Tarun Kumar Allamsetty.
