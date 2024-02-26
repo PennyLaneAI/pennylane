@@ -176,11 +176,13 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-class X(Observable, Operation):
-    r"""X(wires)
-    The Pauli X operator
+class PauliX(Observable, Operation):
+    r"""
+    An alias of the Pauli X operator :class:`~X`.
 
     .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
+
+    .. seealso:: :class:`~X`
 
     **Details:**
 
@@ -344,13 +346,11 @@ class X(Observable, Operation):
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
-PauliX = X
-r"""
-An alias of the Pauli X operator :class:`~X`.
+X = PauliX
+r"""X(wires)
+The Pauli X operator
 
 .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
-
-.. seealso:: :class:`~X`
 
 **Details:**
 
@@ -362,11 +362,14 @@ Args:
 """
 
 
-class Y(Observable, Operation):
-    r"""Y(wires)
-    The Pauli Y operator
+
+class PauliY(Observable, Operation):
+    r"""
+    An alias of the Pauli Y operator :class:`~Y`.
 
     .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
+
+    .. seealso:: :class:`~Y`
 
     **Details:**
 
@@ -529,13 +532,11 @@ class Y(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
-PauliY = Y
-r"""
-An alias of the Pauli Y operator :class:`~Y`.
+Y = PauliY
+r"""Y(wires)
+The Pauli Y operator
 
 .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
-
-.. seealso:: :class:`~Y`
 
 **Details:**
 
@@ -547,11 +548,13 @@ Args:
 """
 
 
-class Z(Observable, Operation):
-    r"""Z(wires)
-    The Pauli Z operator
+class PauliZ(Observable, Operation):
+    r"""
+    An alias of the Pauli Z operator :class:`~Z`.
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
+
+    .. seealso:: :class:`~Z`
 
     **Details:**
 
@@ -714,13 +717,11 @@ class Z(Observable, Operation):
         return [np.pi, 0.0, 0.0]
 
 
-PauliZ = Z
-r"""
-An alias of the Pauli Z operator :class:`~Z`.
+Z = PauliZ
+r"""Z(wires)
+The Pauli Z operator
 
 .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
-
-.. seealso:: :class:`~Z`
 
 **Details:**
 
