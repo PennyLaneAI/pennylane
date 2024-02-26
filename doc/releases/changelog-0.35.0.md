@@ -233,6 +233,9 @@
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
+* Added a `partial_trace` function to `pennylane.math` for matrices.
+  [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
+
 <h4>Other operator arithmetic improvements</h4>
 
 * The following capabilities have been added for Pauli arithmetic:
@@ -271,9 +274,6 @@
     + 2j * X(0) @ Z(1)
     ```
 
-* Controlled composite operations can be decomposed using ZYZ rotations.
-  [(#5242)](https://github.com/PennyLaneAI/pennylane/pull/5242)
-
 * Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and `SProd` operations
   convert `Hamiltonian` and `Tensor` operands to `Sum` and `Prod` types, respectively. This helps
   avoid the mixing of incompatible operator types.
@@ -282,10 +282,6 @@
 
 * `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
   [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
-
-* Adds `qml.devices.modifiers.simulator_tracking` and `qml.devices.modifiers.single_tape_support`
-  to add basic default behavior onto a device class.
-  [(#5200)](https://github.com/PennyLaneAI/pennylane/pull/5200)
 
 * `qml.dot` now returns a `Sum` class even when all the coefficients match.
   [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
@@ -321,6 +317,12 @@
   ([0.5, 0.7, 1.5],
    [X(0), X(1), Y(1) @ Y(0)])
   ```
+
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs` have been added for feature parity with `qml.Hamiltonian` but will be deprecated in the future.
+  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
+
+* String representations of `ParametrizedHamiltonian` have been updated to match the style of other PL operators.
+  [(#5215)](https://github.com/PennyLaneAI/pennylane/pull/5215)
 
 <h4>Other improvements</h4>
 
@@ -361,9 +363,6 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
-* String representations of `ParametrizedHamiltonian` have been updated to match the style of other PL operators.
-  [(#5215)](https://github.com/PennyLaneAI/pennylane/pull/5215)
-
 * `qml.ctrl` called on operators with custom controlled versions will return instances
   of the custom class, and it will also flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
@@ -374,12 +373,6 @@
 * Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
-
-* `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs` have been added for feature parity with `qml.Hamiltonian` but will be deprecated in the future.
-  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
-
-* Added a `partial_trace` function to `pennylane.math` for matrices.
-  [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
 
 * Users can specify a list of PennyLane `measurements` they would want as terminal measurements
   when converting a `QuantumCircuit` using `qml.from_qiskit`.
@@ -400,6 +393,13 @@
 * `qml.ctrl` is now a simple wrapper that either calls PennyLane's built in `create_controlled_op`
   or uses the Catalyst implementation.
   [(#5247)](https://github.com/PennyLaneAI/pennylane/pull/5247)
+
+* Controlled composite operations can be decomposed using ZYZ rotations.
+  [(#5242)](https://github.com/PennyLaneAI/pennylane/pull/5242)
+
+* Adds `qml.devices.modifiers.simulator_tracking` and `qml.devices.modifiers.single_tape_support`
+  to add basic default behavior onto a device class.
+  [(#5200)](https://github.com/PennyLaneAI/pennylane/pull/5200)
 
 <h3>Breaking changes 💔</h3>
 
