@@ -224,7 +224,7 @@
 * Improve efficiency of matrix calculation when operator is symmetric over wires.
   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
-* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+* The `pennylane/math/quantum.py` module now has support for computing the minimum entropy of a density matrix.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
