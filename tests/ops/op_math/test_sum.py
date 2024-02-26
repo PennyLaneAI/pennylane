@@ -1275,6 +1275,45 @@ class TestArithmetic:
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
 
+class TestGrouping:
+    """Test grouping functionality of Sum"""
+
+    def test_non_pauli_error(self):
+        """Test that grouping non-Pauli observables is not supported."""
+        op = Sum(qml.PauliX(0), Prod(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(2))
+
+        with pytest.raises(
+            ValueError, match="Cannot compute groupings for Sums containing non-Pauli"
+        ):
+            _, _ = op.compute_grouping()
+
+    def test_reuse_after_on_second_call(self, mocker):
+        """Test that the stored grouping indices are used to compute groupings on
+        all calls to the method after the first one."""
+        op = Sum(
+            qml.PauliX(0),
+            Prod(qml.PauliZ(0), qml.PauliX(1)),
+            Prod(qml.PauliZ(2), qml.PauliY(1)),
+            qml.PauliX(1),
+            Prod(qml.PauliZ(1), qml.PauliX(2)),
+        )
+
+        spy = mocker.spy(qml.pauli, "group_observables")
+        o_groups1, c_groups1 = op.compute_grouping()
+        assert op._grouping_inds is not None
+
+        o_groups2, c_groups2 = op.compute_grouping()
+        assert spy.call_count == 1
+
+        assert o_groups1 == o_groups2
+        assert c_groups1 == c_groups2
+
+    @pytest.mark.parametrize("ops", [])
+    def test_groupings(self, ops):
+        """Test that the computed groupings are correct."""
+        return
+
+
 class TestSupportsBroadcasting:
     """Test that the Sum operator supports broadcasting if its operands support broadcasting."""
 

@@ -160,10 +160,9 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
-    _grouping_cache = {}
 
     def __init__(self, *operands: Operator, id=None, _pauli_rep=None):
-        self._groupings = None
+        self._grouping_inds = None
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
     @property
@@ -339,41 +338,52 @@ class Sum(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             ops = [pauli.operation() for pauli in pr.keys()]
-            coeffs = list(pr.values())
+            return list(pr.values()), ops
 
-        else:
-            new_summands = self._simplify_summands(summands=self.operands).get_summands()
+        new_summands = self._simplify_summands(summands=self.operands).get_summands()
 
-            coeffs = []
-            ops = []
-            for factor in new_summands:
-                if isinstance(factor, qml.ops.SProd):
-                    coeffs.append(factor.scalar)
-                    ops.append(factor.base)
-                else:
-                    coeffs.append(1.0)
-                    ops.append(factor)
-
+        coeffs = []
+        ops = []
+        for factor in new_summands:
+            if isinstance(factor, qml.ops.SProd):
+                coeffs.append(factor.scalar)
+                ops.append(factor.base)
+            else:
+                coeffs.append(1.0)
+                ops.append(factor)
         return coeffs, ops
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
-        """doc"""
+        """
+        Compute and return groups of operators and coefficients corresponding to commuting
+        observables of this Sum.
+
+        Args:
+            grouping_type (str): The type of binary relation between Pauli words used to compute
+                the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+            method (str): The graph coloring heuristic to use in solving minimum clique cover for
+                grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
+                First).
+
+        Returns:
+            tuple[list[list[.Operation]], list[list[tensor_like or float]]]: List of observable
+            groups and corresponding list of coefficient groups
+        """
         if not self.pauli_rep:
-            raise ValueError("Can't compute groupings for Sums containing non-Pauli operators.")
+            raise ValueError("Cannot compute groupings for Sums containing non-Pauli operators.")
 
         coeffs, ops = self.terms()
 
-        if (grouping_inds := self._groupings) is not None:
-            op_groups = [[ops[i] for i in group] for group in grouping_inds]
-            coeff_groups = [[coeffs[i] for i in group] for group in grouping_inds]
+        if self._grouping_inds is not None:
+            op_groups = [[ops[i] for i in group] for group in self._grouping_inds]
+            coeff_groups = [[coeffs[i] for i in group] for group in self._grouping_inds]
 
         else:
             op_groups, coeff_groups = qml.pauli.group_observables(
                 ops, coeffs, grouping_type=grouping_type, method=method
             )
 
-            groupings = [[ops.index(o) for o in group] for group in op_groups]
-            self._groupings = groupings
+            self._grouping_inds = [[ops.index(o) for o in group] for group in op_groups]
 
         return op_groups, coeff_groups
 
