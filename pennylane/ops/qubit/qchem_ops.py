@@ -171,9 +171,7 @@ class SingleExcitation(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return qml.s_prod(
-            0.25, qml.sum(qml.prod(qml.X(w1), qml.Y(w2)), -qml.prod(qml.Y(w1), qml.X(w2)))
-        )
+        return qml.s_prod(0.25, (qml.X(w1) @ qml.Y(w2) - qml.Y(w1) @ qml.X(w2)))
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -320,11 +318,11 @@ class SingleExcitationMinus(Operation):
         w1, w2 = self.wires
         return qml.s_prod(
             0.25,
-            qml.sum(
-                -qml.Identity(w1),
-                qml.prod(qml.X(w1), qml.Y(w2)),
-                -qml.prod(qml.Y(w1), qml.X(w2)),
-                -qml.prod(qml.Z(w1), qml.Z(w2)),
+            (
+                -qml.Identity(w1)
+                + qml.X(w1) @ qml.Y(w2)
+                - qml.Y(w1) @ qml.X(w2)
+                - qml.Z(w1) @ qml.Z(w2)
             ),
         )
 
