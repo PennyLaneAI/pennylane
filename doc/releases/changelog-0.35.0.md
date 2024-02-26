@@ -6,16 +6,141 @@
 
 <h4>Easy to import circuits 💾</h4>
 
-* An error message provides clearer instructions for installing PennyLane-Qiskit if the `qml.from_qiskit`
-  function fails because the Qiskit converter is missing.
-  [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
+* This version of PennyLane makes it easier to import workflows from Qiskit.
 
-* A Qiskit `SparsePauliOp` can be converted into a PennyLane `Operator` using `qml.from_qiskit_op`.
+  The `qml.from_qiskit` function converts a Qiskit
+  [QuantumCircuit](https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit) into
+  a PennyLane
+  [quantum function](https://docs.pennylane.ai/en/stable/introduction/circuits.html#quantum-functions).
+  Although `qml.from_qiskit` already exists in PennyLane, we have made a number of improvements to
+  make importing from Qiskit easier:
+  [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
+  [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
+
+  * You can now append PennyLane measurements onto the quantum function returned by
+    `qml.from_qiskit`. Consider this simple Qiskit circuit:
+
+    ```python
+    import pennylane as qml
+    from qiskit import QuantumCircuit
+
+    qc = QuantumCircuit(2)
+    qc.rx(0.785, 0)
+    qc.ry(1.57, 1)
+    ```
+    
+    We can convert into a PennyLane QNode in just a few lines.
+
+    ```pycon
+    >>> dev = qml.device("default.qubit")
+    >>> measurements = [qml.expval(qml.Z(0) @ qml.Z(1))]
+    >>> qfunc = qml.from_qiskit(qc, measurements=measurements)
+    >>> qnode = qml.QNode(qfunc, dev)
+    >>> qnode()
+    [tensor(0.00056331, requires_grad=True)]
+    ```
+
+  * Quantum circuits that already contain Qiskit-side measurements can be faithfully converted with
+    `qml.from_qiskit`:
+
+    ```python
+    qc = QuantumCircuit(3, 2)  # Teleportation
+  
+    qc.rx(0.9, 0)  # Prepare input state on qubit 0
+  
+    qc.h(1)  # Prepare Bell state on qubits 1 and 2
+    qc.cx(1, 2)
+  
+    qc.cx(0, 1)  # Perform teleportation
+    qc.h(0)
+    qc.measure(0, 0)
+    qc.measure(1, 1)
+  
+    with qc.if_test((1, 1)):  # Perform first conditional
+        qc.x(2)
+    ```
+    
+    This circuit can be converted into PennyLane with the mid-circuit measurements still accessible.
+
+    ```python
+    @qml.qnode(dev)
+    def teleport():
+        m0, m1 = qml.from_qiskit(qc)()
+        qml.cond(m0, qml.CZ)(2)
+        return qml.density_matrix(2)
+    ```
+    
+  * It is now more intuitive to handle parametrized Qiskit circuits. Consider the following circuit:
+
+    ```python
+    from qiskit.circuit import Parameter
+
+    angle0 = Parameter("x")
+    angle1 = Parameter("y")
+
+    qc = QuantumCircuit(2, 2)
+    qc.rx(angle0, 0)
+    qc.ry(angle1, 1)
+    qc.cx(1, 0)
+    ```
+    
+    We can convert this circuit into a QNode with two arguments, corresponding to `x` and `y`:
+
+    ```pycon
+    measurements=qml.expval(qml.PauliZ(0))
+    qfunc = qml.from_qiskit(qc, measurements)
+    qnode = qml.QNode(qfunc, dev)
+    ```
+    
+    The QNode can be evaluated and differentiated:
+
+    ```pycon
+    >>> x, y = qml.numpy.array([0.4, 0.5], requires_grad=True)
+    >>> qnode(x, y)
+    tensor(0.80830707, requires_grad=True)
+    >>> qml.grad(qnode)(x, y)
+    (tensor(-0.34174675, requires_grad=True),
+     tensor(-0.44158016, requires_grad=True))
+    ```
+
+    This shows how easy it is to make a Qiskit circuit differentiable with PennyLane.
+
+  * The `qml.from_qiskit` functionality is compatible with both Qiskit
+    [1.0](https://docs.quantum.ibm.com/api/qiskit/release-notes/1.0) and earlier versions.
+
+* In addition to circuits, it is also possible to convert operators from Qiskit to PennyLane.
   [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
 
-* Users can specify a list of PennyLane `measurements` they would want as terminal measurements
-  when converting a `QuantumCircuit` using `qml.from_qiskit`.
-  [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
+  A Qiskit
+  [SparsePauliOp](https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp) can be
+  converted to a PennyLane operator using `qml.from_qiskit_op`:
+
+  ```pycon
+  >>> from qiskit.quantum_info import SparsePauliOp
+  >>> qiskit_op = SparsePauliOp(["II", "XY"])
+  >>> qiskit_op
+  SparsePauliOp(['II', 'XY'],
+                coeffs=[1.+0.j, 1.+0.j])
+  >>> pl_op = qml.from_qiskit_op(qiskit_op)
+  I(0) + X(1) @ Y(0)
+  ```
+
+  Combined with `qml.from_qiskit`, it becomes easy to quickly calculate quantities like expectation
+  values by converting the whole workflow to PennyLane:
+
+  ```python
+  qc = QuantumCircuit(2)  # Create circuit
+  qc.rx(0.785, 0)
+  qc.ry(1.57, 1)
+
+  measurements = [qml.expval(pl_op)]  # Create QNode
+  qfunc = qml.from_qiskit(qc, measurements)
+  qnode = qml.QNode(qfunc, dev)
+  ```
+  ```pycon
+  >>> qnode()  # Evaluate!
+  [tensor(0.29317504, requires_grad=True)]
+  ```
 
 <h4>Native mid-circuit measurements on Default Qubit 💡</h4>
 
