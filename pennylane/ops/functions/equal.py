@@ -14,7 +14,7 @@
 """
 This module contains the qml.equal function.
 """
-# pylint: disable=too-many-arguments,too-many-return-statements
+# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
 from collections.abc import Iterable
 from functools import singledispatch
 from typing import Union
