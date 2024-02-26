@@ -64,7 +64,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
 
         @qml.qnode(dev)
         def func():
-            qml.PauliX(1)
+            qml.X(1)
             m_0 = qml.measure(1, reset=True)
             return qml.probs(wires=[1])
 
@@ -111,7 +111,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
             def func(x):
                 qml.RX(x, wires=0)
                 m0 = qml.measure(0, postselect=1)
-                qml.cond(m0, qml.PauliX)(wires=1)
+                qml.cond(m0, qml.X)(wires=1)
                 return qml.sample(wires=1)
 
         By postselecting on ``1``, we only consider the ``1`` measurement outcome on wire 0. So, the probability of
@@ -134,7 +134,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
             def func(x):
                 qml.RX(x, wires=0)
                 m0 = qml.measure(0, postselect=1)
-                qml.cond(m0, qml.PauliX)(wires=1)
+                qml.cond(m0, qml.X)(wires=1)
                 return qml.probs(wires=1)
 
         >>> func(0.0)
@@ -150,7 +150,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
             def func(x):
                 qml.RX(x, wires=0)
                 m0 = qml.measure(0, postselect=1)
-                qml.cond(m0, qml.PauliX)(wires=1)
+                qml.cond(m0, qml.X)(wires=1)
                 return qml.sample(wires=[0, 1])
 
         >>> func(0.0, shots=[10, 10])

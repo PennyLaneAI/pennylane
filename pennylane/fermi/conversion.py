@@ -65,8 +65,12 @@ def jordan_wigner(
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> jordan_wigner(w)
-    (-0.25j*(PauliY(wires=[0]) @ PauliX(wires=[1]))) + ((0.25+0j)*(PauliY(wires=[0]) @ PauliY(wires=[1]))) +
-    ((0.25+0j)*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + (0.25j*(PauliX(wires=[0]) @ PauliY(wires=[1])))
+    (
+        -0.25j * (Y(0) @ X(1))
+      + (0.25+0j) * (Y(0) @ Y(1))
+      + (0.25+0j) * (X(0) @ X(1))
+      + 0.25j * (X(0) @ Y(1))
+    )
 
     >>> jordan_wigner(w, ps=True)
     -0.25j * Y(0) @ X(1)
@@ -197,8 +201,12 @@ def parity_transform(
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> parity_transform(w, n=6)
-    (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
-    ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
+    (
+        -0.25j * Y(0)
+    + (-0.25+0j) * (X(0) @ Z(1))
+    + (0.25+0j) * X(0)
+    + 0.25j * (Y(0) @ Z(1))
+    )
 
     >>> parity_transform(w, n=6, ps=True)
     -0.25j * Y(0)

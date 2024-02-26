@@ -247,7 +247,7 @@ def simulate(
 
     This function assumes that all operations provide matrices.
 
-    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
     >>> simulate(qs)
     (0.36235775447667357,
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
