@@ -10,6 +10,9 @@
   function fails because the Qiskit converter is missing.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
 
+* A Qiskit `SparsePauliOp` can be converted into a PennyLane `Operator` using `qml.from_qiskit_op`.
+  [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
+
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
 * When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
@@ -324,8 +327,12 @@
 
 <h4>Other improvements</h4>
 
+* The `pl-device-test` suite is now compatible with the `qml.devices.Device` interface.
+  [(#5229)](https://github.com/PennyLaneAI/pennylane/pull/5229)
+
 * The `QSVT` operation now determines its `data` from the block encoding and projector operator data.
   [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
+  [(#5248)](https://github.com/PennyLaneAI/pennylane/pull/5248)
 
 * Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
@@ -393,7 +400,15 @@
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
+* `qml.ctrl` is now a simple wrapper that either calls PennyLane's built in `create_controlled_op`
+  or uses the Catalyst implementation.
+  [(#5247)](https://github.com/PennyLaneAI/pennylane/pull/5247)
+
 <h3>Breaking changes 💔</h3>
+
+* Caching of executions is now turned off by default when `max_diff == 1`, as the classical overhead cost
+  outweighs the probability that duplicate circuits exists.
+  [(#5243)](https://github.com/PennyLaneAI/pennylane/pull/5243)
 
 * The entry point convention registering compilers with PennyLane has changed.
   [(#5140)](https://github.com/PennyLaneAI/pennylane/pull/5140)
@@ -632,6 +647,9 @@
 
 * When a QNode specifies `diff_method="adjoint"`, `default.qubit` no longer tries to decompose non-trainable operations with non-scalar parameters such as `QubitUnitary`.
   [(#5233)](https://github.com/PennyLaneAI/pennylane/pull/5233)
+
+* The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the init after causing problems with datasets. Now happens globally.
+  [(#5252)](https://github.com/PennyLaneAI/pennylane/pull/5252)
 
 <h3>Contributors ✍️</h3>
 
