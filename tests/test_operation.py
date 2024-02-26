@@ -1296,7 +1296,7 @@ class TestOperatorIntegration:
 
     def test_mul_with_not_supported_object_raises_error(self):
         """Test that the __mul__ dunder method raises an error when using a non-supported object."""
-        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'X'"):
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'PauliX'"):
             _ = "dummy" * qml.PauliX(0)
 
     def test_matmul_with_not_supported_object_raises_error(self):
