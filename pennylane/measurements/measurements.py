@@ -313,7 +313,7 @@ class MeasurementProcess(ABC):
             return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{self.return_type.value}(wires={self.wires.tolist()})"
+        return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
