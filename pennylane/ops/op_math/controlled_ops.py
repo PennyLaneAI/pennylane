@@ -87,7 +87,7 @@ class ControlledQubitUnitary(ControlledOp):
     Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
        [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
 
-    Typically controlled operations apply a desired gate if the control qubits
+    Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
     it is necessary to apply a gate conditioned on all qubits being in the
     :math:`\vert 0\rangle` state, or a mix of the two.
@@ -267,7 +267,7 @@ class CH(ControlledOp):
         **Example:**
 
         >>> print(qml.CH.compute_decomposition([0, 1]))
-        [qml.RY(-0.78539816339, wires=[1]), CZ(wires=[0, 1]), qml.RY(0.78539816339, wires=[1])]
+        [qml.RY(-0.78539816339, wires=[1]), Controlled(Z(1), control_wires=[0]), qml.RY(0.78539816339, wires=[1])]
 
         """
         return [
@@ -373,7 +373,7 @@ class CY(ControlledOp):
         **Example:**
 
         >>> print(qml.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
+        [Controlled(RY(3.141592653589793, wires=[1]), S(wires=[0])]
 
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
@@ -678,20 +678,20 @@ class CCZ(ControlledOp):
 
         >>> qml.CCZ.compute_decomposition((0,1,2))
         [CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        T(wires=[1]),
-        CNOT(wires=[0, 1]),
-        Hadamard(wires=[2]),
-        T(wires=[0]),
-        Adjoint(T)(wires=[1]),
-        CNOT(wires=[0, 1]),
-        Hadamard(wires=[2]),]
+         Adjoint(T(wires=[2])),
+         CNOT(wires=[0, 2]),
+         T(wires=[2]),
+         CNOT(wires=[1, 2]),
+         Adjoint(T(wires=[2])),
+         CNOT(wires=[0, 2]),
+         T(wires=[2]),
+         T(wires=[1]),
+         CNOT(wires=[0, 1]),
+         Hadamard(wires=[2]),
+         T(wires=[0]),
+         Adjoint(T(wires=[1])),
+         CNOT(wires=[0, 1]),
+         Hadamard(wires=[2])]
 
         """
         return [
@@ -903,20 +903,20 @@ class Toffoli(ControlledOp):
 
         >>> qml.Toffoli.compute_decomposition((0,1,2))
         [Hadamard(wires=[2]),
-        CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        T(wires=[1]),
-        CNOT(wires=[0, 1]),
-        Hadamard(wires=[2]),
-        T(wires=[0]),
-        Adjoint(T)(wires=[1]),
-        CNOT(wires=[0, 1])]
+         CNOT(wires=[1, 2]),
+         Adjoint(T(wires=[2])),
+         CNOT(wires=[0, 2]),
+         T(wires=[2]),
+         CNOT(wires=[1, 2]),
+         Adjoint(T(wires=[2])),
+         CNOT(wires=[0, 2]),
+         T(wires=[2]),
+         T(wires=[1]),
+         CNOT(wires=[0, 1]),
+         Hadamard(wires=[2]),
+         T(wires=[0]),
+         Adjoint(T(wires=[1])),
+         CNOT(wires=[0, 1])]
 
         """
         return [
@@ -1079,12 +1079,12 @@ class MultiControlledX(ControlledOp):
 
         **Example**
 
-        >>> print(qml.MultiControlledX.compute_matrix([0], 1))
+        >>> print(qml.MultiControlledX.compute_matrix([0], [1]))
         [[1. 0. 0. 0.]
          [0. 1. 0. 0.]
          [0. 0. 0. 1.]
          [0. 0. 1. 0.]]
-        >>> print(qml.MultiControlledX.compute_matrix([1], 0))
+        >>> print(qml.MultiControlledX.compute_matrix([1], [0]))
         [[0. 1. 0. 0.]
          [1. 0. 0. 0.]
          [0. 0. 1. 0.]
@@ -1390,10 +1390,10 @@ class CRY(ControlledOp):
         **Example**
 
         >>> qml.CRY.compute_matrix(torch.tensor(0.5))
-        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
-                [ 0.0000,  1.0000,  0.0000,  0.0000],
-                [ 0.0000,  0.0000,  0.9689, -0.2474],
-                [ 0.0000,  0.0000,  0.2474,  0.9689]], dtype=torch.float64)
+        tensor([[ 1.0000+0.j,  0.0000+0.j,  0.0000+0.j,  0.0000+0.j],
+                [ 0.0000+0.j,  1.0000+0.j,  0.0000+0.j,  0.0000+0.j],
+                [ 0.0000+0.j,  0.0000+0.j,  0.9689+0.j, -0.2474-0.j],
+                [ 0.0000+0.j,  0.0000+0.j,  0.2474+0.j,  0.9689+0.j]])
         """
         interface = qml.math.get_interface(theta)
 
@@ -1780,14 +1780,14 @@ class CRot(ControlledOp):
 
         **Example:**
 
-        >>> qml.PhaseShift.compute_decomposition(1.234, wires=0)
-        [RZ(-1.1, wires=[1]),
-        CNOT(wires=[0, 1]),
-        RZ(-2.3, wires=[1]),
-        RY(-1.15, wires=[1]),
-        CNOT(wires=[0, 1]),
-        RY(1.15, wires=[1]),
-        RZ(3.4, wires=[1])]
+        >>> qml.CRot.compute_decomposition(1.234, 2.34, 3.45, wires=[0, 1])
+        [RZ(-1.108, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RZ(-2.342, wires=[1]),
+         RY(-1.17, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RY(1.17, wires=[1]),
+         RZ(3.45, wires=[1])]
 
         """
         return [
@@ -1951,10 +1951,10 @@ class ControlledPhaseShift(ControlledOp):
 
         >>> qml.ControlledPhaseShift.compute_decomposition(1.234, wires=(0,1))
         [PhaseShift(0.617, wires=[0]),
-        CNOT(wires=[0, 1]),
-        PhaseShift(-0.617, wires=[1]),
-        CNOT(wires=[0, 1]),
-        PhaseShift(0.617, wires=[1])]
+         CNOT(wires=[0, 1]),
+         PhaseShift(-0.617, wires=[1]),
+         CNOT(wires=[0, 1]),
+         PhaseShift(0.617, wires=[1])]
 
         """
         return [
