@@ -29,8 +29,8 @@ def generate_FABLE_circuit(A, tol):
 
     ancilla = ["ancilla"]
     s = int(qml.math.log2(qml.math.shape(A)[0]))
-    wires_i = [f"i{index}" for index in range(s)]
-    wires_j = [f"j{index}" for index in range(s)]
+    wires_i = list(range(s))
+    wires_j = list(range(s, 2 * s))
 
     code = gray_code(2 * qml.math.sqrt(len(A)))
     n_selections = len(code)
