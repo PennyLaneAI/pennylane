@@ -85,7 +85,7 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
 
 
 def from_qiskit(quantum_circuit, measurements=None):
-    """Loads Qiskit QuantumCircuit objects by using the converter in the
+    """Loads Qiskit ``QuantumCircuit`` objects by using the converter in the
     PennyLane-Qiskit plugin.
 
     The loaded object is a PennyLane quantum function that can be passed
@@ -139,7 +139,8 @@ def from_qiskit(quantum_circuit, measurements=None):
     (tensor(0.70738827, requires_grad=True),
     tensor(0.99999937, requires_grad=True))
 
-    ..note::
+    .. note::
+
         The ``measurement`` keyword allows one to add a list of PennyLane measurements
         that will **override** the terminal measurements present in the ``QuantumCircuit``,
         so that they are not performed before the operations specified in ``measurements``.
@@ -166,7 +167,7 @@ def from_qiskit(quantum_circuit, measurements=None):
     >>> circuit()
     [tensor(1., requires_grad=True), tensor(0., requires_grad=True)]
 
-    ..note::
+    .. note::
 
         The returned measurements from the ``QuantumCircuit`` are in the measurement basis
         and are readout values between 0 (ground) and 1 (excited). Such a measurement on the
@@ -181,12 +182,12 @@ def from_qiskit(quantum_circuit, measurements=None):
         >>> circuit()
         [tensor(-1., requires_grad=True), tensor(1., requires_grad=True)]
 
-    See Usage Details below for more information regarding how to translate more complex
-    circuits from Qiskit to PennyLane, including handling parameterized Qiskit circuits,
+    See below for more information regarding how to translate more complex circuits
+    from Qiskit to PennyLane, including handling parameterized Qiskit circuits,
     mid-circuit measurements, and classical control flows.
 
     .. details::
-        :title: Usage Details: Parameterized QuantumCircuits
+        :title: Parameterized Quantum Circuits
 
         A Qiskit ``QuantumCircuit`` is parameterized if it contains ``Parameter`` or
         ``ParameterVector`` references that need to be given defined values to evaluate
@@ -222,7 +223,7 @@ def from_qiskit(quantum_circuit, measurements=None):
                 qml.from_qiskit(qc)(x=a0, y=a1)
                 return qml.expval(qml.Z(0))
 
-        ..note::
+        .. note::
 
             The parameters can also be passed to the qfunc as positional arguments. In this case, the positions
             match those from ``qc.parameters``. Note that these are in alphabetical order by name, rather than
@@ -260,7 +261,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         #TODO: either note here that this doesn't work with gradients, or get the gradient working and add qml.grad(circuit, argnum=0)([np.pi/4, np.pi/6])
 
     .. details::
-        :title: Usage Details: Mid-Circuit Measurements and Classical Control Flows
+        :title: Mid-Circuit Measurements and Classical Control Flows
 
         Mid-circuit measurements in the ``QuantumCircuit`` will be translated into mid-circuit
         measurements in PennyLane and executed as specified. Some classical workflows in the
