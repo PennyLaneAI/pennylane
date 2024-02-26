@@ -233,9 +233,6 @@
 * A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
   [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
 
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
-
 <h4>Other operator arithmetic improvements</h4>
 
 * The following capabilities have been added for Pauli arithmetic:
