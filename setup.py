@@ -62,7 +62,7 @@ info = {
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
-    "description": "PennyLane is a cross-platform Python library for differentiable programming of quantum computers. Train a quantum computer the same way as a neural network.",
+    "description": "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network.",
     "long_description": open("README.md").read(),
     "long_description_content_type": "text/markdown",
     "provides": ["pennylane"],
