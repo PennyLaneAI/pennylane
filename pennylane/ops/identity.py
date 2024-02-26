@@ -196,8 +196,6 @@ class I(CVObservable, Operation):
         return [I(wires=self.wires)]
 
 
-I.__name__ = "Identity"
-
 Identity = I
 r"""
 An alias of the identity observable :class:`~I`.

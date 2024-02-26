@@ -344,8 +344,6 @@ class X(Observable, Operation):
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
-X.__name__ = "PauliX"
-
 PauliX = X
 r"""
 An alias of the Pauli X operator :class:`~X`.
@@ -531,8 +529,6 @@ class Y(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
-Y.__name__ = "PauliY"
-
 PauliY = Y
 r"""
 An alias of the Pauli Y operator :class:`~Y`.
@@ -717,8 +713,6 @@ class Z(Observable, Operation):
         # Z = RZ(\pi) RY(0) RZ(0)
         return [np.pi, 0.0, 0.0]
 
-
-Z.__name__ = "PauliZ"
 
 PauliZ = Z
 r"""
