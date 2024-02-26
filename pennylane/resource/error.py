@@ -16,7 +16,7 @@ Stores classes and logic to define and track algorithmic error in a quantum work
 """
 from abc import ABC, abstractmethod
 
-from pennylane.operation import Operation, Operator, MatrixUndefinedError
+from pennylane.operation import Operation, Operator
 from pennylane import math as fn
 
 
