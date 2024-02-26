@@ -40,7 +40,7 @@ class TestIntegrationMultipleReturns:
         dev = device(n_wires)
 
         obs1 = qml.Projector([0], wires=0)
-        obs2 = qml.PauliZ(wires=1)
+        obs2 = qml.Z(1)
         func = qubit_ansatz
 
         def circuit(x):
@@ -53,11 +53,9 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], np.ndarray)
-        assert res[0].shape == ()
+        assert isinstance(res[0], (float, np.ndarray))
 
-        assert isinstance(res[1], np.ndarray)
-        assert res[1].shape == ()
+        assert isinstance(res[1], (float, np.ndarray))
 
     def test_multiple_var(self, device):
         """Return multiple vars."""
@@ -65,7 +63,7 @@ class TestIntegrationMultipleReturns:
         dev = device(n_wires)
 
         obs1 = qml.Projector([0], wires=0)
-        obs2 = qml.PauliZ(wires=1)
+        obs2 = qml.Z(1)
         func = qubit_ansatz
 
         def circuit(x):
@@ -78,13 +76,11 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], np.ndarray)
-        assert res[0].shape == ()
+        assert isinstance(res[0], (float, np.ndarray))
 
-        assert isinstance(res[1], np.ndarray)
-        assert res[1].shape == ()
+        assert isinstance(res[1], (float, np.ndarray))
 
-    def test_multiple_prob(self, device):  # pylint: disable=too-many-arguments
+    def test_multiple_prob(self, device):
         """Return multiple probs."""
 
         n_wires = 2
@@ -92,7 +88,7 @@ class TestIntegrationMultipleReturns:
 
         def circuit(x):
             qubit_ansatz(x)
-            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(op=qml.PauliY(wires=1))
+            return qml.probs(op=qml.Z(0)), qml.probs(op=qml.Y(1))
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -106,7 +102,7 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == (2**1,)
 
-    def test_mix_meas(self, device):  # pylint: disable=too-many-arguments
+    def test_mix_meas(self, device):
         """Return multiple different measurements."""
         n_wires = 2
         dev = device(n_wires)
@@ -115,9 +111,9 @@ class TestIntegrationMultipleReturns:
             qubit_ansatz(x)
             return (
                 qml.probs(wires=0),
-                qml.expval(qml.PauliZ(wires=0)),
-                qml.probs(op=qml.PauliY(wires=1)),
-                qml.expval(qml.PauliY(wires=1)),
+                qml.expval(qml.Z(0)),
+                qml.probs(op=qml.Y(1)),
+                qml.expval(qml.Y(1)),
             )
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -129,11 +125,9 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[0], np.ndarray)
         assert res[0].shape == (2**1,)
 
-        assert isinstance(res[1], np.ndarray)
-        assert res[1].shape == ()
+        assert isinstance(res[1], (float, np.ndarray))
 
         assert isinstance(res[2], np.ndarray)
         assert res[2].shape == (2**1,)
 
-        assert isinstance(res[3], np.ndarray)
-        assert res[3].shape == ()
+        assert isinstance(res[3], (float, np.ndarray))

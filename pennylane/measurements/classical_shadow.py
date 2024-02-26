@@ -57,7 +57,7 @@ def shadow_expval(H, k=1, seed=None):
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+        H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
         dev = qml.device("default.qubit", wires=range(2), shots=10000)
         @qml.qnode(dev)
@@ -79,7 +79,7 @@ def shadow_expval(H, k=1, seed=None):
     In ``shadow_expval``, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
     to include all observables that you want to estimate from a single measurement in the same execution.
 
-    >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+    >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
     >>> circuit(x, Hs)
     array([ 1.881 , -0.0312, -0.0027, -0.0087])
     >>> qml.jacobian(circuit)(x, Hs)
@@ -293,7 +293,7 @@ class ClassicalShadowMP(MeasurementTransform):
             # are the same for different executions with the same seed
             rng = np.random.RandomState(seed)
             recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+            obs_list = [qml.X, qml.Y, qml.Z]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
 
@@ -349,9 +349,9 @@ class ClassicalShadowMP(MeasurementTransform):
 
         obs_list = np.stack(
             [
-                qml.PauliX.compute_matrix(),
-                qml.PauliY.compute_matrix(),
-                qml.PauliZ.compute_matrix(),
+                qml.X.compute_matrix(),
+                qml.Y.compute_matrix(),
+                qml.Z.compute_matrix(),
             ]
         )
 
