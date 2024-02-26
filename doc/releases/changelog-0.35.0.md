@@ -13,13 +13,14 @@
 * A Qiskit `SparsePauliOp` can be converted into a PennyLane `Operator` using `qml.from_qiskit_op`.
   [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
 
-<h4>Native mid-circuit measurements on default qubit 💡</h4>
+<h4>Native mid-circuit measurements on Default Qubit 💡</h4>
 
 * When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
   measurements in a similar way to quantum hardware. For each shot, when a mid-circuit measurement
   is encountered, the device evaluates the probability of projecting onto `|0>` or `|1>` and
   makes a random choice to collapse the circuit state.
   [(#5088)](https://github.com/PennyLaneAI/pennylane/pull/5088)
+  [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
 
   This approach works well when there are a lot of mid-circuit measurements and the number of shots
   is not too high:
@@ -43,13 +44,9 @@
 
   Previously, mid-circuit measurements would be automatically replaced with an additional qubit
   using the `@qml.defer_measurements` transform, so the above circuit would have required thousands
-  of qubits to simulate.
-
-* The `default.qubit` device now supports mid-circuit measurements without using the deferred measurement
-  principle when using finite shots. The native execution mode comprises all features supported with `qml.defer_measurements`, including
-  classical control, collecting statistics, and post-selection. This PR notably introduces support for
-  post-selection, measurement value lists, and composite measurements.
-  [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
+  of qubits to simulate. All the mid-circuit measurement features supported through deferred
+  measurements, such as post-selection and classical control, are now supported natively with
+  a finite number of shots in `default.qubit`.
 
 <h4>Work easily and efficiently with operators 🔧</h4>
 
