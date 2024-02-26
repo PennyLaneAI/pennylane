@@ -362,7 +362,6 @@ Args:
 """
 
 
-
 class PauliY(Observable, Operation):
     r"""
     An alias of the Pauli Y operator :class:`~Y`.
