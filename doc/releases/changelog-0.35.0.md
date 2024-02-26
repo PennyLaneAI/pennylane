@@ -644,6 +644,7 @@
 
 * `QubitDensityMatrix` now works with jax-jit on the `default.mixed` device.
   [(#5203)](https://github.com/PennyLaneAI/pennylane/pull/5203)
+  [(#5236)](https://github.com/PennyLaneAI/pennylane/pull/5236)
 
 * When a QNode specifies `diff_method="adjoint"`, `default.qubit` no longer tries to decompose non-trainable operations with non-scalar parameters such as `QubitUnitary`.
   [(#5233)](https://github.com/PennyLaneAI/pennylane/pull/5233)
