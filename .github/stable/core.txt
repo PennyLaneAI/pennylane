@@ -23,7 +23,7 @@ fonttools==4.49.0
 future==1.0.0
 identify==2.5.35
 idna==3.6
-importlib-resources==6.1.1
+importlib_resources==6.1.2
 iniconfig==2.0.0
 kiwisolver==1.4.5
 matplotlib==3.8.3
@@ -34,7 +34,7 @@ numpy==1.26.4
 osqp==0.6.5
 packaging==23.2
 pathspec==0.12.1
-PennyLane_Lightning==0.35.0.dev17
+PennyLane_Lightning==0.35.0.dev18
 pillow==10.2.0
 platformdirs==4.2.0
 pluggy==1.4.0
@@ -43,7 +43,7 @@ py==1.11.0
 py-cpuinfo==9.0.0
 pybind11==2.11.1
 pyparsing==3.1.1
-pytest==8.0.1
+pytest==8.0.2
 pytest-benchmark==4.0.0
 pytest-cov==4.1.0
 pytest-forked==1.6.0
@@ -61,7 +61,7 @@ semantic-version==2.10.0
 six==1.16.0
 toml==0.10.2
 tomli==2.0.1
-typing_extensions==4.9.0
+typing_extensions==4.10.0
 urllib3==2.2.1
 virtualenv==20.25.1
 zipp==3.17.0
