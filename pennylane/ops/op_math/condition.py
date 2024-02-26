@@ -120,7 +120,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             qml.RY(-np.pi/2, wires=[2])
             m_1 = qml.measure(2)
             qml.cond(m_1 == 0, qml.RX)(y, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(1))
 
     .. code-block :: pycon
 
@@ -161,7 +161,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
 
             qml.cond(x > 1.4, ansatz_true, ansatz_false)()
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(1.4)
     array(0.16996714)
@@ -186,7 +186,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 qml.RX(x ** 2, wires=0)
 
             qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))()
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(1.2)
     array(0.13042371)
@@ -211,7 +211,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
                 qml.cond(m_0, qfunc)(x, wires=[1])
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         .. code-block :: pycon
 
@@ -246,7 +246,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
                 qml.cond(m_0, qfunc1, qfunc2)(x, wires=[1])
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         .. code-block :: pycon
 
@@ -266,7 +266,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 m_0 = qml.measure(0)
                 qml.cond(m_0, qfunc1)(x, wires=[1])
                 qml.cond(~m_0, qfunc2)(x, wires=[1])
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         .. code-block :: pycon
 
@@ -296,7 +296,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
                 qml.cond(m_0, lambda: qfunc1(a, wire=1), lambda: qfunc2(x, y, z, wire=1))()
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         .. code-block :: pycon
 

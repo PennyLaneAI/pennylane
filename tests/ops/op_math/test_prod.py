@@ -89,6 +89,20 @@ ops_hermitian_status = (  # computed manually
 )
 
 
+def test_legacy_ops():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
+        _ = H.ops
+
+
+def test_legacy_coeffs():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
+        _ = H.coeffs
+
+
 # currently failing due to has_diagonalizing_gates logic
 @pytest.mark.xfail  # TODO: fix with story 49608
 def test_basic_validity():
@@ -946,6 +960,16 @@ class TestProperties:
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
+
+    @pytest.mark.jax
+    def test_eigvals_jax_jit(self):
+        """Assert computing the eigvals of a Prod is compatible with jax-jit."""
+        import jax
+
+        def f(t1, t2):
+            return qml.prod(qml.RX(t1, 0), qml.RX(t2, 0)).eigvals()
+
+        assert qml.math.allclose(f(0.5, 1.0), jax.jit(f)(0.5, 1.0))
 
     # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):

@@ -83,31 +83,31 @@ def equal(
     >>> qml.equal(op1, op1), qml.equal(op1, op2)
     (True, False)
 
-    >>> T1 = qml.PauliX(0) @ qml.PauliY(1)
-    >>> T2 = qml.PauliY(1) @ qml.PauliX(0)
-    >>> T3 = qml.PauliX(1) @ qml.PauliY(0)
+    >>> T1 = qml.X(0) @ qml.Y(1)
+    >>> T2 = qml.Y(1) @ qml.X(0)
+    >>> T3 = qml.X(1) @ qml.Y(0)
     >>> qml.equal(T1, T2), qml.equal(T1, T3)
     (True, False)
 
-    >>> T = qml.PauliX(0) @ qml.PauliY(1)
-    >>> H = qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)])
+    >>> T = qml.X(0) @ qml.Y(1)
+    >>> H = qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)])
     >>> qml.equal(T, H)
     True
 
-    >>> H1 = qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")])
-    >>> H2 = qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliY(1)])
-    >>> H3 = qml.Hamiltonian([2], [qml.PauliZ(0) @ qml.PauliY(1)])
+    >>> H1 = qml.Hamiltonian([0.5, 0.5], [qml.Z(0) @ qml.Y(1), qml.Y(1) @ qml.Z(0) @ qml.Identity("a")])
+    >>> H2 = qml.Hamiltonian([1], [qml.Z(0) @ qml.Y(1)])
+    >>> H3 = qml.Hamiltonian([2], [qml.Z(0) @ qml.Y(1)])
     >>> qml.equal(H1, H2), qml.equal(H1, H3)
     (True, False)
 
-    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)))
+    >>> qml.equal(qml.expval(qml.X(0)), qml.expval(qml.X(0)))
     True
     >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)))
     False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]))
     True
-    >>> tape1 = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))])
-    >>> tape2 = qml.tape.QuantumScript([qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> tape1 = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0))])
+    >>> tape2 = qml.tape.QuantumScript([qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.Z(0))])
     >>> qml.equal(tape1, tape2, tol=0, atol=1e-7)
     False
     >>> qml.equal(tape1, tape2, tol=0, atol=1e-5)
