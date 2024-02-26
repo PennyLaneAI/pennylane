@@ -13,6 +13,10 @@
 * A Qiskit `SparsePauliOp` can be converted into a PennyLane `Operator` using `qml.from_qiskit_op`.
   [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
 
+* Users can specify a list of PennyLane `measurements` they would want as terminal measurements
+  when converting a `QuantumCircuit` using `qml.from_qiskit`.
+  [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
+
 <h4>Native mid-circuit measurements on Default Qubit 💡</h4>
 
 * When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
@@ -182,12 +186,12 @@
   now strictly faster for jax.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
+* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
+  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
+
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
-
-* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
-  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
 
 * Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance
   for large workflows.
@@ -195,6 +199,9 @@
 
 * Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
+
+* Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
+  [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
 <h4>Community contributions 🥳</h4>
 
@@ -221,7 +228,7 @@
 * Improve efficiency of matrix calculation when operator is symmetric over wires
   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
-* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+* The module `pennylane/math/quantum.py` now has support for the min-entropy.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
@@ -333,9 +340,6 @@
   [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
   [(#5248)](https://github.com/PennyLaneAI/pennylane/pull/5248)
 
-* Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
-  [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
-
 * Ensure the `BlockEncode` operator is JIT-compatible with JAX.
   [(#5110)](https://github.com/PennyLaneAI/pennylane/pull/5110)
 
@@ -370,13 +374,9 @@
   `MultiControlledX` depending on the number of control wires and control values.
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
 
-* Remove the unwanted warning filter from tests, and ensure that no PennyLaneDeprecationWarnings
+* Remove the unwanted warning filter from tests, and ensure that no `PennyLaneDeprecationWarning`s
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
-
-* Users can specify a list of PennyLane `measurements` they would want as terminal measurements
-  when converting a `QuantumCircuit` using `qml.from_qiskit`.
-  [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
 * Added new error tracking and propagation functionality.
   [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
