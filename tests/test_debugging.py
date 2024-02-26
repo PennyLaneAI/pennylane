@@ -368,7 +368,7 @@ class TestSnapshot:
             qml.Hadamard(0)
             with pytest.raises(
                 ValueError,
-                match="The measurement PauliZ is not supported as it is not an instance "
+                match="The measurement Z is not supported as it is not an instance "
                 "of <class 'pennylane.measurements.measurements.StateMeasurement'>",
             ):
                 qml.Snapshot(measurement=qml.PauliZ(0))

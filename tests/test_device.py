@@ -252,7 +252,7 @@ class TestDeviceSupportedLogic:
         dev = mock_device_with_operations()
 
         assert dev.supports_operation("PauliX")
-        assert dev.supports_operation(qml.PauliX)
+        assert dev.supports_operation(qml.X)
 
         assert not dev.supports_operation("S")
         assert not dev.supports_operation(qml.CNOT)
