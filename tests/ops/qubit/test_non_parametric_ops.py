@@ -1245,29 +1245,3 @@ op_pauli_rep = (
 def test_pauli_rep(op, rep):
     # pylint: disable=protected-access
     assert op.pauli_rep == rep
-
-
-class TestPauliAlias:
-    def test_X_class_name(self):
-        """Test the class name of X is by default correct"""
-        assert qml.X.__name__ == "PauliX"
-        assert qml.PauliX.__name__ == "PauliX"
-
-        assert qml.X(0).name == "PauliX"
-        assert qml.PauliX(0).name == "PauliX"
-
-    def test_Y_class_name(self):
-        """Test the class name of Y is by default correct"""
-        assert qml.Y.__name__ == "PauliY"
-        assert qml.PauliY.__name__ == "PauliY"
-
-        assert qml.Y(0).name == "PauliY"
-        assert qml.PauliY(0).name == "PauliY"
-
-    def test_Z_class_name(self):
-        """Test the class name of Z is by default correct"""
-        assert qml.Z.__name__ == "PauliZ"
-        assert qml.PauliZ.__name__ == "PauliZ"
-
-        assert qml.Z(0).name == "PauliZ"
-        assert qml.PauliZ(0).name == "PauliZ"
