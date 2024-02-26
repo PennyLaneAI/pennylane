@@ -874,14 +874,14 @@ def norm(tensor, like=None, **kwargs):
 def svd(tensor, like=None, **kwargs):
     """Compute the singular value decomposition of a tensor in each interface.
 
-    For a matrix A, the singular value decomposition consist of three matrices U, S and Vh, such that:
+    For a matrix :math:`A`, the singular value decomposition consist of three matrices :math:`S`, :math:`U` and :math:`Vh`, such that:
     .. math::
 
         A = U . Diag(S) . Vh
 
     Returns:
-        S, U, V: full decomposition (if compute_uv is True or None)
-        S: only the singular values (if compute_uv is False)
+        :math:`S`, :math:`U` and :math:`Vh`: full decomposition (if compute_uv is True or None)
+        :math:`S`: only the singular values (if compute_uv is False)
 
     """
     if like == "tensorflow":
