@@ -48,7 +48,15 @@ class MockPluginConverter:
         return self.mock_loader.call_args
 
 
-load_entry_points = ["qiskit", "qasm", "qasm_file", "pyquil_program", "quil", "quil_file"]
+load_entry_points = [
+    "pyquil_program",
+    "qasm_file",
+    "qasm",
+    "qiskit_op",
+    "qiskit",
+    "quil_file",
+    "quil",
+]
 
 
 @pytest.fixture(name="mock_plugin_converters")
@@ -71,42 +79,47 @@ class TestLoad:
         ):
             qml.load("Test", format="some_non_existing_format")
 
-    def test_qiskit_not_installed(self, monkeypatch):
-        """Test that a specific error is raised if qml.from_qiskit is called and the qiskit
-        plugin converter isn't found, instead of the generic 'ValueError: Converter does not exist.'
+    @pytest.mark.parametrize(
+        "method, entry_point_name",
+        [(qml.from_qiskit, "qiskit"), (qml.from_qiskit_op, "qiskit_op")],
+    )
+    def test_qiskit_converter_does_not_exist(self, monkeypatch, method, entry_point_name):
+        """Test that a RuntimeError with an appropriate message is raised if a Qiskit convenience
+        method is called but the Qiskit plugin converter is not found.
         """
-
-        # temporarily make a mock_converter_dict with no "qiskit"
+        # Temporarily make a mock_converter_dict without the Qiskit entry point.
         mock_plugin_converter_dict = {
             entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
         }
-        del mock_plugin_converter_dict["qiskit"]
+        del mock_plugin_converter_dict[entry_point_name]
         monkeypatch.setattr(qml.io, "plugin_converters", mock_plugin_converter_dict)
 
-        # calling from_qiskit raises the specific RuntimeError rather than the generic ValueError
-        with pytest.raises(
-            RuntimeError,
-            match="Conversion from Qiskit requires the PennyLane-Qiskit plugin. "
-            "You can install the plugin by",
-        ):
-            qml.from_qiskit("Test")
-
-        # if load raises some other ValueError instead of the "converter does not exist" error, it is unaffected
-        def mock_load_with_error(*args, **kwargs):
-            raise ValueError("Some other error raised than instead of converter does not exist")
-
-        monkeypatch.setattr(qml.io, "load", mock_load_with_error)
-
-        with pytest.raises(
-            ValueError,
-            match="Some other error raised than instead of converter does not exist",
-        ):
-            qml.from_qiskit("Test")
+        # Check that the specific RuntimeError is raised as opposed to a generic ValueError.
+        with pytest.raises(RuntimeError, match=r"Conversion from Qiskit requires..."):
+            method("Test")
 
     @pytest.mark.parametrize(
-        "method,entry_point_name",
+        "method, entry_point_name",
+        [(qml.from_qiskit, "qiskit"), (qml.from_qiskit_op, "qiskit_op")],
+    )
+    def test_qiskit_converter_load_fails(self, monkeypatch, method, entry_point_name):
+        """Test that an exception which is raised while calling a Qiskit convenience method (but
+        after the Qiskit plugin converter is found) is propagated correctly.
+        """
+        mock_plugin_converter = MockPluginConverter(entry_point_name)
+        mock_plugin_converter.mock_loader.side_effect = ValueError("Some Other Error")
+
+        mock_plugin_converter_dict = {entry_point_name: mock_plugin_converter}
+        monkeypatch.setattr(qml.io, "plugin_converters", mock_plugin_converter_dict)
+
+        with pytest.raises(ValueError, match=r"Some Other Error"):
+            method("Test")
+
+    @pytest.mark.parametrize(
+        "method, entry_point_name",
         [
             (qml.from_qiskit, "qiskit"),
+            (qml.from_qiskit_op, "qiskit_op"),
             (qml.from_qasm, "qasm"),
             (qml.from_qasm_file, "qasm_file"),
             (qml.from_pyquil, "pyquil_program"),
@@ -115,7 +128,7 @@ class TestLoad:
         ],
     )
     def test_convenience_functions(self, method, entry_point_name, mock_plugin_converters):
-        """Test that the convenience load functions access the correct entrypoint."""
+        """Test that the convenience load functions access the correct entry point."""
 
         method("Test")
 
@@ -130,21 +143,30 @@ class TestLoad:
                 raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
 
     @pytest.mark.parametrize(
-        "method, entry_point_name",
+        "method, entry_point_name, args, kwargs",
         [
-            (qml.from_qiskit, "qiskit"),
+            (qml.from_qiskit, "qiskit", ("Circuit",), {"measurements": []}),
+            (qml.from_qiskit_op, "qiskit_op", ("Op",), {"params": [1, 2], "wires": [3, 4]}),
         ],
     )
-    def test_convenience_functions_kwargs(self, method, entry_point_name, mock_plugin_converters):
-        """Test that the convenience load functions access the correct entrypoint with keywords."""
-
-        method("Test", measurements=[])
+    def test_convenience_function_arguments(
+        self,
+        method,
+        entry_point_name,
+        mock_plugin_converters,
+        args,
+        kwargs,
+    ):  # pylint: disable=too-many-arguments
+        """Test that the convenience load functions access the correct entry point and forward their
+        arguments correctly.
+        """
+        method(*args, **kwargs)
 
         assert mock_plugin_converters[entry_point_name].called
 
-        args, kwargs = mock_plugin_converters[entry_point_name].call_args
-        assert args == ("Test",)
-        assert kwargs == {"measurements": []}
+        called_args, called_kwargs = mock_plugin_converters[entry_point_name].call_args
+        assert called_args == args
+        assert called_kwargs == kwargs
 
         for plugin_converter in mock_plugin_converters:
             if plugin_converter == entry_point_name:

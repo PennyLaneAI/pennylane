@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.35.0-dev (development release)
+# Release 0.35.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -9,6 +9,9 @@
 * An error message provides clearer instructions for installing PennyLane-Qiskit if the `qml.from_qiskit`
   function fails because the Qiskit converter is missing.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
+
+* A Qiskit `SparsePauliOp` can be converted into a PennyLane `Operator` using `qml.from_qiskit_op`.
+  [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
 
 <h4>Native mid-circuit measurements on default qubit 💡</h4>
 
@@ -324,6 +327,9 @@
 
 <h4>Other improvements</h4>
 
+* The `pl-device-test` suite is now compatible with the `qml.devices.Device` interface.
+  [(#5229)](https://github.com/PennyLaneAI/pennylane/pull/5229)
+
 * The `QSVT` operation now determines its `data` from the block encoding and projector operator data.
   [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
   [(#5248)](https://github.com/PennyLaneAI/pennylane/pull/5248)
@@ -393,6 +399,10 @@
 * `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
+
+* `qml.ctrl` is now a simple wrapper that either calls PennyLane's built in `create_controlled_op`
+  or uses the Catalyst implementation.
+  [(#5247)](https://github.com/PennyLaneAI/pennylane/pull/5247)
 
 <h3>Breaking changes 💔</h3>
 
