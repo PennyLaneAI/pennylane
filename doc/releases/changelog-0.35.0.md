@@ -482,6 +482,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
+  ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
+  these cases.
+  [(#5039)](https://github.com/PennyLaneAI/pennylane/pull/5039)
+
 * `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
   module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
@@ -499,11 +504,6 @@
   [(#5071)](https://github.com/PennyLaneAI/pennylane/pull/5071)
   [(#5076)](https://github.com/PennyLaneAI/pennylane/pull/5076)
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
-
-* Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
-  ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
-  these cases.
-  [(#5039)](https://github.com/PennyLaneAI/pennylane/pull/5039)
 
 * `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now deprecated. Instead, you
   should use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
