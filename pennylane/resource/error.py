@@ -114,7 +114,7 @@ class SpectralNormError(AlgorithmicError):
             float: The error between the exact operator and its
             approximation.
         """
-        if approximate_op.has_matrix and exact_op.has_matrix:
-            return fn.svd(exact_op.matrix() - approximate_op.matrix(), compute_uv=False)[0]
-
-        raise MatrixUndefinedError
+        wire_order = exact_op.wires
+        m1 = fn.matrix(exact_op, wire_order=wire_order)
+        m2 = fn.matrix(approximate_op, wire_order=wire_order)
+        return fn.svd(m1 - m2, compute_uv=False)[0]
