@@ -131,7 +131,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
 
 def create_controlled_op(op, control, control_values=None, work_wires=None):
-    """Default `qml.ctrl` implementation, allowing other implementations to call it when needed."""
+    """Default ``qml.ctrl`` implementation, allowing other implementations to call it when needed."""
 
     control = qml.wires.Wires(control)
     if isinstance(control_values, (int, bool)):
