@@ -7,6 +7,8 @@
 <h4>Easy to import circuits 💾</h4>
 
 * This version of PennyLane makes it easier to import workflows from Qiskit.
+  [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
+  [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
   The `qml.from_qiskit` function converts a Qiskit
   [QuantumCircuit](https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit) into
@@ -14,8 +16,6 @@
   [quantum function](https://docs.pennylane.ai/en/stable/introduction/circuits.html#quantum-functions).
   Although `qml.from_qiskit` already exists in PennyLane, we have made a number of improvements to
   make importing from Qiskit easier:
-  [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
-  [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
   * You can now append PennyLane measurements onto the quantum function returned by
     `qml.from_qiskit`. Consider this simple Qiskit circuit:
@@ -29,7 +29,7 @@
     qc.ry(1.57, 1)
     ```
     
-    We can convert into a PennyLane QNode in just a few lines.
+    We can convert it into a PennyLane QNode in just a few lines and then add some `measurements`:
 
     ```pycon
     >>> dev = qml.device("default.qubit")
@@ -41,7 +41,7 @@
     ```
 
   * Quantum circuits that already contain Qiskit-side measurements can be faithfully converted with
-    `qml.from_qiskit`:
+    `qml.from_qiskit`. Consider this example Qiskit circuit:
 
     ```python
     qc = QuantumCircuit(3, 2)  # Teleportation
@@ -60,7 +60,8 @@
         qc.x(2)
     ```
     
-    This circuit can be converted into PennyLane with the mid-circuit measurements still accessible.
+    This circuit can be converted into PennyLane with the Qiskit measurements still accessible. For example, we can 
+    use those results as inputs to a mid-circuit measurement in PennyLane:
 
     ```python
     @qml.qnode(dev)
@@ -87,7 +88,7 @@
     We can convert this circuit into a QNode with two arguments, corresponding to `x` and `y`:
 
     ```pycon
-    measurements=qml.expval(qml.PauliZ(0))
+    measurements = qml.expval(qml.PauliZ(0))
     qfunc = qml.from_qiskit(qc, measurements)
     qnode = qml.QNode(qfunc, dev)
     ```
@@ -108,7 +109,8 @@
   * The `qml.from_qiskit` functionality is compatible with both Qiskit
     [1.0](https://docs.quantum.ibm.com/api/qiskit/release-notes/1.0) and earlier versions.
 
-* In addition to circuits, it is also possible to convert operators from Qiskit to PennyLane.
+* In addition to circuits, it is also possible to convert operators from Qiskit to PennyLane with a new function called
+   `qml.from_qiskit_op`.
   [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
 
   A Qiskit
@@ -145,14 +147,13 @@
 <h4>Native mid-circuit measurements on Default Qubit 💡</h4>
 
 * When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
-  measurements in a similar way to quantum hardware. For each shot, when a mid-circuit measurement
-  is encountered, the device evaluates the probability of projecting onto `|0>` or `|1>` and
-  makes a random choice to collapse the circuit state.
+  measurements in a similar way to quantum hardware. 
   [(#5088)](https://github.com/PennyLaneAI/pennylane/pull/5088)
   [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
-
-  This approach works well when there are a lot of mid-circuit measurements and the number of shots
-  is not too high:
+  
+  For each shot, when a mid-circuit measurement is encountered, the device evaluates the probability of 
+  projecting onto `|0>` or `|1>` and makes a random choice to collapse the circuit state. This approach works 
+  well when there are a lot of mid-circuit measurements and the number of shots is not too high.
 
   ```python
   import pennylane as qml
@@ -173,9 +174,7 @@
 
   Previously, mid-circuit measurements would be automatically replaced with an additional qubit
   using the `@qml.defer_measurements` transform, so the above circuit would have required thousands
-  of qubits to simulate. All the mid-circuit measurement features supported through deferred
-  measurements, such as post-selection and classical control, are now supported natively with
-  a finite number of shots in `default.qubit`.
+  of qubits to simulate.
 
 <h4>Work easily and efficiently with operators 🔧</h4>
 
@@ -311,26 +310,26 @@
   now strictly faster for jax.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
-* PennyLane can now use lightning provided VJPs by selecting `device_vjp=True` on the QNode.
+* PennyLane can now use lightning-provided VJPs by selecting `device_vjp=True` on the QNode.
   [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
 
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
   for `tf.Function` and Tensorflow Autograph.
   [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
 
-* Remove queuing (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance
+* Queueing has been removed (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance
   for large workflows.
   [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
 
-* Improve the performance of circuit-cutting workloads with large numbers of generated tapes.
+* The performance of circuit-cutting workloads with large numbers of generated tapes have been improved.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
-* Faster `qml.probs` measurements due to an optimization in `_samples_to_counts`.
+* Measuring `qml.probs`is now faster due to an optimization in `_samples_to_counts`.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
 <h4>Community contributions 🥳</h4>
 
-* `parity_transform` is added for parity mapping of a fermionic Hamiltonian.
+* A new function called `qml.fermi.parity_transform` has been added for parity mapping of a fermionic Hamiltonian.
   [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
   It is now possible to transform a fermionic Hamiltonian to a qubit Hamiltonian with parity mapping.
 
@@ -350,13 +349,13 @@
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
-* Improve efficiency of matrix calculation when operator is symmetric over wires
+* The efficiency of matrix calculations when an operator is symmetric over a given set of wires has been improved.
   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
 * The module `pennylane/math/quantum.py` now has support for the min-entropy.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
+* A function called `apply_operation` that applies operations to device-compatible states has been added to the new `qutrit_mixed` module found in `qml.devices`.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
 * A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
@@ -365,7 +364,7 @@
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
-* Added a `partial_trace` function to `pennylane.math` for matrices.
+* A `partial_trace` function has been added to `qml.math` for taking the partial trace of matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
 
 <h4>Other operator arithmetic improvements</h4>
@@ -492,14 +491,14 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
-* `qml.ctrl` called on operators with custom controlled versions will return instances
-  of the custom class, and it will also flatten nested controlled operators to a single
+* `qml.ctrl` called on operators with custom controlled versions will now return instances
+  of the custom class, and it will flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
   calling `qml.ctrl` will always resolve to the best option in `CNOT`, `Toffoli`, or
   `MultiControlledX` depending on the number of control wires and control values.
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
 
-* Remove the unwanted warning filter from tests, and ensure that no `PennyLaneDeprecationWarning`s
+* Unwanted warning filters have been removed from tests and no `PennyLaneDeprecationWarning`s 
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
@@ -519,16 +518,16 @@
   or uses the Catalyst implementation.
   [(#5247)](https://github.com/PennyLaneAI/pennylane/pull/5247)
 
-* Controlled composite operations can be decomposed using ZYZ rotations.
+* Controlled composite operations can now be decomposed using ZYZ rotations.
   [(#5242)](https://github.com/PennyLaneAI/pennylane/pull/5242)
 
-* Adds `qml.devices.modifiers.simulator_tracking` and `qml.devices.modifiers.single_tape_support`
+* New functions called `qml.devices.modifiers.simulator_tracking` and `qml.devices.modifiers.single_tape_support` have been added
   to add basic default behavior onto a device class.
   [(#5200)](https://github.com/PennyLaneAI/pennylane/pull/5200)
 
 <h3>Breaking changes 💔</h3>
 
-* Passing additional arguments to a transform that decorates a QNode must be done through the use
+* Passing additional arguments to a transform that decorates a QNode must now be done through the use
   of `functools.partial`.
   [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
 
