@@ -37,16 +37,8 @@ jobs:
             && pip freeze | grep -v 'file:///' > .github/stable/doc.txt.tmp
         build-command: "sphinx-build -b html . _build -W --keep-going"
 
-    - name: Check if organization member
-      id: is_organization_member
-      uses: JamesSingleton/is-organization-member@1.0.1
-      with:
-        organization: PennyLaneAI
-        username: ${{ github.actor }}
-        token: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Prepare local repo
-      if: steps.is_organization_member.outputs.result == 'true'
+      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane'
       run: |
         git fetch
         git config user.name "GitHub Actions Bot"
@@ -61,13 +53,13 @@ jobs:
         mv -f .github/stable/doc.txt.tmp .github/stable/doc.txt
 
     - name: Determine if changes have been made
-      if: steps.is_organization_member.outputs.result == 'true'
+      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane'
       id: changed
       run: |
         echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
 
     - name: Stage changes
-      if: steps.is_organization_member.outputs.result == 'true' && steps.changed.outputs.has_changes != '0'
+      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane' && steps.changed.outputs.has_changes != '0'
       run: |
         git add .github/stable/doc.txt
         git commit -m "Update stable docs dependencies"
@@ -75,7 +67,7 @@ jobs:
 
     # Create PR to master
     - name: Create pull request
-      if: steps.is_organization_member.outputs.result == 'true' && steps.changed.outputs.has_changes != '0'
+      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane' && steps.changed.outputs.has_changes != '0'
       uses: repo-sync/pull-request@v2
       with:
         source_branch: "${{ env.DEPS_BRANCH }}"
