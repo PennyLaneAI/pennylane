@@ -195,6 +195,9 @@
     >>> X(0)
     X(0)
     ```
+    
+    The original long-form names `Identity`, `PauliX`, `PauliY`, and `PauliZ` remain available, but
+    use of the short-form names is now recommended.
 
   * PennyLane will try to automatically work with a Pauli representation of operators when
     available. The Pauli representation can be optionally accessed via `op.pauli_rep`:
