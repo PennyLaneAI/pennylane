@@ -31,7 +31,7 @@ class Identity(CVObservable, Operation):
     .. math::
         E[\I] = \text{Tr}(\I \rho)
 
-    .. seealso:: :class:`~I`
+    .. seealso:: The equivalent short-form alias :class:`~I`
 
     Args:
         wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
@@ -205,6 +205,8 @@ The expectation of this observable
 
 .. math::
     E[\I] = \text{Tr}(\I \rho)
+
+.. seealso:: The equivalent long-form alias :class:`~Identity`
 
 Args:
     wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.

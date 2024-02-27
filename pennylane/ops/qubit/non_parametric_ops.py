@@ -182,7 +182,7 @@ class PauliX(Observable, Operation):
 
     .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
 
-    .. seealso:: :class:`~X`
+    .. seealso:: The equivalent short-form alias :class:`~X`
 
     **Details:**
 
@@ -351,7 +351,7 @@ r"""``X(wires)`` - the Pauli X operator
 
 .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
 
-.. seealso:: :class:`~PauliX`
+.. seealso:: The equivalent short-form alias :class:`~PauliX`
 
 **Details:**
 
@@ -369,7 +369,7 @@ class PauliY(Observable, Operation):
 
     .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
 
-    .. seealso:: :class:`~Y`
+    .. seealso:: The equivalent short-form alias :class:`~Y`
 
     **Details:**
 
@@ -537,7 +537,7 @@ r"""``Y(wires)`` - the Pauli Y operator
 
 .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
 
-.. seealso:: :class:`~PauliY`
+.. seealso:: The equivalent long-form alias :class:`~PauliY`
 
 **Details:**
 
@@ -555,7 +555,7 @@ class PauliZ(Observable, Operation):
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
 
-    .. seealso:: :class:`~Z`
+    .. seealso:: The equivalent short-form alias :class:`~Z`
 
     **Details:**
 
@@ -723,7 +723,7 @@ r"""``Z(wires)`` - the Pauli Z operator
 
 .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
 
-.. seealso:: :class:`~PauliZ`
+.. seealso:: The equivalent long-form alias :class:`~PauliZ`
 
 **Details:**
 
