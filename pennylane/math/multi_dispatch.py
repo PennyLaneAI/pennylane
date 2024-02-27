@@ -879,6 +879,10 @@ def svd(tensor, like=None, **kwargs):
 
         A = U . Diag(S) . Vh
 
+    Args:
+        tensor (tensor_like): input tensor
+        compute_uv (bool):  if True, the full decomposition is returned
+
     Returns:
         :math:`S`, :math:`U` and :math:`Vh`: full decomposition (if compute_uv is True or None)
         :math:`S`: only the singular values (if compute_uv is False)
