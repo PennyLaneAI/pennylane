@@ -347,7 +347,7 @@ class PauliX(Observable, Operation):
 
 
 X = PauliX
-r"""``X(wires)``  
+r"""``X(wires)``
 
 The Pauli X operator
 
@@ -535,7 +535,7 @@ class PauliY(Observable, Operation):
 
 
 Y = PauliY
-r"""``Y(wires)``  
+r"""``Y(wires)``
 
 The Pauli Y operator
 
@@ -723,7 +723,7 @@ class PauliZ(Observable, Operation):
 
 
 Z = PauliZ
-r"""``Z(wires)``  
+r"""``Z(wires)``
 
 The Pauli Z operator
 
