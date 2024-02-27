@@ -217,6 +217,9 @@ class CH(ControlledOp):
         target_wires = wires[1:]
         super().__init__(qml.Hadamard(wires=target_wires), control_wires, id=id)
 
+    def __repr__(self):
+        return f"CH(wires={self.wires.tolist()})"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -267,7 +270,7 @@ class CH(ControlledOp):
         **Example:**
 
         >>> print(qml.CH.compute_decomposition([0, 1]))
-        [qml.RY(-0.78539816339, wires=[1]), Controlled(Z(1), control_wires=[0]), qml.RY(0.78539816339, wires=[1])]
+        [RY(-0.7853981633974483, wires=[1]), CZ(wires=[0, 1]), RY(0.7853981633974483, wires=[1])]
 
         """
         return [
@@ -323,6 +326,9 @@ class CY(ControlledOp):
         control_wire, wire = wires
         super().__init__(qml.Y(wire), control_wire, id=id)
 
+    def __repr__(self):
+        return f"CY(wires={self.wires.tolist()})"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -373,7 +379,7 @@ class CY(ControlledOp):
         **Example:**
 
         >>> print(qml.CY.compute_decomposition([0, 1]))
-        [Controlled(RY(3.141592653589793, wires=[1]), S(wires=[0])]
+        [CRY(3.141592653589793, wires=[0, 1])), S(wires=[0])]
 
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
@@ -422,6 +428,9 @@ class CZ(ControlledOp):
     def __init__(self, wires, id=None):
         control_wire, wire = wires
         super().__init__(qml.Z(wires=wire), control_wire, id=id)
+
+    def __repr__(self):
+        return f"CZ(wires={self.wires.tolist()})"
 
     @staticmethod
     @lru_cache()
@@ -502,6 +511,9 @@ class CSWAP(ControlledOp):
         control_wires = wires[:1]
         target_wires = wires[1:]
         super().__init__(qml.SWAP(wires=target_wires), control_wires, id=id)
+
+    def __repr__(self):
+        return f"CSWAP(wires={self.wires.tolist()})"
 
     @staticmethod
     @lru_cache()
@@ -619,6 +631,9 @@ class CCZ(ControlledOp):
         control_wires = wires[:2]
         target_wires = wires[2:]
         super().__init__(qml.PauliZ(wires=target_wires), control_wires, id=id)
+
+    def __repr__(self):
+        return f"CCZ(wires={self.wires.tolist()})"
 
     @staticmethod
     @lru_cache()
@@ -1220,6 +1235,9 @@ class CRX(ControlledOp):
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[0], id=id)
 
+    def __repr__(self):
+        return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
+
     @classmethod
     def _unflatten(cls, data, metadata):
         base = data[0]
@@ -1365,6 +1383,9 @@ class CRY(ControlledOp):
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[0], id=id)
 
+    def __repr__(self):
+        return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
+
     @classmethod
     def _unflatten(cls, data, metadata):
         base = data[0]
@@ -1509,6 +1530,9 @@ class CRZ(ControlledOp):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+
+    def __repr__(self):
+        return f"CRZ({self.data[0]}, wires={self.wires})"
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -1687,6 +1711,10 @@ class CRot(ControlledOp):
     def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
         super().__init__(qml.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0], id=id)
 
+    def __repr__(self):
+        params = ", ".join([repr(p) for p in self.parameters])
+        return f"CRot({params}, wires={self.wires})"
+
     @classmethod
     def _unflatten(cls, data, metadata):
         base = data[0]
@@ -1842,6 +1870,9 @@ class ControlledPhaseShift(ControlledOp):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+
+    def __repr__(self):
+        return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
 
     @classmethod
     def _unflatten(cls, data, metadata):
