@@ -89,6 +89,13 @@ class SpectralNormError(AlgorithmicError):
     Args:
         error (float): The numerical value of the error
 
+    **Example**
+
+    >>> s1 = SpectralNormError(0.01)
+    >>> s2 = SpectralNormError(0.02)
+    >>> s3 = s1.combine(s2)
+    >>> print(type(s3), s3.error)
+    <class 'pennylane.resource.error.SpectralNormError'> 0.03
     """
 
     def combine(self, other: "SpectralNormError"):
@@ -99,6 +106,14 @@ class SpectralNormError(AlgorithmicError):
 
         Returns:
             SpectralNormError: The total error after combination.
+
+        **Example**
+
+        >>> s1 = SpectralNormError(0.01)
+        >>> s2 = SpectralNormError(0.02)
+        >>> s3 = s1.combine(s2)
+        >>> print(type(s3), s3.error)
+        <class 'pennylane.resource.error.SpectralNormError'> 0.03
         """
         return self.__class__(self.error + other.error)
 
@@ -113,6 +128,13 @@ class SpectralNormError(AlgorithmicError):
         Returns:
             float: The error between the exact operator and its
             approximation.
+
+        **Example**
+
+        >>> Op1 = qml.RY(0.40, 0)
+        >>> Op2 = qml.RY(0.41, 0)
+        >>> SpectralNormError.get_error(Op1, Op2)
+        0.004999994791668309
         """
         wire_order = exact_op.wires
         m1 = qml.matrix(exact_op, wire_order=wire_order)
