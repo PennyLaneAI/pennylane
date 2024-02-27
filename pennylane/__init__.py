@@ -89,6 +89,7 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     defer_measurements,
+    dynamic_one_shot,
     qfunc_transform,
     op_transform,
     single_tape_transform,
