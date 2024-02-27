@@ -123,7 +123,8 @@ def test_apply_mid_measure():
 
 def test_accumulate_native_mcm_unsupported_error():
     with pytest.raises(
-        TypeError, match=f"Unsupported measurement of {type(qml.var(qml.PauliZ(0))).__name__}"
+        TypeError,
+        match=f"Native mid-circuit measurement mode does not support {type(qml.var(qml.PauliZ(0))).__name__}",
     ):
         accumulate_native_mcm(qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None])
 
@@ -178,7 +179,7 @@ def test_all_invalid_shots_circuit():
 )
 def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
     circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [measurement])
-    with pytest.raises(ValueError, match="Native mid-circuit measurement mode does not support"):
+    with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
         parse_native_mid_circuit_measurements(circuit, None, None)
 
 
@@ -195,7 +196,7 @@ def test_unsupported_measurement():
 
     with pytest.raises(
         TypeError,
-        match=f"Unsupported measurement of {type(qml.classical_shadow(wires=0)).__name__}",
+        match=f"Native mid-circuit measurement mode does not support {type(qml.classical_shadow(wires=0)).__name__}",
     ):
         qml.dynamic_one_shot(func)(*params)
 
@@ -220,7 +221,7 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(op=m0)
 
-    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func1 = func
     func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
@@ -270,7 +271,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
         obs_tape(x, y, z, reset=reset, postselect=postselect)
         return measure_f(op=obs)
 
-    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func1 = func
     func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
@@ -303,7 +304,7 @@ def test_single_mcm_single_measure_wires(shots, postselect, reset, measure_f, wi
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(wires=wires)
 
-    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func1 = func
     func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
@@ -335,7 +336,7 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
         return measure_f(op=obs), measure_f(op=mcms[0])
 
-    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func1 = func
     func2 = qml.defer_measurements(func)
 
     results1 = func1(*params)
@@ -369,7 +370,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
         m2 = qml.measure(0)
         return measure_f(op=(m0 - 2 * m1) * m2 + 7)
 
-    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func1 = func
     func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
@@ -402,7 +403,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
         qml.cond(mcms[0] == mcms[1], qml.RY)(z, wires=1)
         return measure_f(op=obs)
 
-    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func1 = func
     func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
@@ -438,7 +439,7 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
         m2 = qml.measure(0)
         return measure_f(op=[m0, m1, m2])
 
-    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func1 = func
     func2 = qml.defer_measurements(func)
 
     results1 = func1(param)
@@ -471,7 +472,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
         qml.cond((m0 + m1) > 0, qml.RY)(2 * np.pi / 3, 1)
         return measure_f(op=obs)
 
-    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func1 = func
     func2 = qml.defer_measurements(func)
 
     results1 = func1(*param)

@@ -158,7 +158,9 @@ def mid_circuit_measurements(
     """
     has_mcm = any(isinstance(op, MidMeasureMP) for op in tape.operations)
     if tape.shots and tape.batch_size is None and has_mcm:
-        return qml.dynamic_one_shot(tape)
+        if tape.shots.total_shots > 1:
+            return qml.dynamic_one_shot(tape)
+        return (tape,), null_postprocessing
     return qml.defer_measurements(tape, device=device)
 
 
