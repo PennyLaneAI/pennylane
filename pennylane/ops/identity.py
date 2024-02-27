@@ -24,7 +24,7 @@ from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
 
 class Identity(CVObservable, Operation):
     r"""
-    An alias of the identity observable :class:`~I`.
+    The Identity operator
 
     The expectation of this observable
 
@@ -199,7 +199,7 @@ class Identity(CVObservable, Operation):
 
 
 I = Identity
-r"""``I(wires)`` - the identity observable :math:`\I`
+r"""The Identity operator
 
 The expectation of this observable
 

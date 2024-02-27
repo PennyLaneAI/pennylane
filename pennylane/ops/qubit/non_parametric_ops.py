@@ -178,7 +178,7 @@ class Hadamard(Observable, Operation):
 
 class PauliX(Observable, Operation):
     r"""
-    An alias of the Pauli X operator :class:`~X`.
+    The Pauli X operator
 
     .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
 
@@ -347,7 +347,7 @@ class PauliX(Observable, Operation):
 
 
 X = PauliX
-r"""``X(wires)`` - the Pauli X operator
+r"""The Pauli X operator
 
 .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
 
@@ -365,7 +365,7 @@ Args:
 
 class PauliY(Observable, Operation):
     r"""
-    An alias of the Pauli Y operator :class:`~Y`.
+    The Pauli Y operator
 
     .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
 
@@ -533,7 +533,7 @@ class PauliY(Observable, Operation):
 
 
 Y = PauliY
-r"""``Y(wires)`` - the Pauli Y operator
+r"""The Pauli Y operator
 
 .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
 
@@ -551,7 +551,7 @@ Args:
 
 class PauliZ(Observable, Operation):
     r"""
-    An alias of the Pauli Z operator :class:`~Z`.
+    The Pauli Z operator
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
 
@@ -719,7 +719,7 @@ class PauliZ(Observable, Operation):
 
 
 Z = PauliZ
-r"""``Z(wires)`` - the Pauli Z operator
+r"""The Pauli Z operator
 
 .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
 
