@@ -969,7 +969,7 @@ class TestIntegration:
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        assert spy.call_count == 0
+        assert spy.call_count == 1
 
         @qml.defer_measurements
         @qml.qnode(dev)
