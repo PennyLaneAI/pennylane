@@ -150,6 +150,8 @@ and chat with the PennyLane team.
 Note that we are committed to providing a friendly, safe, and welcoming environment for all.
 Please read and respect the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 
+Foobar
+
 ## Authors
 
 PennyLane is the work of [many contributors](https://github.com/PennyLaneAI/pennylane/graphs/contributors).
