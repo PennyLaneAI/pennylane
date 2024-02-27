@@ -16,8 +16,8 @@ Stores classes and logic to define and track algorithmic error in a quantum work
 """
 from abc import ABC, abstractmethod
 
+import pennylane as qml
 from pennylane.operation import Operation, Operator
-from pennylane import math as fn
 
 
 class AlgorithmicError(ABC):
@@ -115,6 +115,6 @@ class SpectralNormError(AlgorithmicError):
             approximation.
         """
         wire_order = exact_op.wires
-        m1 = fn.matrix(exact_op, wire_order=wire_order)
-        m2 = fn.matrix(approximate_op, wire_order=wire_order)
-        return fn.svd(m1 - m2, compute_uv=False)[0]
+        m1 = qml.matrix(exact_op, wire_order=wire_order)
+        m2 = qml.matrix(approximate_op, wire_order=wire_order)
+        return qml.svd(m1 - m2, compute_uv=False)[0]

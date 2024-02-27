@@ -177,6 +177,7 @@ __all__ = [
     "sqrt_matrix",
     "scatter_element_add",
     "stack",
+    "svd",
     "tensordot",
     "trace_distance",
     "unwrap",
