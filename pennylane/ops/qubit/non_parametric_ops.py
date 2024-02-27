@@ -351,7 +351,7 @@ r"""The Pauli X operator
 
 .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
 
-.. seealso:: The equivalent short-form alias :class:`~PauliX`
+.. seealso:: The equivalent long-form alias :class:`~PauliX`
 
 **Details:**
 
