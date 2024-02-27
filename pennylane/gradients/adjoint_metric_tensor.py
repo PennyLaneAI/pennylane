@@ -31,14 +31,19 @@ def _reshape_real_imag(state, dim):
     return qml.math.real(state), qml.math.imag(state)
 
 
-def _group_operations(tape):
+def _group_operations(tape, argnums):
     """Divide all operations of a tape into trainable operations and blocks
     of untrainable operations after each trainable one."""
 
     # Extract tape operations list
     ops = tape.operations
     # Find the indices of trainable operations in the tape operations list
-    trainables = np.where([qml.operation.is_trainable(op) for op in ops])[0]
+    if argnums is None:
+        argnums = tape.trainable_params
+    elif isinstance(argnums, int):
+        argnums = [argnums]
+    trainable_par_info = [tape._par_info[i] for i in argnums]
+    trainables = [info["op_idx"] for info in trainable_par_info]
     # Add the indices incremented by one to the trainable indices
     split_ids = list(chain.from_iterable([idx, idx + 1] for idx in trainables))
 
@@ -54,13 +59,28 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
+def _expand_trainable_multipar(
+    tape: qml.tape.QuantumTape,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Expand trainable multi-parameter operations in a quantum tape."""
+
+    interface = qml.math.get_interface(*tape.get_parameters())
+    use_tape_argnum = interface == "jax"
+    expand_fn = qml.transforms.create_expand_trainable_multipar(
+        tape, use_tape_argnum=use_tape_argnum
+    )
+    return [expand_fn(tape)], lambda x: x[0]
+
+
 @partial(
     transform,
+    expand_transform=_expand_trainable_multipar,
     classical_cotransform=_contract_metric_tensor_with_cjac,
     is_informative=True,
+    use_argnum_in_expand=True,
 )
 def adjoint_metric_tensor(
-    tape: qml.tape.QuantumTape,
+    tape: qml.tape.QuantumTape, argnums=None
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
@@ -147,11 +167,11 @@ def adjoint_metric_tensor(
             wire_map = {w: i for i, w in enumerate(tape.wires)}
             tapes, fn = qml.map_wires(tape, wire_map)
             tape = fn(tapes)
-        tape = qml.transforms.expand_trainable_multipar(tape)
 
         # Divide all operations of a tape into trainable operations and blocks
         # of untrainable operations after each trainable one.
-        trainable_operations, group_after_trainable_op = _group_operations(tape)
+
+        trainable_operations, group_after_trainable_op = _group_operations(tape, argnums)
 
         dim = 2**tape.num_wires
         # generate and extract initial state
