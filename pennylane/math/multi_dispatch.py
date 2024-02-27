@@ -882,7 +882,6 @@ def svd(tensor, like=None, **kwargs):
     Returns:
         :math:`S`, :math:`U` and :math:`Vh`: full decomposition (if compute_uv is True or None)
         :math:`S`: only the singular values (if compute_uv is False)
-
     """
     if like == "tensorflow":
         from tensorflow.linalg import svd, adjoint
@@ -898,7 +897,7 @@ def svd(tensor, like=None, **kwargs):
         from jax.numpy.linalg import svd
 
     elif like == "torch":
-        # Torch is deprecating torch.svd() in favor of torch.linalg.svd().
+        # Torch is deprecating torch.svd() in favour of torch.linalg.svd().
         # The new UI is slightly different and breaks the logic for the multi dispatching.
         # This small workaround restores the compute_uv control argument.
         if kwargs.get("compute_uv", True) is False:
