@@ -170,6 +170,7 @@ def create_expand_trainable_multipar(tape, use_tape_argnum=False):
     if not use_tape_argnum:
         return expand_trainable_multipar
 
+    # pylint: disable=protected-access
     trainable_par_info = [tape._par_info[i] for i in tape.trainable_params]
     trainable_ops = [info["op"] for info in trainable_par_info]
 

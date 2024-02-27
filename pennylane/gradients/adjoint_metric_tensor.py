@@ -42,6 +42,7 @@ def _group_operations(tape, argnums):
         argnums = tape.trainable_params
     elif isinstance(argnums, int):
         argnums = [argnums]
+    # pylint: disable=protected-access
     trainable_par_info = [tape._par_info[i] for i in argnums]
     trainables = [info["op_idx"] for info in trainable_par_info]
     # Add the indices incremented by one to the trainable indices
