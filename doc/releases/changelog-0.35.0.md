@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Easy to import circuits 💾</h4>
+<h4>Easy-to-import Qiskit circuits 💾</h4>
 
 * This version of PennyLane makes it easier to import workflows from Qiskit.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
@@ -502,7 +502,7 @@
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
-* Added new error tracking and propagation functionality.
+* New error tracking and propagation functionality has been added
   [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
   [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
 
