@@ -35,14 +35,16 @@ from .core import transform
 
 @transform
 def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
-    """Transform a QNode to into several one-shot tapes to support dynamic
-    circuit execution.
+    """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit to add a batch dimension to
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        This circuit will provide the results of a dynamic execution.
 
 
     **Example**
@@ -51,60 +53,24 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", shots=100)
+        params = np.pi / 4 * np.ones(2)
 
-        @qml.batch_params
+        @qml.dynamic_one_shot
         @qml.qnode(dev)
-        def circuit(x, weights):
+        def func(x, y):
             qml.RX(x, wires=0)
-            qml.RY(0.2, wires=1)
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-            return qml.expval(qml.Hadamard(0))
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.RY)(y, wires=1)
+            return measure_f(op=m0)
 
-    The ``qml.batch_params`` decorator allows us to pass arguments ``x`` and ``weights``
-    that have a batch dimension. For example,
-
-    >>> batch_size = 3
-    >>> x = np.linspace(0.1, 0.5, batch_size)
-    >>> rng = np.random.default_rng(seed=1234)
-    >>> weights = rng.random((batch_size, 10, 3, 3), requires_grad=True)
-
-    If we evaluate the QNode with these inputs, we will get an output
-    of shape ``(batch_size,)``:
-
-    >>> circuit(x, weights)
-    tensor([ 0.00800498,  0.2735391 , -0.24395442], requires_grad=True)
-
-    QNodes with a batch dimension remain fully differentiable:
-
-    >>> cost_fn = lambda x, weights: np.sum(circuit(x, weights))
-    >>> cost_fn(x, weights)
-    tensor(0.03758966, requires_grad=True)
-    >>> qml.grad(cost_fn)(x, weights)[0]
-    array([-0.30262974,  0.06320878,  0.00811555])
-
-    If we pass the ``all_operations`` argument, we can specify that
-    *all* operation parameters in the transformed QNode, regardless of whether they
-    are QNode input parameters, have a batch dimension:
-
-    .. code-block:: python
-
-        from functools import partial
-
-        @partial(qml.batch_params, all_operations=True)
-        @qml.qnode(dev)
-        def circuit(x, weights):
-            qml.RX(x, wires=0)
-            qml.RY([0.2, 0.2, 0.2], wires=1)
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-            return qml.expval(qml.Hadamard(0))
-
-    >>> cost_fn = lambda x, weights: np.sum(circuit(x, weights))
-    >>> weights.requires_grad = False
-    >>> cost_fn(x, weights)
-    tensor(0.03758966, requires_grad=True)
-    >>> qml.grad(cost_fn)(x, weights)[0]
-    -0.30262974103192636
+    The ``qml.dynamic_one_shot`` decorator prompts the QNode to perform a hundred one-shot
+    calculations, where in each calculation the ``qml.measure`` operations dynamically
+    measures the 0-wire and collapse the state vector stochastically. This transforms
+    contrasts with ``qml.defer_measurements``, which instead introduces an extra wire
+    for each mid-circuit measurement. The ``qml.dynamic_one_shot`` transform is favorable in the few-shots
+    several-mid-circuit-measurement limit, whereas ``qml.defer_measurements`` is favorable
+    in the opposite limit.
     """
     # pylint: disable=protected-access
     aux_tape = init_auxiliary_tape(tape)

@@ -26,6 +26,7 @@ from pennylane import Snapshot
 from pennylane.operation import Tensor, StatePrepBase
 from pennylane.measurements import (
     MeasurementProcess,
+    MidMeasureMP,
     StateMeasurement,
     SampleMeasurement,
 )
@@ -155,8 +156,9 @@ def mid_circuit_measurements(
 
     If the tape of device uses finite-shot, use the native implementation (i.e. no transform), and use defer measurements transforms otherwise.
     """
-    if tape.shots and tape.batch_size is None:
-        return (tape,), null_postprocessing
+    has_mcm = any(isinstance(op, MidMeasureMP) for op in tape.operations)
+    if tape.shots and tape.batch_size is None and has_mcm:
+        return qml.dynamic_one_shot(tape)
     return qml.defer_measurements(tape, device=device)
 
 
