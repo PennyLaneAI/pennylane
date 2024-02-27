@@ -1285,7 +1285,11 @@ class TestSimplify:
         """Test that simplifying operators with a valid pauli representation works with tf interface."""
         import tensorflow as tf
 
-        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46j)
+        c1, c2, c3 = (
+            tf.Variable(1.23, dtype=tf.complex128),
+            tf.Variable(2.0, dtype=tf.complex128),
+            tf.Variable(2.46j, dtype=tf.complex128),
+        )
 
         op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
