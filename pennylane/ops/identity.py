@@ -199,9 +199,7 @@ class Identity(CVObservable, Operation):
 
 
 I = Identity
-r"""``I(wires)``
-
-The identity observable :math:`\I`.
+r"""``I(wires)`` - the identity observable :math:`\I`
 
 The expectation of this observable
 
