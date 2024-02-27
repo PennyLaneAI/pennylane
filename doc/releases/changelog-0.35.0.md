@@ -87,7 +87,7 @@
     
     We can convert this circuit into a QNode with two arguments, corresponding to `x` and `y`:
 
-    ```pycon
+    ```python
     measurements = qml.expval(qml.PauliZ(0))
     qfunc = qml.from_qiskit(qc, measurements)
     qnode = qml.QNode(qfunc, dev)
