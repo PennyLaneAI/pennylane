@@ -103,7 +103,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 
             def circuit(theta):
                 qml.RX(theta, wires=1)
-                qml.PauliZ(wires=0)
+                qml.Z(0)
 
         We can use ``qml.matrix`` to generate a new function that returns the unitary matrix
         corresponding to the function ``circuit``:
@@ -133,7 +133,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
         .. code-block:: python
 
             def circuit(theta):
-                qml.RX(theta, wires=1) qml.PauliZ(wires=0)
+                qml.RX(theta, wires=1) qml.Z(0)
                 qml.CNOT(wires=[0, 1])
 
             def cost(theta):
