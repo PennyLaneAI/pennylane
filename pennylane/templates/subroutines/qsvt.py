@@ -304,6 +304,23 @@ class QSVT(Operation):
                     op.data = new_data[: op.num_params]
                     new_data = new_data[op.num_params :]
 
+    def __copy__(self):
+        # Override Operator.__copy__() to avoid setting the "data" property before the new instance
+        # is assigned hyper-parameters since QSVT data is derived from the hyper-parameters.
+        clone = QSVT.__new__(QSVT)
+
+        # Ensure the operators in the hyper-parameters are copied instead of aliased.
+        clone._hyperparameters = {
+            "UA": copy.copy(self._hyperparameters["UA"]),
+            "projectors": list(map(copy.copy, self._hyperparameters["projectors"])),
+        }
+
+        for attr, value in vars(self).items():
+            if attr != "_hyperparameters":
+                setattr(clone, attr, value)
+
+        return clone
+
     @property
     def _operators(self) -> list[qml.operation.Operator]:
         """Flattened list of operators that compose this QSVT operation."""
