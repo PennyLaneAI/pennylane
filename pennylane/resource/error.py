@@ -139,4 +139,4 @@ class SpectralNormError(AlgorithmicError):
         wire_order = exact_op.wires
         m1 = qml.matrix(exact_op, wire_order=wire_order)
         m2 = qml.matrix(approximate_op, wire_order=wire_order)
-        return qml.max(qml.math.svd(m1 - m2, compute_uv=False))
+        return qml.math.max(qml.math.svd(m1 - m2, compute_uv=False))
