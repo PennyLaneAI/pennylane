@@ -1074,7 +1074,7 @@ def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     >>> vn_entropy(x, indices=[1])
     0.4164955
     >>> min_entropy(x, indices=[1])
-    0.15834718382037496
+    0.1583472
 
     """
     density_matrix = reduce_dm(state, indices, check_state, c_dtype)
