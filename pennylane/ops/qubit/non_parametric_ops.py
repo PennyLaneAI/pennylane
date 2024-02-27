@@ -347,10 +347,13 @@ class PauliX(Observable, Operation):
 
 
 X = PauliX
-r"""X(wires)
+r"""``X(wires)``  
+
 The Pauli X operator
 
 .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
+
+.. seealso:: :class:`~PauliX`
 
 **Details:**
 
@@ -532,10 +535,13 @@ class PauliY(Observable, Operation):
 
 
 Y = PauliY
-r"""Y(wires)
+r"""``Y(wires)``  
+
 The Pauli Y operator
 
 .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
+
+.. seealso:: :class:`~PauliY`
 
 **Details:**
 
@@ -717,10 +723,13 @@ class PauliZ(Observable, Operation):
 
 
 Z = PauliZ
-r"""Z(wires)
+r"""``Z(wires)``  
+
 The Pauli Z operator
 
 .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
+
+.. seealso:: :class:`~PauliZ`
 
 **Details:**
 
