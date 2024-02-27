@@ -38,6 +38,7 @@ jobs:
         build-command: "sphinx-build -b html . _build -W --keep-going"
 
     - name: Prepare local repo
+      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane'
       run: |
         git fetch
         git config user.name "GitHub Actions Bot"
@@ -52,12 +53,13 @@ jobs:
         mv -f .github/stable/doc.txt.tmp .github/stable/doc.txt
 
     - name: Determine if changes have been made
+      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane'
       id: changed
       run: |
         echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
 
     - name: Stage changes
-      if: steps.changed.outputs.has_changes != '0'
+      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane' && steps.changed.outputs.has_changes != '0'
       run: |
         git add .github/stable/doc.txt
         git commit -m "Update stable docs dependencies"
@@ -65,7 +67,7 @@ jobs:
 
     # Create PR to master
     - name: Create pull request
-      if: steps.changed.outputs.has_changes != '0'
+      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane' && steps.changed.outputs.has_changes != '0'
       uses: repo-sync/pull-request@v2
       with:
         source_branch: "${{ env.DEPS_BRANCH }}"
