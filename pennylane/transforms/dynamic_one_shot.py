@@ -131,7 +131,7 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 "All shots were thrown away as invalid. This can happen for example when post-selecting the 1-branch of a 0-state. Make sure your circuit has some probability of producing a valid shot.",
                 UserWarning,
             )
-        return parse_native_mid_tape_measurements(tape, all_shot_meas, list_mcm_values_dict)
+        return parse_native_mid_circuit_measurements(tape, all_shot_meas, list_mcm_values_dict)
 
     return output_tapes, processing_fn
 
@@ -194,7 +194,7 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
     return new_shot_meas
 
 
-def parse_native_mid_tape_measurements(
+def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript, all_shot_meas, mcm_shot_meas
 ):
     """Combines, gathers and normalizes the results of native mid-circuit measurement runs.

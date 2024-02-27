@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import apply_mid_measure, MidMeasureMP
-from pennylane.devices.qubit.simulate import (
+from pennylane.transforms.dynamic_one_shot import (
     accumulate_native_mcm,
     parse_native_mid_circuit_measurements,
 )
