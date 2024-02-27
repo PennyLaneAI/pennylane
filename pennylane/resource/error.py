@@ -136,6 +136,9 @@ class SpectralNormError(AlgorithmicError):
         >>> SpectralNormError.get_error(Op1, Op2)
         0.004999994791668309
         """
+        if not (exact_op.has_matrix and approximate_op.has_matrix):
+            raise ValueError("The input operator must have a matrix.")
+
         wire_order = exact_op.wires
         m1 = qml.matrix(exact_op, wire_order=wire_order)
         m2 = qml.matrix(approximate_op, wire_order=wire_order)

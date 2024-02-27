@@ -111,10 +111,10 @@ class TestSpectralNormError:
     def test_get_error(self, phi, expected):
         """Test that get_error works as expected"""
         approx_op = qml.Hadamard(0)
-        exact_op = qml.RX(phi, 1)
+        exact_op = qml.RX(phi, 0)
 
         res = SpectralNormError.get_error(approx_op, exact_op)
-        assert res == expected
+        assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
         "phi, expected",
@@ -130,7 +130,7 @@ class TestSpectralNormError:
         """Test that get_error for a custom operator"""
 
         class DummyOp(Operation):  # pylint: disable=too-few-public-methods
-            def matrix(self):
+            def compute_matrix(self):
                 return np.array([[0.5, 1.0], [1.2, 1.3]])
 
         approx_op = DummyOp(1)
@@ -144,7 +144,7 @@ class TestSpectralNormError:
         approx_op = Operation
         exact_op = qml.RX(0.1, 1)
 
-        with pytest.raises(qml.operation.MatrixUndefinedError):
+        with pytest.raises(ValueError, match="The input operator must have a matrix."):
             SpectralNormError.get_error(approx_op, exact_op)
 
 
