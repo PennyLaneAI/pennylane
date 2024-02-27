@@ -143,7 +143,7 @@ def test_all_invalid_shots_circuit():
         )
 
     res1 = circuit_op()
-    res2 = circuit_op(shots=10)
+    res2 = qml.dynamic_one_shot(circuit_op)(shots=10)
     for r1, r2 in zip(res1, res2):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
@@ -157,7 +157,7 @@ def test_all_invalid_shots_circuit():
         return qml.expval(op=m), qml.probs(op=m), qml.var(op=m)
 
     res1 = circuit_mcm()
-    res2 = circuit_mcm(shots=10)
+    res2 = qml.dynamic_one_shot(circuit_mcm)(shots=10)
     for r1, r2 in zip(res1, res2):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
@@ -197,7 +197,7 @@ def test_unsupported_measurement():
         TypeError,
         match=f"Unsupported measurement of {type(qml.classical_shadow(wires=0)).__name__}",
     ):
-        func(*params)
+        qml.dynamic_one_shot(func)(*params)
 
 
 @flaky(max_runs=5)
@@ -214,13 +214,14 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
     params = np.pi / 4 * np.ones(2)
 
     @qml.qnode(dev)
-    def func1(x, y):
+    def func(x, y):
         qml.RX(x, wires=0)
         m0 = qml.measure(0, reset=reset, postselect=postselect)
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(op=m0)
 
-    func2 = qml.defer_measurements(func1)
+    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -265,11 +266,12 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
     params = [np.pi / 7, np.pi / 6, -np.pi / 5]
 
     @qml.qnode(dev)
-    def func1(x, y, z):
+    def func(x, y, z):
         obs_tape(x, y, z, reset=reset, postselect=postselect)
         return measure_f(op=obs)
 
-    func2 = qml.defer_measurements(func1)
+    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -295,13 +297,14 @@ def test_single_mcm_single_measure_wires(shots, postselect, reset, measure_f, wi
     params = np.pi / 4 * np.ones(2)
 
     @qml.qnode(dev)
-    def func1(x, y):
+    def func(x, y):
         qml.RX(x, wires=0)
         m0 = qml.measure(0, reset=reset, postselect=postselect)
         qml.cond(m0, qml.RY)(y, wires=1)
         return measure_f(wires=wires)
 
-    func2 = qml.defer_measurements(func1)
+    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -328,11 +331,12 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
     obs = qml.PauliY(1)
 
     @qml.qnode(dev)
-    def func1(x, y, z):
+    def func(x, y, z):
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
         return measure_f(op=obs), measure_f(op=mcms[0])
 
-    func2 = qml.defer_measurements(func1)
+    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func2 = qml.defer_measurements(func)
 
     results1 = func1(*params)
     results2 = func2(*params)
@@ -356,7 +360,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
     param = np.pi / 3
 
     @qml.qnode(dev)
-    def func1(x):
+    def func(x):
         qml.RX(x, 0)
         m0 = qml.measure(0)
         qml.RX(0.5 * x, 1)
@@ -365,7 +369,8 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
         m2 = qml.measure(0)
         return measure_f(op=(m0 - 2 * m1) * m2 + 7)
 
-    func2 = qml.defer_measurements(func1)
+    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -391,13 +396,14 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     obs = qml.PauliZ(0) @ qml.PauliY(1)
 
     @qml.qnode(dev)
-    def func1(x, y, z):
+    def func(x, y, z):
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
         qml.cond(mcms[0] != mcms[1], qml.RY)(z, wires=0)
         qml.cond(mcms[0] == mcms[1], qml.RY)(z, wires=1)
         return measure_f(op=obs)
 
-    func2 = qml.defer_measurements(func1)
+    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
         return
@@ -423,7 +429,7 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
     param = np.pi / 3
 
     @qml.qnode(dev)
-    def func1(x):
+    def func(x):
         qml.RX(x, 0)
         m0 = qml.measure(0)
         qml.RX(0.5 * x, 1)
@@ -432,7 +438,8 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
         m2 = qml.measure(0)
         return measure_f(op=[m0, m1, m2])
 
-    func2 = qml.defer_measurements(func1)
+    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func2 = qml.defer_measurements(func)
 
     results1 = func1(param)
     results2 = func2(param)
@@ -455,7 +462,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
     @qml.qnode(dev, diff_method="parameter-shift")
-    def func1(x, y):
+    def func(x, y):
         qml.RX(x, 0)
         m0 = qml.measure(0)
         qml.RX(y, 1)
@@ -464,14 +471,15 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
         qml.cond((m0 + m1) > 0, qml.RY)(2 * np.pi / 3, 1)
         return measure_f(op=obs)
 
-    func2 = qml.defer_measurements(func1)
+    func1 = func if shots is None else qml.dynamic_one_shot(func)
+    func2 = qml.defer_measurements(func)
 
     results1 = func1(*param)
     results2 = func2(*param)
 
     validate_measurements(measure_f, shots, results1, results2)
 
-    grad1 = qml.grad(func1)(*param)
+    grad1 = qml.grad(func)(*param)
     grad2 = qml.grad(func2)(*param)
 
     assert np.allclose(grad1, grad2, atol=0.01, rtol=0.3)
