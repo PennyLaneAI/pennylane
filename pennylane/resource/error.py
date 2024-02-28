@@ -83,8 +83,8 @@ class ErrorOperation(Operation):
 class SpectralNormError(AlgorithmicError):
     """Class representing the spectral norm error.
 
-    The spectral norm error is defined as the distance (in spectral norm) between the true unitary
-    we wish to apply and the approximate unitary that we actually apply.
+    The spectral norm error is defined as the distance, in spectral norm, between the true unitary
+    we intend to apply and the approximate unitary that is actually applied.
 
     Args:
         error (float): The numerical value of the error
@@ -104,7 +104,7 @@ class SpectralNormError(AlgorithmicError):
         return f"<SpectralNormError({self.error})>"
 
     def combine(self, other: "SpectralNormError"):
-        """A method to combine two spectral norm errors.
+        """Combine two spectral norm errors.
 
         Args:
             other (SpectralNormError): The other instance of error being combined.
@@ -117,8 +117,10 @@ class SpectralNormError(AlgorithmicError):
         >>> s1 = SpectralNormError(0.01)
         >>> s2 = SpectralNormError(0.02)
         >>> s3 = s1.combine(s2)
-        >>> print(type(s3), s3.error)
-        <class 'pennylane.resource.error.SpectralNormError'> 0.03
+        >>> print(s3)
+        <SpectralNormError(0.03)>
+        >>> print(s3.error)
+        0.03
         """
         return self.__class__(self.error + other.error)
 
