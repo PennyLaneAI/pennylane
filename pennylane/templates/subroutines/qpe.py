@@ -215,12 +215,6 @@ class QuantumPhaseEstimation(Operation):
         >>> QPE.error
         0.11010001000000001
         """
-        if not isinstance(self._hyperparameters["unitary"], Operator):
-            raise qml.ValueError("The input unitary must be an Operator.")
-
-        if not hasattr(self._hyperparameters["unitary"], "error"):
-            raise qml.ValueError("The input unitary operator must have an error attribute.")
-
         unitary_error = self._hyperparameters["unitary"].error
         sequence_error = [
             unitary_error ** (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)

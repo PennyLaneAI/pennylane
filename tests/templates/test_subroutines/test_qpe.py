@@ -38,6 +38,20 @@ def test_flatten_unflatten():
     assert op is not new_op
 
 
+def test_error_value():
+    """Test that QPE error is correct for a given unitary error."""
+
+    class CustomOP(qml.resource.ErrorOperation):
+        @property
+        def error(self):
+            return 0.1
+
+    Op = CustomOP(wires=[0])
+    QPE = qml.QuantumPhaseEstimation(Op, estimation_wires=range(1, 5))
+
+    assert QPE.error == 0.11010001000000001
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
