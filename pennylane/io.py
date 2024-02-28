@@ -112,7 +112,7 @@ def from_qiskit(quantum_circuit, measurements=None):
             that may be present in the input circuit
 
     Returns:
-        function: the PennyLane quantum function, created based on the input Qiskit
+        function: The PennyLane quantum function, created based on the input Qiskit
         ``QuantumCircuit`` object.
 
     **Example:**
@@ -313,14 +313,51 @@ def from_qiskit(quantum_circuit, measurements=None):
         >>> circuit()
         (tensor(0.5, requires_grad=True), tensor(0.5, requires_grad=True))
 
-        The ``IfElseOp``, ``SwitchCaseOp`` and ``c_if`` classical workflows using mid-circuit
-        measurements can be translated from a Qiskit ``QuantumCircuit``
+        Furthermore, the Qiskit `IfElseOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.IfElseOp>`__,
+        `SwitchCaseOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.SwitchCaseOp>`__ and
+        `c_if <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.Instruction#c_if>`__
+        conditional workflows are automatically translated into their PennyLane counterparts during
+        conversion. For example, if we construct a ``QuantumCircuit`` with these workflows:
 
+        .. code-block:: python
 
-        >>> print(qml.draw(circuit_loaded_qiskit_circuit)())
-        0: ──H──┤↗├──RZ(0.24)─╭●─┤  <Z>
-        1: ───────────────────╰X─┤  vnentropy
+            qc = QuantumCircuit(4, 1)
+            qc.h(0)
+            qc.measure(0, 0)
 
+            # Use an `IfElseOp` operation.
+            noop = QuantumCircuit(1)
+            flip_x = QuantumCircuit(1)
+            flip_x.x(0)
+            qc.if_else((qc.clbits[0], True), flip_x, noop, [1], [])
+
+            # Use a `SwitchCaseOp` operation.
+            with qc.switch(qc.clbits[0]) as case:
+                with case(0):
+                    qc.y(2)
+
+            # Use the `c_if()` function.
+            qc.z(3).c_if(qc.clbits[0], True)
+
+            qc.measure_all()
+
+        We can convert the ``QuantumCircuit`` into a PennyLane quantum function using:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+
+            measurements = [qml.expval(qml.Z(i)) for i in range(qc.num_qubits)]
+            cond_circuit = qml.QNode(qml.from_qiskit(qc, measurements=measurements), dev)
+
+        The result is:
+
+        >>> print(qml.draw(cond_circuit)())
+        0: ──H──┤↗├──────────╭||─┤  <Z>
+        1: ──────║───X───────├||─┤  <Z>
+        2: ──────║───║──Y────├||─┤  <Z>
+        3: ──────║───║──║──Z─╰||─┤  <Z>
+                 ╚═══╩══╩══╝
     """
     try:
         return load(quantum_circuit, format="qiskit", measurements=measurements)
