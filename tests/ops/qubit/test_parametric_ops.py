@@ -2994,7 +2994,7 @@ class TestPauliRot:
             else:
                 expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
 
-        assert gen == qml.s_prod(-0.5, expected_gen)
+        assert qml.equal(gen, qml.s_prod(-0.5, expected_gen))
 
     @pytest.mark.torch
     @pytest.mark.gpu
@@ -3189,7 +3189,7 @@ class TestMultiRZ:
         for i in range(1, qubits):
             expected_gen = expected_gen @ qml.PauliZ(wires=i)
 
-        assert gen == qml.s_prod(-0.5, expected_gen)
+        assert qml.equal(gen, qml.s_prod(-0.5, expected_gen))
 
         spy = mocker.spy(qml.utils, "pauli_eigs")
 
