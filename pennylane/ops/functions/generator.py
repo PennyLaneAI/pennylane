@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane.ops import Hamiltonian, SProd, Prod, Sum
 
 
+# pylint: disable=too-many-branches
 def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~.Hamiltonian`."""
     wires = op.wires
