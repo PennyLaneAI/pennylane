@@ -874,18 +874,21 @@ def norm(tensor, like=None, **kwargs):
 def svd(tensor, like=None, **kwargs):
     """Compute the singular value decomposition of a tensor in each interface.
 
-    For a matrix :math:`A`, the singular value decomposition consist of three matrices :math:`S`, :math:`U` and :math:`Vh`, such that:
+    For a matrix :math:`A`, the singular value decomposition consist of three matrices :math:`S`, :math:`U` and :math:`V_h`, such that:
+
     .. math::
 
-        A = U . Diag(S) . Vh
+        A = U . Diag(S) . V_h
 
     Args:
         tensor (tensor_like): input tensor
-        compute_uv (bool):  if True, the full decomposition is returned
+        compute_uv (bool):  if ``True``, the full decomposition is returned
+
 
     Returns:
-        :math:`S`, :math:`U` and :math:`Vh`: full decomposition (if compute_uv is True or None)
-        :math:`S`: only the singular values (if compute_uv is False)
+        :math:`S`, :math:`U` and :math:`Vh` or :math:`S`: full decomposition
+        if ``compute_uv`` is ``True`` or ``None``, or only the singular values
+        if ``compute_uv`` is ``False``
     """
     if like == "tensorflow":
         from tensorflow.linalg import svd, adjoint
