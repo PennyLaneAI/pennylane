@@ -214,7 +214,7 @@
     use of the short-form names is now recommended.
 
   * A new `qml.commutator` function is now available that allows you to compute commutators between
-    `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
+    PennyLane operators.
     [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
     [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
     [(#5098)](https://github.com/PennyLaneAI/pennylane/pull/5098)
