@@ -265,11 +265,14 @@
     )
     ```
 
-  * The `Sum` and `Prod` classes have been updated to reach feature parity with `Hamiltonian`
-    and `Tensor`, respectively. This includes support for grouping via the `pauli` module:
+  * The `Sum` and `Prod` classes, two major components of our new approach to operator arithmetic,
+    have been updated to reach feature parity with `Hamiltonian` and `Tensor`, respectively.
+    This should minimize the effort to port over any existing code.
     [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
     [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
     [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
+
+    Updates include support for grouping via the `pauli` module:
 
     ```pycon
     >>> obs = [X(0) @ Y(1), Z(0), Y(0) @ Z(1), Y(1)]
