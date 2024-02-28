@@ -31,19 +31,15 @@ def _reshape_real_imag(state, dim):
     return qml.math.real(state), qml.math.imag(state)
 
 
-def _group_operations(tape, argnums):
+def _group_operations(tape):
     """Divide all operations of a tape into trainable operations and blocks
     of untrainable operations after each trainable one."""
 
     # Extract tape operations list
     ops = tape.operations
     # Find the indices of trainable operations in the tape operations list
-    if argnums is None:
-        argnums = tape.trainable_params
-    elif isinstance(argnums, int):
-        argnums = [argnums]
     # pylint: disable=protected-access
-    trainable_par_info = [tape._par_info[i] for i in argnums]
+    trainable_par_info = [tape._par_info[i] for i in tape.trainable_params]
     trainables = [info["op_idx"] for info in trainable_par_info]
     # Add the indices incremented by one to the trainable indices
     split_ids = list(chain.from_iterable([idx, idx + 1] for idx in trainables))
@@ -80,9 +76,7 @@ def _expand_trainable_multipar(
     is_informative=True,
     use_argnum_in_expand=True,
 )
-def adjoint_metric_tensor(
-    tape: qml.tape.QuantumTape, argnums=None
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+def adjoint_metric_tensor(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
@@ -172,7 +166,7 @@ def adjoint_metric_tensor(
         # Divide all operations of a tape into trainable operations and blocks
         # of untrainable operations after each trainable one.
 
-        trainable_operations, group_after_trainable_op = _group_operations(tape, argnums)
+        trainable_operations, group_after_trainable_op = _group_operations(tape)
 
         dim = 2**tape.num_wires
         # generate and extract initial state
