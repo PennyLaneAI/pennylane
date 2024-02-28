@@ -97,18 +97,6 @@ def test_unsupported_measurements(mp, err_msg):
         _, _ = qml.defer_measurements(tape)
 
 
-def test_custom_wires_error():
-    """Test that using custom wire labels raises an error"""
-    tape = qml.tape.QuantumScript(
-        [qml.PauliX("a"), qml.CNOT(["a", 1]), MidMeasureMP("a")], [qml.expval(qml.PauliZ(1))]
-    )
-
-    with pytest.raises(
-        ValueError, match="qml.defer_measurements does not support custom wire labels."
-    ):
-        _, _ = qml.defer_measurements(tape)
-
-
 @pytest.mark.parametrize(
     "mp, compose_mv",
     [
@@ -1541,3 +1529,52 @@ class TestDrawing:
             "3: ─╰X─╰●─╰●──────────────────┤     "
         )
         assert qml.draw(transformed_qnode)() == expected
+
+
+def test_custom_wire_labels_allowed_without_reuse():
+    """Test that custom wire labels work if no qubits are re-used."""
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard("a")
+        ma = qml.measure("a", reset=False)
+        qml.cond(ma, qml.PauliX)("b")
+        qml.probs(wires="b")
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    tapes, _ = qml.defer_measurements(tape)
+    tape = tapes[0]
+
+    assert len(tape) == 3
+    assert qml.equal(tape[0], qml.Hadamard("a"))
+    assert qml.equal(tape[1], qml.CNOT(["a", "b"]))
+    assert qml.equal(tape[2], qml.probs(wires="b"))
+
+
+def test_custom_wire_labels_fails_with_reset():
+    """Test that custom wire labels do not work if any qubits are re-used."""
+
+    # Reset example
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard("a")
+        ma = qml.measure("a", reset=True)
+        qml.cond(ma, qml.PauliX)("b")
+        qml.probs(wires="a")
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    with pytest.raises(
+        ValueError, match="qml.defer_measurements does not support custom wire labels"
+    ):
+        _, _ = qml.defer_measurements(tape)
+
+    # Reuse example
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard("a")
+        ma = qml.measure("a")
+        qml.cond(ma, qml.PauliX)("b")
+        qml.Hadamard("a")
+        qml.probs(wires="b")
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    with pytest.raises(
+        ValueError, match="qml.defer_measurements does not support custom wire labels"
+    ):
+        _, _ = qml.defer_measurements(tape)
