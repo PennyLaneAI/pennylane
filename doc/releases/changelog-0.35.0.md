@@ -233,9 +233,6 @@
 * A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
   [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
 
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
-
 <h4>Other operator arithmetic improvements</h4>
 
 * The following capabilities have been added for Pauli arithmetic:
@@ -554,6 +551,9 @@
   [(#5237)](https://github.com/PennyLaneAI/pennylane/pull/5237)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug in the matplotlib drawer where the color of `Barrier` did not match the requested style.
+  [(#5276)](https://github.com/PennyLaneAI/pennylane/pull/5276)
 
 * `ctrl_decomp_zyz` is now differentiable.
   [(#5198)](https://github.com/PennyLaneAI/pennylane/pull/5198)
