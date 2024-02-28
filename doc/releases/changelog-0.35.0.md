@@ -213,6 +213,17 @@
     The original long-form names `Identity`, `PauliX`, `PauliY`, and `PauliZ` remain available, but
     use of the short-form names is now recommended.
 
+  * A new `qml.commutator` function is now available that allows you to compute commutators between
+    `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
+    [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
+    [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
+    [(#5098)](https://github.com/PennyLaneAI/pennylane/pull/5098)
+
+    ```pycon
+    >>> qml.commutator(X(0), Y(0))
+    2j * Z(0)
+    ```
+
   * PennyLane will try to automatically work with a Pauli representation of operators when
     available. The Pauli representation can be optionally accessed via `op.pauli_rep`:
     [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
@@ -267,17 +278,6 @@
     >>> obs = [X(0) @ Y(1), Z(0), Y(0) @ Z(1), Y(1)]
     >>> qml.pauli.group_observables(obs)
     [[Y(0) @ Z(1)], [X(0) @ Y(1), Y(1)], [Z(0)]]
-    ```
-
-  * A new `qml.commutator` function is now available that allows you to compute commutators between
-    `qml.operation.Operator`, `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` instances.
-    [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
-    [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
-    [(#5098)](https://github.com/PennyLaneAI/pennylane/pull/5098)
-
-    ```pycon
-    >>> qml.commutator(X(0), Y(0))
-    2j * Z(0)
     ```
 
 <h4>New Clifford device 🦾</h4>
