@@ -460,10 +460,6 @@
   ([0.5, 1.0],
    [X(1) @ X(0),
     X(2) @ X(0)])
-  >>> op.coeffs
-  [0.5, 1.0]
-  >>> op.ops
-  [X(1) @ X(0), X(2) @ X(0)]
   ```
 
 * String representations of `ParametrizedHamiltonian` have been updated to match the style of other PL operators.
