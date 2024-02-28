@@ -6,7 +6,7 @@
 
 <h4>Easy-to-import Qiskit workflows 💾</h4>
 
-* This version of PennyLane makes it easier to import workflows from Qiskit.
+* This version of PennyLane makes it easier to import circuits from Qiskit.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
   [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
