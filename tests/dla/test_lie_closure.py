@@ -212,4 +212,3 @@ class TestVSpace:
             ]
         )
         assert v1 != v2
-
