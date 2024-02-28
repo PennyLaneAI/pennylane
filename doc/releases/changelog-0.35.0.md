@@ -448,7 +448,7 @@
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
 * Akin to `qml.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum` or `Prod` can now be accessed 
-  with attributes `coeffs` and `ops`, respectively, or together with a `terms()` method.
+  with the `terms()` method.
   [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
   [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
   [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
