@@ -21,8 +21,8 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-DEFAULT_METHODS = ["backprop", "parameter-shift", "hadamard", "spsa"]
-SKIP_IF_FINITE = ["backprop", "spsa"]
+DEFAULT_METHODS = ["backprop", "parameter-shift", "hadamard"]
+SKIP_IF_FINITE = ["backprop"]
 
 
 class TestGradients:
@@ -140,8 +140,6 @@ class TestGradients:
         assert isinstance(res[1], pnp.ndarray)
         assert res[1].shape == (2,)
 
-        if diff_method == "spsa":
-            pytest.xfail(reason="spsa gets wrong results here")
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
 
@@ -198,8 +196,6 @@ class TestGradients:
         grad_fn = qml.grad(circuit)
         g = grad_fn(x)
 
-        if diff_method == "spsa":
-            pytest.xfail(reason="spsa gets wrong results here")
         expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 

@@ -139,8 +139,6 @@ class TestGradients:
         assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == (2,)
 
-        if diff_method == "spsa":
-            pytest.xfail(reason="spsa gets wrong results here")
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
 
