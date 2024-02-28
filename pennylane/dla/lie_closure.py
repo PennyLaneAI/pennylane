@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Functions to convert a fermionic operator to the qubit basis."""
-
+"""A function to compute the Lie closure of a set of operators"""
+# pylint: disable=too-many-arguments
 from functools import reduce
 
 from typing import Union, Iterable
@@ -206,7 +206,7 @@ class VSpace:
         return self._basis
 
     @staticmethod
-    def _add_if_independent(M, pauli_sentence, pw_to_idx, rank, num_pw):
+    def _add_if_independent(M, pauli_sentence, pw_to_idx, rank, num_pw, tol=1e-15):
         r"""
         Checks if ``pauli_sentence`` is linearly independent.
 
@@ -256,21 +256,16 @@ class VSpace:
         for pw, value in pauli_sentence.items():
             M[pw_to_idx[pw], rank] = value
 
-        # Check if new vector is proportional to any of the previous vectors
-        # This is significantly cheaper than computing the rank and should be done first
-        if _is_any_col_propto_last(M):
-            M = M[:num_pw, :rank]
-            return M, pw_to_idx, rank, num_pw, False
+        # Check if new vector is linearly dependent on the current basis
+        v = M[:, -1].copy()  # remove copy to normalize M
+        v /= np.linalg.norm(v)
+        A = M[:, :-1]
+        v = v - A @ qml.math.linalg.inv(qml.math.conj(A.T) @ A) @ qml.math.conj(A).T @ v
 
-        new_rank = np.linalg.matrix_rank(M)  # expensive
+        if np.linalg.norm(v) > tol:
+            return M, pw_to_idx, rank + 1, new_num_pw, True
 
-        # Manual singular value alternative, probably slower than ``matrix_rank``
-        # sing_value = np.min(np.abs(svd(M, compute_uv=False, lapack_driver="gesdd", check_finite=False)))
-        if new_rank == rank:
-            M = M[:num_pw, :rank]
-            return M, pw_to_idx, rank, num_pw, False
-
-        return M, pw_to_idx, rank + 1, new_num_pw, True
+        return M[:num_pw, :rank], pw_to_idx, rank, num_pw, False
 
     def __repr__(self):
         return str(self.basis)
@@ -290,49 +285,3 @@ class VSpace:
         rank3 = np.linalg.matrix_rank(np.concatenate([self._M, other._M], axis=1))
 
         return rank1 == rank2 and rank2 == rank3
-
-
-def _is_any_col_propto_last(inM):
-    """Given a 2D matrix M, check if any column is proportional to the last column
-    **Example**
-
-    .. code-block::python3
-        M1 = np.array([
-            [0., 1., 2., 4.],
-            [1., 1., 1., 0.],
-            [2., 2., 3., 6.]
-        ])
-        M2 = np.array([
-            [0., 1., 2., 4.],
-            [1., 1., 0., 0.],
-            [2., 2., 3., 6.]
-        ])
-
-    >>> _any_col_propto(M1)
-    False
-    >>> _any_col_propto(M2)
-    True
-
-    """
-    M = inM.copy()
-
-    nonzero_mask = np.nonzero(M[:, 0])  # target vector is the last column
-
-    # process nonzero part of the matrix
-    nonzero_part = M[nonzero_mask]
-    normalize_columns = np.linalg.norm(M, axis=0)[np.newaxis, :]
-
-    # divide each column by its norm
-    # If we decide to maintain a normalization in M, this is not needed anymore
-    nonzero_part = nonzero_part / normalize_columns
-
-    # fill the original matrix with the nonzero elements
-    # note that if a candidate vector has nonzero part where the target vector is zero, this part is unaltered
-    # (this is good to catch cases where columns are proportional on the non-zero part of the last column, but not on those where the candidate is zero)
-    M[nonzero_mask] = nonzero_part
-
-    # check if any column matches the last column completely
-    # OR the negative of it
-    return np.any(np.all(M[:, :-1].T == M[:, -1], axis=1)) or np.any(
-        np.all(M[:, :-1].T == -M[:, -1], axis=1)
-    )

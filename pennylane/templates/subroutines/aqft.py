@@ -47,7 +47,7 @@ class AQFT(Operation):
 
         @qml.qnode(dev)
         def circuit_aqft():
-            qml.PauliX(0)
+            qml.X(0)
             qml.Hadamard(1)
             qml.AQFT(order=1,wires=range(wires))
             return qml.state()

@@ -3,7 +3,7 @@ on:
 - pull_request
 
 jobs:
-  black:
+  black-pylint:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +18,7 @@ jobs:
           python-version: 3.9
 
       - name: Install dependencies
-        run: pip install black
+        run: pip install black pylint==2.7.4
 
       - uses: actions/checkout@v2
 
@@ -26,3 +26,11 @@ jobs:
         run: |
           black -l 100 pennylane/ --check
           black -l 100 tests/ --check
+
+      - name: Run Pylint (source files)
+        if: always()
+        run: pylint --rcfile .pylintrc $(find pennylane -name "*.py")
+
+      - name: Run Pylint (test files)
+        if: always()
+        run: pylint --rcfile tests/.pylintrc $(find tests -name "*.py")

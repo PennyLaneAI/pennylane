@@ -219,7 +219,7 @@ class TestBatchTransformExecution:
         H = 2.0 * qml.PauliZ(0)
         qscript = qml.tape.QuantumScript(measurements=[qml.expval(H)])
         res = qml.execute([qscript], dev, interface=None, override_shots=10)
-        assert res == [2.0]
+        assert res == (2.0,)
 
 
 class TestCaching:

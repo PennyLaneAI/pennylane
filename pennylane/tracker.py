@@ -62,7 +62,7 @@ class Tracker:
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         x = np.array(0.1, requires_grad=True)
 
@@ -143,7 +143,7 @@ class Tracker:
         >>> @qml.qnode(dev)
         ... def circuit(x):
         ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         ...
         >>> with qml.Tracker(dev) as tracker:
         ...     circuit(0.1)

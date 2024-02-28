@@ -17,9 +17,10 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+
 from pennylane import X, Y, Z
 from pennylane.dla import lie_closure
-from pennylane.dla.lie_closure import VSpace, _is_any_col_propto_last
+from pennylane.dla.lie_closure import VSpace
 from pennylane.pauli import PauliWord, PauliSentence
 
 ops1 = [

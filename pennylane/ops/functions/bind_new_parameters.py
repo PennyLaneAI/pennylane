@@ -113,10 +113,13 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 
 @bind_new_parameters.register(qml.CY)
 @bind_new_parameters.register(qml.CZ)
+@bind_new_parameters.register(qml.CH)
+@bind_new_parameters.register(qml.CCZ)
+@bind_new_parameters.register(qml.CSWAP)
+@bind_new_parameters.register(qml.CNOT)
+@bind_new_parameters.register(qml.Toffoli)
 @bind_new_parameters.register(qml.MultiControlledX)
-def bind_new_parameters_copy(
-    op: Union[qml.CY, qml.CZ, qml.MultiControlledX], params: Sequence[TensorLike]
-):  # pylint:disable=unused-argument
+def bind_new_parameters_copy(op, params: Sequence[TensorLike]):  # pylint:disable=unused-argument
     return copy.copy(op)
 
 
