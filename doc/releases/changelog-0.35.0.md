@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Easy-to-import Qiskit circuits 💾</h4>
+<h4>Easy-to-import Qiskit workflows 💾</h4>
 
 * This version of PennyLane makes it easier to import workflows from Qiskit.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
@@ -132,6 +132,7 @@
   SparsePauliOp(['II', 'XY'],
                 coeffs=[1.+0.j, 1.+0.j])
   >>> pl_op = qml.from_qiskit_op(qiskit_op)
+  >>> pl_op
   I(0) + X(1) @ Y(0)
   ```
 
@@ -193,7 +194,7 @@
 * Over the past few releases, PennyLane's approach to operator arithmetic has been in the process
   of being overhauled. We have a few objectives:
 
-  1. To make it as easy to work with PennyLane operators as it would with pen and paper.
+  1. To make it as easy to work with PennyLane operators as it would be with pen and paper.
   2. To improve the efficiency of operator arithmetic.
 
   The updated operator arithmetic functionality is still being finalized, but can be activated
@@ -236,6 +237,7 @@
     The Pauli representation can be optionally accessed via `op.pauli_rep`:
 
     ```pycon
+    >>> qml.operation.enable_new_opmath()
     >>> op = X(0) + Y(0)
     >>> op.pauli_rep
     1.0 * X(0)
