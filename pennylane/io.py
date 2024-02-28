@@ -148,7 +148,7 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     The measurements can also be passed directly to the function when creating the
     quantum function, making it possible to create a PennyLane circuit with
-    :class:`qml.QNode <~.QNode>`:
+    :class:`qml.QNode <pennylane.QNode>`:
 
     >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(1))]
     >>> circuit = qml.QNode(qml.from_qiskit(qc, measurements), dev)
@@ -372,11 +372,19 @@ def from_qiskit(quantum_circuit, measurements=None):
 
 
 def from_qiskit_op(qiskit_op, params=None, wires=None):
-    """Loads Qiskit `SparsePauliOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>`_
-    objects by using the converter in the PennyLane-Qiskit plugin.
+
+    """Converts a Qiskit `SparsePauliOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>`__
+    into a PennyLane :class:`Operator <pennylane.operation.Operator>`.
+
+    .. note::
+
+        This function depends upon the PennyLane-Qiskit plugin. Follow the
+        `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__
+        to get up and running. You may need to restart your kernel if you are running in a notebook
+        environment.
 
     Args:
-        qiskit_op (qiskit.quantum_info.SparsePauliOp): the ``SparsePauliOp`` to be converted
+        qiskit_op (qiskit.quantum_info.SparsePauliOp): a ``SparsePauliOp`` created in Qiskit
         params (Any): optional assignment of coefficient values for the ``SparsePauliOp``; see the
             `Qiskit documentation <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp#assign_parameters>`_
             to learn more about the expected format of these parameters
@@ -385,7 +393,8 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
             sequence of length :math:`N`
 
     Returns:
-        Operator: The equivalent PennyLane operator.
+        Operator: The PennyLane operator, created based on the input Qiskit
+        ``SparsePauliOp`` object.
 
     .. note::
 
@@ -412,7 +421,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
     SparsePauliOp(['II', 'XY'],
                   coeffs=[1.+0.j, 1.+0.j])
 
-    To convert the ``SparsePauliOp`` into a PennyLane :class:`Operator`, use:
+    To convert the ``SparsePauliOp`` into a PennyLane :class:`pennylane.operation.Operator`, use:
 
     >>> import pennylane as qml
     >>> qml.from_qiskit_op(qiskit_op)
