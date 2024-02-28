@@ -151,7 +151,7 @@ class QubitDevice(Device):
         "Identity",
         "Projector",
         "Sum",
-        "Sprod",
+        "SProd",
         "Prod",
     }
 

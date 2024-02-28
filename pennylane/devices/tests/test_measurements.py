@@ -50,12 +50,17 @@ obs = {
     ],
     "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
     "Hamiltonian": qml.Hamiltonian([1, 1], [qml.Z(0), qml.X(0)]),
+    "Prod": qml.prod(qml.X(0), qml.Z(1)),
+    "SProd": qml.s_prod(0.1, qml.Z(0)),
+    "Sum": qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),
 }
 
 all_obs = obs.keys()
 
 # All qubit observables should be available to test in the device test suite
-all_available_obs = qml.ops._qubit__obs__.copy()  # pylint: disable=protected-access
+all_available_obs = qml.ops._qubit__obs__.copy().union(  # pylint: disable=protected-access
+    {"Prod", "SProd", "Sum"}
+)
 # Note that the identity is not technically a qubit observable
 all_available_obs |= {"Identity"}
 
@@ -404,6 +409,30 @@ class TestExpval:
         )
 
         assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    @pytest.mark.parametrize(
+        "o",
+        [
+            qml.prod(qml.X(0), qml.Z(1)),
+            qml.s_prod(0.1, qml.Z(0)),
+            qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),
+        ],
+    )
+    def test_op_arithmetic_matches_default_qubit(self, o, device, tol):
+        """Test that devices (which support the observable) match default.qubit results."""
+        dev = device(2)
+        if isinstance(dev, qml.Device) and o.name not in dev.observables:
+            pytest.skip(f"Skipped because device does not support the {o.name} observable.")
+
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            return qml.expval(o)
+
+        res_dq = qml.QNode(circuit, qml.device("default.qubit"))()
+        res = qml.QNode(circuit, dev)()
+        assert res.shape == ()
+        assert np.isclose(res, res_dq, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
