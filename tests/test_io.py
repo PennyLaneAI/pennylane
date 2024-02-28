@@ -71,6 +71,38 @@ class TestLoad:
         ):
             qml.load("Test", format="some_non_existing_format")
 
+    def test_qiskit_not_installed(self, monkeypatch):
+        """Test that a specific error is raised if qml.from_qiskit is called and the qiskit
+        plugin converter isn't found, instead of the generic 'ValueError: Converter does not exist.'
+        """
+
+        # temporarily make a mock_converter_dict with no "qiskit"
+        mock_plugin_converter_dict = {
+            entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
+        }
+        del mock_plugin_converter_dict["qiskit"]
+        monkeypatch.setattr(qml.io, "plugin_converters", mock_plugin_converter_dict)
+
+        # calling from_qiskit raises the specific RuntimeError rather than the generic ValueError
+        with pytest.raises(
+            RuntimeError,
+            match="Conversion from Qiskit requires the PennyLane-Qiskit plugin. "
+            "You can install the plugin by",
+        ):
+            qml.from_qiskit("Test")
+
+        # if load raises some other ValueError instead of the "converter does not exist" error, it is unaffected
+        def mock_load_with_error(*args, **kwargs):
+            raise ValueError("Some other error raised than instead of converter does not exist")
+
+        monkeypatch.setattr(qml.io, "load", mock_load_with_error)
+
+        with pytest.raises(
+            ValueError,
+            match="Some other error raised than instead of converter does not exist",
+        ):
+            qml.from_qiskit("Test")
+
     @pytest.mark.parametrize(
         "method,entry_point_name",
         [
@@ -95,7 +127,7 @@ class TestLoad:
                 continue
 
             if mock_plugin_converters[plugin_converter].called:
-                raise Exception(f"The other plugin converter {plugin_converter} was called.")
+                raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
 
     @pytest.mark.parametrize(
         "method, entry_point_name",
@@ -119,4 +151,4 @@ class TestLoad:
                 continue
 
             if mock_plugin_converters[plugin_converter].called:
-                raise Exception(f"The other plugin converter {plugin_converter} was called.")
+                raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")

@@ -142,7 +142,18 @@ def from_qiskit(quantum_circuit, measurements=None):
         1: ───────────────────╰X─┤  vnentropy
 
     """
-    return load(quantum_circuit, format="qiskit", measurements=measurements)
+    try:
+        return load(quantum_circuit, format="qiskit", measurements=measurements)
+    except ValueError as e:
+        if e.args[0].split(".")[0] == "Converter does not exist":
+            raise RuntimeError(
+                "Conversion from Qiskit requires the PennyLane-Qiskit plugin. "
+                "You can install the plugin by running: pip install pennylane-qiskit. "
+                "You may need to restart your kernel or environment after installation. "
+                "If you have any difficulties, you can reach out on the PennyLane forum at "
+                "https://discuss.pennylane.ai/c/pennylane-plugins/pennylane-qiskit/"
+            ) from e
+        raise e
 
 
 def from_qasm(quantum_circuit: str):
