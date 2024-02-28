@@ -549,6 +549,10 @@
 * The docstring of `qml.sample` has been updated to advise the use of single-shot expectations
   instead when differentiating a circuit.
   [(#5237)](https://github.com/PennyLaneAI/pennylane/pull/5237)
+  
+* A quick start page has been added called "Importing Circuits". This explains
+  how to import quantum circuits and operations defined outside of PennyLane.
+  [(#5281)](https://github.com/PennyLaneAI/pennylane/pull/5281)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -655,9 +659,8 @@
 * The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the init after causing problems with datasets. Now happens globally.
   [(#5252)](https://github.com/PennyLaneAI/pennylane/pull/5252)
 
-* There is now an "Importing Circuits" quick start page. This explains how to import quantum
-  circuits and operations that were defined outside of PennyLane.
-  [(#5XXX)](https://github.com/PennyLaneAI/pennylane/pull/5XXX)
+* The `adjoint_metric_tensor` transform now works with `jax`.
+  [(#5271)](https://github.com/PennyLaneAI/pennylane/pull/5271)
 
 <h3>Contributors ✍️</h3>
 

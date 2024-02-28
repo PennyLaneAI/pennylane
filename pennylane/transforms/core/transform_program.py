@@ -440,7 +440,8 @@ class TransformProgram:
         argnums_list = []
         for index, transform in enumerate(self):
             argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
-            if transform.classical_cotransform and argnums:
+            # pylint: disable=protected-access
+            if (transform._use_argnum or transform.classical_cotransform) and argnums:
                 params = qml.math.jax_argnums_to_tape_trainable(
                     qnode, argnums, TransformProgram(self[0:index]), args, kwargs
                 )
