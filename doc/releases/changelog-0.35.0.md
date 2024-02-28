@@ -143,7 +143,7 @@
   qc.rx(0.785, 0)
   qc.ry(1.57, 1)
 
-  measurements = [qml.expval(pl_op)]  # Create QNode
+  measurements = qml.expval(pl_op)  # Create QNode
   qfunc = qml.from_qiskit(qc, measurements)
   qnode = qml.QNode(qfunc, dev)
   ```
