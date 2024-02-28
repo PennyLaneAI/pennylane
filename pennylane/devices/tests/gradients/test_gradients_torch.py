@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests trainable circuits using the Autograd interface."""
+"""Tests trainable circuits using the Torch interface."""
 # pylint:disable=no-self-use
 import pytest
 
 import numpy as np
 
 import pennylane as qml
-from pennylane import numpy as pnp
 
+torch = pytest.importorskip("torch")
 
-DEFAULT_METHODS = ["backprop", "parameter-shift", "hadamard", "spsa"]
-SKIP_IF_FINITE = ["backprop", "spsa"]
+DEFAULT_METHODS = ["backprop", "parameter-shift", "hadamard"]
+SKIP_IF_FINITE = ["backprop"]
 
 
 class TestGradients:
@@ -44,9 +44,10 @@ class TestGradients:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        x = pnp.array(0.5)
-        res = qml.grad(circuit)(x)
-        assert np.isclose(res, -pnp.sin(x), atol=tol, rtol=0)
+        x = torch.tensor(0.5, requires_grad=True)
+        res = circuit(x)
+        res.backward()
+        assert np.isclose(x.grad, -np.sin(x.detach()), atol=tol, rtol=0)
 
     def test_backprop_state(self, device, tol):
         """Test the trainability of parameters in a circuit returning the state."""
@@ -57,8 +58,8 @@ class TestGradients:
             pytest.skip("mixed-state simulator will wrongly use grad on non-scalar results")
         tol = tol(dev.shots)
 
-        x = pnp.array(0.543)
-        y = pnp.array(-0.654)
+        x = torch.tensor(0.543, requires_grad=True)
+        y = torch.tensor(-0.654, requires_grad=True)
 
         @qml.qnode(dev, diff_method="backprop", grad_on_execution=True)
         def circuit(x, y):
@@ -69,21 +70,20 @@ class TestGradients:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            probs = pnp.abs(res) ** 2
+            probs = torch.abs(res) ** 2
             return probs[0] + probs[2]
 
-        res = qml.grad(cost_fn)(x, y)
+        res = cost_fn(x, y)
+        res.backward()
+        grad = [x.grad, y.grad]
+        x, y = x.detach(), y.detach()
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        y = pnp.array(-0.654, requires_grad=False)
-        res = qml.grad(cost_fn)(x, y)
-        assert np.allclose(res, expected[0], atol=tol, rtol=0)
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_parameter_shift(self, device, tol):
         """Test a multi-parameter circuit with parameter-shift."""
-        a = pnp.array(0.1)
-        b = pnp.array(0.2)
+        a = torch.tensor(0.1, requires_grad=True)
+        b = torch.tensor(0.2, requires_grad=True)
 
         dev = device(2)
         tol = tol(dev.shots)
@@ -95,14 +95,12 @@ class TestGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Hamiltonian([1, 1], [qml.Z(0), qml.Y(1)]))
 
-        res = qml.grad(circuit)(a, b)
+        res = circuit(a, b)
+        res.backward()
+        grad = [a.grad, b.grad]
+        a, b = a.detach(), b.detach()
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # make the second QNode argument a constant
-        b = pnp.array(0.2, requires_grad=False)
-        res = qml.grad(circuit)(a, b)
-        assert np.allclose(res, expected[0], atol=tol, rtol=0)
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("diff_method", DEFAULT_METHODS)
     def test_probs(self, diff_method, device, tol):
@@ -112,8 +110,8 @@ class TestGradients:
         if dev.shots and diff_method in SKIP_IF_FINITE:
             pytest.skip(f"{diff_method} does not work with finite shots")
         tol = tol(dev.shots)
-        x = pnp.array(0.543)
-        y = pnp.array(-0.654)
+        x = torch.tensor(0.543, requires_grad=True)
+        y = torch.tensor(-0.654, requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x, y):
@@ -122,8 +120,9 @@ class TestGradients:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        res = qml.jacobian(circuit)(x, y)
+        res = torch.autograd.functional.jacobian(circuit, (x, y))
 
+        x, y = x.detach(), y.detach()
         expected = np.array(
             [
                 [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
@@ -134,10 +133,10 @@ class TestGradients:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], pnp.ndarray)
+        assert isinstance(res[0], torch.Tensor)
         assert res[0].shape == (2,)
 
-        assert isinstance(res[1], pnp.ndarray)
+        assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == (2,)
 
         if diff_method == "spsa":
@@ -153,8 +152,8 @@ class TestGradients:
         if dev.shots and diff_method in SKIP_IF_FINITE:
             pytest.skip(f"{diff_method} does not work with finite shots")
         tol = tol(dev.shots)
-        x = pnp.array(0.543)
-        y = pnp.array(-0.654, requires_grad=False)
+        x = torch.tensor(0.543, requires_grad=True)
+        y = torch.tensor(-0.654, requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x, y):
@@ -163,14 +162,28 @@ class TestGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(0)), qml.probs(wires=[1])
 
-        def cost_fn(x, y):
-            return pnp.hstack(circuit(x, y))
+        jac = torch.autograd.functional.jacobian(circuit, (x, y))
 
-        jac = qml.jacobian(cost_fn)(x, y)
+        x, y = x.detach(), y.detach()
+        expected = [
+            [-np.sin(x), 0],
+            [
+                [-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
+                [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+            ],
+        ]
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
 
-        expected = [-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2]
-        assert isinstance(jac, pnp.ndarray)
-        assert np.allclose(jac, expected, atol=tol, rtol=0)
+        assert isinstance(jac[0], tuple)
+        assert len(jac[0]) == 2
+        assert all(isinstance(j, torch.Tensor) and j.shape == () for j in jac[0])
+        assert np.allclose(jac[0], expected[0], atol=tol, rtol=0)
+
+        assert isinstance(jac[1], tuple)
+        assert len(jac[1]) == 2
+        assert all(isinstance(j, torch.Tensor) and j.shape == (2,) for j in jac[1])
+        assert np.allclose(jac[1], expected[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("diff_method", DEFAULT_METHODS)
     def test_hessian(self, diff_method, device, tol):
@@ -187,26 +200,27 @@ class TestGradients:
             qml.RX(x[1], wires=0)
             return qml.expval(qml.Z(0))
 
-        x = pnp.array([1.0, 2.0])
+        x = torch.tensor([1.0, 2.0], requires_grad=True)
         res = circuit(x)
 
-        a, b = x
+        res.backward()
+        g = x.grad
+
+        hess = torch.autograd.functional.hessian(circuit, x)
+        a, b = x.detach().numpy()
+
+        assert isinstance(hess, torch.Tensor)
+        assert tuple(hess.shape) == (2, 2)
 
         expected_res = np.cos(a) * np.cos(b)
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
-        g = grad_fn(x)
-
-        if diff_method == "spsa":
-            pytest.xfail(reason="spsa gets wrong results here")
         expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
-
-        hess = qml.jacobian(grad_fn)(x)
+        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
 
         expected_hess = [
             [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
             [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
         ]
-        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+        assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)

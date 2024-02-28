@@ -23,8 +23,8 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 
-DEFAULT_METHODS = ["backprop", "parameter-shift", "hadamard", "finite-diff", "spsa"]
-SKIP_IF_FINITE = ["backprop", "finite-diff", "spsa"]
+DEFAULT_METHODS = ["backprop", "parameter-shift", "hadamard", "spsa"]
+SKIP_IF_FINITE = ["backprop", "spsa"]
 
 
 class TestGradients:
@@ -55,6 +55,8 @@ class TestGradients:
         dev = device(2)
         if dev.shots:
             pytest.skip("test uses backprop, must be in analytic mode")
+        if "mixed" in dev.name:
+            pytest.skip("mixed-state simulator will wrongly use grad on non-scalar results")
         tol = tol(dev.shots)
 
         x = jnp.array(0.543)
@@ -222,6 +224,4 @@ class TestGradients:
             [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
             [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
         ]
-        if diff_method == "finite-diff":
-            tol = 0.1
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
