@@ -220,9 +220,6 @@ def parity_transform(
     + (0.25+0j) * X(2)
     + 0.25j * Y(2) @ Z(3)
     """
-    warnings.warn(
-        "This mapping should be used with operators and states in the parity basis.", UserWarning
-    )
 
     return _parity_transform_dispatch(fermi_operator, n, ps, wire_map, tol)
 
