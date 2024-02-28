@@ -38,6 +38,9 @@ def _check_tape_validity(tape: QuantumTape):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
+    if not all(isinstance(w, int) for w in tape.wires):
+        raise ValueError("qml.defer_measurements does not support custom wire labels.")
+
     for mp in tape.measurements:
         if isinstance(mp, (CountsMP, ProbabilityMP, SampleMP)) and not (
             mp.obs or mp._wires or mp.mv
@@ -117,8 +120,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         Devices that inherit from :class:`~pennylane.QubitDevice` **must** be initialized
         with an additional wire for each mid-circuit measurement after which the measured
         wire is reused or reset for ``defer_measurements`` to transform the quantum tape
-        correctly. Hence, devices and quantum tapes must also be initialized without custom
-        wire labels for correct behaviour.
+        correctly.
 
     .. note::
 
@@ -138,6 +140,11 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         Additionally, :func:`~.pennylane.probs`, :func:`~.pennylane.sample` and
         :func:`~.pennylane.counts` can only be used with ``defer_measurements`` if wires
         or an observable are explicitly specified.
+
+    .. warning::
+
+        ``defer_measurements`` does not support custom wire labels. Only integer wires are
+        supported.
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
