@@ -95,7 +95,7 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
 
 
 def from_qiskit(quantum_circuit, measurements=None):
-    """Converts a Qiskit `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`_
+    r"""Converts a Qiskit `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`_
     into a PennyLane :ref:`quantum function <intro_vcirc_qfunc>`.
 
     .. note::
@@ -185,18 +185,10 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     .. note::
 
-        The returned measurements from the ``QuantumCircuit`` are in the measurement basis
-        and are readout values between 0 (ground) and 1 (excited). Such a measurement on the
-        ``ith`` wire does not match the result of ``qml.expval(qml.PauliZ(i)``, which ranges from
-        1 (ground) to -1 (excited), indicating a position on the Bloch sphere.
-
-        We can alternatively translate the circuit and capture the same information in a different
-        format as:
-
-        >>> measurements = [qml.expval(qml.Z(0)), qml.expval(qml.Z(1))]
-        >>> circuit = qml.QNode(qml.from_qiskit(qc, measurements), dev)
-        >>> circuit()
-        [tensor(-1., requires_grad=True), tensor(1., requires_grad=True)]
+        The ``measurements`` returned from a ``QuantumCircuit`` are in the computational basis
+        with 0 corresponding to :math:`|0\rangle` and 1 corresponding to :math:`|1 \rangle`. This
+        corresponds to the :math:`|1 \rangle \langle 1|` observable rather than the :math:`Z` Pauli
+        operator.
 
     See below for more information regarding how to translate more complex circuits from Qiskit to
     PennyLane, including handling parameterized Qiskit circuits, mid-circuit measurements, and
@@ -372,7 +364,6 @@ def from_qiskit(quantum_circuit, measurements=None):
 
 
 def from_qiskit_op(qiskit_op, params=None, wires=None):
-
     """Converts a Qiskit `SparsePauliOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>`__
     into a PennyLane :class:`Operator <pennylane.operation.Operator>`.
 
