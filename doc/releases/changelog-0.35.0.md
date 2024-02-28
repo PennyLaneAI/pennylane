@@ -166,7 +166,7 @@
   Now, mid-circuit measurements (MCMs) are performed in a similar way to quantum hardware
   with finite shots on `default.qubit`. For each shot and each time an MCM is encountered, 
   the device evaluates the probability of projecting onto `|0>` or `|1>` and makes a random choice to 
-  collapse the circuit state. This approach works well when there are a lot of mid-circuit measurements 
+  collapse the circuit state. This approach works well when there are a lot of MCMs 
   and the number of shots is not too high.
 
   ```python
@@ -181,15 +181,11 @@
           qml.measure(0)
       return qml.sample(qml.PauliX(0))
   ```
-  
+
   ```pycon
   >>> f()
   tensor([-1, -1, -1,  1,  1, -1,  1, -1,  1, -1], requires_grad=True)
   ```
-
-  Previously, mid-circuit measurements would be automatically replaced with an additional qubit
-  using the `@qml.defer_measurements` transform, so the above circuit would have required thousands
-  of qubits to simulate.
 
 <h4>Work easily and efficiently with operators 🔧</h4>
 
