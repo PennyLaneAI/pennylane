@@ -277,9 +277,10 @@ def from_qiskit(quantum_circuit, measurements=None):
         :title: Measurements and Classical Control Flows
 
 
-        When ``measurement=None``, all of the measurements performed in the ``QuantumCircuit`` will be returned
-        by the quantum function in the form of a mid-circuit measurement.
-        For example, if we define a ``QuantumCircuit`` with measurements:
+        When ``measurement=None``, all of the measurements performed in the ``QuantumCircuit`` will
+        be returned by the quantum function in the form of a :ref:`mid-circuit measurement
+        <mid_circuit_measurements>`. For example, if we define a ``QuantumCircuit`` with
+        measurements:
 
         .. code-block:: python
 
