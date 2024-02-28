@@ -296,7 +296,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
 
     ops_t = 0.0
     for p in range(num_orbitals):
-        ops_t += 0.5 * t_eigvals[p] * (qml.Identity(p) - qml.PauliZ(p))
+        ops_t += 0.5 * t_eigvals[p] * (qml.Identity(p) - qml.Z(p))
 
     ops_l = []
     for idx in range(len(factors)):
@@ -309,9 +309,9 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
                     * 0.25
                     * (
                         qml.Identity(p)
-                        - qml.PauliZ(p)
-                        - qml.PauliZ(q)
-                        + (qml.Identity(p) if p == q else (qml.PauliZ(p) @ qml.PauliZ(q)))
+                        - qml.Z(p)
+                        - qml.Z(q)
+                        + (qml.Identity(p) if p == q else (qml.Z(p) @ qml.Z(q)))
                     )
                 )
         ops_l.append(ops_l_)

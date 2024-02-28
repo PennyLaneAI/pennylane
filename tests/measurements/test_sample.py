@@ -165,13 +165,13 @@ class TestSample:
             m0 = qml.measure(0)
             return qml.sample(m0)
 
-        res = circuit(phi)
-
-        if isinstance(shots, list):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s,) for r, s in zip(res, shots))
-        else:
-            assert res.shape == (shots,)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if isinstance(shots, list):
+                assert len(res) == len(shots)
+                assert all(r.shape == (s,) for r, s in zip(res, shots))
+            else:
+                assert res.shape == (shots,)
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
@@ -180,7 +180,6 @@ class TestSample:
         are correct for a composite measurement value."""
         dev = qml.device("default.qubit", shots=shots)
 
-        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -189,13 +188,13 @@ class TestSample:
             m1 = qml.measure(1)
             return qml.sample(op=m0 + m1)
 
-        res = circuit(phi)
-
-        if isinstance(shots, list):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s,) for r, s in zip(res, shots))
-        else:
-            assert res.shape == (shots,)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if isinstance(shots, list):
+                assert len(res) == len(shots)
+                assert all(r.shape == (s,) for r, s in zip(res, shots))
+            else:
+                assert res.shape == (shots,)
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
@@ -212,13 +211,13 @@ class TestSample:
             m1 = qml.measure(1)
             return qml.sample(op=[m0, m1])
 
-        res = circuit(phi)
-
-        if isinstance(shots, list):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s, 2) for r, s in zip(res, shots))
-        else:
-            assert res.shape == (shots, 2)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if isinstance(shots, list):
+                assert len(res) == len(shots)
+                assert all(r.shape == (s, 2) for r, s in zip(res, shots))
+            else:
+                assert res.shape == (shots, 2)
 
     def test_mixed_lists_as_op_not_allowed(self):
         """Test that passing a list not containing only measurement values raises an error."""
@@ -451,6 +450,36 @@ class TestSample:
 
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
+
+    def test_sample_allowed_with_parameter_shift(self):
+        """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
+        dev = qml.device("default.qubit", shots=10)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.sample(qml.PauliX(0))
+
+        angle = qml.numpy.array(0.1)
+        res = qml.jacobian(circuit)(angle)
+        assert qml.math.shape(res) == (10,)
+        assert all(r in {-1, 0, 1} for r in np.round(res, 13))
+
+    @pytest.mark.jax
+    def test_sample_fails_with_jax_jacobian(self):
+        """Test that qml.sample raises an error with parameter-shift and jax."""
+        import jax
+
+        dev = qml.device("default.qubit", shots=10)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.sample(qml.PauliX(0))
+
+        angle = jax.numpy.array(0.1)
+        with pytest.raises(TypeError, match=r"got int64\[10\] and float64\[10\] respectively"):
+            _ = jax.jacobian(circuit)(angle)
 
 
 @pytest.mark.jax

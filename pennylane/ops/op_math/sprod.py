@@ -65,9 +65,9 @@ def s_prod(scalar, operator, lazy=True, id=None):
 
     **Example**
 
-    >>> sprod_op = s_prod(2.0, qml.PauliX(0))
+    >>> sprod_op = s_prod(2.0, qml.X(0))
     >>> sprod_op
-    2.0*(PauliX(wires=[0]))
+    2.0 * X(0)
     >>> sprod_op.matrix()
     array([[ 0., 2.],
            [ 2., 0.]])
@@ -99,9 +99,9 @@ class SProd(ScalarSymbolicOp):
 
     **Example**
 
-    >>> sprod_op = SProd(1.23, qml.PauliX(0))
+    >>> sprod_op = SProd(1.23, qml.X(0))
     >>> sprod_op
-    1.23*(PauliX(wires=[0]))
+    1.23 * X(0)
     >>> qml.matrix(sprod_op)
     array([[0.  , 1.23],
            [1.23, 0.  ]])
@@ -149,8 +149,6 @@ class SProd(ScalarSymbolicOp):
             self.batch_size is None
         ):
             scalar = copy(self.scalar)
-            if qnp.get_interface(scalar) == "tensorflow" and not scalar.dtype.is_complex:
-                scalar = qnp.cast(scalar, "complex128")
 
             pr = {pw: qnp.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)

@@ -114,7 +114,7 @@ class ParametrizedEvolution(Operation):
         from jax import numpy as jnp
 
         f1 = lambda p, t: jnp.sin(p * t)
-        H = f1 * qml.PauliY(0)
+        H = f1 * qml.Y(0)
 
         ev = qml.evolve(H)
 
@@ -142,7 +142,7 @@ class ParametrizedEvolution(Operation):
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> params = [1.2]
     >>> circuit(params)
@@ -185,7 +185,7 @@ class ParametrizedEvolution(Operation):
             def f2(p, t):
                 return p * jnp.cos(t)
 
-            H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
+            H = 2 * qml.X(0) + f1 * qml.Y(0) + f2 * qml.Z(0)
             ev = qml.evolve(H)
 
         >>> params = [[4.6, 2.3], 1.2]
@@ -211,11 +211,11 @@ class ParametrizedEvolution(Operation):
 
             from jax import numpy as jnp
 
-            ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+            ops = [qml.X(0), qml.Y(1), qml.Z(2)]
             coeffs = [lambda p, t: p for _ in range(3)]
             H1 = qml.dot(coeffs, ops)  # time-independent parametrized Hamiltonian
 
-            ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
+            ops = [qml.Z(0), qml.Y(1), qml.X(2)]
             coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
             H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
 
@@ -229,12 +229,12 @@ class ParametrizedEvolution(Operation):
             def circuit1(params):
                 qml.evolve(H1)(params, t=[0, 10])
                 qml.evolve(H2)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+                return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
             @qml.qnode(dev, interface="jax")
             def circuit2(params):
                 qml.evolve(H1 + H2)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+                return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
         In ``circuit1``, the two Hamiltonians are evolved over the same time window, but inside different operators.
         In ``circuit2``, we add the two to form a single :class:`~.ParametrizedHamiltonian`. This will combine the
@@ -265,7 +265,7 @@ class ParametrizedEvolution(Operation):
             @qml.qnode(dev, interface="jax")
             def circuit(params):
                 qml.evolve(H1 + H2)(params, t=t)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+                return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
         >>> circuit(params)
         Array(-0.78236955, dtype=float32)
@@ -291,7 +291,7 @@ class ParametrizedEvolution(Operation):
 
         .. code-block:: python
 
-            ops = [qml.PauliZ(0), qml.PauliY(0), qml.PauliX(0)]
+            ops = [qml.Z(0), qml.Y(0), qml.X(0)]
             coeffs = [lambda p, t: p * jnp.cos(t) for _ in range(3)]
             H = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
 
@@ -554,7 +554,7 @@ class ParametrizedEvolution(Operation):
 
         **Example:**
 
-        >>> H = qml.PauliX(1) + qml.pulse.constant * qml.PauliY(0) + jnp.polyval * qml.PauliY(1)
+        >>> H = qml.X(1) + qml.pulse.constant * qml.Y(0) + jnp.polyval * qml.Y(1)
         >>> params = [0.2, [1, 2, 3]]
         >>> op = qml.evolve(H)(params, t=2)
         >>> cache = {'matrices': []}
