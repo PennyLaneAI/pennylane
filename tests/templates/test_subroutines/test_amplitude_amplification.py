@@ -150,16 +150,7 @@ class TestIntegration:
     # not calculated analytically, we are only ensuring that the results are consistent accross interfaces
 
     exp_result = np.array(
-        [
-            0.67103818,
-            0.04699455,
-            0.04699455,
-            0.04699455,
-            0.04699455,
-            0.04699455,
-            0.04699455,
-            0.04699455,
-        ]
+        [0.52864728, 0.0673361, 0.0673361, 0.0673361, 0.0673361, 0.0673361, 0.0673361, 0.0673361]
     )
 
     def test_qnode_numpy(self):
@@ -223,7 +214,7 @@ def test_flatten_and_unflatten():
     data, metadata = op._flatten()
 
     assert len(data) == 2
-    assert len(metadata) == 4
+    assert len(metadata) == 5
 
     new_op = type(op)._unflatten(*op._flatten())
     assert qml.equal(op, new_op)
@@ -248,7 +239,26 @@ def test_amplification():
         return qml.probs(wires=range(3))
 
     res = np.round(circuit(), 3)
-    print("res", res)
-    expected = np.array([0.009, 0.009, 0.94, 0.009, 0.009, 0.009, 0.009, 0.009])
+    expected = np.array([0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013])
 
     assert np.allclose(res, expected)
+
+
+@pytest.mark.parametrize(("p_min"), [0.7, 0.8, 0.9])
+def test_p_min(p_min):
+    """Test that the p_min parameter works correctly."""
+
+    dev = qml.device("default.qubit")
+
+    U = generator(wires=range(4))
+    O = oracle([0], wires=range(4))
+
+    @qml.qnode(dev)
+    def circuit():
+        generator(wires=range(4))
+
+        qml.AmplitudeAmplification(U, O, fixed_point=True, work_wire=4, p_min=p_min, iters=11)
+
+        return qml.probs(wires=range(4))
+
+    assert circuit()[0] >= p_min

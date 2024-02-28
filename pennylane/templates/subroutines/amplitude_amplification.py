@@ -22,12 +22,14 @@ from pennylane.operation import Operation
 import pennylane as qml
 
 
-def get_fixed_point_angles(iters):
+def get_fixed_point_angles(iters, p_min):
     """
     Returns the angles needed for the fixed-point amplitude amplification algorithm.
     This is extracted from the equation (11) of  `arXiv:1409.3305v2 <https://arxiv.org/abs/1409.3305>`__.
     """
-    gamma = 0.95
+
+    delta = np.sqrt(1 - p_min)
+    gamma = np.cos(np.arccos(1 / delta, dtype=np.complex128) / iters, dtype=np.complex128) ** -1
 
     alphas = [
         2 * np.arctan(1 / (np.tan(2 * np.pi * j / iters) * np.sqrt(1 - gamma**2)))
@@ -56,6 +58,7 @@ class AmplitudeAmplification(Operation):
         fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm. Default is False.
         work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm. Default is None.
         reflection_wires (Wires): the wires to reflect on. Default is the wires of U.
+        p_min (int): the lower bound for the probability of success in fixed-point amplitude amplification. Default is 0.9
 
     Raises:
         ValueError: work_wire must be specified if fixed_point == True.
@@ -109,10 +112,13 @@ class AmplitudeAmplification(Operation):
             iters=metadata[0],
             fixed_point=metadata[1],
             work_wire=metadata[2],
-            reflection_wires=metadata[3],
+            p_min=metadata[3],
+            reflection_wires=metadata[4],
         )
 
-    def __init__(self, U, O, iters=1, fixed_point=False, work_wire=None, reflection_wires=None):
+    def __init__(
+        self, U, O, iters=1, fixed_point=False, work_wire=None, p_min=0.9, reflection_wires=None
+    ):
         self._name = "AmplitudeAmplification"
         if reflection_wires is None:
             reflection_wires = U.wires
@@ -133,6 +139,7 @@ class AmplitudeAmplification(Operation):
         self.hyperparameters["iters"] = iters
         self.hyperparameters["fixed_point"] = fixed_point
         self.hyperparameters["work_wire"] = work_wire
+        self.hyperparameters["p_min"] = p_min
         self.hyperparameters["reflection_wires"] = qml.wires.Wires(reflection_wires)
 
         super().__init__(wires=wires)
@@ -145,12 +152,13 @@ class AmplitudeAmplification(Operation):
         iters = hyperparameters["iters"]
         fixed_point = hyperparameters["fixed_point"]
         work_wire = hyperparameters["work_wire"]
+        p_min = hyperparameters["p_min"]
         reflection_wires = hyperparameters["reflection_wires"]
 
         ops = []
 
         if fixed_point:
-            alphas, betas = get_fixed_point_angles(iters)
+            alphas, betas = get_fixed_point_angles(iters, p_min)
 
             for iter in range(iters // 2):
                 ops.append(qml.Hadamard(wires=work_wire))
