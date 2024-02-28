@@ -225,8 +225,8 @@
     2j * Z(0)
     ```
   
-  * PennyLane can now speed up operator arithmetic by harnessing an internal Pauli representation,
-    if available.
+  * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli 
+    representation will be automatically used for calculations when available.
     [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
     [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
     [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
