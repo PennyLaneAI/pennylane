@@ -424,3 +424,5 @@ def test_applied_transforms(device):
     assert len(ax.lines) == 1  # single wire used in tape
     assert len(ax.patches) == 1  # single pauli x gate
     assert len(ax.texts) == 2  # one wire label, one gate label
+
+    plt.close()
