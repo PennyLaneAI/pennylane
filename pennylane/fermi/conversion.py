@@ -164,6 +164,11 @@ def parity_transform(
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the parity mapping.
 
+    .. note::
+
+        Hamiltonians created with this mapping should be only used with operators and states in the
+        parity basis.
+
     In parity mapping, qubit :math:`j` stores the parity of all :math:`j-1` qubits before it.
     In comparison, :func:`~.jordan_wigner` simply uses qubit :math:`j` to store the occupation number.
     In parity mapping, the fermionic creation and annihilation operators are mapped to the Pauli operators as
