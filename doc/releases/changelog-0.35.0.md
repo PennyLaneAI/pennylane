@@ -236,8 +236,9 @@
 
     ```pycon
     >>> op = X(0) + Y(0)
-    >>> type(op.pauli_rep)
-    pennylane.pauli.pauli_arithmetic.PauliSentence
+    >>> op.pauli_rep
+    1.0 * X(0)
+    + 1.0 * Y(0)
     ```
 
   * Extensive improvements have been made to the string representations of PennyLane operators,
