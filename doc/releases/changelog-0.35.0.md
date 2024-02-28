@@ -189,12 +189,15 @@
 
 <h4>Work easily and efficiently with operators 🔧</h4>
 
-* Over the past few releases, PennyLane's approach to operator arithmetic has been overhauled.
-  New classes such as `Sum` and `Prod` have been added in the
-  [op_math](https://docs.pennylane.ai/en/stable/code/qml_ops_op_math.html) module, providing
-  an extensive range of manipulations and ways to combine PennyLane operators. The updated operator
-  arithmetic functionality can be activated using `qml.operation.enable_new_opmath()` and will
-  become the default approach in the next release.
+* Over the past few releases, PennyLane's approach to operator arithmetic has been in the process
+  of being overhauled. We have a few objectives:
+
+  1. To make it as easy to work with PennyLane operators as it would with pen and paper.
+  2. To improve the efficiency of operator arithmetic.
+
+  The updated operator arithmetic functionality is still being finalized, but can be activated
+  using `qml.operation.enable_new_opmath()`. In the next release, the new behaviour will become the
+  default, so we recommend enabling now to become familiar with the new system!
 
   The following updates have been made in this version of PennyLane:
 
