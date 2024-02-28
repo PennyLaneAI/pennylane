@@ -339,7 +339,7 @@
   for large workflows.
   [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
 
-* The performance of circuit-cutting workloads with large numbers of generated tapes have been improved.
+* The performance of circuit-cutting workloads with large numbers of generated tapes has been improved.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
 * Measuring `qml.probs` is now faster due to an optimization in converting samples to counts.
@@ -349,6 +349,7 @@
 
 * A new function called `qml.fermi.parity_transform` has been added for parity mapping of a fermionic Hamiltonian.
   [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
+
   It is now possible to transform a fermionic Hamiltonian to a qubit Hamiltonian with parity mapping.
 
   ```python
@@ -364,7 +365,7 @@
   ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
   ```
 
-* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
+* The transform `split_non_commuting` now accepts measurements of type `probs`, `sample`, and `counts`, which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 * The efficiency of matrix calculations when an operator is symmetric over a given set of wires has been improved.
@@ -392,25 +393,18 @@
   [(#5027)](https://github.com/PennyLaneAI/pennylane/pull/5027)
   [(#5018)](https://github.com/PennyLaneAI/pennylane/pull/5018)
 
-  * You can now multiply `PauliWord` and `PauliSentence` instances by scalars, e.g.
-    `0.5 * PauliWord({0:"X"})` or `0.5 * PauliSentence({PauliWord({0:"X"}): 1.})`.
+  * You can now multiply `PauliWord` and `PauliSentence` instances by scalars (e.g.,
+    `0.5 * PauliWord({0: "X"})` or `0.5 * PauliSentence({PauliWord({0: "X"}): 1.})`).
 
-  * You can now intuitively add together
-    `PauliWord` and `PauliSentence` as well as scalars, which are treated implicitly as identities.
-    For example, `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli
-    sentence `ps1 = PauliSentence({pw1: 3.})`.
+  * You can now intuitively add and subtract `PauliWord` and `PauliSentence` instances and scalars together (scalars are treated implicitly as multiples 
+    of the identity, `I`). For example, `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli sentence `ps1 = PauliSentence({pw1: 3.})`.
 
-  * You can now subtract `PauliWord` and `PauliSentence` instances, as well as scalars, from each
-    other. For example `ps1 - pw1 - 1`.
+  * You can now element-wise multiply `PauliWord`, `PauliSentence`, and operators together with `qml.dot` (e.g.,
+    `qml.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`).
 
-  * You can now also use `qml.dot` with `PauliWord`, `PauliSentence` and operators, e.g.
-    `qml.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`.
+  * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances (e.g., `qml.matrix(PauliWord({0: "X"}))`).
 
-  * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances,
-    `qml.matrix(PauliWord({0:"X"}))`.
-
-  * It is possible to compute commutators with Pauli operators natively with the
-    `PauliSentence.commutator` method.
+  * It is now possible to compute commutators with Pauli operators natively with the new `commutator` method.
 
     ```pycon
     >>> op1 = PauliWord({0: "X", 1: "X"})
@@ -420,13 +414,13 @@
     + 2j * X(0) @ Z(1)
     ```
 
-* Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and `SProd` operations
+* Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and scalar-product operations
   convert `Hamiltonian` and `Tensor` operands to `Sum` and `Prod` types, respectively. This helps
   avoid the mixing of incompatible operator types.
   [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
   [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
 
-* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible though.
+* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible, though.
   [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
 
 * `qml.dot` now returns a `Sum` class even when all the coefficients match.
@@ -435,7 +429,7 @@
 * `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
   [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
 
-* Cuts down on performance bottlenecks in converting a `PauliSentence` to a `Sum`.
+* The performance of converting a `PauliSentence` to a `Sum` has been improved.
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
