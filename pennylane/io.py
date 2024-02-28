@@ -115,9 +115,10 @@ def from_qiskit(quantum_circuit, measurements=None):
     >>>     return qml.expval(qml.Z(0))
 
     Args:
-        quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in qiskit
-        measurements (list[MeasurementProcess]): the list of PennyLane measurements that
-            overrides the terminal measurements that may be present in the input circuit.
+        quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in Qiskit
+        measurements (None | MeasurementProcess | list[MeasurementProcess]): the PennyLane
+            measurements that override the terminal measurements that may be present in the input
+            circuit
 
     Returns:
         function: the PennyLane template created based on the ``QuantumCircuit`` object

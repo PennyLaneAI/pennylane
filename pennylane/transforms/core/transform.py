@@ -25,7 +25,8 @@ def transform(
     classical_cotransform=None,
     is_informative=False,
     final_transform=False,
-):
+    use_argnum_in_expand=False,
+):  # pylint: disable=too-many-arguments
     """Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
     :class:`~.QNode`.
 
@@ -55,6 +56,8 @@ def transform(
             of the transform program and the tapes or qnode aren't executed.
         final_transform=False (bool): Whether or not the transform is terminal. If true the transform is queued at the end
             of the transform program. ``is_informative`` supersedes ``final_transform``.
+        use_argnum_in_expand=False (bool): Whether or not to use ``argnum`` of the tape to determine trainable parameters
+            during the expansion transform process.
 
     Returns:
 
@@ -187,4 +190,5 @@ def transform(
         classical_cotransform=classical_cotransform,
         is_informative=is_informative,
         final_transform=final_transform,
+        use_argnum_in_expand=use_argnum_in_expand,
     )
