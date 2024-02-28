@@ -28,6 +28,8 @@ def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~.Hamiltonian`."""
     wires = op.wires
 
+    H = None
+
     if isinstance(gen, qml.Hamiltonian):
         H = gen
 
@@ -42,6 +44,29 @@ def _generator_hamiltonian(gen, op):
 
     elif isinstance(gen, qml.operation.Observable):
         H = 1.0 * gen
+
+    elif isinstance(gen, (SProd, Prod, Sum)):
+
+        if isinstance(gen, SProd):
+            if gen.arithmetic_depth == 1:
+                H = gen.scalar * gen.base
+
+            elif gen.arithmetic_depth == 2:
+                if isinstance(gen.base, Prod):
+                    H = qml.Hamiltonian([gen.scalar], [gen.base[0] @ gen.base[1]])
+
+        elif isinstance(gen, Prod):
+            if gen.arithmetic_depth == 1:
+                H = qml.Hamiltonian([1], [gen[0] @ gen[1]])
+
+        elif isinstance(gen, Sum):
+            if gen.arithmetic_depth == 1:
+                H = gen[0] + gen[1]
+
+    if H is None:
+        raise NotImplementedError(
+            f"Conversion of generator {gen} to Hamiltonian is currently not implemented."
+        )
 
     return H
 
