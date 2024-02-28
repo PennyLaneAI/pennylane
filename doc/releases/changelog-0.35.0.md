@@ -15,7 +15,10 @@
   a PennyLane
   [quantum function](https://docs.pennylane.ai/en/stable/introduction/circuits.html#quantum-functions).
   Although `qml.from_qiskit` already exists in PennyLane, we have made a number of improvements to
-  make importing from Qiskit easier:
+  make importing from Qiskit easier. And yes — `qml.from_qiskit` functionality 
+  is compatible with both Qiskit 
+  [1.0](https://docs.quantum.ibm.com/api/qiskit/release-notes/1.0) and earlier 
+  versions! Here's a comprehensive list of the improvements:
 
   * You can now append PennyLane measurements onto the quantum function returned by
     `qml.from_qiskit`. Consider this simple Qiskit circuit:
@@ -70,11 +73,18 @@
         qml.cond(m0, qml.Z)(2)
         return qml.density_matrix(2)
     ```
+
+    ```pycon
+    >>> teleport()
+    tensor([[0.81080498+0.j, 0.        +0.j],
+        [0.        +0.j, 0.18919502+0.j]], requires_grad=True)
+    ```
     
-  * It is now more intuitive to handle parametrized Qiskit circuits. Consider the following circuit:
+  * It is now more intuitive to handle and differentiate parametrized Qiskit circuits. Consider the following circuit:
 
     ```python
     from qiskit.circuit import Parameter
+    from pennylane import numpy as np
 
     angle0 = Parameter("x")
     angle1 = Parameter("y")
@@ -96,7 +106,7 @@
     The QNode can be evaluated and differentiated:
 
     ```pycon
-    >>> x, y = qml.numpy.array([0.4, 0.5], requires_grad=True)
+    >>> x, y = np.array([0.4, 0.5], requires_grad=True)
     >>> qnode(x, y)
     tensor(0.80830707, requires_grad=True)
     >>> qml.grad(qnode)(x, y)
@@ -106,11 +116,8 @@
 
     This shows how easy it is to make a Qiskit circuit differentiable with PennyLane.
 
-  * The `qml.from_qiskit` functionality is compatible with both Qiskit
-    [1.0](https://docs.quantum.ibm.com/api/qiskit/release-notes/1.0) and earlier versions.
-
 * In addition to circuits, it is also possible to convert operators from Qiskit to PennyLane with a new function called
-   `qml.from_qiskit_op`.
+  `qml.from_qiskit_op`.
   [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
 
   A Qiskit
