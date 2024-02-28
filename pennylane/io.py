@@ -162,7 +162,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         that will **override** any terminal measurements present in the ``QuantumCircuit``,
         so that they are not performed before the operations specified in ``measurements``.
         Converting a ``QuantumCircuit`` with ``measurements`` set will create a quantum function
-        that does not return final or mid-circuit measurement values. See Usage Details below
+        that does not return terminal or mid-circuit measurement values. See Usage Details below
         for more information on how measurements defined on the QuantumCircuit are returned if
         ``measurements=None``.
 
