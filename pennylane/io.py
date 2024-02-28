@@ -95,19 +95,24 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
 
 
 def from_qiskit(quantum_circuit, measurements=None):
-    """Loads Qiskit `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`_
-    objects by using the converter in the PennyLane-Qiskit plugin.
+    """Converts a Qiskit `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`_
+    into a PennyLane `quantum function <intro_vcirc_qfunc>`_.
 
-    The loaded object is a PennyLane quantum function that can be passed
-    to a qnode to create a full PennyLane circuit.
+    .. note::
+
+      This function depends upon the PennyLane-Qiskit plugin. Follow the
+      `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__
+      to get up and running. You may need to restart your kernel if you are running in a notebook
+      environment.
 
     Args:
-        quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in qiskit
+        quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in Qiskit
         measurements (list[MeasurementProcess]): the list of PennyLane measurements that
             overrides the terminal measurements that may be present in the input circuit.
 
     Returns:
-        function: the PennyLane template created based on the ``QuantumCircuit`` object
+        function: the PennyLane quantum function, created based on the input Qiskit
+        ``QuantumCircuit`` object.
 
     **Example:**
 
@@ -141,7 +146,8 @@ def from_qiskit(quantum_circuit, measurements=None):
     tensor(0.99999937, requires_grad=True))
 
     The measurements can also be passed directly to the function when creating the
-    qfunc, making it possible to create a PennyLane circuit with ``qml.QNode`:
+    qfunc, making it possible to create a PennyLane circuit with
+    :class:`qml.QNode <~.QNode>`:
 
     >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(1))]
     >>> circuit = qml.QNode(qml.from_qiskit(qc, measurements), dev)
@@ -152,27 +158,28 @@ def from_qiskit(quantum_circuit, measurements=None):
     .. note::
 
         The ``measurement`` keyword allows one to add a list of PennyLane measurements
-        that will **override** the terminal measurements present in the ``QuantumCircuit``,
+        that will **override** any terminal measurements present in the ``QuantumCircuit``,
         so that they are not performed before the operations specified in ``measurements``.
-        Converting a QuantumCircuit with ``measurements`` set will create a quanutm function
+        Converting a ``QuantumCircuit`` with ``measurements`` set will create a quantum function
         that does not return final or mid-circuit measurement values. See Usage Details below
         for more information on how measurements defined on the QuantumCircuit are returned if
         ``measurements=None``.
 
-    If an existing ``QuantumCircuit`` already ends with final measurements, the QNode can return
-    the expectation values of those final measurements directly:
+    If an existing ``QuantumCircuit`` already contains measurements, ``from_qiskit``
+    will return those measurements, which can be used, e.g., for conditioning with
+    :func:`qml.cond() <~.cond>`, or simply included directly within the QNode's return:
 
-     .. code-block:: python
+    .. code-block:: python
 
-        qc = QuantumCircuit(2, 2)
-        qc.rx(np.pi, 0)
-        qc.measure_all()
+       qc = QuantumCircuit(2, 2)
+       qc.rx(np.pi, 0)
+       qc.measure_all()
 
-        @qml.qnode(dev)
-        def circuit():
-            # here measurements=None, so the measurements present in the QuantumCircuit are returned
-            measurements = qml.from_qiskit(qc)()
-            return [qml.expval(m) for m in measurements]
+       @qml.qnode(dev)
+       def circuit():
+           # here measurements=None, so the measurements present in the QuantumCircuit are returned
+           measurements = qml.from_qiskit(qc)()
+           return [qml.expval(m) for m in measurements]
 
     >>> circuit()
     [tensor(1., requires_grad=True), tensor(0., requires_grad=True)]
@@ -201,8 +208,8 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         A Qiskit ``QuantumCircuit`` is parameterized if it contains ``Parameter`` or
         ``ParameterVector`` references that need to be given defined values to evaluate
-        the circuit. These can be passed to the generated qfunc as keyword or positional
-        arguments. If we define a parameterized
+        the circuit. These can be passed to the generated quantum function as keyword or positional
+        arguments. If we define a parameterized circuit:
 
         .. code-block:: python
 
@@ -226,20 +233,14 @@ def from_qiskit(quantum_circuit, measurements=None):
 
             dev = qml.device("default.qubit")
 
-            @qml.qnode(dev)
-            def circuit(a0, a1):
-                # parameters are passed from the circuit function into the template as keyword arguments
-                # the keywords match the names given to the parameters in the code block above
-                qml.from_qiskit(qc)(x=a0, y=a1)
-                return qml.expval(qml.Z(0))
+            qfunc = qml.from_qiskit(qc, measurements=qml.expval(qml.Z(0)))
+            circuit = qml.QNode(qfunc, dev)
 
-        .. note::
+        Now, ``circuit`` has a signature of ``(x, y)``. The parameters are ordered alphabetically.
 
-            The parameters can also be passed to the qfunc as positional arguments. In this case, the positions
-            match those from ``qc.parameters``. Note that these are in alphabetical order by name, rather than
-            in the order they are used in the circuit.
-
-        >>> circuit(np.pi/4, 0.)
+        >>> x = np.pi / 4
+        >>> y = 0
+        >>> circuit(x, y)
         tensor(0.70710678, requires_grad=True)
 
         >>> qml.grad(circuit, argnum=[0, 1])(np.pi/4, np.pi/6)
@@ -268,18 +269,14 @@ def from_qiskit(quantum_circuit, measurements=None):
         >>> circuit(angles)
         tensor(-0.89966835, requires_grad=True)
 
-        #TODO: either note here that this doesn't work with gradients, or get the gradient working and add qml.grad(circuit, argnum=0)([np.pi/4, np.pi/6])
 
     .. details::
-        :title: Mid-Circuit Measurements and Classical Control Flows
+        :title: Measurements and Classical Control Flows
 
-        Mid-circuit measurements in the ``QuantumCircuit`` will be translated into mid-circuit
-        measurements in PennyLane and executed as specified. Some classical workflows in the
-        QuantumCircuit can also be translated to PennyLane.
 
-        When ``measurement=None``, all of the measurements performed in the ``QuantumCircuit`` will be included
-        in the template as mid-circuit measurements, and returned for further use. For example, if we define a
-        ``QuantumCircuit`` with measurements:
+        When ``measurement=None``, all of the measurements performed in the ``QuantumCircuit`` will be returned
+        by the quantum function in the form of a mid-circuit measurement.
+        For example, if we define a ``QuantumCircuit`` with measurements:
 
         .. code-block:: python
 
@@ -294,7 +291,7 @@ def from_qiskit(quantum_circuit, measurements=None):
             qc.measure_all()
 
         Then we can create a PennyLane circuit that uses this as a sub-circuit, and performs
-        additional operations conditional on the results. We can also do the standard mid-circuit
+        additional operations conditional on the results. We can also calculate standard mid-circuit
         measurement statistics, like expectation value, on the returned measurements:
 
         .. code-block:: python
