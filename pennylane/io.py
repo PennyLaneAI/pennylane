@@ -209,7 +209,7 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         A Qiskit ``QuantumCircuit`` is parameterized if it contains
         `Parameter <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.Parameter>`__ or
-        `ParameterVector <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.ParameterVector`__
+        `ParameterVector <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.ParameterVector>`__
         references that need to be given defined values to evaluate the circuit. These can be passed
         to the generated quantum function as keyword or positional arguments. If we define a
         parameterized circuit:
