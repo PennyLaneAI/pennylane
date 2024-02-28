@@ -689,6 +689,9 @@
 * Fixed a bug in the matplotlib drawer where the color of `Barrier` did not match the requested style.
   [(#5276)](https://github.com/PennyLaneAI/pennylane/pull/5276)
 
+* `qml.draw` and `qml.draw_mpl` now apply all applied transforms before drawing.
+  [(#5277)](https://github.com/PennyLaneAI/pennylane/pull/5277) 
+
 * `ctrl_decomp_zyz` is now differentiable.
   [(#5198)](https://github.com/PennyLaneAI/pennylane/pull/5198)
 
