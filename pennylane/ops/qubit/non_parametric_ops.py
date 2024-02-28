@@ -176,11 +176,13 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-class X(Observable, Operation):
-    r"""X(wires)
+class PauliX(Observable, Operation):
+    r"""
     The Pauli X operator
 
     .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
+
+    .. seealso:: The equivalent short-form alias :class:`~X`
 
     **Details:**
 
@@ -344,15 +346,12 @@ class X(Observable, Operation):
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
-X.__name__ = "PauliX"
-
-PauliX = X
-r"""
-An alias of the Pauli X operator :class:`~X`.
+X = PauliX
+r"""The Pauli X operator
 
 .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
 
-.. seealso:: :class:`~X`
+.. seealso:: The equivalent long-form alias :class:`~PauliX`
 
 **Details:**
 
@@ -364,11 +363,13 @@ Args:
 """
 
 
-class Y(Observable, Operation):
-    r"""Y(wires)
+class PauliY(Observable, Operation):
+    r"""
     The Pauli Y operator
 
     .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
+
+    .. seealso:: The equivalent short-form alias :class:`~Y`
 
     **Details:**
 
@@ -531,15 +532,12 @@ class Y(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
-Y.__name__ = "PauliY"
-
-PauliY = Y
-r"""
-An alias of the Pauli Y operator :class:`~Y`.
+Y = PauliY
+r"""The Pauli Y operator
 
 .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
 
-.. seealso:: :class:`~Y`
+.. seealso:: The equivalent long-form alias :class:`~PauliY`
 
 **Details:**
 
@@ -551,11 +549,13 @@ Args:
 """
 
 
-class Z(Observable, Operation):
-    r"""Z(wires)
+class PauliZ(Observable, Operation):
+    r"""
     The Pauli Z operator
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
+
+    .. seealso:: The equivalent short-form alias :class:`~Z`
 
     **Details:**
 
@@ -718,15 +718,12 @@ class Z(Observable, Operation):
         return [np.pi, 0.0, 0.0]
 
 
-Z.__name__ = "PauliZ"
-
-PauliZ = Z
-r"""
-An alias of the Pauli Z operator :class:`~Z`.
+Z = PauliZ
+r"""The Pauli Z operator
 
 .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
 
-.. seealso:: :class:`~Z`
+.. seealso:: The equivalent long-form alias :class:`~PauliZ`
 
 **Details:**
 
