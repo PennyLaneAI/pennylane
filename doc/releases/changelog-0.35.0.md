@@ -478,22 +478,22 @@
   [(#5226)](https://github.com/PennyLaneAI/pennylane/pull/5226)
   [(#5248)](https://github.com/PennyLaneAI/pennylane/pull/5248)
 
-* Ensure the `BlockEncode` operator is JIT-compatible with JAX.
+* The `BlockEncode` operator is now JIT-compatible with JAX.
   [(#5110)](https://github.com/PennyLaneAI/pennylane/pull/5110)
 
-* The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define global phase.
+* The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define a global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
 
-* Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
+* The `tests/ops/functions/conftest.py` test has been updated to ensure that all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
 
-* A new `pennylane.workflow` module is added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
+* A new `pennylane.workflow` module has been added. This module now contains `qnode.py`, `execution.py`, `set_shots.py`, `jacobian_products.py`, and the submodule `interfaces`.
   [(#5023)](https://github.com/PennyLaneAI/pennylane/pull/5023)
 
-* Raise a more informative error when calling `adjoint_jacobian` with trainable state-prep operations.
+* A more informative error is now raised when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
 
-* Adds `qml.workflow.get_transform_program` and `qml.workflow.construct_batch` to inspect the transform program and batch of tapes
+* `qml.workflow.get_transform_program` and `qml.workflow.construct_batch` have been added to inspect the transform program and batch of tapes
   at different stages.
   [(#5084)](https://github.com/PennyLaneAI/pennylane/pull/5084)
 
@@ -501,7 +501,7 @@
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
   [(#5199)](https://github.com/PennyLaneAI/pennylane/pull/5199)
 
-* CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
+* The CI will now fail if coverage data fails to upload to codecov. Previously, it would silently pass
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
@@ -520,11 +520,11 @@
   [(#5115)](https://github.com/PennyLaneAI/pennylane/pull/5115)
   [(#5121)](https://github.com/PennyLaneAI/pennylane/pull/5121)
 
-* Replacing `map_batch_transform` in the source code with the method `_batch_transform`
+* The method `map_batch_transform` has been replaced with the method `_batch_transform`
   implemented in `TransformDispatcher`.
   [(#5212)](https://github.com/PennyLaneAI/pennylane/pull/5212)
 
-* `TransformDispatcher` can now dispatch onto a batch of tapes, so that it is easier to compose transforms
+* `TransformDispatcher` can now dispatch onto a batch of tapes, making it easier to compose transforms
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
@@ -570,11 +570,11 @@
   For more information, please see the
   [documentation on adding compilers](https://docs.pennylane.ai/en/stable/code/qml_compiler.html#adding-a-compiler).
 
-* Make PennyLane code compatible with the latest version of `black`.
+* PennyLane source code is now compatible with the latest version of `black`.
   [(#5112)](https://github.com/PennyLaneAI/pennylane/pull/5112)
   [(#5119)](https://github.com/PennyLaneAI/pennylane/pull/5119)
 
-* `gradient_analysis_and_validation` is now renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
+* `gradient_analysis_and_validation` has been renamed to `find_and_validate_gradient_methods`. Instead of returning a list, it now returns a dictionary of gradient methods for each parameter index, and no longer mutates the tape.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
 * Multiplying two `PauliWord` instances no longer returns a tuple `(new_word, coeff)`
@@ -588,11 +588,11 @@
 
 * `ClassicalShadow.entropy()` no longer needs an `atol` keyword as a better
   method to estimate entropies from approximate density matrix reconstructions
-  (with potentially negative eigenvalues) has been implemented.
+  (with potentially negative eigenvalues).
   [(#5048)](https://github.com/PennyLaneAI/pennylane/pull/5048)
 
-* Controlled operators with a custom controlled version decomposes like how their controlled
-  counterpart decomposes, as opposed to decomposing into their controlled version.
+* Controlled operators with a custom controlled version decompose like how their controlled
+  counterpart decomposes as opposed to decomposing into their controlled version.
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
 
@@ -614,7 +614,7 @@
   validate these properties manually.
   [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
 
-* `qml.transforms.one_qubit_decomposition` and `qml.transforms.two_qubit_decomposition` are removed. Instead,
+* `qml.transforms.one_qubit_decomposition` and `qml.transforms.two_qubit_decomposition` have been removed. Instead,
   you should use `qml.ops.one_qubit_decomposition` and `qml.ops.two_qubit_decomposition`.
   [(#5091)](https://github.com/PennyLaneAI/pennylane/pull/5091)
 
@@ -663,25 +663,25 @@
 * A typo in a code example in the `qml.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
-* Documentation `qml.data` has been updated and now mentions a way to access the same dataset simultaneously from multiple environments.
+* Documentation for `qml.data` has been updated and now mentions a way to access the same dataset simultaneously from multiple environments.
   [(#5029)](https://github.com/PennyLaneAI/pennylane/pull/5029)
 
-* Clarification for the definition of `argnum` added to gradient methods
+* A clarification for the definition of `argnum` added to gradient methods has been made.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
 * A typo in the code example for `qml.qchem.dipole_of` has been fixed.
   [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036)
 
-* Added a development guide on deprecations and removals.
+* A development guide on deprecations and removals has been added.
   [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
-* A note about the eigenspectrum of second-quantized Hamiltonians added to `qml.eigvals`.
+* A note about the eigenspectrum of second-quantized Hamiltonians has been added to `qml.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
-* A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions was added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
+* A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions has been added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
   [(#5137)](https://github.com/PennyLaneAI/pennylane/pull/5137)
 
-* Added a reference to the paper that provides the image of the `qml.QAOAEmbedding` template.
+* A reference to the paper that provides the image of the `qml.QAOAEmbedding` template has been added.
   [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
 
 * The docstring of `qml.sample` has been updated to advise the use of single-shot expectations
@@ -690,7 +690,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug in the matplotlib drawer where the color of `Barrier` did not match the requested style.
+* Fixed a bug in the matplotlib drawer where the color of `Barrier` did not match the requested style.
   [(#5276)](https://github.com/PennyLaneAI/pennylane/pull/5276)
 
 * `ctrl_decomp_zyz` is now differentiable.
@@ -699,13 +699,13 @@
 * `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
   [(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
 
-* The `qml.MottonenStatePreparation` template is updated to include a global phase operation.
+* The `qml.MottonenStatePreparation` template has been updated to include a global phase operation.
   [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
 
-* Fixes a queuing bug when using `qml.prod` with a qfunc that queues a single operator.
+* Fixed a queuing bug when using `qml.prod` with a quantum function that queues a single operator.
   [(#5170)](https://github.com/PennyLaneAI/pennylane/pull/5170)
 
-* The `qml.TrotterProduct` template is updated to accept `SProd` as input Hamiltonian.
+* The `qml.TrotterProduct` template has been updated to accept scalar products of operators as an input Hamiltonian.
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
@@ -733,7 +733,7 @@
 * `CosineWindow` no longer raises an unexpected error when used on a subset of wires at the beginning of a circuit.
   [(#5080)](https://github.com/PennyLaneAI/pennylane/pull/5080)
 
-* Ensure `tf.function` works with `TensorSpec(shape=None)` by skipping batch size computation.
+* `tf.function` now works with `TensorSpec(shape=None)` by skipping batch size computation.
   [(#5089)](https://github.com/PennyLaneAI/pennylane/pull/5089)
 
 * `PauliSentence.wires` no longer imposes a false order.
@@ -747,7 +747,7 @@
   operators to the left, as is standard in quantum chemistry).
   [(#5114)](https://github.com/PennyLaneAI/pennylane/pull/5114)
 
-* Multi-wire controlled `CNOT` and `PhaseShift` can now be decomposed correctly.
+* Multi-wire controlled `CNOT` and `PhaseShift` are now be decomposed correctly.
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
   [(#5148)](https://github.com/PennyLaneAI/pennylane/pull/5148)
 
@@ -764,20 +764,20 @@
   operators have a valid `pauli_rep` property.
   [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
 
-* Controlled `GlobalPhase` with non-zero control wire no longer throws an error.
+* Controlled `GlobalPhase` with non-zero control wires no longer throws an error.
   [(#5194)](https://github.com/PennyLaneAI/pennylane/pull/5194)
 
 * A `QNode` transformed with `mitigate_with_zne` now accepts batch parameters.
   [(#5195)](https://github.com/PennyLaneAI/pennylane/pull/5195)
 
 * The matrix of an empty `PauliSentence` instance is now correct (all-zeros).
-  Further, matrices of empty `PauliWord` and `PauliSentence` instances can be turned to matrices now.
+  Further, matrices of empty `PauliWord` and `PauliSentence` instances can now be turned into matrices.
   [(#5188)](https://github.com/PennyLaneAI/pennylane/pull/5188)
 
-* `PauliSentence.__matmul__` can handle `PauliWord` instances now.
+* `PauliSentence` instances can handle matrix multiplication with `PauliWord` instances.
   [(#5208)](https://github.com/PennyLaneAI/pennylane/pull/5208)
 
-* Make `CompositeOp.eigendecomposition` JIT-compatible.
+* `CompositeOp.eigendecomposition` is now JIT-compatible.
   [(#5207)](https://github.com/PennyLaneAI/pennylane/pull/5207)
 
 * `QubitDensityMatrix` now works with JAX-JIT on the `default.mixed` device.
@@ -787,7 +787,8 @@
 * When a QNode specifies `diff_method="adjoint"`, `default.qubit` no longer tries to decompose non-trainable operations with non-scalar parameters such as `QubitUnitary`.
   [(#5233)](https://github.com/PennyLaneAI/pennylane/pull/5233)
 
-* The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the init after causing problems with datasets. Now happens globally.
+* The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the initialization after causing problems with datasets. This now 
+  happens globally.
   [(#5252)](https://github.com/PennyLaneAI/pennylane/pull/5252)
 
 <h3>Contributors ✍️</h3>
