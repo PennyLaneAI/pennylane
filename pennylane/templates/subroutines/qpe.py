@@ -202,7 +202,7 @@ class QuantumPhaseEstimation(Operation):
 
     @property
     def error(self):
-        """The error of the QPE"""
+        """The error of the QPE workflow computed from the unitary spectral norm error."""
         if not isinstance(self._hyperparameters["unitary"], Operator):
             raise qml.ValueError("The input unitary must be an Operator.")
 
