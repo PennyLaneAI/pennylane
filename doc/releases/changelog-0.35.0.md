@@ -552,6 +552,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in the matplotlib drawer where the color of `Barrier` did not match the requested style.
+
 * `ctrl_decomp_zyz` is now differentiable.
   [(#5198)](https://github.com/PennyLaneAI/pennylane/pull/5198)
 

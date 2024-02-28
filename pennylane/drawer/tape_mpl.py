@@ -125,8 +125,9 @@ def _(op: ops.Barrier, drawer, layer, _):
     mapped_wires = op.wires if len(op.wires) != 0 else list(range(drawer.n_wires))
     ymin = min(mapped_wires) - 0.5
     ymax = max(mapped_wires) + 0.5
-    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
-    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
+    # wasnt obeying the stylesheet for some reason, so we have to manually force the color to be the line color.
+    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax, color=mpl.pyplot.rcParams["lines.color"])
+    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax, color=mpl.pyplot.rcParams["lines.color"])
 
 
 @_add_operation_to_drawer.register
@@ -267,6 +268,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     return drawer.fig, drawer.ax
 
 
+# pylint: disable=too-many-arguments
 def tape_mpl(
     tape, wire_order=None, show_all_wires=False, decimals=None, style=None, *, fig=None, **kwargs
 ):
