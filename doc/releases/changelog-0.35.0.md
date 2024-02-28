@@ -655,6 +655,9 @@
 * The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the init after causing problems with datasets. Now happens globally.
   [(#5252)](https://github.com/PennyLaneAI/pennylane/pull/5252)
 
+* The `adjoint_metric_tensor` transform now works with `jax`.
+  [(#5271)](https://github.com/PennyLaneAI/pennylane/pull/5271)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
