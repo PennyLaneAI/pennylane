@@ -19,6 +19,7 @@ page in the developement guide.
 # pylint: disable=protected-access, expression-not-assigned
 
 import pytest
+import numpy as np
 import pennylane as qml
 
 from pennylane.drawer import tape_mpl
@@ -384,6 +385,8 @@ class TestSpecialGates:
 
         assert len(ax.lines) == 3
         assert len(ax.collections) == 2
+        assert np.allclose(ax.collections[0].get_color(), np.array([[0.0, 0.0, 0.0, 1.0]]))  # black
+        assert np.allclose(ax.collections[0].get_color(), np.array([[0.0, 0.0, 0.0, 1.0]]))  # black
 
         plt.close()
 
