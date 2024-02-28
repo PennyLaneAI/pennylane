@@ -150,7 +150,7 @@
 
   ```pycon
   >>> qnode()  # Evaluate!
-  [tensor(0.29317504, requires_grad=True)]
+  tensor(0.29317504, requires_grad=True)
   ```
 
 <h4>Native mid-circuit measurements on Default Qubit 💡</h4>
