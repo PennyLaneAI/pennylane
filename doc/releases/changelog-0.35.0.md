@@ -67,7 +67,7 @@
     @qml.qnode(dev)
     def teleport():
         m0, m1 = qml.from_qiskit(qc)()
-        qml.cond(m0, qml.CZ)(2)
+        qml.cond(m0, qml.Z)(2)
         return qml.density_matrix(2)
     ```
     
