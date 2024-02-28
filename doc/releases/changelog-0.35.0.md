@@ -341,15 +341,16 @@
     for `tf.Function` and Tensorflow Autograph.
     [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
 
-* Queueing has been removed (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance
-  for large workflows.
-  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
+* Measuring `qml.probs` is now faster due to an optimization in converting samples to counts.
+  [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
 * The performance of circuit-cutting workloads with large numbers of generated tapes has been improved.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
-* Measuring `qml.probs` is now faster due to an optimization in converting samples to counts.
-  [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
+* Queueing (`AnnotatedQueue`) has been removed from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance
+  for large workflows.
+  [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
+
 
 <h4>Community contributions 🥳</h4>
 
@@ -446,9 +447,11 @@
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
-* Upgrade the `Prod.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and
-  pure product operators.
+* Akin to `qml.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum` or `Prod` can now be accessed 
+  with attributes `coeffs` and `ops`, respectively, or together with a `terms()` method.
   [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
+  [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
+  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
 
   ```python
   >>> qml.operation.enable_new_opmath()
@@ -457,22 +460,11 @@
   ([0.5, 1.0],
    [X(1) @ X(0),
     X(2) @ X(0)])
+  >>> op.coeffs
+  [0.5, 1.0]
+  >>> op.ops
+  [X(1) @ X(0), X(2) @ X(0)]
   ```
-
-* Upgrade the `Sum.terms()` method to return a tuple `(coeffs, ops)` consisting of coefficients and
-  pure product operators.
-  [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
-
-  ```python
-  >>> qml.operation.enable_new_opmath()
-  >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
-  >>> op.terms()
-  ([0.5, 0.7, 1.5],
-   [X(0), X(1), Y(1) @ Y(0)])
-  ```
-
-* `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs` have been added for feature parity with `qml.Hamiltonian` but will be deprecated in the future.
-  [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
 
 * String representations of `ParametrizedHamiltonian` have been updated to match the style of other PL operators.
   [(#5215)](https://github.com/PennyLaneAI/pennylane/pull/5215)
