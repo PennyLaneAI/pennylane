@@ -379,6 +379,13 @@
 * The `pennylane/math/quantum.py` module now has support for computing the minimum entropy of a density matrix.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> x = qml.math.dm_from_state_vector(x)
+  >>> qml.math.min_entropy(x, indices=[0])
+  0.6931471805599455
+  ```
+
 * A function called `apply_operation` that applies operations to device-compatible states has been added to the new `qutrit_mixed` module found in `qml.devices`.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
