@@ -223,26 +223,22 @@
     >>> qml.commutator(X(0), Y(0))
     2j * Z(0)
     ```
-
-  * PennyLane will try to automatically work with a Pauli representation of operators when
-    available. The Pauli representation can be optionally accessed via `op.pauli_rep`:
+  
+  * PennyLane can now speed up operator arithmetic by harnessing an internal Pauli representation,
+    if available.
     [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
     [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
     [(#5003)](https://github.com/PennyLaneAI/pennylane/pull/5003)
     [(#5017)](https://github.com/PennyLaneAI/pennylane/pull/5017)
     [(#5027)](https://github.com/PennyLaneAI/pennylane/pull/5027)
 
+    The Pauli representation can be optionally accessed via `op.pauli_rep`:
+
     ```pycon
     >>> op = X(0) + Y(0)
     >>> type(op.pauli_rep)
     pennylane.pauli.pauli_arithmetic.PauliSentence
     ```
-
-    The `PauliWord` and `PauliSentence` objects in the
-    [pauli](https://docs.pennylane.ai/en/stable/code/qml_pauli.html#classes) module provide an
-    efficient representation and can be combined using basic arithmetic like addition, products, and
-    scalar multiplication. These objects do not need to be directly handled in most workflows
-    since manipulation will happen automatically in the background.
 
   * Extensive improvements have been made to the string representations of PennyLane operators,
     making them shorter and possible to copy as valid PennyLane code:
