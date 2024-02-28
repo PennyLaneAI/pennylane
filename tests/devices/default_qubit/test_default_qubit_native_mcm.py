@@ -144,7 +144,7 @@ def test_all_invalid_shots_circuit():
         )
 
     res1 = circuit_op()
-    res2 = qml.dynamic_one_shot(circuit_op)(shots=10)
+    res2 = circuit_op(shots=10)
     for r1, r2 in zip(res1, res2):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
@@ -158,7 +158,7 @@ def test_all_invalid_shots_circuit():
         return qml.expval(op=m), qml.probs(op=m), qml.var(op=m)
 
     res1 = circuit_mcm()
-    res2 = qml.dynamic_one_shot(circuit_mcm)(shots=10)
+    res2 = circuit_mcm(shots=10)
     for r1, r2 in zip(res1, res2):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
@@ -198,7 +198,7 @@ def test_unsupported_measurement():
         TypeError,
         match=f"Native mid-circuit measurement mode does not support {type(qml.classical_shadow(wires=0)).__name__}",
     ):
-        qml.dynamic_one_shot(func)(*params)
+        func(*params)
 
 
 @flaky(max_runs=5)

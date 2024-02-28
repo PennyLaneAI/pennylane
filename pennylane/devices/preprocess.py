@@ -33,7 +33,6 @@ from pennylane.measurements import (
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
 from pennylane import transform
-from pennylane.transforms.dynamic_one_shot import parse_native_mid_circuit_measurements
 from pennylane.wires import WireError
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
@@ -158,18 +157,9 @@ def mid_circuit_measurements(
     If the tape of device uses finite-shot, use the native implementation (i.e. no transform), and use defer measurements transforms otherwise.
     """
 
-    def one_shot_postprocessing(results):
-        if results[0][0]:
-            return parse_native_mid_circuit_measurements(tape, [results[0][0]], [results[0][1]])
-        return parse_native_mid_circuit_measurements(tape, [], [])
-
     has_mcm = any(isinstance(op, MidMeasureMP) for op in tape.operations)
     if tape.shots and tape.batch_size is None and has_mcm:
-        if tape.shots.total_shots > 1:
-            return qml.dynamic_one_shot(tape)
-        if device.shots.total_shots == 1:
-            return (tape,), one_shot_postprocessing
-        return (tape,), null_postprocessing
+        return qml.dynamic_one_shot(tape)
     return qml.defer_measurements(tape, device=device)
 
 
