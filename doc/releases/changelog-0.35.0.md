@@ -146,6 +146,7 @@
   qfunc = qml.from_qiskit(qc, measurements)
   qnode = qml.QNode(qfunc, dev)
   ```
+
   ```pycon
   >>> qnode()  # Evaluate!
   [tensor(0.29317504, requires_grad=True)]
@@ -153,14 +154,20 @@
 
 <h4>Native mid-circuit measurements on Default Qubit 💡</h4>
 
-* When operating in finite-shots mode, the `default.qubit` device now performs mid-circuit
-  measurements in a similar way to quantum hardware. 
+* Mid-circuit measurements are now more scalable and efficient in finite-shots mode
+  with `default.qubit` and better represent what happens on quantum hardware.
   [(#5088)](https://github.com/PennyLaneAI/pennylane/pull/5088)
   [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
   
-  For each shot, when a mid-circuit measurement is encountered, the device evaluates the probability of 
-  projecting onto `|0>` or `|1>` and makes a random choice to collapse the circuit state. This approach works 
-  well when there are a lot of mid-circuit measurements and the number of shots is not too high.
+  Previously, mid-circuit measurements would be automatically replaced with an additional qubit
+  using the `@qml.defer_measurements` transform. The circuit below would have required thousands
+  of qubits to simulate.
+
+  Now, mid-circuit measurements (MCMs) are performed in a similar way to quantum hardware
+  with finite shots on `default.qubit`. For each shot and each time an MCM is encountered, 
+  the device evaluates the probability of projecting onto `|0>` or `|1>` and makes a random choice to 
+  collapse the circuit state. This approach works well when there are a lot of mid-circuit measurements 
+  and the number of shots is not too high.
 
   ```python
   import pennylane as qml
@@ -174,6 +181,7 @@
           qml.measure(0)
       return qml.sample(qml.PauliX(0))
   ```
+  
   ```pycon
   >>> f()
   tensor([-1, -1, -1,  1,  1, -1,  1, -1,  1, -1], requires_grad=True)
