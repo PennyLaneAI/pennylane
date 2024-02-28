@@ -324,16 +324,22 @@
 
 <h4>Faster gradients with VJPs and other performance improvements</h4>
 
-* Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
-  now strictly faster for JAX.
-  [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
+* Vector-Jacobian products (VJPs) can result in faster computations when the output of your quantum
+  Node has a low dimension. They can be enabled by setting `device_vjp=True` when loading a QNode.
+  In the next release of PennyLane, VJPs are planned to be used by default, when available.
 
-* PennyLane can now use lightning-provided VJPs by selecting `device_vjp=True` on the QNode.
-  [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
+  In this release, we have unlocked:
 
-* `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
-  for `tf.Function` and Tensorflow Autograph.
-  [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
+  * Adjoint device VJPs can be used with `jax.jacobian`, meaning that `device_vjp=True` is always
+    faster when using JAX with `default.qubit`.
+    [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
+
+  * PennyLane can now use lightning-provided VJPs.
+    [(#4914)](https://github.com/PennyLaneAI/pennylane/pull/4914)
+
+  * VJPs can be used with TensorFlow, though support has not yet been added
+    for `tf.Function` and Tensorflow Autograph.
+    [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
 
 * Queueing has been removed (`AnnotatedQueue`) from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance
   for large workflows.
@@ -373,6 +379,13 @@
 
 * The `pennylane/math/quantum.py` module now has support for computing the minimum entropy of a density matrix.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
+
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> x = qml.math.dm_from_state_vector(x)
+  >>> qml.math.min_entropy(x, indices=[0])
+  0.6931471805599455
+  ```
 
 * A function called `apply_operation` that applies operations to device-compatible states has been added to the new `qutrit_mixed` module found in `qml.devices`.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
