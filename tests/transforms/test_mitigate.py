@@ -179,7 +179,7 @@ class TestMitigateWithZNE:
         assert args[0][0] == scale_factors
         assert np.allclose(args[0][1], np.mean(np.reshape(random_results, (3, 2)), axis=1))
 
-    def test_braodcasting(self):
+    def test_broadcasting(self):
         """Tests that mitigate_with_zne supports batch arguments"""
 
         batch_size = 2
