@@ -36,7 +36,7 @@
 
     ```pycon
     >>> dev = qml.device("default.qubit")
-    >>> measurements = [qml.expval(qml.Z(0) @ qml.Z(1))]
+    >>> measurements = qml.expval(qml.Z(0) @ qml.Z(1))
     >>> qfunc = qml.from_qiskit(qc, measurements=measurements)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> qnode()
