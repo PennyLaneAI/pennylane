@@ -182,7 +182,7 @@
 <h4>Faster gradients with VJPs and other performance improvements</h4>
 
 * Adjoint device VJP's are now supported with `jax.jacobian`. `device_vjp=True` is
-  now strictly faster for jax.
+  now strictly faster for JAX.
   [(#4963)](https://github.com/PennyLaneAI/pennylane/pull/4963)
 
 * `device_vjp` can now be used with normal Tensorflow. Support has not yet been added
@@ -221,10 +221,10 @@
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
   [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
-* Improve efficiency of matrix calculation when operator is symmetric over wires
+* Improve efficiency of matrix calculation when operator is symmetric over wires.
   [(#3601)](https://github.com/PennyLaneAI/pennylane/pull/3601)
 
-* The module `pennylane/math/quantum.py` has now support for the min-entropy.
+* The `pennylane/math/quantum.py` module now has support for computing the minimum entropy of a density matrix.
   [(#3959)](https://github.com/PennyLaneAI/pennylane/pull/3959/)
 
 * A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
@@ -232,9 +232,6 @@
 
 * A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
   [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
-
-* A function called `apply_operation` has been added to the new `qutrit_mixed` module found in `qml.devices` that applies operations to device-compatible states.
-  [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
 <h4>Other operator arithmetic improvements</h4>
 
@@ -571,7 +568,7 @@
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
-  `Operator.hash` now depends on the memory location, `id`, of a Jax tracer instead of its string representation.
+  `Operator.hash` now depends on the memory location, `id`, of a JAX tracer instead of its string representation.
   [(#3917)](https://github.com/PennyLaneAI/pennylane/pull/3917)
 
 * `qml.transforms.undo_swaps` can now work with operators with hyperparameters or nesting.
@@ -639,11 +636,12 @@
 * `PauliSentence.__matmul__` can handle `PauliWord` instances now.
   [(#5208)](https://github.com/PennyLaneAI/pennylane/pull/5208)
 
-* Make `CompositeOp.eigendecomposition` jit-compatible.
+* Make `CompositeOp.eigendecomposition` JIT-compatible.
   [(#5207)](https://github.com/PennyLaneAI/pennylane/pull/5207)
 
-* `QubitDensityMatrix` now works with jax-jit on the `default.mixed` device.
+* `QubitDensityMatrix` now works with JAX-JIT on the `default.mixed` device.
   [(#5203)](https://github.com/PennyLaneAI/pennylane/pull/5203)
+  [(#5236)](https://github.com/PennyLaneAI/pennylane/pull/5236)
 
 * When a QNode specifies `diff_method="adjoint"`, `default.qubit` no longer tries to decompose non-trainable operations with non-scalar parameters such as `QubitUnitary`.
   [(#5233)](https://github.com/PennyLaneAI/pennylane/pull/5233)
