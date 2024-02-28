@@ -130,7 +130,7 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     The ``my_qfunc`` function can now be used within QNodes, as a two-wire quantum
     template. We can also pass ``wires`` when calling the returned template to define
-    which device wires it should operate on. If no wires are passed, it will default
+    which wires it should operate on. If no wires are passed, it will default
     to sequential wire labels starting at 0.
 
     .. code-block:: python
@@ -161,13 +161,11 @@ def from_qiskit(quantum_circuit, measurements=None):
         The ``measurements`` keyword allows one to add a list of PennyLane measurements
         that will **override** any terminal measurements present in the ``QuantumCircuit``,
         so that they are not performed before the operations specified in ``measurements``.
-        Converting a ``QuantumCircuit`` with ``measurements`` set will create a quantum function
-        that does not return terminal or mid-circuit measurement values. See Usage Details below
-        for more information on how measurements defined on the ``QuantumCircuit`` are returned if
         ``measurements=None``.
 
     If an existing ``QuantumCircuit`` already contains measurements, ``from_qiskit``
-    will return those measurements, which can be used, e.g., for conditioning with
+    will return those measurements, provided that they are not overriden as shown above.
+    These measurements can be used, e.g., for conditioning with
     :func:`qml.cond() <~.cond>`, or simply included directly within the QNode's return:
 
     .. code-block:: python
@@ -312,6 +310,12 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         >>> circuit()
         (tensor(0.5, requires_grad=True), tensor(0.5, requires_grad=True))
+
+        .. note::
+
+            The order of mid-circuit measurements returned by `qml.from_qiskit()` in the example
+            above is determined by the order in which measurements appear in the input Qiskit
+            ``QuantumCircuit``.
 
         Furthermore, the Qiskit `IfElseOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.IfElseOp>`__,
         `SwitchCaseOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.SwitchCaseOp>`__ and
