@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
-
+# pylint: disable=too-many-arguments
 from functools import reduce
 
 from copy import copy
