@@ -341,7 +341,7 @@
 * The performance of circuit-cutting workloads with large numbers of generated tapes have been improved.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
-* Measuring `qml.probs`is now faster due to an optimization in `_samples_to_counts`.
+* Measuring `qml.probs` is now faster due to an optimization in converting samples to counts.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
 <h4>Community contributions 🥳</h4>
