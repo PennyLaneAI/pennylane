@@ -132,6 +132,13 @@ Qubit Simulation Tools
 .. currentmodule:: pennylane.devices.qubit
 .. automodule:: pennylane.devices.qubit
 
+
+Qutrit Mixed-State Simulation Tools
+-----------------------------------
+
+.. currentmodule:: pennylane.devices.qutrit_mixed
+.. automodule:: pennylane.devices.qutrit_mixed
+
 """
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
