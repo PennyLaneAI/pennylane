@@ -147,6 +147,11 @@ class TestSpectralNormError:
         with pytest.raises(ValueError, match="The input operator must have a matrix."):
             SpectralNormError.get_error(approx_op, exact_op)
 
+    def test_repr(selfself):
+        """Test that formal string representation is correct"""
+        S1 = SpectralNormError(0.3)
+        assert repr(S1) == f"<SpectralNormError({0.3})>"
+
 
 class TestErrorOperation:  # pylint: disable=too-few-public-methods
     """Test the base ErrorOperation class."""

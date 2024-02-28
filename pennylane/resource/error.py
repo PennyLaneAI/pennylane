@@ -98,6 +98,11 @@ class SpectralNormError(AlgorithmicError):
     <class 'pennylane.resource.error.SpectralNormError'> 0.03
     """
 
+    def __repr__(self):
+        """Return formal string representation."""
+
+        return f"<SpectralNormError({self.error})>"
+
     def combine(self, other: "SpectralNormError"):
         """A method to combine two spectral norm errors.
 
