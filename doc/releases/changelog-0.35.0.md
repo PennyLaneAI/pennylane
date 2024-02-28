@@ -552,6 +552,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.draw` and `qml.draw_mpl` now apply all applied transforms before drawing.
+
 * `ctrl_decomp_zyz` is now differentiable.
   [(#5198)](https://github.com/PennyLaneAI/pennylane/pull/5198)
 
