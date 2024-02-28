@@ -96,19 +96,20 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
 
 def from_qiskit(quantum_circuit, measurements=None):
     """Converts a Qiskit `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`_
-    into a PennyLane `quantum function <intro_vcirc_qfunc>`_.
+    into a PennyLane :ref:`quantum function <intro_vcirc_qfunc>`.
 
     .. note::
 
-      This function depends upon the PennyLane-Qiskit plugin. Follow the
-      `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__
-      to get up and running. You may need to restart your kernel if you are running in a notebook
-      environment.
+        This function depends upon the PennyLane-Qiskit plugin. Follow the
+        `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__
+        to get up and running. You may need to restart your kernel if you are running in a notebook
+        environment.
 
     Args:
         quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in Qiskit
-        measurements (None | MeasurementProcess | list[MeasurementProcess]): the PennyLane measurements
-            that override the terminal measurements that may be present in the input circuit
+        measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
+            measurement or list of PennyLane measurements that override any terminal measurements
+            that may be present in the input circuit
 
     Returns:
         function: the PennyLane quantum function, created based on the input Qiskit
