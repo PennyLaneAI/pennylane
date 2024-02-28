@@ -202,7 +202,19 @@ class QuantumPhaseEstimation(Operation):
 
     @property
     def error(self):
-        """The QPE error computed from the spectral norm error of the input unitary operator."""
+        """The QPE error computed from the spectral norm error of the input unitary operator.
+
+        **Example**
+
+        >>> class CustomOP(qml.resource.ErrorOperation):
+        ...    @property
+        ...    def error(self):
+        ...       return 0.1
+        >>> Op = CustomOP(wires=[0])
+        >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
+        >>> QPE.error
+        0.11010001000000001
+        """
         if not isinstance(self._hyperparameters["unitary"], Operator):
             raise qml.ValueError("The input unitary must be an Operator.")
 
@@ -211,7 +223,7 @@ class QuantumPhaseEstimation(Operation):
 
         unitary_error = self._hyperparameters["unitary"].error
         sequence_error = [
-            unitary_error**2**i for i in range(len(self.estimation_wires) - 1, -1, -1)
+            unitary_error ** (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)
         ]
 
         additive_error = qml.math.sum(sequence_error)
