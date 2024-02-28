@@ -655,6 +655,10 @@
 * The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the init after causing problems with datasets. Now happens globally.
   [(#5252)](https://github.com/PennyLaneAI/pennylane/pull/5252)
 
+* There is now an "Importing Circuits" quick start page. This explains how to import quantum
+  circuits and operations that were defined outside of PennyLane.
+  [(#5XXX)](https://github.com/PennyLaneAI/pennylane/pull/5XXX)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
