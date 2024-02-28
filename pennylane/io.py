@@ -107,8 +107,8 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     Args:
         quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in Qiskit
-        measurements (list[MeasurementProcess]): the list of PennyLane measurements that
-            overrides the terminal measurements that may be present in the input circuit.
+        measurements (None | MeasurementProcess | list[MeasurementProcess]): the PennyLane measurements
+            that override the terminal measurements that may be present in the input circuit
 
     Returns:
         function: the PennyLane quantum function, created based on the input Qiskit

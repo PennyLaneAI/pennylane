@@ -22,14 +22,16 @@ import pennylane as qml
 from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
 
 
-class I(CVObservable, Operation):
-    r"""pennylane.I(wires)
-    The identity observable :math:`\I`.
+class Identity(CVObservable, Operation):
+    r"""
+    The Identity operator
 
     The expectation of this observable
 
     .. math::
         E[\I] = \text{Tr}(\I \rho)
+
+    .. seealso:: The equivalent short-form alias :class:`~I`
 
     Args:
         wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
@@ -196,18 +198,15 @@ class I(CVObservable, Operation):
         return [I(wires=self.wires)]
 
 
-I.__name__ = "Identity"
-
-Identity = I
-r"""
-An alias of the identity observable :class:`~I`.
+I = Identity
+r"""The Identity operator
 
 The expectation of this observable
 
 .. math::
     E[\I] = \text{Tr}(\I \rho)
 
-.. seealso:: :class:`~I`
+.. seealso:: The equivalent long-form alias :class:`~Identity`
 
 Args:
     wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
