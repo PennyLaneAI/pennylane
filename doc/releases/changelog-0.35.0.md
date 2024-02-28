@@ -243,7 +243,7 @@
     ```
 
   * Extensive improvements have been made to the string representations of PennyLane operators,
-    making them shorter and possible to copy as valid PennyLane code:
+    making them shorter and possible to copy-paste as valid PennyLane code.
     [(#5116)](https://github.com/PennyLaneAI/pennylane/pull/5116)
     [(#5138)](https://github.com/PennyLaneAI/pennylane/pull/5138)
 
@@ -266,7 +266,7 @@
     )
     ```
 
-  * The `Sum` and `Prod` classes, two major components of our new approach to operator arithmetic,
+  * Linear combinations of operators and operator multiplication via `Sum` and `Prod`, respectively, 
     have been updated to reach feature parity with `Hamiltonian` and `Tensor`, respectively.
     This should minimize the effort to port over any existing code.
     [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
