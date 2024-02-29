@@ -610,14 +610,15 @@ class LinearCombination(Observable):
                 _pauli_rep = pr1 + pr2
             else:
                 _pauli_rep = None
-            return qml.LinearCombination(coeffs, ops, simplify=True, _pauli_rep=_pauli_rep)
+            return qml.LinearCombination(coeffs, ops, _pauli_rep=_pauli_rep)
 
-        if isinstance(H, (Tensor, Observable)):
+        if isinstance(H, (Tensor, Observable, qml.ops.Prod, qml.ops.SProd)):
             coeffs = qml.math.concatenate(
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )
             ops.append(H)
-            return qml.LinearCombination(coeffs, ops, simplify=True)
+            print(coeffs, ops)
+            return qml.LinearCombination(coeffs, ops)
 
         return NotImplemented
 
@@ -637,7 +638,7 @@ class LinearCombination(Observable):
     def __sub__(self, H):
         r"""The subtraction operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
         if isinstance(H, (LinearCombination, Hamiltonian, Tensor, Observable)):
-            return self + qml.s_prod(-1, H)
+            return self + qml.s_prod(-1., H, lazy=False)
         return NotImplemented
 
     def queue(self, context=qml.QueuingManager):
