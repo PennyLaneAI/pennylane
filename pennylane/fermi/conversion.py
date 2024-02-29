@@ -15,7 +15,6 @@
 
 from functools import singledispatch
 from typing import Union
-import warnings
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -164,6 +163,11 @@ def parity_transform(
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the parity mapping.
 
+    .. note::
+
+        Hamiltonians created with this mapping should be used with operators and states that are
+        compatible with the parity basis.
+
     In parity mapping, qubit :math:`j` stores the parity of all :math:`j-1` qubits before it.
     In comparison, :func:`~.jordan_wigner` simply uses qubit :math:`j` to store the occupation number.
     In parity mapping, the fermionic creation and annihilation operators are mapped to the Pauli operators as
@@ -220,9 +224,6 @@ def parity_transform(
     + (0.25+0j) * X(2)
     + 0.25j * Y(2) @ Z(3)
     """
-    warnings.warn(
-        "This mapping should be used with operators and states in the parity basis.", UserWarning
-    )
 
     return _parity_transform_dispatch(fermi_operator, n, ps, wire_map, tol)
 
