@@ -15,6 +15,7 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
+import warnings
 from typing import Union
 from copy import copy
 
@@ -215,6 +216,36 @@ class SProd(ScalarSymbolicOp):
             return new_coeffs, ops
 
         return [self.scalar], [self.base]
+
+    @property
+    def coeffs(self):
+        r"""
+        Scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~SProd.terms` instead.
+
+        .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
+        warnings.warn(
+            "SProd.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        coeffs, _ = self.terms()
+        return coeffs
+
+    @property
+    def ops(self):
+        r"""
+        Operator terms without scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~SProd.terms` instead.
+
+        .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
+        warnings.warn(
+            "SProd.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        _, ops = self.terms()
+        return ops
 
     @property
     def is_hermitian(self):

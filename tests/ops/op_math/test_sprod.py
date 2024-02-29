@@ -96,6 +96,19 @@ ops_rep = (
     "42 * Rot(0.34, 1.0, 0, wires=[0])",
 )
 
+def test_legacy_ops():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
+    H = qml.s_prod(0.5, qml.X(0))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="SProd.ops is deprecated and"):
+        _ = H.ops
+
+
+def test_legacy_coeffs():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
+    H = qml.s_prod(0.5, qml.X(0))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="SProd.coeffs is deprecated and"):
+        _ = H.coeffs
+
 
 class TestInitialization:
     """Test initialization of the SProd Class."""
