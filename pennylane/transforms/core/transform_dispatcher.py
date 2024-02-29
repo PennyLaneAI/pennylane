@@ -71,6 +71,7 @@ class TransformDispatcher:
         classical_cotransform=None,
         is_informative=False,
         final_transform=False,
+        use_argnum_in_expand=False,
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
@@ -79,6 +80,7 @@ class TransformDispatcher:
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._qnode_transform = self.default_qnode_transform
+        self._use_argnum_in_expand = use_argnum_in_expand
         functools.update_wrapper(self, transform)
 
     def __call__(self, *targs, **tkwargs):  # pylint: disable=too-many-return-statements
@@ -208,7 +210,11 @@ class TransformDispatcher:
         qnode = copy.copy(qnode)
 
         if self.expand_transform:
-            qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
+            qnode.add_transform(
+                TransformContainer(
+                    self._expand_transform, targs, tkwargs, use_argnum=self._use_argnum_in_expand
+                )
+            )
         qnode.add_transform(
             TransformContainer(
                 self._transform,
@@ -382,6 +388,7 @@ class TransformContainer:
         classical_cotransform=None,
         is_informative=False,
         final_transform=False,
+        use_argnum=False,
     ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
         self._args = args or []
@@ -389,6 +396,7 @@ class TransformContainer:
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
         self._final_transform = is_informative or final_transform
+        self._use_argnum = use_argnum
 
     def __repr__(self):
         return f"<{self._transform.__name__}({self._args}, {self._kwargs})>"
