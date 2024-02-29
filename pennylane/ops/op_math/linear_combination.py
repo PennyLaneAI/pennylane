@@ -591,7 +591,17 @@ class LinearCombination(Observable):
     def __matmul__(self, other):
         """The product operation between Operator objects."""
         if isinstance(other, Operator):
+            if other.arithmetic_depth == 0:
+                new_ops = [op @ other for op in self.ops]
+
+                # build new pauli rep using old pauli rep
+                if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
+                    new_pr = pr1 @ pr2
+                else:
+                    new_pr = None
+                return LinearCombination(self.coeffs, new_ops, _pauli_rep=new_pr)
             return qml.prod(self, other)
+
 
         return NotImplemented
 

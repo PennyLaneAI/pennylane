@@ -812,12 +812,16 @@ class TestLinearCombination:
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_LinearCombinations)
     def test_LinearCombination_matmul(self, H1, H2, H):
         """Tests that LinearCombinations are tensored correctly"""
+        qml.operation.enable_new_opmath()
         assert H.compare(H1 @ H2)
+        qml.operation.disable_new_opmath()
 
     @pytest.mark.parametrize(("H1", "H2", "H"), rmatmul_LinearCombinations)
     def test_LinearCombination_rmatmul(self, H1, H2, H):
         """Tests that LinearCombinations are tensored correctly when using __rmatmul__"""
+        qml.operation.enable_new_opmath()
         assert H.compare(H1 @ H2)
+        qml.operation.disable_new_opmath()
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""
@@ -1001,6 +1005,8 @@ class TestLinearCombinationArithmeticTF:
 
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
+        qml.operation.enable_new_opmath()
+
         coeffs = tf.Variable([1.0, 2.0])
         obs = [X(0), Y(1)]
         H1 = qml.LinearCombination(coeffs, obs)
@@ -1011,14 +1017,15 @@ class TestLinearCombinationArithmeticTF:
 
         coeffs_expected = tf.Variable([-4.0, -2.0, -2.0, -1.0])
         obs_expected = [
-            Y(1) @ Y(3),
-            X(0) @ Y(3),
-            X(2) @ Y(1),
-            X(0) @ X(2),
+            qml.prod(Y(1), Y(3)),
+            qml.prod(X(0), Y(3)),
+            qml.prod(X(2), Y(1)),
+            qml.prod(X(0), X(2)),
         ]
         H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
+        qml.operation.disable_new_opmath()
 
 
 class TestLinearCombinationArithmeticTorch:
@@ -1074,6 +1081,8 @@ class TestLinearCombinationArithmeticTorch:
     @pytest.mark.torch
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
+        qml.operation.enable_new_opmath()
+
         coeffs = torch.tensor([1.0, 2.0])
         obs = [X(0), Y(1)]
         H1 = qml.LinearCombination(coeffs, obs)
@@ -1084,14 +1093,15 @@ class TestLinearCombinationArithmeticTorch:
 
         coeffs_expected = torch.tensor([-4.0, -2.0, -2.0, -1.0])
         obs_expected = [
-            Y(1) @ Y(3),
-            X(0) @ Y(3),
-            X(2) @ Y(1),
-            X(0) @ X(2),
+            qml.prod(Y(1), Y(3)),
+            qml.prod(X(0), Y(3)),
+            qml.prod(X(2), Y(1)),
+            qml.prod(X(0), X(2)),
         ]
         H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
+        qml.operation.disable_new_opmath()
 
 
 class TestLinearCombinationArithmeticAutograd:
@@ -1144,6 +1154,7 @@ class TestLinearCombinationArithmeticAutograd:
     @pytest.mark.autograd
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
+        qml.operation.enable_new_opmath()
         coeffs = pnp.array([1.0, 2.0])
         obs = [X(0), Y(1)]
         H1 = qml.LinearCombination(coeffs, obs)
@@ -1154,14 +1165,15 @@ class TestLinearCombinationArithmeticAutograd:
 
         coeffs_expected = pnp.array([-4.0, -2.0, -2.0, -1.0])
         obs_expected = [
-            Y(1) @ Y(3),
-            X(0) @ Y(3),
-            X(2) @ Y(1),
-            X(0) @ X(2),
+            qml.prod(Y(1), Y(3)),
+            qml.prod(X(0), Y(3)),
+            qml.prod(X(2), Y(1)),
+            qml.prod(X(0), X(2)),
         ]
         H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
+        qml.operation.disable_new_opmath()
 
 
 class TestLinearCombinationSparseMatrix:
@@ -1365,6 +1377,8 @@ class TestLinearCombinationArithmeticJax:
 
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
+        qml.operation.enable_new_opmath()
+
         coeffs = jnp.array([1.0, 2.0])
         obs = [X(0), Y(1)]
         H1 = qml.LinearCombination(coeffs, obs)
@@ -1375,14 +1389,15 @@ class TestLinearCombinationArithmeticJax:
 
         coeffs_expected = jnp.array([-4.0, -2.0, -2.0, -1.0])
         obs_expected = [
-            Y(1) @ Y(3),
-            X(0) @ Y(3),
-            X(2) @ Y(1),
-            X(0) @ X(2),
+            qml.prod(Y(1), Y(3)),
+            qml.prod(X(0), Y(3)),
+            qml.prod(X(2), Y(1)),
+            qml.prod(X(0), X(2)),
         ]
         H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
+        qml.operation.disable_new_opmath()
 
 
 class TestGrouping:
