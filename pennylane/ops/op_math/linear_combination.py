@@ -15,19 +15,14 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
-# pylint: disable=too-many-arguments,too-many-instance-attributes
-import itertools
+# pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
 import numbers
 from collections.abc import Iterable
 from copy import copy
-import functools
 from typing import List
-import numpy as np
-import scipy
 
 import pennylane as qml
 from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
-from pennylane.wires import Wires
 from ..qubit.hamiltonian import Hamiltonian
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -243,6 +238,7 @@ class LinearCombination(Observable):
 
     @property
     def operands(self):
+        """List of all operands in the linear combination"""
         return self._operands
 
     def _check_batching(self):
