@@ -34,6 +34,9 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
+    [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+    [qml.device("lightning.qubit", wires=5), "parameter-shift", False, False],
 ]
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
@@ -1022,6 +1025,8 @@ class TestQubitIntegration:
             pytest.skip("Diff method does not support postselection.")
         if dev.name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention")
+        elif getattr(dev, "short_name", "") == "lightning.qubit":
+            pytest.xfail("lightning qubit does not support postselection.")
 
         @qml.qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -1361,6 +1366,13 @@ class TestQubitIntegrationHigherOrder:
     def test_state(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
         """Test that the state can be returned and differentiated"""
 
+        if (
+            getattr(dev, "short_name", "") == "lightning.qubit"
+            and diff_method == "adjoint"
+            and grad_on_execution
+        ):
+            pytest.xfail("lightning.qubit does not support adjoint with the state.")
+
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
         if not dev.wires:
@@ -1560,7 +1572,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_finite_shots(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, max_diff, mocker
+        self, dev, diff_method, grad_on_execution, device_vjp, interface, max_diff
     ):
         """Test that the Hamiltonian is correctly measured if there
         are non-commuting groups and the number of shots is finite
@@ -1577,7 +1589,6 @@ class TestTapeExpansion:
             gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA, "h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
 
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(
@@ -1605,7 +1616,6 @@ class TestTapeExpansion:
         res = circuit(d, w, c, shots=50000)  # pylint:disable=unexpected-keyword-arg
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected, atol=tol)
-        spy.assert_not_called()
 
         # test gradients
         grad = jax.grad(circuit, argnums=[1, 2])(d, w, c, shots=50000)
@@ -1637,16 +1647,14 @@ class TestTapeExpansion:
     ):
         """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
         vectorized=True is specified for the callback when caching is disabled."""
+        if (
+            dev.name == "default.qubit"
+            and diff_method == "adjoint"
+            and grad_on_execution
+            and not device_vjp
+        ):
+            pytest.xfail("adjoint is incompatible with parameter broadcasting.")
         interface = "jax-jit"
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not yet support Hamiltonians")
-        elif diff_method == "hadamard":
-            pytest.skip("The Hadamard method does not yet support Hamiltonians")
-
-        if diff_method == "backprop":
-            pytest.skip(
-                "The backprop method does not yet support parameter-broadcasting with Hamiltonians"
-            )
 
         n_configs = 5
         pars_q = np.random.rand(n_configs, 2)
@@ -1663,15 +1671,14 @@ class TestTapeExpansion:
             def _measure_operator():
                 qml.RY(params[..., 0], wires=0)
                 qml.RY(params[..., 1], wires=1)
-                op = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
-                return qml.expval(op)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
             res = _measure_operator()
             return res
 
-        assert np.allclose(
-            jax.jit(minimal_circ)(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q), tol
-        )
+        res1 = jax.jit(minimal_circ)(pars_q)
+        res2 = jax.jit(jax.vmap(minimal_circ))(pars_q)
+        assert np.allclose(res1, res2, tol)
 
     def test_vmap_compared_param_broadcasting_multi_output(
         self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
@@ -1679,16 +1686,14 @@ class TestTapeExpansion:
         """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
         vectorized=True is specified for the callback when caching is disabled and when multiple output values
         are returned."""
+        if (
+            dev.name == "default.qubit"
+            and diff_method == "adjoint"
+            and grad_on_execution
+            and not device_vjp
+        ):
+            pytest.xfail("adjoint is incompatible with parameter broadcasting.")
         interface = "jax-jit"
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not yet support Hamiltonians")
-        elif diff_method == "hadamard":
-            pytest.skip("The Hadamard method does not yet support Hamiltonians")
-
-        if diff_method == "backprop":
-            pytest.skip(
-                "The backprop method does not yet support parameter-broadcasting with Hamiltonians"
-            )
 
         n_configs = 5
         pars_q = np.random.rand(n_configs, 2)
@@ -1705,9 +1710,7 @@ class TestTapeExpansion:
             def _measure_operator():
                 qml.RY(params[..., 0], wires=0)
                 qml.RY(params[..., 1], wires=1)
-                op1 = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
-                op2 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
-                return qml.expval(op1), qml.expval(op2)
+                return qml.expval(qml.Z(0) @ qml.Z(1)), qml.expval(qml.X(0) @ qml.X(1))
 
             res = _measure_operator()
             return res

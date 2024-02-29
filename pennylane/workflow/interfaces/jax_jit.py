@@ -159,7 +159,15 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
         # swap the order in that case.
         return jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
 
-    out = jax.pure_callback(pure_callback_wrapper, shape_dtype_structs, params, vectorized=True)
+    if isinstance(device, qml.Device):
+        device_supports_vectorization = device.capabilities().get("supports_broadcasting")
+    else:
+        # first order way of determining native parameter broadcasting support
+        # will be inaccurate when inclusion of broadcast_expand depends on ExecutionConfig values (like adjoint)
+        device_supports_vectorization = qml.transforms.broadcast_expand in device.preprocess()[0]
+    out = jax.pure_callback(
+        pure_callback_wrapper, shape_dtype_structs, params, vectorized=device_supports_vectorization
+    )
     return out
 
 

@@ -552,6 +552,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `jax.vmap` with `jax.jit` will now work with devices that do not support parameter broadcasting.
+
 * `qml.draw` and `qml.draw_mpl` now apply all applied transforms before drawing.
   [(#5277)](https://github.com/PennyLaneAI/pennylane/pull/5277/)
 
