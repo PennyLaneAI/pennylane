@@ -318,7 +318,7 @@ mul_LinearCombinations = [
         qml.LinearCombination([0.5, 1.0], [X(0), Z(1)]),
     ),
     (
-        3.,
+        3.0,
         qml.LinearCombination([1.5, 0.5], [X(0), Z(1)]),
         qml.LinearCombination([4.5, 1.5], [X(0), Z(1)]),
     ),
@@ -340,18 +340,18 @@ mul_LinearCombinations = [
     ),
     # The result is the zero LinearCombination
     (
-        0.,
+        0.0,
         qml.LinearCombination([1], [X(0)]),
         qml.LinearCombination([0], [X(0)]),
     ),
     (
-        0.,
-        qml.LinearCombination([1., 1.2, 0.1], [X(0), Z(1), X(2)]),
-        qml.LinearCombination([0., 0., 0.], [X(0), Z(1), X(2)]),
+        0.0,
+        qml.LinearCombination([1.0, 1.2, 0.1], [X(0), Z(1), X(2)]),
+        qml.LinearCombination([0.0, 0.0, 0.0], [X(0), Z(1), X(2)]),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
-        3.,
+        3.0,
         qml.LinearCombination((1.5, 0.5), (X(0), Z(1))),
         qml.LinearCombination(np.array([4.5, 1.5]), np.array([X(0), Z(1)])),
     ),
@@ -508,8 +508,16 @@ class TestLinearCombination:
     """Test the LinearCombination class"""
 
     PAULI_REPS = (
-        (list(range(3)), [X(i) for i in range(3)], PauliSentence({PauliWord({i:"X"}): 1.*i for i in range(3)})),
-        (list(range(3)), [qml.s_prod(i, X(i)) for i in range(3)], PauliSentence({PauliWord({i:"X"}): 1.*i*i for i in range(3)})),
+        (
+            list(range(3)),
+            [X(i) for i in range(3)],
+            PauliSentence({PauliWord({i: "X"}): 1.0 * i for i in range(3)}),
+        ),
+        (
+            list(range(3)),
+            [qml.s_prod(i, X(i)) for i in range(3)],
+            PauliSentence({PauliWord({i: "X"}): 1.0 * i * i for i in range(3)}),
+        ),
     )
 
     @pytest.mark.parametrize("simplify", [None, True])
