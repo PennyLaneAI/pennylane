@@ -165,8 +165,8 @@ def parity_transform(
 
     .. note::
 
-        Hamiltonians created with this mapping should be only used with operators and states in the
-        parity basis.
+        Hamiltonians created with this mapping should be used with operators and states that are
+        compatible with the parity basis.
 
     In parity mapping, qubit :math:`j` stores the parity of all :math:`j-1` qubits before it.
     In comparison, :func:`~.jordan_wigner` simply uses qubit :math:`j` to store the occupation number.
