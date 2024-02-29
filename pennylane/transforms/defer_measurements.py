@@ -150,6 +150,13 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
         transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
+    Raises:
+        ValueError: If custom wire labels are used with qubit reuse or reset
+        ValueError: If any measurements with no wires or observable are present
+        ValueError: If continuous variable operations or measurements are present
+        ValueError: If using the transform with any device other than
+            :mod:`default.qubit <~pennylane.devices.DefaultQubit>` and postselection is used
+
     **Example**
 
     Suppose we have a quantum function with mid-circuit measurements and
