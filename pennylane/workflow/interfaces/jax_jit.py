@@ -146,18 +146,7 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
 
     def pure_callback_wrapper(p):
         new_tapes = _set_fn(tapes.vals, p)
-        res = tuple(_to_jax(execute_fn(new_tapes)))
-        # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
-        # the shape without the vmap dimensions, while the function here will be
-        # executed with objects containing the vmap dimensions. So res[i].ndim
-        # will have an extra dimension for every `jax.vmap` wrapping this execution.
-        #
-        # The execute_fn will return an object with shape `(n_observables, batches)`
-        # but the default behaviour for `jax.pure_callback` is to add the extra
-        # dimension at the beginning, so `(batches, n_observables)`. So in here
-        # we detect with the heuristic above if we are executing under vmap and we
-        # swap the order in that case.
-        return jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
+        return _to_jax(execute_fn(new_tapes))
 
     if isinstance(device, qml.Device):
         device_supports_vectorization = device.capabilities().get("supports_broadcasting")

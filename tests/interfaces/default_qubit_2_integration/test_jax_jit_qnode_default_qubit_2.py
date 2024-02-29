@@ -1720,6 +1720,48 @@ class TestTapeExpansion:
         assert np.allclose(res1, vres1, tol)
         assert np.allclose(res2, vres2, tol)
 
+    def test_vmap_compared_param_broadcasting_probs(
+        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
+    ):
+        """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
+        vectorized=True is specified for the callback when caching is disabled and when multiple output values
+        are returned."""
+        if (
+            dev.name == "default.qubit"
+            and diff_method == "adjoint"
+            and grad_on_execution
+            and not device_vjp
+        ):
+            pytest.xfail("adjoint is incompatible with parameter broadcasting.")
+        elif getattr(dev, "short_name", "") == "lightning.qubit" and diff_method == "adjoint":
+            pytest.xfail("lightning adjoign cannot differentiate probabilities.")
+        interface = "jax-jit"
+
+        n_configs = 5
+        pars_q = np.random.rand(n_configs, 2)
+
+        def minimal_circ(params):
+            @qml.qnode(
+                dev,
+                interface=interface,
+                diff_method=diff_method,
+                grad_on_execution=grad_on_execution,
+                device_vjp=device_vjp,
+                cache=None,
+            )
+            def _measure_operator():
+                qml.RY(params[..., 0], wires=0)
+                qml.RY(params[..., 1], wires=1)
+                return qml.probs(wires=0), qml.probs(wires=1)
+
+            res = _measure_operator()
+            return res
+
+        res1, res2 = jax.jit(minimal_circ)(pars_q)
+        vres1, vres2 = jax.jit(jax.vmap(minimal_circ))(pars_q)
+        assert np.allclose(res1, vres1, tol)
+        assert np.allclose(res2, vres2, tol)
+
 
 jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 
