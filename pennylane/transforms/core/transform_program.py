@@ -359,7 +359,7 @@ class TransformProgram:
             if not found and ttype == keep:
                 found = True
                 continue
-            if ttype in [1, 2]:
+            if found and ttype in [1, 2]:
                 self._transform_program.pop(len(self._transform_program) - 1 - i)
 
     def _set_all_classical_jacobians(
