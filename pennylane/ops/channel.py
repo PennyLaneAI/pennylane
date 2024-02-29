@@ -18,7 +18,7 @@ quantum channels supported by PennyLane, as well as their conventions.
 """
 import warnings
 
-import pennylane.math as np
+from pennylane import math
 from pennylane.operation import AnyWires, Channel
 
 
@@ -77,12 +77,12 @@ class AmplitudeDamping(Channel):
         [array([[1., 0.], [0., 0.70710678]]),
          array([[0., 0.70710678], [0., 0.]])]
         """
-        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+        if not math.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
-        K1 = np.sqrt(gamma + np.eps) * np.convert_like(
-            np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma
+        K0 = math.diag([1, math.sqrt(1 - gamma + math.eps)])
+        K1 = math.sqrt(gamma + math.eps) * math.convert_like(
+            math.cast_like(math.array([[0, 1], [0, 0]]), gamma), gamma
         )
         return [K0, K1]
 
@@ -159,23 +159,23 @@ class GeneralizedAmplitudeDamping(Channel):
          array([[0.52915026, 0.        ], [0.        , 0.63245553]]),
          array([[0.        , 0.        ], [0.34641016, 0.        ]])]
         """
-        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+        if not math.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1].")
 
-        K0 = np.sqrt(p + np.eps) * np.diag([1, np.sqrt(1 - gamma + np.eps)])
+        K0 = math.sqrt(p + math.eps) * math.diag([1, math.sqrt(1 - gamma + math.eps)])
         K1 = (
-            np.sqrt(p + np.eps)
-            * np.sqrt(gamma)
-            * np.convert_like(np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma)
+            math.sqrt(p + math.eps)
+            * math.sqrt(gamma)
+            * math.convert_like(math.cast_like(math.array([[0, 1], [0, 0]]), gamma), gamma)
         )
-        K2 = np.sqrt(1 - p + np.eps) * np.diag([np.sqrt(1 - gamma + np.eps), 1])
+        K2 = math.sqrt(1 - p + math.eps) * math.diag([math.sqrt(1 - gamma + math.eps), 1])
         K3 = (
-            np.sqrt(1 - p + np.eps)
-            * np.sqrt(gamma)
-            * np.convert_like(np.cast_like(np.array([[0, 0], [1, 0]]), gamma), gamma)
+            math.sqrt(1 - p + math.eps)
+            * math.sqrt(gamma)
+            * math.convert_like(math.cast_like(math.array([[0, 0], [1, 0]]), gamma), gamma)
         )
         return [K0, K1, K2, K3]
 
@@ -235,11 +235,11 @@ class PhaseDamping(Channel):
         [array([[1.        , 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.        ], [0.        , 0.70710678]])]
         """
-        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+        if not math.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
-        K1 = np.diag([0, np.sqrt(gamma + np.eps)])
+        K0 = math.diag([1, math.sqrt(1 - gamma + math.eps)])
+        K1 = math.diag([0, math.sqrt(gamma + math.eps)])
         return [K0, K1]
 
 
@@ -324,19 +324,21 @@ class DepolarizingChannel(Channel):
          array([[0.+0.j        , 0.-0.40824829j], [0.+0.40824829j, 0.+0.j        ]]),
          array([[ 0.40824829,  0.        ], [ 0.        , -0.40824829]])]
         """
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        if np.get_interface(p) == "tensorflow":
-            p = np.cast_like(p, 1j)
+        if math.get_interface(p) == "tensorflow":
+            p = math.cast_like(p, 1j)
 
-        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.eye(2, dtype=complex), p)
-        K1 = np.sqrt(p / 3 + np.eps) * np.convert_like(np.array([[0, 1], [1, 0]], dtype=complex), p)
-        K2 = np.sqrt(p / 3 + np.eps) * np.convert_like(
-            np.array([[0, -1j], [1j, 0]], dtype=complex), p
+        K0 = math.sqrt(1 - p + math.eps) * math.convert_like(math.eye(2, dtype=complex), p)
+        K1 = math.sqrt(p / 3 + math.eps) * math.convert_like(
+            math.array([[0, 1], [1, 0]], dtype=complex), p
         )
-        K3 = np.sqrt(p / 3 + np.eps) * np.convert_like(
-            np.array([[1, 0], [0, -1]], dtype=complex), p
+        K2 = math.sqrt(p / 3 + math.eps) * math.convert_like(
+            math.array([[0, -1j], [1j, 0]], dtype=complex), p
+        )
+        K3 = math.sqrt(p / 3 + math.eps) * math.convert_like(
+            math.array([[1, 0], [0, -1]], dtype=complex), p
         )
         return [K0, K1, K2, K3]
 
@@ -396,11 +398,13 @@ class BitFlip(Channel):
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2), p), p)
-        K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.array([[0, 1], [1, 0]]), p), p)
+        K0 = math.sqrt(1 - p + math.eps) * math.convert_like(math.cast_like(math.eye(2), p), p)
+        K1 = math.sqrt(p + math.eps) * math.convert_like(
+            math.cast_like(math.array([[0, 1], [1, 0]]), p), p
+        )
         return [K0, K1]
 
 
@@ -482,29 +486,31 @@ class ResetError(Channel):
          array([[0.        , 0.        ], [0.54772256, 0.        ]]),
          array([[0.        , 0.        ], [0.        , 0.54772256]])]
         """
-        if not np.is_abstract(p_0) and not 0.0 <= p_0 <= 1.0:
+        if not math.is_abstract(p_0) and not 0.0 <= p_0 <= 1.0:
             raise ValueError("p_0 must be in the interval [0,1]")
 
-        if not np.is_abstract(p_1) and not 0.0 <= p_1 <= 1.0:
+        if not math.is_abstract(p_1) and not 0.0 <= p_1 <= 1.0:
             raise ValueError("p_1 must be in the interval [0,1]")
 
-        if not np.is_abstract(p_0 + p_1) and not 0.0 <= p_0 + p_1 <= 1.0:
+        if not math.is_abstract(p_0 + p_1) and not 0.0 <= p_0 + p_1 <= 1.0:
             raise ValueError("p_0 + p_1 must be in the interval [0,1]")
 
-        interface = np.get_interface(p_0, p_1)
-        p_0, p_1 = np.coerce([p_0, p_1], like=interface)
-        K0 = np.sqrt(1 - p_0 - p_1 + np.eps) * np.convert_like(np.cast_like(np.eye(2), p_0), p_0)
-        K1 = np.sqrt(p_0 + np.eps) * np.convert_like(
-            np.cast_like(np.array([[1, 0], [0, 0]]), p_0), p_0
+        interface = math.get_interface(p_0, p_1)
+        p_0, p_1 = math.coerce([p_0, p_1], like=interface)
+        K0 = math.sqrt(1 - p_0 - p_1 + math.eps) * math.convert_like(
+            math.cast_like(math.eye(2), p_0), p_0
         )
-        K2 = np.sqrt(p_0 + np.eps) * np.convert_like(
-            np.cast_like(np.array([[0, 1], [0, 0]]), p_0), p_0
+        K1 = math.sqrt(p_0 + math.eps) * math.convert_like(
+            math.cast_like(math.array([[1, 0], [0, 0]]), p_0), p_0
         )
-        K3 = np.sqrt(p_1 + np.eps) * np.convert_like(
-            np.cast_like(np.array([[0, 0], [1, 0]]), p_0), p_0
+        K2 = math.sqrt(p_0 + math.eps) * math.convert_like(
+            math.cast_like(math.array([[0, 1], [0, 0]]), p_0), p_0
         )
-        K4 = np.sqrt(p_1 + np.eps) * np.convert_like(
-            np.cast_like(np.array([[0, 0], [0, 1]]), p_0), p_0
+        K3 = math.sqrt(p_1 + math.eps) * math.convert_like(
+            math.cast_like(math.array([[0, 0], [1, 0]]), p_0), p_0
+        )
+        K4 = math.sqrt(p_1 + math.eps) * math.convert_like(
+            math.cast_like(math.array([[0, 0], [0, 1]]), p_0), p_0
         )
 
         return [K0, K1, K2, K3, K4]
@@ -571,7 +577,7 @@ class PauliError(Channel):
             raise ValueError("The specified operators need to be either of 'X', 'Y' or 'Z'")
 
         # check if probabilities are legal
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         # check if the number of operators matches the number of wires
@@ -605,25 +611,27 @@ class PauliError(Channel):
         nq = len(operators)
 
         # K0 is sqrt(1-p) * Identity
-        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2**nq), p), p)
+        K0 = math.sqrt(1 - p + math.eps) * math.convert_like(
+            math.cast_like(math.eye(2**nq), p), p
+        )
 
-        interface = np.get_interface(p)
+        interface = math.get_interface(p)
         if interface == "tensorflow" or "Y" in operators:
             if interface == "numpy":
                 p = (1 + 0j) * p
             else:
-                p = np.cast_like(p, 1j)
+                p = math.cast_like(p, 1j)
 
         ops = {
-            "X": np.convert_like(np.cast_like(np.array([[0, 1], [1, 0]]), p), p),
-            "Y": np.convert_like(np.cast_like(np.array([[0, -1j], [1j, 0]]), p), p),
-            "Z": np.convert_like(np.cast_like(np.array([[1, 0], [0, -1]]), p), p),
+            "X": math.convert_like(math.cast_like(math.array([[0, 1], [1, 0]]), p), p),
+            "Y": math.convert_like(math.cast_like(math.array([[0, -1j], [1j, 0]]), p), p),
+            "Z": math.convert_like(math.cast_like(math.array([[1, 0], [0, -1]]), p), p),
         }
 
         # K1 is composed by Kraus matrices of operators
-        K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.eye(1), p), p)
+        K1 = math.sqrt(p + math.eps) * math.convert_like(math.cast_like(math.eye(1), p), p)
         for op in operators[::-1]:
-            K1 = np.multi_dispatch()(np.kron)(ops[op], K1)
+            K1 = math.multi_dispatch()(math.kron)(ops[op], K1)
 
         return [K0, K1]
 
@@ -683,11 +691,11 @@ class PhaseFlip(Channel):
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[ 0.70710678,  0.        ], [ 0.        , -0.70710678]])]
         """
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2), p), p)
-        K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.diag([1, -1]), p), p)
+        K0 = math.sqrt(1 - p + math.eps) * math.convert_like(math.cast_like(math.eye(2), p), p)
+        K1 = math.sqrt(p + math.eps) * math.convert_like(math.cast_like(math.diag([1, -1]), p), p)
         return [K0, K1]
 
 
@@ -717,26 +725,27 @@ class QubitChannel(Channel):
         super().__init__(*K_list, wires=wires, id=id)
 
         # check all Kraus matrices are square matrices
-        if not all(K.shape[0] == K.shape[1] for K in K_list):
+        if any(K.shape[0] != K.shape[1] for K in K_list):
             raise ValueError(
                 "Only channels with the same input and output Hilbert space dimensions can be applied."
             )
 
         # check all Kraus matrices have the same shape
-        if not all(K.shape == K_list[0].shape for K in K_list):
+        if any(K.shape != K_list[0].shape for K in K_list):
             raise ValueError("All Kraus matrices must have the same shape.")
 
         # check the dimension of all Kraus matrices are valid
-        if not all(K.ndim == 2 for K in K_list):
+        if any(K.ndim != 2 for K in K_list):
             raise ValueError(
                 "Dimension of all Kraus matrices must be (2**num_wires, 2**num_wires)."
             )
 
         # check that the channel represents a trace-preserving map
-        K_arr = np.array(K_list)
-        Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
-        if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
-            raise ValueError("Only trace preserving channels can be applied.")
+        if not any(math.is_abstract(K) for K in K_list):
+            K_arr = math.array(K_list)
+            Kraus_sum = math.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
+            if not math.allclose(Kraus_sum, math.eye(K_list[0].shape[0])):
+                raise ValueError("Only trace preserving channels can be applied.")
 
     def _flatten(self):
         return (self.data,), (self.wires, ())
@@ -755,7 +764,7 @@ class QubitChannel(Channel):
 
         >>> K_list = qml.PhaseFlip(0.5, wires=0).kraus_matrices()
         >>> res = qml.QubitChannel.compute_kraus_matrices(K_list)
-        >>> all(np.allclose(r, k) for r, k  in zip(res, K_list))
+        >>> all(math.allclose(r, k) for r, k  in zip(res, K_list))
         True
         """
         return list(kraus_matrices)
@@ -868,21 +877,21 @@ class ThermalRelaxationError(Channel):
          array([[-0.12718544,  0.        ], [ 0.        ,  0.13165421]]),
          array([[0.98784022, 0.        ], [0.        , 0.95430977]])]
         """
-        if not np.is_abstract(pe) and not 0.0 <= pe <= 1.0:
+        if not math.is_abstract(pe) and not 0.0 <= pe <= 1.0:
             raise ValueError("pe must be between 0 and 1.")
-        if not np.is_abstract(tg) and tg < 0:
+        if not math.is_abstract(tg) and tg < 0:
             raise ValueError(f"Invalid gate_time tg ({tg} < 0)")
-        if not np.is_abstract(t1) and t1 <= 0:
+        if not math.is_abstract(t1) and t1 <= 0:
             raise ValueError("Invalid T_1 relaxation time parameter: T_1 <= 0.")
-        if not np.is_abstract(t2) and t2 <= 0:
+        if not math.is_abstract(t2) and t2 <= 0:
             raise ValueError("Invalid T_2 relaxation time parameter: T_2 <= 0.")
-        if not np.is_abstract(t2 - 2 * t1) and t2 - 2 * t1 > 0:
+        if not math.is_abstract(t2 - 2 * t1) and t2 - 2 * t1 > 0:
             raise ValueError("Invalid T_2 relaxation time parameter: T_2 greater than 2 * T_1.")
         # T1 relaxation rate
-        eT1 = np.exp(-tg / t1)
+        eT1 = math.exp(-tg / t1)
         p_reset = 1 - eT1
         # T2 dephasing rate
-        eT2 = np.exp(-tg / t2)
+        eT2 = math.exp(-tg / t2)
 
         def kraus_ops_small_t2():
             pz = (1 - p_reset) * (1 - eT2 / eT1) / 2
@@ -890,50 +899,50 @@ class ThermalRelaxationError(Channel):
             pr1 = pe * p_reset
             pid = 1 - pz - pr0 - pr1
 
-            K0 = np.sqrt(pid + np.eps) * np.eye(2)
-            K1 = np.sqrt(pz + np.eps) * np.array([[1, 0], [0, -1]])
-            K2 = np.sqrt(pr0 + np.eps) * np.array([[1, 0], [0, 0]])
-            K3 = np.sqrt(pr0 + np.eps) * np.array([[0, 1], [0, 0]])
-            K4 = np.sqrt(pr1 + np.eps) * np.array([[0, 0], [1, 0]])
-            K5 = np.sqrt(pr1 + np.eps) * np.array([[0, 0], [0, 1]])
+            K0 = math.sqrt(pid + math.eps) * math.eye(2)
+            K1 = math.sqrt(pz + math.eps) * math.array([[1, 0], [0, -1]])
+            K2 = math.sqrt(pr0 + math.eps) * math.array([[1, 0], [0, 0]])
+            K3 = math.sqrt(pr0 + math.eps) * math.array([[0, 1], [0, 0]])
+            K4 = math.sqrt(pr1 + math.eps) * math.array([[0, 0], [1, 0]])
+            K5 = math.sqrt(pr1 + math.eps) * math.array([[0, 0], [0, 1]])
 
             return [K0, K1, K2, K3, K4, K5]
 
         def kraus_ops_large_t2():
             e0 = p_reset * pe
-            v0 = np.array([[0, 0], [1, 0]])
-            K0 = np.sqrt(e0 + np.eps) * v0
+            v0 = math.array([[0, 0], [1, 0]])
+            K0 = math.sqrt(e0 + math.eps) * v0
             e1 = -p_reset * pe + p_reset
-            v1 = np.array([[0, 1], [0, 0]])
-            K1 = np.sqrt(e1 + np.eps) * v1
+            v1 = math.array([[0, 1], [0, 0]])
+            K1 = math.sqrt(e1 + math.eps) * v1
             base = sum(
                 (
                     4 * eT2**2,
                     4 * p_reset**2 * pe**2,
                     -4 * p_reset**2 * pe,
                     p_reset**2,
-                    np.eps,
+                    math.eps,
                 )
             )
-            common_term = np.sqrt(base)
+            common_term = math.sqrt(base)
             e2 = 1 - p_reset / 2 - common_term / 2
             term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
-            v2 = (term2 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(
+            v2 = (term2 * math.array([[1, 0], [0, 0]]) + math.array([[0, 0], [0, 1]])) / math.sqrt(
                 term2**2 + 1
             )
-            K2 = np.sqrt(e2 + np.eps) * v2
+            K2 = math.sqrt(e2 + math.eps) * v2
             term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
             e3 = 1 - p_reset / 2 + common_term / 2
-            v3 = (term3 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(
+            v3 = (term3 * math.array([[1, 0], [0, 0]]) + math.array([[0, 0], [0, 1]])) / math.sqrt(
                 term3**2 + 1
             )
-            K3 = np.sqrt(e3 + np.eps) * v3
-            K4 = np.cast_like(np.zeros((2, 2)), K1)
-            K5 = np.cast_like(np.zeros((2, 2)), K1)
+            K3 = math.sqrt(e3 + math.eps) * v3
+            K4 = math.cast_like(math.zeros((2, 2)), K1)
+            K5 = math.cast_like(math.zeros((2, 2)), K1)
 
             return [K0, K1, K2, K3, K4, K5]
 
-        K = np.cond(t2 <= t1, kraus_ops_small_t2, kraus_ops_large_t2, ())
+        K = math.cond(t2 <= t1, kraus_ops_small_t2, kraus_ops_large_t2, ())
         return K
 
 
