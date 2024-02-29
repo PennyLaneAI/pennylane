@@ -65,7 +65,7 @@ class AmplitudeEmbedding(StatePrep):
             @qml.qnode(dev)
             def circuit(f=None):
                 qml.AmplitudeEmbedding(features=f, wires=range(2))
-                return qml.expval(qml.PauliZ(0)), qml.state()
+                return qml.expval(qml.Z(0)), qml.state()
 
             res, state = circuit(f=[1/2, 1/2, 1/2, 1/2])
 
@@ -89,7 +89,7 @@ class AmplitudeEmbedding(StatePrep):
             @qml.qnode(dev)
             def circuit(f=None):
                 qml.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
-                return qml.expval(qml.PauliZ(0)), qml.state()
+                return qml.expval(qml.Z(0)), qml.state()
 
             res, state = circuit(f=[15, 15, 15, 15])
 
@@ -108,7 +108,7 @@ class AmplitudeEmbedding(StatePrep):
             @qml.qnode(dev)
             def circuit(f=None):
                 qml.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
-                return qml.expval(qml.PauliZ(0)), qml.state()
+                return qml.expval(qml.Z(0)), qml.state()
 
             res, state = circuit(f=[1/sqrt(2), 1/sqrt(2)])
 

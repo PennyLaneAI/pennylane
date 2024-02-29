@@ -43,7 +43,7 @@ class BasisStatePreparation(Operation):
         @qml.qnode(dev)
         def circuit(basis_state):
             qml.BasisStatePreparation(basis_state, wires=range(4))
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(4)]
+            return [qml.expval(qml.Z(i)) for i in range(4)]
 
         basis_state = [0, 1, 1, 0]
 
@@ -108,8 +108,8 @@ class BasisStatePreparation(Operation):
         **Example**
 
         >>> qml.BasisStatePreparation.compute_decomposition(basis_state=[1, 1], wires=["a", "b"])
-        [PauliX(wires=['a']),
-        PauliX(wires=['b'])]
+        [X('a'),
+        X('b')]
         """
         if len(qml.math.shape(basis_state)) > 1:
             raise ValueError(
@@ -122,7 +122,7 @@ class BasisStatePreparation(Operation):
             op_list = []
             for wire, state in zip(wires, basis_state):
                 if state == 1:
-                    op_list.append(qml.PauliX(wire))
+                    op_list.append(qml.X(wire))
             return op_list
 
         op_list = []

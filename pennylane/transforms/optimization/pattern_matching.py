@@ -58,7 +58,7 @@ def pattern_matching_optimization(
 
     .. code-block:: python
 
-        ops = [qml.S(0), qml.S(0), qml.PauliZ(0)]
+        ops = [qml.S(0), qml.S(0), qml.Z(0)]
         pattern = qml.tape.QuantumTape(ops)
 
 
@@ -71,14 +71,14 @@ def pattern_matching_optimization(
         @qml.qnode(device=dev)
         def circuit():
             qml.S(wires=0)
-            qml.PauliZ(wires=0)
+            qml.Z(0)
             qml.S(wires=1)
             qml.CZ(wires=[0, 1])
             qml.S(wires=1)
             qml.S(wires=2)
             qml.CZ(wires=[1, 2])
             qml.S(wires=2)
-            return qml.expval(qml.PauliX(wires=0))
+            return qml.expval(qml.X(0))
 
     During the call of the circuit, it is first optimized (if possible) and then executed.
 
@@ -91,14 +91,14 @@ def pattern_matching_optimization(
 
             def circuit():
                 qml.S(wires=0)
-                qml.PauliZ(wires=0)
+                qml.Z(0)
                 qml.S(wires=1)
                 qml.CZ(wires=[0, 1])
                 qml.S(wires=1)
                 qml.S(wires=2)
                 qml.CZ(wires=[1, 2])
                 qml.S(wires=2)
-                return qml.expval(qml.PauliX(wires=0))
+                return qml.expval(qml.X(0))
 
         For optimizing the circuit given the following template of CNOTs we apply the ``pattern_matching``
         transform.
@@ -139,11 +139,11 @@ def pattern_matching_optimization(
                 qml.CNOT(wires=[1, 4])
                 qml.CNOT(wires=[2, 1])
                 qml.Hadamard(wires=3)
-                qml.PauliZ(wires=1)
+                qml.Z(1)
                 qml.CNOT(wires=[2, 3])
                 qml.Toffoli(wires=[2, 3, 0])
                 qml.CNOT(wires=[1, 4])
-                return qml.expval(qml.PauliX(wires=0))
+                return qml.expval(qml.X(0))
 
         We define a pattern that implement the identity:
 
@@ -310,14 +310,14 @@ def pattern_matching(circuit_dag, pattern_dag):
 
         def circuit():
             qml.S(wires=0)
-            qml.PauliZ(wires=0)
+            qml.Z(0)
             qml.S(wires=1)
             qml.CZ(wires=[0, 1])
             qml.S(wires=1)
             qml.S(wires=2)
             qml.CZ(wires=[1, 2])
             qml.S(wires=2)
-            return qml.expval(qml.PauliX(wires=0))
+            return qml.expval(qml.X(0))
 
     Assume that we want to find all maximal matches of a pattern containing a sequence of two :class:`~.S` gates and
     a :class:`~.PauliZ` gate:
@@ -327,7 +327,7 @@ def pattern_matching(circuit_dag, pattern_dag):
         def pattern():
             qml.S(wires=0)
             qml.S(wires=0)
-            qml.PauliZ(wires=0)
+            qml.Z(0)
 
 
     >>> circuit_dag = qml.commutation_dag(circuit)()

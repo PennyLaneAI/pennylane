@@ -78,9 +78,16 @@ def _refresh_compilers():
     )
 
     for entry in entries:
-        # Only need name of the parent module
-        module_name = entry.module.split(".")[0]
-        AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
+        try:
+            # First element of split is the compiler name
+            # New convention for entry point.
+            compiler_name, e_name = entry.name.split(".")
+            AvailableCompilers.names_entrypoints[compiler_name][e_name] = entry  # pragma: no cover
+        except ValueError:
+            # Keep old behaviour.
+            # TODO: Deprecate in 0.35 release
+            compiler_name = entry.module.split(".")[0]
+            AvailableCompilers.names_entrypoints[compiler_name][entry.name] = entry
 
     # Check whether available compilers follow the entry_point interface
     # by validating that all entry points (qjit, context, and ops) are defined.
@@ -189,7 +196,7 @@ def active_compiler() -> Optional[str]:
                 qml.RX(phi, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(np.pi, np.pi / 2)
     1.0
@@ -231,7 +238,7 @@ def active() -> bool:
                 qml.RX(phi, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(np.pi, np.pi / 2)
     1.0

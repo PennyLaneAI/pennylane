@@ -14,6 +14,7 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
+# pylint: disable=eval-used
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -22,10 +23,12 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import math
+from pennylane import math, X, Y, Z
 from pennylane.wires import Wires
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
+
+X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 
 no_mat_ops = (
     qml.Barrier,
@@ -111,6 +114,20 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
+def test_legacy_ops():
+    """Test that PennyLaneDepcreationWarning is raised when Sum.ops is called"""
+    H = qml.sum(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Sum.ops is deprecated and"):
+        _ = H.ops
+
+
+def test_legacy_coeffs():
+    """Test that PennyLaneDepcreationWarning is raised when Sum.ops is called"""
+    H = qml.sum(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Sum.coeffs is deprecated and"):
+        _ = H.coeffs
+
+
 class TestInitialization:
     """Test the initialization."""
 
@@ -146,18 +163,115 @@ class TestInitialization:
         assert sum_op.parameters == [0.23, 9.87]
         assert sum_op.num_params == 2
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_terms(self, ops_lst):
-        """Test that terms are initialized correctly."""
-        sum_op = Sum(*ops_lst)
-        coeff, sum_ops = sum_op.terms()
+    coeffs_ = [1.0, 1.0, 1.0, 3.0, 4.0, 4.0, 5.0]
+    h6 = qml.sum(
+        qml.s_prod(2.0, qml.prod(qml.PauliX(0), qml.PauliZ(10))),
+        qml.s_prod(3.0, qml.prod(qml.PauliX(1), qml.PauliZ(11))),
+    )
+    ops_ = [
+        qml.s_prod(1.0, qml.PauliX(0)),
+        qml.s_prod(1.0, qml.prod(qml.PauliX(0), qml.PauliX(1))),
+        qml.s_prod(2.0, qml.prod(qml.PauliZ(0), qml.PauliZ(1))),
+        qml.s_prod(2.0, qml.PauliY(0)),
+        qml.s_prod(2.0, qml.prod(qml.PauliY(0), qml.PauliY(1))),
+        qml.s_prod(2.0, qml.prod(qml.s_prod(2.0, qml.PauliY(2)), qml.PauliY(3))),
+        h6,
+    ]
+    Hamiltonian_with_Paulis = qml.dot(coeffs_, ops_)
 
-        assert coeff == [1.0, 1.0, 1.0]
+    SUM_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
+        (
+            qml.sum(*(i * X(i) for i in range(1, 5))),
+            [float(i) for i in range(1, 5)],
+            [X(i) for i in range(1, 5)],
+        ),
+        (
+            qml.sum(*(qml.s_prod(i, qml.prod(X(i), X(i + 1))) for i in range(1, 5))),
+            [float(i) for i in range(1, 5)],
+            [qml.prod(X(i), X(i + 1)) for i in range(1, 5)],
+        ),
+        (
+            Hamiltonian_with_Paulis,
+            [1.0, 1.0, 2.0, 6.0, 8.0, 16.0, 10.0, 15.0],
+            [
+                X(0),
+                qml.prod(X(1), X(0)),
+                qml.prod(Z(1), Z(0)),
+                Y(0),
+                qml.prod(Y(1), Y(0)),
+                qml.prod(Y(3), Y(2)),
+                qml.prod(Z(10), X(0)),
+                qml.prod(Z(11), X(1)),
+            ],
+        ),
+    )
 
-        for op1, op2 in zip(sum_ops, ops_lst):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert op1.data == op2.data
+    @pytest.mark.parametrize("op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_PAULI)
+    def test_terms_pauli_rep(self, op, coeffs_true, ops_true):
+        """Test that Sum.terms() is correct for operators that all have a pauli_rep"""
+        coeffs, ops1 = op.terms()
+        assert coeffs == coeffs_true
+        assert ops1 == ops_true
+
+    coeffs_ = [1.0, 1.0, 1.0, 3.0, 4.0, 4.0, 5.0]
+    h6 = qml.sum(
+        qml.s_prod(2.0, qml.prod(qml.Hadamard(0), qml.PauliZ(10))),
+        qml.s_prod(3.0, qml.prod(qml.PauliX(1), qml.PauliZ(11))),
+    )
+    ops_ = [
+        qml.s_prod(1.0, qml.Hadamard(0)),
+        qml.s_prod(1.0, qml.prod(qml.Hadamard(0), qml.PauliX(1))),
+        qml.s_prod(2.0, qml.prod(qml.PauliZ(0), qml.PauliZ(1))),
+        qml.s_prod(2.0, qml.PauliY(0)),
+        qml.s_prod(2.0, qml.prod(qml.PauliY(0), qml.PauliY(1))),
+        qml.s_prod(2.0, qml.prod(qml.s_prod(2.0, qml.PauliY(2)), qml.PauliY(3))),
+        h6,
+    ]
+    Hamiltonian_mixed = qml.dot(coeffs_, ops_)
+
+    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # all operands have pauli representation
+        (
+            qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))),
+            [float(i) for i in range(1, 5)],
+            [qml.Hadamard(i) for i in range(1, 5)],
+        ),
+        (
+            qml.sum(qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))), 0.0 * qml.Identity(0)),
+            [float(i) for i in range(1, 5)],
+            [qml.Hadamard(i) for i in range(1, 5)],
+        ),
+        (
+            qml.sum(qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))), qml.Identity(0)),
+            [float(i) for i in range(1, 5)] + [1.0],
+            [qml.Hadamard(i) for i in range(1, 5)] + [qml.Identity(0)],
+        ),
+        (
+            qml.sum(*(qml.s_prod(i, qml.prod(X(i), qml.Hadamard(i + 1))) for i in range(1, 5))),
+            [float(i) for i in range(1, 5)],
+            [qml.prod(X(i), qml.Hadamard(i + 1)) for i in range(1, 5)],
+        ),
+        (
+            Hamiltonian_mixed,
+            [1.0, 1.0, 2.0, 6.0, 8.0, 16.0, 10.0, 15.0],
+            [
+                qml.Hadamard(0),
+                qml.prod(X(1), qml.Hadamard(0)),
+                qml.prod(Z(1), Z(0)),
+                Y(0),
+                qml.prod(Y(1), Y(0)),
+                qml.prod(Y(3), Y(2)),
+                qml.prod(Z(10), qml.Hadamard(0)),
+                qml.prod(Z(11), X(1)),
+            ],
+        ),
+    )
+
+    @pytest.mark.parametrize("op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_MIXEDPAULI)
+    def test_terms_mixed(self, op, coeffs_true, ops_true):
+        """Test that Sum.terms() is correct for operators that dont all have a pauli_rep"""
+        coeffs, ops1 = op.terms()
+        assert coeffs == coeffs_true
+        assert ops1 == ops_true
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
@@ -173,6 +287,47 @@ class TestInitialization:
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
+
+    qml.operation.enable_new_opmath()
+    SUM_REPR = (
+        (qml.sum(X(0), Y(1), Z(2)), "X(0) + Y(1) + Z(2)"),
+        (X(0) + X(1) + X(2), "X(0) + X(1) + X(2)"),
+        (0.5 * X(0) + 0.7 * X(1), "0.5 * X(0) + 0.7 * X(1)"),
+        (0.5 * (X(0) @ X(1)) + 0.7 * X(1), "0.5 * (X(0) @ X(1)) + 0.7 * X(1)"),
+        (
+            0.5 * (X(0) @ (0.5 * X(1))) + 0.7 * X(1) + 0.8 * qml.CNOT((0, 1)),
+            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * CNOT(wires=[0, 1])\n)",
+        ),
+        (
+            0.5 * (X(0) @ (0.5 * X(1))) + 0.7 * X(1) + 0.8 * (X(0) @ Y(1) @ Z(1)),
+            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * ((X(0) @ Y(1)) @ Z(1))\n)",
+        ),
+    )
+    qml.operation.disable_new_opmath()
+
+    @pytest.mark.parametrize("op, repr_true", SUM_REPR)
+    def test_repr(self, op, repr_true):
+        """Test the string representation of Sum instances"""
+        assert repr(op) == repr_true
+
+    qml.operation.enable_new_opmath()
+    SUM_REPR_EVAL = (
+        X(0) + Y(1) + Z(2),  # single line output
+        0.5 * X(0) + 3.5 * Y(1) + 10 * Z(2),  # single line output
+        X(0) @ X(1) + Y(1) @ Y(2) + Z(2),  # single line output
+        0.5 * (X(0) @ X(1) @ X(2))
+        + 1000 * (Y(1) @ X(0) @ X(1))
+        + 1000000000 * Z(2),  # multiline output
+        # qml.sum(*[0.5 * X(i) for i in range(10)]) # multiline output needs fixing of https://github.com/PennyLaneAI/pennylane/issues/5162 before working
+    )
+    qml.operation.disable_new_opmath()
+
+    @pytest.mark.parametrize("op", SUM_REPR_EVAL)
+    def test_eval_sum(self, op):
+        """Test that string representations of Sum can be evaluated and yield the same operator"""
+        qml.operation.enable_new_opmath()
+        assert qml.equal(eval(repr(op)), op)
+        qml.operation.disable_new_opmath()
 
 
 class TestMatrix:

@@ -36,6 +36,8 @@ Note that we must provide the expected output shape for the function to use pure
 
 """
 # pylint: disable=unused-argument, too-many-arguments
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 
@@ -111,7 +113,7 @@ def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"
         tape (QuantumTape): the tape who's output we want to determine
         device (Device): the device used to execute the tape.
 
-    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliX(0)), qml.probs(0)])
+    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.X(0)), qml.probs(0)])
     >>> dev = qml.devices.DefaultQubit()
     >>> _jac_shape_dtype_struct(tape, dev)
     (ShapeDtypeStruct(shape=(), dtype=float64),
@@ -135,14 +137,15 @@ def _pytree_shape_dtype_struct(pytree):
     return jax.tree_util.tree_unflatten(struct, new_leaves)
 
 
-def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
+def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -> ResultBatch:
     """
     Execute tapes using a pure-callback.
     """
     shape_dtype_structs = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
+    _set_fn = _set_trainable_parameters_on_copy if is_vjp else _set_all_parameters_on_copy
 
     def pure_callback_wrapper(p):
-        new_tapes = _set_all_parameters_on_copy(tapes.vals, p)
+        new_tapes = _set_fn(tapes.vals, p)
         res = tuple(_to_jax(execute_fn(new_tapes)))
         # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
         # the shape without the vmap dimensions, while the function here will be
@@ -158,6 +161,10 @@ def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
 
     out = jax.pure_callback(pure_callback_wrapper, shape_dtype_structs, params, vectorized=True)
     return out
+
+
+_execute_wrapper = partial(_execute_wrapper_inner, is_vjp=False)
+_execute_wrapper_vjp = partial(_execute_wrapper_inner, is_vjp=True)
 
 
 def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
@@ -192,7 +199,7 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
 
 def _vjp_fwd(params, tapes, execute_fn, jpc, device):
     """Perform the forward pass execution, return results and the parameters as residuals."""
-    return _execute_wrapper(params, tapes, execute_fn, jpc, device), params
+    return _execute_wrapper_vjp(params, tapes, execute_fn, jpc, device), params
 
 
 def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
@@ -209,7 +216,7 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
 _execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
 _execute_jvp_jit.defjvp(_execute_and_compute_jvp, symbolic_zeros=True)
 
-_execute_vjp_jit = jax.custom_vjp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
+_execute_vjp_jit = jax.custom_vjp(_execute_wrapper_vjp, nondiff_argnums=[1, 2, 3, 4])
 _execute_vjp_jit.defvjp(_vjp_fwd, _vjp_bwd)
 
 
