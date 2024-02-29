@@ -29,7 +29,7 @@ from pennylane.queuing import QueuingManager
 from .composite import CompositeOp
 
 
-def sum(*summands, id=None, lazy=True):
+def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -39,6 +39,11 @@ def sum(*summands, id=None, lazy=True):
         id (str or None): id for the Sum operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
             of the operators is already a sum operator, its operands (summands) will be used instead.
+        grouping_type (str): The type of binary relation between Pauli words used to compute
+            the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+            grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
+            First).
 
     Returns:
         ~ops.op_math.Sum: The operator representing the sum of summands.
@@ -69,10 +74,12 @@ def sum(*summands, id=None, lazy=True):
     """
     summands = tuple(convert_to_opmath(op) for op in summands)
     if lazy:
-        return Sum(*summands, id=id)
+        return Sum(*summands, grouping_type=grouping_type, method=method, id=id)
 
     summands_simp = Sum(
         *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands]),
+        grouping_type=grouping_type,
+        method=method,
         id=id,
     )
 
@@ -89,6 +96,11 @@ class Sum(CompositeOp):
         *summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
+        grouping_type (str): The type of binary relation between Pauli words used to compute
+            the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+            grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
+            First).
         id (str or None): id for the sum operator. Default is None.
 
     .. note::
@@ -161,14 +173,28 @@ class Sum(CompositeOp):
     _op_symbol = "+"
     _math_op = math.sum
 
-    def __init__(self, *operands: Operator, id=None, _pauli_rep=None):
-        self._grouping_inds = None
+    def __init__(
+        self, *operands: Operator, grouping_type=None, method="rlf", id=None, _pauli_rep=None
+    ):
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
+
+        self._grouping_indices = None
+        if grouping_type is not None:
+            self.compute_grouping(grouping_type=grouping_type, method=method)
 
     @property
     def hash(self):
         # Since addition is always commutative, we do not need to sort
         return hash(("Sum", frozenset(o.hash for o in self.operands)))
+
+    @property
+    def grouping_indices(self):
+        """Return the grouping indices attribute.
+
+        Returns:
+            list[list[int]]: indices needed to form groups of commuting observables
+        """
+        return self._grouping_indices
 
     def __str__(self):
         """String representation of the PauliSentence."""
@@ -337,10 +363,12 @@ class Sum(CompositeOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            ops = [pauli.operation() for pauli in pr.keys()]
+            with qml.QueuingManager.stop_recording():
+                ops = [pauli.operation() for pauli in pr.keys()]
             return list(pr.values()), ops
 
-        new_summands = self._simplify_summands(summands=self.operands).get_summands()
+        with qml.QueuingManager.stop_recording():
+            new_summands = self._simplify_summands(summands=self.operands).get_summands()
 
         coeffs = []
         ops = []
@@ -355,8 +383,15 @@ class Sum(CompositeOp):
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """
-        Compute and return groups of operators and coefficients corresponding to commuting
+        Compute groups of operators and coefficients corresponding to commuting
         observables of this Sum.
+
+        .. note::
+
+            The computed groupings are stored as a list of list of indices in the
+            ``grouping_indices`` attribute. The indices refer to the operators and
+            coefficients returned by ``Sum.terms()``, not ``Sum.operands()``, as these
+            are not guaranteed to be equivalent.
 
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute
@@ -364,28 +399,15 @@ class Sum(CompositeOp):
             method (str): The graph coloring heuristic to use in solving minimum clique cover for
                 grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
                 First).
-
-        Returns:
-            tuple[list[list[.Operation]], list[list[tensor_like or float]]]: List of observable
-            groups and corresponding list of coefficient groups
         """
         if not self.pauli_rep:
-            raise ValueError("Cannot compute groupings for Sums containing non-Pauli operators.")
+            raise ValueError("Cannot compute grouping for Sums containing non-Pauli operators.")
 
-        coeffs, ops = self.terms()
+        _, ops = self.terms()
 
-        if self._grouping_inds is not None:
-            op_groups = [[ops[i] for i in group] for group in self._grouping_inds]
-            coeff_groups = [[coeffs[i] for i in group] for group in self._grouping_inds]
-
-        else:
-            op_groups, coeff_groups = qml.pauli.group_observables(
-                ops, coeffs, grouping_type=grouping_type, method=method
-            )
-
-            self._grouping_inds = [[ops.index(o) for o in group] for group in op_groups]
-
-        return op_groups, coeff_groups
+        with qml.QueuingManager.stop_recording():
+            op_groups = qml.pauli.group_observables(ops, grouping_type=grouping_type, method=method)
+        self._grouping_indices = tuple(tuple(ops.index(o) for o in group) for group in op_groups)
 
     @property
     def coeffs(self):
@@ -396,7 +418,8 @@ class Sum(CompositeOp):
 
         .. seealso:: :attr:`~Sum.ops`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
-            "Sum.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            "Sum.coeffs is deprecated and will be removed in future releases. You can access both "
+            "(coeffs, ops) via op.terms(). Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         coeffs, _ = self.terms()
@@ -411,7 +434,8 @@ class Sum(CompositeOp):
 
         .. seealso:: :attr:`~Sum.coeffs`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
-            "Sum.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            "Sum.ops is deprecated and will be removed in future releases. You can access both "
+            "(coeffs, ops) via op.terms(). Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         _, ops = self.terms()

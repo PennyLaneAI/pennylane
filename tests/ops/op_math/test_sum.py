@@ -14,7 +14,7 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-# pylint: disable=eval-used
+# pylint: disable=eval-used, unused-argument
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -229,7 +229,7 @@ class TestInitialization:
     ]
     Hamiltonian_mixed = qml.dot(coeffs_, ops_)
 
-    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # all operands have pauli representation
+    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # not all operands have pauli representation
         (
             qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))),
             [float(i) for i in range(1, 5)],
@@ -272,6 +272,17 @@ class TestInitialization:
         coeffs, ops1 = op.terms()
         assert coeffs == coeffs_true
         assert ops1 == ops_true
+
+    @pytest.mark.parametrize(
+        "op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_PAULI + SUM_TERMS_OP_PAIRS_MIXEDPAULI
+    )
+    def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
+        """Test that calling Prod.terms does not queue anything."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.apply(op)
+            _, _ = op.terms()
+
+        assert q.queue == [op]
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
@@ -1283,35 +1294,123 @@ class TestGrouping:
         op = Sum(qml.PauliX(0), Prod(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(2))
 
         with pytest.raises(
-            ValueError, match="Cannot compute groupings for Sums containing non-Pauli"
+            ValueError, match="Cannot compute grouping for Sums containing non-Pauli"
         ):
-            _, _ = op.compute_grouping()
+            op.compute_grouping()
 
-    def test_reuse_after_on_second_call(self, mocker):
-        """Test that the stored grouping indices are used to compute groupings on
-        all calls to the method after the first one."""
-        op = Sum(
-            qml.PauliX(0),
-            Prod(qml.PauliZ(0), qml.PauliX(1)),
-            Prod(qml.PauliZ(2), qml.PauliY(1)),
-            qml.PauliX(1),
-            Prod(qml.PauliZ(1), qml.PauliX(2)),
-        )
+    def test_grouping_is_correct_kwarg(self):
+        """Basic test checking that grouping with a kwarg works as expected"""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
 
-        spy = mocker.spy(qml.pauli, "group_observables")
-        o_groups1, c_groups1 = op.compute_grouping()
-        assert op._grouping_inds is not None
+        # check with qml.dot
+        op1 = qml.dot(coeffs, obs, grouping_type="qwc")
+        assert op1.grouping_indices == ((0, 1), (2,))
 
-        o_groups2, c_groups2 = op.compute_grouping()
-        assert spy.call_count == 1
+        # check with qml.sum
+        sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        op2 = qml.sum(*sprods, grouping_type="qwc")
+        assert op2.grouping_indices == ((0, 1), (2,))
 
-        assert o_groups1 == o_groups2
-        assert c_groups1 == c_groups2
+        # check with Sum directly
+        op3 = Sum(*sprods, grouping_type="qwc")
+        assert op3.grouping_indices == ((0, 1), (2,))
 
-    @pytest.mark.parametrize("ops", [])
-    def test_groupings(self, ops):
-        """Test that the computed groupings are correct."""
-        return
+    def test_grouping_is_correct_compute_grouping(self):
+        """Basic test checking that grouping with compute_grouping works as expected"""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        op = qml.dot(coeffs, obs, grouping_type=None)
+        assert op.grouping_indices is None
+
+        op.compute_grouping(grouping_type="qwc")
+        assert op.grouping_indices == ((0, 1), (2,))
+
+    def test_grouping_does_not_alter_queue(self):
+        """Tests that grouping is invisible to the queue."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.dot(coeffs, obs, grouping_type="qwc")
+
+        assert q.queue == [op]
+
+    def test_grouping_for_non_groupable_sums(self):
+        """Test that grouping is computed correctly, even if no observables commute"""
+        a = qml.PauliX(0)
+        b = qml.PauliY(0)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        op = qml.dot(coeffs, obs, grouping_type="qwc")
+        assert op.grouping_indices == ((0,), (1,), (2,))
+
+    def test_grouping_method_can_be_set(self):
+        """Tests that the grouping method can be controlled by kwargs.
+        This is done by changing from default to 'rlf' and checking the result."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        # compute grouping during construction with qml.dot
+        op1 = qml.dot(coeffs, obs, grouping_type="qwc", method="lf")
+        assert op1.grouping_indices == ((2, 1), (0,))
+
+        # compute grouping during construction with qml.sum
+        sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        op2 = qml.sum(*sprods, grouping_type="qwc", method="lf")
+        assert op2.grouping_indices == ((2, 1), (0,))
+
+        # compute grouping during construction with Sum
+        op3 = Sum(*sprods, grouping_type="qwc", method="lf")
+        assert op3.grouping_indices == ((2, 1), (0,))
+
+        # compute grouping separately
+        op4 = qml.dot(coeffs, obs, grouping_type=None)
+        op4.compute_grouping(method="lf")
+        assert op4.grouping_indices == ((2, 1), (0,))
+
+    def test_grouping_type_can_be_set(self):
+        """Tests that the grouping type can be controlled by kwargs.
+        This is done by changing from default to 'commuting' or 'anticommuting'
+        and checking the result."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        # compute grouping during construction with qml.dot
+        op1 = qml.dot(coeffs, obs, grouping_type="anticommuting")
+        assert op1.grouping_indices == ((1,), (0, 2))
+
+        # compute grouping during construction with qml.sum
+        sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        op2 = qml.sum(*sprods, grouping_type="anticommuting")
+        assert op2.grouping_indices == ((1,), (0, 2))
+
+        # compute grouping during construction with Sum
+        op3 = Sum(*sprods, grouping_type="anticommuting")
+        assert op3.grouping_indices == ((1,), (0, 2))
+
+        # compute grouping separately
+        op4 = qml.dot(coeffs, obs, grouping_type=None)
+        op4.compute_grouping(grouping_type="anticommuting")
+        assert op4.grouping_indices == ((1,), (0, 2))
 
 
 class TestSupportsBroadcasting:

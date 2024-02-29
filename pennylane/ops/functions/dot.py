@@ -29,6 +29,8 @@ def dot(
     coeffs: Sequence[Union[float, Callable]],
     ops: Sequence[Union[Operator, PauliWord, PauliSentence]],
     pauli=False,
+    grouping_type=None,
+    method="rlf",
 ) -> Union[Operator, ParametrizedHamiltonian, PauliSentence]:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
@@ -42,6 +44,12 @@ def dot(
             operator is used to represent the linear combination. If False, a :class:`Sum` operator
             is returned. Defaults to ``False``. Note that when ``ops`` consists solely of ``PauliWord``
             and ``PauliSentence`` instances, the function still returns a PennyLane operator when ``pauli=False``.
+        grouping_type (str): The type of binary relation between Pauli words used to compute
+            the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Note that if
+            ``pauli=True``, the grouping will be ignored.
+        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+            grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
+            First).
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty
@@ -116,7 +124,11 @@ def dot(
     ops = (convert_to_opmath(op) for op in ops)
 
     operands = [op if coeff == 1 else qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
-    return operands[0] if len(operands) == 1 else qml.sum(*operands)
+    return (
+        operands[0]
+        if len(operands) == 1
+        else qml.sum(*operands, grouping_type=grouping_type, method=method)
+    )
 
 
 def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):

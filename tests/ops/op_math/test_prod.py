@@ -14,7 +14,7 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
-# pylint:disable=protected-access
+# pylint:disable=protected-access, unused-argument
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -254,6 +254,17 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         coeffs, ops1 = op.terms()
         assert coeffs == coeffs_true
         assert ops1 == ops_true
+
+    @pytest.mark.parametrize(
+        "op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI + PROD_TERMS_OP_PAIRS_MIXED
+    )
+    def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
+        """Test that calling Prod.terms does not queue anything."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.apply(op)
+            _, _ = op.terms()
+
+        assert q.queue == [op]
 
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
