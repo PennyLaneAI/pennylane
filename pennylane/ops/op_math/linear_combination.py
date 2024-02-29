@@ -186,12 +186,6 @@ class LinearCombination(Observable):
                 "number of coefficients and operators does not match."
             )
 
-        # for obs in observables:
-        #     if not isinstance(obs, Observable):
-        #         raise ValueError(
-        #             "Could not create circuits. Some or all observables are not valid."
-        #         )
-
         self._coeffs = coeffs
         self._ops = [convert_to_opmath(op) for op in observables]
 
