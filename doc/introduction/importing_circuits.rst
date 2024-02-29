@@ -131,11 +131,50 @@ The result is as follows:
 0: ──H─╭●──┤↗├─┤  <Y>
 1: ────╰X──┤↗├─┤  Var[Z]
 
+Rigetti
+~~~~~~~
 
-Quil
-~~~~
+PennyLane also offers convenience functions for importing circuits from `pyQuil
+<https://pyquil-docs.rigetti.com/en/stable/index.html>`_ or Quil representations. Both of these
+require the `PennyLane-Forest <https://docs.pennylane.ai/projects/rigetti/en/stable/>`__ plugin,
+which can be installed using:
 
-TODO
+.. code-block::
+
+    pip install pennylane-forest
+
+We begin with a familiar pyQuil ``Program``:
+
+.. code-block:: python
+
+    import pyquil
+
+    pq_program = pyquil.Program()
+    pq_program += pyquil.gates.H(0)
+    pq_program += pyquil.gates.CNOT(0, 1)
+
+This ``Program`` can be converted into a PennyLane quantum function using :func:`from_pyquil`:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    pl_template_from_pq = qml.from_pyquil(pq_program)
+
+    @qml.qnode(qml.device("default.qubit"))
+    def pl_circuit_from_pq():
+        pl_template_from_pq(wires=[0, 1])
+        return qml.expval(qml.Y(0)), qml.var(qml.Z(1))
+
+The resulting PennyLane circuit is:
+
+>>> print(qml.draw(pl_circuit_from_pq)())
+0: ──H─╭●─┤  <Y>
+1: ────╰X─┤  Var[Z]
+
+.. note::
+
+    Quantum circuits expressed in Quil can be imported in a similar way using :func:`from_quil`.
 
 
 Importing Quantum Operations in PennyLane
