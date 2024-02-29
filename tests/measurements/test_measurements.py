@@ -324,9 +324,11 @@ class TestProperties:
     def test_obs_mv_error(self):
         """Test that an error is raised if both obs and mv are set."""
         obs = qml.PauliZ(0)
-        mv = qml.measure(0)
-        with pytest.raises(ValueError, match="Cannot set measurement value if an observable or wires are provided"):
-            ExpectationMP(obs=obs, mv=mv)
+        m0 = qml.measure(0)
+        with pytest.raises(
+            ValueError, match="Cannot set measurement value if an observable or wires are provided"
+        ):
+            ExpectationMP(obs=obs, mv=m0)
 
     def test_eigvals_match_observable(self):
         """Test that the eigenvalues of the measurement process
