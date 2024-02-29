@@ -28,7 +28,6 @@ from pennylane import numpy as pnp, LinearCombination, X, Y, Z
 from pennylane.wires import Wires
 from pennylane.pauli import PauliWord, PauliSentence
 
-qml.operation.enable_new_opmath()
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -812,16 +811,12 @@ class TestLinearCombination:
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_LinearCombinations)
     def test_LinearCombination_matmul(self, H1, H2, H):
         """Tests that LinearCombinations are tensored correctly"""
-        qml.operation.enable_new_opmath()
         assert H.compare(H1 @ H2)
-        qml.operation.disable_new_opmath()
 
     @pytest.mark.parametrize(("H1", "H2", "H"), rmatmul_LinearCombinations)
     def test_LinearCombination_rmatmul(self, H1, H2, H):
         """Tests that LinearCombinations are tensored correctly when using __rmatmul__"""
-        qml.operation.enable_new_opmath()
         assert H.compare(H1 @ H2)
-        qml.operation.disable_new_opmath()
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""
@@ -858,17 +853,16 @@ class TestLinearCombination:
         assert isinstance(q.queue[0], qml.Hadamard)
         assert isinstance(q.queue[1], qml.PauliX)
         assert isinstance(q.queue[2], qml.measurements.MeasurementProcess)
-        assert H.compare(q.queue[2].obs)
+        queue_op = q.queue[2].obs
+        assert H.pauli_rep == queue_op.pauli_rep
 
     def test_LinearCombination_queue_inside(self):
         """Tests that LinearCombination are queued correctly when components are instantiated inside the recording context."""
-        qml.operation.enable_new_opmath()
         with qml.queuing.AnnotatedQueue() as q:
             m = qml.expval(qml.LinearCombination([1, 3, 1], [X(1), Z(0) @ Z(2), Z(1)]))
 
         assert len(q.queue) == 1
         assert q.queue[0] is m
-        qml.operation.disable_new_opmath()
 
     def test_terms(self):
         """Tests that the terms representation is returned correctly."""
@@ -921,7 +915,6 @@ class TestLinearCombination:
             assert coeff1 == coeff2
         assert group_indices_before == mapped_h.grouping_indices
 
-    @pytest.mark.xfail  # TODO
     def test_hermitian_tensor_prod(self):
         """Test that the tensor product of a LinearCombination with Hermitian observable works."""
         tensor = X(0) @ X(1)
@@ -1005,7 +998,6 @@ class TestLinearCombinationArithmeticTF:
 
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
-        qml.operation.enable_new_opmath()
 
         coeffs = tf.Variable([1.0, 2.0])
         obs = [X(0), Y(1)]
@@ -1025,7 +1017,6 @@ class TestLinearCombinationArithmeticTF:
         H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
-        qml.operation.disable_new_opmath()
 
 
 class TestLinearCombinationArithmeticTorch:
@@ -1081,7 +1072,6 @@ class TestLinearCombinationArithmeticTorch:
     @pytest.mark.torch
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
-        qml.operation.enable_new_opmath()
 
         coeffs = torch.tensor([1.0, 2.0])
         obs = [X(0), Y(1)]
@@ -1101,7 +1091,6 @@ class TestLinearCombinationArithmeticTorch:
         H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
-        qml.operation.disable_new_opmath()
 
 
 class TestLinearCombinationArithmeticAutograd:
@@ -1154,7 +1143,6 @@ class TestLinearCombinationArithmeticAutograd:
     @pytest.mark.autograd
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
-        qml.operation.enable_new_opmath()
         coeffs = pnp.array([1.0, 2.0])
         obs = [X(0), Y(1)]
         H1 = qml.LinearCombination(coeffs, obs)
@@ -1173,7 +1161,6 @@ class TestLinearCombinationArithmeticAutograd:
         H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
-        qml.operation.disable_new_opmath()
 
 
 class TestLinearCombinationSparseMatrix:
@@ -1377,7 +1364,6 @@ class TestLinearCombinationArithmeticJax:
 
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
-        qml.operation.enable_new_opmath()
 
         coeffs = jnp.array([1.0, 2.0])
         obs = [X(0), Y(1)]
@@ -1397,7 +1383,6 @@ class TestLinearCombinationArithmeticJax:
         H = qml.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
-        qml.operation.disable_new_opmath()
 
 
 class TestGrouping:
@@ -1967,5 +1952,3 @@ class TestLinearCombinationDifferentiation:
         ):
             grad_fn(coeffs, param)
 
-
-qml.operation.disable_new_opmath()
