@@ -15,7 +15,6 @@
 
 from functools import singledispatch
 from typing import Union
-import warnings
 
 import pennylane as qml
 from pennylane.operation import Operator
