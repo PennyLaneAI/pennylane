@@ -232,12 +232,13 @@ class LinearCombination(Observable):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the LinearCombination of operators."""
-        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+        if all(op.pauli_rep for op in self.ops):
             new_rep = qml.pauli.PauliSentence()
-            for operand_rep in operand_pauli_reps:
-                for pw, coeff in operand_rep.items():
-                    new_rep[pw] += coeff
+            for c, op in zip(self.coeffs, self.ops):
+                ps = qml.pauli.pauli_sentence(op)
+                new_rep += ps * c
             return new_rep
+
         return None
 
     @property
@@ -445,7 +446,7 @@ class LinearCombination(Observable):
 
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            # pr.simplify()
             wire_order = self.wires
             if len(pr) == 0:
                 return LinearCombination([], [], _pauli_rep=pr)

@@ -318,7 +318,7 @@ mul_LinearCombinations = [
         qml.LinearCombination([0.5, 1.0], [X(0), Z(1)]),
     ),
     (
-        3,
+        3.,
         qml.LinearCombination([1.5, 0.5], [X(0), Z(1)]),
         qml.LinearCombination([4.5, 1.5], [X(0), Z(1)]),
     ),
@@ -340,18 +340,18 @@ mul_LinearCombinations = [
     ),
     # The result is the zero LinearCombination
     (
-        0,
+        0.,
         qml.LinearCombination([1], [X(0)]),
         qml.LinearCombination([0], [X(0)]),
     ),
     (
-        0,
-        qml.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
-        qml.LinearCombination([0, 0, 0], [X(0), Z(1), X(2)]),
+        0.,
+        qml.LinearCombination([1., 1.2, 0.1], [X(0), Z(1), X(2)]),
+        qml.LinearCombination([0., 0., 0.], [X(0), Z(1), X(2)]),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
-        3,
+        3.,
         qml.LinearCombination((1.5, 0.5), (X(0), Z(1))),
         qml.LinearCombination(np.array([4.5, 1.5]), np.array([X(0), Z(1)])),
     ),
@@ -506,6 +506,23 @@ dev = qml.device("default.qubit", wires=2)
 
 class TestLinearCombination:
     """Test the LinearCombination class"""
+
+    PAULI_REPS = (
+        (list(range(3)), [X(i) for i in range(3)], PauliSentence({PauliWord({i:"X"}): 1.*i for i in range(3)})),
+        (list(range(3)), [qml.s_prod(i, X(i)) for i in range(3)], PauliSentence({PauliWord({i:"X"}): 1.*i*i for i in range(3)})),
+    )
+
+    @pytest.mark.parametrize("simplify", [None, True])
+    @pytest.mark.parametrize("coeffs, ops, true_pauli", PAULI_REPS)
+    def test_pauli_rep(self, coeffs, ops, true_pauli, simplify):
+        """Test the pauli rep is correctly constructed"""
+        H = qml.LinearCombination(coeffs, ops, simplify=simplify)
+        pr = H.pauli_rep
+        if simplify:
+            pr.simplify()
+            true_pauli.simplify()
+        assert pr is not None
+        assert pr == true_pauli
 
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     def test_LinearCombination_valid_init(self, coeffs, ops):
@@ -906,12 +923,7 @@ class TestLinearCombinationCoefficients:
         assert H1.compare(H2)
         assert qml.math.allclose(H1.data, H2.data)
 
-    def test_pauli_rep(self):
-        """Test the Pauli representation is as expected"""
-        op = qml.LinearCombination([1.1, 2.2], [X(0), Z(0)])
-        assert op.pauli_rep is not None
-        assert op.pauli_rep == PauliSentence({PauliWord({0: "X"}): 1.1, PauliWord({0: "Z"}): 2.2})
-
+    # TODO: increase coverage
     def test_operands(self):
         op = qml.LinearCombination([1.1, 2.2], [X(0), Z(0)])
         assert op.operands == [qml.s_prod(1.1, X(0)), qml.s_prod(2.2, Z(0))]
