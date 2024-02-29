@@ -68,8 +68,8 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
         quantum_circuit_object: the quantum circuit that will be converted
             to a PennyLane template
         format (str): the format of the quantum circuit object to convert from
-        **load_kwargs: keyword argument to pass when converting the quantum circuit
-            using the plugin
+        **load_kwargs: keyword arguments to pass when converting the quantum circuit
+            using the plugin. See below for details about supported keyword arguments.
 
     Keyword Args:
         measurements (list[MeasurementProcess]): the list of PennyLane measurements that
@@ -86,7 +86,7 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
         plugin_converter = plugin_converters[format].load()
 
         # calls the load function of the converter on the quantum circuit object
-        return plugin_converter(quantum_circuit_object, **(load_kwargs or {}))
+        return plugin_converter(quantum_circuit_object, **load_kwargs)
 
     raise ValueError(
         "Converter does not exist. Make sure the required plugin is installed "
