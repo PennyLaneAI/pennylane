@@ -98,10 +98,6 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
         all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
         for res in results:
             one_shot_meas, mcm_values_dict = res
-            if not isinstance(mcm_values_dict, dict):
-                raise TypeError(
-                    f"Mid-measurement value object of type {type(mcm_values_dict).__name__} should be a dict."
-                )
             if one_shot_meas is None:
                 continue
             valid_shots += 1
