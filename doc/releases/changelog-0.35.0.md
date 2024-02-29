@@ -689,6 +689,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * `jax.vmap` with `jax.jit` will now work with devices that do not support parameter broadcasting.
+  [(#5286)](https://github.com/PennyLaneAI/pennylane/pull/5286/)
 
 * Fixed a bug in the matplotlib drawer where the colour of `Barrier` did not match the requested style.
   [(#5276)](https://github.com/PennyLaneAI/pennylane/pull/5276)
