@@ -573,7 +573,7 @@ class DefaultMixed(QubitDevice):
                     right_axes.append(index + self.num_wires)
             transpose_axes = left_axes + right_axes
             rho = qnp.transpose(rho, axes=transpose_axes)
-            assert qnp.allclose(
+            assert qml.math.is_abstract(rho) or qnp.allclose(
                 qnp.trace(qnp.reshape(rho, (2**self.num_wires, 2**self.num_wires))),
                 1.0,
                 atol=tolerance,

@@ -71,7 +71,7 @@ def commutator(op1, op2, pauli=False):
     >>> res = qml.commutator(op1, op2, pauli=False)
     >>> res
     2j * (Z(0) @ X(1)) + 2j * (X(0) @ Z(1))
-    >>> isinstance(res, qml.operation.Operator))
+    >>> isinstance(res, qml.operation.Operator)
     True
 
     It is worth noting that computing commutators with Paulis is typically faster.
