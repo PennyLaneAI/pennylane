@@ -24,6 +24,7 @@ performance improvements.
 
 Currently, PennyLane supports the
 `Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler
+and the CUDA Quantum compiler with the
 with the :func:`~.qjit` decorator. A significant benefit of Catalyst
 is the ability to preserve complex control flow around quantum
 operations — such as if statements and for loops, and including measurement
