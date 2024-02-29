@@ -58,8 +58,8 @@ We can convert the ``QuantumCircuit`` into a PennyLane quantum function using:
 
     pl_template_from_qk = qml.from_qiskit(qk_circuit)
 
-Above, the :func:`from_qiskit` function converts a ``QuantumCircuit`` into a PennyLane template
-which can then be called from within a QNode to generate a PennyLane circuit:
+Above, the :func:`from_qiskit` function converts a ``QuantumCircuit`` into a PennyLane template.
+This template can then be called from inside a QNode to generate a PennyLane circuit:
 
 .. code-block:: python
 
@@ -87,7 +87,7 @@ The resulting PennyLane circuit can be executed directly:
 >>> pl_circuit_from_qk()
 [tensor(0., requires_grad=True), tensor(1., requires_grad=True)]
 
-It can also be visualized using PennyLane's :func:`draw` utility:
+It can also be visualized using PennyLane's :func:`~pennylane.draw` utility:
 
 >>> print(qml.draw(pl_circuit_from_qk)())
 0: ──H─╭●─╭||─┤  <Y>
@@ -156,7 +156,8 @@ We begin with a familiar pyQuil `Program
     pq_program += pyquil.gates.H(0)
     pq_program += pyquil.gates.CNOT(0, 1)
 
-This ``Program`` can be converted into a PennyLane quantum function using :func:`from_pyquil`:
+This ``Program`` can be converted into a PennyLane quantum function using the :func:`from_pyquil`
+function:
 
 .. code-block:: python
 
@@ -184,12 +185,12 @@ Importing Quantum Operators
 ---------------------------
 
 Sometimes, it is preferable to import a single operation from a framework instead of an entire
-quantum circuit. This lightweight approach can save you some keystrokes and also serve as a helpful
-crutch for debugging or understanding an individual component of a circuit.
+quantum circuit. This can save you some keystrokes and serve as a helpful crutch for understanding
+an individual component of a circuit.
 
 Presently, only Qiskit `SparsePauliOp
 <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>`__ operators can be
-imported into PennyLane. To do so, first define a ``SparsePauliOp``:
+imported into PennyLane. To see this in action, we first define a ``SparsePauliOp``:
 
 .. code-block:: python
 
@@ -197,7 +198,7 @@ imported into PennyLane. To do so, first define a ``SparsePauliOp``:
 
     qk_op = SparsePauliOp(["II", "XY"])
 
-Then, apply the :func:`from_qiskit_op` function to convert the ``SparsePauliOp`` into a PennyLane
+Then, we apply the :func:`from_qiskit_op` function to convert the ``SparsePauliOp`` into a PennyLane
 :class:`Operator <pennylane.operation.Operator>`:
 
 .. code-block:: python
@@ -206,7 +207,7 @@ Then, apply the :func:`from_qiskit_op` function to convert the ``SparsePauliOp``
 
     pl_op = qml.from_qiskit_op(qk_op)
 
-You can inspect both operators to make sure they match:
+We can inspect both operators to make sure they match:
 
 >>> qk_op
 SparsePauliOp(['II', 'XY'],
@@ -228,8 +229,8 @@ PennyLane also supports importing parameterized ``SparsePauliOp`` instances. Con
     a, b, c = [Parameter(var) for var in "abc"]
     param_qk_op = SparsePauliOp(["II", "XZ", "YX"], coeffs=np.array([a, b, c]))
 
-To import this ``SparsePauliOp``, specify a concrete value for each coefficient (i.e., parameter)
-using the ``params`` argument:
+To import this ``SparsePauliOp``, we must specify a concrete value for each coefficient using the
+``params`` argument:
 
 .. code-block:: python
 
@@ -237,7 +238,7 @@ using the ``params`` argument:
 
     param_pl_op = qml.from_qiskit_op(param_qk_op, params={a: 2, b: 3, c: 4})
 
-The resulting operators are:
+The result is:
 
 >>> param_qk_op
 SparsePauliOp(['II', 'XZ', 'YX'],
