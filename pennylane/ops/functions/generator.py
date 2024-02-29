@@ -29,8 +29,6 @@ def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~.Hamiltonian`."""
     wires = op.wires
 
-    H = None
-
     if isinstance(gen, qml.Hamiltonian):
         H = gen
 
@@ -46,28 +44,14 @@ def _generator_hamiltonian(gen, op):
     elif isinstance(gen, qml.operation.Observable):
         H = 1.0 * gen
 
-    elif isinstance(gen, (SProd, Prod, Sum)):
+    # TODO: remove this once test_tapering supports new opmath
+    elif isinstance(gen, SProd):
 
-        if isinstance(gen, SProd):
-            if gen.arithmetic_depth == 1:
-                H = gen.scalar * gen.base
-
-            elif gen.arithmetic_depth == 2:
-                if isinstance(gen.base, Prod):
-                    H = qml.Hamiltonian([gen.scalar], [gen.base[0] @ gen.base[1]])
-
-        elif isinstance(gen, Prod):
-            if gen.arithmetic_depth == 1:
-                H = qml.Hamiltonian([1], [gen[0] @ gen[1]])
-
-        elif isinstance(gen, Sum):
-            if gen.arithmetic_depth == 1:
-                H = gen[0] + gen[1]
-
-    if H is None:
-        raise NotImplementedError(
-            f"Conversion of generator {gen} to Hamiltonian is currently not implemented."
-        )
+        if gen.arithmetic_depth == 1:
+            H = gen.scalar * gen.base
+        elif gen.arithmetic_depth == 2:
+            if isinstance(gen.base, Prod):
+                H = qml.Hamiltonian([gen.scalar], [gen.base[0] @ gen.base[1]])
 
     return H
 
@@ -191,7 +175,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
     >>> qml.generator(op, format="prefactor")  # output will always be (obs, prefactor)
     (X(0), -0.5)
     >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian
-    <Hamiltonian: terms=1, wires=[0]>
+    (-0.5) [X0]
     >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])
     >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`
