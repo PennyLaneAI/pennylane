@@ -164,7 +164,7 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
     else:
         # first order way of determining native parameter broadcasting support
         # will be inaccurate when inclusion of broadcast_expand depends on ExecutionConfig values (like adjoint)
-        device_supports_vectorization = qml.transforms.broadcast_expand in device.preprocess()[0]
+        device_supports_vectorization = qml.transforms.broadcast_expand not in device.preprocess()[0]
     out = jax.pure_callback(
         pure_callback_wrapper, shape_dtype_structs, params, vectorized=device_supports_vectorization
     )
