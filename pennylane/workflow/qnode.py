@@ -1043,7 +1043,7 @@ class QNode:
                 full_transform_program._set_all_argnums(
                     self, args, kwargs, argnums
                 )  # pylint: disable=protected-access
-
+        full_transform_program.prune_dynamic_transform()
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
