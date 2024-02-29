@@ -8,7 +8,8 @@ Importing Circuits
 
 PennyLane offers the :mod:`~.io` module to import quantum circuits and operations that were
 constructed outside of PennyLane. This includes circuits defined using `Qiskit <https://www.ibm.com/quantum/qiskit>`__,
-`OpenQASM <https://openqasm.com/>`_, and `Quil <https://docs.rigetti.com/qcs/guides/quil>`_.
+`OpenQASM <https://docs.quantum.ibm.com/build/interoperate-qiskit-qasm2>`_, and `Quil
+<https://docs.rigetti.com/qcs/guides/quil>`_.
 
 .. note::
 
@@ -16,8 +17,8 @@ constructed outside of PennyLane. This includes circuits defined using `Qiskit <
     corresponding PennyLane plugin for that framework. More information about PennyLane plugins is
     available on the `plugins <https://pennylane.ai/plugins.html>`_ page.
 
-Importing Quantum Circuits in PennyLane
----------------------------------------
+Importing Quantum Circuits
+--------------------------
 
 Importing quantum circuits can help you take advantage of PennyLane's various optimization,
 visualization, and interoperability features for existing circuits. For example, you can take a
@@ -37,7 +38,8 @@ To import a quantum circuit from Qiskit, you must first install the `PennyLane-Q
 
     pip install pennylane-qiskit
 
-Now, suppose we define a Qiskit ``QuantumCircuit`` as follows:
+Now, suppose we define a Qiskit `QuantumCircuit
+<https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`__ as follows:
 
 .. code-block:: python
 
@@ -131,11 +133,11 @@ The result is as follows:
 0: ──H─╭●──┤↗├─┤  <Y>
 1: ────╰X──┤↗├─┤  Var[Z]
 
-Rigetti
-~~~~~~~
+Quil
+~~~~
 
 PennyLane also offers convenience functions for importing circuits from `pyQuil
-<https://pyquil-docs.rigetti.com/en/stable/index.html>`_ or Quil representations. Both of these
+<https://pyquil-docs.rigetti.com/en/stable/index.html>`__ or Quil representations. Both of these
 require the `PennyLane-Forest <https://docs.pennylane.ai/projects/rigetti/en/stable/>`__ plugin,
 which can be installed using:
 
@@ -143,7 +145,8 @@ which can be installed using:
 
     pip install pennylane-forest
 
-We begin with a familiar pyQuil ``Program``:
+We begin with a familiar pyQuil `Program
+<https://pyquil-docs.rigetti.com/en/stable/apidocs/pyquil.quil.html#pyquil.quil.Program>`__:
 
 .. code-block:: python
 
@@ -177,9 +180,71 @@ The resulting PennyLane circuit is:
     Quantum circuits expressed in Quil can be imported in a similar way using :func:`from_quil`.
 
 
-Importing Quantum Operations in PennyLane
------------------------------------------
+Importing Quantum Operators
+---------------------------
 
+Sometimes, it is preferable to import a single operation from a framework instead of an entire
+quantum circuit. This lightweight approach can save you some keystrokes and also serve as a helpful
+crutch for debugging or understanding an individual component of a circuit.
+
+Presently, only Qiskit `SparsePauliOp
+<https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>`__ operators can be
+imported into PennyLane. To do so, first define a ``SparsePauliOp``:
+
+.. code-block:: python
+
+    from qiskit.quantum_info import SparsePauliOp
+
+    qk_op = SparsePauliOp(["II", "XY"])
+
+Then, apply the :func:`from_qiskit_op` function to convert the ``SparsePauliOp`` into a PennyLane
+:class:`Operator <pennylane.operation.Operator>`:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    pl_op = qml.from_qiskit_op(qk_op)
+
+You can inspect both operators to make sure they match:
+
+>>> qk_op
+SparsePauliOp(['II', 'XY'],
+              coeffs=[1.+0.j, 1.+0.j])
+>>> pl_op
+I(0) + X(1) @ Y(0)
+
+
+Parameterized Operators
+~~~~~~~~~~~~~~~~~~~~~~~
+
+PennyLane also supports importing parameterized ``SparsePauliOp`` instances. Consider:
+
+.. code-block:: python
+
+    import numpy as np
+    from qiskit.circuit import Parameter
+
+    a, b, c = [Parameter(var) for var in "abc"]
+    param_qk_op = SparsePauliOp(["II", "XZ", "YX"], coeffs=np.array([a, b, c]))
+
+To import this ``SparsePauliOp``, specify a concrete value for each coefficient (i.e., parameter)
+using the ``params`` argument:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    param_pl_op = qml.from_qiskit_op(param_qk_op, params={a: 2, b: 3, c: 4})
+
+The resulting operators are:
+
+>>> param_qk_op
+SparsePauliOp(['II', 'XZ', 'YX'],
+              coeffs=[ParameterExpression(1.0*a), ParameterExpression(1.0*b),
+ ParameterExpression(1.0*c)])
+>>> param_pl_op
+(2+0j) * I(0) + (3+0j) * (X(1) @ Z(0)) + (4+0j) * (Y(1) @ X(0))
 
 
 Import Functions
