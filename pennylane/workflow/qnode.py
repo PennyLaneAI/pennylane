@@ -1017,6 +1017,15 @@ class QNode:
             full_transform_program = self.transform_program + device_transform_program
         else:
             full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        has_mcm_support = (
+            any(isinstance(op, MidMeasureMP) for op in self._tape)
+            and hasattr(self.device, "capabilities")
+            and self.device.capabilities().get("supports_mid_measure", False)
+        )
+        if has_mcm_support:
+            full_transform_program.add_transform(qml.dynamic_one_shot)
+            override_shots = 1
+
         # Add the gradient expand to the program if necessary
         if (
             isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher)
@@ -1087,7 +1096,7 @@ class QNode:
             else:
                 res = type(self._qfunc_output)(res)
 
-        if override_shots is not False:
+        if not has_mcm_support and override_shots is not False:
             # restore the initialization gradient function
             self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
 
