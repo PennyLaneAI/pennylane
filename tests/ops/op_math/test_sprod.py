@@ -156,14 +156,26 @@ class TestInitialization:
         assert op.base[1].data == (0.4,)
         assert op.base[1][1].data == (0.4,)
 
-    @pytest.mark.parametrize("scalar, op", ops)
-    def test_terms(self, op, scalar):
-        sprod_op = SProd(scalar, op)
-        coeff, op2 = sprod_op.terms()
+    TERMS = (
+        (qml.s_prod(0.5, qml.sum(qml.X(0), qml.X(1))), [0.5, 0.5], [qml.X(0), qml.X(1)]),
+        (
+            qml.s_prod(0.5, qml.sum(qml.X(0), qml.Hadamard(1))),
+            [0.5, 0.5],
+            [qml.X(0), qml.Hadamard(1)],
+        ),
+        (qml.s_prod(0.5, qml.prod(qml.X(0), qml.X(1))), [0.5], [qml.prod(qml.X(0), qml.X(1))]),
+        (
+            qml.s_prod(0.5, qml.sum(qml.X(0), qml.prod(qml.X(0), qml.X(1)))),
+            [0.5, 0.5],
+            [qml.X(0), qml.prod(qml.X(0), qml.X(1))],
+        ),
+    )
 
-        assert coeff == [scalar]
-        for op1, op2 in zip(op2, [op]):
-            assert qml.equal(op1, op2)
+    @pytest.mark.parametrize("op, true_coeffs, true_ops", TERMS)
+    def test_terms(self, op, true_coeffs, true_ops):
+        coeffs, ops_ = op.terms()
+        assert coeffs == true_coeffs
+        assert ops_ == true_ops
 
     def test_decomposition_raises_error(self):
         sprod_op = s_prod(3.14, qml.Identity(wires=1))

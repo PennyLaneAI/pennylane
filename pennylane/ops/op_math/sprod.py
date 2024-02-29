@@ -183,7 +183,7 @@ class SProd(ScalarSymbolicOp):
         """
         return 1 + self.base.num_params
 
-    def terms(self):  # is this method necessary for this class?
+    def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
@@ -193,7 +193,27 @@ class SProd(ScalarSymbolicOp):
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
+
+        **Example**
+
+        >>> qml.operation.enable_new_opmath()
+        >>> op = X(0) @ (0.5 * X(1) + X(2))
+        >>> op.terms()
+        ([0.5, 1.0],
+         [X(1) @ X(0),
+          X(2) @ X(0)])
+
         """
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            ops = [pauli.operation() for pauli in pr.keys()]
+            return list(pr.values()), ops
+
+        if isinstance(base := self.base, (Sum, qml.ops.Prod)):
+            coeffs, ops = base.terms()
+            new_coeffs = [c * self.scalar for c in coeffs]
+            return new_coeffs, ops
+
         return [self.scalar], [self.base]
 
     @property
