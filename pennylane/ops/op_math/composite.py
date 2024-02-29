@@ -285,7 +285,7 @@ class CompositeOp(Operator):
 
         **Example (using the Sum composite operator)**
 
-        >>> op = qml.S(0) + qml.PauliX(0) + qml.Rot(1,2,3, wires=[1])
+        >>> op = qml.S(0) + qml.X(0) + qml.Rot(1,2,3, wires=[1])
         >>> op.label()
         '(S+X)+Rot'
         >>> op.label(decimals=2, base_label=[["my_s", "my_x"], "inc_rot"])

@@ -58,7 +58,7 @@ def map_wires(
         ... @qml.qnode(dev)
         ... def func(x):
         ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         ...
         >>> print(qml.draw(func)(0.1))
         10: ──RX(0.10)─┤  <Z>
@@ -68,26 +68,26 @@ def map_wires(
 
     Given an operator, ``qml.map_wires`` returns a copy of the operator with its wires changed:
 
-    >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
+    >>> op = qml.RX(0.54, wires=0) + qml.X(1) + (qml.Z(2) @ qml.RY(1.23, wires=3))
     >>> op
-    (RX(0.54, wires=[0]) + PauliX(wires=[1])) + (PauliZ(wires=[2]) @ RY(1.23, wires=[3]))
+    (RX(0.54, wires=[0]) + X(1)) + (Z(2) @ RY(1.23, wires=[3]))
     >>> wire_map = {0: 3, 1: 2, 2: 1, 3: 0}
     >>> qml.map_wires(op, wire_map)
-    (RX(0.54, wires=[3]) + PauliX(wires=[2])) + (PauliZ(wires=[1]) @ RY(1.23, wires=[0]))
+    (RX(0.54, wires=[3]) + X(2)) + (Z(1) @ RY(1.23, wires=[0]))
 
     Moreover, ``qml.map_wires`` can be used to change the wires of QNodes or quantum functions:
 
     >>> dev = qml.device("default.qubit", wires=4)
     >>> @qml.qnode(dev)
     ... def circuit():
-    ...    qml.RX(0.54, wires=0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.RY(1.23, wires=3)
+    ...    qml.RX(0.54, wires=0) @ qml.X(1) @ qml.Z(2) @ qml.RY(1.23, wires=3)
     ...    return qml.probs(wires=0)
     ...
     >>> mapped_circuit = qml.map_wires(circuit, wire_map)
     >>> mapped_circuit()
     tensor([0.92885434, 0.07114566], requires_grad=True)
     >>> list(mapped_circuit.tape)
-    [((RX(0.54, wires=[3]) @ PauliX(wires=[2])) @ PauliZ(wires=[1])) @ RY(1.23, wires=[0]), probs(wires=[3])]
+    [((RX(0.54, wires=[3]) @ X(2)) @ Z(1)) @ RY(1.23, wires=[0]), probs(wires=[3])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
         if QueuingManager.recording():

@@ -388,7 +388,7 @@ class TestExpandInvalidTrainable:
 
 
 # Custom decomposition functions for testing.
-def custom_cnot(wires):
+def custom_cnot(wires, **_):
     return [
         qml.Hadamard(wires=wires[1]),
         qml.CZ(wires=[wires[0], wires[1]]),
