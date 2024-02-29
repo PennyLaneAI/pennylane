@@ -382,7 +382,7 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
     """Incorporates new measurements in current measurement sequence.
 
     Args:
-        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
+        circuit (QuantumTape): A one-shot (auxiliary) ``QuantumScript``
         all_shot_meas (Sequence[Any]): List of accumulated measurement results
         one_shot_meas (Sequence[Any]): List of measurement results
 
@@ -415,13 +415,13 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
 def has_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript,
 ):
-    """Returns True if the circuit contains a MidMeasureMP object and False otherwise.
+    """Returns ``True`` if the circuit contains a ``MidMeasureMP`` object and ``False`` otherwise.
 
     Args:
-        circuit (QuantumTape): A QuantumScript
+        circuit (QuantumTape): A ``QuantumScript``
 
     Returns:
-        bool: Whether the circuit contains a MidMeasureMP object
+        bool: Whether the circuit contains a ``MidMeasureMP`` object
     """
     return any(isinstance(op, MidMeasureMP) for op in circuit.operations)
 
@@ -432,7 +432,7 @@ def parse_native_mid_circuit_measurements(
     """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
 
     Args:
-        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
+        circuit (QuantumTape): A one-shot (auxiliary) ``QuantumScript``
         all_shot_meas (Sequence[Any]): List of accumulated measurement results
         mcm_shot_meas (Sequence[dict]): List of dictionaries containing the mid-circuit measurement results of each shot
 
