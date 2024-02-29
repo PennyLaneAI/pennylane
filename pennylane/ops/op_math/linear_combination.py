@@ -602,7 +602,6 @@ class LinearCombination(Observable):
                 return LinearCombination(self.coeffs, new_ops, _pauli_rep=new_pr)
             return qml.prod(self, other)
 
-
         return NotImplemented
 
     def __add__(self, H):
