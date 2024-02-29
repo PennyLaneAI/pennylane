@@ -114,12 +114,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError(
-            "Symbolic Operations are not supported for rotating probabilities yet."
-        )
-
-    if op is not None and not qml.operation.defines_diagonalizing_gates(op):
+    if op is not None and not op.has_diagonalizing_gates:
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )

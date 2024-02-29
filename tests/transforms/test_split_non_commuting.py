@@ -139,7 +139,6 @@ class TestUnittestSplitNonCommuting:
 
         if convert_to_opmath:
             obs_list = [qml.operation.convert_to_opmath(o) for o in obs_list]
-            expected = [qml.operation.convert_to_opmath(o) for o in expected]
         # create a queue with several measurements of same type but with differnent non-commuting
         # observables
         with qml.queuing.AnnotatedQueue() as q:
