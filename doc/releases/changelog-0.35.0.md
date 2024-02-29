@@ -399,6 +399,7 @@
 * A `partial_trace` function has been added to `qml.math` for taking the partial trace of matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
 
+
 <h4>Other operator arithmetic improvements</h4>
 
 * The following capabilities have been added for Pauli arithmetic:
