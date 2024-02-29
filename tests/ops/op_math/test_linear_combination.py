@@ -1951,4 +1951,3 @@ class TestLinearCombinationDifferentiation:
             match="not supported on adjoint",
         ):
             grad_fn(coeffs, param)
-
