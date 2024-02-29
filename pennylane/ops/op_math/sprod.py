@@ -197,9 +197,9 @@ class SProd(ScalarSymbolicOp):
         **Example**
 
         >>> qml.operation.enable_new_opmath()
-        >>> op = X(0) @ (0.5 * X(1) + X(2))
+        >>> op = 0.5 * (X(0) @ (0.5 * X(1) + X(2)))
         >>> op.terms()
-        ([0.5, 1.0],
+        ([0.25, 0.5],
          [X(1) @ X(0),
           X(2) @ X(0)])
 
