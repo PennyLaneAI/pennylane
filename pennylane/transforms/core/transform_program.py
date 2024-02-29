@@ -355,11 +355,11 @@ class TransformProgram:
             return
         keep = 2 if 2 in trans_type else 1
         found = False
-        for i, type in enumerate(reversed(trans_type)):
-            if not found and type == keep:
+        for i, ttype in enumerate(reversed(trans_type)):
+            if not found and ttype == keep:
                 found = True
                 continue
-            if type in [1, 2]:
+            if ttype in [1, 2]:
                 self._transform_program.pop(len(self._transform_program) - 1 - i)
 
     def _set_all_classical_jacobians(
