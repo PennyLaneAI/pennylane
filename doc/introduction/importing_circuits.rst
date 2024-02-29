@@ -54,34 +54,83 @@ We can convert the ``QuantumCircuit`` into a PennyLane quantum function using:
 
     import pennylane as qml
 
-    pl_template = qml.from_qiskit(qk_circuit)
+    pl_template_from_qk = qml.from_qiskit(qk_circuit)
 
-The :func:`from_qiskit` function returns a PennyLane template which can be used inside a QNode, as
-in:
+Above, the :func:`from_qiskit` function converts a ``QuantumCircuit`` into a PennyLane template
+which can then be called from within a QNode to generate a PennyLane circuit:
 
 .. code-block:: python
 
     @qml.qnode(qml.device("default.qubit"))
-    def pl_circuit():
-        pl_template(wires=[0, 1])
-        return qml.expval(qml.Z(0) @ qml.Z(1))
+    def pl_circuit_from_qk():
+        pl_template_from_qk(wires=[0, 1])
+        return qml.expval(qml.Y(0)), qml.expval(qml.Z(1))
+
+.. note::
+
+    Alternatively, the QNode can be instantiated directly from the Qiskit circuit:
+
+    .. code-block:: python
+
+        measurements = [qml.expval(qml.Y(0)), qml.var(qml.Z(1))]
+        pl_template_from_qk = qml.from_qiskit(qk_circuit, measurements=measurements)
+        pl_circuit_from_qk = qml.QNode(pl_template_from_qk, qml.device("default.qubit"))
+
+
+    Here, the ``measurements`` argument overrides the terminal measurements in the Qiskit circuit.
+    See the :func:`from_qiskit` documentation for more details.
 
 The resulting PennyLane circuit can be executed directly:
 
->>> pl_circuit()
-tensor(1., requires_grad=True)
+>>> pl_circuit_from_qk()
+[tensor(0., requires_grad=True), tensor(1., requires_grad=True)]
 
-The usual PennyLane circuit functions are also available, including the drawing tool:
+It can also be visualized using PennyLane's :func:`draw` utility:
 
->>> print(qml.draw(pl_circuit)())
-0: ──H─╭●─╭||──┤↗├─┤ ╭<Z@Z>
-1: ────╰X─╰||──┤↗├─┤ ╰<Z@Z>
-
+>>> print(qml.draw(pl_circuit_from_qk)())
+0: ──H─╭●─╭||─┤  <Y>
+1: ────╰X─╰||─┤  Var[Z]
 
 OpenQASM
 ~~~~~~~~
 
-TODO
+An equivalent quantum circuit can be expressed in OpenQASM 2.0 as follows:
+
+.. code-block:: python
+
+    oq_circuit = (
+        """
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[2];
+        creg c[2];
+
+        h q[0];
+        cx q[0], q[1];
+
+        measure q -> c;
+        """
+    )
+
+We can import this circuit into PennyLane using the PennyLane-Qiskit plugin once more:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    pl_template_from_oq = qml.from_qasm(oq_circuit)
+
+    @qml.qnode(qml.device("default.qubit"))
+    def pl_circuit_from_oq():
+        pl_template_from_oq(wires=[0, 1])
+        return qml.expval(qml.Y(0)), qml.var(qml.Z(1))
+
+The result is as follows:
+
+>>> print(qml.draw(pl_circuit_from_oq)())
+0: ──H─╭●──┤↗├─┤  <Y>
+1: ────╰X──┤↗├─┤  Var[Z]
+
 
 Quil
 ~~~~
