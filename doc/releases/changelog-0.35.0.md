@@ -689,6 +689,7 @@
 <h3>Bug fixes 🐛</h3>
 
 *  `QubitChannel` can now be used with jitting.
+  [(#5288)](https://github.com/PennyLaneAI/pennylane/pull/5288)
 
 * Fixed a bug in the matplotlib drawer where the colour of `Barrier` did not match the requested style.
   [(#5276)](https://github.com/PennyLaneAI/pennylane/pull/5276)
