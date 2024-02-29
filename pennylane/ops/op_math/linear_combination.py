@@ -617,7 +617,7 @@ class LinearCombination(Observable):
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )
             ops.append(H)
-            print(coeffs, ops)
+
             return qml.LinearCombination(coeffs, ops)
 
         return NotImplemented
