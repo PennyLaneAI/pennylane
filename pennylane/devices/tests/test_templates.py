@@ -950,7 +950,8 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
                 [0.01076341, 0.04449877, 0.0],
                 [0.98729513, 1.63059094, 0.0],
                 [1.87262415, -0.00815842, 0.0],
-            ]
+            ],
+            dtype=np.float64,
         )
         electrons = 2
         charge = 1
