@@ -333,10 +333,12 @@ class Sum(CompositeOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            ops = [pauli.operation() for pauli in pr.keys()]
+            with qml.QueuingManager.stop_recording():
+                ops = [pauli.operation() for pauli in pr.keys()]
             return list(pr.values()), ops
 
-        new_summands = self._simplify_summands(summands=self.operands).get_summands()
+        with qml.QueuingManager.stop_recording():
+            new_summands = self._simplify_summands(summands=self.operands).get_summands()
 
         coeffs = []
         ops = []
