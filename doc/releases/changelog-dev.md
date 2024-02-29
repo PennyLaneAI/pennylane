@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
+  [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
+
 <h3>Improvements 🛠</h3>
 
 <h3>Breaking changes 💔</h3>
