@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+[(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
+
 <h3>Improvements 🛠</h3>
 
 <h3>Breaking changes 💔</h3>
@@ -21,4 +24,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Austin Huang,
 Korbinian Kottmann
