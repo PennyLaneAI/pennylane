@@ -811,7 +811,7 @@ class TestVectorValuedJIT:
                 qml.RY(a[2], wires=0)
                 qml.sample(qml.PauliZ(0))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=dev.shots)
 
             res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
