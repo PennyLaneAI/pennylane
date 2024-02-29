@@ -638,7 +638,7 @@ class LinearCombination(Observable):
     def __sub__(self, H):
         r"""The subtraction operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
         if isinstance(H, (LinearCombination, Hamiltonian, Tensor, Observable)):
-            return self + qml.s_prod(-1., H, lazy=False)
+            return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented
 
     def queue(self, context=qml.QueuingManager):

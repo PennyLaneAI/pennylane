@@ -288,8 +288,8 @@ sub_LinearCombinations = [
         qml.LinearCombination([], []),
     ),
     (
-        qml.LinearCombination([1., 2.], [X(4), Z(2)]),
-        qml.LinearCombination([1., 2.], [X(4), Z(2)]),
+        qml.LinearCombination([1.0, 2.0], [X(4), Z(2)]),
+        qml.LinearCombination([1.0, 2.0], [X(4), Z(2)]),
         qml.LinearCombination([], []),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
@@ -503,18 +503,21 @@ def circuit2(param):
 
 dev = qml.device("default.qubit", wires=2)
 
+
 class TestToDo:
     """Test that currently xfail but ideally shouldnt"""
+
     @pytest.mark.xfail
     def test_integer_coefficients(self):
         """Test that handling integers is not a problem"""
         H1, H2, true_res = (
-            qml.LinearCombination([1, 2], [X(4), Z(2)]), # not failing with float coeffs
+            qml.LinearCombination([1, 2], [X(4), Z(2)]),  # not failing with float coeffs
             qml.LinearCombination([1, 2], [X(4), Z(2)]),
             qml.LinearCombination([], []),
         )
         res = H1 - H2
         assert res.compare(true_res)
+
 
 class TestLinearCombination:
     """Test the LinearCombination class"""
