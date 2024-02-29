@@ -94,8 +94,8 @@ class SpectralNormError(AlgorithmicError):
     >>> s1 = SpectralNormError(0.01)
     >>> s2 = SpectralNormError(0.02)
     >>> s3 = s1.combine(s2)
-    >>> print(type(s3), s3.error)
-    <class 'pennylane.resource.error.SpectralNormError'> 0.03
+    >>> print(s3, s3.error)
+    <SpectralNormError(0.03)> 0.03
     """
 
     def __repr__(self):
