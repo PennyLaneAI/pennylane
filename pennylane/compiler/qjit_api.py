@@ -150,7 +150,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         ``static_argnums`` defines which elements should be treated as static. If it takes an
         integer, it means the argument whose index is equal to the integer is static. If it takes
         an iterable of integers, arguments whose index is contained in the iterable are static.
-        Changing static arguments will introduce re-compilation.
+        Changing static arguments will trigger re-compilation.
 
         A valid static argument must be hashable and its ``__hash__`` method must be able to
         reflect any changes of its attributes.
@@ -177,7 +177,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
         In the example above, ``y`` is static. Note that the second function call triggers
         re-compilation since the input object is different from the previous one. However,
-        the third function call direcly uses the previous compiled one and does not introduce
+        the third function call directly uses the previous compiled one and does not introduce
         re-compilation.
 
         .. code-block:: python
@@ -203,8 +203,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             my_obj_1.val = 7
             f(1, my_obj_1, my_obj_2) # re-compilation
 
-        In the example above, ``y`` and ``z`` are static. The second function should make
-        function ``f`` be re-compiled because ``my_obj_1`` is changed. This requires that
+        In the example above, ``y`` and ``z`` are static. The second function will cause
+        function ``f`` to re-compile because ``my_obj_1`` is changed. This requires that
         the mutation is properly reflected in the hash value.
 
         Note that when ``static_argnums`` is used in conjunction with type hinting,
@@ -231,11 +231,12 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
         - the first argument will have a statically known shape,
 
-        - the second argument has its zeroth axis have dynamic
-          shape ``n``, and
+        - the second argument will have dynamic
+          shape ``n``  for the zeroth axis, and
 
-        - the third argument will have its zeroth axis with dynamic shape
-          ``m`` and first axis with dynamic shape ``n``.
+        - the third argument will have dynamic shape
+          ``m`` for its zeroth axis and dynamic shape ``n`` for
+          its first axis.
 
         Passing a dictionary:
 
@@ -285,7 +286,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             sum(jnp.array([1]))     # Compilation happens here.
             sum(jnp.array([1, 1]))  # No need to recompile.
 
-        the ``sum_abstracted`` function would only compile once and its definition would be
+        The ``sum_abstracted`` function would only compile once and its definition would be
         reused for subsequent function calls.
     """
 

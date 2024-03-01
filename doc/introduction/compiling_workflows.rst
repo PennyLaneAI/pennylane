@@ -12,10 +12,10 @@ hybrid compilers, which can be installed separately.
 
 The best supported and default compiler is the `Catalyst hybrid compiler
 <https://github.com/pennylaneai/catalyst>`__. Catalyst allows you to compile the entire
-quantum-classical workflow, including any optimization loops, which allows for optimized
-performance, and the ability to run the entire workflow on accelerator devices as appropriate.
+quantum-classical workflow, including any optimization loops. This maximizes
+performance and enables running the entire workflow on accelerator devices.
 
-In addition, PennyLane also supports compiling restricted programs via CUDA Quantum.
+In addition, PennyLane also supports compiling restricted programs via CUDA Quantum; see the CUDA Quantum section below for more details.
 
 Installing compilers
 --------------------
@@ -161,7 +161,7 @@ The following devices are available when compiling with CUDA Quantum:
 * ``nvidia.cutensornet``: The NVIDIA CuTensorNet GPU simulator (with support for matrix product state)
 
 Note that CUDA Quantum compilation currently does not have feature parity with Catalyst compilation;
-in particular, AutoGraph, control flow, differentiation, and various measurement statistics(such as
+in particular, AutoGraph, control flow, differentiation, and various measurement statistics (such as
 probabilities and variance) are not yet supported.
 
 Additional resources
