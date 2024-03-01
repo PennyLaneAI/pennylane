@@ -881,6 +881,29 @@ def test_expansion_strategy(device):
     assert draw(circ, expansion_strategy="device", decimals=None)(0.5) == expected_device
 
 
+@pytest.mark.parametrize(
+    "device",
+    [qml.device("default.qubit.legacy", wires=2), qml.device("default.qubit", wires=2)],
+)
+def test_applied_transforms(device):
+    """Test that any transforms applied to the qnode are included in the output."""
+
+    @qml.transform
+    def just_pauli_x(_):
+        new_tape = qml.tape.QuantumScript([qml.PauliX(0)])
+        return (new_tape,), lambda res: res[0]
+
+    @just_pauli_x
+    @qml.qnode(device)
+    def my_circuit(x):
+        qml.RX(x, wires=0)
+        qml.SWAP(wires=(0, 1))
+        return qml.probs(wires=(0, 1))
+
+    expected = "0: ──X─┤  "
+    assert qml.draw(my_circuit)(1.234) == expected
+
+
 def test_draw_with_qfunc():
     """Test a non-qnode qfunc can be drawn."""
 
