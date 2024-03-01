@@ -55,7 +55,7 @@ pytest-forked==1.6.0
 pytest-mock==3.12.0
 pytest-split==0.8.2
 pytest-xdist==3.5.0
-python-dateutil==2.9.0
+python-dateutil==2.9.0.post0
 PyYAML==6.0.1
 qdldl==0.1.7.post0
 requests==2.31.0

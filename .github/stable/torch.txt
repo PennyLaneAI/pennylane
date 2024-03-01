@@ -53,7 +53,7 @@ pytest-cov==4.1.0
 pytest-forked==1.6.0
 pytest-mock==3.12.0
 pytest-xdist==3.5.0
-python-dateutil==2.9.0
+python-dateutil==2.9.0.post0
 pytorch-triton-rocm==2.2.0
 PyYAML==6.0.1
 qdldl==0.1.7.post0
