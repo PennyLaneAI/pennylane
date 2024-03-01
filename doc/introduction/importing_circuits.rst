@@ -7,7 +7,7 @@ Importing workflows
 ===================
 
 PennyLane supports importing quantum circuits and operations that were
-constructed outside of PennyLane. This includes circuits defined using `Qiskit <https://www.ibm.com/quantum/qiskit>`__,
+constructed using another framework. This includes circuits defined using `Qiskit <https://www.ibm.com/quantum/qiskit>`__,
 `OpenQASM <https://arxiv.org/abs/1707.03429>`_, and `Quil
 <https://docs.rigetti.com/qcs/guides/quil>`_.
 
