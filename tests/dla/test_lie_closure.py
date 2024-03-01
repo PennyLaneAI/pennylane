@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.dla.lie_closure import VSpace
+from pennylane.dla.lie_closure import PauliVSpace
 from pennylane.pauli import PauliWord, PauliSentence
 
 ops1 = [
@@ -46,12 +46,12 @@ ops2 = [
 ops2plusY10 = ops2 + [PauliSentence({PauliWord({10: "Y"}): 1.0})]
 
 
-class TestVSpace:
-    """Unit and integration tests for VSpace class"""
+class TestPauliVSpace:
+    """Unit and integration tests for PauliVSpace class"""
 
     def test_init(self):
         """Unit tests for initialization"""
-        vspace = VSpace(ops1)
+        vspace = PauliVSpace(ops1)
 
         assert all(isinstance(op, PauliSentence) for op in vspace.basis)
         assert np.allclose(vspace._M, [[1.0, 1.0], [1.0, 0.0]]) or np.allclose(
@@ -71,7 +71,7 @@ class TestVSpace:
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
     def test_add_linear_independent(self, ops, op, true_new_basis):
         """Test that adding new (linearly independent) operators works as expected"""
-        vspace = VSpace(ops)
+        vspace = PauliVSpace(ops)
         new_basis = vspace.add(op)
         assert new_basis == true_new_basis
 
@@ -86,14 +86,14 @@ class TestVSpace:
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_DEPENDENT)
     def test_add_lin_dependent(self, ops, op, true_new_basis):
         """Test that adding linearly dependent operators works as expected"""
-        vspace = VSpace(ops)
+        vspace = PauliVSpace(ops)
         new_basis = vspace.add(op)
         assert new_basis == true_new_basis
 
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
     def test_len(self, ops, op, true_new_basis):
-        """Test the length of the VSpace instance with inplace addition to the basis"""
-        vspace = VSpace(ops)
+        """Test the length of the PauliVSpace instance with inplace addition to the basis"""
+        vspace = PauliVSpace(ops)
         len_before_adding = len(vspace)
         len_basis_before_adding = len(vspace.basis)
 
@@ -117,8 +117,8 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "Y"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 == vspace2
 
     def test_eq_False0(self):
@@ -135,8 +135,8 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({0: "Z"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 != vspace2
 
     def test_eq_False1(self):
@@ -154,8 +154,8 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "Z"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 != vspace2
 
     def test_eq_False2(self):
@@ -173,8 +173,8 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "Y"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 != vspace2
 
     def test_eq_False3(self):
@@ -193,19 +193,19 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "Z"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 != vspace2
 
     def test_eq_False4(self):
         """Test case where both vspaces have the same rank, same PauliWords but span different spaces"""
-        v1 = VSpace(
+        v1 = PauliVSpace(
             [
                 PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({0: "Y"}): 1.0}),
                 PauliSentence({PauliWord({0: "Z"}): 1.0, PauliWord({0: "Y"}): 1.0}),
             ]
         )
-        v2 = VSpace(
+        v2 = PauliVSpace(
             [
                 PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({0: "Z"}): 1.0}),
                 PauliSentence({PauliWord({0: "Y"}): 1.0}),
