@@ -78,6 +78,12 @@ STRING_REPR = (
     (qml.PauliX("a"), "X('a')"),
     (qml.PauliY("a"), "Y('a')"),
     (qml.PauliZ("a"), "Z('a')"),
+    (qml.X("a"), "X('a')"),
+    (qml.Y("a"), "Y('a')"),
+    (qml.Z("a"), "Z('a')"),
+    (qml.X(1), "X(1)"),
+    (qml.Y(2), "Y(2)"),
+    (qml.Z(3), "Z(3)"),
 )
 
 
@@ -86,7 +92,7 @@ def test_alias_XYZI(wire):
     assert qml.PauliX(wire) == qml.X(wire)
     assert qml.PauliY(wire) == qml.Y(wire)
     assert qml.PauliZ(wire) == qml.Z(wire)
-    assert qml.Identity(wire) == qml.Identity(wire)
+    assert qml.Identity(wire) == qml.I(wire)
 
 
 class TestOperations:
