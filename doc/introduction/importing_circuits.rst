@@ -246,7 +246,11 @@ SparsePauliOp(['II', 'XZ', 'YX'],
               coeffs=[ParameterExpression(1.0*a), ParameterExpression(1.0*b),
  ParameterExpression(1.0*c)])
 >>> param_pl_op
-(2+0j) * I(0) + (3+0j) * (X(1) @ Z(0)) + (4+0j) * (Y(1) @ X(0))
+(
+    (2+0j) * I(0)
+  + (3+0j) * (X(1) @ Z(0))
+  + (4+0j) * (Y(1) @ X(0))
+)
 
 
 Import Functions
