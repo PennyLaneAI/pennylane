@@ -642,8 +642,8 @@ class LinearCombination(Sum):
         
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
-        coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
-        self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in coeffs_flat)
+        # coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
+        # self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in coeffs_flat)
 
         self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
 
@@ -651,7 +651,7 @@ class LinearCombination(Sum):
             simplified = self.simplify()
             self._coeffs = simplified.coeffs
             self._ops = simplified.ops
-            self.data = simplified.coeffs
+            # self.data = simplified.coeffs
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():
                 self._grouping_indices = _compute_grouping_indices(
@@ -725,7 +725,7 @@ class LinearCombination(Sum):
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return self.parameters, self.ops
+        return self.coeffs, self.ops
 
     @property
     def wires(self):

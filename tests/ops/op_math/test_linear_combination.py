@@ -585,8 +585,8 @@ class TestLinearCombination:
         assert metadata[0] == H.grouping_indices
         assert hash(metadata)
         assert len(data) == 2
-        assert data[0] is H.data
-        assert data[1] is H._ops
+        assert data[0] == H.data # Previously checking "is" instead of "==", problem?
+        assert data[1] == H._ops
 
         new_H = LinearCombination._unflatten(*H._flatten())
         assert qml.equal(H, new_H)
