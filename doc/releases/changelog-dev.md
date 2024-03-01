@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Extend the device test suite to cover gradient methods, templates and arithmetic observables.
+  [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -22,3 +25,4 @@
 This release contains contributions from (in alphabetical order):
 
 Korbinian Kottmann
+Matthew Silverman
