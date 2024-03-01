@@ -101,8 +101,8 @@ The resulting PennyLane circuit can be executed directly:
 It can also be visualized using PennyLane's :func:`~pennylane.draw` utility:
 
 >>> print(qml.draw(pl_circuit_from_qk)())
-0: ──H─╭●─╭||─┤  <Y>
-1: ────╰X─╰||─┤  Var[Z]
+0: ──H─╭●─┤  <Y>
+1: ────╰X─┤  Var[Z]
 
 OpenQASM
 ~~~~~~~~
