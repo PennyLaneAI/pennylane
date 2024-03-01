@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure.py functionality"""
 # pylint: disable=too-few-public-methods, protected-access
+from copy import copy
 import pytest
 import numpy as np
 
@@ -212,3 +213,34 @@ class TestPauliVSpace:
             ]
         )
         assert v1 != v2
+
+    IS_INDEPENDENT_TEST = (
+        ([
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z"}): 1.0}),
+        ], PauliSentence({PauliWord({0: "Y"}): 1.0}), True),
+        ([
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z"}): 1.0}),
+        ], PauliSentence({PauliWord({0: "Z"}): 1.0}), False),
+        ([
+            PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({1: "Y"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z", 1: "Z"}): 1.0}),
+        ], PauliSentence({PauliWord({0: "Z"}): 1.0}), True),
+        ([
+            PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({1: "Y"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z", 1: "Z"}): 1.0}),
+        ], PauliSentence({PauliWord({0: "Z", 1:"Z"}): 1.0}), False),
+    )
+    @pytest.mark.parametrize("ops, op, is_independent_true", IS_INDEPENDENT_TEST)
+    def test_is_independent(self, ops, op, is_independent_true):
+        """Test the `is_independent` method returns correct results and leaves class attributes intact"""
+        v1 = PauliVSpace(ops)
+        vcopy = copy(v1)
+
+        is_independent = v1.is_independent(op)
+        assert is_independent == is_independent_true
+        assert qml.math.allclose(v1._M, vcopy._M)
+        assert v1._pw_to_idx == vcopy._pw_to_idx
+        assert v1._rank == vcopy._rank
+        assert v1._num_pw == vcopy._num_pw
