@@ -21,14 +21,14 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-DEFAULT_METHODS = ["backprop", "parameter-shift", "hadamard"]
 SKIP_IF_FINITE = ["backprop"]
 
 
+@pytest.mark.usefixtures("validate_diff_method")
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "hadamard"])
 class TestGradients:
     """Test various gradient computations."""
 
-    @pytest.mark.parametrize("diff_method", DEFAULT_METHODS)
     def test_basic_grad(self, diff_method, device, tol):
         """Test a basic function with one RX and one expectation."""
         wires = 2 if diff_method == "hadamard" else 1
@@ -48,8 +48,10 @@ class TestGradients:
         res = qml.grad(circuit)(x)
         assert np.isclose(res, -pnp.sin(x), atol=tol, rtol=0)
 
-    def test_backprop_state(self, device, tol):
+    def test_backprop_state(self, diff_method, device, tol):
         """Test the trainability of parameters in a circuit returning the state."""
+        if diff_method != "backprop":
+            pytest.skip(reason="test only works with backprop")
         dev = device(2)
         if dev.shots:
             pytest.skip("test uses backprop, must be in analytic mode")
@@ -60,7 +62,7 @@ class TestGradients:
         x = pnp.array(0.543)
         y = pnp.array(-0.654)
 
-        @qml.qnode(dev, diff_method="backprop", grad_on_execution=True)
+        @qml.qnode(dev, diff_method=diff_method, grad_on_execution=True)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -80,8 +82,11 @@ class TestGradients:
         res = qml.grad(cost_fn)(x, y)
         assert np.allclose(res, expected[0], atol=tol, rtol=0)
 
-    def test_parameter_shift(self, device, tol):
+    def test_parameter_shift(self, diff_method, device, tol):
         """Test a multi-parameter circuit with parameter-shift."""
+        if diff_method != "parameter-shift":
+            pytest.skip(reason="test only works with parameter-shift")
+
         a = pnp.array(0.1)
         b = pnp.array(0.2)
 
@@ -104,7 +109,6 @@ class TestGradients:
         res = qml.grad(circuit)(a, b)
         assert np.allclose(res, expected[0], atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("diff_method", DEFAULT_METHODS)
     def test_probs(self, diff_method, device, tol):
         """Test differentiation of a circuit returning probs()."""
         wires = 3 if diff_method == "hadamard" else 2
@@ -143,7 +147,6 @@ class TestGradients:
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("diff_method", DEFAULT_METHODS)
     def test_multi_meas(self, diff_method, device, tol):
         """Test differentiation of a circuit with both scalar and array-like returns."""
         wires = 3 if diff_method == "hadamard" else 2
@@ -170,7 +173,6 @@ class TestGradients:
         assert isinstance(jac, pnp.ndarray)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("diff_method", DEFAULT_METHODS)
     def test_hessian(self, diff_method, device, tol):
         """Test hessian computation."""
         wires = 3 if diff_method == "hadamard" else 1
