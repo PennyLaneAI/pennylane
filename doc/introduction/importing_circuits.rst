@@ -58,8 +58,8 @@ We can convert the ``QuantumCircuit`` into a PennyLane quantum function using:
 
     pl_template_from_qk = qml.from_qiskit(qk_circuit)
 
-Above, the :func:`from_qiskit` function converts a ``QuantumCircuit`` into a PennyLane template.
-This template can then be called from inside a QNode to generate a PennyLane circuit:
+Above, the :func:`~pennylane.from_qiskit` function converts a ``QuantumCircuit`` into a PennyLane
+template. This template can then be called from inside a QNode to generate a PennyLane circuit:
 
 .. code-block:: python
 
@@ -80,7 +80,7 @@ This template can then be called from inside a QNode to generate a PennyLane cir
 
 
     Here, the ``measurements`` argument overrides the terminal measurements in the Qiskit circuit.
-    See the :func:`from_qiskit` documentation for more details.
+    See the :func:`~pennylane.from_qiskit` documentation for more details.
 
 The resulting PennyLane circuit can be executed directly:
 
@@ -156,8 +156,8 @@ We begin with a familiar pyQuil `Program
     pq_program += pyquil.gates.H(0)
     pq_program += pyquil.gates.CNOT(0, 1)
 
-This ``Program`` can be converted into a PennyLane quantum function using the :func:`from_pyquil`
-function:
+This ``Program`` can be converted into a PennyLane quantum function using the
+:func:`~pennylane.from_pyquil` function:
 
 .. code-block:: python
 
@@ -178,7 +178,8 @@ The resulting PennyLane circuit is:
 
 .. note::
 
-    Quantum circuits expressed in Quil can be imported in a similar way using :func:`from_quil`.
+    Quantum circuits expressed in Quil can be imported in a similar way using
+    :func:`~pennylane.from_quil`.
 
 
 Importing Quantum Operators
@@ -198,8 +199,8 @@ imported into PennyLane. To see this in action, we first define a ``SparsePauliO
 
     qk_op = SparsePauliOp(["II", "XY"])
 
-Then, we apply the :func:`from_qiskit_op` function to convert the ``SparsePauliOp`` into a PennyLane
-:class:`Operator <pennylane.operation.Operator>`:
+Then, we apply the :func:`~pennylane.from_qiskit_op` function to convert the ``SparsePauliOp`` into
+a PennyLane :class:`Operator <pennylane.operation.Operator>`:
 
 .. code-block:: python
 
