@@ -259,16 +259,16 @@ def _draw_qnode(
             expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
         ):
             qnode.construct(args, kwargs)
+            tapes = qnode.transform_program([qnode.tape])[0]
             program, _ = qnode.device.preprocess()
-            tapes = program([qnode.tape])
+            tapes = program(tapes)[0]
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 tapes = qnode.construct(args, kwargs)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    tapes = program([qnode.tape])
+                program = qnode.transform_program
+                tapes = program([qnode.tape])[0]
 
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
@@ -287,7 +287,7 @@ def _draw_qnode(
                     max_length=max_length,
                     cache=cache,
                 )
-                for t in tapes[0]
+                for t in tapes
             ]
             if show_matrices and cache["matrices"]:
                 mat_str = ""
@@ -570,8 +570,9 @@ def _draw_mpl_qnode(
     def wrapper(*args, **kwargs_qnode):
         if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
             qnode.construct(args, kwargs)
+            tapes, _ = qnode.transform_program([qnode.tape])
             program, _ = qnode.device.preprocess()
-            tapes, _ = program([qnode.tape])
+            tapes, _ = program(tapes)
             tape = tapes[0]
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
@@ -579,11 +580,8 @@ def _draw_mpl_qnode(
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 qnode.construct(args, kwargs_qnode)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    [tape], _ = program([qnode.tape])
-                else:
-                    tape = qnode.tape
+                program = qnode.transform_program
+                [tape], _ = program([qnode.tape])
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
