@@ -31,6 +31,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
 
 .. note::
     If no interface is specified, PennyLane will automatically determine the interface based on provided arguments and keyword arguments.
+    See ``qml.workflow.SUPPORTED_INTERFACES`` for a list of all accepted interface strings.
 
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
