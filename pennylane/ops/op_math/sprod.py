@@ -224,7 +224,7 @@ class SProd(ScalarSymbolicOp):
 
         This is a deprecated attribute, please use :meth:`~SProd.terms` instead.
 
-        .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
+        .. seealso:: :attr:`~SProd.ops`, :class:`~SProd.pauli_rep`"""
         warnings.warn(
             "SProd.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
@@ -239,7 +239,7 @@ class SProd(ScalarSymbolicOp):
 
         This is a deprecated attribute, please use :meth:`~SProd.terms` instead.
 
-        .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
+        .. seealso:: :attr:`~SProd.coeffs`, :class:`~SProd.pauli_rep`"""
         warnings.warn(
             "SProd.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
