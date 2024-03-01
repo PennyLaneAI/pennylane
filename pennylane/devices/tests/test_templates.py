@@ -371,27 +371,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             expected = math.dm_from_state_vector(expected)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    def test_GateFabric(self, device, tol):
-        """Test the GateFabric template."""
-        symbols = ["H", "H"]
-        coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
-        H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
-        electrons = 2
-        ref_state = qml.qchem.hf_state(electrons, qubits)
-        dev = device(qubits)
-
-        @qml.qnode(dev)
-        def circuit(weights):
-            qml.GateFabric(weights, wires=[0, 1, 2, 3], init_state=ref_state, include_pi=True)
-            return qml.expval(H)
-
-        layers = 2
-        shape = qml.GateFabric.shape(n_layers=layers, n_wires=qubits)
-        weights = np.array([0.1, 0.2, 0.3, 0.4]).reshape(shape)
-        res = circuit(weights)
-        expected = -0.9453094224618628
-        assert np.isclose(res, expected, atol=tol(dev.shots))
-
     def test_GroverOperator(self, device, tol):
         """Test the GroverOperator template."""
         n_wires = 3
@@ -593,47 +572,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         global_phase = qml.math.sum(-1 * qml.math.angle(expected) / len(expected))
         global_phase = np.exp(-1j * global_phase)
         assert np.allclose(expected / res, global_phase)
-
-    def test_ParticleConservingU1(self, device, tol):
-        """Test the ParticleConservingU1 template."""
-        symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
-        h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
-        electrons = 2
-        ref_state = qml.qchem.hf_state(electrons, qubits)
-        dev = device(qubits)
-        ansatz = partial(qml.ParticleConservingU1, init_state=ref_state, wires=dev.wires)
-
-        @qml.qnode(dev)
-        def circuit(params):
-            ansatz(params)
-            return qml.expval(h)
-
-        layers = 2
-        shape = qml.ParticleConservingU1.shape(layers, qubits)
-        params = np.arange(1, 13).reshape(shape) / 10
-        res = circuit(params)
-        expected = -0.5669084184194393
-        assert np.isclose(res, expected, atol=tol(dev.shots))
-
-    def test_ParticleConservingU2(self, device, tol):
-        """Test the ParticleConservingU2 template."""
-        symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
-        h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
-        ref_state = qml.qchem.hf_state(2, qubits)
-        dev = device(qubits)
-        ansatz = partial(qml.ParticleConservingU2, init_state=ref_state, wires=dev.wires)
-
-        @qml.qnode(dev)
-        def circuit(params):
-            ansatz(params)
-            return qml.expval(h)
-
-        layers = 1
-        shape = qml.ParticleConservingU2.shape(layers, qubits)
-        params = np.arange(1, 8).reshape(shape) / 10
-        res = circuit(params)
-        expected = -0.8521967086461301
-        assert np.isclose(res, expected, atol=tol(dev.shots))
 
     def test_Permute(self, device, tol):
         """Test the Permute template."""
@@ -942,21 +880,76 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         tol = tol(dev.shots)
         assert all(np.isclose(val, probs[i], atol=tol) for i, val in zip(order, res))
 
-    def test_UCCSD(self, device, tol):
-        """Test the UCCSD template."""
-        symbols = ["H", "H", "H"]
-        geometry = np.array(
-            [
-                [0.01076341, 0.04449877, 0.0],
-                [0.98729513, 1.63059094, 0.0],
-                [1.87262415, -0.00815842, 0.0],
-            ],
-            dtype=np.float64,
-        )
+
+class TestMoleculeTemplates:
+    """Test templates using the H2 molecule."""
+
+    @pytest.fixture(scope="class")
+    def h2(self):
+        """Return attributes needed for H2."""
+        symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
+        h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
         electrons = 2
-        charge = 1
-        H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge=charge)
-        hf_state = qml.qchem.hf_state(electrons, qubits)
+        ref_state = qml.qchem.hf_state(electrons, qubits)
+        return qubits, ref_state, h
+
+    def test_GateFabric(self, device, tol, h2):
+        """Test the GateFabric template."""
+        qubits, ref_state, H = h2
+        dev = device(qubits)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.GateFabric(weights, wires=[0, 1, 2, 3], init_state=ref_state, include_pi=True)
+            return qml.expval(H)
+
+        layers = 2
+        shape = qml.GateFabric.shape(n_layers=layers, n_wires=qubits)
+        weights = np.array([0.1, 0.2, 0.3, 0.4]).reshape(shape)
+        res = circuit(weights)
+        expected = -0.9453094224618628
+        assert np.isclose(res, expected, atol=tol(dev.shots))
+
+    def test_ParticleConservingU1(self, device, tol, h2):
+        """Test the ParticleConservingU1 template."""
+        qubits, ref_state, h = h2
+        dev = device(qubits)
+        ansatz = partial(qml.ParticleConservingU1, init_state=ref_state, wires=dev.wires)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            ansatz(params)
+            return qml.expval(h)
+
+        layers = 2
+        shape = qml.ParticleConservingU1.shape(layers, qubits)
+        params = np.arange(1, 13).reshape(shape) / 10
+        res = circuit(params)
+        expected = -0.5669084184194393
+        assert np.isclose(res, expected, atol=tol(dev.shots))
+
+    def test_ParticleConservingU2(self, device, tol, h2):
+        """Test the ParticleConservingU2 template."""
+        qubits, ref_state, h = h2
+        dev = device(qubits)
+        ansatz = partial(qml.ParticleConservingU2, init_state=ref_state, wires=dev.wires)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            ansatz(params)
+            return qml.expval(h)
+
+        layers = 1
+        shape = qml.ParticleConservingU2.shape(layers, qubits)
+        params = np.arange(1, 8).reshape(shape) / 10
+        res = circuit(params)
+        expected = -0.8521967086461301
+        assert np.isclose(res, expected, atol=tol(dev.shots))
+
+    def test_UCCSD(self, device, tol, h2):
+        """Test the UCCSD template."""
+        qubits, hf_state, H = h2
+        electrons = 2
         singles, doubles = qml.qchem.excitations(electrons, qubits)
         s_wires, d_wires = qml.qchem.excitations_to_wires(singles, doubles)
         dev = device(qubits)
@@ -970,17 +963,12 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = circuit(
             params, wires=range(qubits), s_wires=s_wires, d_wires=d_wires, hf_state=hf_state
         )
-        expected = -0.21186021880992106
-        pytest.xfail(reason="CI seems to have issues with dtype here despite geometry setting it.")
+        expected = -1.0864433121798176
         assert np.isclose(res, expected, atol=tol(dev.shots))
 
-    def test_kUpCCGSD(self, device, tol):
+    def test_kUpCCGSD(self, device, tol, h2):
         """Test the kUpCCGSD template."""
-        symbols = ["H", "H"]
-        coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
-        H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
-        electrons = 2
-        ref_state = qml.qchem.hf_state(electrons, qubits)
+        qubits, ref_state, H = h2
         dev = device(qubits)
 
         @qml.qnode(dev)
