@@ -77,7 +77,7 @@ This quantum function can then be called from inside a QNode to generate a Penny
     @qml.qnode(qml.device("default.qubit"))
     def pl_circuit_from_qk():
         pl_qfunc_from_qk(wires=[0, 1])
-        return qml.expval(qml.Y(0)), qml.expval(qml.Z(1))
+        return qml.expval(qml.Y(0)), qml.var(qml.Z(1))
 
 .. note::
 
