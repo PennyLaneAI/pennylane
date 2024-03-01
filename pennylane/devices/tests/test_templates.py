@@ -331,6 +331,8 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_FermionicDoubleExcitation(self, device, tol):
         """Test the FermionicDoubleExcitation template."""
         dev = device(5)
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+            pytest.xfail(reason="device is generating negative probabilities")
 
         @qml.qnode(dev)
         def circuit(weight, wires1=None, wires2=None):
@@ -344,6 +346,8 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_FermionicSingleExcitation(self, device, tol):
         """Test the FermionicSingleExcitation template."""
         dev = device(3)
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+            pytest.xfail(reason="device is generating negative probabilities")
 
         @qml.qnode(dev)
         def circuit(weight, wires=None):
@@ -900,6 +904,8 @@ class TestMoleculeTemplates:
         """Test the GateFabric template."""
         qubits, ref_state, H = h2
         dev = device(qubits)
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+            pytest.xfail(reason="device is generating negative probabilities")
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -973,6 +979,8 @@ class TestMoleculeTemplates:
         """Test the kUpCCGSD template."""
         qubits, ref_state, H = h2
         dev = device(qubits)
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+            pytest.xfail(reason="device is generating negative probabilities")
 
         @qml.qnode(dev)
         def circuit(weights):
