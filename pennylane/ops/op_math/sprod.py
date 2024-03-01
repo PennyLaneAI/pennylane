@@ -15,7 +15,6 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-import warnings
 from typing import Union
 from copy import copy
 
@@ -184,7 +183,7 @@ class SProd(ScalarSymbolicOp):
         """
         return 1 + self.base.num_params
 
-    def terms(self):
+    def terms(self):  # is this method necessary for this class?
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
@@ -194,58 +193,8 @@ class SProd(ScalarSymbolicOp):
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
-
-        **Example**
-
-        >>> qml.operation.enable_new_opmath()
-        >>> op = 0.5 * (X(0) @ (0.5 * X(1) + X(2)))
-        >>> op.terms()
-        ([0.25, 0.5],
-         [X(1) @ X(0),
-          X(2) @ X(0)])
-
         """
-        # try using pauli_rep:
-        if pr := self.pauli_rep:
-            ops = [pauli.operation() for pauli in pr.keys()]
-            return list(pr.values()), ops
-
-        if isinstance(base := self.base, (Sum, qml.ops.Prod)):
-            coeffs, ops = base.terms()
-            new_coeffs = [c * self.scalar for c in coeffs]
-            return new_coeffs, ops
-
         return [self.scalar], [self.base]
-
-    @property
-    def coeffs(self):
-        r"""
-        Scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~SProd.terms` instead.
-
-        .. seealso:: :attr:`~SProd.ops`, :class:`~SProd.pauli_rep`"""
-        warnings.warn(
-            "SProd.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        coeffs, _ = self.terms()
-        return coeffs
-
-    @property
-    def ops(self):
-        r"""
-        Operator terms without scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~SProd.terms` instead.
-
-        .. seealso:: :attr:`~SProd.coeffs`, :class:`~SProd.pauli_rep`"""
-        warnings.warn(
-            "SProd.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        _, ops = self.terms()
-        return ops
 
     @property
     def is_hermitian(self):

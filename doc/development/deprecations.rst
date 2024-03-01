@@ -70,7 +70,7 @@ Pending deprecations
 
 * ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
 
-  - Added and deprecated for ``Sum``, ``Prod`` and ``SProd`` instances in v0.35
+  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
 
 Completed deprecation cycles
 ----------------------------
