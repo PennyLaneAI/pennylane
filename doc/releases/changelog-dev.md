@@ -64,4 +64,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Korbinian Kottmann
+Korbinian Kottmann,
+Mudit Pandey,
