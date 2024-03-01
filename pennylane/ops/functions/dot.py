@@ -57,6 +57,12 @@ def dot(
     Returns:
         Operator or ParametrizedHamiltonian: operator describing the linear combination
 
+    .. note::
+
+        If grouping is requested, the computed groupings are stored as a list of list of indices
+        in ``Sum.grouping_indices``. The indices refer to the operators and coefficients returned
+        by ``Sum.terms()``, not ``Sum.operands``, as these are not guaranteed to be equivalent.
+
     **Example**
 
     >>> coeffs = np.array([1.1, 2.2])

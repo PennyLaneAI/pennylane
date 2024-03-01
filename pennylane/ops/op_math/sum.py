@@ -61,6 +61,12 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
         >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
+    .. note::
+
+        If grouping is requested, the computed groupings are stored as a list of list of indices
+        in ``Sum.grouping_indices``. The indices refer to the operators and coefficients returned
+        by ``Sum.terms()``, not ``Sum.operands``, as these are not guaranteed to be equivalent.
+
     .. seealso:: :class:`~.ops.op_math.Sum`
 
     **Example**
@@ -117,6 +123,12 @@ class Sum(CompositeOp):
         But it doesn't support batching of operators:
         >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+
+    .. note::
+
+        If grouping is requested, the computed groupings are stored as a list of list of indices
+        in ``Sum.grouping_indices``. The indices refer to the operators and coefficients returned
+        by ``Sum.terms()``, not ``Sum.operands``, as these are not guaranteed to be equivalent.
 
     .. seealso:: :func:`~.ops.op_math.sum`
 
@@ -388,10 +400,9 @@ class Sum(CompositeOp):
 
         .. note::
 
-            The computed groupings are stored as a list of list of indices in the
-            ``grouping_indices`` attribute. The indices refer to the operators and
-            coefficients returned by ``Sum.terms()``, not ``Sum.operands()``, as these
-            are not guaranteed to be equivalent.
+            If grouping is requested, the computed groupings are stored as a list of list of indices
+            in ``Sum.grouping_indices``. The indices refer to operators and coefficients returned
+            by ``Sum.terms()``, not ``Sum.operands``, as these are not guaranteed to be equivalent.
 
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute
