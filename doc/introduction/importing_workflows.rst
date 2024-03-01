@@ -120,8 +120,6 @@ An equivalent quantum circuit can be expressed in OpenQASM 2.0 as follows:
 
         h q[0];
         cx q[0], q[1];
-
-        measure q -> c;
         """
     )
 
@@ -141,8 +139,8 @@ We can import this circuit into PennyLane using the PennyLane-Qiskit plugin once
 The result is as follows:
 
 >>> print(qml.draw(pl_circuit_from_oq)())
-0: ──H─╭●──┤↗├─┤  <Y>
-1: ────╰X──┤↗├─┤  Var[Z]
+0: ──H─╭●─┤  <Y>
+1: ────╰X─┤  Var[Z]
 
 Quil
 ~~~~
