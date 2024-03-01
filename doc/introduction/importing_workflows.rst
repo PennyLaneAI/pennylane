@@ -46,22 +46,22 @@ Now, suppose we define a Qiskit ``QuantumCircuit`` as follows:
     qk_circuit.cx(0, 1)
     qk_circuit.measure_all()
 
-We can convert the ``QuantumCircuit`` into a PennyLane quantum function using:
+We can convert the ``QuantumCircuit`` into a PennyLane :ref:`quantum function <intro_vcirc_qfunc>`
+using:
 
 .. code-block:: python
 
     import pennylane as qml
 
-    pl_template_from_qk = qml.from_qiskit(qk_circuit)
+    pl_qfunc_from_qk = qml.from_qiskit(qk_circuit)
 
-Above, the :func:`~pennylane.from_qiskit` function converts a ``QuantumCircuit`` into a PennyLane
-template. This template can then be called from inside a QNode to generate a PennyLane circuit:
+This function can then be called from inside a QNode to generate a PennyLane circuit:
 
 .. code-block:: python
 
     @qml.qnode(qml.device("default.qubit"))
     def pl_circuit_from_qk():
-        pl_template_from_qk(wires=[0, 1])
+        pl_qfunc_from_qk(wires=[0, 1])
         return qml.expval(qml.Y(0)), qml.expval(qml.Z(1))
 
 .. note::
@@ -71,8 +71,8 @@ template. This template can then be called from inside a QNode to generate a Pen
     .. code-block:: python
 
         measurements = [qml.expval(qml.Y(0)), qml.var(qml.Z(1))]
-        pl_template_from_qk = qml.from_qiskit(qk_circuit, measurements=measurements)
-        pl_circuit_from_qk = qml.QNode(pl_template_from_qk, qml.device("default.qubit"))
+        pl_qfunc_from_qk = qml.from_qiskit(qk_circuit, measurements=measurements)
+        pl_circuit_from_qk = qml.QNode(pl_qfunc_from_qk, qml.device("default.qubit"))
 
 
     Here, the ``measurements`` argument overrides the terminal measurements in the Qiskit circuit.
@@ -116,11 +116,11 @@ We can import this circuit into PennyLane using the PennyLane-Qiskit plugin once
 
     import pennylane as qml
 
-    pl_template_from_oq = qml.from_qasm(oq_circuit)
+    pl_qfunc_from_oq = qml.from_qasm(oq_circuit)
 
     @qml.qnode(qml.device("default.qubit"))
     def pl_circuit_from_oq():
-        pl_template_from_oq(wires=[0, 1])
+        pl_qfunc_from_oq(wires=[0, 1])
         return qml.expval(qml.Y(0)), qml.var(qml.Z(1))
 
 The result is as follows:
@@ -159,11 +159,11 @@ This ``Program`` can be converted into a PennyLane quantum function using the
 
     import pennylane as qml
 
-    pl_template_from_pq = qml.from_pyquil(pq_program)
+    pl_qfunc_from_pq = qml.from_pyquil(pq_program)
 
     @qml.qnode(qml.device("default.qubit"))
     def pl_circuit_from_pq():
-        pl_template_from_pq(wires=[0, 1])
+        pl_qfunc_from_pq(wires=[0, 1])
         return qml.expval(qml.Y(0)), qml.var(qml.Z(1))
 
 The resulting PennyLane circuit is:
