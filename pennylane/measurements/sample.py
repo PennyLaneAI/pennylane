@@ -55,10 +55,37 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
     .. note::
 
         QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
-        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
-        observable ``obs``.
+        with respect to a sample --- a stochastic process --- is ill-defined. An alternative
+        approach would be to use single-shot expectation values. For example, instead of this:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", shots=10)
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(angle):
+                qml.RX(angle, wires=0)
+                return qml.sample(qml.PauliX(0))
+
+            angle = qml.numpy.array(0.1)
+            res = qml.jacobian(circuit)(angle)
+
+        Consider using :func:`~pennylane.expval` and a sequence of single shots, like this:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", shots=[(1, 10)])
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(angle):
+                qml.RX(angle, wires=0)
+                return qml.expval(qml.PauliX(0))
+
+            def cost(angle):
+                return qml.math.hstack(circuit(angle))
+
+            angle = qml.numpy.array(0.1)
+            res = qml.jacobian(cost)(angle)
 
     **Example**
 

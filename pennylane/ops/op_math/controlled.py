@@ -127,6 +127,11 @@ def ctrl(op, control, control_values=None, work_wires=None):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
+    return create_controlled_op(op, control, control_values=control_values, work_wires=work_wires)
+
+
+def create_controlled_op(op, control, control_values=None, work_wires=None):
+    """Default ``qml.ctrl`` implementation, allowing other implementations to call it when needed."""
 
     control = qml.wires.Wires(control)
     if isinstance(control_values, (int, bool)):
