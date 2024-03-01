@@ -785,7 +785,7 @@ class TestLinearCombination:
     def test_LinearCombination_mul_coeff_cast(self):
         """Test that the coefficients are correct when the type of the existing
         and the new coefficients differ."""
-        h = 0.5 * (X(0) @ X(0) + Y(0) @ Y(1))
+        h = qml.LinearCombination([0.5, 0.5], [X(0) @ X(0), Y(0) @ Y(1)])
         assert np.all(h.coeffs == np.array([0.5, 0.5]))
 
     @pytest.mark.parametrize(("H1", "H2", "H"), sub_LinearCombinations)
