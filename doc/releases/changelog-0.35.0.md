@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Easy-to-import Qiskit workflows 💾</h4>
+<h4>Qiskit 1.0 integration 🔌</h4>
 
 * This version of PennyLane makes it easier to import circuits from Qiskit.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
@@ -77,8 +77,8 @@
 
     ```pycon
     >>> teleport()
-    tensor([[0.81080498+0.j, 0.        +0.j],
-        [0.        +0.j, 0.18919502+0.j]], requires_grad=True)
+    tensor([[0.81080498+0.j        , 0.        +0.39166345j],
+            [0.        -0.39166345j, 0.18919502+0.j        ]], requires_grad=True)
     ```
     
   * It is now more intuitive to handle and differentiate parametrized Qiskit circuits. Consider the following circuit:
@@ -370,8 +370,7 @@
 
   ```pycon
   >>> print(qubit_ham)
-  (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
-  ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
+  -0.25j * Y(0) + (-0.25+0j) * (X(0) @ Z(1)) + (0.25+0j) * X(0) + 0.25j * (Y(0) @ Z(1))
   ```
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample`, and `counts`, which accept both wires and observables.
@@ -449,11 +448,12 @@
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
-* Akin to `qml.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum` or `Prod` can now be accessed 
+* Akin to `qml.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum`, `Prod` and `SProd` can now be accessed 
   with the `terms()` method.
   [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
   [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
   [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
+  [(#5287)](https://github.com/PennyLaneAI/pennylane/pull/5287)
 
   ```python
   >>> qml.operation.enable_new_opmath()
@@ -650,8 +650,9 @@
   functionality can be achieved using newer features in the `pauli` module.
   [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
 
-* `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` will be deprecated in the future.
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs`, `SProd.ops` and `SProd.coeffs` will be deprecated in the future.
   [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
+  [(#5287)](https://github.com/PennyLaneAI/pennylane/pull/5287)
 
 <h3>Documentation 📝</h3>
 
