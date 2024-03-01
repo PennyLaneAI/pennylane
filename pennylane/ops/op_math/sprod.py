@@ -207,7 +207,8 @@ class SProd(ScalarSymbolicOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            ops = [pauli.operation() for pauli in pr.keys()]
+            with qml.QueuingManager.stop_recording():
+                ops = [pauli.operation() for pauli in pr.keys()]
             return list(pr.values()), ops
 
         if isinstance(base := self.base, (Sum, qml.ops.Prod)):

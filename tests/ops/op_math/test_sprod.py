@@ -183,6 +183,7 @@ class TestInitialization:
             [0.5, 0.5],
             [qml.X(0), qml.prod(qml.X(0), qml.X(1))],
         ),
+        (qml.s_prod(0.5, qml.Hadamard(0)), [0.5], [qml.Hadamard(0)]),
     )
 
     @pytest.mark.parametrize("op, true_coeffs, true_ops", TERMS)
@@ -190,6 +191,15 @@ class TestInitialization:
         coeffs, ops_ = op.terms()
         assert coeffs == true_coeffs
         assert ops_ == true_ops
+
+    @pytest.mark.parametrize("op, true_coeffs, true_ops", TERMS)
+    def test_terms_queuing(self, op, true_coeffs, true_ops):  # pylint: disable=unused-argument
+        """Test that no operations are queued by SProd.terms"""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.apply(op)
+            _, _ = op.terms()
+
+        assert q.queue == [op]
 
     def test_decomposition_raises_error(self):
         sprod_op = s_prod(3.14, qml.Identity(wires=1))
