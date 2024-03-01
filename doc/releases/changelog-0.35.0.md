@@ -77,8 +77,8 @@
 
     ```pycon
     >>> teleport()
-    tensor([[0.81080498+0.j, 0.        +0.j],
-        [0.        +0.j, 0.18919502+0.j]], requires_grad=True)
+    tensor([[0.81080498+0.j        , 0.        +0.39166345j],
+            [0.        -0.39166345j, 0.18919502+0.j        ]], requires_grad=True)
     ```
     
   * It is now more intuitive to handle and differentiate parametrized Qiskit circuits. Consider the following circuit:
@@ -370,8 +370,7 @@
 
   ```pycon
   >>> print(qubit_ham)
-  (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
-  ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
+  -0.25j * Y(0) + (-0.25+0j) * (X(0) @ Z(1)) + (0.25+0j) * X(0) + 0.25j * (Y(0) @ Z(1))
   ```
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample`, and `counts`, which accept both wires and observables.
