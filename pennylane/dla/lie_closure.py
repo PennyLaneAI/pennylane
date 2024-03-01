@@ -167,6 +167,7 @@ class VSpace:
             pw_to_idx (dict): map from ``PauliWord`` to row index in ``M``
             rank (int): current rank of ``M``, equal to its number of columns
             num_pw (int): current number of ``PauliWord``\ s, equal to the number of rows in ``M``
+
         Returns:
             ndarray: updated coefficient matrix for the LIS
             dict: updated map from ``PauliWord`` to row index in ``M``. Includes new ``PauliWord`` keys
