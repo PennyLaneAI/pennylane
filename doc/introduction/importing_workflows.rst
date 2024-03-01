@@ -25,7 +25,7 @@ visualization, and interoperability features for existing circuits. For example,
 `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`__ from
 Qiskit, import it into PennyLane, and then apply a `circuit-cutting transform
 <https://pennylane.ai/qml/demos/tutorial_quantum_circuit_cutting/>`_ to reduce the number of qubits
-required to implement the circuit. You could also :ref:`compile <intro_ref_compile_circuits>` the
+required to implement the circuit. You could also :ref:`compile <intro_ref_compile_worklfows>` the
 circuit using `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ or
 differentiate and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>`.
 
