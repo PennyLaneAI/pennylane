@@ -215,23 +215,40 @@ class TestPauliVSpace:
         assert v1 != v2
 
     IS_INDEPENDENT_TEST = (
-        ([
-            PauliSentence({PauliWord({0: "X"}): 1.0}),
+        (
+            [
+                PauliSentence({PauliWord({0: "X"}): 1.0}),
+                PauliSentence({PauliWord({0: "Z"}): 1.0}),
+            ],
+            PauliSentence({PauliWord({0: "Y"}): 1.0}),
+            True,
+        ),
+        (
+            [
+                PauliSentence({PauliWord({0: "X"}): 1.0}),
+                PauliSentence({PauliWord({0: "Z"}): 1.0}),
+            ],
             PauliSentence({PauliWord({0: "Z"}): 1.0}),
-        ], PauliSentence({PauliWord({0: "Y"}): 1.0}), True),
-        ([
-            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            False,
+        ),
+        (
+            [
+                PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({1: "Y"}): 1.0}),
+                PauliSentence({PauliWord({0: "Z", 1: "Z"}): 1.0}),
+            ],
             PauliSentence({PauliWord({0: "Z"}): 1.0}),
-        ], PauliSentence({PauliWord({0: "Z"}): 1.0}), False),
-        ([
-            PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({1: "Y"}): 1.0}),
+            True,
+        ),
+        (
+            [
+                PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({1: "Y"}): 1.0}),
+                PauliSentence({PauliWord({0: "Z", 1: "Z"}): 1.0}),
+            ],
             PauliSentence({PauliWord({0: "Z", 1: "Z"}): 1.0}),
-        ], PauliSentence({PauliWord({0: "Z"}): 1.0}), True),
-        ([
-            PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({1: "Y"}): 1.0}),
-            PauliSentence({PauliWord({0: "Z", 1: "Z"}): 1.0}),
-        ], PauliSentence({PauliWord({0: "Z", 1:"Z"}): 1.0}), False),
+            False,
+        ),
     )
+
     @pytest.mark.parametrize("ops, op, is_independent_true", IS_INDEPENDENT_TEST)
     def test_is_independent(self, ops, op, is_independent_true):
         """Test the `is_independent` method returns correct results and leaves class attributes intact"""
