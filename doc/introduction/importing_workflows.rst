@@ -181,9 +181,10 @@ The resulting PennyLane circuit is:
 Importing quantum operators
 ---------------------------
 
-Sometimes, it is preferable to import a single operation from a framework instead of an entire
-quantum circuit. This can save you some keystrokes and serve as a helpful crutch for understanding
-an individual component of a circuit.
+As well as circuits, it can be useful to import operators defined in other frameworks into
+PennyLane. This can be useful for workflows that involve calculating the expectation value of an
+observable. By mapping to PennyLane, we can make the workflow differentiable while maintaining
+access to features like :mod:`grouping <pennylane.pauli>` for hardware-efficient execution.
 
 Presently, only Qiskit `SparsePauliOp
 <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>`__ operators can be
