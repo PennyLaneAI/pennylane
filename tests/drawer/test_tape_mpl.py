@@ -19,6 +19,7 @@ page in the developement guide.
 # pylint: disable=protected-access, expression-not-assigned
 
 import pytest
+import numpy as np
 import pennylane as qml
 
 from pennylane.drawer import tape_mpl
@@ -371,6 +372,8 @@ class TestSpecialGates:
         for i in range(3):
             assert ax.patches[i].center == (layer, i)
 
+        plt.close()
+
     def test_Barrier(self):
         """Test Barrier gets correct special call."""
 
@@ -382,6 +385,8 @@ class TestSpecialGates:
 
         assert len(ax.lines) == 3
         assert len(ax.collections) == 2
+        assert np.allclose(ax.collections[0].get_color(), np.array([[0.0, 0.0, 0.0, 1.0]]))  # black
+        assert np.allclose(ax.collections[0].get_color(), np.array([[0.0, 0.0, 0.0, 1.0]]))  # black
 
         plt.close()
 
@@ -540,6 +545,8 @@ class TestControlledGates:
         tape = QuantumScript.from_queue(q_tape)
         self.check_tape_controlled_qubit_unitary(tape)
 
+        plt.close()
+
     def test_nested_control_values_bool(self):
         """Test control_values get displayed correctly for nested controlled operations
         when they are provided as a list of bools."""
@@ -647,6 +654,8 @@ class TestGeneralOperations:
         assert ax.patches[0].get_y() == -self.width / 2.0
         assert ax.patches[0].get_width() == self.width
         assert ax.patches[0].get_height() == 2 + self.width
+
+        plt.close()
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):
@@ -855,6 +864,7 @@ class TestClassicalControl:
             "linewidth": 3 * plt.rcParams["lines.linewidth"],
             "foreground": "white",  # figure.facecolor for black white sytle
         }
+        plt.close()
 
     def test_combo_measurement(self):
         """Test a control that depends on two mid circuit measurements."""
@@ -893,6 +903,8 @@ class TestClassicalControl:
         assert eraser.get_ydata() == (2, 2)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+
+        plt.close()
 
     def test_combo_measurement_non_terminal(self):
         """Test a combination measurement where the classical wires continue on.
@@ -933,6 +945,8 @@ class TestClassicalControl:
         assert eraser.get_ydata() == (2, 2)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+
+        plt.close()
 
     def test_single_mcm_measure(self):
         """Test a final measurement of a mid circuit measurement."""
@@ -999,3 +1013,5 @@ class TestClassicalControl:
         assert (
             final_measure_box.get_height() == 0.75 - 2 * 0.2 + 2 * 0.25
         )  # box_length - 2 * pad + 2 *cwire_scaling
+
+        plt.close()
