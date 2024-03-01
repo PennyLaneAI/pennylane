@@ -3,12 +3,12 @@
 
 .. _intro_ref_importing_circuits:
 
-Importing circuits
-==================
+Importing workflows
+===================
 
-PennyLane offers the :mod:`~.io` module to import quantum circuits and operations that were
+PennyLane supports importing quantum circuits and operations that were
 constructed outside of PennyLane. This includes circuits defined using `Qiskit <https://www.ibm.com/quantum/qiskit>`__,
-`OpenQASM <https://docs.quantum.ibm.com/build/interoperate-qiskit-qasm2>`_, and `Quil
+`OpenQASM <https://arxiv.org/abs/1707.03429>`_, and `Quil
 <https://docs.rigetti.com/qcs/guides/quil>`_.
 
 .. note::
@@ -26,17 +26,13 @@ visualization, and interoperability features for existing circuits. For example,
 <https://pennylane.ai/qml/demos/tutorial_quantum_circuit_cutting/>`_ to reduce the number of qubits
 required to implement the circuit. You could also :ref:`compile <intro_ref_compile_circuits>` the
 circuit using `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ or
-execute the circuit remotely using a supported hardware provider.
+differentiate and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>`.
 
 Qiskit
 ~~~~~~
 
 To import a quantum circuit from Qiskit, you must first install the `PennyLane-Qiskit
-<https://docs.pennylane.ai/projects/qiskit/en/stable/>`__ plugin. This can be done by running:
-
-.. code-block::
-
-    pip install pennylane-qiskit
+<https://docs.pennylane.ai/projects/qiskit/en/latest/>`__ plugin.
 
 Now, suppose we define a Qiskit `QuantumCircuit
 <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`__ as follows:
