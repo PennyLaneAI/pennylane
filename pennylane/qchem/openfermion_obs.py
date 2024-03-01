@@ -865,8 +865,9 @@ def molecular_hamiltonian(
         basis (str): atomic basis set used to represent the molecular orbitals
         method (str): Quantum chemistry method used to solve the
             mean field electronic structure problem. Available options are ``method="dhf"``
-            to specify the built-in differentiable Hartree-Fock solver, or ``method="pyscf"``
-            to use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
+            to specify the built-in differentiable Hartree-Fock solver, ``method="pyscf"`` to use
+            the PySCF package (requires ``pyscf`` to be installed), or ``method="openfermion"`` to
+            use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
@@ -914,8 +915,8 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
 
-    if method not in ["dhf", "pyscf"]:
-        raise ValueError("Only 'dhf' and 'pyscf' backends are supported.")
+    if method not in ["dhf", "pyscf", "openfermion"]:
+        raise ValueError("Only 'dhf', 'pyscf' and 'openfermion' backends are supported.")
 
     if len(coordinates) == len(symbols) * 3:
         geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
@@ -982,7 +983,7 @@ def molecular_hamiltonian(
             h = qml.map_wires(h, wires_map)
         return h, 2 * len(active)
 
-    if mapping.strip().lower() == "jordan_wigner":
+    if method == "pyscf" and mapping.strip().lower() == "jordan_wigner":
         core_constant, one_mo, two_mo = _pyscf_integrals(
             symbols, geometry_hf, charge, mult, basis, active_electrons, active_orbitals
         )

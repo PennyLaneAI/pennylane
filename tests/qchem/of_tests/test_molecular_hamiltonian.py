@@ -388,7 +388,9 @@ def test_diff_hamiltonian_error(symbols, geometry):
     with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
         qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
-    with pytest.raises(ValueError, match="Only 'dhf' and 'pyscf' backends are supported"):
+    with pytest.raises(
+        ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
+    ):
         qchem.molecular_hamiltonian(symbols, geometry, method="psi4")
 
     with pytest.raises(ValueError, match="Openshell systems are not supported"):
