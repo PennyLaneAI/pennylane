@@ -28,18 +28,7 @@ import pennylane as qml
 from pennylane import math
 
 
-def check_op_supported(op, dev):
-    """Skip test if device does not support an operation. Works with both device APIs"""
-    if isinstance(dev, qml.Device):
-        if op.name not in dev.operations:
-            pytest.skip("operation not supported.")
-    else:
-        prog, _ = dev.preprocess()
-        tape = qml.tape.QuantumScript([op])
-        try:
-            prog((tape,))
-        except qml.DeviceError:
-            pytest.skip("operation not supported on the device")
+pytestmark = pytest.mark.skip_unsupported
 
 
 class TestTemplates:  # pylint:disable=too-many-public-methods
@@ -642,7 +631,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         dev = device(2)
         A = np.array([[0.1]])
         block_encode = qml.BlockEncode(A, wires=[0, 1])
-        check_op_supported(block_encode, dev)
         shifts = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
 
         @qml.qnode(dev)
@@ -674,7 +662,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
         dev = device(wires=n + m + 1)
-        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), [1], [0]), dev)
 
         @qml.qnode(dev)
         def circuit():
@@ -751,7 +738,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_Select(self, device, tol):
         """Test the Select template."""
         dev = device(4)
-        check_op_supported(qml.MultiControlledX(wires=[0, 1, 2]), dev)
 
         ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
 

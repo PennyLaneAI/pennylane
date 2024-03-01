@@ -30,6 +30,13 @@ SKIP_IF_FINITE = ["backprop"]
 class TestGradients:
     """Test various gradient computations."""
 
+    @pytest.fixture(autouse=True)
+    def skip_if_braket(self, device):
+        """Skip braket tests with tensorflow."""
+        dev = device(1)
+        if "raket" in dev.name:
+            pytest.skip(reason="braket cannot convert TF variables to literal")
+
     def test_basic_grad(self, diff_method, device, tol):
         """Test a basic function with one RX and one expectation."""
         wires = 2 if diff_method == "hadamard" else 1
