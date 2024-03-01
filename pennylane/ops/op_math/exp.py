@@ -34,9 +34,8 @@ from pennylane.operation import (
 )
 from pennylane.wires import Wires
 
-from .linear_combination import LinearCombination
 from .sprod import SProd
-from .sum import Sum
+from .sum import Sum, LinearCombination
 from .symbolicop import ScalarSymbolicOp
 from ..qubit.hamiltonian import Hamiltonian
 
