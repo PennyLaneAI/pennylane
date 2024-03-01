@@ -472,10 +472,8 @@ class Prod(CompositeOp):
 
         with qml.QueuingManager.stop_recording():
             global_phase, factors = self._simplify_factors(factors=self.operands)
+            factors = list(itertools.product(*factors))
 
-        factors = list(itertools.product(*factors))
-
-        with qml.QueuingManager.stop_recording():
             factors = [
                 Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors
             ]
