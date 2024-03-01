@@ -49,7 +49,7 @@ def lie_closure(
             op.pauli_rep if op.pauli_rep else qml.pauli.pauli_sentence(op) for op in generators
         ]
 
-    vspace = VSpace(generators)
+    vspace = PauliVSpace(generators)
 
     epoch = 0
     old_length = 0  # dummy value
@@ -80,7 +80,7 @@ def lie_closure(
     return vspace.basis
 
 
-class VSpace:
+class PauliVSpace:
     """
     Class representing the linearly independent basis of a vector space.
 
@@ -117,7 +117,7 @@ class VSpace:
 
     **Example**
 
-    Take the linearly dependent set of operators and span the VSpace.
+    Take the linearly dependent set of operators and span the PauliVSpace.
 
     .. code-block::python3
         ops = [
@@ -133,7 +133,7 @@ class VSpace:
             }),
         ]
 
-        vspace = VSpace(ops)
+        vspace = PauliVSpace(ops)
 
     It automatically detects that the third operator is linearly dependent on the former two, so it does not add the third operator to the basis.
 
@@ -167,7 +167,7 @@ class VSpace:
         # Create a dictionary mapping from PauliWord to row index
         self._pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
 
-        # Initialize VSpace properties trivially
+        # Initialize PauliVSpace properties trivially
         self._basis = []
         rank = 0
 
@@ -180,7 +180,7 @@ class VSpace:
 
     @property
     def basis(self):
-        """List of basis operators of VSpace"""
+        """List of basis operators of PauliVSpace"""
         return self._basis
 
     def __len__(self):
@@ -223,6 +223,7 @@ class VSpace:
             pw_to_idx (dict): map from ``PauliWord`` to row index in ``M``
             rank (int): current rank of ``M``, equal to its number of columns
             num_pw (int): current number of ``PauliWord``\ s, equal to the number of rows in ``M``
+
         Returns:
             ndarray: updated coefficient matrix for the LIS
             dict: updated map from ``PauliWord`` to row index in ``M``. Includes new ``PauliWord`` keys
@@ -272,7 +273,7 @@ class VSpace:
 
     def __eq__(self, other):
         """
-        Two VSpaces are equivalent when they span the same dimensional space.
+        Two PauliVSpaces are equivalent when they span the same dimensional space.
         This is checked here by having matching PauliWord keys in the sparse DOK representation and having the same rank.
         """
         if not self._num_pw == other._num_pw:

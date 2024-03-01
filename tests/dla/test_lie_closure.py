@@ -20,7 +20,7 @@ import pennylane as qml
 
 from pennylane import X, Y, Z
 from pennylane.dla import lie_closure
-from pennylane.dla.lie_closure import VSpace
+from pennylane.dla.lie_closure import PauliVSpace
 from pennylane.pauli import PauliWord, PauliSentence
 
 ops1 = [
@@ -49,12 +49,12 @@ ops2 = [
 ops2plusY10 = ops2 + [PauliSentence({PauliWord({10: "Y"}): 1.0})]
 
 
-class TestVSpace:
-    """Unit and integration tests for VSpace class"""
+class TestPauliVSpace:
+    """Unit and integration tests for PauliVSpace class"""
 
     def test_init(self):
         """Unit tests for initialization"""
-        vspace = VSpace(ops1)
+        vspace = PauliVSpace(ops1)
 
         assert all(isinstance(op, PauliSentence) for op in vspace.basis)
         assert np.allclose(vspace._M, [[1.0, 1.0], [1.0, 0.0]]) or np.allclose(
@@ -74,7 +74,7 @@ class TestVSpace:
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
     def test_add_linear_independent(self, ops, op, true_new_basis):
         """Test that adding new (linearly independent) operators works as expected"""
-        vspace = VSpace(ops)
+        vspace = PauliVSpace(ops)
         new_basis = vspace.add(op)
         assert new_basis == true_new_basis
 
@@ -89,14 +89,14 @@ class TestVSpace:
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_DEPENDENT)
     def test_add_lin_dependent(self, ops, op, true_new_basis):
         """Test that adding linearly dependent operators works as expected"""
-        vspace = VSpace(ops)
+        vspace = PauliVSpace(ops)
         new_basis = vspace.add(op)
         assert new_basis == true_new_basis
 
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
     def test_len(self, ops, op, true_new_basis):
-        """Test the length of the VSpace instance with inplace addition to the basis"""
-        vspace = VSpace(ops)
+        """Test the length of the PauliVSpace instance with inplace addition to the basis"""
+        vspace = PauliVSpace(ops)
         len_before_adding = len(vspace)
         len_basis_before_adding = len(vspace.basis)
 
@@ -120,8 +120,8 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "Y"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 == vspace2
 
     def test_eq_False0(self):
@@ -138,8 +138,8 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({0: "Z"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 != vspace2
 
     def test_eq_False1(self):
@@ -157,8 +157,8 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "Z"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 != vspace2
 
     def test_eq_False2(self):
@@ -176,8 +176,8 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "Y"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 != vspace2
 
     def test_eq_False3(self):
@@ -196,19 +196,19 @@ class TestVSpace:
             PauliSentence({PauliWord({0: "Z"}): 1.0}),
         ]
 
-        vspace1 = VSpace(gens1)
-        vspace2 = VSpace(gens2)
+        vspace1 = PauliVSpace(gens1)
+        vspace2 = PauliVSpace(gens2)
         assert vspace1 != vspace2
 
     def test_eq_False4(self):
         """Test case where both vspaces have the same rank, same PauliWords but span different spaces"""
-        v1 = VSpace(
+        v1 = PauliVSpace(
             [
                 PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({0: "Y"}): 1.0}),
                 PauliSentence({PauliWord({0: "Z"}): 1.0, PauliWord({0: "Y"}): 1.0}),
             ]
         )
-        v2 = VSpace(
+        v2 = PauliVSpace(
             [
                 PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({0: "Z"}): 1.0}),
                 PauliSentence({PauliWord({0: "Y"}): 1.0}),
@@ -254,7 +254,7 @@ class TestLieClosure:
         ]
         gen12 = dla12[:-1]
         res12 = lie_closure(gen12)
-        assert VSpace(res12) == VSpace(dla12)
+        assert PauliVSpace(res12) == PauliVSpace(dla12)
 
     def test_lie_closure_with_pl_ops(self):
         """Test that lie_closure works properly with PennyLane ops instead of PauliSentences"""
@@ -266,7 +266,7 @@ class TestLieClosure:
         ]
         gen11 = dla[:-1]
         res11 = lie_closure(gen11)
-        assert VSpace(res11) == VSpace(dla11)
+        assert PauliVSpace(res11) == PauliVSpace(dla11)
 
     def test_lie_closure_with_PauliWords(self):
         """Test that lie_closure works properly with PauliWords"""
@@ -283,7 +283,7 @@ class TestLieClosure:
         dla = [op.pauli_rep for op in dla]
 
         res = lie_closure(gen)
-        assert VSpace(res) == VSpace(dla)
+        assert PauliVSpace(res) == PauliVSpace(dla)
 
     @pytest.mark.parametrize("n", range(2, 5))
     def test_lie_closure_transverse_field_ising_1D_open(self, n):
