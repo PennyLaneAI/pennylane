@@ -138,12 +138,12 @@ Quil
 
 PennyLane also offers convenience functions for importing circuits from `pyQuil
 <https://pyquil-docs.rigetti.com/en/stable/index.html>`__ or Quil representations. Both of these
-require the `PennyLane-Forest <https://docs.pennylane.ai/projects/rigetti/en/stable/>`__ plugin,
+require the `PennyLane-Rigetti <https://docs.pennylane.ai/projects/rigetti/en/stable/>`__ plugin,
 which can be installed using:
 
 .. code-block::
 
-    pip install pennylane-forest
+    pip install pennylane-rigetti
 
 We begin with a familiar pyQuil `Program
 <https://pyquil-docs.rigetti.com/en/stable/apidocs/pyquil.quil.html#pyquil.quil.Program>`__:
