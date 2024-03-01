@@ -90,7 +90,7 @@ This quantum function can then be called from inside a QNode to generate a Penny
         pl_circuit_from_qk = qml.QNode(pl_qfunc_from_qk, qml.device("default.qubit"))
 
 
-    Here, the ``measurements`` argument overrides the terminal measurements in the Qiskit circuit.
+    Here, the ``measurements`` argument overrides any terminal measurements in the Qiskit circuit.
     See the :func:`~pennylane.from_qiskit` documentation for more details.
 
 The resulting PennyLane circuit can be executed directly:
