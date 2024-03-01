@@ -31,6 +31,20 @@ from pennylane import math
 pytestmark = pytest.mark.skip_unsupported
 
 
+def check_op_supported(op, dev):
+    """Skip test if device does not support an operation. Works with both device APIs"""
+    if isinstance(dev, qml.Device):
+        if op.name not in dev.operations:
+            pytest.skip("operation not supported.")
+    else:
+        prog, _ = dev.preprocess()
+        tape = qml.tape.QuantumScript([op])
+        try:
+            prog((tape,))
+        except qml.DeviceError:
+            pytest.skip("operation not supported on the device")
+
+
 class TestTemplates:  # pylint:disable=too-many-public-methods
     """Test various templates."""
 
@@ -738,6 +752,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_Select(self, device, tol):
         """Test the Select template."""
         dev = device(4)
+        check_op_supported(qml.MultiControlledX(wires=[0, 1, 2]), dev)
 
         ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
 

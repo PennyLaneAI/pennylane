@@ -268,7 +268,7 @@ def pytest_runtest_makereport(item, call):
             # Exclude failing test cases for unsupported operations/observables
             # and those using not implemented features
             if (
-                call.excinfo.type == qml.DeviceError
+                call.excinfo.type in (qml.DeviceError, TypeError)
                 and "supported" in str(call.excinfo.value)
                 or call.excinfo.type == NotImplementedError
             ):
