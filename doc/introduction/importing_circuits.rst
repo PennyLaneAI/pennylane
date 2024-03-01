@@ -3,7 +3,7 @@
 
 .. _intro_ref_importing_circuits:
 
-Importing Circuits
+Importing circuits
 ==================
 
 PennyLane offers the :mod:`~.io` module to import quantum circuits and operations that were
@@ -17,7 +17,7 @@ constructed outside of PennyLane. This includes circuits defined using `Qiskit <
     corresponding PennyLane plugin for that framework. More information about PennyLane plugins is
     available on the `plugins <https://pennylane.ai/plugins.html>`_ page.
 
-Importing Quantum Circuits
+Importing quantum circuits
 --------------------------
 
 Importing quantum circuits can help you take advantage of PennyLane's various optimization,
@@ -182,7 +182,7 @@ The resulting PennyLane circuit is:
     :func:`~pennylane.from_quil`.
 
 
-Importing Quantum Operators
+Importing quantum operators
 ---------------------------
 
 Sometimes, it is preferable to import a single operation from a framework instead of an entire
@@ -217,7 +217,7 @@ SparsePauliOp(['II', 'XY'],
 I(0) + X(1) @ Y(0)
 
 
-Parameterized Operators
+Parameterized operators
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 PennyLane also supports importing parameterized ``SparsePauliOp`` instances. Consider:
@@ -253,7 +253,7 @@ SparsePauliOp(['II', 'XZ', 'YX'],
 )
 
 
-Import Functions
+Import functions
 ----------------
 
 :html:`<div class="summary-table">`
