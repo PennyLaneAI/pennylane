@@ -1001,7 +1001,7 @@ def molecular_hamiltonian(
 
     openfermion, _ = _import_of()
 
-    hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
+    hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, "pyscf", outpath)
 
     molecule = openfermion.MolecularData(filename=hf_file)
 
