@@ -15,7 +15,7 @@
 This module contains the qml.counts measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 import numpy as np
 
 import pennylane as qml
@@ -26,7 +26,48 @@ from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
+def _counts_op(op: Operator, argname=None, all_outcomes=False):
+    if argname is not None and argname != "op":
+        warnings.warn(
+            f"counts got argument '{argname}' of type {type(op)}. Using argument as op", UserWarning
+        )
+
+    if not op.is_hermitian:
+        warnings.warn(f"{op.name} might not be hermitian.")
+    return CountsMP(obs=op, all_outcomes=all_outcomes)
+
+
+def _counts_mv(
+    mv: Union[MeasurementValue, Sequence[MeasurementValue]], argname=None, all_outcomes=False
+):
+    if argname is not None and argname != "mv":
+        warnings.warn(
+            f"counts got argument '{argname}' of type {type(mv)}. Using argument as mv", UserWarning
+        )
+
+    if isinstance(mv, Sequence) and not all(
+        isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in mv
+    ):
+        raise qml.QuantumFunctionError(
+            "Only sequences of single MeasurementValues can be passed with the op argument. "
+            "MeasurementValues manipulated using arithmetic operators cannot be used when "
+            "collecting statistics for a sequence of mid-circuit measurements."
+        )
+
+    return CountsMP(mv=mv, all_outcomes=all_outcomes)
+
+
+def _counts_wires(wires: Sequence[Union[int, str]], argname=None, all_outcomes=False):
+    if argname is not None and argname != "wires":
+        warnings.warn(
+            f"counts got argument '{argname}' of type {type(wires)}. Using argument as wires",
+            UserWarning,
+        )
+
+    return CountsMP(wires=Wires(wires), all_outcomes=all_outcomes)
+
+
+def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -36,10 +77,14 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue or None): a quantum observable object. To get counts
+        op (Observable or None): a quantum observable object. To get counts
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
+        mv (Union[MeasurementValue, Sequence[MeasurementValue]]): One or more
+            ``MeasurementValue``'s corresponding to mid-circuit measurements. To get
+            probabilities for more than one ``MeasurementValue``, they can be passed
+            in a list or tuple or composed using arithmetic operators.
         all_outcomes(bool): determines whether the returned dict will contain only the observed
             outcomes (default), or whether it will display all possible outcomes for the system
 
@@ -129,31 +174,40 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
     """
-    if isinstance(op, MeasurementValue):
-        return CountsMP(obs=op, all_outcomes=all_outcomes)
 
-    if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
-            raise qml.QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
-                "MeasurementValues manipulated using arithmetic operators cannot be used when "
-                "collecting statistics for a sequence of mid-circuit measurements."
-            )
+    _args = [a for a in args if a is not None]
+    _kwargs = {key: value for key, value in kwargs.items() if value is not None}
 
-        return CountsMP(obs=op, all_outcomes=all_outcomes)
+    if (n_args := len(_args) + len(_kwargs)) > 1:
+        raise ValueError(
+            f"counts takes 1 argument other than 'all_outcomes', but "
+            f"{n_args} were given. Only one out of the following can be provided: "
+            "an Operator, one or more MeasurementValues, or wires. Other arguments "
+            "must be of NoneType."
+        )
 
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be hermitian.")
+    if n_args == 0:
+        return CountsMP(all_outcomes=all_outcomes)
 
-    if wires is not None:
-        if op is not None:
-            raise ValueError(
-                "Cannot specify the wires to sample if an observable is "
-                "provided. The wires to sample will be determined directly from the observable."
-            )
-        wires = Wires(wires)
+    if _args:
+        arg = args[0]
+        argname = None
 
-    return CountsMP(obs=op, wires=wires, all_outcomes=all_outcomes)
+    elif _kwargs:
+        argname, arg = next(iter(_kwargs.items()))
+
+        if argname not in ("wires", "op", "mv"):
+            raise TypeError(f"counts got an unexpected keyword argument '{argname}'")
+
+    if isinstance(arg, Operator):
+        return _counts_op(arg, argname=argname, all_outcomes=all_outcomes)
+
+    if isinstance(arg, MeasurementValue) or (
+        isinstance(arg, Sequence) and any(isinstance(a, MeasurementValue) for a in arg)
+    ):
+        return _counts_mv(arg, argname=argname, all_outcomes=all_outcomes)
+
+    return _counts_wires(arg, argname=argname, all_outcomes=all_outcomes)
 
 
 class CountsMP(SampleMeasurement):
@@ -181,16 +235,17 @@ class CountsMP(SampleMeasurement):
         self,
         obs: Optional[Operator] = None,
         wires=None,
+        mv=None,
         eigvals=None,
         id: Optional[str] = None,
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
-        super().__init__(obs, wires, eigvals, id)
+        super().__init__(obs, wires, mv, eigvals, id)
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))
-        return (self.obs or self.mv, self._eigvals), metadata
+        return (self.obs, self.mv, self._eigvals), metadata
 
     def __repr__(self):
         if self.mv:
@@ -227,7 +282,7 @@ class CountsMP(SampleMeasurement):
         bin_size: int = None,
     ):
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(
+            samples = qml.sample(op=self.obs, mv=self.mv, wires=self._wires).process_samples(
                 samples, wire_order, shot_range, bin_size
             )
 

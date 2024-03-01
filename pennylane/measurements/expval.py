@@ -15,7 +15,7 @@
 This module contains the qml.expval measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -25,7 +25,39 @@ from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
-def expval(op: Union[Operator, MeasurementValue]):
+def _expval_op(op: Operator, argname=None):
+    if argname is not None and argname != "op":
+        warnings.warn(
+            f"expval got argument '{argname}' of type {type(op)}. Using argument as op", UserWarning
+        )
+
+    if isinstance(op, qml.Identity) and len(op.wires) == 0:
+        # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
+        raise NotImplementedError(
+            "Expectation values of qml.Identity() without wires are currently not allowed."
+        )
+
+    if not op.is_hermitian:
+        warnings.warn(f"{op.name} might not be hermitian.")
+
+    return ExpectationMP(obs=op)
+
+
+def _expval_mv(mv: MeasurementValue, argname=None):
+    if argname is not None and argname != "mv":
+        warnings.warn(
+            f"expval got argument '{argname}' of type {type(mv)}. Using argument as mv", UserWarning
+        )
+
+    if isinstance(mv, Sequence):
+        raise ValueError(
+            "qml.expval does not support measuring sequences of measurements or observables"
+        )
+    return ExpectationMP(mv=mv)
+
+
+# def expval(op: Union[Operator, MeasurementValue]):
+def expval(*args, **kwargs):
     r"""Expectation value of the supplied observable.
 
     **Example:**
@@ -47,31 +79,34 @@ def expval(op: Union[Operator, MeasurementValue]):
     -0.4794255386042029
 
     Args:
-        op (Union[Observable, MeasurementValue]): a quantum observable object. To
-            get expectation values for mid-circuit measurements, ``op`` should be
-            a ``MeasurementValue``.
+        op (Observable): a quantum observable object
+        mv (MeasurementValue): ``MeasurementValue`` corresponding to mid-circuit
+            measurements. To get the variance for more than one ``MeasurementValue``,
+            they can be composed using arithmetic operators.
 
     Returns:
         ExpectationMP: measurement process instance
     """
-    if isinstance(op, MeasurementValue):
-        return ExpectationMP(obs=op)
+    _args = [a for a in args if a is not None]
+    _kwargs = {key: value for key, value in kwargs.items() if value is not None}
 
-    if isinstance(op, Sequence):
-        raise ValueError(
-            "qml.expval does not support measuring sequences of measurements or observables"
-        )
+    if (n_args := len(_args) + len(_kwargs)) != 1:
+        raise ValueError(f"expval takes 1 argument but {n_args} were given")
 
-    if isinstance(op, qml.Identity) and len(op.wires) == 0:
-        # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
-        raise NotImplementedError(
-            "Expectation values of qml.Identity() without wires are currently not allowed."
-        )
+    if _args:
+        arg = args[0]
+        argname = None
 
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
+    elif _kwargs:
+        argname, arg = next(iter(_kwargs.items()))
 
-    return ExpectationMP(obs=op)
+        if argname not in ("op", "mv"):
+            raise TypeError(f"expval got an unexpected keyword argument '{argname}'")
+
+    if isinstance(arg, Operator):
+        return _expval_op(arg, argname=argname)
+
+    return _expval_mv(arg, argname=argname)
 
 
 class ExpectationMP(SampleMeasurement, StateMeasurement):
@@ -115,7 +150,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=op).process_samples(
+            samples = qml.sample(op).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 

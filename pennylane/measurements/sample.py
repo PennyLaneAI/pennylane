@@ -16,7 +16,7 @@ This module contains the qml.sample measurement.
 """
 import functools
 import warnings
-from typing import Sequence, Tuple, Optional, Union
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -26,7 +26,46 @@ from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -> "SampleMP":
+def _sample_op(op: Operator, argname=None):
+    if argname is not None and argname != "op":
+        warnings.warn(
+            f"sample got argument '{argname}' of type {type(op)}. Using argument as op", UserWarning
+        )
+
+    if not op.is_hermitian:
+        warnings.warn(f"{op.name} might not be hermitian.")
+    return SampleMP(obs=op)
+
+
+def _sample_mv(mv: Union[MeasurementValue, Sequence[MeasurementValue]], argname=None):
+    if argname is not None and argname != "mv":
+        warnings.warn(
+            f"sample got argument '{argname}' of type {type(mv)}. Using argument as mv", UserWarning
+        )
+
+    if isinstance(mv, Sequence) and not all(
+        isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in mv
+    ):
+        raise qml.QuantumFunctionError(
+            "Only sequences of single MeasurementValues can be passed with the op argument. "
+            "MeasurementValues manipulated using arithmetic operators cannot be used when "
+            "collecting statistics for a sequence of mid-circuit measurements."
+        )
+
+    return SampleMP(mv=mv)
+
+
+def _sample_wires(wires: Sequence[Union[int, str]], argname=None):
+    if argname is not None and argname != "wires":
+        warnings.warn(
+            f"sample got argument '{argname}' of type {type(wires)}. Using argument as wires",
+            UserWarning,
+        )
+
+    return SampleMP(wires=Wires(wires))
+
+
+def sample(*args, **kwargs) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -36,10 +75,13 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue): a quantum observable object. To get samples
-            for mid-circuit measurements, ``op`` should be a``MeasurementValue``.
+        op (Observable): a quantum observable object
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``
+        mv (Union[MeasurementValue, Sequence[MeasurementValue]]): One or more
+            ``MeasurementValue``'s corresponding to mid-circuit measurements. To get
+            probabilities for more than one ``MeasurementValue``, they can be passed
+            in a list or tuple or composed using arithmetic operators.
 
     Returns:
         SampleMP: Measurement process instance
@@ -130,31 +172,39 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
            [0, 0]])
 
     """
-    if isinstance(op, MeasurementValue):
-        return SampleMP(obs=op)
 
-    if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
-            raise qml.QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
-                "MeasurementValues manipulated using arithmetic operators cannot be used when "
-                "collecting statistics for a sequence of mid-circuit measurements."
-            )
+    _args = [a for a in args if a is not None]
+    _kwargs = {key: value for key, value in kwargs.items() if value is not None}
 
-        return SampleMP(obs=op)
+    if (n_args := len(_args) + len(_kwargs)) > 1:
+        raise ValueError(
+            f"sample takes 1 argument, but {n_args} were given. Only one "
+            "out of the following can be provided: an Operator, one or more "
+            "MeasurementValues, or wires. Other arguments must be of NoneType."
+        )
 
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be hermitian.")
+    if n_args == 0:
+        return SampleMP()
 
-    if wires is not None:
-        if op is not None:
-            raise ValueError(
-                "Cannot specify the wires to sample if an observable is "
-                "provided. The wires to sample will be determined directly from the observable."
-            )
-        wires = Wires(wires)
+    if _args:
+        arg = args[0]
+        argname = None
 
-    return SampleMP(obs=op, wires=wires)
+    elif _kwargs:
+        argname, arg = next(iter(_kwargs.items()))
+
+        if argname not in ("wires", "op", "mv"):
+            raise TypeError(f"sample got an unexpected keyword argument '{argname}'")
+
+    if isinstance(arg, Operator):
+        return _sample_op(arg, argname=argname)
+
+    if isinstance(arg, MeasurementValue) or (
+        isinstance(arg, Sequence) and any(isinstance(a, MeasurementValue) for a in arg)
+    ):
+        return _sample_mv(arg, argname=argname)
+
+    return _sample_wires(arg, argname=argname)
 
 
 class SampleMP(SampleMeasurement):

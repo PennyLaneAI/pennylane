@@ -85,7 +85,7 @@ class VnEntropyMP(StateMeasurement):
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("log_base", self.log_base))
-        return (None, None), metadata
+        return (None, None, None), metadata
 
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(

@@ -46,6 +46,42 @@ class TestSample:
             (n_sample,) if not n_sample == 1 else ()
         )
 
+    def test_invalid_argument_error(self):
+        """Test that passing an argument with an invalid name raises an error"""
+        with pytest.raises(TypeError, match="sample got an unexpected keyword argument"):
+            _ = qml.sample(invalid_name=qml.PauliZ(0))
+
+    def test_multiple_arguments_error(self):
+        """Test that an error is raised if multiple non-None arguments are given"""
+        obs = qml.PauliZ(0)
+        mv = qml.measure(0)
+        with pytest.raises(ValueError, match="sample takes 1 argument"):
+            _ = qml.sample(op=obs, mv=mv)
+
+    @pytest.mark.parametrize(
+        "arg, argname, mp_attribute",
+        [
+            (qml.PauliZ(0), "mv", "obs"),
+            (qml.PauliZ(0), "wires", "obs"),
+            (qml.measurements.MeasurementValue([], None), "op", "mv"),
+            (qml.measurements.MeasurementValue([], None), "wires", "mv"),
+            ([0, 1], "mv", "_wires"),
+            ([0, 1], "op", "_wires"),
+        ],
+    )
+    def test_incorrect_argname_warning(self, arg, argname, mp_attribute):
+        """Test that a warning is raised when an argument is misnamed and that the correct
+        attribute is set in the measurment process."""
+        kwargs = {argname: arg}
+        with pytest.warns(UserWarning, match=f"sample got argument '{argname}'"):
+            mp = qml.sample(**kwargs)
+
+        mp_attr = getattr(mp, mp_attribute, -1)
+        if isinstance(mp_attr, qml.wires.Wires):
+            assert mp_attr == qml.wires.Wires(arg)
+        else:
+            assert mp_attr == arg
+
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
         n_sample = 10
@@ -186,7 +222,7 @@ class TestSample:
             m0 = qml.measure(0)
             qml.RX(phi, 1)
             m1 = qml.measure(1)
-            return qml.sample(op=m0 + m1)
+            return qml.sample(mv=m0 + m1)
 
         for func in [circuit, qml.defer_measurements(circuit)]:
             res = func(phi)
@@ -209,7 +245,7 @@ class TestSample:
             qml.RX(phi, 0)
             m0 = qml.measure(0)
             m1 = qml.measure(1)
-            return qml.sample(op=[m0, m1])
+            return qml.sample(mv=[m0, m1])
 
         for func in [circuit, qml.defer_measurements(circuit)]:
             res = func(phi)
@@ -227,7 +263,7 @@ class TestSample:
             qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
-            _ = qml.sample(op=[m0, qml.PauliZ(0)])
+            _ = qml.sample(mv=[m0, qml.PauliZ(0)])
 
     def test_composed_measurement_value_lists_not_allowed(self):
         """Test that passing a list containing measurement values composed with arithmetic
@@ -240,10 +276,10 @@ class TestSample:
             qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
-            _ = qml.sample(op=[m0 + m1, m2])
+            _ = qml.sample(mv=[m0 + m1, m2])
 
     def test_providing_observable_and_wires(self):
-        """Test that a ValueError is raised if both an observable is provided and wires are specified"""
+        """Test that a ValueError is raised if multiple arguments are provided"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -251,11 +287,7 @@ class TestSample:
             qml.Hadamard(wires=0)
             return qml.sample(qml.PauliZ(0), wires=[0, 1])
 
-        with pytest.raises(
-            ValueError,
-            match="Cannot specify the wires to sample if an observable is provided."
-            " The wires to sample will be determined directly from the observable.",
-        ):
+        with pytest.raises(ValueError, match="sample takes 1 argument, but 2 were given"):
             _ = circuit()
 
     def test_providing_no_observable_and_no_wires(self):

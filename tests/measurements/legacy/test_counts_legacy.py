@@ -33,7 +33,7 @@ def custom_measurement_process(device, spy):
         shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
         if isinstance(meas, Operator):
             all_outcomes = call_args.kwargs["all_outcomes"]
-            meas = qml.counts(op=meas, all_outcomes=all_outcomes)
+            meas = qml.counts(meas, all_outcomes=all_outcomes)
         old_res = device.sample(call_args.args[1], **call_args.kwargs)
         new_res = meas.process_samples(
             samples=samples, wire_order=device.wires, shot_range=shot_range, bin_size=bin_size

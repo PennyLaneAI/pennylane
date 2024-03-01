@@ -86,6 +86,34 @@ class TestExpval:
         with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             _ = circuit()
 
+    def test_invalid_argument_error(self):
+        """Test that passing an argument with an invalid name raises an error"""
+        with pytest.raises(TypeError, match="expval got an unexpected keyword argument"):
+            _ = qml.expval(invalid_name=qml.PauliZ(0))
+
+    def test_multiple_arguments_error(self):
+        """Test that an error is raised if multiple non-None arguments are given"""
+        obs = qml.PauliZ(0)
+        mv = qml.measure(0)
+        with pytest.raises(ValueError, match="expval takes 1 argument"):
+            _ = qml.expval(op=obs, mv=mv)
+
+    @pytest.mark.parametrize(
+        "arg, argname, mp_attribute",
+        [
+            (qml.PauliZ(0), "mv", "obs"),
+            (qml.measurements.MeasurementValue([], None), "op", "mv"),
+        ],
+    )
+    def test_incorrect_argname_warning(self, arg, argname, mp_attribute):
+        """Test that a warning is raised when an argument is misnamed and that the correct
+        attribute is set in the measurment process."""
+        kwargs = {argname: arg}
+        with pytest.warns(UserWarning, match=f"expval got argument '{argname}'"):
+            mp = qml.expval(**kwargs)
+
+        assert getattr(mp, mp_attribute, -1) is arg
+
     def test_observable_return_type_is_expectation(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
         dev = qml.device("default.qubit", wires=2)

@@ -218,7 +218,7 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
         qml.RX(x, wires=0)
         m0 = qml.measure(0, reset=reset, postselect=postselect)
         qml.cond(m0, qml.RY)(y, wires=1)
-        return measure_f(op=m0)
+        return measure_f(mv=m0)
 
     func2 = qml.defer_measurements(func1)
 

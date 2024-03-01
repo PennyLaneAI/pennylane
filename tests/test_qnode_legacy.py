@@ -1133,7 +1133,7 @@ class TestIntegration:
             qml.RY(x, wires=0)
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(y, wires=1)
-            return qml.apply(return_type), mv_return(op=m_0)
+            return qml.apply(return_type), mv_return(mv=m_0)
 
         spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par, sec_par)
