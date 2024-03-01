@@ -199,7 +199,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_BasisRotation(self, device, tol):
         """Test the BasisRotation template."""
         dev = device(2)
-        if dev.shots or "mixed" in dev.name:
+        if dev.shots or "mixed" in dev.name or "Mixed" in dev.name:
             pytest.skip("test only works with analytic-mode pure statevector simulators")
 
         unitary_matrix = np.array(
@@ -370,7 +370,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit()
         expected = [0.5, 0.5, -0.5, 0.5]
-        if "mixed" in dev.name:
+        if "mixed" in dev.name or "Mixed" in dev.name:
             expected = math.dm_from_state_vector(expected)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
@@ -566,7 +566,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         state = state / np.linalg.norm(state)
         res = circuit(state)
         expected = state
-        if "mixed" in dev.name:
+        if "mixed" in dev.name or "Mixed" in dev.name:
             expected = math.dm_from_state_vector(expected)
         if np.allclose(res, expected, atol=tol(dev.shots)):
             # GlobalPhase supported
@@ -645,6 +645,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         dev = device(2)
         A = np.array([[0.1]])
         block_encode = qml.BlockEncode(A, wires=[0, 1])
+        check_op_supported(block_encode, dev)
         shifts = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
 
         @qml.qnode(dev)
@@ -676,6 +677,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
         dev = device(wires=n + m + 1)
+        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), [1], [0]), dev)
 
         @qml.qnode(dev)
         def circuit():
