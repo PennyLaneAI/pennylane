@@ -83,8 +83,8 @@ hybrid quantum-classical compilers with PennyLane, but does not provide
 a built-in compiler.
 
 Currently, only the `Catalyst <https://github.com/pennylaneai/catalyst>`__
-hybrid compiler is supported with PennyLane, however there are plans
-to incorporate additional compilers in the near future.
+hybrid compiler and CUDA Quantum compiler toolchains are supported with PennyLane,
+however there are plans to incorporate additional compilers in the near future.
 
 .. note::
 
