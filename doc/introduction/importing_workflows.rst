@@ -46,10 +46,7 @@ differentiate and optimize the circuit using :ref:`quantum-specific optimizers <
 Qiskit
 ~~~~~~
 
-To import a quantum circuit from Qiskit, you must first install the `PennyLane-Qiskit
-<https://docs.pennylane.ai/projects/qiskit/en/latest/>`__ plugin.
-
-Now, suppose we define a Qiskit ``QuantumCircuit`` as follows:
+Suppose we define a Qiskit ``QuantumCircuit`` as follows:
 
 .. code-block:: python
 
@@ -58,7 +55,6 @@ Now, suppose we define a Qiskit ``QuantumCircuit`` as follows:
     qk_circuit = QuantumCircuit(2, 1)
     qk_circuit.h(0)
     qk_circuit.cx(0, 1)
-    qk_circuit.measure_all()
 
 We can convert the ``QuantumCircuit`` into a PennyLane :ref:`quantum function <intro_vcirc_qfunc>`
 using:
@@ -69,7 +65,12 @@ using:
 
     pl_qfunc_from_qk = qml.from_qiskit(qk_circuit)
 
-This function can then be called from inside a QNode to generate a PennyLane circuit:
+.. note::
+
+    The `PennyLane-Qiskit <https://docs.pennylane.ai/projects/qiskit/en/latest/>`__ plugin must be
+    installed to use the :func:`~pennylane.from_qiskit` function.
+
+This quantum function can then be called from inside a QNode to generate a PennyLane circuit:
 
 .. code-block:: python
 
@@ -148,12 +149,7 @@ Quil
 
 PennyLane also offers convenience functions for importing circuits from `pyQuil
 <https://pyquil-docs.rigetti.com/en/stable/index.html>`__ or Quil representations. Both of these
-require the `PennyLane-Rigetti <https://docs.pennylane.ai/projects/rigetti/en/stable/>`__ plugin,
-which can be installed using:
-
-.. code-block::
-
-    pip install pennylane-rigetti
+require the `PennyLane-Rigetti <https://docs.pennylane.ai/projects/rigetti/en/stable/>`__ plugin.
 
 We begin with a familiar pyQuil `Program
 <https://pyquil-docs.rigetti.com/en/stable/apidocs/pyquil.quil.html#pyquil.quil.Program>`__:
