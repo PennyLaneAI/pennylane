@@ -57,14 +57,14 @@ PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
 @singledispatch
-def null_measurement(
+def zero_measurement(
     mp: MeasurementProcess, obj_with_wires, shots: Shots, batch_size: int, interface: str
 ):
     """Create all-zero results for various measurement processes."""
-    return _null_measurement(mp, obj_with_wires, shots, batch_size, interface)
+    return _zero_measurement(mp, obj_with_wires, shots, batch_size, interface)
 
 
-def _null_measurement(mp, obj_with_wires, shots, batch_size, interface):
+def _zero_measurement(mp, obj_with_wires, shots, batch_size, interface):
     shape = mp.shape(obj_with_wires, shots)
     if all(isinstance(s, int) for s in shape):
         if batch_size is not None:
@@ -75,7 +75,7 @@ def _null_measurement(mp, obj_with_wires, shots, batch_size, interface):
     return tuple(math.zeros(s, like=interface, dtype=mp.numeric_type) for s in shape)
 
 
-@null_measurement.register
+@zero_measurement.register
 def _(mp: ClassicalShadowMP, obj_with_wires, shots, batch_size, interface):
     shapes = [mp.shape(obj_with_wires, Shots(s)) for s in shots]
     if batch_size is not None:
@@ -87,7 +87,7 @@ def _(mp: ClassicalShadowMP, obj_with_wires, shots, batch_size, interface):
     return results if shots.has_partitioned_shots else results[0]
 
 
-@null_measurement.register
+@zero_measurement.register
 def _(mp: CountsMP, obj_with_wires, shots, batch_size, interface):
     outcomes = []
     if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
@@ -111,11 +111,11 @@ def _(mp: CountsMP, obj_with_wires, shots, batch_size, interface):
     return results[0] if len(results) == 1 else results
 
 
-null_measurement.register(DensityMatrixMP)(_null_measurement)
+zero_measurement.register(DensityMatrixMP)(_zero_measurement)
 
 
-@null_measurement.register(StateMP)
-@null_measurement.register(ProbabilityMP)
+@zero_measurement.register(StateMP)
+@zero_measurement.register(ProbabilityMP)
 def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots, batch_size, interface):
     wires = mp.wires or obj_with_wires.wires
     state = [1.0] + [0.0] * (2 ** len(wires) - 1)
@@ -229,7 +229,7 @@ class NullQubit(Device):
         shots = circuit.shots
         obj_with_wires = self if self.wires else circuit
         results = tuple(
-            null_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
+            zero_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
             for mp in circuit.measurements
         )
         if len(results) == 1:
@@ -245,7 +245,7 @@ class NullQubit(Device):
         derivatives = tuple(
             (
                 math.zeros_like(
-                    null_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
+                    zero_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
                 ),
             )
             * n
