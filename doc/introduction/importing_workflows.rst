@@ -177,7 +177,6 @@ The resulting PennyLane circuit is:
     Quantum circuits expressed in Quil can be imported in a similar way using
     :func:`~pennylane.from_quil`.
 
-
 Importing quantum operators
 ---------------------------
 
@@ -212,43 +211,6 @@ SparsePauliOp(['II', 'XY'],
               coeffs=[1.+0.j, 1.+0.j])
 >>> pl_op
 I(0) + X(1) @ Y(0)
-
-
-Parameterized operators
-~~~~~~~~~~~~~~~~~~~~~~~
-
-PennyLane also supports importing parameterized ``SparsePauliOp`` instances. Consider:
-
-.. code-block:: python
-
-    import numpy as np
-    from qiskit.circuit import Parameter
-
-    a, b, c = [Parameter(var) for var in "abc"]
-    param_qk_op = SparsePauliOp(["II", "XZ", "YX"], coeffs=np.array([a, b, c]))
-
-To import this ``SparsePauliOp``, we must specify a concrete value for each coefficient using the
-``params`` argument:
-
-.. code-block:: python
-
-    import pennylane as qml
-
-    param_pl_op = qml.from_qiskit_op(param_qk_op, params={a: 2, b: 3, c: 4})
-
-The result is:
-
->>> param_qk_op
-SparsePauliOp(['II', 'XZ', 'YX'],
-              coeffs=[ParameterExpression(1.0*a), ParameterExpression(1.0*b),
- ParameterExpression(1.0*c)])
->>> param_pl_op
-(
-    (2+0j) * I(0)
-  + (3+0j) * (X(1) @ Z(0))
-  + (4+0j) * (Y(1) @ X(0))
-)
-
 
 Import functions
 ----------------
