@@ -448,12 +448,11 @@
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
-* Akin to `qml.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum`, `Prod` and `SProd` can now be accessed 
+* Akin to `qml.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum` or `Prod` can now be accessed 
   with the `terms()` method.
   [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
   [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
   [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
-  [(#5287)](https://github.com/PennyLaneAI/pennylane/pull/5287)
 
   ```python
   >>> qml.operation.enable_new_opmath()
@@ -650,9 +649,8 @@
   functionality can be achieved using newer features in the `pauli` module.
   [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
 
-* `Sum.ops`, `Sum.coeffs`, `Prod.ops`, `Prod.coeffs`, `SProd.ops` and `SProd.coeffs` will be deprecated in the future.
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` will be deprecated in the future.
   [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
-  [(#5287)](https://github.com/PennyLaneAI/pennylane/pull/5287)
 
 <h3>Documentation 📝</h3>
 
