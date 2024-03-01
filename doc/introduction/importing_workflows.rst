@@ -29,6 +29,20 @@ required to implement the circuit. You could also :ref:`compile <intro_ref_compi
 circuit using `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ or
 differentiate and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>`.
 
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.from_pyquil
+    ~pennylane.from_qasm
+    ~pennylane.from_qasm_file
+    ~pennylane.from_qiskit
+    ~pennylane.from_quil
+    ~pennylane.from_quil_file
+
+:html:`</div>`
+
 Qiskit
 ~~~~~~
 
@@ -185,6 +199,16 @@ PennyLane. This can be useful for workflows that involve calculating the expecta
 observable. By mapping to PennyLane, we can make the workflow differentiable while maintaining
 access to features like :mod:`grouping <pennylane.pauli>` for hardware-efficient execution.
 
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.from_qiskit_op
+
+:html:`</div>`
+
+
 Presently, only Qiskit `SparsePauliOp
 <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>`__ operators can be
 imported into PennyLane. To see this in action, we first define a ``SparsePauliOp``:
@@ -211,21 +235,3 @@ SparsePauliOp(['II', 'XY'],
               coeffs=[1.+0.j, 1.+0.j])
 >>> pl_op
 I(0) + X(1) @ Y(0)
-
-Import functions
-----------------
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.from_pyquil
-    ~pennylane.from_qasm
-    ~pennylane.from_qasm_file
-    ~pennylane.from_qiskit
-    ~pennylane.from_qiskit_op
-    ~pennylane.from_quil
-    ~pennylane.from_quil_file
-
-:html:`</div>`
