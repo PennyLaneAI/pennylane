@@ -267,6 +267,9 @@ def pytest_runtest_makereport(item, call):
         if call.excinfo is not None:
             # Exclude failing test cases for unsupported operations/observables
             # and those using not implemented features
+
+            # set it to only DeviceError after resolving
+            # https://github.com/amazon-braket/amazon-braket-pennylane-plugin-python/issues/237
             if (
                 call.excinfo.type in (qml.DeviceError, TypeError)
                 and "supported" in str(call.excinfo.value)
