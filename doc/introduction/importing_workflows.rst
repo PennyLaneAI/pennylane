@@ -191,7 +191,7 @@ Importing quantum operators
 As well as circuits, it can be useful to import operators defined in other frameworks into
 PennyLane. This can be useful for workflows that involve calculating the expectation value of an
 observable. By mapping to PennyLane, we can make the workflow differentiable while maintaining
-access to features like :mod:`grouping <pennylane.pauli>` for hardware-efficient execution.
+access to features like grouping for hardware-efficient execution.
 
 :html:`<div class="summary-table">`
 
