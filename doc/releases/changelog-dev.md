@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
+  [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
+
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
 
@@ -24,4 +27,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Korbinian Kottmann
+Soran Jahangiri,
+Korbinian Kottmann,
+Matthew Silverman.
