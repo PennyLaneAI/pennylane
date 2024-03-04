@@ -16,10 +16,12 @@ Test base AlgorithmicError class and its associated methods.
 """
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
+
+import numpy as np
+
 import pennylane as qml
 from pennylane.resource.error import AlgorithmicError, SpectralNormError, ErrorOperation
 from pennylane.operation import Operation
-import numpy as np
 
 
 class SimpleError(AlgorithmicError):
