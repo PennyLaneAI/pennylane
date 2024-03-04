@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
+  [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
+  
 * All generators in the source code (except those in the `qchem` module) no longer return 
   `Hamiltonian` or `Tensor` instances. Wherever possible, these return op_math instances.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
@@ -26,4 +29,6 @@
 This release contains contributions from (in alphabetical order):
 
 Pietropaolo Frisoni
-Korbinian Kottmann
+Soran Jahangiri,
+Korbinian Kottmann.
+
