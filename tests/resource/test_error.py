@@ -14,12 +14,12 @@
 """
 Test base AlgorithmicError class and its associated methods.
 """
+# pylint: disable=too-few-public-methods, unused-argument
 import pytest
-import numpy as np
-
 import pennylane as qml
 from pennylane.resource.error import AlgorithmicError, SpectralNormError, ErrorOperation
 from pennylane.operation import Operation
+import numpy as np
 
 
 class SimpleError(AlgorithmicError):
@@ -27,11 +27,11 @@ class SimpleError(AlgorithmicError):
         return self.__class__(self.error + other.error)
 
     @staticmethod
-    def get_error(approx_op, other_op):  # pylint: disable=unused-argument
+    def get_error(approx_op, other_op):
         return 0.5  # get simple error is always 0.5
 
 
-class ErrorNoGetError(AlgorithmicError):  # pylint: disable=too-few-public-methods
+class ErrorNoGetError(AlgorithmicError):
     def combine(self, other):
         return self.__class__(self.error + other.error)
 
@@ -49,9 +49,9 @@ class TestAlgorithmicError:
         """Test can't instantiate Error if the combine method is not defined."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
 
-            class ErrorNoCombine(AlgorithmicError):  # pylint: disable=too-few-public-methods
+            class ErrorNoCombine(AlgorithmicError):
                 @staticmethod
-                def get_error(approx_op, other_op):  # pylint: disable=unused-argument
+                def get_error(approx_op, other_op):
                     return 0.5  # get simple error is always 0.5
 
             _ = ErrorNoCombine(1.23)
@@ -129,7 +129,7 @@ class TestSpectralNormError:
     def test_custom_operator(self, phi, expected):
         """Test that get_error for a custom operator"""
 
-        class DummyOp(Operation):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operation):
             def compute_matrix(self):
                 return np.array([[0.5, 1.0], [1.2, 1.3]])
 
@@ -158,13 +158,13 @@ class TestSpectralNormError:
         assert repr(S1) == f"<SpectralNormError({0.3})>"
 
 
-class TestErrorOperation:  # pylint: disable=too-few-public-methods
+class TestErrorOperation:
     """Test the base ErrorOperation class."""
 
     def test_error_method(self):
         """Test that error method works as expected"""
 
-        class SimpleErrorOperation(ErrorOperation):  # pylint: disable=too-few-public-methods
+        class SimpleErrorOperation(ErrorOperation):
             @property
             def error(self):
                 return len(self.wires)
@@ -176,7 +176,7 @@ class TestErrorOperation:  # pylint: disable=too-few-public-methods
         """Test error is raised if the error method is not defined."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
 
-            class NoErrorOp(ErrorOperation):  # pylint: disable=too-few-public-methods
+            class NoErrorOp(ErrorOperation):
                 num_wires = 3
 
             _ = NoErrorOp(wires=[1, 2, 3])
