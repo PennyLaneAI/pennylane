@@ -1531,7 +1531,7 @@ class TestDrawing:
         assert qml.draw(transformed_qnode)() == expected
 
 
-def test_custom_wire_labels_allowed_without_reset():
+def test_custom_wire_labels_allowed_without_reuse():
     """Test that custom wire labels work if no qubits are re-used."""
     with qml.queuing.AnnotatedQueue() as q:
         qml.Hadamard("a")
@@ -1551,6 +1551,8 @@ def test_custom_wire_labels_allowed_without_reset():
 
 def test_custom_wire_labels_fails_with_reset():
     """Test that custom wire labels do not work if any qubits are re-used."""
+
+    # Reset example
     with qml.queuing.AnnotatedQueue() as q:
         qml.Hadamard("a")
         ma = qml.measure("a", reset=True)
@@ -1558,5 +1560,21 @@ def test_custom_wire_labels_fails_with_reset():
         qml.probs(wires="a")
 
     tape = qml.tape.QuantumScript.from_queue(q)
-    with pytest.raises(TypeError, match="can only concatenate str"):
-        qml.defer_measurements(tape)
+    with pytest.raises(
+        ValueError, match="qml.defer_measurements does not support custom wire labels"
+    ):
+        _, _ = qml.defer_measurements(tape)
+
+    # Reuse example
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard("a")
+        ma = qml.measure("a")
+        qml.cond(ma, qml.PauliX)("b")
+        qml.Hadamard("a")
+        qml.probs(wires="b")
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    with pytest.raises(
+        ValueError, match="qml.defer_measurements does not support custom wire labels"
+    ):
+        _, _ = qml.defer_measurements(tape)
