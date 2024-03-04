@@ -142,7 +142,9 @@ class TestSpectralNormError:
     def test_no_operator_matrix_defined(self):
         """Test that get_error fails if the operator matrix is not defined"""
 
-        class MyOp(Operation): ...
+        class MyOp(Operation):
+            def name(self):
+                return self.__class__.__name__
 
         approx_op = MyOp(0)
         exact_op = qml.RX(0.1, 1)
