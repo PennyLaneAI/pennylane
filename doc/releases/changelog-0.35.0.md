@@ -31,6 +31,7 @@
     qc.rx(0.785, 0)
     qc.ry(1.57, 1)
     ```
+    
 
     We can convert it into a PennyLane QNode in just a few lines, with PennyLane
     `measurements` easily included:
@@ -95,7 +96,7 @@
     qc.ry(angle1, 1)
     qc.cx(1, 0)
     ```
-
+    
     We can convert this circuit into a QNode with two arguments, corresponding to `x` and `y`:
 
     ```python
@@ -135,7 +136,7 @@
   >>> pl_op
   I(0) + X(1) @ Y(0)
   ```
-
+  
   Combined with `qml.from_qiskit`, it becomes easy to quickly calculate quantities like expectation
   values by converting the whole workflow to PennyLane:
 
