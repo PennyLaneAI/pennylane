@@ -211,7 +211,7 @@
     >>> X(0)
     X(0)
     ```
-
+    
     The original long-form names `Identity`, `PauliX`, `PauliY`, and `PauliZ` remain available, but
     use of the short-form names is now recommended.
 
@@ -397,6 +397,7 @@
 
 * A `partial_trace` function has been added to `qml.math` for taking the partial trace of matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
+
 
 <h4>Other operator arithmetic improvements</h4>
 
