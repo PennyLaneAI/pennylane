@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
+  [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -24,4 +27,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Korbinian Kottmann
+Soran Jahangiri,
+Korbinian Kottmann.
