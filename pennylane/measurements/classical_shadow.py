@@ -536,8 +536,12 @@ class ShadowExpvalMP(MeasurementTransform):
     def return_type(self):
         return ShadowExpval
 
-    def shape(self, device, shots):  # pylint: disable=unused-argument
-        return ()
+    def shape(self, device, shots):
+        is_single_op = isinstance(self.H, Operator)
+        if not shots.has_partitioned_shots:
+            return () if is_single_op else (len(self.H),)
+        base = () if is_single_op else (len(self.H),)
+        return (base,) * sum(s.copies for s in shots.shot_vector)
 
     @property
     def wires(self):
