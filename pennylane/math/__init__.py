@@ -76,6 +76,7 @@ from .quantum import (
     relative_entropy,
     sqrt_matrix,
     vn_entropy,
+    vn_entanglement_entropy,
     max_entropy,
     min_entropy,
     trace_distance,
@@ -180,5 +181,6 @@ __all__ = [
     "trace_distance",
     "unwrap",
     "vn_entropy",
+    "vn_entanglement_entropy",
     "where",
 ]
