@@ -720,7 +720,7 @@ class TestExecutingBatches:
         g0_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[0]))(phi)
         assert qml.math.allclose(g0, g0_expected)
 
-        g1 = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
+        g1 = qml.jacobian(lambda x: qml.numpy.array(self.f(dev, x)[1]))(phi)
         g1_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
         assert qml.math.allclose(g1, g1_expected)
 
