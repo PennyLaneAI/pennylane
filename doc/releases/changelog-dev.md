@@ -6,7 +6,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* All generators in the source code (except those in the `qchem` module) now return op_math instances.
+* All generators in the source code (except those in the `qchem` module) no longer return 
+  `Hamiltonian` or `Tensor` instances. Wherever possible, these return op_math instances.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
 
 <h3>Breaking changes 💔</h3>
