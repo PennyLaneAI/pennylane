@@ -153,7 +153,8 @@ def mid_circuit_measurements(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Provide the transform to handle mid-circuit measurements.
 
-    If the tape of device uses finite-shot, use the native implementation (i.e. no transform), and use defer measurements transforms otherwise.
+    If the tape or device uses finite-shot, use the native implementation (i.e. no transform),
+    and use the ``qml.defer_measurements`` transform otherwise.
     """
     if tape.shots and tape.batch_size is None:
         return (tape,), null_postprocessing
@@ -270,7 +271,7 @@ def decompose(
             a ``DecompositionUndefinedError`` will be raised.
         stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape as shots.
+            a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape has shots.
         skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
             If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
