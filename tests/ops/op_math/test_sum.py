@@ -1384,7 +1384,11 @@ class TestGrouping:
         op4.compute_grouping(method="lf")
         assert op4.grouping_indices == ((2, 1), (0,))
 
-    def test_grouping_type_can_be_set(self):
+    @pytest.mark.parametrize(
+        "grouping_type, grouping_indices",
+        [("commuting", ((0, 1), (2,))), ("anticommuting", ((1,), (0, 2)))],
+    )
+    def test_grouping_type_can_be_set(self, grouping_type, grouping_indices):
         """Tests that the grouping type can be controlled by kwargs.
         This is done by changing from default to 'commuting' or 'anticommuting'
         and checking the result."""
@@ -1395,22 +1399,41 @@ class TestGrouping:
         coeffs = [1.0, 2.0, 3.0]
 
         # compute grouping during construction with qml.dot
-        op1 = qml.dot(coeffs, obs, grouping_type="anticommuting")
-        assert op1.grouping_indices == ((1,), (0, 2))
+        op1 = qml.dot(coeffs, obs, grouping_type=grouping_type)
+        assert op1.grouping_indices == grouping_indices
 
         # compute grouping during construction with qml.sum
         sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
-        op2 = qml.sum(*sprods, grouping_type="anticommuting")
-        assert op2.grouping_indices == ((1,), (0, 2))
+        op2 = qml.sum(*sprods, grouping_type=grouping_type)
+        assert op2.grouping_indices == grouping_indices
 
         # compute grouping during construction with Sum
-        op3 = Sum(*sprods, grouping_type="anticommuting")
-        assert op3.grouping_indices == ((1,), (0, 2))
+        op3 = Sum(*sprods, grouping_type=grouping_type)
+        assert op3.grouping_indices == grouping_indices
 
         # compute grouping separately
         op4 = qml.dot(coeffs, obs, grouping_type=None)
-        op4.compute_grouping(grouping_type="anticommuting")
-        assert op4.grouping_indices == ((1,), (0, 2))
+        op4.compute_grouping(grouping_type=grouping_type)
+        assert op4.grouping_indices == grouping_indices
+
+    @pytest.mark.parametrize("shots", [None, 1000])
+    def test_grouping_integration(self, shots):
+        """Test that grouping does not impact the results of a circuit."""
+        dev = qml.device("default.qubit", shots=shots)
+
+        @qml.qnode(dev)
+        def qnode(grouping_type):
+            H = qml.dot(
+                [1.0, 2.0, 3.0],
+                [qml.X(0), qml.prod(qml.X(0), qml.X(1)), qml.prod(qml.X(0), qml.X(1), qml.X(2))],
+                grouping_type=grouping_type,
+            )
+            for i in range(3):
+                qml.Hadamard(i)
+            return qml.expval(H)
+
+        assert np.allclose(qnode("qwc"), 6.0)
+        assert np.allclose(qnode(None), 6.0)
 
 
 class TestSupportsBroadcasting:

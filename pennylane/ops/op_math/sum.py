@@ -43,7 +43,7 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-            First).
+            First). This keyword argument is ignored if ``grouping_type`` is ``None``.
 
     Returns:
         ~ops.op_math.Sum: The operator representing the sum of summands.
@@ -106,7 +106,7 @@ class Sum(CompositeOp):
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-            First).
+            First). This keyword argument is ignored if ``grouping_type`` is ``None``.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::

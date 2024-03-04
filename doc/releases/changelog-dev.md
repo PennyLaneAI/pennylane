@@ -47,6 +47,8 @@
   ((0, 1), (2,))
   ```
 
+  Note that the grouping indices refer to the lists returned by `Sum.terms()`, not `Sum.operands`.
+
 <h3>Improvements 🛠</h3>
 
 <h3>Breaking changes 💔</h3>

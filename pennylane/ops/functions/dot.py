@@ -49,7 +49,7 @@ def dot(
             ``pauli=True``, the grouping will be ignored.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-            First).
+            First). This keyword argument is ignored if ``grouping_type`` is ``None``.
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty
