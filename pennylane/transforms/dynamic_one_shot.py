@@ -84,6 +84,12 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
+    for m in tape.measurements:
+        if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
+            raise TypeError(
+                f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
+            )
+
     aux_tape = init_auxiliary_tape(tape)
     output_tapes = [aux_tape] * tape.shots.total_shots
 

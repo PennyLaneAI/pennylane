@@ -283,6 +283,13 @@ class QubitDevice(Device):
             mid_measurements=mid_measurements,
             **kwargs,
         )
+        if has_mcm:
+            mid_values = np.array(tuple(mid_measurements.values()))
+            if np.any(mid_values == -1):
+                for k, v in tuple(mid_measurements.items()):
+                    if v == -1:
+                        mid_measurements.pop(k)
+                return None, mid_measurements
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
