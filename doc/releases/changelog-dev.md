@@ -10,7 +10,7 @@
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
   
 * All generators in the source code (except those in the `qchem` module) no longer return 
-  `Hamiltonian` or `Tensor` instances. Wherever possible, these return op_math instances.
+  `Hamiltonian` or `Tensor` instances. Wherever possible, these return `Sum`, `SProd`, and `Prod` instances.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
