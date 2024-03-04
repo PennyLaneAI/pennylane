@@ -141,10 +141,13 @@ class TestSpectralNormError:
 
     def test_no_operator_matrix_defined(self):
         """Test that get_error fails if the operator matrix is not defined"""
-        approx_op = Operation
+
+        class MyOp(Operation): ...
+
+        approx_op = MyOp(0)
         exact_op = qml.RX(0.1, 1)
 
-        with pytest.raises(ValueError, match="The input operator must have a matrix."):
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
             SpectralNormError.get_error(approx_op, exact_op)
 
     def test_repr(self):
