@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* All generators in the source code (except those in the `qchem` module) now return op_math instances.
+  [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -21,4 +24,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Pietropaolo Frisoni
 Korbinian Kottmann
