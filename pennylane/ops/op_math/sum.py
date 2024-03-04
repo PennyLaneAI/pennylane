@@ -167,12 +167,12 @@ class Sum(CompositeOp):
         return hash(("Sum", frozenset(o.hash for o in self.operands)))
 
     def __str__(self):
-        """String representation of the PauliSentence."""
+        """String representation of the Sum."""
         ops = self.operands
         return " + ".join(f"{str(op)}" if i == 0 else f"{str(op)}" for i, op in enumerate(ops))
 
     def __repr__(self):
-        """Terminal representation for PauliSentence"""
+        """Terminal representation for Sum"""
         # post-processing the flat str() representation
         # We have to do it like this due to the possible
         # nesting of Sums, e.g. X(0) + X(1) + X(2) is a sum(sum(X(0), X(1)), X(2))
