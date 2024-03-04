@@ -650,6 +650,17 @@ class TestBasisStateProjector:
         res = circuit(x)
         assert qml.math.allclose(res, np.cos(x / 2) ** 2)
 
+    def test_projector_raises_for_invalid_input():
+        """
+        Tests that the Projector construction raises a ValueError for non-binary inputs.
+        """
+
+        invalid_states = [[2], [0.5], ["a"], [1, 2, 3]]
+
+        for invalid_state in invalid_states:
+            with pytest.raises(ValueError, match="Basis state must only consist of 0s and 1s"):
+                qml.Projector(invalid_state, wires=0)
+
 
 class TestStateVectorProjector:
     """Tests for state vector projector observable."""

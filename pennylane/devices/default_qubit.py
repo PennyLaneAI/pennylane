@@ -603,7 +603,6 @@ class DefaultQubit(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
@@ -656,7 +655,6 @@ class DefaultQubit(Device):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
@@ -797,7 +795,6 @@ class DefaultQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
