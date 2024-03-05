@@ -399,6 +399,7 @@
 * A `partial_trace` function has been added to `qml.math` for taking the partial trace of matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
 
+
 <h4>Other operator arithmetic improvements</h4>
 
 * The following capabilities have been added for Pauli arithmetic:
@@ -687,9 +688,6 @@
   [(#5237)](https://github.com/PennyLaneAI/pennylane/pull/5237)
 
 <h3>Bug fixes 🐛</h3>
-
-* `jax.vmap` with `jax.jit` will now work with devices that do not support parameter broadcasting.
-  [(#5286)](https://github.com/PennyLaneAI/pennylane/pull/5286/)
 
 * Fixed a bug in the matplotlib drawer where the colour of `Barrier` did not match the requested style.
   [(#5276)](https://github.com/PennyLaneAI/pennylane/pull/5276)
