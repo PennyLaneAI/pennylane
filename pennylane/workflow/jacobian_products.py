@@ -223,7 +223,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
             instead of treating each call as independent. This keyword argument is used to patch problematic
             autograd behavior when caching is turned off. In this case, caching will be based on the identity
             of the batch, rather than the potentially expensive :attr:`~.QuantumScript.hash` that is used
-            by :func:`~.cache_execute`.
+            by :func:`~._cache_transform`.
 
     >>> inner_execute = qml.device('default.qubit').execute
     >>> gradient_transform = qml.gradients.param_shift
