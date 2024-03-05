@@ -48,7 +48,7 @@ class AlgorithmicError(ABC):
         """
 
     @staticmethod
-    def get_error(approximate_op, exact_op, **kwargs):
+    def get_error(approximate_op, exact_op):
         """A method to allow users to compute this type of error between two operators.
 
         Args:
