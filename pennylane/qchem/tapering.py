@@ -578,22 +578,21 @@ def _build_generator(operation, wire_order, op_gen=None):
     if op_gen is None:
         if operation.num_params < 1:  # Non-parameterized gates
             gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
-            op_gen = qml.pauli_decompose(gen_mat, wire_order=wire_order, hide_identity=True)
-            op_gen = qml.simplify(op_gen)
-            if op_gen.ops[0].label() == qml.Identity(wires=[wire_order[0]]).label():
-                op_gen -= qml.Hamiltonian([op_gen.coeffs[0]], [qml.Identity(wires=wire_order[0])])
+            op_gen = qml.pauli_decompose(gen_mat, wire_order=wire_order, hide_identity=True, pauli=True)
+            op_gen.simplify()
+            op_gen.pop(qml.pauli.PauliWord({}), 0.0)
         else:  # Single-parameter gates
             try:
-                op_gen = qml.generator(operation, "hamiltonian")
+                op_gen = qml.generator(operation, "arithmetic").pauli_rep
 
             except ValueError as exc:
                 raise NotImplementedError(
                     f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
                 ) from exc
     else:  # check that user-provided generator is correct
-        if not isinstance(op_gen, qml.Hamiltonian):
+        if not isinstance(op_gen, (qml.operation.Operator, qml.pauli.PauliSentence)):
             raise ValueError(
-                f"Generator for the operation needs to be a qml.Hamiltonian, but got {type(op_gen)}."
+                f"Generator for the operation needs to be a valid operator, but got {type(op_gen)}."
             )
         coeffs = 1.0
 
@@ -611,6 +610,7 @@ def _build_generator(operation, wire_order, op_gen=None):
             raise ValueError(
                 f"Given op_gen: {op_gen} doesn't seem to be the correct generator for the {operation}."
             )
+        op_gen = op_gen.pauli_rep
 
     return op_gen
 
@@ -756,16 +756,20 @@ def taper_operation(
 
     # build generator for the operation either internally or using the provided op_gen
     op_gen = _build_generator(operation, wire_order, op_gen=op_gen)
+
     # check compatibility between the generator and the symmeteries
-    if np.all(
+    def _is_commuting_ps(ps1, ps2):
+        comm = ps1.commutator(ps2)
+        comm.simplify()
+        return comm == qml.pauli.PauliSentence({})
+
+    # check compatibility between the generator and the symmeteries
+    if all(
         [
-            [
-                qml.is_commuting(op1, op2)
-                for op1, op2 in itertools.product(generator.ops, op_gen.ops)
-            ]
+            _is_commuting_ps(generator.pauli_rep, op_gen)
             for generator in generators
         ]
-    ) and not np.all(np.isclose(op_gen.coeffs, np.zeros_like(op_gen.coeffs), rtol=1e-8)):
+    ) and not qml.math.allclose(list(op_gen.values()), 0.0, rtol=1e-8):
         gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
     else:
         gen_tapered = qml.Hamiltonian([], [])
