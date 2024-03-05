@@ -68,7 +68,9 @@ class TestCatalyst:
         assert not qml.compiler.available("SomeRandomCompiler")
 
         assert qml.compiler.available("catalyst")
-        assert qml.compiler.available_compilers() == ["catalyst"]
+        available_compilers = qml.compiler.available_compilers()
+        expected_compilers = {"catalyst", "cuda_quantum"}
+        assert all(compiler in expected_compilers for compiler in available_compilers)
 
     def test_active_compiler(self):
         """Test `qml.compiler.active_compiler` inside a simple circuit"""
