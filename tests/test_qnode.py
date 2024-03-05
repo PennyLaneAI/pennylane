@@ -965,11 +965,13 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy_dm = mocker.spy(qml.defer_measurements, "_transform")
+        spy_os = mocker.spy(qml.dynamic_one_shot, "_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        assert spy.call_count == 0
+        assert spy_dm.call_count == 0
+        assert spy_os.call_count == 2
 
         @qml.defer_measurements
         @qml.qnode(dev)
