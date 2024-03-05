@@ -578,7 +578,9 @@ def _build_generator(operation, wire_order, op_gen=None):
     if op_gen is None:
         if operation.num_params < 1:  # Non-parameterized gates
             gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
-            op_gen = qml.pauli_decompose(gen_mat, wire_order=wire_order, hide_identity=True, pauli=True)
+            op_gen = qml.pauli_decompose(
+                gen_mat, wire_order=wire_order, hide_identity=True, pauli=True
+            )
             op_gen.simplify()
             op_gen.pop(qml.pauli.PauliWord({}), 0.0)
         else:  # Single-parameter gates
@@ -763,14 +765,11 @@ def taper_operation(
     # check compatibility between the generator and the symmeteries
     with qml.QueuingManager.stop_recording():
         if all(
-            [
-                _is_commuting_ps(generator, op_gen)
-                for generator in generators
-            ]
+            [_is_commuting_ps(generator, op_gen) for generator in generators]
         ) and not qml.math.allclose(list(op_gen.values()), 0.0, rtol=1e-8):
             gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
         else:
-            gen_tapered = qml.pauli.PauliSentence({}) #qml.Hamiltonian([], [])
+            gen_tapered = qml.pauli.PauliSentence({})
 
         gen_tapered = qml.operation.convert_to_opmath(gen_tapered).pauli_rep
         gen_tapered.simplify()
