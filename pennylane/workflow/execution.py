@@ -263,14 +263,7 @@ def _make_inner_execute(
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    def cached_device_execution(tapes):
-        tapes, post_processing = _cache_transform(tapes, cache=cache)
-        return post_processing(device_execution(tapes))
-
-    if cache in [None, False]:
-        inner_device_execution = device_execution
-    else:
-        inner_device_execution = cached_device_execution
+    cached_device_execution = _apply_cache_transform(fn=device_execution, cache=cache)
 
     def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
@@ -278,14 +271,14 @@ def _make_inner_execute(
         Closure Variables:
             expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
             numpy_only (bool): whether or not to convert the data to numpy or leave as is
-            inner_device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
+            cached_device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
 
         """
         if expand_fn:
             tapes = tuple(expand_fn(t) for t in tapes)
         if numpy_only:
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        return inner_device_execution(tapes)
+        return cached_device_execution(tapes)
 
     return inner_execute
 
@@ -440,7 +433,12 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
 @transform
 def _cache_transform(tape: QuantumTape, cache: MutableMapping):
-    """Caches the result of ``tape`` using the provided ``cache``."""
+    """Caches the result of ``tape`` using the provided ``cache``.
+
+    .. note::
+
+        This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
+    """
 
     def cache_hit_postprocessing(_results: Tuple[Tuple]) -> Tuple:
         result = cache[tape.hash]
@@ -468,6 +466,25 @@ def _cache_transform(tape: QuantumTape, cache: MutableMapping):
     return [tape], cache_miss_postprocessing
 
 
+def _apply_cache_transform(fn: Callable, cache: Optional[MutableMapping]) -> Callable:
+    """Wraps the given execution function with ``_cache_transform()`` using the provided cache.
+
+    Args:
+        fn (Callable): The execution function to be augmented with caching. This function should
+            have the signature ``fn(tapes, **kwargs)`` and return ``list[tensor_like]`` with the
+            same length as the input ``tapes``.
+        cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
+    """
+    if cache is None:
+        return fn
+
+    def execution_function_with_caching(tapes):
+        tapes, post_processing_fn = _cache_transform(tapes, cache=cache)
+        return post_processing_fn(fn(tapes))
+
+    return execution_function_with_caching
+
+
 def execute(
     tapes: Sequence[QuantumTape],
     device: device_type,
@@ -477,7 +494,7 @@ def execute(
     config=None,
     grad_on_execution="best",
     gradient_kwargs=None,
-    cache: Union[bool, dict, Cache] = True,
+    cache: Union[None, bool, dict, Cache] = True,
     cachesize=10000,
     max_diff=1,
     override_shots: int = False,
@@ -508,7 +525,7 @@ def execute(
             pass. The 'best' option chooses automatically between the two options and is default.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
-        cache (bool, dict, Cache): Whether to cache evaluations. This can result in
+        cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
         cachesize (int): the size of the cache
         max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
@@ -661,10 +678,13 @@ def execute(
         else:
             transform_program = qml.transforms.core.TransformProgram()
 
-    if isinstance(cache, bool) and cache:
-        # cache=True: create a LRUCache object
+    # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
+    if cache is True:
         cache = LRUCache(maxsize=cachesize)
-        setattr(cache, "_persistent_cache", False)
+
+    # Ensure that ``cache`` is not a Boolean to simplify downstream code.
+    elif cache is False:
+        cache = None
 
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
@@ -834,21 +854,13 @@ def execute(
 
             # replace the backward gradient computation
             gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
-            # TODO: Use cache_transform().
-            # cached_gradient_fn = qml.workflow.cache_execute(
-            #     gradient_fn_with_shots,
-            #     cache,
-            #     pass_kwargs=True,
-            #     return_tuple=False,
-            # )
+            cached_gradient_fn = _apply_cache_transform(fn=gradient_fn_with_shots, cache=cache)
 
             def device_gradient_fn(inner_tapes, **gradient_kwargs):
                 numpy_tapes = tuple(
                     qml.transforms.convert_to_numpy_parameters(t) for t in inner_tapes
                 )
-                # TODO: Use the result from cache_transform() above.
-                # return cached_gradient_fn(numpy_tapes, **gradient_kwargs)
-                return gradient_fn_with_shots(numpy_tapes, **gradient_kwargs)
+                return cached_gradient_fn(numpy_tapes, **gradient_kwargs)
 
             gradient_fn = device_gradient_fn
 
