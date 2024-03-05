@@ -121,7 +121,7 @@ class SpectralNormError(AlgorithmicError):
         return self.__class__(self.error + other.error)
 
     @staticmethod
-    def get_error(approximate_op: Operator, exact_op: Operator, **kwargs):
+    def get_error(approximate_op: Operator, exact_op: Operator):
         """Compute spectral norm error between two operators.
 
         Args:
