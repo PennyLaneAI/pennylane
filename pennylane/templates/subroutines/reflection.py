@@ -76,7 +76,7 @@ class Reflection(Operation):
 
         .. math::
 
-            \text{Reflection}(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-I + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^{\dagger}.
+            \text{R}(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-I + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^{\dagger}.
 
         The central block is obtained through a :class:`~.PhaseShift` controlled operator.
 
