@@ -49,6 +49,9 @@
 
   Note that the grouping indices refer to the lists returned by `Sum.terms()`, not `Sum.operands`.
 
+* The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
+  [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
+
 <h3>Improvements 🛠</h3>
 
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
