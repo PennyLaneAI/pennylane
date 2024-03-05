@@ -48,7 +48,7 @@ def test_expval_identity_nowires_LQ():
 class TestExpval:
     """Tests for the expval function"""
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     def test_value(self, tol, shots):
         """Test that the expval interface works"""
         dev = qml.device("default.qubit", wires=2, shots=shots)
@@ -98,7 +98,7 @@ class TestExpval:
 
         circuit()
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_measurement_value(
         self, shots, phi, tol, tol_stochastic
@@ -118,7 +118,7 @@ class TestExpval:
             res = func(phi)
             assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_composite_measurement_value(
         self, shots, phi, tol, tol_stochastic
@@ -200,7 +200,7 @@ class TestExpval:
         assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
-    @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])
     def test_projector_expval(self, state, shots):
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
         its subclasses."""

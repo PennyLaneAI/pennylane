@@ -103,7 +103,7 @@ runs:
     - name: Freeze dependencies
       shell: bash
       if: inputs.requirements_file != ''
-      run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
+      run: pip freeze | grep -v "file:///" | sed 's/\(pennylane[-_]lightning==[0-9\.]\+\)\.dev[0-9]\+/\1/gI' > ${{ inputs.requirements_file }}
 
     - name: Upload frozen requirements
       if: inputs.requirements_file != ''

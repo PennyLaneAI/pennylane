@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
+  [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
+
 <h3>Improvements 🛠</h3>
 
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
@@ -35,6 +38,12 @@
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
   ```
   
+* The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
+  [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
+
+* Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
+  [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -52,3 +61,6 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Korbinian Kottmann.
+Soran Jahangiri,
+Korbinian Kottmann,
+Matthew Silverman.

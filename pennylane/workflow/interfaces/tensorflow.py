@@ -78,7 +78,7 @@ Unfortunately, we then get an extra call to the vjp function.
 
         @tf.py_function(Tout=x.dtype)
         def vjp(*dy):
-            print("In the VJP function with")
+            print("In the VJP function with: ", dy)
             print("eager? ", tf.executing_eagerly())
             return dy[0] * 2 * x
 
@@ -88,17 +88,13 @@ Unfortunately, we then get an extra call to the vjp function.
 >>> with tf.GradientTape(persistent=True) as tape:
 ...         y = f(x)
 >>> tape.jacobian(y, x)
-In the VJP function with:  (<tf.Tensor: shape=(2,), dtype=float32, numpy=array([1., 0.], dtype=float32)>,)
+In the VJP function with:  (<tf.Tensor: shape=(), dtype=float32, numpy=1.0>,)
 eager?  True
-In the VJP function with:  (<tf.Tensor: shape=(2,), dtype=float32, numpy=array([1., 0.], dtype=float32)>,)
+In the VJP function with:  (<tf.Tensor: shape=(), dtype=float32, numpy=1.0>,)
 eager?  True
-In the VJP function with:  (<tf.Tensor: shape=(2,), dtype=float32, numpy=array([0., 1.], dtype=float32)>,)
-eager?  True
-<tf.Tensor: shape=(2, 2), dtype=float32, numpy=
-array([[0.2, 0. ],
-       [0. , 0.4]], dtype=float32)>
+<tf.Tensor: shape=(), dtype=float32, numpy=0.2>
 
-As you can see, we got 3 calls to ``vjp`` instead of 2, and the first calls have identical ``dy``. We do not want
+As you can see, we got 2 calls to ``vjp`` instead of 1, and the calls have identical ``dy``. We do not want
 to have to perform this extra call.
 
 """

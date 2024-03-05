@@ -35,6 +35,7 @@ to verify and test quantum gradient computations.
     default_mixed
     default_qutrit
     default_clifford
+    null_qubit
     tests
 
 Next generation devices
@@ -53,6 +54,7 @@ accessible from the ``pennylane.devices`` submodule.
     ExecutionConfig
     Device
     DefaultQubit
+    NullQubit
 
 Preprocessing Transforms
 ------------------------
@@ -131,6 +133,13 @@ Qubit Simulation Tools
 
 .. currentmodule:: pennylane.devices.qubit
 .. automodule:: pennylane.devices.qubit
+
+
+Qutrit Mixed-State Simulation Tools
+-----------------------------------
+
+.. currentmodule:: pennylane.devices.qutrit_mixed
+.. automodule:: pennylane.devices.qutrit_mixed
 
 """
 
