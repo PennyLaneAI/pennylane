@@ -235,6 +235,8 @@ def _equal_operators(
         return False
 
     if isinstance(op1, qml.Identity):
+        # We already know op1 and op2 are of the same type, so no need to check
+        # that op2 is also an Identity
         return True
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
