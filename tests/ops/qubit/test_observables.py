@@ -650,7 +650,7 @@ class TestBasisStateProjector:
         res = circuit(x)
         assert qml.math.allclose(res, np.cos(x / 2) ** 2)
 
-    def test_projector_raises_for_invalid_input():
+    def test_projector_raises_for_invalid_input(self):
         """
         Tests that the Projector construction raises a ValueError for non-binary inputs.
         """
