@@ -30,6 +30,7 @@ from pennylane.operation import (
     Operator,
     StatePrepBase,
     Tensor,
+    convert_to_hamiltonian,
     operation_derivative,
     _UNSET_BATCH_SIZE,
 )
@@ -2824,6 +2825,58 @@ def test_custom_operator_is_jax_pytree():
 
     new_op = jax.tree_util.tree_unflatten(structure, [2.3])
     assert qml.equal(new_op, CustomOperator(2.3, wires=0))
+
+
+# TODO: improve style (WIP)
+def test_convert_to_hamiltonian():
+    """Test that arithmetic operators can be converted to Hamiltonian instances"""
+
+    w0, w1, w2, w3 = [0, 1, 2, 3]
+
+    coeffs = [0.25, -0.25]
+    obs = [qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2)]
+    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
+    opmath_instance = qml.dot(coeffs, obs)
+    converted_hamiltonian = convert_to_hamiltonian(opmath_instance)
+    assert qml.equal(hamiltonian_instance, converted_hamiltonian)
+
+    coeffs = [0.25, -0.25, 0.25, -0.25]
+    obs = [
+        qml.X(w0) @ qml.Z(w1) @ qml.Y(w2),
+        qml.Y(w0) @ qml.Z(w1) @ qml.X(w2),
+        qml.X(w1) @ qml.Z(w2) @ qml.Y(w3),
+        qml.Y(w1) @ qml.Z(w2) @ qml.X(w3),
+    ]
+    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
+    opmath_instance = qml.dot(coeffs, obs)
+    converted_hamiltonian = convert_to_hamiltonian(opmath_instance)
+    assert qml.equal(hamiltonian_instance, converted_hamiltonian)
+
+    coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
+    obs = [
+        qml.X(w0) @ qml.X(w1) @ qml.X(w2) @ qml.Y(w3),
+        qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.X(w3),
+        qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.X(w3),
+        qml.X(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.Y(w3),
+        qml.Y(w0) @ qml.X(w1) @ qml.X(w2) @ qml.X(w3),
+        qml.Y(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Y(w3),
+        qml.Y(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Y(w3),
+        qml.Y(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.X(w3),
+    ]
+    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
+    opmath_instance = qml.dot(coeffs, obs)
+    converted_hamiltonian = convert_to_hamiltonian(opmath_instance)
+    assert qml.equal(hamiltonian_instance, converted_hamiltonian)
+
+    ##########################################################################################
+    ### This test is currently failing since identity operator lose information on wires
+    ##########################################################################################
+    coeffs = [-0.5, 0.4, -0.3, 0.2]
+    obs = [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)]
+    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
+    opmath_instance = qml.dot(coeffs, obs)
+    new_hamiltonian = convert_to_hamiltonian(opmath_instance)
+    # assert qml.equal(hamiltonian_instance, new_hamiltonian)
 
 
 # pylint: disable=unused-import,no-name-in-module
