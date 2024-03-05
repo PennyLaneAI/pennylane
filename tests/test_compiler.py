@@ -683,7 +683,7 @@ class TestCatalystGrad:
     def test_vjp(self):
         """Test that the correct VJP is returned with QJIT."""
 
-        def f(params):
+        def f(x):
             y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
             return jnp.stack(y)
 
