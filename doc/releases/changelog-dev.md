@@ -23,10 +23,14 @@
 * We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
   [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
 
+* Fixes incorrect tests after upgrading Catalyst to version 0.5.0.
+  [(#5310)](https://github.com/PennyLaneAI/pennylane/pull/5310)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Soran Jahangiri,
 Korbinian Kottmann,
+Erick Ochoa Lopez,
 Matthew Silverman.
