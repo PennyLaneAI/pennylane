@@ -14,6 +14,8 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -27,6 +29,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai
 Soran Jahangiri,
 Korbinian Kottmann,
 Matthew Silverman.
