@@ -275,15 +275,16 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
-        mid_measurements = {}
+        if has_mcm:
+            kwargs["mid_measurements"] = {}
         # apply all circuit operations
         self.apply(
             circuit.operations,
             rotations=self._get_diagonalizing_gates(circuit),
-            mid_measurements=mid_measurements,
             **kwargs,
         )
         if has_mcm:
+            mid_measurements = kwargs["mid_measurements"]
             mid_values = np.array(tuple(mid_measurements.values()))
             if np.any(mid_values == -1):
                 for k, v in tuple(mid_measurements.items()):
