@@ -3035,6 +3035,40 @@ def convert_to_opmath(op):
     return op
 
 
+def convert_to_hamiltonian(op):
+    """
+    Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
+    Objects of any other type are returned directly.
+
+    Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
+    :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
+
+    Args:
+        op (Operator): The operator instance to convert
+
+    Returns:
+        Operator: The operator as an :class:`~pennylane.Hamiltonian` instance
+    """
+    if isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
+
+        op = qml.simplify(op)
+
+        if isinstance(op, Observable):
+            return qml.Hamiltonian(coeffs=[1], observables=[op])
+
+        coeffs, obs = op.terms()
+
+        for idx, p in enumerate(obs):
+            if isinstance(p, qml.ops.op_math.Prod):
+                obs[idx] = functools.reduce(lambda x, y: x @ Tensor(y), p[1:], Tensor(p[0]))
+            else:
+                obs[idx] = Tensor(p)
+
+        return qml.Hamiltonian(coeffs, obs)
+
+    return op
+
+
 def __getattr__(name):
     """To facilitate StatePrep rename"""
     if name == "StatePrep":
