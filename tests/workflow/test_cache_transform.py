@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the :func:``_cache_transform()`` function."""
+"""
+Unit tests for the :func:``_cache_transform()`` function.
+"""
+# pylint: disable=redefined-outer-name
 from typing import MutableMapping
 import pytest
 
