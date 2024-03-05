@@ -52,7 +52,7 @@ Pending deprecations
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
 
   - Contents moved in v0.35
-  - Old import path removed in v0.36.
+  - Old import path removed in v0.36
 
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
@@ -423,7 +423,7 @@ Completed deprecation cycles
    - Removed in 0.29
 
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
-  use ``qml.adjoint`` or ``qml.pow`` instead. 
+  use ``qml.adjoint`` or ``qml.pow`` instead.
 
   - Still accessible in v0.27 and v0.28
   - Removed in v0.29
@@ -472,7 +472,7 @@ Completed deprecation cycles
   - Deprecated in v0.27
   - Removed in v0.28
 
-* ``QueuingContext`` is renamed ``QueuingManager``. 
+* ``QueuingContext`` is renamed ``QueuingManager``.
 
   - Deprecated name ``QueuingContext`` in v0.27
   - Removed in v0.28
@@ -501,7 +501,7 @@ Completed deprecation cycles
   - Removed in v0.28
 
 * ``qml.transforms.measurement_grouping`` has been removed. Please use ``qml.transforms.hamiltonian_expand``
-  instead. 
+  instead.
 
   - Deprecated in v0.28
   - Removed in v0.29
