@@ -610,7 +610,7 @@ def _build_generator(operation, wire_order, op_gen=None):
             raise ValueError(
                 f"Given op_gen: {op_gen} doesn't seem to be the correct generator for the {operation}."
             )
-        op_gen = op_gen.pauli_rep
+        op_gen = qml.operation.convert_to_opmath(op_gen).pauli_rep
 
     return op_gen
 
@@ -743,11 +743,6 @@ def taper_operation(
 
             V^{\prime} \equiv e^{i U^{\dagger} G U \theta} = e^{i G^{\prime} \theta}.
     """
-    if active_new_opmath():
-        raise qml.QuantumFunctionError(
-            "This function is currently not supported with the new operator arithmetic "
-            "framework. Please de-activate it using `qml.operation.disable_new_opmath()`"
-        )
 
     # maintain a flag to track functional form of the operation
     callable_op = callable(operation)
@@ -758,22 +753,28 @@ def taper_operation(
     op_gen = _build_generator(operation, wire_order, op_gen=op_gen)
 
     # check compatibility between the generator and the symmeteries
-    def _is_commuting_ps(ps1, ps2):
+    def _is_commuting_ps(op1, op2):
+        ps1 = qml.operation.convert_to_opmath(op1).pauli_rep
+        ps2 = qml.operation.convert_to_opmath(op2).pauli_rep
         comm = ps1.commutator(ps2)
         comm.simplify()
         return comm == qml.pauli.PauliSentence({})
-
+    print(op_gen)
     # check compatibility between the generator and the symmeteries
     if all(
         [
-            _is_commuting_ps(generator.pauli_rep, op_gen)
+            _is_commuting_ps(generator, op_gen)
             for generator in generators
         ]
     ) and not qml.math.allclose(list(op_gen.values()), 0.0, rtol=1e-8):
         gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
     else:
-        gen_tapered = qml.Hamiltonian([], [])
-    gen_tapered = qml.simplify(gen_tapered)
+        gen_tapered = qml.Hamiltonian([], []) if not qml.operation.active_new_opmath else qml.pauli.PauliSentence({})
+    
+    if qml.operation.active_new_opmath() or isinstance(gen_tapered, qml.pauli.PauliSentence):
+        gen_tapered.simplify()
+    else: 
+        gen_tapered = qml.simplify(gen_tapered)
 
     def _tapered_op(params):
         r"""Applies the tapered operation for the specified parameter value whenever
