@@ -179,7 +179,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         _validate_computational_basis_sampling(tape.measurements)
 
     diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
-    print(diagonalizing_gates)
     for queue, new_queue in [
         (tape.operations + diagonalizing_gates, new_ops),
         (diagonal_measurements, new_measurements),

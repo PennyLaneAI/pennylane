@@ -12,6 +12,9 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
 
+* `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
+  [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -29,4 +32,5 @@ This release contains contributions from (in alphabetical order):
 
 Soran Jahangiri,
 Korbinian Kottmann,
+Christina Lee,
 Matthew Silverman.

@@ -1199,9 +1199,7 @@ def qwc_rotation(pauli_operators):
 
             elif isinstance(pauli, qml.Y):
                 ops.append(qml.RX(np.pi / 2, wires=pauli.wires))
-
-    # known issue with pylint recognizing @property members
-    return ops  # pylint:disable=no-member
+    return ops
 
 
 def diagonalize_pauli_word(pauli_word):
@@ -1296,19 +1294,19 @@ def diagonalize_qwc_pauli_words(
                 full_pauli_word[wire] = pauli_type
 
         if isinstance(term, Tensor):
-            components = [qml.Z(w) for w in pw]
+            components = [qml.Z(w) for w in term.wires]
             new_ops.append(Tensor(*components) if len(components) > 1 else components[0])
         elif isinstance(term, (qml.Z, qml.I)):
             new_ops.append(term)
         elif isinstance(term, (qml.X, qml.Y)):
             new_ops.append(qml.Z(term.wires[0]))
         else:  # operator arithmetic
-            prod_term = qml.prod(*(qml.Z(w) for w in pw))
+            prod_term = qml.prod(*(qml.Z(w) for w in term.wires))
             coeff = pauli_rep[pw]
             if qml.math.allclose(coeff, 1):
-                new_ops.append(coeff * prod_term)
-            else:
                 new_ops.append(prod_term)
+            else:
+                new_ops.append(coeff * prod_term)
 
     diag_gates = []
     for w, pauli_type in full_pauli_word.items():
