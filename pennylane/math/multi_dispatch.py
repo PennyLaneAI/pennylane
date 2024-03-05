@@ -870,6 +870,57 @@ def norm(tensor, like=None, **kwargs):
     return norm(tensor, **kwargs)
 
 
+@multi_dispatch(argnum=[0])
+def svd(tensor, like=None, **kwargs):
+    """Compute the singular value decomposition of a tensor in each interface.
+
+    The singular value decomposition for a matrix :math:`A` consist of three matrices :math:`S`,
+    :math:`U` and :math:`V_h`, such that:
+
+    .. math::
+
+        A = U . Diag(S) . V_h
+
+    Args:
+        tensor (tensor_like): input tensor
+        compute_uv (bool):  if ``True``, the full decomposition is returned
+
+
+    Returns:
+        :math:`S`, :math:`U` and :math:`V_h` or :math:`S`: full decomposition
+        if ``compute_uv`` is ``True`` or ``None``, or only the singular values
+        if ``compute_uv`` is ``False``
+    """
+    if like == "tensorflow":
+        from tensorflow.linalg import svd, adjoint
+
+        # Tensorflow results need some post-processing to keep it similar to other frameworks.
+
+        if kwargs.get("compute_uv", True):
+            S, U, V = svd(tensor, **kwargs)
+            return U, S, adjoint(V)
+        return svd(tensor, **kwargs)
+
+    if like == "jax":
+        from jax.numpy.linalg import svd
+
+    elif like == "torch":
+        # Torch is deprecating torch.svd() in favour of torch.linalg.svd().
+        # The new UI is slightly different and breaks the logic for the multi dispatching.
+        # This small workaround restores the compute_uv control argument.
+        if kwargs.get("compute_uv", True) is False:
+            from torch.linalg import svdvals as svd
+        else:
+            from torch.linalg import svd
+        if kwargs.get("compute_uv", None) is not None:
+            kwargs.pop("compute_uv")
+
+    else:
+        from numpy.linalg import svd
+
+    return svd(tensor, **kwargs)
+
+
 def _flat_autograd_norm(tensor, **kwargs):  # pylint: disable=unused-argument
     """Helper function for computing the norm of an autograd tensor when the order or axes are not
     specified. This is used for differentiability."""
