@@ -355,11 +355,11 @@ class TransformProgram:
             return
         keep = 2 if 2 in trans_type else 1
         found = False
-        for i, type in enumerate(reversed(trans_type)):
-            if not found and type == keep:
+        for i, ttype in enumerate(reversed(trans_type)):
+            if not found and ttype == keep:
                 found = True
                 continue
-            if type in [1, 2]:
+            if found and ttype in [1, 2]:
                 self._transform_program.pop(len(self._transform_program) - 1 - i)
 
     def _set_all_classical_jacobians(
@@ -461,7 +461,8 @@ class TransformProgram:
         argnums_list = []
         for index, transform in enumerate(self):
             argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
-            if transform.classical_cotransform and argnums:
+            # pylint: disable=protected-access
+            if (transform._use_argnum or transform.classical_cotransform) and argnums:
                 params = qml.math.jax_argnums_to_tape_trainable(
                     qnode, argnums, TransformProgram(self[0:index]), args, kwargs
                 )
