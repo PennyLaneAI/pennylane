@@ -7,6 +7,9 @@
 * Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
   [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
 
+* The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
+  [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
+
 <h3>Improvements 🛠</h3>
 
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
