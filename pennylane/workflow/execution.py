@@ -27,13 +27,14 @@ devices with autodifferentiation support.
 import inspect
 import warnings
 from functools import wraps, partial
-from typing import Callable, Sequence, Optional, Union, Tuple
+from typing import Callable, MutableMapping, Sequence, Optional, Union, Tuple
 import logging
 
 from cachetools import LRUCache, Cache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
@@ -259,13 +260,17 @@ def _make_inner_execute(
 
     if isinstance(device, qml.Device):
         device_execution = set_shots(device, override_shots)(device.batch_execute)
-
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    cached_device_execution = qml.workflow.cache_execute(
-        device_execution, cache, return_tuple=False
-    )
+    def cached_device_execution(tapes):
+        tapes, post_processing = _cache_transform(tapes, cache=cache)
+        return post_processing(device_execution(tapes))
+
+    if cache in [None, False]:
+        inner_device_execution = device_execution
+    else:
+        inner_device_execution = cached_device_execution
 
     def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
@@ -273,14 +278,14 @@ def _make_inner_execute(
         Closure Variables:
             expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
             numpy_only (bool): whether or not to convert the data to numpy or leave as is
-            cached_device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
+            inner_device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
 
         """
         if expand_fn:
             tapes = tuple(expand_fn(t) for t in tapes)
         if numpy_only:
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        return cached_device_execution(tapes)
+        return inner_device_execution(tapes)
 
     return inner_execute
 
@@ -322,6 +327,8 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         function: a wrapped version of the execution function ``fn`` with caching
         support
     """
+    # TODO: Add deprecation warning.
+    #       This function has been replaced by ``_cache_transform()``.
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             "Entry with args=(fn=%s, cache=%s, pass_kwargs=%s, return_tuple=%s, expand_fn=%s) called by=%s",
@@ -429,6 +436,36 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
     wrapper.fn = fn
     return wrapper
+
+
+@transform
+def _cache_transform(tape: QuantumTape, cache: MutableMapping):
+    """Caches the result of ``tape`` using the provided ``cache``."""
+
+    def cache_hit_postprocessing(_results: Tuple[Tuple]) -> Tuple:
+        result = cache[tape.hash]
+        if result is not None:
+            return result
+
+        raise RuntimeError(
+            "Result for tape is missing from the execution cache. "
+            "This is likely the result of a race condition."
+        )
+
+    if tape.hash in cache:
+        return [], cache_hit_postprocessing
+
+    def cache_miss_postprocessing(results: Tuple[Tuple]) -> Tuple:
+        result = results[0]
+        cache[tape.hash] = result
+        return result
+
+    # Adding a ``None`` entry to the cache indicates that a result will eventually be available for
+    # the tape. This assumes that post-processing functions are called in the same order in which
+    # the transforms are invoked. Otherwise, ``cache_hit_postprocessing()`` may be called before the
+    # result of the corresponding tape is placed in the cache by ``cache_miss_postprocessing()``.
+    cache[tape.hash] = None
+    return [tape], cache_miss_postprocessing
 
 
 def execute(
@@ -797,18 +834,21 @@ def execute(
 
             # replace the backward gradient computation
             gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
-            cached_gradient_fn = qml.workflow.cache_execute(
-                gradient_fn_with_shots,
-                cache,
-                pass_kwargs=True,
-                return_tuple=False,
-            )
+            # TODO: Use cache_transform().
+            # cached_gradient_fn = qml.workflow.cache_execute(
+            #     gradient_fn_with_shots,
+            #     cache,
+            #     pass_kwargs=True,
+            #     return_tuple=False,
+            # )
 
             def device_gradient_fn(inner_tapes, **gradient_kwargs):
                 numpy_tapes = tuple(
                     qml.transforms.convert_to_numpy_parameters(t) for t in inner_tapes
                 )
-                return cached_gradient_fn(numpy_tapes, **gradient_kwargs)
+                # TODO: Use the result from cache_transform() above.
+                # return cached_gradient_fn(numpy_tapes, **gradient_kwargs)
+                return gradient_fn_with_shots(numpy_tapes, **gradient_kwargs)
 
             gradient_fn = device_gradient_fn
 
