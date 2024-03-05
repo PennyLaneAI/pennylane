@@ -7,6 +7,9 @@
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
+* Added new `SpectralNormError` class to the new error tracking functionality.
+  [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
+
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
@@ -37,6 +40,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Amintor Dusko
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
