@@ -15,10 +15,11 @@
 This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
+import warnings
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
-
+import pennylane as qml
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -77,14 +78,23 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
             Currently, only supported for Qiskit's `QuantumCircuit <https://docs.pennylane.ai/projects/qiskit>`_.
 
     Returns:
-        function: the PennyLane template created from the quantum circuit
-        object
+        function: the PennyLane template created from the quantum circuit object
+
+    .. warning::
+        ``qml.load`` is deprecated and will be removed in version 0.37. Instead, please
+        use the appropriate ``qml.from_x`` functions, such as ``qml.from_qiskit``.
+
     """
+
+    warnings.warn(
+        "qml.load is deprecated and will be removed in version 0.37. Instead, "
+        "please use the appropriate qml.from_x functions, such as qml.from_qiskit.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if format in plugin_converters:
         # loads the plugin load function
         plugin_converter = plugin_converters[format].load()
-
         # calls the load function of the converter on the quantum circuit object
         return plugin_converter(quantum_circuit_object, **load_kwargs)
 
@@ -356,11 +366,10 @@ def from_qiskit(quantum_circuit, measurements=None):
                  ╚═══╩══╩══╝
     """
     try:
-        return load(quantum_circuit, format="qiskit", measurements=measurements)
-    except ValueError as e:
-        if e.args[0].split(".")[0] == "Converter does not exist":
-            raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
-        raise e
+        plugin_converter = plugin_converters["qiskit"].load()
+        return plugin_converter(quantum_circuit, measurements=measurements)
+    except KeyError as e:
+        raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
 
 def from_qiskit_op(qiskit_op, params=None, wires=None):
@@ -459,11 +468,10 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         Y(5) @ Z(3) @ X(7)
     """
     try:
-        return load(qiskit_op, format="qiskit_op", params=params, wires=wires)
-    except ValueError as e:
-        if e.args[0].split(".")[0] == "Converter does not exist":
-            raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
-        raise e
+        plugin_converter = plugin_converters["qiskit_op"].load()
+        return plugin_converter(qiskit_op, params=params, wires=wires)
+    except KeyError as e:
+        raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
 
 def from_qasm(quantum_circuit: str):
@@ -495,7 +503,8 @@ def from_qasm(quantum_circuit: str):
     Returns:
         function: the PennyLane template created based on the QASM string
     """
-    return load(quantum_circuit, format="qasm")
+    plugin_converter = plugin_converters["qasm"].load()
+    return plugin_converter(quantum_circuit)
 
 
 def from_qasm_file(qasm_filename: str):
@@ -521,7 +530,8 @@ def from_qasm_file(qasm_filename: str):
     Returns:
         function: the PennyLane template created based on the QASM file
     """
-    return load(qasm_filename, format="qasm_file")
+    plugin_converter = plugin_converters["qasm_file"].load()
+    return plugin_converter(qasm_filename)
 
 
 def from_pyquil(pyquil_program):
@@ -551,7 +561,8 @@ def from_pyquil(pyquil_program):
         pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
         be used like a PennyLane template and that contains additional inspection properties
     """
-    return load(pyquil_program, format="pyquil_program")
+    plugin_converter = plugin_converters["pyquil_program"].load()
+    return plugin_converter(pyquil_program)
 
 
 def from_quil(quil: str):
@@ -582,7 +593,8 @@ def from_quil(quil: str):
         pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
         be used like a PennyLane template and that contains additional inspection properties
     """
-    return load(quil, format="quil")
+    plugin_converter = plugin_converters["quil"].load()
+    return plugin_converter(quil)
 
 
 def from_quil_file(quil_filename: str):
@@ -609,4 +621,5 @@ def from_quil_file(quil_filename: str):
         pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
         be used like a PennyLane template and that contains additional inspection properties
     """
-    return load(quil_filename, format="quil_file")
+    plugin_converter = plugin_converters["quil_file"].load()
+    return plugin_converter(quil_filename)

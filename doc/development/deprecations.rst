@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The method ``qml.load`` does not add any functionality to the ``from_x`` functions. It will be removed, and users will be directed to use the appropriate ``from_x`` functions instead.
+
+  - Deprecated in v0.36
+  - Will be removed in v0.37
+
 * The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
   operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed
   from the ``Operator`` class.

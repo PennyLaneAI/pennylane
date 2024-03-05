@@ -16,6 +16,8 @@
 
 <h3>Deprecations 👋</h3>
 
+* ``qml.load`` is deprecated and will be removed in version 0.37. Instead, please use the appropriate ``qml.from_x`` functions, such as ``qml.from_qiskit``.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
