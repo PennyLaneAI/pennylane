@@ -647,30 +647,20 @@ class TestCatalystGrad:
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""
 
-        def f(params):
-            y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-            return jnp.stack(y)
-
         @qml.qjit
-        def cat_jvp(params, tangent):
-            return qml.jvp(f, [params], [tangent])
+        def jvp(params, tangent):
+            def f(x):
+                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+                return jnp.stack(y)
 
-        def jax_jvp(params, tangent):
-            return jax.jvp(f, [params], [tangent])
+            return qml.jvp(f, [params], [tangent])
 
         x = jnp.array([0.1, 0.2])
         tangent = jnp.array([0.3, 0.6])
-
-        expected_res, expected_jvp = jax_jvp(x, tangent)
-        observed_res, observed_jvp = cat_jvp(x, tangent)
-
-        assert jnp.allclose(expected_res, observed_res)
-
-        exp_vals, exp_treedef = jax.tree_util.tree_flatten(expected_jvp)
-        obs_vals, obs_treedef = jax.tree_util.tree_flatten(observed_jvp)
-        assert exp_treedef == obs_treedef
-        for exp_val, obs_val in zip(exp_vals, obs_vals):
-            assert jnp.allclose(exp_val, obs_val)
+        res = jvp(x, tangent)
+        assert len(res) == 2
+        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
+        assert jnp.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
 
     def test_jvp_without_qjit(self):
         """Test that an error is raised when using JVP without QJIT."""
