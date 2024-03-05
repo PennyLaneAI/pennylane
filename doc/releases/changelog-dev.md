@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
+  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
+
 <h3>Improvements 🛠</h3>
 
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
@@ -27,6 +30,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai
 Soran Jahangiri,
 Korbinian Kottmann,
 Matthew Silverman.
