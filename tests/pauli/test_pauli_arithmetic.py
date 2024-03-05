@@ -21,6 +21,7 @@ import pytest
 from scipy import sparse
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.operation import Tensor
 from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
 
 
@@ -468,10 +469,33 @@ class TestPauliWord:
         assert res == qml.Identity()
 
     tup_pw_hamiltonian = (
-        (PauliWord({0: X}), 1 * qml.PauliX(wires=0)),
-        (pw1, 1 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)),
-        (pw2, 1 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")),
-        (pw3, 1 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c")),
+        (PauliWord({0: X}), qml.Hamiltonian([1], [qml.PauliX(wires=0)])),
+        (
+            pw1,
+            qml.Hamiltonian([1], [qml.operation.Tensor(qml.PauliX(wires=1), qml.PauliY(wires=2))]),
+        ),
+        (
+            pw2,
+            qml.Hamiltonian(
+                [1],
+                [
+                    qml.operation.Tensor(
+                        qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")
+                    )
+                ],
+            ),
+        ),
+        (
+            pw3,
+            qml.Hamiltonian(
+                [1],
+                [
+                    qml.operation.Tensor(
+                        qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")
+                    )
+                ],
+            ),
+        ),
     )
 
     @pytest.mark.parametrize("pw, h", tup_pw_hamiltonian)
@@ -483,7 +507,7 @@ class TestPauliWord:
     def test_hamiltonian_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity Hamiltonian."""
         op = PauliWord({}).hamiltonian(wire_order=[0, 1])
-        id = 1 * qml.Identity(wires=[0, 1])
+        id = qml.Hamiltonian([1], [qml.Identity(wires=[0, 1])])
         assert op.compare(id)
 
     def test_hamiltonian_empty_error(self):
@@ -1090,23 +1114,38 @@ class TestPauliSentence:
         assert qml.equal(op, id)
 
     tup_ps_hamiltonian = (
-        (PauliSentence({PauliWord({0: X}): 1}), 1 * qml.PauliX(wires=0)),
+        (PauliSentence({PauliWord({0: X}): 1}), qml.Hamiltonian([1], [qml.PauliX(wires=0)])),
         (
             ps1_hamiltonian,
-            +1.23 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)
-            + 4 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")
-            - 0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c"),
+            qml.Hamiltonian(
+                [1.23, 4.0, -0.5],
+                [
+                    Tensor(qml.PauliX(wires=1), qml.PauliY(wires=2)),
+                    Tensor(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
+                    Tensor(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+                ],
+            ),
         ),
         (
             ps2_hamiltonian,
-            -1.23 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)
-            - 4 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")
-            + 0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c"),
+            qml.Hamiltonian(
+                [-1.23, -4.0, 0.5],
+                [
+                    Tensor(qml.PauliX(wires=1), qml.PauliY(wires=2)),
+                    Tensor(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
+                    Tensor(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+                ],
+            ),
         ),
         (
             ps3,
-            -0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c")
-            + 1 * qml.Identity(wires=[0, "b", "c"]),
+            qml.Hamiltonian(
+                [-0.5, 1.0],
+                [
+                    Tensor(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+                    qml.Identity(wires=[0, "b", "c"]),
+                ],
+            ),
         ),
     )
 
