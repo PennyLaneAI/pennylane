@@ -179,6 +179,30 @@ class TestMitigateWithZNE:
         assert args[0][0] == scale_factors
         assert np.allclose(args[0][1], np.mean(np.reshape(random_results, (3, 2)), axis=1))
 
+    def test_broadcasting(self):
+        """Tests that mitigate_with_zne supports batch arguments"""
+
+        batch_size = 2
+
+        @qml.qnode(dev_noisy)
+        def original_qnode(inputs):
+            qml.AmplitudeEmbedding(features=inputs, wires=range(2), normalize=True)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
+
+        expanded_qnode = qml.transforms.broadcast_expand(original_qnode)
+
+        mitigated_qnode_orig = qml.transforms.mitigate_with_zne(
+            original_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+        )
+        mitigated_qnode_expanded = qml.transforms.mitigate_with_zne(
+            expanded_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+        )
+        rng = np.random.default_rng(seed=18954959)
+        inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
+        result_orig = mitigated_qnode_orig(inputs)
+        result_expanded = mitigated_qnode_expanded(inputs)
+        assert qml.math.allclose(result_orig, result_expanded)
+
 
 @pytest.fixture
 def skip_if_no_mitiq_support():

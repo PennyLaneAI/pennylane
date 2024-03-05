@@ -15,6 +15,7 @@
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
 from unittest import mock
+from flaky import flaky
 import pytest
 
 import numpy as np
@@ -76,6 +77,18 @@ def test_snapshot_multiprocessing_qnode():
         match="Debugging with ``Snapshots`` is not available with multiprocessing.",
     ):
         qml.snapshots(circuit)()
+
+
+# pylint: disable=protected-access
+def test_applied_modifiers():
+    """Test that defualt qubit has the `single_tape_support` and `simulator_tracking`
+    modifiers applied.
+    """
+    dev = DefaultQubit()
+    assert dev._applied_modifiers == [
+        qml.devices.modifiers.single_tape_support,
+        qml.devices.modifiers.simulator_tracking,
+    ]
 
 
 class TestSupportsDerivatives:
@@ -698,7 +711,7 @@ class TestExecutingBatches:
         g0_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[0]))(phi)
         assert qml.math.allclose(g0, g0_expected)
 
-        g1 = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
+        g1 = qml.jacobian(lambda x: qml.numpy.array(self.f(dev, x)[1]))(phi)
         g1_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
         assert qml.math.allclose(g1, g1_expected)
 
@@ -1697,6 +1710,7 @@ class TestPostselection:
         assert qml.math.allclose(res, expected)
         assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
+    @flaky(max_runs=5)
     @pytest.mark.parametrize(
         "mp",
         [

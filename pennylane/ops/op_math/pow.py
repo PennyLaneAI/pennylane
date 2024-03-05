@@ -75,14 +75,14 @@ def pow(base, z=1, lazy=True, id=None):
 
     **Example**
 
-    >>> qml.pow(qml.PauliX(0), 0.5)
-    PauliX(wires=[0])**0.5
-    >>> qml.pow(qml.PauliX(0), 0.5, lazy=False)
+    >>> qml.pow(qml.X(0), 0.5)
+    X(0)**0.5
+    >>> qml.pow(qml.X(0), 0.5, lazy=False)
     SX(wires=[0])
-    >>> qml.pow(qml.PauliX(0), 0.1, lazy=False)
-    PauliX(wires=[0])**0.1
-    >>> qml.pow(qml.PauliX(0), 2, lazy=False)
-    Identity(wires=[0])
+    >>> qml.pow(qml.X(0), 0.1, lazy=False)
+    X(0)**0.1
+    >>> qml.pow(qml.X(0), 2, lazy=False)
+    I(0)
 
     Lazy behavior can also be accessed via ``op ** z``.
 
@@ -115,7 +115,7 @@ class Pow(ScalarSymbolicOp):
 
     **Example**
 
-    >>> sqrt_x = Pow(qml.PauliX(0), 0.5)
+    >>> sqrt_x = Pow(qml.X(0), 0.5)
     >>> sqrt_x.decomposition()
     [SX(wires=[0])]
     >>> qml.matrix(sqrt_x)
@@ -153,7 +153,7 @@ class Pow(ScalarSymbolicOp):
         True
         >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is Pow._operation_type
         True
-        >>> Pow(qml.PauliX(0), 1.2).__class__ is Pow._operation_observable_type
+        >>> Pow(qml.X(0), 1.2).__class__ is Pow._operation_observable_type
         True
 
         """

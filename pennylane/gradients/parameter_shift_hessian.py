@@ -455,7 +455,7 @@ def param_shift_hessian(
     ... def circuit(x):
     ...     qml.RX(x[0], wires=0)
     ...     qml.CRY(x[1], wires=[0, 1])
-    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
 
     >>> x = np.array([0.5, 0.2], requires_grad=True)
     >>> qml.gradients.param_shift_hessian(circuit)(x)

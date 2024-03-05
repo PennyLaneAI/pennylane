@@ -63,6 +63,7 @@ class TestTracking:
         assert tracker.totals == {
             "batches": 2,
             "executions": 3,
+            "results": 3.0,
             "simulations": 3,
             "derivative_batches": 1,
             "derivatives": 1,

@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
+from pennylane.typing import TensorLike
 from pennylane import execute
 
 pytestmark = pytest.mark.torch
@@ -421,7 +422,7 @@ class TestTorchExecuteIntegration:
 
         res = execute([tape1, tape2], dev, **execute_kwargs)
 
-        assert isinstance(res, list)
+        assert isinstance(res, TensorLike)
         assert len(res) == 2
         assert res[0].shape == ()
         assert res[1].shape == ()

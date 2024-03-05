@@ -148,7 +148,9 @@ class PauliWord(dict):
     .. note::
 
         An empty :class:`~.PauliWord` will be treated as the multiplicative
-        identity (i.e identity on all wires).
+        identity (i.e identity on all wires). Its matrix is the identity matrix
+        (trivially the :math:`1\times 1` one matrix when no ``wire_order`` is passed to
+        ``PauliWord({}).to_mat()``).
 
     **Examples**
 
@@ -189,6 +191,11 @@ class PauliWord(dict):
             if op == I:
                 del mapping[wire]
         super().__init__(mapping)
+
+    @property
+    def pauli_rep(self):
+        """Trivial pauli_rep"""
+        return PauliSentence({self: 1.0})
 
     def __reduce__(self):
         """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
@@ -250,6 +257,9 @@ class PauliWord(dict):
         Returns:
             PauliSentence: coeff * new_word
         """
+        if isinstance(other, PauliSentence):
+            return PauliSentence({self: 1.0}) @ other
+
         new_word, coeff = self._matmul(other)
         return PauliSentence({new_word: coeff})
 
@@ -370,7 +380,7 @@ class PauliWord(dict):
 
         You can also compute the commutator with other operator types if they have a Pauli representation.
 
-        >>> pw.commutator(qml.PauliY(0))
+        >>> pw.commutator(qml.Y(0))
         2j * Z(0)
         """
         if isinstance(other, PauliWord):
@@ -428,12 +438,11 @@ class PauliWord(dict):
             )
 
         if len(self) == 0:
-            if not wire_order:
-                raise ValueError("Can't get the matrix of an empty PauliWord.")
+            n = len(wire_order) if wire_order is not None else 0
             return (
-                np.diag([coeff] * 2 ** len(wire_order))
+                np.diag([coeff] * 2**n)
                 if format == "dense"
-                else coeff * sparse.eye(2 ** len(wire_order), format=format, dtype="complex128")
+                else coeff * sparse.eye(2**n, format=format, dtype="complex128")
             )
 
         if format == "dense":
@@ -539,7 +548,9 @@ class PauliSentence(dict):
     .. note::
 
         An empty :class:`~.PauliSentence` will be treated as the additive
-        identity (i.e ``0 * Identity()``).
+        identity (i.e ``0 * Identity()``). Its matrix is the all-zero matrix
+        (trivially the :math:`1\times 1` zero matrix when no ``wire_order`` is passed to
+        ``PauliSentence({}).to_mat()``).
 
     **Examples**
 
@@ -586,6 +597,11 @@ class PauliSentence(dict):
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
+
+    @property
+    def pauli_rep(self):
+        """Trivial pauli_rep"""
+        return self
 
     def __missing__(self, key):
         """If the PauliWord is not in the sentence then the coefficient
@@ -679,6 +695,9 @@ class PauliSentence(dict):
     def __matmul__(self, other):
         """Matrix / tensor product between two PauliSentences by iterating over each sentence and multiplying
         the Pauli words pair-wise"""
+        if isinstance(other, PauliWord):
+            other = PauliSentence({other: 1.0})
+
         final_ps = PauliSentence()
 
         if len(self) == 0 or len(other) == 0:
@@ -759,7 +778,7 @@ class PauliSentence(dict):
 
         You can also compute the commutator with other operator types if they have a Pauli representation.
 
-        >>> ps1.commutator(qml.PauliY(0))
+        >>> ps1.commutator(qml.Y(0))
         2j * Z(0)"""
         final_ps = PauliSentence()
 
@@ -834,11 +853,10 @@ class PauliSentence(dict):
             return w or Wires(self.wires[0]) if self.wires else self.wires
 
         if len(self) == 0:
-            if not wire_order:
-                raise ValueError("Can't get the matrix of an empty PauliSentence.")
+            n = len(wire_order) if wire_order is not None else 0
             if format == "dense":
-                return np.eye(2 ** len(wire_order))
-            return sparse.eye(2 ** len(wire_order), format=format, dtype="complex128")
+                return np.zeros((2**n, 2**n))
+            return sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
         if format != "dense":
             return self._to_sparse_mat(wire_order, buffer_size=buffer_size)

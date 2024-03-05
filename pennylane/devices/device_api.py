@@ -97,7 +97,7 @@ class Device(abc.ABC):
         >>> dev = DefaultQubit()
         >>> dev.execute(circuit)
         MatrixUndefinedError
-        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.PauliZ(0))])
+        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.Z(0))])
         >>> config = ExecutionConfig(gradient_method="adjoint")
         >>> dev.compute_derivatives(circuit, config)
         ValueError: Operation Rot is not written in terms of a single parameter
@@ -274,7 +274,7 @@ class Device(abc.ABC):
                 from pennylane.interfaces.jax import execute as jax_boundary
 
                 def f(x):
-                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.PauliZ(0))])
+                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
                     config = ExecutionConfig(gradient_method="adjoint")
                     program, config = dev.preprocess(config)
                     circuit_batch, postprocessing = program((circuit, ))
@@ -350,7 +350,7 @@ class Device(abc.ABC):
             measurement value in a numpy array. ``shape`` currently accepts a device, as historically devices
             stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
-            >>> tape = qml.tape.QuantumTape(measurements=qml.expval(qml.PauliZ(0))])
+            >>> tape = qml.tape.QuantumTape(measurements=qml.expval(qml.Z(0))])
             >>> tape.shape(dev)
             ()
             >>> dev.execute(tape)
@@ -365,7 +365,7 @@ class Device(abc.ABC):
 
             If the script has multiple measurments, then the device should return a tuple of measurements.
 
-            >>> tape = qml.tape.QuantumTape(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+            >>> tape = qml.tape.QuantumTape(measurements=[qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
             >>> tape.shape(dev)
             ((), (4,))
             >>> dev.execute(tape)
@@ -411,10 +411,10 @@ class Device(abc.ABC):
         >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)
         True
-        >>> circuit_analytic = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))], shots=None)
+        >>> circuit_analytic = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))], shots=None)
         >>> dev.supports_derivatives(config, circuit=circuit_analytic)
         True
-        >>> circuit_finite_shots = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10)
+        >>> circuit_finite_shots = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))], shots=10)
         >>> dev.supports_derivatives(config, circuit = circuit_fintite_shots)
         False
 
@@ -438,7 +438,7 @@ class Device(abc.ABC):
         and validation steps performed by :meth:`~.Device.preprocess`.
 
         >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
-        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.Z(0))])
         >>> dev.supports_derivatives(config, circuit=circuit)
         True
 
