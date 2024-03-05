@@ -157,7 +157,7 @@ class TestSpectralNormError:
     def test_repr(self):
         """Test that formal string representation is correct"""
         S1 = SpectralNormError(0.3)
-        assert repr(S1) == f"<SpectralNormError({0.3})>"
+        assert repr(S1) == f"SpectralNormError({0.3})"
 
 
 class TestErrorOperation:

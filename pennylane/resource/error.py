@@ -100,7 +100,7 @@ class SpectralNormError(AlgorithmicError):
     def __repr__(self):
         """Return formal string representation."""
 
-        return f"<SpectralNormError({self.error})>"
+        return f"SpectralNormError({self.error})"
 
     def combine(self, other: "SpectralNormError"):
         """Combine two spectral norm errors.
@@ -116,7 +116,7 @@ class SpectralNormError(AlgorithmicError):
         >>> s1 = SpectralNormError(0.01)
         >>> s2 = SpectralNormError(0.02)
         >>> s1.combine(s2)
-        <SpectralNormError(0.03)>
+        SpectralNormError(0.03)
         """
         return self.__class__(self.error + other.error)
 
