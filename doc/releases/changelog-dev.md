@@ -37,7 +37,6 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko
-Korbinian Kottmann
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
