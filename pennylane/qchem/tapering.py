@@ -759,34 +759,33 @@ def taper_operation(
         comm = ps1.commutator(ps2)
         comm.simplify()
         return comm == qml.pauli.PauliSentence({})
-    print(op_gen)
+
     # check compatibility between the generator and the symmeteries
-    if all(
-        [
-            _is_commuting_ps(generator, op_gen)
-            for generator in generators
-        ]
-    ) and not qml.math.allclose(list(op_gen.values()), 0.0, rtol=1e-8):
-        gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
-    else:
-        gen_tapered = qml.Hamiltonian([], []) if not qml.operation.active_new_opmath else qml.pauli.PauliSentence({})
-    
-    if qml.operation.active_new_opmath() or isinstance(gen_tapered, qml.pauli.PauliSentence):
+    with qml.QueuingManager.stop_recording():
+        if all(
+            [
+                _is_commuting_ps(generator, op_gen)
+                for generator in generators
+            ]
+        ) and not qml.math.allclose(list(op_gen.values()), 0.0, rtol=1e-8):
+            gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
+        else:
+            gen_tapered = qml.pauli.PauliSentence({}) #qml.Hamiltonian([], [])
+
+        gen_tapered = qml.operation.convert_to_opmath(gen_tapered).pauli_rep
         gen_tapered.simplify()
-    else: 
-        gen_tapered = qml.simplify(gen_tapered)
 
     def _tapered_op(params):
         r"""Applies the tapered operation for the specified parameter value whenever
         queing context is active, otherwise returns it as a list."""
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(operation)
-            for coeff, op in zip(*gen_tapered.terms()):
-                qml.exp(op, 1j * params * coeff)
+            for op, coeff in gen_tapered.items():
+                qml.exp(op.operation(), 1j * params * coeff)
         else:
             ops_tapered = []
-            for coeff, op in zip(*gen_tapered.terms()):
-                ops_tapered.append(qml.exp(op, 1j * params * coeff))
+            for op, coeff in gen_tapered.items():
+                ops_tapered.append(qml.exp(op.operation(), 1j * params * coeff))
             return ops_tapered
 
     # if operation was a callable, return the functional form that accepts new parameters

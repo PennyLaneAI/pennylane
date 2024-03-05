@@ -737,7 +737,7 @@ def test_taper_excitations(
         (
             qml.U2(1, 1, 2),
             np.identity(16),
-            "Generator for the operation needs to be a qml.Hamiltonian",
+            "Generator for the operation needs to be a valid operator",
         ),
         (
             qml.U2(1, 1, 2),
@@ -895,10 +895,9 @@ def test_taper_ops_opmath_error():
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
     wire_order = hamiltonian.wires
 
-    with pytest.raises(qml.QuantumFunctionError, match="This function is currently not supported"):
-        taper_operation(
-            operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
-        )
+    assert taper_operation(
+        operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
+    )
     disable_new_opmath()
 
 
