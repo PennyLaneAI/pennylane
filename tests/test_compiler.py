@@ -693,21 +693,31 @@ class TestCatalystGrad:
     def test_vjp(self):
         """Test that the correct VJP is returned with QJIT."""
 
-        @qml.qjit
-        def vjp(params, cotangent):
-            def f(x):
-                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-                return jnp.stack(y)
+        def f(params):
+            y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+            return jnp.stack(y)
 
+        @qml.qjit
+        def cat_vjp(params, cotangent):
             return qml.vjp(f, [params], [cotangent])
+
+        def jax_vjp(params, cotangent):
+            res, f_vjp = jax.vjp(f, x)
+            return res, f_vjp(cotangent)
 
         x = jnp.array([0.1, 0.2])
         dy = jnp.array([-0.5, 0.1, 0.3])
 
-        res = vjp(x, dy)
-        assert len(res) == 2
-        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
+        expected_res, expected_vjp = jax_vjp(x, dy)
+        observed_res, observed_vjp = cat_vjp(x, dy)
+
+        assert jnp.allclose(expected_res, observed_res)
+
+        exp_vals, exp_treedef = jax.tree_util.tree_flatten(expected_vjp)
+        obs_vals, obs_treedef = jax.tree_util.tree_flatten(observed_vjp)
+        assert exp_treedef == obs_treedef
+        for exp_val, obs_val in zip(exp_vals, obs_vals):
+            assert jnp.allclose(exp_val, obs_val)
 
     def test_vjp_without_qjit(self):
         """Test that an error is raised when using VJP without QJIT."""
