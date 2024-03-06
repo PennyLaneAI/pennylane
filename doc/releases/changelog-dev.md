@@ -52,6 +52,17 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
+
+  ```pycon
+  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+  >>> op
+  -1j*(PauliY(wires=[0]))
+  >>> [phase], [base] = op.terms()
+  >>> phase, base
+  (-1j, PauliY(wires=[0]))
+  ```
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -66,7 +77,8 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
-Amintor Dusko
+Astral Cai,
+Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,

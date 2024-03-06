@@ -722,26 +722,6 @@ class TestPauliGroup:
         obtained_phase = prod.scalar if isinstance(prod, qml.ops.SProd) else 1
         assert obtained_phase == expected_phase
 
-    def test_deprecated_pauli_mult(self):
-        """Test that pauli_mult is deprecated."""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`pauli_mult` is deprecated"):
-            pauli_mult(PauliX(0), PauliY(1))
-
-    @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,expected_phase",
-        [
-            (PauliZ(0), PauliY(0), -1j),
-            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), -1),
-            (PauliZ(0), PauliZ(0), 1),
-            (PauliZ(0), PauliZ(1), 1),
-        ],
-    )
-    def test_deprecated_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, expected_phase):
-        """Test that pauli_mult_with_phase is deprecated."""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="pauli_mult"):
-            _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2)
-        assert obtained_phase == expected_phase
-
 
 class TestPartitionPauliGroup:
     """Tests for the partition_pauli_group function"""

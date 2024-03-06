@@ -23,19 +23,6 @@ Pending deprecations
   - Deprecated in v0.35
   - Will be removed in v0.36
 
-* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now deprecated. Instead, you
-  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
-
-  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-  >>> op
-  -1j*(PauliY(wires=[0]))
-  >>> [phase], [base] = op.terms()
-  >>> phase, base
-  (-1j, PauliY(wires=[0]))
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
 * Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
   ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
   does not provide wires, or quantum functions.
@@ -74,6 +61,19 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you
+  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
+
+  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+  >>> op
+  -1j*(PauliY(wires=[0]))
+  >>> [phase], [base] = op.terms()
+  >>> phase, base
+  (-1j, PauliY(wires=[0]))
+
+  - Deprecated in v0.35
+  - Removed in v0.36
 
 * ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are removed. Instead,
   you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition``.
