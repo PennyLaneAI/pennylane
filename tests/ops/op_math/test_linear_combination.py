@@ -585,7 +585,9 @@ class TestLinearCombination:
         assert metadata[0] == H.grouping_indices
         assert hash(metadata)
         assert len(data) == 3
-        assert qml.math.allequal(data[0], H._coeffs) # Previously checking "is" instead of "==", problem?
+        assert qml.math.allequal(
+            data[0], H._coeffs
+        )  # Previously checking "is" instead of "==", problem?
         assert data[1] == H._ops
         assert data[2] == H.data
 

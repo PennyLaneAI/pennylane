@@ -32,6 +32,7 @@ from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
 
+
 def sum(*summands, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
@@ -217,7 +218,11 @@ class Sum(CompositeOp):
         """
         gen = (
             (
-                qml.matrix(op) if isinstance(op, (qml.Hamiltonian, LinearCombination)) else op.matrix(),
+                (
+                    qml.matrix(op)
+                    if isinstance(op, (qml.Hamiltonian, LinearCombination))
+                    else op.matrix()
+                ),
                 op.wires,
             )
             for op in self
@@ -463,6 +468,7 @@ class _SumSummandsGrouping:
 
         return new_summands
 
+
 # LinearCombination class as special case of Sum
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -640,7 +646,7 @@ class LinearCombination(Sum):
 
         with qml.QueuingManager().stop_recording():
             operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
-        
+
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
         # coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
