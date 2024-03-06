@@ -9,13 +9,6 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
-  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed
-  from the ``Operator`` class.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
   ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
   functionality can be achieved using newer features in the ``pauli`` module.
@@ -71,6 +64,13 @@ Completed deprecation cycles
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
   dummy values that are no longer needed.
+  
+  - Deprecated in v0.35
+  - Removed in v0.36
+
+* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
+  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and has been removed
+  from the ``Operator`` class.
 
   - Deprecated in v0.35
   - Removed in v0.36
