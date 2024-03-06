@@ -14,10 +14,14 @@
 """
 Test base AlgorithmicError class and its associated methods.
 """
+# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
+import numpy as np
+
 import pennylane as qml
-from pennylane.resource.error import AlgorithmicError, ErrorOperation
+from pennylane.resource.error import AlgorithmicError, SpectralNormError, ErrorOperation
+from pennylane.operation import Operation
 
 
 class SimpleError(AlgorithmicError):
@@ -25,11 +29,11 @@ class SimpleError(AlgorithmicError):
         return self.__class__(self.error + other.error)
 
     @staticmethod
-    def get_error(approx_op, other_op):  # pylint: disable=unused-argument
+    def get_error(approx_op, other_op):
         return 0.5  # get simple error is always 0.5
 
 
-class ErrorNoGetError(AlgorithmicError):  # pylint: disable=too-few-public-methods
+class ErrorNoGetError(AlgorithmicError):
     def combine(self, other):
         return self.__class__(self.error + other.error)
 
@@ -47,9 +51,9 @@ class TestAlgorithmicError:
         """Test can't instantiate Error if the combine method is not defined."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
 
-            class ErrorNoCombine(AlgorithmicError):  # pylint: disable=too-few-public-methods
+            class ErrorNoCombine(AlgorithmicError):
                 @staticmethod
-                def get_error(approx_op, other_op):  # pylint: disable=unused-argument
+                def get_error(approx_op, other_op):
                     return 0.5  # get simple error is always 0.5
 
             _ = ErrorNoCombine(1.23)
@@ -82,13 +86,87 @@ class TestAlgorithmicError:
         assert res == 0.5
 
 
-class TestErrorOperation:  # pylint: disable=too-few-public-methods
+class TestSpectralNormError:
+    """Test methods for the SpectralNormError class"""
+
+    @pytest.mark.parametrize("err1", [0, 0.25, 0.75, 1.50, 2.50])
+    @pytest.mark.parametrize("err2", [0, 0.25, 0.75, 1.50, 2.50])
+    def test_combine(self, err1, err2):
+        """Test that combine works as expected"""
+        ErrorObj1 = SpectralNormError(err1)
+        ErrorObj2 = SpectralNormError(err2)
+
+        res = ErrorObj1.combine(ErrorObj2)
+        assert res.error == err1 + err2
+        assert isinstance(res, type(ErrorObj1))
+
+    @pytest.mark.parametrize(
+        "phi, expected",
+        [
+            [0, 2.0000000000000004],
+            [0.25, 1.9980522880732308],
+            [0.75, 1.9828661007943447],
+            [1.50, 1.9370988373785705],
+            [2.50, 1.8662406421959807],
+        ],
+    )
+    def test_get_error(self, phi, expected):
+        """Test that get_error works as expected"""
+        approx_op = qml.Hadamard(0)
+        exact_op = qml.RX(phi, 0)
+
+        res = SpectralNormError.get_error(approx_op, exact_op)
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "phi, expected",
+        [
+            [0, 1.311891347309272],
+            [0.25, 1.3182208123805488],
+            [0.75, 1.3772695464365001],
+            [1.50, 1.6078817482299055],
+            [2.50, 2.0506044587737255],
+        ],
+    )
+    def test_custom_operator(self, phi, expected):
+        """Test that get_error for a custom operator"""
+
+        class DummyOp(Operation):
+            def compute_matrix(self):
+                return np.array([[0.5, 1.0], [1.2, 1.3]])
+
+        approx_op = DummyOp(1)
+        exact_op = qml.RX(phi, 1)
+
+        res = SpectralNormError.get_error(approx_op, exact_op)
+        assert res == expected
+
+    def test_no_operator_matrix_defined(self):
+        """Test that get_error fails if the operator matrix is not defined"""
+
+        class MyOp(Operation):
+            def name(self):
+                return self.__class__.__name__
+
+        approx_op = MyOp(0)
+        exact_op = qml.RX(0.1, 1)
+
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            SpectralNormError.get_error(approx_op, exact_op)
+
+    def test_repr(self):
+        """Test that formal string representation is correct"""
+        S1 = SpectralNormError(0.3)
+        assert repr(S1) == f"SpectralNormError({0.3})"
+
+
+class TestErrorOperation:
     """Test the base ErrorOperation class."""
 
     def test_error_method(self):
         """Test that error method works as expected"""
 
-        class SimpleErrorOperation(ErrorOperation):  # pylint: disable=too-few-public-methods
+        class SimpleErrorOperation(ErrorOperation):
             @property
             def error(self):
                 return len(self.wires)
@@ -100,7 +178,7 @@ class TestErrorOperation:  # pylint: disable=too-few-public-methods
         """Test error is raised if the error method is not defined."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
 
-            class NoErrorOp(ErrorOperation):  # pylint: disable=too-few-public-methods
+            class NoErrorOp(ErrorOperation):
                 num_wires = 3
 
             _ = NoErrorOp(wires=[1, 2, 3])
