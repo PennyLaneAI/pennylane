@@ -184,7 +184,7 @@ def _measure_sum_with_samples(
     rng=None,
     prng_key=None,
 ):
-    """Sums expectation values of Sum or Hamiltonian Observables"""
+    """Compute expectation values of Sum or Hamiltonian Observables"""
     # mp.obs returns is the list of observables for Sum,
     # mp.obs.terms()[1] returns is the list of observables for Hamiltonian
     obs_terms = mp.obs if isinstance(mp.obs, Sum) else mp.obs.terms()[1]
