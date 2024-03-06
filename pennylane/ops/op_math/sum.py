@@ -687,9 +687,9 @@ class LinearCombination(Sum):
 
     def label(self, decimals=None, base_label=None, cache=None):
         decimals = None if (len(self.parameters) > 3) else decimals
-        return super(CompositeOp).label(
+        return super(CompositeOp, self).label(
             decimals=decimals, base_label=base_label or "𝓗", cache=cache
-        )
+        ) # Skipping the label method of CompositeOp
 
     @property
     def coeffs(self):
@@ -846,6 +846,7 @@ class LinearCombination(Sum):
                [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
                [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
         """
+        # TODO use super which uses the pauli rep
         if wire_order is None:
             wires = self.wires
         else:
@@ -905,6 +906,7 @@ class LinearCombination(Sum):
         if len(self.ops) == 1:
             return LinearCombination(self.coeffs, [self.ops[0].simplify()], _pauli_rep=pr)
 
+        # TODO use super
         # Fallback on logic from Sum when there is no pauli_rep
         op_as_sum = qml.sum(*self.operands)
         op_as_sum = op_as_sum.simplify()
@@ -912,6 +914,7 @@ class LinearCombination(Sum):
 
     def __str__(self):
         """String representation of the PauliSentence."""
+        # TODO use super
         ops = self.operands
         return " + ".join(f"{str(op)}" if i == 0 else f"{str(op)}" for i, op in enumerate(ops))
 
@@ -920,6 +923,8 @@ class LinearCombination(Sum):
         # post-processing the flat str() representation
         # We have to do it like this due to the possible
         # nesting of Sums, e.g. X(0) + X(1) + X(2) is a sum(sum(X(0), X(1)), X(2))
+
+        # TODO use super
         if len(main_string := str(self)) > 50:
             main_string = main_string.replace(" + ", "\n  + ")
             return f"(\n    {main_string}\n)"
