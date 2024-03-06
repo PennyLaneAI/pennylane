@@ -71,7 +71,9 @@ class TestPauliVSpace:
 
     def test_repr(self):
         """Test the string representation of the PauliVSpace instance"""
-        assert repr(PauliVSpace(ops1)) == '[1.0 * X(0) @ X(1)\n+ 1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]'
+        assert (
+            repr(PauliVSpace(ops1)) == "[1.0 * X(0) @ X(1)\n+ 1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]"
+        )
 
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
     def test_add_linear_independent(self, ops, op, true_new_basis):
