@@ -689,7 +689,7 @@ class LinearCombination(Sum):
         decimals = None if (len(self.parameters) > 3) else decimals
         return super(CompositeOp, self).label(
             decimals=decimals, base_label=base_label or "𝓗", cache=cache
-        ) # Skipping the label method of CompositeOp
+        )  # Skipping the label method of CompositeOp
 
     @property
     def coeffs(self):
