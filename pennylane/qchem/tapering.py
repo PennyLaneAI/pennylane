@@ -586,7 +586,11 @@ def _build_generator(operation, wire_order, op_gen=None):
             op_gen.pop(PauliWord({}), 0.0)
         else:  # Single-parameter gates
             try:
-                op_gen = qml.generator(operation, "arithmetic").pauli_rep
+                op_gen = (
+                    operation.generator()
+                    if active_new_opmath()
+                    else qml.generator(operation, "arithmetic")
+                ).pauli_rep
 
             except ValueError as exc:
                 raise NotImplementedError(
@@ -773,8 +777,7 @@ def taper_operation(
         ):
             gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
 
-        if not active_new_opmath():
-            gen_tapered = convert_to_opmath(gen_tapered).pauli_rep
+        gen_tapered = convert_to_opmath(gen_tapered).pauli_rep
         gen_tapered.simplify()
 
     def _tapered_op(params):

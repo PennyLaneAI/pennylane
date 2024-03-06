@@ -570,6 +570,7 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
     tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
     if op_arithmetic:
         enable_new_opmath()
+
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
@@ -593,8 +594,6 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
         qml.qchem.spinz(len(hamiltonian.wires)),
     ]
     for observable in observables:
-        if op_arithmetic:
-            enable_new_opmath()
 
         obs_ps = qml.pauli.pauli_sentence(observable)
         tapered_obs = qml.taper(observable, generators, paulixops, paulix_sector)
@@ -611,11 +610,11 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
             @ scipy.sparse.coo_matrix(state_tapered).T
         ).toarray()
 
-        if op_arithmetic:
-            disable_new_opmath()
-
         assert np.isclose(obs_val, obs_val_tapered)
         assert qml.equal(tapered_obs, tapered_ps)
+
+    if op_arithmetic:
+        disable_new_opmath()
 
 
 @pytest.mark.parametrize("op_arithmetic", [False, True])
@@ -673,9 +672,6 @@ def test_taper_excitations(
     r"""Test that the tapered excitation operators using :func:`~.taper_operation`
     are consistent with the tapered Hartree-Fock state."""
 
-    if op_arithmetic:
-        enable_new_opmath()
-
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     num_electrons, num_wires = mol.n_electrons, 2 * mol.n_orbitals
     hf_state = np.where(np.arange(num_wires) < num_electrons, 1, 0)
@@ -687,6 +683,10 @@ def test_taper_excitations(
         qml.qchem.spin2(num_electrons, num_wires),
         qml.qchem.spinz(num_wires),
     ]
+
+    if op_arithmetic:
+        enable_new_opmath()
+
     tapered_obs = [
         qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
     ]
@@ -723,12 +723,12 @@ def test_taper_excitations(
             for obs, tap_obs in zip(observables, tapered_obs):
                 expec_val = (
                     scipy.sparse.coo_matrix(excited_state)
-                    @ obs.sparse_matrix()
+                    @ obs.sparse_matrix(wire_order=range(len(hf_state)))
                     @ scipy.sparse.coo_matrix(excited_state).getH()
                 ).toarray()
                 expec_val_tapered = (
                     scipy.sparse.coo_matrix(excited_state_tapered)
-                    @ tap_obs.sparse_matrix()
+                    @ tap_obs.sparse_matrix(wire_order=range(len(hf_tapered)))
                     @ scipy.sparse.coo_matrix(excited_state_tapered).getH()
                 ).toarray()
                 assert np.isclose(expec_val, expec_val_tapered)
@@ -853,7 +853,7 @@ def test_consistent_taper_ops(operation, op_gen, op_arithmetic):
             hamiltonian,  # for energy
             sum(qml.PauliZ(wire) for wire in hamiltonian.wires),  # for local-cost 1
             # for local-cost 2
-            sum(qml.PauliZ(wire) @ qml.PauliZ(wire + 1) for wire in hamiltonian.wires),
+            sum(qml.PauliZ(wire) @ qml.PauliZ(wire + 1) for wire in hamiltonian.wires[:-1]),
         ]
         tapered_obs = [
             qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
