@@ -2832,6 +2832,7 @@ def test_custom_operator_is_jax_pytree():
     [
         ([0.5], [qml.X(1)]),
         ([0.5, 0.5], [qml.Identity(1), qml.Identity(1)]),
+        ([1, 0.5], [qml.Identity(1), qml.X(2)]),
         (
             [0.25, -0.25, 0.25, -0.25],
             [
