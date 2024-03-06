@@ -3035,7 +3035,7 @@ def convert_to_opmath(op):
     return op
 
 
-def convert_to_hamiltonian(op, wires_on_identity=True):
+def convert_to_hamiltonian(op):
     """
     Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
     Objects of any other type are returned directly.
@@ -3045,8 +3045,6 @@ def convert_to_hamiltonian(op, wires_on_identity=True):
 
     Args:
         op (Operator): The operator instance to convert.
-        wires_on_identity (bool): If it is `True` preserves the wires associated with
-            the identity operator
 
     Returns:
         Operator: The operator as an :class:`~pennylane.Hamiltonian` instance
@@ -3058,30 +3056,36 @@ def convert_to_hamiltonian(op, wires_on_identity=True):
         if isinstance(op, Observable):
             return qml.Hamiltonian(coeffs=[1], observables=[op])
 
-        identity_info = {}
+        coeffs = []
+        ops = []
 
-        # This is for tracking wires associated with identity
-        if wires_on_identity and isinstance(op, qml.ops.op_math.Sum):
-            for idx, o in enumerate(op):
-                if isinstance(o, qml.ops.op_math.SProd) and isinstance(o.base, qml.ops.Identity):
-                    identity_info["Id_idx"] = idx
-                    identity_info["Id_wires"] = o.base.wires
-                elif isinstance(o, qml.ops.Identity):
-                    identity_info["Id_idx"] = idx
-                    identity_info["Id_wires"] = o.wires
+        if isinstance(op, qml.ops.SProd):
+            coeffs.append(op.scalar)
+            ops.append(
+                op.base if isinstance(op.base, Observable) else qml.operation.Tensor(*op.base)
+            )
 
-        coeffs, obs = op.terms()
+        if isinstance(op, qml.ops.Prod):
+            coeffs.append(1.0)
+            ops.append(qml.operation.Tensor(*op))
 
-        if identity_info:
-            obs[identity_info["Id_idx"]]._wires = identity_info["Id_wires"]
+        if isinstance(op, qml.ops.Sum):
+            for factor in op:
+                if isinstance(factor, (qml.ops.SProd)):
+                    coeffs.append(factor.scalar)
+                    ops.append(
+                        qml.operation.Tensor(*factor.base)
+                        if isinstance(factor.base, qml.ops.Prod)
+                        else factor.base
+                    )
+                elif isinstance(factor, (qml.ops.Prod)):
+                    coeffs.append(1.0)
+                    ops.append(qml.operation.Tensor(*factor))
+                elif isinstance(factor, Observable):
+                    coeffs.append(1.0)
+                    ops.append(factor)
 
-        for idx, p in enumerate(obs):
-            if isinstance(p, qml.ops.op_math.Prod):
-                obs[idx] = functools.reduce(lambda x, y: x @ Tensor(y), p[1:], Tensor(p[0]))
-            else:
-                obs[idx] = Tensor(p)
-
-        return qml.Hamiltonian(coeffs, obs)
+        return qml.Hamiltonian(coeffs, ops)
 
     return op
 
