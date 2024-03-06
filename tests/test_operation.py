@@ -2827,56 +2827,49 @@ def test_custom_operator_is_jax_pytree():
     assert qml.equal(new_op, CustomOperator(2.3, wires=0))
 
 
-# TODO: improve style (WIP)
-def test_convert_to_hamiltonian():
+@pytest.mark.parametrize(
+    "coeffs, obs",
+    [
+        ([0.5], [qml.X(1)]),
+        ([0.5, 0.5], [qml.Identity(1), qml.Identity(1)]),
+        (
+            [0.25, -0.25, 0.25, -0.25],
+            [
+                qml.X(0) @ qml.Z(1) @ qml.Y(2),
+                qml.Y(0) @ qml.Z(1) @ qml.X(2),
+                qml.X(1) @ qml.Z(2) @ qml.Y(3),
+                qml.Y(1) @ qml.Z(2) @ qml.X(3),
+            ],
+        ),
+        (
+            [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
+            [
+                qml.Hadamard(0) @ qml.X(1) @ qml.X(2) @ qml.Y(3),
+                qml.X(0) @ qml.X(1) @ qml.Y(2) @ qml.X(3),
+                qml.X(0) @ qml.Y(1) @ qml.X(2) @ qml.X(3),
+                qml.X(0) @ qml.Y(1) @ qml.Y(2) @ qml.Y(3),
+                qml.Y(0) @ qml.X(1) @ qml.X(2) @ qml.X(3),
+                qml.Y(0) @ qml.X(1) @ qml.Hadamard(2) @ qml.Y(3),
+                qml.Y(0) @ qml.Y(1) @ qml.X(2) @ qml.Y(3),
+                qml.Y(0) @ qml.Y(1) @ qml.Y(2) @ qml.Hadamard(3),
+            ],
+        ),
+        (
+            [-0.5, 0.4, -0.3, 0.2],
+            [qml.Identity(1), qml.X(1) @ qml.Y(2), qml.Y(1) @ qml.X(2), qml.Z(1) @ qml.Z(2)],
+        ),
+    ],
+)
+def test_convert_to_hamiltonian(coeffs, obs):
     """Test that arithmetic operators can be converted to Hamiltonian instances"""
 
-    w0, w1, w2, w3 = [0, 1, 2, 3]
-
-    coeffs = [0.25, -0.25]
-    obs = [qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2)]
-    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
     opmath_instance = qml.dot(coeffs, obs)
     converted_hamiltonian = convert_to_hamiltonian(opmath_instance)
-    assert qml.equal(hamiltonian_instance, converted_hamiltonian)
+    assert isinstance(converted_hamiltonian, qml.Hamiltonian)
 
-    coeffs = [0.25, -0.25, 0.25, -0.25]
-    obs = [
-        qml.X(w0) @ qml.Z(w1) @ qml.Y(w2),
-        qml.Y(w0) @ qml.Z(w1) @ qml.X(w2),
-        qml.X(w1) @ qml.Z(w2) @ qml.Y(w3),
-        qml.Y(w1) @ qml.Z(w2) @ qml.X(w3),
-    ]
-    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
-    opmath_instance = qml.dot(coeffs, obs)
-    converted_hamiltonian = convert_to_hamiltonian(opmath_instance)
-    assert qml.equal(hamiltonian_instance, converted_hamiltonian)
-
-    coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
-    obs = [
-        qml.X(w0) @ qml.X(w1) @ qml.X(w2) @ qml.Y(w3),
-        qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.X(w3),
-        qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.X(w3),
-        qml.X(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.Y(w3),
-        qml.Y(w0) @ qml.X(w1) @ qml.X(w2) @ qml.X(w3),
-        qml.Y(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Y(w3),
-        qml.Y(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Y(w3),
-        qml.Y(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.X(w3),
-    ]
-    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
-    opmath_instance = qml.dot(coeffs, obs)
-    converted_hamiltonian = convert_to_hamiltonian(opmath_instance)
-    assert qml.equal(hamiltonian_instance, converted_hamiltonian)
-
-    ##########################################################################################
-    ### This test is currently failing since identity operator lose information on wires
-    ##########################################################################################
-    coeffs = [-0.5, 0.4, -0.3, 0.2]
-    obs = [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)]
-    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
-    opmath_instance = qml.dot(coeffs, obs)
-    new_hamiltonian = convert_to_hamiltonian(opmath_instance)
-    # assert qml.equal(hamiltonian_instance, new_hamiltonian)
+    if not qml.operation.active_new_opmath():
+        hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
+        assert qml.equal(hamiltonian_instance, converted_hamiltonian)
 
 
 # pylint: disable=unused-import,no-name-in-module

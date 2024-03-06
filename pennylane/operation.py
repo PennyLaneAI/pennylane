@@ -3034,7 +3034,7 @@ def convert_to_opmath(op):
     return op
 
 
-def convert_to_hamiltonian(op):
+def convert_to_hamiltonian(op, wires_on_identity=True):
     """
     Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
     Objects of any other type are returned directly.
@@ -3043,7 +3043,9 @@ def convert_to_hamiltonian(op):
     :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
 
     Args:
-        op (Operator): The operator instance to convert
+        op (Operator): The operator instance to convert.
+        wires_on_identity (bool): If it is `True` preserves the wires associated with
+            the identity operator
 
     Returns:
         Operator: The operator as an :class:`~pennylane.Hamiltonian` instance
@@ -3055,7 +3057,22 @@ def convert_to_hamiltonian(op):
         if isinstance(op, Observable):
             return qml.Hamiltonian(coeffs=[1], observables=[op])
 
+        identity_info = {}
+
+        # This is for tracking wires associated with identity
+        if wires_on_identity and isinstance(op, qml.ops.op_math.Sum):
+            for idx, o in enumerate(op):
+                if isinstance(o, qml.ops.op_math.SProd) and isinstance(o.base, qml.ops.Identity):
+                    identity_info["Id_idx"] = idx
+                    identity_info["Id_wires"] = o.base.wires
+                elif isinstance(o, qml.ops.Identity):
+                    identity_info["Id_idx"] = idx
+                    identity_info["Id_wires"] = o.wires
+
         coeffs, obs = op.terms()
+
+        if identity_info:
+            obs[identity_info["Id_idx"]]._wires = identity_info["Id_wires"]
 
         for idx, p in enumerate(obs):
             if isinstance(p, qml.ops.op_math.Prod):
