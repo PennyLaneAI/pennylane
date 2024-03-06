@@ -814,6 +814,38 @@ class TestProperties:
         """Test that the pauli rep gives the expected result."""
         assert op.pauli_rep == rep
 
+    def test_flatten_unflatten(self):
+        """Test that we can flatten/unflatten a Sum correctly."""
+        # pylint: disable=protected-access
+        op = Sum(qml.PauliX(0), qml.PauliZ(0))
+        new_op = Sum._unflatten(*op._flatten())
+
+        assert op == new_op
+        assert new_op.grouping_indices is None
+
+    @pytest.mark.parametrize("grouping_type", ("qwc", "commuting", "anticommuting"))
+    @pytest.mark.parametrize("method", ("lf", "rlf"))
+    def test_flatten_unflatten_with_groups(self, grouping_type, method):
+        """Test that we can flatten/unflatten a Sum correctly when grouping indices are available."""
+        # pylint: disable=protected-access
+        op = Sum(
+            qml.PauliX(0),
+            qml.s_prod(2.0, qml.PauliX(1)),
+            qml.s_prod(3.0, qml.PauliZ(0)),
+            grouping_type=grouping_type,
+            method=method,
+        )
+        new_op = Sum._unflatten(*op._flatten())
+
+        assert new_op == op
+        assert new_op.grouping_indices == op.grouping_indices
+
+        old_coeffs, old_ops = op.terms()
+        new_coeffs, new_ops = new_op.terms()
+
+        assert old_coeffs == new_coeffs
+        assert old_ops == new_ops
+
 
 class TestSimplify:
     """Test Sum simplify method and depth property."""

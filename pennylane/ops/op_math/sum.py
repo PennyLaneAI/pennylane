@@ -209,6 +209,15 @@ class Sum(CompositeOp):
     _op_symbol = "+"
     _math_op = math.sum
 
+    def _flatten(self):
+        return tuple(self.operands), (self.grouping_indices,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls(*data)
+        new_op._grouping_indices = metadata[0]
+        return new_op
+
     def __init__(
         self, *operands: Operator, grouping_type=None, method="rlf", id=None, _pauli_rep=None
     ):
