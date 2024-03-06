@@ -2868,6 +2868,9 @@ def test_convert_to_hamiltonian(coeffs, obs):
     converted_hamiltonian = convert_to_hamiltonian(opmath_instance)
     assert isinstance(converted_hamiltonian, qml.Hamiltonian)
 
+    not_converted_obs = convert_to_hamiltonian(obs)
+    assert qml.equal(obs, not_converted_obs)
+
     if not qml.operation.active_new_opmath():
         hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
         assert qml.equal(hamiltonian_instance, converted_hamiltonian)
