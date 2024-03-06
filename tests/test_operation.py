@@ -44,18 +44,8 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-def test_validate_subspace_is_deprecated():
-    """Test that Operator.validate_subspace() is deprecated"""
-
-    with pytest.warns(
-        expected_warning=qml.PennyLaneDeprecationWarning,
-        match=r"Operator\.validate_subspace\(subspace\)",
-    ):
-        _ = Operator.validate_subspace([0, 1])
-
-
 class TestOperatorConstruction:
-    """Test custom operators construction."""
+    """Test custom operators' construction."""
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context"""
