@@ -653,7 +653,7 @@ class TestBasisStateProjector:
     @pytest.mark.parametrize(
         "basis_state", [qml.math.asarray([0, 1]), qml.math.asarray([0, qml.math.asarray(1)])]
     )
-    def test_projector_jit_with_jax_array(basis_state):
+    def test_projector_jit_with_jax_array(self, basis_state):  # Assuming within a class
         """
         Tests if the BasisStateProjector works correctly with JAX arrays
         within a jitted QNode.
