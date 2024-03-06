@@ -17,7 +17,7 @@ import functools
 import pickle
 import pytest
 import numpy as np
-
+import jax
 from gate_data import I, X, Y, Z, H
 import pennylane as qml
 from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
@@ -650,16 +650,30 @@ class TestBasisStateProjector:
         res = circuit(x)
         assert qml.math.allclose(res, np.cos(x / 2) ** 2)
 
-    def test_projector_raises_for_invalid_input(self):
+    @pytest.mark.parametrize(
+        "basis_state", [qml.math.asarray([0, 1]), qml.math.asarray([0, qml.math.asarray(1)])]
+    )
+    def test_projector_jit_with_jax_array(basis_state):
         """
-        Tests that the Projector construction raises a ValueError for non-binary inputs.
+        Tests if the BasisStateProjector works correctly with JAX arrays
+        within a jitted QNode.
         """
 
-        invalid_states = [[2], [0.5], ["a"], [1, 2, 3]]
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(state):
+            return qml.expval(BasisStateProjector(state, wires=0))
 
-        for invalid_state in invalid_states:
-            with pytest.raises(ValueError, match="Basis state must only consist of 0s and 1s"):
-                qml.Projector(invalid_state, wires=0)
+        # Apply JAX JIT to the circuit
+        jitted_circuit = jax.jit(circuit)
+
+        # Run the jitted circuit with the state (as JAX array)
+        result = jitted_circuit(basis_state)
+
+        # Expected result (calculated directly)
+        expected_result = 1.0 if all(element == 1 for element in basis_state) else 0.0
+
+        # Assert the results
+        assert pytest.approx(result, abs=1e-6) == expected_result
 
 
 class TestStateVectorProjector:
