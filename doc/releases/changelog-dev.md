@@ -72,7 +72,7 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
-Gabriel Bottrill
+Gabriel Bottrill,
 Amintor Dusko
 Pietropaolo Frisoni,
 Soran Jahangiri,
