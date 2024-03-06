@@ -50,6 +50,9 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
 
+* `taper_operation` method is compatible with new operator arithmetic.
+  [(#5326)](https://github.com/PennyLaneAI/pennylane/pull/5326)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -66,6 +69,7 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Utkarsh Azad,
 Amintor Dusko
 Pietropaolo Frisoni,
 Soran Jahangiri,

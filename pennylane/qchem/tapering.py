@@ -703,7 +703,8 @@ def taper_operation(
         1: ─╰Exp(-0.00-0.79j X@Y)─╰Exp(-0.00-0.79j Y@X)─┤ ╰<Z@Z>
 
         For more involved gates operations such as the ones constructed from matrices, users would need to provide their generators manually
-        via the ``op_gen`` argument. The generator can be passed as a :class:`~.pennylane.Hamiltonian`:
+        via the ``op_gen`` argument. The generator can be passed as a :class:`~.pennylane.Hamiltonian`, :class:`~.PauliSentence` or any
+        arithmetic operator:
 
         >>> op_fun = qml.QubitUnitary(np.array([[0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
         ...                                     [0.+0.j, 0.+0.j, 0.-1.j, 0.+0.j],
@@ -715,8 +716,8 @@ def taper_operation(
         ...                       wire_order=H.wires, op_gen=op_gen)
         [Exp(1.5707963267948957j PauliX)]
 
-        Alternatively, generators can also be specified as a function which returns :class:`~.pennylane.Hamiltonian` and uses ``wires`` as
-        its only required keyword argument:
+        Alternatively, generators can also be specified as a function which returns :class:`~.pennylane.Hamiltonian`
+        or an arithmetic operator, and uses ``wires`` as its only required keyword argument:
 
         >>> op_gen = lambda wires: qml.Hamiltonian(
         ...     [0.25, -0.25],
@@ -767,12 +768,13 @@ def taper_operation(
         commutator.simplify()
         return commutator == PauliSentence({})
 
-    # Get pauli rep for symmetery generators
+    # Obtain the tapered generator for the operation
     with qml.QueuingManager.stop_recording():
+        # Get pauli rep for symmetery generators
         ps_gen = list(map(lambda x: convert_to_opmath(x).pauli_rep, generators))
 
         gen_tapered = PauliSentence({})
-        if all([_is_commuting(sym, op_gen) for sym in ps_gen]) and not qml.math.allclose(
+        if all(_is_commuting(sym, op_gen) for sym in ps_gen) and not qml.math.allclose(
             list(op_gen.values()), 0.0, rtol=1e-8
         ):
             gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)

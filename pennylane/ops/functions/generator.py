@@ -213,8 +213,6 @@ def generator(op: qml.operation.Operator, format="prefactor"):
             return _generator_hamiltonian(gen, gen_op)
 
         if format == "arithmetic":
-            if isinstance(gen, SProd):
-                return gen
             h = _generator_hamiltonian(gen, gen_op)
             return qml.dot(h.coeffs, h.ops)
 
