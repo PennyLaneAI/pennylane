@@ -1229,8 +1229,11 @@ def diagonalize_pauli_word(pauli_word):
 
     # ordered as pauli_word, with identities eliminateds
     components = [qml.Z(w) for w in pauli_word.wires if w in pw]
+    if not components:
+        return qml.Identity(wires=pauli_word.wires)
+
     if isinstance(pauli_word, Tensor):
-        return Tensor(*components)
+        return components[0] if len(components) == 1 else Tensor(*components)
 
     prod = qml.prod(*components)
     coeff = pauli_word.pauli_rep[pw]
