@@ -61,7 +61,7 @@ class AmplitudeAmplification(Operation):
         p_min (int): the lower bound for the probability of success in fixed-point amplitude amplification. Default is 0.9
 
     Raises:
-        ValueError: work_wire must be specified if fixed_point == True.
+        ValueError: work_wire must be specified if ``fixed_point == True``.
         ValueError: work_wire must be different from the wires of U.
 
     **Example**
