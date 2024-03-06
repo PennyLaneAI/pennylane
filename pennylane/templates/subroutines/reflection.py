@@ -23,23 +23,22 @@ from pennylane.queuing import QueuingManager
 
 
 class Reflection(Operation):
-    r"""Applies a reflection about a state :math:`|\Psi\rangle`.
+    r"""Apply a reflection about a state :math:`|\Psi\rangle`.
 
-    This operator is useful in algorithms such as `amplitude amplification <https://arxiv.org/abs/quant-ph/0005055>`__
-    or `oblivious amplitude amplification <https://arxiv.org/abs/1312.1414>`__.
-
-    Given an :class:`~.Operator` :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`,  and a reflection angle :math:`\alpha`,
+    Given an operator :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`  and a reflection angle :math:`\alpha`,
     this template creates the operation:
 
     .. math::
 
-        \text{Reflection}(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
+       R(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
 
+    This operator is an important component of quantum algorithms such as amplitude amplification [`arXiv:quant-ph/0005055 <https://arxiv.org/abs/quant-ph/0005055>`__]
+    and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__].
 
     Args:
-        U (Operator): The operator that generates the state :math:`|\Psi\rangle`.
-        alpha (float): the angle of the operator. Default is :math:`\pi`.
-        reflection_wires (Any or Iterable[Any]): Subsystem of wires on which to reflect. The default is None and the reflection will be applied on the U wires.
+        U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+        alpha (float): the angle of the operator, default is :math:`\pi`
+        reflection_wires (Any or Iterable[Any]): subsystem of wires on which to reflect, the default is ``None`` and the reflection will be applied on the ``U`` wires
 
     **Example**
 
@@ -66,7 +65,8 @@ class Reflection(Operation):
 
             return qml.state()
 
-        circuit()
+    >>> circuit()
+    tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
 
 
     .. details::
@@ -76,11 +76,11 @@ class Reflection(Operation):
 
         .. math::
 
-            \text{Reflection}(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-I + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^{\dagger}.
+            \text{R}(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi| = U(-I + (1 - e^{i\alpha}) |0\rangle \langle 0|)U^{\dagger}.
 
-        The central block is obtained through a PhaseShift controlled operator.
+        The central block is obtained through a :class:`~.PhaseShift` controlled operator.
 
-        In the case of specifying the reflection wires,  the operator would have the following expression.
+        In the case of specifying the reflection wires, the operator would have the following expression.
 
         .. math::
 

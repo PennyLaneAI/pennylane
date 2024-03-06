@@ -35,7 +35,7 @@ def hadamards(wires):
     ],
 )
 def test_reflection_wires(prod, reflection_wires):
-    """Assert reflection_wires is a subset of the U wires"""
+    """Assert that the reflection wires are a subset of the input operation wires"""
     with pytest.raises(
         ValueError, match="The reflection wires must be a subset of the operation wires."
     ):
@@ -110,7 +110,7 @@ class TestIntegration:
 
     x = np.array(0.25)
 
-    # not calculated analytically, we are only ensuring that the results are consistent accross interfaces
+    # obtained with autograd, we are only ensuring that the results are consistent accross interfaces
 
     exp_result = np.array(
         [
