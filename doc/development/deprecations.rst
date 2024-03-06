@@ -43,12 +43,6 @@ Pending deprecations
   - Deprecated in v0.35
   - Will raise an error in v0.36
 
-* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
-  dummy values that are no longer needed.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
 
   - Contents moved in v0.35
@@ -74,6 +68,12 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+  dummy values that are no longer needed.
+
+  - Deprecated in v0.35
+  - Removed in v0.36
 
 * ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are removed. Instead,
   you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition``.

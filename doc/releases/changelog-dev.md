@@ -52,6 +52,8 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
