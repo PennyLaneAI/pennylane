@@ -278,7 +278,7 @@ def sample_state(
     rng=None,
     prng_key=None,
 ) -> np.ndarray:
-    """Returns a series of samples of a state.
+    """Returns a series of computational basis samples of a state.
 
     Args:
         state (array[complex]): A state vector to be sampled
