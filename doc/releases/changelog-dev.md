@@ -64,6 +64,9 @@
   (-1j, PauliY(wires=[0]))
   ```
 
+* `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
+  [(#5311)](https://github.com/PennyLaneAI/pennylane/pull/5311)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
