@@ -466,14 +466,17 @@ class Prod(CompositeOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            ops = [pauli.operation() for pauli in pr.keys()]
+            with qml.QueuingManager.stop_recording():
+                ops = [pauli.operation() for pauli in pr.keys()]
             return list(pr.values()), ops
 
-        global_phase, factors = self._simplify_factors(factors=self.operands)
+        with qml.QueuingManager.stop_recording():
+            global_phase, factors = self._simplify_factors(factors=self.operands)
+            factors = list(itertools.product(*factors))
 
-        factors = list(itertools.product(*factors))
-
-        factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
+            factors = [
+                Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors
+            ]
 
         # harvest coeffs and ops
         coeffs = []

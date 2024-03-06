@@ -536,7 +536,7 @@ def from_qasm_file(qasm_filename: str):
 
 def from_pyquil(pyquil_program):
     """Loads pyQuil Program objects by using the converter in the
-    PennyLane-Forest plugin.
+    PennyLane-Rigetti plugin.
 
     **Example:**
 
@@ -567,7 +567,7 @@ def from_pyquil(pyquil_program):
 
 def from_quil(quil: str):
     """Loads quantum circuits from a Quil string using the converter in the
-    PennyLane-Forest plugin.
+    PennyLane-Rigetti plugin.
 
     **Example:**
 
@@ -599,7 +599,7 @@ def from_quil(quil: str):
 
 def from_quil_file(quil_filename: str):
     """Loads quantum circuits from a Quil file using the converter in the
-    PennyLane-Forest plugin.
+    PennyLane-Rigetti plugin.
 
     **Example:**
 
