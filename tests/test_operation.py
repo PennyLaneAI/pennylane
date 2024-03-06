@@ -30,7 +30,7 @@ from pennylane.operation import (
     Operator,
     StatePrepBase,
     Tensor,
-    convert_to_hamiltonian,
+    convert_to_legacy_H,
     operation_derivative,
     _UNSET_BATCH_SIZE,
 )
@@ -2861,7 +2861,7 @@ def test_convert_to_hamiltonian(coeffs, obs):
     """Test that arithmetic operators can be converted to Hamiltonian instances"""
 
     opmath_instance = qml.dot(coeffs, obs)
-    converted_opmath = convert_to_hamiltonian(opmath_instance)
+    converted_opmath = convert_to_legacy_H(opmath_instance)
 
     if isinstance(qml.simplify(opmath_instance), (Prod, SProd, Sum)):
 

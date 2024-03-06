@@ -192,7 +192,7 @@ return newer arithmetic operators, the ``operation`` module provides the followi
     ~disable_new_opmath
     ~active_new_opmath
     ~convert_to_opmath
-    ~convert_to_hamiltonian
+    ~convert_to_legacy_H
 
 Other
 ~~~~~
@@ -3035,7 +3035,7 @@ def convert_to_opmath(op):
     return op
 
 
-def convert_to_hamiltonian(op):
+def convert_to_legacy_H(op):
     """
     Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
     Objects of any other type are returned directly.

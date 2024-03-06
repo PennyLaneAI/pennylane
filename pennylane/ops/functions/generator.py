@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.ops import Hamiltonian, SProd, Prod, Sum
-from pennylane.operation import convert_to_hamiltonian
+from pennylane.operation import convert_to_legacy_H
 
 
 # pylint: disable=too-many-branches
@@ -46,7 +46,7 @@ def _generator_hamiltonian(gen, op):
         H = 1.0 * gen
 
     elif isinstance(gen, (SProd, Prod, Sum)):
-        H = convert_to_hamiltonian(gen)
+        H = convert_to_legacy_H(gen)
 
     return H
 
