@@ -152,7 +152,6 @@ def _measure_with_samples_diagonalizing_gates(
             # Like default.qubit currently calling sample_state for each shot entry,
             # but it may be better to call sample_state just once with total_shots,
             # then use the shot_range keyword argument
-            print(s)
             samples = sample_state(
                 state,
                 shots=s,
