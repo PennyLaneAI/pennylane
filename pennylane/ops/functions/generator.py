@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane.ops import Hamiltonian, SProd, Prod, Sum
 
 
+# pylint: disable=too-many-branches
 def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~.Hamiltonian`."""
     wires = op.wires
@@ -42,6 +43,15 @@ def _generator_hamiltonian(gen, op):
 
     elif isinstance(gen, qml.operation.Observable):
         H = 1.0 * gen
+
+    # TODO: remove this once test_tapering supports new opmath
+    elif isinstance(gen, SProd):
+
+        if gen.arithmetic_depth == 1:
+            H = gen.scalar * gen.base
+        elif gen.arithmetic_depth == 2:
+            if isinstance(gen.base, Prod):
+                H = qml.Hamiltonian([gen.scalar], [gen.base[0] @ gen.base[1]])
 
     return H
 
@@ -165,7 +175,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
     >>> qml.generator(op, format="prefactor")  # output will always be (obs, prefactor)
     (X(0), -0.5)
     >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian
-    <Hamiltonian: terms=1, wires=[0]>
+    (-0.5) [X0]
     >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])
     >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`
