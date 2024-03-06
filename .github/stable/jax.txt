@@ -6,7 +6,7 @@ cachetools==5.3.3
 certifi==2024.2.2
 cfgv==3.4.0
 charset-normalizer==3.3.2
-clarabel==0.7.0
+clarabel==0.7.1
 click==8.1.7
 contourpy==1.2.0
 coverage==7.4.3
@@ -39,7 +39,7 @@ opt-einsum==3.3.0
 osqp==0.6.5
 packaging==23.2
 pathspec==0.12.1
-PennyLane_Lightning==0.35.0
+PennyLane_Lightning==0.36.0
 pillow==10.2.0
 platformdirs==4.2.0
 pluggy==1.4.0
