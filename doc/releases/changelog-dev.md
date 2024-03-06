@@ -52,6 +52,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
+  * tapes with more than one wire.
+  * quantum functions.
+  * QNodes if the device does not have wires specified.
+  * PauliWords and PauliSentences with more than one wire.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -66,7 +72,8 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
-Amintor Dusko
+Astral Cai,
+Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
