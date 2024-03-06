@@ -53,6 +53,7 @@
 <h3>Breaking changes 💔</h3>
 
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the ``pauli`` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
+  [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
 
 <h3>Deprecations 👋</h3>
 
