@@ -53,6 +53,7 @@
 <h3>Breaking changes 💔</h3>
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
+  [(#5321)](https://github.com/PennyLaneAI/pennylane/pull/5321)
 
 <h3>Deprecations 👋</h3>
 
@@ -68,7 +69,8 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
-Amintor Dusko
+Astral Cai,
+Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
