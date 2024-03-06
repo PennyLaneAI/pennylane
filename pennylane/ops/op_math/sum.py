@@ -647,6 +647,7 @@ class LinearCombination(Sum):
         with qml.QueuingManager().stop_recording():
             operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
 
+        # TODO use grouping functionality of Sum once that is merged
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
         # coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
@@ -686,7 +687,9 @@ class LinearCombination(Sum):
 
     def label(self, decimals=None, base_label=None, cache=None):
         decimals = None if (len(self.parameters) > 3) else decimals
-        return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
+        return super(CompositeOp).label(
+            decimals=decimals, base_label=base_label or "𝓗", cache=cache
+        )
 
     @property
     def coeffs(self):
