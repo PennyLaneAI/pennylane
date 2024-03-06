@@ -87,5 +87,9 @@ jobs:
             ```
 
             Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
+            
+            Note that it is expected that the PennyLane-Lightning repo is a version ahead of the release, because the 
+            version number is taken from the dev branch. Trying to `pip install` from the files will fail until that 
+            major version of Lightning is released.
           pr_allow_empty: false
           pr_draft: false
