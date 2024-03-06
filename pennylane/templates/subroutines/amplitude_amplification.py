@@ -49,7 +49,7 @@ class AmplitudeAmplification(Operation):
             \text{AmplitudeAmplification}(U, O)|\Psi\rangle \sim |\phi\rangle
 
     The implementation of the amplitude amplification algorithm is based on `arXiv:quant-ph/0005055 <https://arxiv.org/abs/quant-ph/0005055>`__ paper.
-    The template also allows to work with advanced techniques such as fixed-point quantum search [`arXiv:1409.3305 <https://arxiv.org/abs/1409.3305>`__] and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__] by reflecting on a subset of the wires.
+    The template also unlocks advanced techniques such as fixed-point quantum search [`arXiv:1409.3305 <https://arxiv.org/abs/1409.3305>`__] and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__] by reflecting on a subset of the wires.
 
     Args:
         U (Operator): Operator that generate the state :math:`|\Psi\rangle`.
