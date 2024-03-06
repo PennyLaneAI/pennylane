@@ -147,3 +147,6 @@ the groups of observables:
  [PauliY(wires=[0]), PauliZ(wires=[1])]]
 >>> coeffs_groupings
 [[4.21], [1.43, 0.97]]
+
+For a larger example of how grouping can be used with PennyLane, check out the
+`Measurement Optimization demo <https://pennylane.ai/qml/demos/tutorial_measurement_optimize/>`_.

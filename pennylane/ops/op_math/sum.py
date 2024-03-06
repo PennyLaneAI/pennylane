@@ -77,6 +77,30 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
     >>> summed_op.matrix()
     array([[ 1,  1],
            [ 1, -1]])
+
+    .. details::
+        :title: Grouping
+
+        Grouping information can be collected during construction using the ``grouping_type`` and ``method``
+        keyword arguments. For example:
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            a = qml.s_prod(1.0, qml.X(0))
+            b = qml.s_prod(2.0, qml.X(1))
+            c = qml.s_prod(3.0, qml.Z(0))
+
+            op = qml.sum(a, b, c, grouping_type="qwc")
+
+        >>> op.grouping_indices
+        ((0, 1), (2,))
+
+        ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
+        ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, check out the
+        `Pauli grouping <https://docs.pennylane.ai/en/stable/code/qml_pauli.html#module-pennylane.pauli.grouping.graph_colouring>`_
+        documentation and :func:`~pennylane.pauli.group_observables`.
     """
     summands = tuple(convert_to_opmath(op) for op in summands)
     if lazy:
@@ -410,6 +434,26 @@ class Sum(CompositeOp):
             method (str): The graph coloring heuristic to use in solving minimum clique cover for
                 grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
                 First).
+
+        **Example**
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            a = qml.PauliX(0)
+            b = qml.PauliX(1)
+            c = qml.PauliZ(0)
+            obs = [a, b, c]
+            coeffs = [1.0, 2.0, 3.0]
+
+            op = qml.dot(coeffs, obs)
+
+        >>> op.grouping_indices is None
+        True
+        >>> op.compute_grouping(grouping_type="qwc")
+        >>> op.grouping_indices
+        ((0, 1), (2,))
         """
         if not self.pauli_rep:
             raise ValueError("Cannot compute grouping for Sums containing non-Pauli operators.")

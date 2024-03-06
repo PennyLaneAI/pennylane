@@ -104,6 +104,32 @@ def dot(
         <lambda>(params_0, t) * X(0)
       + <lambda>(params_1, t) * Y(0)
     )
+
+    .. details::
+        :title: Grouping
+
+        Grouping information can be collected during construction using the ``grouping_type`` and ``method``
+        keyword arguments. For example:
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            a = qml.PauliX(0)
+            b = qml.PauliX(1)
+            c = qml.PauliZ(0)
+            obs = [a, b, c]
+            coeffs = [1.0, 2.0, 3.0]
+
+            op = qml.dot(coeffs, obs, grouping_type="qwc")
+
+        >>> op.grouping_indices
+        ((0, 1), (2,))
+
+        ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
+        ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, check out the
+        `Pauli grouping <https://docs.pennylane.ai/en/stable/code/qml_pauli.html#module-pennylane.pauli.grouping.graph_colouring>`_
+        documentation and :func:`~pennylane.pauli.group_observables`.
     """
 
     if len(coeffs) != len(ops):
