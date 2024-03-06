@@ -23,7 +23,7 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.operation import active_new_opmath
+from pennylane.operation import active_new_opmath, convert_to_opmath
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence, simplify
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
@@ -564,12 +564,13 @@ def _build_generator(operation, wire_order, op_gen=None):
     Args:
         operation (Operation): qubit operation to be tapered
         wire_order (Sequence[Any]): order of the wires in the quantum circuit
-        op_gen (Hamiltonian): generator of the operation in case it cannot be computed internally.
+        op_gen (Hamiltonian or PauliSentence): generator of the operation in case it cannot be computed internally.
     Returns:
         Hamiltonian: the generator of the operation
     Raises:
         NotImplementedError: generator of the operation cannot be constructed internally
-        ValueError: optional argument `op_gen` is either not a :class:`~.pennylane.Hamiltonian` or a valid generator of the operation
+        ValueError: optional argument `op_gen` either is not a valid generator of the operation or is not a
+            :class:`~.pennylane.Hamiltonian`, :class:`~.PauliSentence`, or an arithmetic operator
     **Example**
     >>> _build_generator(qml.SingleExcitation, [0, 1], op_wires=[0, 2])
       (-0.25) [Y0 X1]
@@ -582,7 +583,7 @@ def _build_generator(operation, wire_order, op_gen=None):
                 gen_mat, wire_order=wire_order, hide_identity=True, pauli=True
             )
             op_gen.simplify()
-            op_gen.pop(qml.pauli.PauliWord({}), 0.0)
+            op_gen.pop(PauliWord({}), 0.0)
         else:  # Single-parameter gates
             try:
                 op_gen = qml.generator(operation, "arithmetic").pauli_rep
@@ -592,7 +593,9 @@ def _build_generator(operation, wire_order, op_gen=None):
                     f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
                 ) from exc
     else:  # check that user-provided generator is correct
-        if not isinstance(op_gen, (qml.operation.Operator, qml.pauli.PauliSentence)):
+        if not isinstance(op_gen, (qml.Hamiltonian, PauliSentence)) or isinstance(
+            getattr(op_gen, "pauli_rep", None), PauliSentence
+        ):
             raise ValueError(
                 f"Generator for the operation needs to be a valid operator, but got {type(op_gen)}."
             )
@@ -612,7 +615,7 @@ def _build_generator(operation, wire_order, op_gen=None):
             raise ValueError(
                 f"Given op_gen: {op_gen} doesn't seem to be the correct generator for the {operation}."
             )
-        op_gen = qml.operation.convert_to_opmath(op_gen).pauli_rep
+        op_gen = convert_to_opmath(op_gen).pauli_rep
 
     return op_gen
 
@@ -636,7 +639,7 @@ def taper_operation(
         paulix_sector (list[int]): eigenvalues of the Pauli-X operators
         wire_order (Sequence[Any]): order of the wires in the quantum circuit
         op_wires (Sequence[Any]): wires for the operation in case any of the provided ``operation`` or ``op_gen`` are callables
-        op_gen (Hamiltonian or Callable): generator of the operation, or a function that returns it in case it cannot be computed internally.
+        op_gen (Hamiltonian or PauliSentence or Callable): generator of the operation, or a function that returns it in case it cannot be computed internally.
 
     Returns:
         list[Operation]: list of operations of type :class:`~.pennylane.Exp` implementing tapered unitary operation
@@ -754,24 +757,24 @@ def taper_operation(
     # build generator for the operation either internally or using the provided op_gen
     op_gen = _build_generator(operation, wire_order, op_gen=op_gen)
 
-    # check compatibility between the generator and the symmeteries
-    def _is_commuting_ps(op1, op2):
-        ps1 = qml.operation.convert_to_opmath(op1).pauli_rep
-        ps2 = qml.operation.convert_to_opmath(op2).pauli_rep
-        comm = ps1.commutator(ps2)
-        comm.simplify()
-        return comm == qml.pauli.PauliSentence({})
+    # Performing commutation check for pauli sentences
+    def _is_commuting(ps1, ps2):
+        commutator = ps1.commutator(ps2)
+        commutator.simplify()
+        return commutator == PauliSentence({})
 
-    # check compatibility between the generator and the symmeteries
+    # Get pauli rep for symmetery generators
     with qml.QueuingManager.stop_recording():
-        if all(
-            [_is_commuting_ps(generator, op_gen) for generator in generators]
-        ) and not qml.math.allclose(list(op_gen.values()), 0.0, rtol=1e-8):
-            gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
-        else:
-            gen_tapered = qml.pauli.PauliSentence({})
+        ps_gen = list(map(lambda x: convert_to_opmath(x).pauli_rep, generators))
 
-        gen_tapered = qml.operation.convert_to_opmath(gen_tapered).pauli_rep
+        gen_tapered = PauliSentence({})
+        if all([_is_commuting(sym, op_gen) for sym in ps_gen]) and not qml.math.allclose(
+            list(op_gen.values()), 0.0, rtol=1e-8
+        ):
+            gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
+
+        if not active_new_opmath():
+            gen_tapered = convert_to_opmath(gen_tapered).pauli_rep
         gen_tapered.simplify()
 
     def _tapered_op(params):

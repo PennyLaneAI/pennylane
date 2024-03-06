@@ -618,6 +618,7 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
         assert qml.equal(tapered_obs, tapered_ps)
 
 
+@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge", "generators", "paulixops", "paulix_sector", "num_commuting"),
     [
@@ -667,10 +668,13 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
     ],
 )
 def test_taper_excitations(
-    symbols, geometry, charge, generators, paulixops, paulix_sector, num_commuting
+    symbols, geometry, charge, generators, paulixops, paulix_sector, num_commuting, op_arithmetic
 ):
     r"""Test that the tapered excitation operators using :func:`~.taper_operation`
     are consistent with the tapered Hartree-Fock state."""
+
+    if op_arithmetic:
+        enable_new_opmath()
 
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     num_electrons, num_wires = mol.n_electrons, 2 * mol.n_orbitals
@@ -729,6 +733,9 @@ def test_taper_excitations(
                 ).toarray()
                 assert np.isclose(expec_val, expec_val_tapered)
 
+    if op_arithmetic:
+        disable_new_opmath()
+
 
 @pytest.mark.parametrize(
     ("operation", "op_gen", "message_match"),
@@ -766,6 +773,7 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen)
 
 
+@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("operation", "op_gen"),
     [
@@ -799,7 +807,7 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
         ),
     ],
 )
-def test_consistent_taper_ops(operation, op_gen):
+def test_consistent_taper_ops(operation, op_gen, op_arithmetic):
     r"""Test that operations are tapered consistently when their generators are provided manually and when they are constructed internally"""
 
     symbols, geometry, charge = (
@@ -809,6 +817,9 @@ def test_consistent_taper_ops(operation, op_gen):
     )
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+
+    if op_arithmetic:
+        enable_new_opmath()
 
     generators = qml.symmetry_generators(hamiltonian)
     paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
@@ -875,30 +886,8 @@ def test_consistent_taper_ops(operation, op_gen):
             ).toarray()
             assert np.isclose(expec_val, expec_val_tapered)
 
-
-def test_taper_ops_opmath_error():
-    """Test that an error is raised if taper_operations() is used with enable_new_opmath()."""
-    enable_new_opmath()
-    symbols, geometry, charge, operation, op_wires, op_gen = (
-        ["He", "H"],
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
-        1,
-        qml.RZ,
-        [3],
-        None,
-    )
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
-
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
-    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
-    wire_order = hamiltonian.wires
-
-    assert taper_operation(
-        operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
-    )
-    disable_new_opmath()
+    if op_arithmetic:
+        disable_new_opmath()
 
 
 @pytest.mark.parametrize(
