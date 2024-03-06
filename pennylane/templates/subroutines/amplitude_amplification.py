@@ -52,7 +52,7 @@ class AmplitudeAmplification(Operation):
     The template also unlocks advanced techniques such as fixed-point quantum search [`arXiv:1409.3305 <https://arxiv.org/abs/1409.3305>`__] and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__] by reflecting on a subset of the wires.
 
     Args:
-        U (Operator): Operator that generate the state :math:`|\Psi\rangle`.
+        U (Operator): Operator that prepares the state :math:`|\Psi\rangle`.
         O (Operator): The oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`.
         iters (int): the number of iterations of the amplitude amplification subroutine. Default is 1.
         fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm. Default is False.
