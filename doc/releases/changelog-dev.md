@@ -53,6 +53,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
+  [(#5311)](https://github.com/PennyLaneAI/pennylane/pull/5311)
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
