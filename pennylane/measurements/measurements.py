@@ -18,7 +18,6 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
-from warnings import warn
 
 from abc import ABC, abstractmethod
 from enum import Enum
