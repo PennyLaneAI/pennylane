@@ -81,14 +81,15 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
         function: the PennyLane template created from the quantum circuit object
 
     .. warning::
-        ``qml.load`` is deprecated and will be removed in version 0.37. Instead, please
-        use the appropriate ``qml.from_x`` functions, such as ``qml.from_qiskit``.
+        ``qml.load`` is deprecated. Instead, please use the functions outlined in the
+        `Importing workflows <https://docs.pennylane.ai/en/stable/introduction/importing_workflows.html>`_
+        quickstart guide, such as ``qml.from_qiskit``.
 
     """
 
+    _format = "pyquil" if format == "pyquil_program" else format
     warnings.warn(
-        "qml.load is deprecated and will be removed in version 0.37. Instead, "
-        "please use the appropriate qml.from_x functions, such as qml.from_qiskit.",
+        f"qml.load() is deprecated. Instead, please use the more specific qml.from_{_format}()",
         qml.PennyLaneDeprecationWarning,
     )
 

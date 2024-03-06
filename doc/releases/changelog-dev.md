@@ -6,6 +6,7 @@
 
 * Added new `SpectralNormError` class to the new error tracking functionality.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
+
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
@@ -54,7 +55,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* ``qml.load`` is deprecated and will be removed in version 0.37. Instead, please use the appropriate ``qml.from_x`` functions, such as ``qml.from_qiskit``.
+* ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
+  [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
 
 <h3>Documentation 📝</h3>
 
@@ -68,7 +70,8 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
-Amintor Dusko
+Astral Cai,
+Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,

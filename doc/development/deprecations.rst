@@ -9,7 +9,9 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The method ``qml.load`` does not add any functionality to the ``from_x`` functions. It will be removed, and users will be directed to use the appropriate ``from_x`` functions instead.
+* The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
+  libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
+  ``from_qasm``, etc.
 
   - Deprecated in v0.36
   - Will be removed in v0.37
