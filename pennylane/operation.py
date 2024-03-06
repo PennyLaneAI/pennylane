@@ -1397,8 +1397,7 @@ class Operator(abc.ABC):
         we get the generator
 
         >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
+          0.5 * Y(0) + Z(0) @ X(1)
 
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
