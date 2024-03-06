@@ -16,13 +16,6 @@ Pending deprecations
   - Deprecated in v0.35
   - Will be removed in v0.36
 
-* The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
-  ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
-  functionality can be achieved using newer features in the ``pauli`` module.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
 * ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now deprecated. Instead, you
   should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
 
@@ -74,6 +67,13 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
+  ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
+  functionality can be achieved using newer features in the ``pauli`` module.
+
+  - Deprecated in v0.35
+  - Removed in v0.36
 
 * ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are removed. Instead,
   you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition``.

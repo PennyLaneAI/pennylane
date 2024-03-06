@@ -52,6 +52,8 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the ``pauli`` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -66,7 +68,8 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
-Amintor Dusko
+Astral Cai,
+Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
