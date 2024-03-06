@@ -87,7 +87,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
 
     dev = qml.device('default.qubit', wires=2, shots=1000)
 
-PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``, 
+PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
 ``'default.gaussian'``, and ``'default.clifford'`` simulators; additional devices can be installed as plugins
 (see `available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the
 choice of a device significantly determines the speed of your computation, as well as
@@ -161,7 +161,7 @@ to estimate statistical quantities. On some supported simulator devices, ``shots
 measurement statistics *exactly*.
 
 Note that this argument can be temporarily overwritten when a QNode is called. For example, ``my_qnode(shots=3)``
-will temporarily evaluate ``my_qnode`` using three shots. This is a feature of each QNode and it is not 
+will temporarily evaluate ``my_qnode`` using three shots. This is a feature of each QNode and it is not
 necessary to manually implement the ``shots`` keyword argument of the quantum function.
 
 It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
@@ -335,7 +335,7 @@ be loaded by using the following functions:
 .. note::
 
     To use these conversion functions, the latest version of the PennyLane-Qiskit
-    and PennyLane-Forest plugins need to be installed.
+    and PennyLane-Rigetti plugins need to be installed.
 
 Objects for quantum circuits can be loaded outside or directly inside of a
 :class:`~.pennylane.QNode`. Circuits that contain unbound parameters are also
@@ -380,7 +380,7 @@ while using the :class:`~.pennylane.QNode` decorator:
 
 Furthermore, loaded templates can be used with any supported device, any number of times.
 For instance, in the following example a template is loaded from a QASM string,
-and then used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
+and then used multiple times on the ``forest.qpu`` device provided by PennyLane-Rigetti:
 
 .. code-block:: python
 

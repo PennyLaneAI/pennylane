@@ -41,7 +41,7 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
     representation of pure states.
 
     .. note::
-        It supports all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax). The second state is coerced
+        It supports all interfaces (NumPy, Autograd, Torch, TensorFlow and Jax). The second state is coerced
         to the type and dtype of the first state. The fidelity is returned in the type of the interface of the
         first state.
 
@@ -104,7 +104,7 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
         F( \rho , \sigma ) = \text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
 
     .. note::
-        It supports all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax). The second state is coerced
+        It supports all interfaces (NumPy, Autograd, Torch, TensorFlow and Jax). The second state is coerced
         to the type and dtype of the first state. The fidelity is returned in the type of the interface of the
         first state.
 
