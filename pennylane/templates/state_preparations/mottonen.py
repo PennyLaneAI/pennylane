@@ -233,10 +233,6 @@ class MottonenStatePreparation(Operation):
 
     This code is adapted from code written by Carsten Blank for PennyLane-Qiskit.
 
-    .. note::
-
-        The final state is only equal to the input state vector up to a global phase.
-
     .. warning::
 
         Due to non-trivial classical processing of the state vector,
@@ -271,16 +267,14 @@ class MottonenStatePreparation(Operation):
             1: ──RY(2.09)─╰X──RY(0.21)─╰X─╭●───────────│────────────╭●───────────│─
             2: ──RY(1.88)─────────────────╰X──RY(0.10)─╰X──RY(0.08)─╰X──RY(0.15)─╰X
 
-            ──╭●────────╭●────╭●────╭●─┤  State
-            ──╰X────────╰X─╭●─│──╭●─│──┤  State
-            ───RZ(1.57)────╰X─╰X─╰X─╰X─┤  State
+            ──╭●────────╭●────╭●────╭●─╭GlobalPhase(-0.79)─┤ ╭State
+            ──╰X────────╰X─╭●─│──╭●─│──├GlobalPhase(-0.79)─┤ ├State
+            ───RZ(1.57)────╰X─╰X─╰X─╰X─╰GlobalPhase(-0.79)─┤ ╰State
 
         The state preparation can be checked by running:
 
-        >>> print(np.allclose(state * np.exp(1j * -0.785396), circuit(state)))
-            True
-
-        The state is equal to the input state upto a global phase. This phase is given by ``np.exp(1j * -0.785396)`` in this example.
+        >>> print(np.allclose(state, circuit(state)))
+        True
 
     """
 

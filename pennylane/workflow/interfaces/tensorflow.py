@@ -15,7 +15,7 @@
 This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 
-**How to bind a custom derivative with Tensorflow.**
+**How to bind a custom derivative with TensorFlow.**
 
 To bind a custom derivative with tensorflow, you:
 
