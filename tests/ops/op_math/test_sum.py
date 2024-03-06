@@ -14,7 +14,7 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-# pylint: disable=eval-used
+# pylint: disable=eval-used, unused-argument
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -229,7 +229,7 @@ class TestInitialization:
     ]
     Hamiltonian_mixed = qml.dot(coeffs_, ops_)
 
-    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # all operands have pauli representation
+    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # not all operands have pauli representation
         (
             qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))),
             [float(i) for i in range(1, 5)],
@@ -272,6 +272,17 @@ class TestInitialization:
         coeffs, ops1 = op.terms()
         assert coeffs == coeffs_true
         assert ops1 == ops_true
+
+    @pytest.mark.parametrize(
+        "op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_PAULI + SUM_TERMS_OP_PAIRS_MIXEDPAULI
+    )
+    def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
+        """Test that calling Prod.terms does not queue anything."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.apply(op)
+            _, _ = op.terms()
+
+        assert q.queue == [op]
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
