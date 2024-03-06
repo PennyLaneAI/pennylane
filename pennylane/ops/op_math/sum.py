@@ -602,12 +602,13 @@ class LinearCombination(Sum):
 
     def _flatten(self):
         # note that we are unable to restore grouping type or method without creating new properties
-        return (self.data, self._ops), (self.grouping_indices,)
+        return (self._coeffs, self._ops, self.data), (self.grouping_indices,)
 
     @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls(data[0], data[1])
         new_op._grouping_indices = metadata[0]  # pylint: disable=protected-access
+        new_op.data = data[2]
         return new_op
 
     def __init__(

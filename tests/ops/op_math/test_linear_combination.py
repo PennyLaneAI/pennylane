@@ -584,9 +584,10 @@ class TestLinearCombination:
         data, metadata = H._flatten()
         assert metadata[0] == H.grouping_indices
         assert hash(metadata)
-        assert len(data) == 2
-        assert data[0] == H.data # Previously checking "is" instead of "==", problem?
+        assert len(data) == 3
+        assert qml.math.allequal(data[0], H._coeffs) # Previously checking "is" instead of "==", problem?
         assert data[1] == H._ops
+        assert data[2] == H.data
 
         new_H = LinearCombination._unflatten(*H._flatten())
         assert qml.equal(H, new_H)
