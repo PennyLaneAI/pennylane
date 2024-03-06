@@ -1202,14 +1202,15 @@ def qwc_rotation(pauli_operators):
     return ops
 
 
+@qml.QueuingManager.stop_recording()
 def diagonalize_pauli_word(pauli_word):
     """Transforms the Pauli word to diagonal form in the computational basis.
 
     Args:
-        pauli_word (Observable): the Pauli word to diagonalize in computational basis
+        pauli_word (Operator): the Pauli word to diagonalize in computational basis
 
     Returns:
-        Observable: the Pauli word diagonalized in the computational basis
+        Operator: the Pauli word diagonalized in the computational basis
 
     Raises:
         TypeError: if the input is not a Pauli word, i.e., a Pauli operator,
@@ -1224,26 +1225,16 @@ def diagonalize_pauli_word(pauli_word):
     if not is_pauli_word(pauli_word):
         raise TypeError(f"Input must be a Pauli word, instead got: {pauli_word}.")
 
-    paulis_with_identity = (qml.X, qml.Y, qml.Z, qml.Identity)
-    diag_term = None
+    pw = next(iter(pauli_word.pauli_rep))
 
+    # ordered as pauli_word, with identities eliminateds
+    components = [qml.Z(w) for w in pauli_word.wires if w in pw]
     if isinstance(pauli_word, Tensor):
-        for sigma in pauli_word.obs:
-            if sigma.name != "Identity":
-                if diag_term is None:
-                    diag_term = qml.Z(sigma.wires)
-                else:
-                    diag_term @= qml.Z(sigma.wires)
+        return Tensor(*components)
 
-    elif isinstance(pauli_word, paulis_with_identity):
-        sigma = pauli_word
-        if sigma.name != "Identity":
-            diag_term = qml.Z(sigma.wires)
-
-    if diag_term is None:
-        diag_term = qml.Identity(pauli_word.wires.tolist()[0])
-
-    return diag_term
+    prod = qml.prod(*components)
+    coeff = pauli_word.pauli_rep[pw]
+    return prod if qml.math.allclose(coeff, 1) else coeff * prod
 
 
 @qml.QueuingManager.stop_recording()
@@ -1293,20 +1284,7 @@ def diagonalize_qwc_pauli_words(
             else:
                 full_pauli_word[wire] = pauli_type
 
-        if isinstance(term, Tensor):
-            components = [qml.Z(w) for w in term.wires]
-            new_ops.append(Tensor(*components) if len(components) > 1 else components[0])
-        elif isinstance(term, (qml.Z, qml.I)):
-            new_ops.append(term)
-        elif isinstance(term, (qml.X, qml.Y)):
-            new_ops.append(qml.Z(term.wires[0]))
-        else:  # operator arithmetic
-            prod_term = qml.prod(*(qml.Z(w) for w in term.wires))
-            coeff = pauli_rep[pw]
-            if qml.math.allclose(coeff, 1):
-                new_ops.append(prod_term)
-            else:
-                new_ops.append(coeff * prod_term)
+        new_ops.append(diagonalize_pauli_word(term))
 
     diag_gates = []
     for w, pauli_type in full_pauli_word.items():
