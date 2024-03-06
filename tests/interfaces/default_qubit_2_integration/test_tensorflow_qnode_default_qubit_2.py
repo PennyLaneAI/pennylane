@@ -23,7 +23,7 @@ from pennylane.devices import DefaultQubit
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
 
-
+# device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [DefaultQubit(), "finite-diff", False, False],
     [DefaultQubit(), "parameter-shift", False, False],

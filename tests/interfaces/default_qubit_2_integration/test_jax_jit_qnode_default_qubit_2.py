@@ -23,6 +23,7 @@ from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
+# device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [DefaultQubit(), "backprop", True, False],
     [DefaultQubit(), "finite-diff", False, False],

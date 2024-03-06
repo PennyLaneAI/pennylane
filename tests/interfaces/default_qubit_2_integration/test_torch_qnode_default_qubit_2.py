@@ -28,6 +28,7 @@ torch = pytest.importorskip("torch", minversion="1.3")
 jacobian = torch.autograd.functional.jacobian
 hessian = torch.autograd.functional.hessian
 
+# device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [DefaultQubit(), "finite-diff", False, False],
     [DefaultQubit(), "parameter-shift", False, False],

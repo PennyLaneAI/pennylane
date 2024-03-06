@@ -50,6 +50,9 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
 
+* The `QNode` now defers `diff_method` validation to the device under the new device api `qml.devices.Device`.
+  [(#5176)](https://github.com/PennyLaneAI/pennylane/pull/5176)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -70,4 +73,5 @@ Amintor Dusko
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
+Christina Lee,
 Matthew Silverman.

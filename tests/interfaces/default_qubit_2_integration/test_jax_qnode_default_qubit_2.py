@@ -24,6 +24,7 @@ from pennylane.devices import DefaultQubit
 
 device_seed = 42
 
+# device, diff_method, grad_on_execution, device_vjp
 device_and_diff_method = [
     [DefaultQubit(seed=device_seed), "backprop", True, False],
     [DefaultQubit(seed=device_seed), "finite-diff", False, False],
