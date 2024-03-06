@@ -44,8 +44,6 @@ from pennylane.pauli import (
     observables_to_binary_matrix,
     partition_pauli_group,
     pauli_group,
-    pauli_mult,
-    pauli_mult_with_phase,
     pauli_to_binary,
     pauli_word_to_matrix,
     pauli_word_to_string,
