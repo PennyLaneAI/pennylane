@@ -2863,7 +2863,7 @@ def test_convert_to_hamiltonian(coeffs, obs):
     opmath_instance = qml.dot(coeffs, obs)
     converted_opmath = convert_to_hamiltonian(opmath_instance)
 
-    if isinstance(opmath_instance, (Prod, SProd, Sum)):
+    if isinstance(qml.simplify(opmath_instance), (Prod, SProd, Sum)):
 
         assert isinstance(converted_opmath, qml.Hamiltonian)
 

@@ -3051,13 +3051,10 @@ def convert_to_hamiltonian(op):
     """
     if isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
 
-        op = qml.simplify(op)
-
-        if isinstance(op, Observable):
-            return qml.Hamiltonian(coeffs=[1], observables=[op])
-
         coeffs = []
         ops = []
+
+        op = qml.simplify(op)
 
         if isinstance(op, qml.ops.SProd):
             coeffs.append(op.scalar)
@@ -3065,11 +3062,11 @@ def convert_to_hamiltonian(op):
                 op.base if isinstance(op.base, Observable) else qml.operation.Tensor(*op.base)
             )
 
-        if isinstance(op, qml.ops.Prod):
+        elif isinstance(op, qml.ops.Prod):
             coeffs.append(1.0)
             ops.append(qml.operation.Tensor(*op))
 
-        if isinstance(op, qml.ops.Sum):
+        elif isinstance(op, qml.ops.Sum):
             for factor in op:
                 if isinstance(factor, (qml.ops.SProd)):
                     coeffs.append(factor.scalar)
