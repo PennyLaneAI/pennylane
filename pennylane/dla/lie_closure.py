@@ -229,7 +229,7 @@ class PauliVSpace:
 
         """
         _, _, _, _, is_independent = self._is_independent(
-            self._M, pauli_sentence, self._pw_to_idx, self._rank, self._num_pw
+            self._M, pauli_sentence, self._pw_to_idx, self._rank, self._num_pw, tol
         )
         return is_independent
 
