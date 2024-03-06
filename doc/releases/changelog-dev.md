@@ -57,6 +57,7 @@
   * quantum functions.
   * QNodes if the device does not have wires specified.
   * PauliWords and PauliSentences with more than one wire.
+  [(#5328)](https://github.com/PennyLaneAI/pennylane/pull/5328)
 
 <h3>Deprecations 👋</h3>
 
