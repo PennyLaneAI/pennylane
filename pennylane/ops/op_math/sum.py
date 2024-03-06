@@ -89,13 +89,13 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
             import pennylane as qml
 
             a = qml.s_prod(1.0, qml.X(0))
-            b = qml.s_prod(2.0, qml.X(1))
+            b = qml.s_prod(2.0, qml.prod(qml.X(0), qml.X(1)))
             c = qml.s_prod(3.0, qml.Z(0))
 
             op = qml.sum(a, b, c, grouping_type="qwc")
 
         >>> op.grouping_indices
-        ((0, 1), (2,))
+        ((2,), (0, 1))
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
         ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, check out the
@@ -214,6 +214,7 @@ class Sum(CompositeOp):
 
     @classmethod
     def _unflatten(cls, data, metadata):
+        # pylint: disable=protected-access
         new_op = cls(*data)
         new_op._grouping_indices = metadata[0]
         return new_op
@@ -450,9 +451,9 @@ class Sum(CompositeOp):
 
             import pennylane as qml
 
-            a = qml.PauliX(0)
-            b = qml.PauliX(1)
-            c = qml.PauliZ(0)
+            a = qml.X(0)
+            b = qml.prod(qml.X(0), qml.X(1))
+            c = qml.Z(0)
             obs = [a, b, c]
             coeffs = [1.0, 2.0, 3.0]
 
@@ -462,7 +463,7 @@ class Sum(CompositeOp):
         True
         >>> op.compute_grouping(grouping_type="qwc")
         >>> op.grouping_indices
-        ((0, 1), (2,))
+        ((2,), (0, 1))
         """
         if not self.pauli_rep:
             raise ValueError("Cannot compute grouping for Sums containing non-Pauli operators.")

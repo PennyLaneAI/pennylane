@@ -12,9 +12,9 @@
   ```python
   import pennylane as qml
 
-  a = qml.PauliX(0)
-  b = qml.PauliX(1)
-  c = qml.PauliZ(0)
+  a = qml.X(0)
+  b = qml.prod(qml.X(0), qml.X(1))
+  c = qml.Z(0)
   obs = [a, b, c]
   coeffs = [1.0, 2.0, 3.0]
 
@@ -22,7 +22,7 @@
   ```
   ```pycon
   >>> op.grouping_indices
-  ((0, 1), (2,))
+  ((2,), (0, 1))
   ```
 
   Additionally, grouping type and method can be set or changed after construction using
@@ -31,9 +31,9 @@
   ```python
   import pennylane as qml
 
-  a = qml.PauliX(0)
-  b = qml.PauliX(1)
-  c = qml.PauliZ(0)
+  a = qml.X(0)
+  b = qml.prod(qml.X(0), qml.X(1))
+  c = qml.Z(0)
   obs = [a, b, c]
   coeffs = [1.0, 2.0, 3.0]
 
@@ -44,7 +44,7 @@
   True
   >>> op.compute_grouping(grouping_type="qwc")
   >>> op.grouping_indices
-  ((0, 1), (2,))
+  ((2,), (0, 1))
   ```
 
   Note that the grouping indices refer to the lists returned by `Sum.terms()`, not `Sum.operands`.

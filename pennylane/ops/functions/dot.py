@@ -115,16 +115,16 @@ def dot(
 
             import pennylane as qml
 
-            a = qml.PauliX(0)
-            b = qml.PauliX(1)
-            c = qml.PauliZ(0)
+            a = qml.X(0)
+            b = qml.prod(qml.X(0), qml.X(1))
+            c = qml.Z(0)
             obs = [a, b, c]
             coeffs = [1.0, 2.0, 3.0]
 
             op = qml.dot(coeffs, obs, grouping_type="qwc")
 
         >>> op.grouping_indices
-        ((0, 1), (2,))
+        ((2,), (0, 1))
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
         ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, check out the
