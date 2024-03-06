@@ -233,6 +233,8 @@ def _matrix_transform(
     wires = kwargs.get("device_wires", None) or tape.wires
     wire_order = wire_order or wires
 
+    print(tape.circuit)
+
     def processing_fn(res):
         """Defines how matrix works if applied to a tape containing multiple operations."""
 

@@ -915,7 +915,9 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(g1, g2)
 
 
-@pytest.mark.parametrize("max_workers", [None, 1, 2])
+@pytest.mark.parametrize(
+    "max_workers", [None, pytest.param(1, pytest.mark.slow), pytest.param(2, mark=pytest.mark.slow)]
+)
 class TestAdjointDifferentiation:
     """Tests adjoint differentiation integration with DefaultQubit."""
 
@@ -1219,6 +1221,7 @@ class TestRandomSeed:
 
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_different_seed(self, max_workers):
         """Test that different devices given different random seeds will produce
