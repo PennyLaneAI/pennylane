@@ -42,7 +42,7 @@ pre-commit==3.6.2
 py==1.11.0
 py-cpuinfo==9.0.0
 pybind11==2.11.1
-pyparsing==3.1.1
+pyparsing==3.1.2
 pytest==8.0.2
 pytest-benchmark==4.0.0
 pytest-cov==4.1.0
