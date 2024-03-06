@@ -2871,6 +2871,8 @@ def test_convert_to_hamiltonian(coeffs, obs):
     if not qml.operation.active_new_opmath():
         hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
         assert qml.equal(hamiltonian_instance, converted_hamiltonian)
+        hamiltonian_instance = convert_to_hamiltonian(hamiltonian_instance)
+        assert qml.equal(hamiltonian_instance, converted_hamiltonian)
 
 
 # pylint: disable=unused-import,no-name-in-module
