@@ -1038,6 +1038,24 @@ class LinearCombination(Sum):
 
     def __matmul__(self, other):
         """The product operation between Operator objects."""
+        if isinstance(other, LinearCombination):
+            coeffs1 = copy(self.coeffs)
+            ops1 = self.ops.copy()
+            shared_wires = qml.wires.Wires.shared_wires([self.wires, other.wires])
+            if len(shared_wires) > 0:
+                raise ValueError(
+                    "Hamiltonians can only be multiplied together if they act on "
+                    "different sets of wires"
+                )
+
+            coeffs2 = other.coeffs
+            ops2 = other.ops
+
+            coeffs = qml.math.kron(coeffs1, coeffs2)
+            ops_list = itertools.product(ops1, ops2)
+            terms = [qml.prod(t[0], t[1], lazy=False) for t in ops_list]
+            return qml.LinearCombination(coeffs, terms)
+
         if isinstance(other, Operator):
             if other.arithmetic_depth == 0:
                 new_ops = [op @ other for op in self.ops]

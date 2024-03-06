@@ -951,7 +951,7 @@ class TestLinearCombinationCoefficients:
     # TODO: increase coverage
     def test_operands(self):
         op = qml.LinearCombination([1.1, 2.2], [X(0), Z(0)])
-        assert op.operands == [qml.s_prod(1.1, X(0)), qml.s_prod(2.2, Z(0))]
+        assert op.operands == (qml.s_prod(1.1, X(0)), qml.s_prod(2.2, Z(0)))
 
 
 @pytest.mark.tf
