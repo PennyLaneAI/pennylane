@@ -130,7 +130,7 @@ def _measure_with_samples_diagonalizing_gates(
         if isinstance(mp, SampleMP):
             return math.squeeze(samples_processed)
         if isinstance(mp, CountsMP):
-            process_func = functools.partial(_process_counts_samples, mp_has_obs=bool(mp.obs))
+            process_func = functools.partial(_process_counts_samples, mp_has_obs=mp.obs is not None)
         elif isinstance(mp, ExpectationMP):
             process_func = _process_expval_samples
         elif isinstance(mp, VarianceMP):
