@@ -77,6 +77,26 @@ def test_copy():
     assert copied_qn.expansion_strategy == qn.expansion_strategy
 
 
+class TestInitialization:
+    def test_cache_initialization_maxdiff_1(self):
+        """Test that when max_diff = 1, the cache initializes to false."""
+
+        @qml.qnode(qml.device("default.qubit"), max_diff=1)
+        def f():
+            return qml.state()
+
+        assert f.execute_kwargs["cache"] is False
+
+    def test_cache_initialization_maxdiff_2(self):
+        """Test that when max_diff = 2, the cache initialization to True."""
+
+        @qml.qnode(qml.device("default.qubit"), max_diff=2)
+        def f():
+            return qml.state()
+
+        assert f.execute_kwargs["cache"] is True
+
+
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
@@ -945,11 +965,13 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy_dm = mocker.spy(qml.defer_measurements, "_transform")
+        spy_os = mocker.spy(qml.dynamic_one_shot, "_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        assert spy.call_count == 0
+        assert spy_dm.call_count == 0
+        assert spy_os.call_count == 2
 
         @qml.defer_measurements
         @qml.qnode(dev)

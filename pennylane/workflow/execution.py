@@ -196,8 +196,10 @@ def _batch_transform(
     """
     # TODO: Remove once old device are removed
     if device_batch_transform:
-        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
-        return *qml.transforms.map_batch_transform(dev_batch_transform, tapes), config
+        dev_batch_transform = qml.transform(
+            set_shots(device, override_shots)(device.batch_transform)
+        )
+        return *dev_batch_transform(tapes), config
 
     def null_post_processing_fn(results):
         """A null post processing function used because the user requested not to use the device batch transform."""
@@ -448,7 +450,7 @@ def execute(
     device_vjp=False,
 ) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
-    during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
+    during the project. The current version is supporting forward execution for NumPy and does not support shot vectors.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
@@ -507,7 +509,7 @@ def execute(
 
         def cost_fn(params, x):
             ops1 = [qml.RX(params[0], wires=0), qml.RY(params[1], wires=0)]
-            measurements1 = [qml.expval(qml.PauliZ(0))]
+            measurements1 = [qml.expval(qml.Z(0))]
             tape1 = qml.tape.QuantumTape(ops1, measurements1)
 
             ops2 = [
