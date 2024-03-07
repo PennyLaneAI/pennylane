@@ -96,6 +96,9 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
 
+* `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
+  [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
+
 <h3>Breaking changes 💔</h3>
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
@@ -133,5 +136,6 @@ Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
+Christina Lee,
 Mudit Pandey,
 Matthew Silverman.

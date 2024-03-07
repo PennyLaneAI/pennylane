@@ -1188,20 +1188,6 @@ class TestIntegration:
         true_var = qnp.array(3 / 2)
         assert qnp.allclose(var, true_var)
 
-    # def test_measurement_process_probs(self):
-    #     dev = qml.device("default.qubit", wires=2)
-    #     sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
-    #
-    #     @qml.qnode(dev)
-    #     def my_circ():
-    #         qml.PauliX(0)
-    #         return qml.probs(op=sum_op)
-    #
-    #     hand_computed_probs = qnp.array([0.573223935039, 0.073223277604, 0.573223935039, 0.073223277604])
-    #     returned_probs = qnp.array([0.0732233, 0.43898224, 0.06101776, 0.4267767])
-    #     # TODO[Jay]: which of these two is correct?
-    #     assert qnp.allclose(my_circ(), returned_probs)
-
     def test_measurement_process_probs(self):
         """Test Sum class instance in probs measurement process raises error."""
         dev = qml.device("default.qubit", wires=2)
@@ -1212,11 +1198,11 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.probs(op=sum_op)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        x_probs = np.array([0.5, 0.5])
+        h_probs = np.array([np.cos(-np.pi / 4 / 2) ** 2, np.sin(-np.pi / 4 / 2) ** 2])
+        expected = np.tensordot(x_probs, h_probs, axes=0).flatten()
+        out = my_circ()
+        assert qml.math.allclose(out, expected)
 
     def test_measurement_process_sample(self):
         """Test Sum class instance in sample measurement process."""
