@@ -3025,7 +3025,7 @@ def convert_to_legacy_H(op):
         op (Operator): The operator instance to convert.
 
     Returns:
-        Operator: The operator as an :class:`~pennylane.Hamiltonian` instance
+        Operator: The operator as a :class:`~pennylane.Hamiltonian` instance
     """
     if isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
 

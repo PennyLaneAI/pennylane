@@ -2831,7 +2831,6 @@ def test_custom_operator_is_jax_pytree():
         ),
         ([0.5], [qml.X(1)]),
         ([1], [Tensor(qml.X(0), qml.Y(1))]),
-        ([0.5, 0.5], [qml.Identity(1), qml.Identity(1)]),
         (
             [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
             [
@@ -2854,7 +2853,6 @@ def test_custom_operator_is_jax_pytree():
                 Tensor(qml.Z(1), qml.Z(2)),
             ],
         ),
-        ([1], [qml.Hadamard(1)]),
     ],
 )
 def test_convert_to_hamiltonian(coeffs, obs):
@@ -2862,20 +2860,27 @@ def test_convert_to_hamiltonian(coeffs, obs):
 
     opmath_instance = qml.dot(coeffs, obs)
     converted_opmath = convert_to_legacy_H(opmath_instance)
+    assert isinstance(converted_opmath, qml.Hamiltonian)
 
-    if isinstance(qml.simplify(opmath_instance), (Prod, SProd, Sum)):
-
-        assert isinstance(converted_opmath, qml.Hamiltonian)
-
-        opmath_was_active = qml.operation.active_new_opmath()
+    opmath_was_active = qml.operation.active_new_opmath()
+    qml.operation.disable_new_opmath()
+    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
+    if opmath_was_active:
+        qml.operation.enable_new_opmath()
+    else:
         qml.operation.disable_new_opmath()
-        hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
-        if opmath_was_active:
-            qml.operation.enable_new_opmath()
-        else:
-            qml.operation.disable_new_opmath()
+    assert qml.equal(hamiltonian_instance, converted_opmath)
 
-        assert qml.equal(hamiltonian_instance, converted_opmath)
+
+@pytest.mark.parametrize(
+    "coeffs, obs", [([1], [qml.Hadamard(1)]), ([0.5, 0.5], [qml.Identity(1), qml.Identity(1)])]
+)
+def test_convert_to_hamiltonian_trivial(coeffs, obs):
+    """Test that non-arithmetic operator after simplification is returned as an Observable"""
+
+    opmath_instance = qml.dot(coeffs, obs)
+    converted_opmath = convert_to_legacy_H(opmath_instance)
+    assert isinstance(converted_opmath, qml.operation.Observable)
 
 
 # pylint: disable=unused-import,no-name-in-module
