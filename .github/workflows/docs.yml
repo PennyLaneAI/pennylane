@@ -74,6 +74,7 @@ jobs:
         destination_branch: "master"
         github_token: "${{ secrets.GITHUB_TOKEN }}"
         pr_title: "Update stable dependency files"
+        # if updating the pr_body, please also update the same text in the tests.yml file
         pr_body: |
           Automatic update of stable requirement files to snapshot valid python environments.
 
