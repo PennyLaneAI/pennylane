@@ -266,7 +266,7 @@ class Sum(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
-        print("Hello from Sum._build_pauli_rep")
+
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
             new_rep = qml.pauli.PauliSentence()
             for operand_rep in operand_pauli_reps:
@@ -635,7 +635,7 @@ class LinearCombination(Sum):
             )
 
         self._coeffs = coeffs
-        print(f"coeffs1: {self._coeffs}")
+
         self._ops = [convert_to_opmath(op) for op in observables]
 
         # TODO: avoid having multiple ways to store ops and coeffs,
@@ -651,21 +651,21 @@ class LinearCombination(Sum):
 
         # TODO use grouping functionality of Sum once that is merged
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
-        print(f"coeffs after super().__init__: {self._coeffs}")
+
         # self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
 
         if simplify:
             # TODO clean up this logic, seems unnecesssarily complicated
+
             simplified_coeffs, simplified_ops, pr = self._simplify_coeffs_ops()
-            print(f"coeffs after self._simplify_coeffs_ops: {self._coeffs}")
-            self._coeffs = simplified_coeffs
-            print(f"coeffs after reassignment: {self._coeffs}")
+
+            self._coeffs = simplified_coeffs # Losing gradient in case of torch interface at this point
+
             self._ops = simplified_ops
             with qml.QueuingManager().stop_recording():
                 operands = [qml.s_prod(c, op) for c, op in zip(self._coeffs, self._ops)]
 
             super().__init__(*operands, id=id, _pauli_rep=pr)
-            print(f"coeffs after second super().__init__: {self._coeffs}")
 
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():
