@@ -17,6 +17,7 @@ Tests for the Hamiltonian class.
 # pylint: disable=too-many-public-methods
 from collections.abc import Iterable
 from unittest.mock import patch
+from contextlib import contextmanager
 
 import numpy as np
 import pytest
@@ -26,6 +27,31 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.wires import Wires
+from pennylane.operation import enable_new_opmath, disable_new_opmath
+
+@contextmanager
+def disable_legacy_opmath_cm():
+    r"""Allows to use the new arithmetic operator dunders within a
+    temporary context using the `with` statement."""
+
+    was_active = qml.operation.active_new_opmath()
+    try:
+        disable_new_opmath()
+        yield
+    except Exception as e:
+        raise e
+    finally:
+        if was_active:
+            enable_new_opmath()
+        else:
+            disable_new_opmath()
+
+@pytest.fixture(scope="function")
+def use_legacy_opmath():
+    with disable_legacy_opmath_cm() as cm:
+        yield cm
+
+disable_new_opmath() # disable opmath during collection
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -637,7 +663,7 @@ def circuit2(param):
 
 dev = qml.device("default.qubit", wires=2)
 
-
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonian:
     """Test the Hamiltonian class"""
 
@@ -645,9 +671,11 @@ class TestHamiltonian:
     def test_hamiltonian_valid_init(self, coeffs, ops):
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
+
         H = qml.Hamiltonian(coeffs, ops)
         assert np.allclose(H.terms()[0], coeffs)
         assert H.terms()[1] == list(ops)
+
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
@@ -1026,7 +1054,7 @@ class TestHamiltonian:
         ham = qml.Hamiltonian([1.0, 1.0], [tensor, qml.PauliX(2)]) @ qml.Hamiltonian([1.0], [herm])
         assert isinstance(ham, qml.Hamiltonian)
 
-
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianCoefficients:
     """Test the creation of a Hamiltonian"""
 
@@ -1048,6 +1076,7 @@ class TestHamiltonianCoefficients:
 
 
 @pytest.mark.tf
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianArithmeticTF:
     """Tests creation of Hamiltonians using arithmetic
     operations with TensorFlow tensor coefficients."""
@@ -1119,7 +1148,7 @@ class TestHamiltonianArithmeticTF:
 
         assert H.compare(H1 @ H2)
 
-
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianArithmeticTorch:
     """Tests creation of Hamiltonians using arithmetic
     operations with torch tensor coefficients."""
@@ -1195,7 +1224,7 @@ class TestHamiltonianArithmeticTorch:
 
         assert H.compare(H1 @ H2)
 
-
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianArithmeticAutograd:
     """Tests creation of Hamiltonians using arithmetic
     operations with autograd tensor coefficients."""
@@ -1271,7 +1300,7 @@ class TestHamiltonianArithmeticAutograd:
 
         assert H.compare(H1 @ H2)
 
-
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianSparseMatrix:
     """Tests for sparse matrix representation."""
 
@@ -1432,6 +1461,7 @@ class TestHamiltonianSparseMatrix:
 
 
 @pytest.mark.jax
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianArithmeticJax:
     """Tests creation of Hamiltonians using arithmetic
     operations with jax tensor coefficients."""
@@ -1504,7 +1534,7 @@ class TestHamiltonianArithmeticJax:
 
         assert H.compare(H1 @ H2)
 
-
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestGrouping:
     """Tests for the grouping functionality"""
 
@@ -1609,7 +1639,7 @@ class TestGrouping:
         H3.compute_grouping(method="lf")
         assert H3.grouping_indices == ((2, 1), (0,))
 
-
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianEvaluation:
     """Test the usage of a Hamiltonian as an observable"""
 
@@ -1658,7 +1688,7 @@ class TestHamiltonianEvaluation:
         # simplify worked and added 1. and 2.
         assert pars == [0.1, 3.0]
 
-
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianDifferentiation:
     """Test that the Hamiltonian coefficients are differentiable"""
 
@@ -2073,3 +2103,5 @@ class TestHamiltonianDifferentiation:
             match="not supported on adjoint",
         ):
             grad_fn(coeffs, param)
+
+enable_new_opmath()
