@@ -659,7 +659,9 @@ class LinearCombination(Sum):
 
             simplified_coeffs, simplified_ops, pr = self._simplify_coeffs_ops()
 
-            self._coeffs = simplified_coeffs # Losing gradient in case of torch interface at this point
+            self._coeffs = (
+                simplified_coeffs  # Losing gradient in case of torch interface at this point
+            )
 
             self._ops = simplified_ops
             with qml.QueuingManager().stop_recording():
