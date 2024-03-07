@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
+  libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
+  ``from_qasm``, etc.
+
+  - Deprecated in v0.36
+  - Will be removed in v0.37
+
 * ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now deprecated. Instead, you
   should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
 
