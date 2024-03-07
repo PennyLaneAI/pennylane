@@ -250,6 +250,7 @@ import warnings
 from enum import IntEnum
 from typing import List
 from unittest import mock
+from contextlib import contextmanager
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -3063,6 +3064,24 @@ def convert_to_opmath(op):
     if isinstance(op, Tensor):
         return qml.prod(*op.obs)
     return op
+
+@contextmanager
+def disable_new_opmath_cm():
+    r"""Allows to use the new arithmetic operator dunders within a
+    temporary context using the `with` statement."""
+
+    was_active = qml.operation.active_new_opmath()
+    try:
+        if was_active:
+            disable_new_opmath()
+        yield
+    except Exception as e:
+        raise e
+    finally:
+        if was_active:
+            enable_new_opmath()
+        else:
+            disable_new_opmath()
 
 
 def __getattr__(name):

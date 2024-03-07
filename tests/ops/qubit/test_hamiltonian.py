@@ -17,7 +17,6 @@ Tests for the Hamiltonian class.
 # pylint: disable=too-many-public-methods
 from collections.abc import Iterable
 from unittest.mock import patch
-from contextlib import contextmanager
 
 import numpy as np
 import pytest
@@ -27,26 +26,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.wires import Wires
-from pennylane.operation import enable_new_opmath, disable_new_opmath
-
-
-@contextmanager
-def disable_legacy_opmath_cm():
-    r"""Allows to use the new arithmetic operator dunders within a
-    temporary context using the `with` statement."""
-
-    was_active = qml.operation.active_new_opmath()
-    try:
-        disable_new_opmath()
-        yield
-    except Exception as e:
-        raise e
-    finally:
-        if was_active:
-            enable_new_opmath()
-        else:
-            disable_new_opmath()
-
+from pennylane.operation import enable_new_opmath, disable_new_opmath, disable_legacy_opmath_cm
 
 @pytest.fixture(scope="function")
 def use_legacy_opmath():
