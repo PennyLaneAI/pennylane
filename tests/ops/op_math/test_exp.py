@@ -432,6 +432,7 @@ class TestDecomposition:
         ):
             op.decomposition()
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_nontensor_tensor_no_decomposition(self):
         """Checks that accessing the decomposition throws an error if the base is a Tensor
         object that is not a mathematical tensor"""
