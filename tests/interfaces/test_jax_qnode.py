@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the JAX-Python interface with a QNode"""
+import random
+
 # pylint: disable=too-many-arguments,too-few-public-methods,too-many-public-methods
 import pytest
 
@@ -859,6 +861,9 @@ class TestQubitIntegration:
 
     def test_counts(self, dev_name, diff_method, grad_on_execution):
         """Test counts works as expected"""
+
+        random.seed(25)
+
         if grad_on_execution is True:
             pytest.skip("Sampling not possible with grad_on_execution differentiation.")
 
