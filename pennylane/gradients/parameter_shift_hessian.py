@@ -17,7 +17,7 @@ of a qubit-based quantum tape.
 """
 import itertools as it
 import warnings
-from abc import ABC
+from string import ascii_letters as ABC
 from functools import partial
 from typing import Sequence, Callable
 
