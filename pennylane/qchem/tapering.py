@@ -586,6 +586,7 @@ def _build_generator(operation, wire_order, op_gen=None):
             op_gen.pop(PauliWord({}), 0.0)
         else:  # Single-parameter gates
             try:
+                # TODO: simplify when qml.generator has a proper support for "arithmetic".
                 op_gen = (
                     operation.generator()
                     if active_new_opmath()
@@ -763,6 +764,7 @@ def taper_operation(
     op_gen = _build_generator(operation, wire_order, op_gen=op_gen)
 
     # Performing commutation check for pauli sentences
+    # TODO: replace when qml.is_commuting supports Pauli words and sentences
     def _is_commuting(ps1, ps2):
         commutator = ps1.commutator(ps2)
         commutator.simplify()

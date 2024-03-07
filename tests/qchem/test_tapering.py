@@ -33,7 +33,7 @@ from pennylane.qchem.tapering import (
     _split_pauli_sentence,
     _taper_pauli_sentence,
 )
-from pennylane.operation import enable_new_opmath, disable_new_opmath
+from pennylane.operation import enable_new_opmath, disable_new_opmath, active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -568,8 +568,8 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
 def test_taper_obs(symbols, geometry, charge, op_arithmetic):
     r"""Test that the expectation values of tapered observables with respect to the
     tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
-    if op_arithmetic:
-        enable_new_opmath()
+    status_op_math = active_new_opmath()
+    _ = enable_new_opmath() if op_arithmetic else disable_new_opmath()
 
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
@@ -613,8 +613,7 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
         assert np.isclose(obs_val, obs_val_tapered)
         assert qml.equal(tapered_obs, tapered_ps)
 
-    if op_arithmetic:
-        disable_new_opmath()
+    _ = enable_new_opmath() if status_op_math else disable_new_opmath()
 
 
 @pytest.mark.parametrize("op_arithmetic", [False, True])
@@ -672,6 +671,9 @@ def test_taper_excitations(
     r"""Test that the tapered excitation operators using :func:`~.taper_operation`
     are consistent with the tapered Hartree-Fock state."""
 
+    status_op_math = active_new_opmath()
+    _ = enable_new_opmath() if op_arithmetic else disable_new_opmath()
+
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     num_electrons, num_wires = mol.n_electrons, 2 * mol.n_orbitals
     hf_state = np.where(np.arange(num_wires) < num_electrons, 1, 0)
@@ -683,9 +685,6 @@ def test_taper_excitations(
         qml.qchem.spin2(num_electrons, num_wires),
         qml.qchem.spinz(num_wires),
     ]
-
-    if op_arithmetic:
-        enable_new_opmath()
 
     tapered_obs = [
         qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
@@ -733,8 +732,7 @@ def test_taper_excitations(
                 ).toarray()
                 assert np.isclose(expec_val, expec_val_tapered)
 
-    if op_arithmetic:
-        disable_new_opmath()
+    _ = enable_new_opmath() if status_op_math else disable_new_opmath()
 
 
 @pytest.mark.parametrize(
@@ -810,6 +808,9 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
 def test_consistent_taper_ops(operation, op_gen, op_arithmetic):
     r"""Test that operations are tapered consistently when their generators are provided manually and when they are constructed internally"""
 
+    status_op_math = active_new_opmath()
+    _ = enable_new_opmath() if op_arithmetic else disable_new_opmath()
+
     symbols, geometry, charge = (
         ["He", "H"],
         np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
@@ -817,9 +818,6 @@ def test_consistent_taper_ops(operation, op_gen, op_arithmetic):
     )
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
-
-    if op_arithmetic:
-        enable_new_opmath()
 
     generators = qml.symmetry_generators(hamiltonian)
     paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
@@ -886,8 +884,7 @@ def test_consistent_taper_ops(operation, op_gen, op_arithmetic):
             ).toarray()
             assert np.isclose(expec_val, expec_val_tapered)
 
-    if op_arithmetic:
-        disable_new_opmath()
+    _ = enable_new_opmath() if status_op_math else disable_new_opmath()
 
 
 @pytest.mark.parametrize(
@@ -973,8 +970,8 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
 def test_taper_matrix_ops(operation, op_wires, op_gen, op_arithmetic):
     """Test that taper_operation can be used with gate operation built using matrices"""
 
-    if op_arithmetic:
-        enable_new_opmath()
+    status_op_math = active_new_opmath()
+    _ = enable_new_opmath() if op_arithmetic else disable_new_opmath()
 
     symbols, geometry, charge = (
         ["He", "H"],
@@ -1013,8 +1010,7 @@ def test_taper_matrix_ops(operation, op_wires, op_gen, op_arithmetic):
             [qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op1(params), taper_op2)]
         )
 
-    if op_arithmetic:
-        disable_new_opmath()
+    _ = enable_new_opmath() if status_op_math else disable_new_opmath()
 
 
 @pytest.mark.parametrize(
