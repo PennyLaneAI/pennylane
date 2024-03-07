@@ -470,4 +470,3 @@ class _SumSummandsGrouping:
                 new_summands.append(qml.s_prod(coeff, summand))
 
         return new_summands
-
