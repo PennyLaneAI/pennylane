@@ -851,15 +851,6 @@ class LinearCombination(Sum):
         op_as_sum = op_as_sum.simplify()
         return LinearCombination(*op_as_sum.terms())
 
-    def _ipython_display_(self):  # pragma: no-cover
-        """Displays __str__ in ipython instead of __repr__
-        See https://ipython.readthedocs.io/en/stable/config/integrating.html
-        """
-        if len(self.ops) < 15:
-            print(str(self))
-        else:  # pragma: no-cover
-            print(repr(self))
-
     def _obs_data(self):
         r"""Extracts the data from a LinearCombination and serializes it in an order-independent fashion.
 

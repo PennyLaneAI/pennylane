@@ -625,22 +625,6 @@ class TestLinearCombination:
         """Tests that the __str__ function for printing is correct"""
         assert str(op) == string
 
-    @patch("builtins.print")
-    def test_small_LinearCombination_ipython_display(self, mock_print):
-        """Test that the ipython_dipslay method prints __str__."""
-        # pylint: disable=protected-access
-        H = qml.LinearCombination([1.0], [X(0)])
-        H._ipython_display_()
-        mock_print.assert_called_with(str(H))
-
-    @patch("builtins.print")
-    def test_big_LinearCombination_ipython_display(self, mock_print):
-        """Test that the ipython_display method prints __repr__ when H has more than 15 terms."""
-        # pylint: disable=protected-access
-        H = qml.LinearCombination([1] * 16, [X(i) for i in range(16)])
-        H._ipython_display_()
-        mock_print.assert_called_with(repr(H))
-
     LINEARCOMBINATION_REPR = (
         (qml.LinearCombination([0.5, 0.5], [X(0), X(1)]), "0.5 * X(0) + 0.5 * X(1)"),
         (
