@@ -3035,7 +3035,11 @@ def convert_to_legacy_H(op):
 
     op = qml.simplify(op)
 
-    if isinstance(op, qml.ops.SProd):
+    if isinstance(op, Observable):
+        coeffs.append(1.0)
+        ops.append(op)
+
+    elif isinstance(op, qml.ops.SProd):
         coeffs.append(op.scalar)
         if isinstance(op.base, Observable):
             ops.append(op.base)
@@ -3070,6 +3074,9 @@ def convert_to_legacy_H(op):
                 raise ValueError(
                     "Could not convert to Hamiltonian. Some or all observables are not valid."
                 )
+
+    else:
+        raise ValueError("Could not convert to Hamiltonian. Some or all observables are not valid.")
 
     return qml.Hamiltonian(coeffs, ops)
 

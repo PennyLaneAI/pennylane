@@ -2889,6 +2889,7 @@ def test_convert_to_hamiltonian_trivial(coeffs, obs):
         ([2], [qml.T(1)]),
         ([0.5, 2], [qml.T(0), qml.Identity(1)]),
         ([1, 2], [qml.T(0), qml.Identity(1)]),
+        ([0.5, 0.5], [qml.T(0), qml.T(0)]),
     ],
 )
 def test_convert_to_hamiltonian_error(coeffs, obs):
