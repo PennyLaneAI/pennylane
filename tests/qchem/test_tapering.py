@@ -949,6 +949,7 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
         )
 
 
+@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("operation", "op_wires", "op_gen"),
     [
@@ -965,14 +966,15 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
                 wires=wires,
             ),
             [0, 2],
-            lambda phi, wires: qml.Hamiltonian(
-                [-0.5 * phi], [qml.PauliX(wires=wires[0]) @ qml.PauliX(wires=wires[1])]
-            ),
+            lambda phi, wires: -0.5 * phi * qml.PauliX(wires=wires[0]) @ qml.PauliX(wires=wires[1]),
         ),
     ],
 )
-def test_taper_matrix_ops(operation, op_wires, op_gen):
+def test_taper_matrix_ops(operation, op_wires, op_gen, op_arithmetic):
     """Test that taper_operation can be used with gate operation built using matrices"""
+
+    if op_arithmetic:
+        enable_new_opmath()
 
     symbols, geometry, charge = (
         ["He", "H"],
@@ -1010,6 +1012,9 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
         assert np.all(
             [qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op1(params), taper_op2)]
         )
+
+    if op_arithmetic:
+        disable_new_opmath()
 
 
 @pytest.mark.parametrize(
