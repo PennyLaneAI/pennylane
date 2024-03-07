@@ -34,7 +34,7 @@ subspaces = [(0, 1), (0, 2), (1, 2)]
 krause_matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=complex)
 
 
-class CustomChannel(Channel):
+class CustomChannel(Channel):  # pylint: disable=too-few-public-methods
     num_params = 1
     num_wires = 1
 
