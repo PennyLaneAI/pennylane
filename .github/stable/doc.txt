@@ -19,7 +19,7 @@ deprecation==2.1.0
 docutils==0.16
 duet==0.2.9
 exceptiongroup==1.2.0
-flatbuffers==23.5.26
+flatbuffers==24.3.6
 fonttools==4.49.0
 frozenlist==1.4.1
 fsspec==2024.2.0
