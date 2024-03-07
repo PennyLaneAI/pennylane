@@ -668,21 +668,6 @@ class LinearCombination(Sum):
                     self.ops, grouping_type=grouping_type, method=method
                 )
 
-    # def _build_pauli_rep(self):
-    #     """PauliSentence representation of the LinearCombination of operators."""
-    #     if all(op.pauli_rep for op in self.ops):
-    #         new_rep = qml.pauli.PauliSentence()
-    #         for c, op in zip(self.coeffs, self.ops):
-    #             ps = qml.pauli.pauli_sentence(op)
-    #             new_rep += ps * c
-    #         return new_rep
-
-    #     return None
-
-    # @property
-    # def operands(self):
-    #     """List of all operands in the linear combination"""
-    #     return self._operands
 
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
@@ -818,53 +803,6 @@ class LinearCombination(Sum):
             self._grouping_indices = _compute_grouping_indices(
                 self.ops, grouping_type=grouping_type, method=method
             )
-
-    def sparse_matrix(self, wire_order=None):
-        r"""Computes the sparse matrix representation of a LinearCombination in the computational basis.
-
-        Args:
-            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires.
-                If not provided, the default order of the wires (self.wires) of the LinearCombination is used.
-
-        Returns:
-            csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
-            :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
-
-        **Example:**
-
-        >>> coeffs = [1, -0.45]
-        >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
-        >>> H = qml.LinearCombination(coeffs, obs)
-        >>> H_sparse = H.sparse_matrix()
-        >>> H_sparse
-        <4x4 sparse matrix of type '<class 'numpy.complex128'>'
-                with 8 stored elements in Compressed Sparse Row format>
-
-        The resulting sparse matrix can be either used directly or transformed into a numpy array:
-
-        >>> H_sparse.toarray()
-        array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
-               [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
-               [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
-               [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
-        """
-        # TODO use super which uses the pauli rep
-        if wire_order is None:
-            wires = self.wires
-        else:
-            wires = wire_order
-
-        if pr := self.pauli_rep:
-            return pr.to_mat(wire_order=wires, format="csr")
-
-        # fallback logic when there is no pauli_rep
-        gen = ((op.sparse_matrix(), op.wires) for op in self.operands)
-
-        reduced_mat, sum_wires = qml.math.reduce_matrices(gen, reduce_func=qml.math.add)
-
-        wire_order = wire_order or self.wires
-
-        return qml.math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def simplify(self):
         r"""Simplifies the LinearCombination by combining like-terms.
