@@ -43,6 +43,10 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
     r"""Load external quantum assembly and quantum circuits from supported frameworks
     into PennyLane templates.
 
+    .. warning::
+        ``qml.load`` is deprecated. Instead, please use the functions outlined in the
+        :ref:`Importing Circuits <intro_ref_importing_circuits>` quickstart guide, such as ``qml.from_qiskit``.
+
     .. note::
 
         For more details on which formats are supported
@@ -79,11 +83,6 @@ def load(quantum_circuit_object, format: str, **load_kwargs):
 
     Returns:
         function: the PennyLane template created from the quantum circuit object
-
-    .. warning::
-        ``qml.load`` is deprecated. Instead, please use the functions outlined in the
-        `Importing workflows <https://docs.pennylane.ai/en/stable/introduction/importing_workflows.html>`_
-        quickstart guide, such as ``qml.from_qiskit``.
 
     """
 
