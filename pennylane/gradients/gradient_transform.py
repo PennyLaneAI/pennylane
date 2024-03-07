@@ -18,7 +18,6 @@ from functools import partial
 import warnings
 
 import pennylane as qml
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.measurements import (
     MutualInfoMP,
     StateMP,

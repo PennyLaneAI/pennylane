@@ -13,11 +13,9 @@
 # limitations under the License.
 """This module contains utilities for defining custom Hessian transforms,
 including a decorator for specifying Hessian expansions."""
-import warnings
 from string import ascii_letters as ABC
 
 import pennylane as qml
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
 def _process_jacs(jac, qhess):

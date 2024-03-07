@@ -271,6 +271,10 @@ For gradient transforms, refer to the examples in :doc:`gradients documentation 
 Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
 for a comprehensive overview of transforms and core functionalities, consult the :doc:`transforms documentation <../code/qml_transforms>`.
 """
+
+# Leave as alias for backwards-compatibility
+from pennylane.tape import make_qscript as make_tape
+
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, TransformError
 from .batch_transform import map_batch_transform
@@ -322,5 +326,3 @@ from .tape_expand import (
 from .transpile import transpile
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
-
-from pennylane.tape import make_qscript as make_tape
