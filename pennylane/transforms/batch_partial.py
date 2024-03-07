@@ -55,7 +55,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
         partial_kwargs (dict): pre-supplied arguments to pass to the QNode.
 
     Returns:
-        func: Function which wraps the QNode and accepts the same arguments minus the
+        function: Function which wraps the QNode and accepts the same arguments minus the
         pre-supplied arguments provided. The first dimension of each argument of the
         wrapper function will be treated as a batch dimension.
 
