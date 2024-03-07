@@ -803,53 +803,53 @@ class LinearCombination(Sum):
                 self.ops, grouping_type=grouping_type, method=method
             )
 
-    def simplify(self):
-        r"""Simplifies the LinearCombination by combining like-terms.
+    # def simplify(self):
+    #     r"""Simplifies the LinearCombination by combining like-terms.
 
-        **Example**
+    #     **Example**
 
-        >>> ops = [qml.Y(2), 0.5 * qml.X(0) @ qml.I(1), qml.X(0)]
-        >>> H = qml.LinearCombination([1, 1, -2], ops)
-        >>> H.simplify()
-        >>> print(H)
-        Y(2) + -1.5 * X(0)
+    #     >>> ops = [qml.Y(2), 0.5 * qml.X(0) @ qml.I(1), qml.X(0)]
+    #     >>> H = qml.LinearCombination([1, 1, -2], ops)
+    #     >>> H.simplify()
+    #     >>> print(H)
+    #     Y(2) + -1.5 * X(0)
 
-        .. warning::
+    #     .. warning::
 
-            Calling this method will reset ``grouping_indices`` to None, since
-            the observables it refers to are updated.
-        """
+    #         Calling this method will reset ``grouping_indices`` to None, since
+    #         the observables it refers to are updated.
+    #     """
 
-        if len(self.ops) == 0:
-            return self
+    #     if len(self.ops) == 0:
+    #         return self
 
-        # try using pauli_rep:
-        if pr := self.pauli_rep:
+    #     # try using pauli_rep:
+    #     if pr := self.pauli_rep:
 
-            wire_order = self.wires
-            if len(pr) == 0:
-                return LinearCombination([], [], _pauli_rep=pr)
+    #         wire_order = self.wires
+    #         if len(pr) == 0:
+    #             return LinearCombination([], [], _pauli_rep=pr)
 
-            # collect coefficients and ops
-            coeffs = []
-            ops = []
+    #         # collect coefficients and ops
+    #         coeffs = []
+    #         ops = []
 
-            for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=wire_order)
-                ops.append(pw_op)
-                coeffs.append(coeff)
+    #         for pw, coeff in pr.items():
+    #             pw_op = pw.operation(wire_order=wire_order)
+    #             ops.append(pw_op)
+    #             coeffs.append(coeff)
 
-            res = LinearCombination(coeffs, ops, _pauli_rep=pr)
-            return res
+    #         res = LinearCombination(coeffs, ops, _pauli_rep=pr)
+    #         return res
 
-        if len(self.ops) == 1:
-            return LinearCombination(self.coeffs, [self.ops[0].simplify()], _pauli_rep=pr)
+    #     if len(self.ops) == 1:
+    #         return LinearCombination(self.coeffs, [self.ops[0].simplify()], _pauli_rep=pr)
 
-        # TODO use super
-        # Fallback on logic from Sum when there is no pauli_rep
-        op_as_sum = qml.sum(*self.operands)
-        op_as_sum = op_as_sum.simplify()
-        return LinearCombination(*op_as_sum.terms())
+    #     # TODO use super
+    #     # Fallback on logic from Sum when there is no pauli_rep
+    #     op_as_sum = qml.sum(*self.operands)
+    #     op_as_sum = op_as_sum.simplify()
+    #     return LinearCombination(*op_as_sum.terms())
 
     def __str__(self):
         """String representation of the PauliSentence."""
