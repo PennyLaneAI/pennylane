@@ -1754,7 +1754,7 @@ class TestLinearCombinationDifferentiation:
 
         assert np.allclose(grad, grad_expected)
 
-    @pytest.mark.xfail # TODO simplify doesnt work with differentiation
+    @pytest.mark.xfail  # TODO simplify doesnt work with differentiation
     @pytest.mark.torch
     @pytest.mark.parametrize("group", [None, "qwc"])
     def test_trainable_coeffs_torch_simplify(self, group):
