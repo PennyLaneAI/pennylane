@@ -36,11 +36,6 @@ Pending deprecations
   - Deprecated in v0.35
   - Will raise an error in v0.36
 
-* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
-
-  - Contents moved in v0.35
-  - Old import path removed in v0.36
-
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
@@ -67,6 +62,11 @@ Completed deprecation cycles
   
   - Deprecated in v0.35
   - Removed in v0.36
+
+* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
+
+  - Contents moved in v0.35
+  - Old import path removed in v0.36
 
 * The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
   operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and has been removed
