@@ -1,4 +1,4 @@
-# Copyright 2022 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,1377 +11,1248 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Unit tests for the :mod:`pennylane.plugin.NullQubit` device.
-"""
-# pylint: disable=protected-access,cell-var-from-loop
-from collections import defaultdict
-import math
+"""Tests for null.qubit."""
 
+from collections import defaultdict as dd
 import pytest
+
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np, DeviceError
-from pennylane.devices.null_qubit import NullQubit
-from pennylane.measurements import Shots
-from pennylane import Tracker
 
-
-@pytest.fixture(
-    name="nullqubit_device",
-    scope="function",
-    params=[(np.float32, np.complex64), (np.float64, np.complex128)],
+from pennylane.devices import NullQubit, ExecutionConfig
+from pennylane.measurements import (
+    SampleMeasurement,
+    StateMeasurement,
+    ClassicalShadowMP,
+    ShadowExpvalMP,
 )
-def fixture_nullqubit_device(request):
-    """Create a NullQubit device with the indicated number of wires,
-    parametrizing over real and complex dtypes."""
 
-    def _device(wires):
-        """Create NullQubit device."""
-        return qml.device(
-            "null.qubit", wires=wires, r_dtype=request.param[0], c_dtype=request.param[1]
-        )
-
-    return _device
+np.random.seed(0)
 
 
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("null.qubit", wires=1, shots=1, analytic=True)
+def test_name():
+    """Tests the name of NullQubit."""
+    assert NullQubit().name == "null.qubit"
 
 
-def test_dtype_errors():
-    """Test that if an incorrect dtype is provided to the device then an error is raised."""
-    with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
-        qml.device("null.qubit", wires=1, r_dtype=np.complex128)
-    with pytest.raises(
-        DeviceError, match="Complex datatype must be a complex floating point type."
-    ):
-        qml.device("null.qubit", wires=1, c_dtype=np.float64)
+def test_shots():
+    """Test the shots property of NullQubit."""
+    assert NullQubit().shots == qml.measurements.Shots(None)
+    assert NullQubit(shots=100).shots == qml.measurements.Shots(100)
+
+    with pytest.raises(AttributeError):
+        NullQubit().shots = 10
 
 
-def test_custom_op_with_matrix():
-    """Test that a dummy op with a matrix is supported."""
-    # pylint: disable=too-few-public-methods
+def test_wires():
+    """Test that a device can be created with wires."""
+    assert NullQubit().wires is None
+    assert NullQubit(wires=2).wires == qml.wires.Wires([0, 1])
+    assert NullQubit(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
 
-    class DummyOp(qml.operation.Operation):
-        """Placeholder Operation on a single wire."""
-
-        num_wires = 1
-
-        def compute_matrix(self):
-            """Compute the matrix of the DummyOp"""
-            return np.eye(2)
-
-    with qml.queuing.AnnotatedQueue() as q:
-        DummyOp(0)
-        qml.state()
-
-    tape = qml.tape.QuantumScript.from_queue(q)
-    dev = qml.device("null.qubit", wires=1)
-    assert dev.execute(tape) == [0.0]
+    with pytest.raises(AttributeError):
+        NullQubit().wires = [0, 1]
 
 
-class TestApply:
-    """Tests that operations and inverses of certain operations are applied correctly."""
+def test_debugger_attribute():
+    """Test that NullQubit has a debugger attribute and that it is `None`"""
+    # pylint: disable=protected-access
+    dev = NullQubit()
 
-    @pytest.mark.parametrize(
-        "operation,input",
-        [
-            (
-                qml.BasisState,
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-            ),
-            (
-                qml.StatePrep,
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-            ),
-        ],
+    assert hasattr(dev, "_debugger")
+    assert dev._debugger is None
+
+
+def test_tracking():
+    """Test some tracking values for null.qubit"""
+
+    qs = qml.tape.QuantumScript(
+        [qml.Hadamard(0), qml.FlipSign([1, 0], [0, 1])], [qml.expval(qml.PauliZ(0))]
     )
-    def test_apply_operation_state_preparation(self, nullqubit_device, operation, input):
-        """Tests that the null.qubit does nothing regarding state initialization."""
-
-        input = np.array(input)
-        dev = nullqubit_device(wires=2)
-        dev.reset()
-        dev.apply([operation(input, wires=[0, 1])])
-        assert dev._state == [0.0]
-
-    @pytest.mark.parametrize(
-        "op",
-        [
-            qml.SingleExcitation,
-            qml.SingleExcitationPlus,
-            qml.SingleExcitationMinus,
-            qml.DoubleExcitation,
-            qml.DoubleExcitationPlus,
-            qml.DoubleExcitationMinus,
-            qml.OrbitalRotation,
-            qml.QubitSum,
-            qml.QubitCarry,
-        ],
-    )
-    def test_advanced_op(self, nullqubit_device, op):
-        """Test qchem and arithmetic operations."""
-
-        dev = nullqubit_device(wires=4)
-
-        n_wires = op.num_wires
-        n_params = op.num_params
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            if n_params == 0:
-                op(wires=range(n_wires))
-            elif n_params == 1:
-                op(0.543, wires=range(n_wires))
-            else:
-                op([0.543] * n_params, wires=range(n_wires))
-            return qml.state()
-
-        assert circuit() == [0.0]
-
-
-class TestExpval:
-    """Tests that expectation values are properly (not) calculated."""
-
-    @pytest.mark.parametrize(
-        "operation,input",
-        [
-            (qml.PauliX, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            (qml.PauliY, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            (qml.PauliZ, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            (qml.Hadamard, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            (qml.Identity, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-        ],
-    )
-    def test_expval_single_wire_no_parameters(self, nullqubit_device, operation, input):
-        """Tests that expectation values are properly calculated for single-wire observables without parameters."""
-
-        obs = operation(wires=[0])
-
-        dev = nullqubit_device(wires=1)
-        dev.reset()
-        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
-        res = dev.expval(obs)
-        assert res == [0.0]
-
-    @pytest.mark.parametrize(
-        "operation,input,par",
-        [
-            (qml.Hermitian, [1, 0], [[1, 1j], [-1j, 1]]),
-            (qml.Hermitian, [0, 1], [[1, 1j], [-1j, 1]]),
-            (qml.Hermitian, [1 / math.sqrt(2), -1 / math.sqrt(2)], [[1, 1j], [-1j, 1]]),
-        ],
-    )
-    def test_expval_single_wire_with_parameters(self, nullqubit_device, operation, input, par):
-        """Tests that expectation values are properly calculated for single-wire observables with parameters."""
-
-        obs = operation(np.array(par), wires=[0])
-
-        dev = nullqubit_device(wires=1)
-        dev.reset()
-        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
-        res = dev.expval(obs)
-
-        assert res == [0.0]
-
-    @pytest.mark.parametrize(
-        "operation,input,par",
-        [
-            (
-                qml.Hermitian,
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-                [[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]],
-            ),
-            (
-                qml.Hermitian,
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-                [[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]],
-            ),
-            (
-                qml.Hermitian,
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-                [[1, 1j, 0, 0.5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-0.5j, 0, 1j, 1]],
-            ),
-        ],
-    )
-    def test_expval_two_wires_with_parameters(self, nullqubit_device, operation, input, par):
-        """Tests that expectation values are properly calculated for two-wire observables with parameters."""
-
-        obs = operation(np.array(par), wires=[0, 1])
-
-        dev = nullqubit_device(wires=2)
-        dev.reset()
-        dev.apply([qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
-        res = dev.expval(obs)
-
-        assert res == [0.0]
-
-
-class TestVar:
-    """Tests that variances are properly (not) calculated."""
-
-    @pytest.mark.parametrize(
-        "operation,input",
-        [
-            (qml.PauliX, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            (qml.PauliY, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            (qml.PauliZ, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            (qml.Hadamard, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            (qml.Identity, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-        ],
-    )
-    def test_var_single_wire_no_parameters(self, nullqubit_device, operation, input):
-        """Tests that variances are properly (not) calculated for single-wire observables without parameters."""
-
-        obs = operation(wires=[0])
-
-        dev = nullqubit_device(wires=1)
-        dev.reset()
-        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
-        res = dev.var(obs)
-        assert res == [0.0]
-
-    @pytest.mark.parametrize(
-        "operation,input,par",
-        [
-            (qml.Hermitian, [1, 0], [[1, 1j], [-1j, 1]]),
-            (qml.Hermitian, [0, 1], [[1, 1j], [-1j, 1]]),
-            (qml.Hermitian, [1 / math.sqrt(2), -1 / math.sqrt(2)], [[1, 1j], [-1j, 1]]),
-        ],
-    )
-    def test_var_single_wire_with_parameters(self, nullqubit_device, operation, input, par):
-        """Tests that variances are properly (not) calculated for single-wire observables with parameters."""
-
-        obs = operation(np.array(par), wires=[0])
-
-        dev = nullqubit_device(wires=1)
-        dev.reset()
-        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
-        res = dev.var(obs)
-
-        assert res == [0.0]
-
-    @pytest.mark.parametrize(
-        "operation,input,par",
-        [
-            (
-                qml.Hermitian,
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-                [[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]],
-            ),
-            (
-                qml.Hermitian,
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-                [[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]],
-            ),
-            (
-                qml.Hermitian,
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-                [[1, 1j, 0, 0.5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-0.5j, 0, 1j, 1]],
-            ),
-        ],
-    )
-    def test_var_two_wires_with_parameters(self, nullqubit_device, operation, input, par):
-        """Tests that variances are properly (not) calculated for two-wire observables with parameters."""
-
-        obs = operation(np.array(par), wires=[0, 1])
-
-        dev = nullqubit_device(wires=2)
-        dev.reset()
-        dev.apply([qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
-        res = dev.var(obs)
-
-        assert res == [0.0]
-
-
-class TestSample:
-    """Tests that samples are properly (not) calculated."""
-
-    # pylint: disable=too-few-public-methods
-
-    def test_sample_values(self):
-        """Tests if the samples returned by sample have
-        the correct values
-        """
-        dev = qml.device("null.qubit", wires=2, shots=1000)
-
-        dev.apply([qml.RX(1.5708, wires=[0])])
-        dev._wires_measured = {0}
-        dev._samples = dev.generate_samples()
-
-        s1 = dev.sample(qml.PauliZ(0))
-
-        assert s1 == [0.0]
-
-
-class TestNullQubitIntegration:
-    """Integration tests for null.qubit. These tests ensure it integrates
-    properly with the PennyLane interface, in particular QNode."""
-
-    def test_defines_correct_capabilities(self):
-        """Test that the device defines the right capabilities"""
-
-        dev = qml.device("null.qubit", wires=1)
-        cap = dev.capabilities()
-        capabilities = {
-            "model": "qubit",
-            "supports_broadcasting": False,
-            "supports_finite_shots": True,
-            "supports_tensor_observables": True,
-            "returns_probs": True,
-            "supports_inverse_operations": True,
-            "supports_analytic_computation": True,
-            "returns_state": True,
-            "passthru_devices": {
-                "tf": "null.qubit",
-                "torch": "null.qubit",
-                "autograd": "null.qubit",
-                "jax": "null.qubit",
-            },
-        }
-        assert cap == capabilities
-
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_circuit_state(self, nullqubit_device, r_dtype):
-        """Test that the NullQubit plugin provides the correct state for a simple circuit"""
-
-        p = 0.543
-
-        dev = nullqubit_device(wires=1)
-        dev.R_DTYPE = r_dtype
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.state()
-
-        assert circuit(p) == [0.0]
-
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_circuit_expval(self, nullqubit_device, r_dtype):
-        """Test that the NullQubit plugin provides the correct expval for a simple circuit"""
-
-        p = 0.543
-
-        dev = nullqubit_device(wires=1)
-        dev.R_DTYPE = r_dtype
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliY(0))
-
-        assert circuit(p) == np.array([0.0], dtype=object)
-
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_circuit_var(self, nullqubit_device, r_dtype):
-        """Test that the NullQubit plugin provides the correct var for a simple circuit"""
-
-        p = 0.543
-
-        dev = nullqubit_device(wires=1)
-        dev.R_DTYPE = r_dtype
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.var(qml.PauliY(0))
-
-        assert circuit(p) == np.array([0.0], dtype=object)
-
-    def test_qubit_identity(self, nullqubit_device):
-        """Test that the NullQubit plugin provides correct result for the Identity expectation"""
-
-        p = 0.543
-
-        @qml.qnode(nullqubit_device(wires=1), diff_method="parameter-shift")
-        def circuit(x):
-            """Test quantum function"""
-            qml.RX(x, wires=0)
-            return qml.expval(qml.Identity(0))
-
-        assert circuit(p) == np.array([0.0], dtype=object)
-
-    def test_nonzero_shots(self):
-        """Test that the NullQubit plugin provides correct result for high shot number"""
-        dev = qml.device("null.qubit", wires=1, shots=10**5)
-
-        p = 0.543
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(x):
-            """Test quantum function"""
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliY(0))
-
-        runs = []
-        for _ in range(100):
-            runs.append(circuit(p))
-
-        assert np.all(runs == np.array([0.0], dtype=object))
-
-    @pytest.mark.parametrize(
-        "name,state",
-        [
-            ("PauliX", [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            ("PauliY", [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            ("PauliZ", [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-            ("Hadamard", [1 / math.sqrt(5), 2 / math.sqrt(5)]),
-        ],
-    )
-    def test_supported_observable_single_wire_no_parameters(self, nullqubit_device, name, state):
-        """Tests supported observables on single wires without parameters."""
-
-        obs = getattr(qml.ops, name)
-
-        dev = nullqubit_device(wires=1)
-        assert dev.supports_observable(name)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            qml.StatePrep(np.array(state), wires=[0])
-            return qml.expval(obs(wires=[0]))
-
-        assert circuit() == np.array([0.0], dtype=object)
-
-    @pytest.mark.parametrize(
-        "name,state,par",
-        [
-            ("Identity", [1 / math.sqrt(5), 2 / math.sqrt(5)], []),
-            ("Hermitian", [1 / math.sqrt(5), 2 / math.sqrt(5)], [np.array([[1, 1j], [-1j, 1]])]),
-        ],
-    )
-    def test_supported_observable_single_wire_with_parameters(
-        self, nullqubit_device, name, state, par
-    ):
-        """Tests supported observables on single wires with parameters."""
-
-        obs = getattr(qml.ops, name)
-
-        dev = nullqubit_device(wires=1)
-        assert dev.supports_observable(name)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            qml.StatePrep(np.array(state), wires=[0])
-            return qml.expval(obs(*par, wires=[0]))
-
-        assert circuit() == np.array([0.0], dtype=object)
-
-    @pytest.mark.parametrize(
-        "name,state,par",
-        [
-            (
-                "Hermitian",
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-                [np.array([[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]])],
-            ),
-            (
-                "Hermitian",
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-                [np.array([[1, 1j, 0, 0.5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-0.5j, 0, 1j, 1]])],
-            ),
-            (
-                "Hermitian",
-                [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-                [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])],
-            ),
-        ],
-    )
-    def test_supported_observable_two_wires_with_parameters(
-        self, nullqubit_device, name, state, par
-    ):
-        """Tests supported observables on two wires with parameters."""
-
-        obs = getattr(qml.ops, name)
-
-        dev = nullqubit_device(wires=2)
-        assert dev.supports_observable(name)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            qml.StatePrep(np.array(state), wires=[0, 1])
-            return qml.expval(obs(*par, wires=[0, 1]))
-
-        assert circuit() == np.array([0.0], dtype=object)
-
-    @pytest.mark.parametrize(
-        "method", ["best", "parameter-shift", "backprop", "finite-diff", "adjoint"]
-    )
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_diff_method(self, nullqubit_device, method, r_dtype):
-        """Test that the NullQubit works with all, except for "device", diff_method options."""
-
-        p = 0.543
-
-        dev = nullqubit_device(wires=1)
-        dev.R_DTYPE = r_dtype
-
-        @qml.qnode(dev, diff_method=method)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.state()
-
-        assert circuit(p) == [0.0]
-
-    @pytest.mark.parametrize(
-        "method", ["best", "parameter-shift", "backprop", "finite-diff", "adjoint"]
-    )
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_diff_method_multi_results(self, nullqubit_device, method, r_dtype):
-        """Test that the NullQubit works with all, except for "device", diff_method options."""
-
-        p = 0.543
-
-        dev = nullqubit_device(wires=4)
-        dev.R_DTYPE = r_dtype
-
-        @qml.qnode(dev, diff_method=method)
-        def circuit(x):
-            for n in range(4):
-                qml.RX(x, wires=n)
-            return [qml.expval(qml.PauliZ(i)) for i in range(4)]
-
-        assert np.all(circuit(p) == np.array([0.0], dtype=object))
-
-
-THETA = np.linspace(0.11, 1, 3)
-PHI = np.linspace(0.32, 1, 3)
-VARPHI = np.linspace(0.02, 1, 3)
-
-
-@pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
-class TestTensorExpval:
-    """Test if tensor expectation values returns None"""
-
-    def test_paulix_pauliy(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = nullqubit_device(wires=3)
-
-        obs = qml.PauliX(0) @ qml.PauliY(2)
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
+    dev = NullQubit()
+    config = ExecutionConfig(gradient_method="device")
+
+    with qml.Tracker(dev) as tracker:
+        dev.execute(qs)
+        dev.compute_derivatives(qs, config)
+        dev.execute_and_compute_derivatives([qs] * 2, config)
+        dev.compute_jvp([qs] * 3, [(0,)] * 3, config)
+        dev.execute_and_compute_jvp([qs] * 4, [(0,)] * 4, config)
+        dev.compute_vjp([qs] * 5, [(0,)] * 5, config)
+        dev.execute_and_compute_vjp([qs] * 6, [(0,)] * 6, config)
+
+    assert tracker.history == {
+        "batches": [1],
+        "results": [np.array(0)],
+        "simulations": [1],
+        "executions": [1, 2, 4, 6],
+        "derivatives": [1, 2],
+        "derivative_batches": [1],
+        "execute_and_derivative_batches": [1],
+        "jvps": [3, 4],
+        "jvp_batches": [1],
+        "execute_and_jvp_batches": [1],
+        "vjps": [5, 6],
+        "vjp_batches": [1],
+        "execute_and_vjp_batches": [1],
+        "resources": [
+            qml.resource.Resources(
+                num_wires=2,
+                num_gates=2,
+                gate_types=dd(int, {"Hadamard": 1, "FlipSign": 1}),
+                gate_sizes=dd(int, {1: 1, 2: 1}),
+                depth=2,
+            )
+        ]
+        * 13,
+    }
+
+
+class TestSupportsDerivatives:
+    """Test that NullQubit states what kind of derivatives it supports."""
+
+    def test_supported_config(self):
+        """Test that NullQubit says that it supports backpropagation."""
+        dev = NullQubit()
+        assert dev.supports_derivatives() is True
+        assert dev.supports_jvp() is True
+        assert dev.supports_vjp() is True
+
+        config = ExecutionConfig(gradient_method="device")
+        assert dev.supports_derivatives(config) is True
+        assert dev.supports_jvp(config) is True
+        assert dev.supports_vjp(config) is True
+
+        config = ExecutionConfig(gradient_method="backprop")
+        assert dev.supports_derivatives(config) is True
+        assert dev.supports_jvp(config) is True
+        assert dev.supports_vjp(config) is True
+
+        qs = qml.tape.QuantumScript([], [qml.state()])
+        assert dev.supports_derivatives(config, qs) is True
+        assert dev.supports_jvp(config, qs) is True
+        assert dev.supports_vjp(config, qs) is True
+
+    @pytest.mark.parametrize("gradient_method", ["parameter-shift", "finite-diff", None])
+    def test_doesnt_support_other_gradient_methods(self, gradient_method):
+        """Test that NullQubit currently does not support other gradient methods natively."""
+        dev = NullQubit()
+        config = ExecutionConfig(gradient_method=gradient_method)
+        assert dev.supports_derivatives(config) is False
+        assert dev.supports_jvp(config) is False
+        assert dev.supports_vjp(config) is False
+
+    def test_swaps_adjoint_to_mean_device(self):
+        """Test that null.qubit interprets 'adjoint' as device derivatives."""
+        dev = NullQubit()
+        config = ExecutionConfig(gradient_method="adjoint")
+        _, config = dev.preprocess(config)
+        assert config.gradient_method == "device"
+        assert dev.supports_derivatives(config) is True
+        assert dev.supports_jvp(config) is True
+        assert dev.supports_vjp(config) is True
+
+
+class TestBasicCircuit:
+    """Tests a basic circuit with one RX gate and two simple expectation values."""
+
+    def test_basic_circuit_numpy(self):
+        """Test execution with a basic circuit."""
+        phi = np.array(0.397)
+        qs = qml.tape.QuantumScript(
+            [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        assert dev.expval(obs) == [0.0]
+        dev = NullQubit()
+        result = dev.execute(qs)
+        dq_res = qml.device("default.qubit").execute(qs)
 
-    def test_pauliz_identity(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = nullqubit_device(wires=3)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        assert qml.math.shape(dq_res) == qml.math.shape(result)
+        assert qml.math.allequal(result, 0)
 
-        obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
+    @pytest.mark.autograd
+    def test_autograd_results_and_backprop(self):
+        """Tests execution and gradients with autograd"""
+        phi = qml.numpy.array(-0.52)
 
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
+        dev = NullQubit()
+
+        def f(x):
+            qs = qml.tape.QuantumScript(
+                [qml.RX(x, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+            )
+            return qml.numpy.array(dev.execute(qs))
+
+        expected = np.zeros(2)
+        assert np.array_equal(f(phi), expected)
+        assert np.array_equal(qml.jacobian(f)(phi), expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_jax_results_and_backprop(self, use_jit):
+        """Tests execution and gradients with jax."""
+        import jax
+
+        phi = jax.numpy.array(0.678)
+
+        dev = NullQubit()
+
+        def f(x):
+            qs = qml.tape.QuantumScript(
+                [qml.RX(x, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+            )
+            return dev.execute(qs)
+
+        if use_jit:
+            f = jax.jit(f)
+
+        expected = np.zeros(2)
+        assert np.array_equal(f(phi), expected)
+        assert np.array_equal(jax.jacobian(f)(phi), expected)
+
+    @pytest.mark.torch
+    def test_torch_results_and_backprop(self):
+        """Tests execution and gradients of a simple circuit with torch."""
+
+        import torch
+
+        phi = torch.tensor(-0.526, requires_grad=True)
+
+        dev = NullQubit()
+
+        def f(x):
+            qs = qml.tape.QuantumScript(
+                [qml.RX(x, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+            )
+            return dev.execute(qs, ExecutionConfig(interface="torch"))
+
+        expected = np.zeros(2)
+        assert np.array_equal(f(phi), expected)
+        assert np.array_equal(torch.autograd.functional.jacobian(f, phi + 0j), expected)
+
+    @pytest.mark.xfail(reason="tf can't track derivatives")
+    @pytest.mark.tf
+    def test_tf_results_and_backprop(self):
+        """Tests execution and gradients of a simple circuit with tensorflow."""
+        import tensorflow as tf
+
+        phi = tf.Variable(4.873)
+
+        dev = NullQubit()
+
+        with tf.GradientTape(persistent=True) as grad_tape:
+            qs = qml.tape.QuantumScript(
+                [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+            )
+            result = dev.execute(qs)
+
+        expected = np.zeros(2)
+        assert np.array_equal(result, expected)
+        grads = [grad_tape.jacobian(result[0], [phi]), grad_tape.jacobian(result[1], [phi])]
+        assert np.array_equal(grads, expected)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("op,param", [(qml.RX, np.pi), (qml.BasisState, [1])])
+    def test_qnode_returns_correct_interface(self, op, param):
+        """Test that even if no interface parameters are given, result is correct."""
+        dev = NullQubit()
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(p):
+            op(p, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit(param)
+        assert qml.math.get_interface(res) == "tensorflow"
+        assert res == qml.math.asarray(0.0, like="tensorflow")
+
+    def test_basis_state_wire_order(self):
+        """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
+
+        dev = NullQubit()
+
+        tape = qml.tape.QuantumScript([qml.BasisState([1], wires=1), qml.PauliZ(0)], [qml.state()])
+
+        expected = np.array([1, 0, 0, 0], dtype=np.complex128)
+        res = dev.execute(tape)
+        assert qml.math.allclose(res, expected)
+
+
+class TestSampleMeasurements:
+    """A copy of the `qubit.simulate` tests, but using the device"""
+
+    def test_single_expval(self):
+        """Test a simple circuit with a single expval measurement"""
+        x = np.array(0.732)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10000)
+
+        dev = NullQubit()
+        result = dev.execute(qs)
+
+        assert np.array_equal(result, 0.0)
+
+    def test_single_probs(self):
+        """Test a simple circuit with a single prob measurement"""
+        x = np.array(0.732)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.probs(wires=0)], shots=10000)
+
+        dev = NullQubit()
+        result = dev.execute(qs)
+        assert np.array_equal(result, [1.0, 0.0])
+
+    def test_single_sample(self):
+        """Test a simple circuit with a single sample measurement"""
+        x = np.array(0.732)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.sample(wires=range(2))], shots=10000)
+
+        dev = NullQubit()
+        result = dev.execute(qs)
+
+        assert np.array_equal(result, np.zeros((10000, 2)))
+
+    def test_multi_measurements(self):
+        """Test a simple circuit containing multiple measurements"""
+        x, y = np.array(0.732), np.array(0.488)
+        qs = qml.tape.QuantumScript(
+            [qml.RX(x, wires=0), qml.CNOT(wires=[0, 1]), qml.RY(y, wires=1)],
+            [qml.expval(qml.Hadamard(0)), qml.probs(wires=range(2)), qml.sample(wires=range(2))],
+            shots=10000,
         )
 
-        assert dev.expval(obs) == [0.0]
+        dev = NullQubit()
+        result = dev.execute(qs)
 
-    def test_pauliz_hadamard(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = nullqubit_device(wires=3)
-        obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
+        assert isinstance(result, tuple)
 
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
+        exp, probs, sample = result
+        assert np.array_equal(exp, 0.0)
+        assert np.array_equal(probs, [1.0, 0.0, 0.0, 0.0])
+        assert np.array_equal(sample, np.zeros((10000, 2)))
 
-        assert dev.expval(obs) == [0.0]
-
-    def test_hermitian(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = nullqubit_device(wires=3)
-
-        A = np.array(
-            [
-                [-6, 2 + 1j, -3, -5 + 2j],
-                [2 - 1j, 0, 2 - 1j, -5 + 4j],
-                [-3, 2 + 1j, 0, -4 + 3j],
-                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
-        )
-
-        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.expval(obs) == [0.0]
-
-    def test_hermitian_hermitian(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = nullqubit_device(wires=3)
-
-        A1 = np.array([[1, 2], [2, 4]])
-
-        A2 = np.array(
-            [
-                [-6, 2 + 1j, -3, -5 + 2j],
-                [2 - 1j, 0, 2 - 1j, -5 + 4j],
-                [-3, 2 + 1j, 0, -4 + 3j],
-                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
-        )
-
-        obs = qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2])
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.expval(obs) == [0.0]
-
-    def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        # pylint: disable=unused-argument
-        dev = nullqubit_device(wires=2)
-
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
-        )
-
-        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
-
-        dev.apply(
-            [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.expval(obs) == [0.0]
-
-    def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        # pylint: disable=unused-argument
-        dev = nullqubit_device(wires=3)
-
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
-        )
-        Identity = np.array([[1, 0], [0, 1]])
-        H = np.kron(np.kron(Identity, Identity), A)
-        obs = qml.Hermitian(H, wires=[2, 1, 0])
-
-        dev.apply(
-            [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.expval(obs) == [0.0]
-
-
-@pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
-class TestTensorVar:
-    """Test if tensor variance returns None"""
-
-    def test_paulix_pauliy(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = nullqubit_device(wires=3)
-
-        obs = qml.PauliX(0) @ qml.PauliY(2)
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.var(obs) == [0.0]
-
-    def test_pauliz_identity(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = nullqubit_device(wires=3)
-
-        obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.var(obs) == [0.0]
-
-    def test_pauliz_hadamard(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = nullqubit_device(wires=3)
-        obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.var(obs) == [0.0]
-
-    def test_hermitian(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = nullqubit_device(wires=3)
-
-        A = np.array(
-            [
-                [-6, 2 + 1j, -3, -5 + 2j],
-                [2 - 1j, 0, 2 - 1j, -5 + 4j],
-                [-3, 2 + 1j, 0, -4 + 3j],
-                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
-        )
-
-        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.var(obs) == [0.0]
-
-    def test_hermitian_hermitian(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = nullqubit_device(wires=3)
-
-        A1 = np.array([[1, 2], [2, 4]])
-
-        A2 = np.array(
-            [
-                [-6, 2 + 1j, -3, -5 + 2j],
-                [2 - 1j, 0, 2 - 1j, -5 + 4j],
-                [-3, 2 + 1j, 0, -4 + 3j],
-                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
-        )
-
-        obs = qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2])
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.var(obs) == [0.0]
-
-    def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        # pylint: disable=unused-argument
-        dev = nullqubit_device(wires=2)
-
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
-        )
-
-        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
-
-        dev.apply(
-            [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.var(obs) == [0.0]
-
-    def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
-        """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        # pylint: disable=unused-argument
-        dev = nullqubit_device(wires=3)
-
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
-        )
-        Identity = np.array([[1, 0], [0, 1]])
-        H = np.kron(np.kron(Identity, Identity), A)
-        obs = qml.Hermitian(H, wires=[2, 1, 0])
-
-        dev.apply(
-            [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
-            obs.diagonalizing_gates(),
-        )
-
-        assert dev.var(obs) == [0.0]
-
-
-class TestApplyOps:
-    """Tests special methods to apply gates in NullQubit."""
-
-    state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
-    dev = qml.device("null.qubit", wires=4)
-
-    single_qubit_ops = [
-        (dev._apply_x),
-        (dev._apply_y),
-        (dev._apply_z),
-        (dev._apply_hadamard),
-        (dev._apply_s),
-        (dev._apply_t),
-        (dev._apply_sx),
-    ]
-    two_qubit_ops = [
-        (dev._apply_cnot),
-        (dev._apply_swap),
-        (dev._apply_cz),
-    ]
-    three_qubit_ops = [
-        (dev._apply_toffoli),
+    shots_data = [
+        [10000, 10000],
+        [(10000, 2)],
+        [10000, 20000],
+        [(10000, 2), 20000],
+        [(10000, 3), 20000, (30000, 2)],
     ]
 
-    @pytest.mark.parametrize("method", single_qubit_ops)
-    def test_apply_single_qubit_op(self, method):
-        """Test if the application of single qubit operations is correct."""
-        state_out = method(self.state, axes=[1])
-        assert state_out == [0.0]
+    @pytest.mark.parametrize("shots", shots_data)
+    def test_expval_shot_vector(self, shots):
+        """Test a simple circuit with a single expval measurement for shot vectors"""
+        x = np.array(0.732)
+        shots = qml.measurements.Shots(shots)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=shots)
 
-    @pytest.mark.parametrize("method", two_qubit_ops)
-    def test_apply_two_qubit_op(self, method):
-        """Test if the application of two qubit operations is correct."""
-        state_out = method(self.state, axes=[0, 1])
-        assert state_out == [0.0]
+        dev = NullQubit()
+        result = dev.execute(qs)
 
-    @pytest.mark.parametrize("method", two_qubit_ops)
-    def test_apply_two_qubit_op_reverse(self, method):
-        """Test if the application of two qubit operations is correct when the applied wires are
-        reversed."""
-        state_out = method(self.state, axes=[2, 1])
-        assert state_out == [0.0]
+        assert isinstance(result, tuple)
+        assert len(result) == len(list(shots))
+        assert all(r == 0.0 for r in result)
 
-    @pytest.mark.parametrize("method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_smaller(self, method):
-        """Test if the application of three qubit operations is correct when both control wires are
-        smaller than the target wire."""
-        state_out = method(self.state, axes=[0, 2, 3])
-        assert state_out == [0.0]
+    @pytest.mark.parametrize("shots", shots_data)
+    def test_probs_shot_vector(self, shots):
+        """Test a simple circuit with a single prob measurement for shot vectors"""
+        x = np.array(0.732)
+        shots = qml.measurements.Shots(shots)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.probs(wires=0)], shots=shots)
 
-    @pytest.mark.parametrize("method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_greater(self, method):
-        """Test if the application of three qubit operations is correct when both control wires are
-        greater than the target wire."""
-        state_out = method(self.state, axes=[2, 1, 0])
-        assert state_out == [0.0]
+        dev = NullQubit()
+        result = dev.execute(qs)
 
-    @pytest.mark.parametrize("method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_split(self, method):
-        """Test if the application of three qubit operations is correct when one control wire is smaller
-        and one control wire is greater than the target wire."""
-        state_out = method(self.state, axes=[3, 1, 2])
-        assert state_out == [0.0]
+        assert isinstance(result, tuple)
+        assert len(result) == len(list(shots))
 
-    single_qubit_ops_param = [
-        (dev._apply_phase, [1.0]),
-    ]
+        assert all(np.array_equal(res, [1.0, 0.0]) for res in result)
 
-    @pytest.mark.parametrize("method,par", single_qubit_ops_param)
-    def test_apply_single_qubit_op_param(self, method, par):
-        """Test if the application of single qubit operations (with parameter) is correct."""
-        state_out = method(self.state, axes=[1], parameters=par)
-        assert state_out == [0.0]
+    @pytest.mark.parametrize("shots", shots_data)
+    def test_sample_shot_vector(self, shots):
+        """Test a simple circuit with a single sample measurement for shot vectors"""
+        x = np.array(0.732)
+        shots = qml.measurements.Shots(shots)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.sample(wires=range(2))], shots=shots)
 
+        dev = NullQubit()
+        result = dev.execute(qs)
 
-class TestStateInitialization:
-    """Unit tests for state initialization methods"""
+        assert isinstance(result, tuple)
+        assert len(result) == len(list(shots))
+        assert all(np.array_equal(res, np.zeros((s, 2))) for res, s in zip(result, shots))
 
-    def test_state_vector_full_system(self, mocker):
-        """Test applying a state vector to the full system"""
-        state_wires = qml.wires.Wires(["a", "b", "c"])
-        dev = NullQubit(wires=state_wires)
-        state = np.array(
-            [
-                1 / math.sqrt(204),
-                2 / math.sqrt(204),
-                3 / math.sqrt(204),
-                4 / math.sqrt(204),
-                5 / math.sqrt(204),
-                6 / math.sqrt(204),
-                7 / math.sqrt(204),
-                8 / math.sqrt(204),
-            ]
+    @pytest.mark.parametrize("shots", shots_data)
+    def test_multi_measurement_shot_vector(self, shots):
+        """Test a simple circuit containing multiple measurements for shot vectors"""
+        # TODO: resume from here
+        x, y = np.array(0.732), np.array(0.488)
+        shots = qml.measurements.Shots(shots)
+        qs = qml.tape.QuantumScript(
+            [qml.RX(x, wires=0), qml.CNOT(wires=[0, 1]), qml.RY(y, wires=1)],
+            [qml.expval(qml.Hadamard(0)), qml.probs(wires=range(2)), qml.sample(wires=range(2))],
+            shots=shots,
         )
 
-        spy = mocker.spy(dev, "_scatter")
-        dev._apply_state_vector(state=state, device_wires=state_wires)
+        dev = NullQubit()
+        result = dev.execute(qs)
 
-        assert dev._state == [0.0]
-        spy.assert_not_called()
+        assert isinstance(result, tuple)
+        assert len(result) == len(list(shots))
 
-    def test_basis_state_full_system(self, mocker):
-        """Test applying a state vector to the full system"""
-        state_wires = qml.wires.Wires(["a", "b", "c"])
-        dev = NullQubit(wires=state_wires)
-        state = np.array(
-            [
-                1 / math.sqrt(204),
-                2 / math.sqrt(204),
-                3 / math.sqrt(204),
-                4 / math.sqrt(204),
-                5 / math.sqrt(204),
-                6 / math.sqrt(204),
-                7 / math.sqrt(204),
-                8 / math.sqrt(204),
-            ]
+        for shot_res, s in zip(result, shots):
+            assert isinstance(shot_res, tuple)
+            assert len(shot_res) == 3
+            assert np.array_equal(shot_res[0], 0.0)
+            assert np.array_equal(shot_res[1], [1.0, 0.0, 0.0, 0.0])
+            assert np.array_equal(shot_res[2], np.zeros((s, 2)))
+
+    def test_batch_tapes(self):
+        """Test that a batch of tapes with sampling works as expected"""
+        x = np.array(0.732)
+        qs1 = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.sample(wires=(0, 1))], shots=100)
+        qs2 = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.sample(wires=1)], shots=50)
+
+        dev = NullQubit()
+        res1, res2 = dev.execute((qs1, qs2))
+
+        assert np.array_equal(res1, np.zeros((100, 2)))
+        assert np.array_equal(res2, np.zeros(50))
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_counts_wires(self, all_outcomes):
+        """Test that a Counts measurement with wires works as expected"""
+        x = np.array(np.pi / 2)
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)], [qml.counts(wires=[0, 1], all_outcomes=all_outcomes)], shots=10000
         )
 
-        spy = mocker.spy(dev, "_scatter")
-        dev._apply_basis_state(state=state, wires=state_wires)
+        dev = NullQubit()
+        result = dev.execute(qs)
 
-        assert dev._state == [0.0]
-        spy.assert_not_called()
+        expected = {"00": 10000, "01": 0, "10": 0, "11": 0} if all_outcomes else {"00": 10000}
+        assert result == expected
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_counts_wires_batched(self, all_outcomes):
+        """Test that a Counts measurement with wires and batching works as expected"""
+        x = np.array([np.pi / 2, np.pi / 4])
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)],
+            [qml.counts(wires=[0, 1], all_outcomes=all_outcomes)],
+            shots=[50, 100, 150],
+        )
+
+        dev = NullQubit()
+        result = dev.execute(qs)
+        print(result)
+
+        assert (
+            result == tuple([{"00": s, "01": 0, "10": 0, "11": 0}] * 2 for s in qs.shots)
+            if all_outcomes
+            else tuple([{"00": s}] * 2 for s in qs.shots)
+        )
+
+    @pytest.mark.parametrize("all_outcomes", [False, True])
+    def test_counts_obs(self, all_outcomes):
+        """Test that a Counts measurement with an observable works as expected"""
+        x = np.array(np.pi / 2)
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)],
+            [qml.counts(qml.PauliZ(0), all_outcomes=all_outcomes)],
+            shots=10000,
+        )
+
+        dev = NullQubit()
+        result = dev.execute(qs)
+        assert result == ({-1: 10000, 1: 0} if all_outcomes else {-1: 10000})
+
+    @pytest.mark.parametrize("all_outcomes", [False, True])
+    def test_counts_obs_batched(self, all_outcomes):
+        """Test that a Counts measurement with an observable and batching works as expected"""
+        x = np.array([np.pi / 2, np.pi / 4])
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)],
+            [qml.counts(qml.PauliZ(0), all_outcomes=all_outcomes)],
+            shots=[50, 100, 150],
+        )
+
+        dev = NullQubit()
+        result = dev.execute(qs)
+        print(result)
+        assert (
+            result == tuple([{-1: s, 1: 0}] * 2 for s in qs.shots)
+            if all_outcomes
+            else tuple([{-1: s}] * 2 for s in qs.shots)
+        )
 
 
-class TestOpCallIntegration:
-    """Integration tests for operation call statistics."""
+class TestExecutingBatches:
+    """Tests involving executing multiple circuits at the same time."""
 
-    single_qubit_ops = [
-        (qml.PauliX, {"PauliX": 1}),
-        (qml.PauliY, {"PauliY": 1}),
-        (qml.PauliZ, {"PauliZ": 1}),
-        (qml.Hadamard, {"Hadamard": 1}),
-        (qml.S, {"S": 1}),
-        (qml.T, {"T": 1}),
-    ]
-    two_qubit_ops = [
-        (qml.CNOT, {"CNOT": 1}),
-        (qml.SWAP, {"SWAP": 1}),
-        (qml.CZ, {"CZ": 1}),
-    ]
+    @staticmethod
+    def f(dev, phi):
+        """A function that executes a batch of scripts on NullQubit without preprocessing."""
+        ops = [
+            qml.PauliX("a"),
+            qml.PauliX("b"),
+            qml.ctrl(qml.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+        ]
 
-    @pytest.mark.parametrize("operation,expected", single_qubit_ops)
-    def test_single_qubit_op(self, nullqubit_device, operation, expected):
-        """Test if the application of single qubit operations, without parameters,
-        is being accounted for."""
+        qs1 = qml.tape.QuantumScript(
+            ops,
+            [
+                qml.expval(qml.sum(qml.PauliY("target"), qml.PauliZ("b"))),
+                qml.expval(qml.s_prod(3, qml.PauliZ("target"))),
+            ],
+        )
 
-        dev = nullqubit_device(wires=2)
+        ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
+        qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
+        config = ExecutionConfig(interface=qml.math.get_interface(phi))
+        return dev.execute((qs1, qs2), config)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            operation(wires=[0])
-            return qml.state()
+    @staticmethod
+    def f_hashable(phi):
+        """A function that executes a batch of scripts on NullQubit without preprocessing."""
+        ops = [
+            qml.PauliX("a"),
+            qml.PauliX("b"),
+            qml.ctrl(qml.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+        ]
 
-        circuit()
+        qs1 = qml.tape.QuantumScript(
+            ops,
+            [
+                qml.expval(qml.sum(qml.PauliY("target"), qml.PauliZ("b"))),
+                qml.expval(qml.s_prod(3, qml.PauliZ("target"))),
+            ],
+        )
 
-        expected_dict = defaultdict(int, **expected)
-        assert dev.operation_calls() == expected_dict
+        ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
+        qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
+        return NullQubit().execute((qs1, qs2))
 
-    @pytest.mark.parametrize("operation,expected", two_qubit_ops)
-    def test_two_qubit_op(self, nullqubit_device, operation, expected):
-        """Test if the application of two qubit operations, without parameters,
-        is being accounted for."""
+    @staticmethod
+    def assert_results(results):
+        """Assert that the results match f's return values."""
+        assert isinstance(results, tuple)
+        expvals, probs = results
+        assert isinstance(expvals, tuple)
+        assert np.array_equal(expvals, np.zeros(2))
+        assert np.array_equal(probs, [1, 0, 0, 0])
 
-        dev = nullqubit_device(wires=2)
+    def test_numpy(self):
+        """Test that results are expected when the parameter does not have a parameter."""
+        dev = NullQubit()
 
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            operation(wires=[0, 1])
-            return qml.state()
+        phi = 0.892
+        results = self.f(dev, phi)
+        self.assert_results(results)
 
-        circuit()
+    @pytest.mark.autograd
+    def test_autograd(self):
+        """Test batches can be executed and have backprop derivatives in autograd."""
+        dev = NullQubit()
 
-        expected_dict = defaultdict(int, **expected)
-        assert dev.operation_calls() == expected_dict
+        phi = qml.numpy.array(-0.629)
+        results = self.f(dev, phi)
+        self.assert_results(results)
 
-    single_qubit_ops_par = [
-        (qml.RX, [math.pi / 4], {"RX": 1}),
-        (qml.RY, [math.pi / 4], {"RY": 1}),
-        (qml.RZ, [math.pi / 4], {"RZ": 1}),
-        (qml.MultiRZ, [math.pi / 2], {"MultiRZ": 1}),
-        (qml.DiagonalQubitUnitary, [np.array([-1, 1])], {"DiagonalQubitUnitary": 1}),
-        (qml.SpecialUnitary, [np.array([-1, 1, 0.4])], {"SpecialUnitary": 1}),
-    ]
-    two_qubit_ops_par = [
-        (qml.CRX, [math.pi / 2], {"CRX": 1}),
-        (qml.CRY, [math.pi / 2], {"CRY": 1}),
-        (qml.CRZ, [math.pi / 2], {"CRZ": 1}),
-        (qml.MultiRZ, [math.pi / 2], {"MultiRZ": 1}),
-        (qml.DiagonalQubitUnitary, [np.array([-1, 1, -1, 1])], {"DiagonalQubitUnitary": 1}),
-        (qml.SpecialUnitary, [np.linspace(0.1, 2, 15)], {"SpecialUnitary": 1}),
-        (qml.IsingXX, [math.pi / 2], {"IsingXX": 1}),
-        (qml.IsingYY, [math.pi / 2], {"IsingYY": 1}),
-        (qml.IsingZZ, [math.pi / 2], {"IsingZZ": 1}),
-        (
-            qml.StatePrep,
-            [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-            {"StatePrep": 1},
-        ),
-        (
-            qml.BasisState,
-            [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-            {"BasisState": 1},
-        ),
-    ]
+        g0 = qml.jacobian(lambda x: qml.numpy.array(self.f(dev, x)[0]))(phi)
+        assert np.array_equal(g0, np.zeros(2))
 
-    @pytest.mark.parametrize("operation,input,expected", single_qubit_ops_par)
-    def test_single_qubit_op_with_par(self, nullqubit_device, operation, input, expected):
-        """Test if the application of single qubit operations, with parameters,
-        is being accounted for."""
+        g1 = qml.jacobian(lambda x: qml.numpy.array(self.f(dev, x)[1]))(phi)
+        assert qml.math.allclose(g1, np.zeros(4))
 
-        dev = nullqubit_device(wires=2)
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_jax(self, use_jit):
+        """Test batches can be executed and have backprop derivatives in jax."""
+        import jax
 
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(input):
-            operation(input, wires=[0])
-            return qml.state()
+        phi = jax.numpy.array(0.123)
 
-        circuit(input)
+        f = jax.jit(self.f_hashable) if use_jit else self.f_hashable
+        results = f(phi)
+        self.assert_results(results)
 
-        expected_dict = defaultdict(int, **expected)
-        assert dev.operation_calls() == expected_dict
+        g0, g1 = jax.jacobian(f)(phi)
+        assert isinstance(g0, tuple)
+        assert np.array_equal(g0, np.zeros(2))
+        assert np.array_equal(g1, np.zeros(4))
 
-    @pytest.mark.parametrize("operation,input,expected", two_qubit_ops_par)
-    def test_two_qubit_op_with_par(self, nullqubit_device, operation, input, expected):
-        """Test if the application of two qubit operations, with parameters,
-        is being accounted for."""
+    @pytest.mark.torch
+    def test_torch(self):
+        """Test batches can be executed and have backprop derivatives in torch."""
+        import torch
 
-        dev = nullqubit_device(wires=2)
+        dev = NullQubit()
 
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(input):
-            operation(input, wires=[0, 1])
-            return qml.state()
+        x = torch.tensor(9.6243)
 
-        circuit(input)
+        results = self.f(dev, x)
+        self.assert_results(results)
 
-        expected_dict = defaultdict(int, **expected)
-        assert dev.operation_calls() == expected_dict
+        g0 = torch.autograd.functional.jacobian(lambda y: self.f(dev, y)[0], x)
+        assert np.array_equal(g0, np.zeros(2))
+        g1 = torch.autograd.functional.jacobian(lambda y: self.f(dev, y)[1], x)
+        assert np.array_equal(g1, np.zeros(4))
 
+    @pytest.mark.xfail(reason="tf can't track derivatives")
+    @pytest.mark.tf
+    def test_tf(self):
+        """Test batches can be executed and have backprop derivatives in tf."""
+
+        import tensorflow as tf
+
+        dev = NullQubit()
+
+        x = tf.Variable(5.2281)
+        with tf.GradientTape(persistent=True) as tape:
+            results = self.f(dev, x)
+
+        self.assert_results(results)
+
+        g00 = tape.gradient(results[0][0], x)
+        assert g00 == 0
+        g01 = tape.gradient(results[0][1], x)
+        assert g01 == 0
+
+        g1 = tape.jacobian(results[1], x)
+        assert np.array_equal(g1, np.zeros(4))
+
+
+class TestSumOfTermsDifferentiability:
+    """Basically a copy of the `qubit.simulate` test but using the device instead."""
+
+    @staticmethod
+    def f(dev, scale, n_wires=10, offset=0.1, style="sum"):
+        """Execute a quantum script with a large Hamiltonian."""
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
+
+        t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
+        t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
+        H = t1 + t2
+        if style == "hamiltonian":
+            H = H.pauli_rep.hamiltonian()
+        elif style == "hermitian":
+            H = qml.Hermitian(H.matrix(), wires=H.wires)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        config = ExecutionConfig(interface=qml.math.get_interface(scale))
+        return dev.execute(qs, config)
+
+    @staticmethod
+    def f_hashable(scale, n_wires=10, offset=0.1, style="sum"):
+        """Execute a quantum script with a large Hamiltonian."""
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
+
+        t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
+        t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
+        H = t1 + t2
+        if style == "hamiltonian":
+            H = H.pauli_rep.hamiltonian()
+        elif style == "hermitian":
+            H = qml.Hermitian(H.matrix(), wires=H.wires)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        return NullQubit().execute(qs)
+
+    @staticmethod
+    def expected(scale, n_wires=10, offset=0.1, like="numpy"):
+        """expected output of f."""
+        phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
+        cosines = qml.math.cos(phase)
+        sines = qml.math.sin(phase)
+        return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    def test_autograd_backprop(self, style):
+        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
+        dev = NullQubit()
+        x = qml.numpy.array(0.52)
+        assert self.f(dev, x, style=style) == 0
+        assert qml.grad(self.f)(dev, x, style=style) == 0
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    def test_jax_backprop(self, style, use_jit):
+        """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
+        import jax
+
+        x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
+        f = jax.jit(self.f_hashable, static_argnums=(1, 2, 3)) if use_jit else self.f_hashable
+
+        assert f(x, style=style) == 0
+        assert jax.grad(f)(x, style=style) == 0
+
+    @pytest.mark.xfail(reason="torch backprop does not work")
+    @pytest.mark.torch
+    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    def test_torch_backprop(self, style):
+        """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
+        import torch
+
+        dev = NullQubit()
+
+        x = torch.tensor(-0.289, requires_grad=True)
+        out = self.f(dev, x, style=style)
+        assert out == torch.tensor(0)
+
+        out.backward()  # pylint:disable=no-member
+        assert x.grad == 0
+
+    @pytest.mark.xfail(reason="tf can't track derivatives")
+    @pytest.mark.tf
+    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    def test_tf_backprop(self, style):
+        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
+        import tensorflow as tf
+
+        dev = NullQubit()
+
+        x = tf.Variable(0.5)
+
+        with tf.GradientTape() as tape1:
+            out = self.f(dev, x, style=style)
+
+        assert out == 0
+
+        g1 = tape1.gradient(out, x)
+        assert g1 == 0
+
+
+class TestDeviceDifferentiation:
+    """Tests device differentiation integration with NullQubit."""
+
+    ec = ExecutionConfig(gradient_method="device")
+
+    def test_derivatives_single_circuit(self):
+        """Tests derivatives with a single circuit."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+
+        config = ExecutionConfig(gradient_method="device")
+        [qs], _ = dev.preprocess(config)[0]((qs,))
+        actual_grad = dev.compute_derivatives(qs, config)
+        assert isinstance(actual_grad, np.ndarray)
+        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad == 0
+
+        actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, self.ec)
+        assert actual_val == 0
+        assert actual_grad == 0
+
+    def test_derivatives_list_with_single_circuit(self):
+        """Tests a basic example with a batch containing a single circuit."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        config = ExecutionConfig(gradient_method="device")
+        [qs], _ = dev.preprocess(config)[0]((qs,))
+        actual_grad = dev.compute_derivatives([qs], self.ec)
+        assert actual_grad == (np.array(0.0),)
+
+        actual_val, actual_grad = dev.execute_and_compute_derivatives([qs], self.ec)
+        assert actual_val == (np.array(0.0),)
+        assert actual_grad == (np.array(0.0),)
+
+    def test_derivatives_many_tapes_many_results(self):
+        """Tests a basic example with a batch of circuits of varying return shapes."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+        actual_grad = dev.compute_derivatives([single_meas, multi_meas], self.ec)
+        assert actual_grad == (0.0, (0.0, 0.0))
+
+    def test_derivatives_integration(self):
+        """Tests the expected workflow done by a calling method."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+
+        program, new_ec = dev.preprocess(self.ec)
+        circuits, _ = program([single_meas, multi_meas])
+        actual_grad = dev.compute_derivatives(circuits, new_ec)
+
+        assert new_ec.use_device_gradient
+        assert new_ec.grad_on_execution
+
+        assert actual_grad == (0.0, (0.0, 0.0))
+
+    def test_jvps_single_circuit(self):
+        """Tests jvps with a single circuit."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        tangent = (0.456,)
+
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+
+        config = ExecutionConfig(gradient_method="device")
+        [qs], _ = dev.preprocess(config)[0]((qs,))
+
+        actual_grad = dev.compute_jvp(qs, tangent, self.ec)
+        assert isinstance(actual_grad, np.ndarray)
+        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad == 0.0
+
+        actual_val_and_grad = dev.execute_and_compute_jvp(qs, tangent, self.ec)
+        assert actual_val_and_grad == (0, 0)
+
+    def test_jvps_list_with_single_circuit(self):
+        """Tests a basic example with a batch containing a single circuit."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        tangent = (0.456,)
+
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+
+        config = ExecutionConfig(gradient_method="device")
+        [qs], _ = dev.preprocess(config)[0]((qs,))
+
+        actual_grad = dev.compute_jvp([qs], [tangent], self.ec)
+        assert actual_grad == (np.array(0.0),)
+
+        actual_val, actual_grad = dev.execute_and_compute_jvp([qs], [tangent], self.ec)
+        assert actual_val == (np.array(0.0),)
+        assert actual_grad == (np.array(0.0),)
+
+    def test_jvps_many_tapes_many_results(self):
+        """Tests a basic example with a batch of circuits of varying return shapes."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+        tangents = [(0.456,), (0.789,)]
+
+        actual_grad = dev.compute_jvp([single_meas, multi_meas], tangents, self.ec)
+        assert actual_grad == (0.0, (0.0, 0.0))
+
+        actual_val, actual_grad = dev.execute_and_compute_jvp(
+            [single_meas, multi_meas], tangents, self.ec
+        )
+        assert actual_val == (0.0, (0.0, 0.0))
+        assert actual_grad == (0.0, (0.0, 0.0))
+
+    def test_jvps_integration(self):
+        """Tests the expected workflow done by a calling method."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+        tangents = [(0.456,), (0.789,)]
+        circuits = [single_meas, multi_meas]
+        program, new_ec = dev.preprocess(self.ec)
+        circuits, _ = program(circuits)
+        actual_grad = dev.compute_jvp(circuits, tangents, new_ec)
+
+        assert new_ec.use_device_gradient
+        assert new_ec.grad_on_execution
+        assert actual_grad == (0.0, (0.0, 0.0))
+
+    def test_vjps_single_circuit(self):
+        """Tests vjps with a single circuit."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        cotangent = (0.456,)
+
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        config = ExecutionConfig(gradient_method="device")
+        [qs], _ = dev.preprocess(config)[0]((qs,))
+
+        actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
+        assert actual_grad == (0.0,)
+
+        actual_val_and_grad = dev.execute_and_compute_vjp(qs, cotangent, self.ec)
+        assert actual_val_and_grad == ((0.0,), (0.0,))
+
+    def test_vjps_list_with_single_circuit(self):
+        """Tests a basic example with a batch containing a single circuit."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        cotangent = (0.456,)
+
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        config = ExecutionConfig(gradient_method="device")
+        [qs], _ = dev.preprocess(config)[0]((qs,))
+
+        actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
+        assert actual_grad == ((0.0,),)
+
+        actual_val, actual_grad = dev.execute_and_compute_vjp([qs], [cotangent], self.ec)
+        assert actual_val == ((0.0,),)
+        assert actual_grad == ((0.0,),)
+
+    def test_vjps_many_tapes_many_results(self):
+        """Tests a basic example with a batch of circuits of varying return shapes."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+        cotangents = [(0.456,), (0.789, 0.123)]
+
+        actual_grad = dev.compute_vjp([single_meas, multi_meas], cotangents, self.ec)
+        print(actual_grad)
+        assert actual_grad == ((0.0,), (0.0,))
+
+        actual_val, actual_grad = dev.execute_and_compute_vjp(
+            [single_meas, multi_meas], cotangents, self.ec
+        )
+        assert actual_val == (0.0, (0.0, 0.0))
+        assert actual_grad == ((0.0,), (0.0,))
+
+    def test_vjps_integration(self):
+        """Tests the expected workflow done by a calling method."""
+        dev = NullQubit()
+        x = np.array(np.pi / 7)
+
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+        cotangents = [(0.456,), (0.789, 0.123)]
+        circuits = [single_meas, multi_meas]
+        program, new_ec = dev.preprocess(self.ec)
+        circuits, _ = program(circuits)
+
+        actual_grad = dev.compute_vjp(circuits, cotangents, new_ec)
+
+        assert new_ec.use_device_gradient
+        assert new_ec.grad_on_execution
+        print(actual_grad)
+        assert actual_grad == ((0.0,), (0.0,))
+
+
+class TestClassicalShadows:
+    """Test that classical shadow measurements works with the new device"""
+
+    @pytest.mark.parametrize("n_qubits", [1, 2, 3])
+    def test_shape_and_dtype(self, n_qubits):
+        """Test that the shape and dtype of the measurement is correct"""
+        dev = NullQubit()
+
+        ops = [qml.Hadamard(i) for i in range(n_qubits)]
+        qs = qml.tape.QuantumScript(ops, [qml.classical_shadow(range(n_qubits))], shots=100)
+        res = dev.execute(qs)
+
+        assert np.array_equal(res, np.zeros((2, 100, n_qubits)))
+        assert res.dtype == np.int8
+
+    def test_expval(self):
+        """Test that shadow expval measurements work as expected"""
+        dev = NullQubit()
+
+        ops = [qml.Hadamard(0), qml.Hadamard(1)]
+        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)]
+        qs = qml.tape.QuantumScript(ops, meas, shots=1000)
+        assert dev.execute(qs) == np.array(0.0)
+
+    @pytest.mark.parametrize("n_qubits", [1, 2, 3])
+    def test_multiple_shadow_measurements(self, n_qubits):
+        """Test that multiple classical shadow measurements work as expected"""
+        dev = NullQubit()
+
+        ops = [qml.Hadamard(i) for i in range(n_qubits)]
+        mps = [qml.classical_shadow(range(n_qubits)), qml.classical_shadow(range(n_qubits))]
+        qs = qml.tape.QuantumScript(ops, mps, shots=100)
+        res = dev.execute(qs)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert all(r.dtype == np.int8 for r in res)
+        assert np.array_equal(res, np.zeros((2, 2, 100, n_qubits)))
+
+    @pytest.mark.parametrize("n_qubits", [1, 2, 3])
     @pytest.mark.parametrize(
-        "op,expected",
+        "shots",
         [
-            (qml.SingleExcitation, {"SingleExcitation": 1}),
-            (qml.SingleExcitationPlus, {"SingleExcitationPlus": 1}),
-            (qml.SingleExcitationMinus, {"SingleExcitationMinus": 1}),
-            (qml.DoubleExcitation, {"DoubleExcitation": 1}),
-            (qml.DoubleExcitationPlus, {"DoubleExcitationPlus": 1}),
-            (qml.DoubleExcitationMinus, {"DoubleExcitationMinus": 1}),
-            (qml.OrbitalRotation, {"OrbitalRotation": 1}),
-            (qml.QubitSum, {"QubitSum": 1}),
-            (qml.QubitCarry, {"QubitCarry": 1}),
+            [1000, 1000],
+            [(1000, 2)],
+            [1000, 2000],
+            [(1000, 2), 2000],
+            [(1000, 3), 2000, (3000, 2)],
         ],
     )
-    def test_advanced_op(self, nullqubit_device, op, expected):
-        """Test qchem and arithmetic operations."""
-        n_wires = op.num_wires
-        n_params = op.num_params
+    def test_shot_vectors(self, n_qubits, shots):
+        """Test that classical shadows works when given a shot vector"""
+        dev = NullQubit()
+        shots = qml.measurements.Shots(shots)
 
-        dev = nullqubit_device(wires=4)
+        ops = [qml.Hadamard(i) for i in range(n_qubits)]
+        qs = qml.tape.QuantumScript(ops, [qml.classical_shadow(range(n_qubits))], shots=shots)
+        res = dev.execute(qs)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            if n_params == 0:
-                op(wires=range(n_wires))
-            elif n_params == 1:
-                op(0.5, wires=range(n_wires))
-            else:
-                op([0.5] * n_params, wires=range(n_wires))
-            return qml.state()
+        assert isinstance(res, tuple)
+        assert len(res) == len(list(shots))
 
-        circuit()
-        expected_dict = defaultdict(int, **expected)
-        assert dev.operation_calls() == expected_dict
+        for r, s in zip(res, shots):
+            assert np.array_equal(r, np.zeros((2, s, n_qubits)))
+            assert r.dtype == np.int8
 
+    def test_batching_not_supported(self):
+        """Test that classical_shadow does not work with batching."""
+        dev = NullQubit()
 
-class TestState:
-    """Unit test for state and density_matrix operations."""
-
-    # pylint: disable=too-few-public-methods
-    dev = qml.device("null.qubit", wires=3)
-
-    @pytest.mark.parametrize(
-        "measurement",
-        [
-            dev.state,
-            dev.density_matrix(wires=[1]),
-            dev.density_matrix(wires=[2, 0]),
-            dev.density_matrix(wires=[2, 1, 0]),
-        ],
-    )
-    def test_state_measurement(self, measurement):
-        """Test that the NullQubit plugin provides correct state results for a simple circuit"""
-        assert measurement == [0.0]
+        ops = [qml.RX([1.1, 2.2], 0)]
+        qs = qml.tape.QuantumScript(ops, [qml.classical_shadow([0])], shots=100)
+        with pytest.raises(ValueError, match="broadcasting is not supported"):
+            _ = dev.execute(qs)
 
 
-class TestTrackerIntegration:
-    """Tests tracker integration behavior with 'null.qubit'."""
+@pytest.mark.parametrize("n_wires", [1, 2, 3])
+def test_projector_dynamic_type(n_wires):
+    """Test that qml.Projector yields the expected results for both of its subclasses."""
+    wires = list(range(n_wires))
+    dev = NullQubit()
+    ops = [qml.adjoint(qml.Hadamard(q)) for q in wires]
+    # non-zero states will still yield zero-state results
+    basis_state = np.ones((n_wires,))
+    state_vector = np.zeros((2**n_wires,))
+    state_vector[-1] = 1
 
-    def test_single_execution(self, nullqubit_device, mocker):
-        """Test correct behavior with single circuit execution"""
-        dev = nullqubit_device(wires=1)
+    for state in [basis_state, state_vector]:
+        qs = qml.tape.QuantumScript(ops, [qml.expval(qml.Projector(state, wires))])
+        assert dev.execute(qs) == 0.0
+
+
+class TestIntegration:
+    """Various integration tests"""
+
+    @pytest.mark.parametrize("wires,expected", [(None, [0, 0]), (3, [0, 0, 0])])
+    def test_sample_uses_device_wires(self, wires, expected):
+        """Test that if device wires are given, then they are used by sample."""
+        dev = NullQubit(wires=wires, shots=5)
 
         @qml.qnode(dev)
         def circuit():
-            qml.RX(1.23, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qml.PauliX(2)
+            qml.Identity(0)
+            return qml.sample()
 
-        circuit_resources = qml.resource.Resources(
-            num_wires=2,
-            num_gates=2,
-            gate_types={"RX": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            depth=2,
-        )
+        assert np.array_equal(circuit(), [expected] * 5)
 
-        class callback_wrapper:
-            """Callback wrapping class"""
-
-            # pylint: disable=too-few-public-methods
-
-            @staticmethod
-            def callback(totals=None, history=None, latest=None):
-                """Wrapped callback function."""
-
-        wrapper = callback_wrapper()
-        spy = mocker.spy(wrapper, "callback")
-
-        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
-            circuit()
-            circuit()
-
-        assert tracker.totals == {"executions": 2, "batches": 2, "batch_len": 2}
-        assert tracker.history == {
-            "executions": [1, 1],
-            "shots": [None, None],
-            "batches": [1, 1],
-            "batch_len": [1, 1],
-            "resources": [circuit_resources, circuit_resources],
-        }
-        assert tracker.latest == {"batches": 1, "batch_len": 1}
-
-        _, kwargs_called = spy.call_args_list[-1]
-
-        assert kwargs_called["totals"] == {"executions": 2, "batches": 2, "batch_len": 2}
-        assert kwargs_called["history"] == {
-            "executions": [1, 1],
-            "shots": [None, None],
-            "batches": [1, 1],
-            "batch_len": [1, 1],
-            "resources": [circuit_resources, circuit_resources],
-        }
-        assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
-
-    def test_shots_execution(self, nullqubit_device, mocker):
-        """Test that correct tracks shots."""
-        # pylint: disable=unexpected-keyword-arg
-        dev = nullqubit_device(wires=1)
+    @pytest.mark.parametrize(
+        "wires,expected",
+        [
+            (None, [1, 0, 0, 0]),
+            (3, [1] + [0] * 7),
+        ],
+    )
+    def test_state_uses_device_wires(self, wires, expected):
+        """Test that if device wires are given, then they are used by state."""
+        dev = NullQubit(wires=wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.RX(1.23, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qml.PauliX(2)
+            qml.Identity(0)
+            return qml.state()
 
-        circuit_resources_10 = qml.resource.Resources(
-            num_wires=2,
-            num_gates=2,
-            gate_types={"RX": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            depth=2,
-            shots=Shots(10),
-        )
+        assert np.array_equal(circuit(), expected)
 
-        circuit_resources_20 = qml.resource.Resources(
-            num_wires=2,
-            num_gates=2,
-            gate_types={"RX": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            depth=2,
-            shots=Shots(20),
-        )
-
-        class callback_wrapper:
-            """Callback wrapping class"""
-
-            # pylint: disable=too-few-public-methods
-
-            @staticmethod
-            def callback(totals=None, history=None, latest=None):
-                """Wrapped callback function."""
-
-        wrapper = callback_wrapper()
-        spy = mocker.spy(wrapper, "callback")
-
-        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
-            circuit(shots=10)
-            circuit(shots=20)
-
-        assert tracker.totals == {"executions": 2, "batches": 2, "batch_len": 2, "shots": 30}
-        assert tracker.history == {
-            "executions": [1, 1],
-            "shots": [10, 20],
-            "batches": [1, 1],
-            "batch_len": [1, 1],
-            "resources": [circuit_resources_10, circuit_resources_20],
-        }
-        assert tracker.latest == {"batches": 1, "batch_len": 1}
-
-        assert spy.call_count == 4
-
-        _, kwargs_called = spy.call_args_list[-1]
-
-        assert kwargs_called["totals"] == {
-            "executions": 2,
-            "batches": 2,
-            "batch_len": 2,
-            "shots": 30,
-        }
-        assert kwargs_called["history"] == {
-            "executions": [1, 1],
-            "shots": [10, 20],
-            "batches": [1, 1],
-            "batch_len": [1, 1],
-            "resources": [circuit_resources_10, circuit_resources_20],
-        }
-        assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
-
-    def test_custom_resource_operations(self, nullqubit_device, mocker):
-        """Test that custom operation resources are tracked correctly."""
-        # pylint: disable=unexpected-keyword-arg
-        dev = nullqubit_device(wires=2)
-
-        class CustomResourceOperation(
-            qml.resource.ResourcesOperation
-        ):  # pylint: disable=too-few-public-methods
-            def resources(self):
-                return qml.resource.Resources(
-                    num_wires=2,
-                    num_gates=3,
-                    gate_types={"Hadamard": 2, "CNOT": 1},
-                    gate_sizes={1: 2, 2: 1},
-                    depth=2,
-                )
+    @pytest.mark.parametrize(
+        "wires,expected",
+        [
+            (None, [1, 0, 0, 0]),
+            (3, [1] + [0] * 7),
+        ],
+    )
+    def test_probs_uses_device_wires(self, wires, expected):
+        """Test that if device wires are given, then they are used by probs."""
+        dev = NullQubit(wires=wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.RX(1.23, wires=0)
-            qml.CNOT(wires=[0, 1])
-            CustomResourceOperation(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qml.PauliX(2)
+            qml.Identity(0)
+            return qml.probs()
 
-        circuit_resources_10 = qml.resource.Resources(
-            num_wires=2,
-            num_gates=5,
-            gate_types={"RX": 1, "Hadamard": 2, "CNOT": 2},
-            gate_sizes={1: 3, 2: 2},
-            depth=4,
-            shots=Shots(10),
+        assert np.array_equal(circuit(), expected)
+
+    @pytest.mark.parametrize(
+        "wires,all_outcomes,expected",
+        [
+            (None, False, {"00": 10}),
+            (None, True, {"00": 10, "10": 0, "01": 0, "11": 0}),
+            (3, False, {"000": 10}),
+            (
+                3,
+                True,
+                {"000": 10, "001": 0, "010": 0, "011": 0, "100": 0, "101": 0, "110": 0, "111": 0},
+            ),
+        ],
+    )
+    def test_counts_uses_device_wires(self, wires, all_outcomes, expected):
+        """Test that if device wires are given, then they are used by probs."""
+        dev = NullQubit(wires=wires, shots=10)
+
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            qml.PauliX(2)
+            qml.Identity(0)
+            return qml.counts(all_outcomes=all_outcomes)
+
+        assert circuit() == expected
+
+    @pytest.mark.parametrize(
+        "diff_method", ["device", "adjoint", "backprop", "finite-diff", "parameter-shift"]
+    )
+    def test_expected_shape_all_methods(self, diff_method):
+        """Test that the gradient shape is as expected with all diff methods."""
+        n_wires = 4
+
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=5, n_wires=n_wires)
+        rng = np.random.default_rng(seed=1239594)
+        params = qml.numpy.array(rng.random(shape))
+        dev = qml.device("null.qubit")
+
+        diff_method = "device"
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(params):
+            qml.StronglyEntanglingLayers(params, wires=range(n_wires))
+            return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+
+        def cost(params):
+            out = circuit(params)
+            return qml.math.sum(out)
+
+        assert np.array_equal(qml.grad(cost)(params), np.zeros(shape))
+
+
+@pytest.mark.parametrize(
+    "method,device_vjp", [("device", False), ("device", True), ("parameter-shift", False)]
+)
+class TestJacobian:
+    """Test that the jacobian of circuits can be computed."""
+
+    @staticmethod
+    def get_circuit(method, device_vjp):
+        @qml.qnode(NullQubit(), diff_method=method, device_vjp=device_vjp)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.probs(wires=[0]), qml.expval(qml.PauliZ(0))
+
+        return circuit
+
+    def test_jacobian_autograd(self, method, device_vjp):
+        """Test the jacobian with autograd."""
+
+        @qml.qnode(NullQubit(), diff_method=method, device_vjp=device_vjp)
+        def circuit(x, mp):
+            qml.RX(x, wires=0)
+            return qml.apply(mp)
+
+        x = qml.numpy.array(0.1)
+        probs_jac = qml.jacobian(circuit)(x, qml.probs(wires=[0]))
+        expval_jac = qml.jacobian(circuit)(x, qml.expval(qml.PauliZ(0)))
+        assert np.array_equal(probs_jac, np.zeros(2))
+        assert np.array_equal(expval_jac, 0.0)
+
+    @pytest.mark.jax
+    def test_jacobian_jax(self, method, device_vjp):
+        """Test the jacobian with jax."""
+        import jax
+        from jax import numpy as jnp
+
+        x = jnp.array(0.1)
+        if device_vjp:
+            pytest.xfail(reason="cannot handle jax's processing of device VJPs")
+        probs_jac, expval_jac = jax.jacobian(self.get_circuit(method, device_vjp))(x)
+        assert np.array_equal(probs_jac, np.zeros(2))
+        assert np.array_equal(expval_jac, 0.0)
+
+    @pytest.mark.tf
+    def test_jacobian_tf(self, method, device_vjp):
+        """Test the jacobian with tf."""
+        import tensorflow as tf
+
+        x = tf.Variable(0.1)
+        with tf.GradientTape(persistent=True) as tape:
+            res = self.get_circuit(method, device_vjp)(x)
+
+        probs_jac = tape.jacobian(res[0], x, experimental_use_pfor=not device_vjp)
+        assert np.array_equal(probs_jac, np.zeros(2))
+        if method == "parameter-shift":
+            pytest.xfail(reason="TF panics when computing the second jacobian here.")
+        expval_jac = tape.jacobian(res[1], x, experimental_use_pfor=not device_vjp)
+        assert np.array_equal(expval_jac, 0.0)
+
+    @pytest.mark.torch
+    def test_jacobian_torch(self, method, device_vjp):
+        """Test the jacobian with torch."""
+        import torch
+
+        x = torch.tensor(0.1, requires_grad=True)
+        probs_jac, expval_jac = torch.autograd.functional.jacobian(
+            self.get_circuit(method, device_vjp), x
         )
+        assert np.array_equal(probs_jac, np.zeros(2))
+        assert np.array_equal(expval_jac, 0.0)
 
-        circuit_resources_20 = qml.resource.Resources(
-            num_wires=2,
-            num_gates=5,
-            gate_types={"RX": 1, "Hadamard": 2, "CNOT": 2},
-            gate_sizes={1: 3, 2: 2},
-            depth=4,
-            shots=Shots(20),
-        )
 
-        class callback_wrapper:
-            """Callback wrapping class"""
+@pytest.mark.parametrize("shots", [None, 100, [(100, 3)]])
+@pytest.mark.parametrize("x", [1.1, [1.1, 2.2]])
+@pytest.mark.parametrize(
+    "mp",
+    [
+        qml.expval(qml.PauliZ(0)),
+        qml.var(qml.PauliZ(0)),
+        qml.state(),
+        qml.probs(),
+        qml.probs(wires=[1]),
+        qml.sample(),
+        qml.sample(wires=[1]),
+        qml.sample(op=qml.PauliZ(0)),
+        qml.mutual_info([0], [1]),
+        qml.purity([1]),
+        qml.purity([0, 1]),
+        qml.density_matrix([1]),
+        qml.density_matrix([0, 1]),
+        qml.vn_entropy([1]),
+        qml.vn_entropy([0, 1]),
+        qml.classical_shadow([1]),
+        qml.classical_shadow([0, 1]),
+        qml.shadow_expval(qml.PauliZ(0)),
+        qml.shadow_expval([qml.PauliZ(0), qml.PauliZ(1)]),
+    ],
+)
+def test_measurement_shape_matches_default_qubit(mp, x, shots):
+    """Test that all results match default.qubit in shape."""
+    if shots and not isinstance(mp, (SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP)):
+        pytest.skip(reason="MeasurementProcess doesn't work with finite shots.")
 
-            # pylint: disable=too-few-public-methods
+    if not shots and not isinstance(mp, StateMeasurement):
+        pytest.skip(reason="MeasurementProcess doesn't work in analytic mode.")
 
-            @staticmethod
-            def callback(totals=None, history=None, latest=None):
-                """Wrapped callback function."""
+    if isinstance(x, list) and isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
+        pytest.xfail(reason="default.qubit cannot handle batching with shadow measurements")
 
-        wrapper = callback_wrapper()
-        spy = mocker.spy(wrapper, "callback")
+    nq = qml.device("null.qubit", shots=shots)
+    dq = qml.device("default.qubit", shots=shots)
 
-        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
-            circuit(shots=10)
-            circuit(shots=20)
+    def circuit(param):
+        qml.RX(param, 0)
+        qml.CNOT([0, 1])
+        return qml.apply(mp)
 
-        assert tracker.totals == {"executions": 2, "batches": 2, "batch_len": 2, "shots": 30}
-        assert tracker.history == {
-            "executions": [1, 1],
-            "shots": [10, 20],
-            "batches": [1, 1],
-            "batch_len": [1, 1],
-            "resources": [circuit_resources_10, circuit_resources_20],
-        }
-        assert tracker.latest == {"batches": 1, "batch_len": 1}
-
-        assert spy.call_count == 4
-
-        _, kwargs_called = spy.call_args_list[-1]
-
-        assert kwargs_called["totals"] == {
-            "executions": 2,
-            "batches": 2,
-            "batch_len": 2,
-            "shots": 30,
-        }
-        assert kwargs_called["history"] == {
-            "executions": [1, 1],
-            "shots": [10, 20],
-            "batches": [1, 1],
-            "batch_len": [1, 1],
-            "resources": [circuit_resources_10, circuit_resources_20],
-        }
-        assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
+    res = qml.QNode(circuit, nq)(x)
+    target = qml.QNode(circuit, dq)(x)
+    assert qml.math.shape(res) == qml.math.shape(target)

@@ -31,7 +31,7 @@ requirements = [
     "semantic-version>=2.7",
     "autoray>=0.6.1",
     "cachetools",
-    "pennylane-lightning>=0.34",
+    "pennylane-lightning>=0.35",
     "requests",
     "typing_extensions",
 ]
