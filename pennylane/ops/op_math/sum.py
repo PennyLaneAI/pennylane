@@ -220,7 +220,7 @@ class Sum(CompositeOp):
             (
                 (
                     qml.matrix(op)
-                    if isinstance(op, (qml.Hamiltonian, LinearCombination))
+                    if isinstance(op, (qml.Hamiltonian, qml.LinearCombination))
                     else op.matrix()
                 ),
                 op.wires,
