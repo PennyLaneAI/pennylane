@@ -593,7 +593,7 @@ def _build_generator(operation, wire_order, op_gen=None):
                     else qml.generator(operation, "arithmetic")
                 ).pauli_rep
 
-            except ValueError as exc:
+            except (ValueError, qml.operation.GeneratorUndefinedError) as exc:
                 raise NotImplementedError(
                     f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
                 ) from exc
