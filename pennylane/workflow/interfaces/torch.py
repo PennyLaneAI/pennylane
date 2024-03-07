@@ -222,9 +222,6 @@ def execute(tapes, execute_fn, jpc, device=None):
 
     parameters = []
     for tape in tapes:
-        # set the trainable parameters
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
         parameters.extend(tape.get_parameters())
 
     kwargs = {
