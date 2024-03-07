@@ -36,11 +36,12 @@ Pending deprecations
   - Deprecated in v0.35
   - Will be removed in v0.36
 
-* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
-  dummy values that are no longer needed.
+* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
+  ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
+  does not provide wires, or quantum functions.
 
   - Deprecated in v0.35
-  - Will be removed in v0.36
+  - Will raise an error in v0.36
 
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
@@ -69,6 +70,12 @@ Completed deprecation cycles
 
   - Deprecated in v0.35
   - Raises an error in v0.36
+
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+  dummy values that are no longer needed.
+  
+  - Deprecated in v0.35
+  - Removed in v0.36
 
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
 
