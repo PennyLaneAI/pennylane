@@ -41,15 +41,41 @@ def test_flatten_unflatten():
 def test_error_value():
     """Test that QPE error is correct for a given unitary error."""
 
+    u_exact = qml.RY(0.50, wires=0)
+    u_apprx = qml.RY(0.51, wires=0)
+
+    n_estimation_wires = 4
+    estimation_wires = range(1, n_estimation_wires + 1)
+    target_wires = [0]
+
+    dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+
+    @qml.qnode(dev)
+    def circuit(unitary):
+        qml.QuantumPhaseEstimation(
+            unitary.matrix(),
+            target_wires=target_wires,
+            estimation_wires=estimation_wires,
+        )
+
+        return qml.state()
+
+    m1 = qml.matrix(circuit)(u_exact)
+    m2 = qml.matrix(circuit)(u_apprx)
+
+    qpe_error_ref = qml.math.max(qml.math.svd(m1 - m2, compute_uv=False))
+
     class CustomOP(qml.resource.ErrorOperation):
         @property
         def error(self):
-            return 0.1
+            return qml.resource.SpectralNormError.get_error(u_exact, u_apprx)
 
     Op = CustomOP(wires=[0])
     QPE = qml.QuantumPhaseEstimation(Op, estimation_wires=range(1, 5))
 
-    assert QPE.error == 0.11010001000000001
+    print(QPE.error, qpe_error_ref)
+
+    assert np.allclose(QPE.error, qpe_error_ref, atol=1e-4)
 
 
 class TestDecomposition:
