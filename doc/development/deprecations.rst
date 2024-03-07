@@ -43,14 +43,6 @@ Pending deprecations
   - Deprecated in v0.35
   - Will raise an error in v0.36
 
-* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
-  deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
-  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
-  to see how this can be done.
-
-  - Deprecated in v0.34
-  - Will be removed in v0.36
-
 * ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
   but instead use ``@`` to conform with the PennyLane convention.
 
@@ -63,6 +55,15 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``,
+  `` gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
+  ``qml.transform`` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+
+  - Deprecated in v0.34
+  - Removed in v0.36
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
   dummy values that are no longer needed.

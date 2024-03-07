@@ -62,6 +62,11 @@
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``. The old import path no longer exists.
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``, `` gradient_transform``
+  and ``hessian_transform`` are removed. Instead, switch to using the new ``qml.transform`` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
