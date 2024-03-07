@@ -1046,7 +1046,7 @@ class TestAdjointConstructorOutsideofQueuing:
         assert isinstance(out, qml.RX)
         assert out.data == (-x,)
 
-    @pytest.mark.xfail # TODO not sure what the expected behavior here is with new opmath
+    @pytest.mark.xfail  # TODO not sure what the expected behavior here is with new opmath
     def test_observable(self):
         """Test providing a preconstructed Observable outside of a queuing context."""
 
