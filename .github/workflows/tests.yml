@@ -92,5 +92,8 @@ jobs:
             Note that it is expected that the PennyLane-Lightning repo is a version ahead of the release, because the 
             version number is taken from the dev branch. Trying to `pip install` from the files will fail until that 
             major version of Lightning is released.
+            
+            If pip install fails with a not found error when installing because of this, it can be fixed by manually 
+            downgrading by 1 version and trying again.
           pr_allow_empty: false
           pr_draft: false
