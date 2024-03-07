@@ -650,16 +650,18 @@ class LinearCombination(Sum):
         # TODO use grouping functionality of Sum once that is merged
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
-        # coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
-        # self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in coeffs_flat)
-
         self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
 
         if simplify:
+            # TODO clean up this logic, seems unnecesssarily complicated
             simplified = self.simplify()
             self._coeffs = simplified.coeffs
             self._ops = simplified.ops
-            # self.data = simplified.coeffs
+            with qml.QueuingManager().stop_recording():
+                operands = [qml.s_prod(c, op) for c, op in zip(self._coeffs, self._ops)]
+
+            super().__init__(*operands, id=id, _pauli_rep=self._pauli_rep)
+
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():
                 self._grouping_indices = _compute_grouping_indices(
