@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
+  libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
+  ``from_qasm``, etc.
+
+  - Deprecated in v0.36
+  - Will be removed in v0.37
+
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
   ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
   functionality can be achieved using newer features in the ``pauli`` module.
