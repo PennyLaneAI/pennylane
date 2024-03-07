@@ -65,7 +65,20 @@ class _FlexShots(qml.measurements.Shots):
         self._frozen = True
 
 
-def _postselection_postprocess(state, is_state_batched, shots):
+def _get_postselected_shots_jax(norm, shots, prng_key):
+    """Compute postselected shots using a JAX PRNGKey"""
+    import jax
+
+    return (
+        [jax.random.binomial(prng_key, s, float(norm**2)) for s in shots]
+        # Question: Since we're definitely using JAX and we're using a JAX function,
+        # do we care about whether or not the norm is abstract?
+        if not qml.math.is_abstract(norm)
+        else shots
+    )
+
+
+def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_key=None):
     """Update state after projector is applied."""
     if is_state_batched:
         raise ValueError(
@@ -87,11 +100,16 @@ def _postselection_postprocess(state, is_state_batched, shots):
     if shots:
         # Clip the number of shots using a binomial distribution using the probability of
         # measuring the postselected state.
-        postselected_shots = (
-            [np.random.binomial(s, float(norm**2)) for s in shots]
-            if not qml.math.is_abstract(norm)
-            else shots
-        )
+        if prng_key is not None:
+            postselected_shots = _get_postselected_shots_jax(norm, shots, prng_key)
+
+        else:
+            rng = np.random.default_rng(rng)
+            postselected_shots = (
+                [rng.binomial(s, float(norm**2)) for s in shots]
+                if not qml.math.is_abstract(norm)
+                else shots
+            )
 
         # _FlexShots is used here since the binomial distribution could result in zero
         # valid samples
@@ -101,7 +119,9 @@ def _postselection_postprocess(state, is_state_batched, shots):
     return state, shots
 
 
-def get_final_state(circuit, debugger=None, interface=None, mid_measurements=None):
+def get_final_state(
+    circuit, debugger=None, interface=None, mid_measurements=None, rng=None, prng_key=None
+):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -112,6 +132,12 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
         debugger (._Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
@@ -139,7 +165,7 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             state, circuit._shots = _postselection_postprocess(
-                state, is_state_batched, circuit.shots
+                state, is_state_batched, circuit.shots, rng=rng, prng_key=prng_key
             )
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
