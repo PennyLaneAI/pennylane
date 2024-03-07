@@ -66,6 +66,7 @@
   and ``hessian_transform`` are removed. Instead, switch to using the new ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
   to see how this can be done.
+  [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
 
 <h3>Deprecations 👋</h3>
 
