@@ -1016,13 +1016,10 @@ class TestIntegration:
         @qml.qnode(dev)
         def my_circ():
             qml.PauliX(0)
-            return qml.probs(op=sprod_op)
+            return qml.probs(op=sprod_op), qml.probs(op=qml.Hadamard(1))
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        res1, res2 = my_circ()
+        assert qml.math.allclose(res1, res2)
 
     def test_measurement_process_sample(self):
         """Test SProd class instance in sample measurement process."""
