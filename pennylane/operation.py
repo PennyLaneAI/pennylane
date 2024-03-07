@@ -192,6 +192,7 @@ return newer arithmetic operators, the ``operation`` module provides the followi
     ~disable_new_opmath
     ~active_new_opmath
     ~convert_to_opmath
+    ~convert_to_legacy_H
 
 Other
 ~~~~~
@@ -3018,6 +3019,53 @@ def convert_to_opmath(op):
         return qml.prod(*op.obs)
     return op
 
+def convert_to_legacy_H(op):
+    """
+    Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
+    Objects of any other type are returned directly.
+    Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
+    :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
+    Args:
+        op (Operator): The operator instance to convert.
+    Returns:
+        Operator: The operator as an :class:`~pennylane.Hamiltonian` instance
+    """
+    if isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
+
+        coeffs = []
+        ops = []
+
+        op = qml.simplify(op)
+
+        if isinstance(op, qml.ops.SProd):
+            coeffs.append(op.scalar)
+            ops.append(
+                op.base if isinstance(op.base, Observable) else qml.operation.Tensor(*op.base)
+            )
+
+        elif isinstance(op, qml.ops.Prod):
+            coeffs.append(1.0)
+            ops.append(qml.operation.Tensor(*op))
+
+        elif isinstance(op, qml.ops.Sum):
+            for factor in op:
+                if isinstance(factor, (qml.ops.SProd)):
+                    coeffs.append(factor.scalar)
+                    ops.append(
+                        qml.operation.Tensor(*factor.base)
+                        if isinstance(factor.base, qml.ops.Prod)
+                        else factor.base
+                    )
+                elif isinstance(factor, (qml.ops.Prod)):
+                    coeffs.append(1.0)
+                    ops.append(qml.operation.Tensor(*factor))
+                elif isinstance(factor, Observable):
+                    coeffs.append(1.0)
+                    ops.append(factor)
+
+        return qml.Hamiltonian(coeffs, ops)
+
+    return op
 
 def __getattr__(name):
     """To facilitate StatePrep rename"""
