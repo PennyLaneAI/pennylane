@@ -14,7 +14,7 @@
 """
 Tests for the LinearCombination class.
 """
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, too-few-public-methods
 from collections.abc import Iterable
 from unittest.mock import patch
 from copy import copy
