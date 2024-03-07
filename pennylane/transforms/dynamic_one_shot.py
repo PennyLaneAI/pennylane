@@ -42,7 +42,9 @@ def null_postprocessing(results):
 
 
 @transform
-def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def dynamic_one_shot(
+    tape: qml.tape.QuantumTape, **kwargs
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:
@@ -83,6 +85,18 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
 
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
+
+    device = kwargs.get("device", None)
+
+    if device is not None:
+        support_mcms = hasattr(device, "capabilities") and device.capabilities().get(
+            "supports_mid_measure", False
+        )
+        support_mcms = support_mcms or isinstance(device, qml.devices.default_qubit.DefaultQubit)
+        if not support_mcms:
+            raise TypeError(
+                f"Device {device.name} does not support mid-circuit measurements natively, and hence it does not support the dynamic_one_shot transform."
+            )
 
     for m in tape.measurements:
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
@@ -126,14 +140,6 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
         raise ValueError(
             "Cannot provide a 'device' value directly to the dynamic_one_shot decorator "
             "when transforming a QNode."
-        )
-    support_mcms = hasattr(qnode.device, "capabilities") and qnode.device.capabilities().get(
-        "supports_mid_measure", False
-    )
-    support_mcms = support_mcms or isinstance(qnode.device, qml.devices.default_qubit.DefaultQubit)
-    if not support_mcms:
-        raise TypeError(
-            f"Device {qnode.device.name} does not support mid-circuit measurements natively, and hence it does not support the dynamic_one_shot transform."
         )
     tkwargs.setdefault("device", qnode.device)
     return self.default_qnode_transform(qnode, targs, tkwargs)
