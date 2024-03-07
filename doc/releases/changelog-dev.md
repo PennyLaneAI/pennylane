@@ -55,6 +55,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
+  [(#5311)](https://github.com/PennyLaneAI/pennylane/pull/5311)
+
+* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``. The old import path no longer exists.
+  [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -69,7 +75,8 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
-Amintor Dusko
+Astral Cai,
+Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,

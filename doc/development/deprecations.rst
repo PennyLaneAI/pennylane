@@ -9,13 +9,6 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
-  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed
-  from the ``Operator`` class.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
   ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
   functionality can be achieved using newer features in the ``pauli`` module.
@@ -49,11 +42,6 @@ Pending deprecations
   - Deprecated in v0.35
   - Will be removed in v0.36
 
-* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
-
-  - Contents moved in v0.35
-  - Old import path removed in v0.36
-
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
@@ -74,6 +62,18 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
+
+  - Contents moved in v0.35
+  - Old import path removed in v0.36
+
+* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
+  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and has been removed
+  from the ``Operator`` class.
+
+  - Deprecated in v0.35
+  - Removed in v0.36
 
 * ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are removed. Instead,
   you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition``.
