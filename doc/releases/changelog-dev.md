@@ -4,15 +4,59 @@
 
 <h3>New features since last release</h3>
 
+* Added new `SpectralNormError` class to the new error tracking functionality.
+  [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
+* The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
+  [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
+
 <h3>Improvements 🛠</h3>
 
+* Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
+  [(##5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+
+  ```python
+  @qml.prod
+  def generator(wires):
+        qml.Hadamard(wires=wires)
+
+  U = generator(wires=0)
+
+  dev = qml.device('default.qubit')
+  @qml.qnode(dev)
+  def circuit():
+
+        # Initialize to the state |1>
+        qml.PauliX(wires=0)
+
+        # Apply the reflection
+        qml.Reflection(U)
+
+        return qml.state()
+
+  ```
+  
+  ```pycon
+  >>> circuit()
+  tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
+  ```
+  
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
+  
+* All generators in the source code (except those in the `qchem` module) no longer return 
+  `Hamiltonian` or `Tensor` instances. Wherever possible, these return `Sum`, `SProd`, and `Prod` instances.
+  [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
 
 <h3>Breaking changes 💔</h3>
+
+* `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
+  [(#5311)](https://github.com/PennyLaneAI/pennylane/pull/5311)
+
+* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``. The old import path no longer exists.
+  [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
 <h3>Deprecations 👋</h3>
 
@@ -27,6 +71,10 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
+Astral Cai,
+Amintor Dusko,
+Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
 Matthew Silverman.

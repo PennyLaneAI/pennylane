@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Easy-to-import Qiskit workflows 💾</h4>
+<h4>Qiskit 1.0 integration 🔌</h4>
 
 * This version of PennyLane makes it easier to import circuits from Qiskit.
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
@@ -15,9 +15,9 @@
   a PennyLane
   [quantum function](https://docs.pennylane.ai/en/stable/introduction/circuits.html#quantum-functions).
   Although `qml.from_qiskit` already exists in PennyLane, we have made a number of improvements to
-  make importing from Qiskit easier. And yes — `qml.from_qiskit` functionality 
-  is compatible with both Qiskit 
-  [1.0](https://docs.quantum.ibm.com/api/qiskit/release-notes/1.0) and earlier 
+  make importing from Qiskit easier. And yes — `qml.from_qiskit` functionality
+  is compatible with both Qiskit
+  [1.0](https://docs.quantum.ibm.com/api/qiskit/release-notes/1.0) and earlier
   versions! Here's a comprehensive list of the improvements:
 
   * You can now append PennyLane measurements onto the quantum function returned by
@@ -49,22 +49,22 @@
 
     ```python
     qc = QuantumCircuit(3, 2)  # Teleportation
-  
+
     qc.rx(0.9, 0)  # Prepare input state on qubit 0
-  
+
     qc.h(1)  # Prepare Bell state on qubits 1 and 2
     qc.cx(1, 2)
-  
+
     qc.cx(0, 1)  # Perform teleportation
     qc.h(0)
     qc.measure(0, 0)
     qc.measure(1, 1)
-  
+
     with qc.if_test((1, 1)):  # Perform first conditional
         qc.x(2)
     ```
-    
-    This circuit can be converted into PennyLane with the Qiskit measurements still accessible. For example, we can 
+
+    This circuit can be converted into PennyLane with the Qiskit measurements still accessible. For example, we can
     use those results as inputs to a mid-circuit measurement in PennyLane:
 
     ```python
@@ -77,10 +77,10 @@
 
     ```pycon
     >>> teleport()
-    tensor([[0.81080498+0.j, 0.        +0.j],
-        [0.        +0.j, 0.18919502+0.j]], requires_grad=True)
+    tensor([[0.81080498+0.j        , 0.        +0.39166345j],
+            [0.        -0.39166345j, 0.18919502+0.j        ]], requires_grad=True)
     ```
-    
+
   * It is now more intuitive to handle and differentiate parametrized Qiskit circuits. Consider the following circuit:
 
     ```python
@@ -95,7 +95,7 @@
     qc.ry(angle1, 1)
     qc.cx(1, 0)
     ```
-    
+
     We can convert this circuit into a QNode with two arguments, corresponding to `x` and `y`:
 
     ```python
@@ -103,7 +103,7 @@
     qfunc = qml.from_qiskit(qc, measurements)
     qnode = qml.QNode(qfunc, dev)
     ```
-    
+
     The QNode can be evaluated and differentiated:
 
     ```pycon
@@ -160,15 +160,15 @@
   with `default.qubit` by simulating them in a similar way to what happens on quantum hardware.
   [(#5088)](https://github.com/PennyLaneAI/pennylane/pull/5088)
   [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
-  
+
   Previously, mid-circuit measurements (MCMs) would be automatically replaced with an additional qubit
   using the `@qml.defer_measurements` transform. The circuit below would have required thousands
   of qubits to simulate.
 
   Now, MCMs are performed in a similar way to quantum hardware
-  with finite shots on `default.qubit`. For each shot and each time an MCM is encountered, 
-  the device evaluates the probability of projecting onto `|0>` or `|1>` and makes a random choice to 
-  collapse the circuit state. This approach works well when there are a lot of MCMs 
+  with finite shots on `default.qubit`. For each shot and each time an MCM is encountered,
+  the device evaluates the probability of projecting onto `|0>` or `|1>` and makes a random choice to
+  collapse the circuit state. This approach works well when there are a lot of MCMs
   and the number of shots is not too high.
 
   ```python
@@ -215,6 +215,9 @@
     The original long-form names `Identity`, `PauliX`, `PauliY`, and `PauliZ` remain available, but
     use of the short-form names is now recommended.
 
+    The original long-form names `Identity`, `PauliX`, `PauliY`, and `PauliZ` remain available, but
+    use of the short-form names is now recommended.
+
   * A new `qml.commutator` function is now available that allows you to compute commutators between
     PennyLane operators.
     [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
@@ -225,8 +228,8 @@
     >>> qml.commutator(X(0), Y(0))
     2j * Z(0)
     ```
-  
-  * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli 
+
+  * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
     representation will be automatically used for calculations when available.
     [(#4989)](https://github.com/PennyLaneAI/pennylane/pull/4989)
     [(#5001)](https://github.com/PennyLaneAI/pennylane/pull/5001)
@@ -268,7 +271,7 @@
     )
     ```
 
-  * Linear combinations of operators and operator multiplication via `Sum` and `Prod`, respectively, 
+  * Linear combinations of operators and operator multiplication via `Sum` and `Prod`, respectively,
     have been updated to reach feature parity with `Hamiltonian` and `Tensor`, respectively.
     This should minimize the effort to port over any existing code.
     [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
@@ -370,8 +373,7 @@
 
   ```pycon
   >>> print(qubit_ham)
-  (-0.25j*(PauliY(wires=[0]))) + ((-0.25+0j)*(PauliX(wires=[0]) @ PauliZ(wires=[1]))) +
-  ((0.25+0j)*(PauliX(wires=[0]))) + (0.25j*(PauliY(wires=[0]) @ PauliZ(wires=[1])))
+  -0.25j * Y(0) + (-0.25+0j) * (X(0) @ Z(1)) + (0.25+0j) * X(0) + 0.25j * (Y(0) @ Z(1))
   ```
 
 * The transform `split_non_commuting` now accepts measurements of type `probs`, `sample`, and `counts`, which accept both wires and observables.
@@ -398,7 +400,6 @@
 
 * A `partial_trace` function has been added to `qml.math` for taking the partial trace of matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
-  
 
 <h4>Other operator arithmetic improvements</h4>
 
@@ -413,7 +414,7 @@
   * You can now multiply `PauliWord` and `PauliSentence` instances by scalars (e.g.,
     `0.5 * PauliWord({0: "X"})` or `0.5 * PauliSentence({PauliWord({0: "X"}): 1.})`).
 
-  * You can now intuitively add and subtract `PauliWord` and `PauliSentence` instances and scalars together (scalars are treated implicitly as multiples 
+  * You can now intuitively add and subtract `PauliWord` and `PauliSentence` instances and scalars together (scalars are treated implicitly as multiples
     of the identity, `I`). For example, `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli sentence `ps1 = PauliSentence({pw1: 3.})`.
 
   * You can now element-wise multiply `PauliWord`, `PauliSentence`, and operators together with `qml.dot` (e.g.,
@@ -450,7 +451,7 @@
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
-* Akin to `qml.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum` or `Prod` can now be accessed 
+* Akin to `qml.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum` or `Prod` can now be accessed
   with the `terms()` method.
   [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
   [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
@@ -511,7 +512,7 @@
   `MultiControlledX` depending on the number of control wires and control values.
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
 
-* Unwanted warning filters have been removed from tests and no `PennyLaneDeprecationWarning`s 
+* Unwanted warning filters have been removed from tests and no `PennyLaneDeprecationWarning`s
   are being raised unexpectedly.
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
@@ -687,13 +688,20 @@
   instead when differentiating a circuit.
   [(#5237)](https://github.com/PennyLaneAI/pennylane/pull/5237)
 
+* A quick start page has been added called "Importing Circuits". This explains
+  how to import quantum circuits and operations defined outside of PennyLane.
+  [(#5281)](https://github.com/PennyLaneAI/pennylane/pull/5281)
+
 <h3>Bug fixes 🐛</h3>
+
+*  `QubitChannel` can now be used with jitting.
+  [(#5288)](https://github.com/PennyLaneAI/pennylane/pull/5288)
 
 * Fixed a bug in the matplotlib drawer where the colour of `Barrier` did not match the requested style.
   [(#5276)](https://github.com/PennyLaneAI/pennylane/pull/5276)
 
 * `qml.draw` and `qml.draw_mpl` now apply all applied transforms before drawing.
-  [(#5277)](https://github.com/PennyLaneAI/pennylane/pull/5277) 
+  [(#5277)](https://github.com/PennyLaneAI/pennylane/pull/5277)
 
 * `ctrl_decomp_zyz` is now differentiable.
   [(#5198)](https://github.com/PennyLaneAI/pennylane/pull/5198)
@@ -789,7 +797,7 @@
 * When a QNode specifies `diff_method="adjoint"`, `default.qubit` no longer tries to decompose non-trainable operations with non-scalar parameters such as `QubitUnitary`.
   [(#5233)](https://github.com/PennyLaneAI/pennylane/pull/5233)
 
-* The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the initialization after causing problems with datasets. This now 
+* The overwriting of the class names of `I`, `X`, `Y`, and `Z` no longer happens in the initialization after causing problems with datasets. This now
   happens globally.
   [(#5252)](https://github.com/PennyLaneAI/pennylane/pull/5252)
 
