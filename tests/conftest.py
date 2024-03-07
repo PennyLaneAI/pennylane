@@ -173,6 +173,7 @@ def tear_down_thermitian():
     yield None
     qml.THermitian._eigs = {}
 
+
 @pytest.fixture(scope="function")
 def use_legacy_opmath():
     with disable_new_opmath_cm() as cm:

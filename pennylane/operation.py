@@ -3065,6 +3065,7 @@ def convert_to_opmath(op):
         return qml.prod(*op.obs)
     return op
 
+
 @contextmanager
 def disable_new_opmath_cm():
     r"""Allows to use the new arithmetic operator dunders within a

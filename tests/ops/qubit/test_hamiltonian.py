@@ -28,6 +28,7 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.wires import Wires
 from pennylane.operation import enable_new_opmath, disable_new_opmath, disable_legacy_opmath_cm
 
+
 @pytest.fixture(scope="function")
 def use_legacy_opmath():
     with disable_legacy_opmath_cm() as cm:
