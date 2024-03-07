@@ -666,7 +666,6 @@ class LinearCombination(Sum):
 
             super().__init__(*operands, id=id, _pauli_rep=pr)
             print(f"coeffs after second super().__init__: {self._coeffs}")
-            
 
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():
@@ -808,8 +807,7 @@ class LinearCombination(Sum):
             self._grouping_indices = _compute_grouping_indices(
                 self.ops, grouping_type=grouping_type, method=method
             )
-    
-    
+
     @qml.QueuingManager.stop_recording()
     def _simplify_coeffs_ops(self):
         """Simplify coeffs and ops"""
@@ -842,7 +840,7 @@ class LinearCombination(Sum):
         op_as_sum = op_as_sum.simplify()
         coeffs, ops = op_as_sum.terms()
         return coeffs, ops, None
-    
+
     def simplify(self):
         r"""Simplifies the LinearCombination by combining like-terms.
 

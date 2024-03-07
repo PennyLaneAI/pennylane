@@ -545,7 +545,7 @@ class TestLinearCombination:
         combination of coefficients and ops"""
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
             qml.LinearCombination(coeffs, ops)
-    
+
     def test_integer_coefficients(self):
         """Test that handling integers is not a problem"""
         H1, H2, true_res = (
