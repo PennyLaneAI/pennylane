@@ -650,7 +650,7 @@ class LinearCombination(Sum):
         # TODO use grouping functionality of Sum once that is merged
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
-        self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
+        # self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
 
         if simplify:
             # TODO clean up this logic, seems unnecesssarily complicated
@@ -668,16 +668,16 @@ class LinearCombination(Sum):
                     self.ops, grouping_type=grouping_type, method=method
                 )
 
-    def _build_pauli_rep(self):
-        """PauliSentence representation of the LinearCombination of operators."""
-        if all(op.pauli_rep for op in self.ops):
-            new_rep = qml.pauli.PauliSentence()
-            for c, op in zip(self.coeffs, self.ops):
-                ps = qml.pauli.pauli_sentence(op)
-                new_rep += ps * c
-            return new_rep
+    # def _build_pauli_rep(self):
+    #     """PauliSentence representation of the LinearCombination of operators."""
+    #     if all(op.pauli_rep for op in self.ops):
+    #         new_rep = qml.pauli.PauliSentence()
+    #         for c, op in zip(self.coeffs, self.ops):
+    #             ps = qml.pauli.pauli_sentence(op)
+    #             new_rep += ps * c
+    #         return new_rep
 
-        return None
+    #     return None
 
     # @property
     # def operands(self):
@@ -888,7 +888,7 @@ class LinearCombination(Sum):
 
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            # pr.simplify()
+
             wire_order = self.wires
             if len(pr) == 0:
                 return LinearCombination([], [], _pauli_rep=pr)

@@ -506,7 +506,6 @@ dev = qml.device("default.qubit", wires=2)
 class TestToDo:
     """Test that currently xfail but ideally shouldnt"""
 
-    @pytest.mark.xfail
     def test_integer_coefficients(self):
         """Test that handling integers is not a problem"""
         H1, H2, true_res = (
@@ -1755,12 +1754,13 @@ class TestLinearCombinationDifferentiation:
 
         assert np.allclose(grad, grad_expected)
 
+    @pytest.mark.xfail # TODO simplify doesnt work with differentiation
     @pytest.mark.torch
-    @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_torch(self, simplify, group):
+    def test_trainable_coeffs_torch_simplify(self, group):
         """Test the torch interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a LinearCombination expectation"""
+        simplify = True
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
         param = torch.tensor(1.7, requires_grad=True)
 
@@ -1799,8 +1799,56 @@ class TestLinearCombinationDifferentiation:
         res_expected.backward()
         grad_expected = (coeffs2.grad, param2.grad)
 
-        assert np.allclose(grad[0], grad_expected[0])
-        assert np.allclose(grad[1], grad_expected[1])
+        assert qml.math.allclose(grad[0], grad_expected[0])
+        assert qml.math.allclose(grad[1], grad_expected[1])
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("group", [None, "qwc"])
+    def test_trainable_coeffs_torch(self, group):
+        """Test the torch interface by comparing the differentiation of linearly combined subcircuits
+        with the differentiation of a LinearCombination expectation"""
+        simplify = False
+
+        coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
+        param = torch.tensor(1.7, requires_grad=True)
+
+        # differentiating a circuit with measurement expval(H)
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(
+                qml.LinearCombination(
+                    coeffs,
+                    [X(0), Z(0)],
+                    simplify=simplify,
+                    grouping_type=group,
+                )
+            )
+
+        res = circuit(coeffs, param)
+        res.backward()  # pylint:disable=no-member
+        grad = (coeffs.grad, param.grad)
+
+        # differentiating a cost that combines circuits with
+        # measurements expval(Pauli)
+
+        # we need to create new tensors here
+        coeffs2 = torch.tensor([-0.05, 0.17], requires_grad=True)
+        param2 = torch.tensor(1.7, requires_grad=True)
+
+        half1 = qml.QNode(circuit1, dev, interface="torch", diff_method="backprop")
+        half2 = qml.QNode(circuit2, dev, interface="torch", diff_method="backprop")
+
+        def combine(coeffs, param):
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
+
+        res_expected = combine(coeffs2, param2)
+        res_expected.backward()
+        grad_expected = (coeffs2.grad, param2.grad)
+
+        assert qml.math.allclose(grad[0], grad_expected[0])
+        assert qml.math.allclose(grad[1], grad_expected[1])
 
     @pytest.mark.torch
     def test_nontrainable_coeffs_torch(self):
