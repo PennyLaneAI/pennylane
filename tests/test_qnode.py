@@ -952,7 +952,7 @@ class TestIntegration:
 
             @qml.transforms.dynamic_one_shot
             @qml.qnode(dev)
-            def circ():
+            def _():
                 qml.RX(1.23, 0)
                 ms = [qml.measure(0) for _ in range(10)]
                 return qml.probs(op=ms)
