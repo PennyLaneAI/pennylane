@@ -1165,28 +1165,6 @@ class Operator(abc.ABC):
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
 
-    @staticmethod
-    def validate_subspace(subspace):
-        """Validate the subspace for qutrit operations.
-
-        This method determines whether a given subspace for qutrit operations
-        is defined correctly or not. If not, a `ValueError` is thrown.
-
-        Args:
-            subspace (tuple[int]): Subspace to check for correctness
-
-        .. warning::
-
-            ``Operator.validate_subspace(subspace)`` has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed from the Operator class in an upcoming release.
-        """
-
-        warnings.warn(
-            "Operator.validate_subspace(subspace) has been relocated to the qml.ops.qutrit.parametric_ops module and will be removed from the Operator class in an upcoming release.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-        return qml.ops.qutrit.validate_subspace(subspace)
-
     @property
     def num_params(self):
         """Number of trainable parameters that the operator depends on.
