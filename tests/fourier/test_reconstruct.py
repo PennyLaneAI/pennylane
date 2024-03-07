@@ -918,6 +918,8 @@ class TestReconstruct:
         """Tests the reconstruction and differentiability with JAX."""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         params = tuple(jax.numpy.array(par) for par in params)
         qnode = qml.QNode(qnode, dev_1, interface="jax")
         with qml.Tracker(qnode.device) as tracker:
