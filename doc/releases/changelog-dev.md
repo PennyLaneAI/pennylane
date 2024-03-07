@@ -53,6 +53,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
+  [(#5321)](https://github.com/PennyLaneAI/pennylane/pull/5321)
+
 * `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
   [(#5311)](https://github.com/PennyLaneAI/pennylane/pull/5311)
 
