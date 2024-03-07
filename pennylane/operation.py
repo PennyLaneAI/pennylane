@@ -3019,6 +3019,7 @@ def convert_to_opmath(op):
         return qml.prod(*op.obs)
     return op
 
+
 def convert_to_legacy_H(op):
     """
     Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
@@ -3066,6 +3067,7 @@ def convert_to_legacy_H(op):
         return qml.Hamiltonian(coeffs, ops)
 
     return op
+
 
 def __getattr__(name):
     """To facilitate StatePrep rename"""
