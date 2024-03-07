@@ -29,14 +29,13 @@ from pennylane import math
 from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
-from pennylane.ops.op_math.sum import Sum
+from pennylane.ops.op_math.sum import Sum, LinearCombination
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .composite import CompositeOp
-from .linear_combination import LinearCombination
 from ..qubit.hamiltonian import Hamiltonian
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
