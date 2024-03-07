@@ -2883,6 +2883,21 @@ def test_convert_to_hamiltonian_trivial(coeffs, obs):
     assert isinstance(converted_opmath, qml.operation.Observable)
 
 
+@pytest.mark.parametrize(
+    "coeffs, obs",
+    [
+        ([2], [qml.T(1)]),
+        ([0.5, 2], [qml.T(0), qml.Identity(1)]),
+        ([1, 2], [qml.T(0), qml.Identity(1)]),
+    ],
+)
+def test_convert_to_hamiltonian_error(coeffs, obs):
+    """Test that arithmetic operator raise an error if there is a non-Observable"""
+
+    with pytest.raises(ValueError):
+        convert_to_legacy_H(qml.dot(coeffs, obs))
+
+
 # pylint: disable=unused-import,no-name-in-module
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""

@@ -3012,6 +3012,7 @@ def convert_to_opmath(op):
     return op
 
 
+# pylint: disable=too-many-branches
 def convert_to_legacy_H(op):
     """
     Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
@@ -3026,42 +3027,51 @@ def convert_to_legacy_H(op):
     Returns:
         Operator: The operator as a :class:`~pennylane.Hamiltonian` instance
     """
-    if isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
+    if not isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
+        return op
 
-        coeffs = []
-        ops = []
+    coeffs = []
+    ops = []
 
-        op = qml.simplify(op)
+    op = qml.simplify(op)
 
-        if isinstance(op, qml.ops.SProd):
-            coeffs.append(op.scalar)
-            ops.append(
-                op.base if isinstance(op.base, Observable) else qml.operation.Tensor(*op.base)
-            )
+    if isinstance(op, qml.ops.SProd):
+        coeffs.append(op.scalar)
+        if isinstance(op.base, Observable):
+            ops.append(op.base)
+        elif isinstance(op.base, qml.ops.op_math.Prod):
+            ops.append(qml.operation.Tensor(*op.base))
+        else:
+            raise ValueError("The base of scalar product must be an observable or a product.")
 
-        elif isinstance(op, qml.ops.Prod):
-            coeffs.append(1.0)
-            ops.append(qml.operation.Tensor(*op))
+    elif isinstance(op, qml.ops.Prod):
+        coeffs.append(1.0)
+        ops.append(qml.operation.Tensor(*op))
 
-        elif isinstance(op, qml.ops.Sum):
-            for factor in op:
-                if isinstance(factor, (qml.ops.SProd)):
-                    coeffs.append(factor.scalar)
-                    ops.append(
-                        qml.operation.Tensor(*factor.base)
-                        if isinstance(factor.base, qml.ops.Prod)
-                        else factor.base
+    elif isinstance(op, qml.ops.Sum):
+        for factor in op:
+            if isinstance(factor, (qml.ops.SProd)):
+                coeffs.append(factor.scalar)
+                if isinstance(factor.base, Observable):
+                    ops.append(factor.base)
+                elif isinstance(factor.base, qml.ops.op_math.Prod):
+                    ops.append(qml.operation.Tensor(*factor.base))
+                else:
+                    raise ValueError(
+                        "The base of scalar product must be an observable or a product."
                     )
-                elif isinstance(factor, (qml.ops.Prod)):
-                    coeffs.append(1.0)
-                    ops.append(qml.operation.Tensor(*factor))
-                elif isinstance(factor, Observable):
-                    coeffs.append(1.0)
-                    ops.append(factor)
+            elif isinstance(factor, (qml.ops.Prod)):
+                coeffs.append(1.0)
+                ops.append(qml.operation.Tensor(*factor))
+            elif isinstance(factor, Observable):
+                coeffs.append(1.0)
+                ops.append(factor)
+            else:
+                raise ValueError(
+                    "Could not convert to Hamiltonian. Some or all observables are not valid."
+                )
 
-        return qml.Hamiltonian(coeffs, ops)
-
-    return op
+    return qml.Hamiltonian(coeffs, ops)
 
 
 def __getattr__(name):
