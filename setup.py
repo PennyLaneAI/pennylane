@@ -31,7 +31,7 @@ requirements = [
     "semantic-version>=2.7",
     "autoray>=0.6.1",
     "cachetools",
-    "pennylane-lightning>=0.34",
+    "pennylane-lightning>=0.35",
     "requests",
     "typing_extensions",
 ]
@@ -62,7 +62,7 @@ info = {
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
-    "description": "PennyLane is a Python quantum machine learning library by Xanadu Inc.",
+    "description": "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network.",
     "long_description": open("README.md").read(),
     "long_description_content_type": "text/markdown",
     "provides": ["pennylane"],

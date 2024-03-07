@@ -16,6 +16,7 @@ This module contains the qml.counts measurement.
 """
 import warnings
 from typing import Sequence, Tuple, Optional
+import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -23,11 +24,6 @@ from pennylane.wires import Wires
 
 from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
-
-
-def _sample_to_str(sample):
-    """Converts a bit-array to a string. For example, ``[0, 1]`` would become '01'."""
-    return "".join(map(str, sample))
 
 
 def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
@@ -74,7 +70,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
             qml.RX(x, wires=0)
             qml.Hadamard(wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.PauliY(0))
+            return qml.counts(qml.Y(0))
 
     Executing this QNode:
 
@@ -110,7 +106,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(wires=0)
+            qml.X(0)
             return qml.counts()
 
     Executing this QNode shows only the observed outcomes:
@@ -124,7 +120,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(wires=0)
+            qml.X(0)
             return qml.counts(all_outcomes=True)
 
     Executing this QNode shows counts for all states:
@@ -301,17 +297,30 @@ class CountsMP(SampleMeasurement):
 
         if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            samples = qml.math.array(
-                [sample for sample in samples if not qml.math.any(qml.math.isnan(sample))]
-            )
+
+            # remove nans
+            mask = qml.math.isnan(samples)
+            num_wires = shape[-1]
+            if np.any(mask):
+                mask = np.logical_not(np.any(mask, axis=tuple(range(1, samples.ndim))))
+                samples = samples[mask, ...]
+
+            # convert to string
+            def convert(x):
+                return f"{x:0{num_wires}b}"
+
+            exp2 = 2 ** np.arange(num_wires - 1, -1, -1)
+            samples = np.einsum("...i,i", samples, exp2)
+            new_shape = samples.shape
             samples = qml.math.cast_like(samples, qml.math.int8(0))
-            samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)
+            samples = list(map(convert, samples.ravel()))
+            samples = np.array(samples).reshape(new_shape)
+
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if self.all_outcomes:
                 num_wires = len(self.wires) if len(self.wires) > 0 else shape[-1]
-                outcomes = list(
-                    map(_sample_to_str, qml.QubitDevice.generate_basis_states(num_wires))
-                )
+                outcomes = list(map(convert, range(2**num_wires)))
+
         elif self.all_outcomes:
             # This also covers statistics for mid-circuit measurements manipulated using
             # arithmetic operators

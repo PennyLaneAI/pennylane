@@ -36,8 +36,8 @@ ops = (
 )
 
 ops_rep = (
-    "PauliX(wires=[0]) # PauliZ(wires=[0]) # Hadamard(wires=[0])",
-    "CNOT(wires=[0, 1]) # RX(1.23, wires=[1]) # Identity(wires=[0])",
+    "X(0) # Z(0) # Hadamard(wires=[0])",
+    "CNOT(wires=[0, 1]) # RX(1.23, wires=[1]) # I(0)",
     "IsingXX(4.56, wires=[2, 3]) # Toffoli(wires=[1, 2, 3]) # Rot(0.34, 1.0, 0, wires=[0])",
 )
 
@@ -217,7 +217,7 @@ class TestConstruction:
             qml.prod(qml.PauliX(0), qml.PauliZ(1)),
             qml.operation.Tensor(qml.PauliX(2), qml.PauliZ(3)),
         ]
-        op = ValidOp(*operands)
+        op = qml.sum(*operands)
         assert isinstance(op[0], Sum)
         assert isinstance(op[0][1], SProd)
         assert isinstance(op[0][1].base, Prod)
@@ -242,7 +242,7 @@ class TestMscMethods:
     def test_nested_repr(self):
         """Test nested repr values while other nested features such as equality are not ready"""
         op = ValidOp(qml.PauliX(0), ValidOp(qml.RY(1, wires=1), qml.PauliX(0)))
-        assert repr(op) == "PauliX(wires=[0]) # (RY(1, wires=[1]) # PauliX(wires=[0]))"
+        assert repr(op) == "X(0) # (RY(1, wires=[1]) # X(0))"
 
     def test_label(self):
         """Test label method."""

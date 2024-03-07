@@ -85,15 +85,15 @@ ops = (
 )
 
 ops_rep = (
-    "1.0*(PauliX(wires=[0]))",
-    "0.0*(PauliZ(wires=[0]))",
-    "1j*(Hadamard(wires=[0]))",
-    "1.23*(CNOT(wires=[0, 1]))",
-    "4.56*(RX(1.23, wires=[1]))",
-    "(1+2j)*(Identity(wires=[0]))",
-    "10*(IsingXX(4.56, wires=[2, 3]))",
-    "0j*(Toffoli(wires=[1, 2, 3]))",
-    "42*(Rot(0.34, 1.0, 0, wires=[0]))",
+    "1.0 * X(0)",
+    "0.0 * Z(0)",
+    "1j * Hadamard(wires=[0])",
+    "1.23 * CNOT(wires=[0, 1])",
+    "4.56 * RX(1.23, wires=[1])",
+    "(1+2j) * I(0)",
+    "10 * IsingXX(4.56, wires=[2, 3])",
+    "0j * Toffoli(wires=[1, 2, 3])",
+    "42 * Rot(0.34, 1.0, 0, wires=[0])",
 )
 
 
@@ -194,6 +194,30 @@ class TestInitialization:
 
 class TestMscMethods:
     """Test miscellaneous methods of the SProd class."""
+
+    def test_string_with_single_pauli(self):
+        """Test the string representation with single pauli"""
+        res = qml.s_prod(0.5, qml.PauliX("a"))
+        true_res = "0.5 * X('a')"
+        assert repr(res) == true_res
+
+        res = qml.s_prod(0.5, qml.PauliX(0))
+        true_res = "0.5 * X(0)"
+        assert repr(res) == true_res
+
+    def test_string_with_sum_of_pauli(self):
+        """Test the string representation with single pauli"""
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX("b")))
+        true_res = "0.5 * (X('a') + X('b'))"
+        assert repr(res) == true_res
+
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX(0), qml.PauliX(1)))
+        true_res = "0.5 * (X(0) + X(1))"
+        assert repr(res) == true_res
+
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX(1)))
+        true_res = "0.5 * (X('a') + X(1))"
+        assert repr(res) == true_res
 
     @pytest.mark.parametrize("op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, op_scalar_tup, op_rep):
@@ -686,6 +710,13 @@ class TestProperties:
         for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
             op = s_prod(scalar, qml.PauliX(wires=0))
             assert op.is_hermitian == hermitian_state
+
+    @pytest.mark.tf
+    def test_no_dtype_promotion(self):
+        import tensorflow as tf
+
+        op = qml.s_prod(tf.constant(0.5), qml.X(0))
+        assert op.scalar.dtype == next(iter(op.pauli_rep.values())).dtype
 
     @pytest.mark.jax
     def test_is_hermitian_jax(self):

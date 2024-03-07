@@ -84,7 +84,7 @@ class TestCounts:
         assert repr(m1) == "CountsMP(wires=[0], all_outcomes=True)"
 
         m2 = CountsMP(obs=qml.PauliX(0), all_outcomes=True)
-        assert repr(m2) == "CountsMP(PauliX(wires=[0]), all_outcomes=True)"
+        assert repr(m2) == "CountsMP(X(0), all_outcomes=True)"
 
         m3 = CountsMP(eigvals=(-1, 1), all_outcomes=False)
         assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"

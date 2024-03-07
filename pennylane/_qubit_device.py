@@ -328,7 +328,7 @@ class QubitDevice(Device):
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
         Returns:
-            tuple: stastics for each shot item from the shot vector
+            tuple: statistics for each shot item from the shot vector
         """
         results = []
         s1 = 0
@@ -726,8 +726,9 @@ class QubitDevice(Device):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
             elif m.return_type is not None:
+                name = obs.name if isinstance(obs, qml.operation.Operator) else type(obs).__name__
                 raise qml.QuantumFunctionError(
-                    f"Unsupported return type specified for observable {obs.name}"
+                    f"Unsupported return type specified for observable {name}"
                 )
             else:
                 result = None
@@ -1044,7 +1045,7 @@ class QubitDevice(Device):
             # are the same for different executions with the same seed
             rng = np.random.RandomState(seed)
             recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+            obs_list = [qml.X, qml.Y, qml.Z]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
 
@@ -1481,7 +1482,7 @@ class QubitDevice(Device):
         # translate to wire labels used by device. observable is list when measuring sequence
         # of multiple MeasurementValues
         device_wires = self.map_wires(observable.wires)
-        name = observable.name
+        name = None if no_observable_provided else observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples

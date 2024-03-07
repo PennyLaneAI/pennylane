@@ -264,9 +264,14 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
-ar.register_function(
-    "tensorflow", "asarray", lambda x, **kwargs: _i("tf").convert_to_tensor(x, **kwargs)
-)
+
+def _tf_convert_to_tensor(x, **kwargs):
+    if isinstance(x, _i("tf").Tensor) and "dtype" in kwargs:
+        return _i("tf").cast(x, **kwargs)
+    return _i("tf").convert_to_tensor(x, **kwargs)
+
+
+ar.register_function("tensorflow", "asarray", _tf_convert_to_tensor)
 ar.register_function(
     "tensorflow",
     "hstack",

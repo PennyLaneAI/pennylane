@@ -122,7 +122,7 @@ def apply_controlled_Q(
         wires = Wires(wires)
         target_wire = Wires(target_wire)
         control_wire = Wires(control_wire)
-        work_wires = Wires(work_wires)
+        work_wires = Wires(work_wires) if work_wires is not None else Wires([])
 
         if not wires.contains_wires(target_wire):
             raise ValueError("The target wire must be contained within wires")

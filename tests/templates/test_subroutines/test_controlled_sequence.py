@@ -356,7 +356,7 @@ class TestQPEResults:
 
         unitary = qml.RX(phase, wires=[0])
         estimation_wires = range(1, 6)
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", wires=range(6))
 
         @qml.qnode(dev)
         def circuit():
@@ -378,7 +378,7 @@ class TestQPEResults:
         """Tests that the QPE defined using ControlledSequence works correctly for compound operators"""
         unitary = qml.RX(phase, wires=[0]) @ qml.CNOT(wires=[0, 1])
         estimation_wires = range(2, 6)
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", wires=range(6))
 
         @qml.qnode(dev)
         def circuit():

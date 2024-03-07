@@ -97,6 +97,11 @@ with qml.queuing.AnnotatedQueue() as q_multi_cut_tape:
 multi_cut_tape = qml.tape.QuantumScript.from_queue(q_multi_cut_tape)
 
 
+def get_name(obj):
+    """MeasurementProcesses don't have names, so we return Measurement."""
+    return "Measurement" if isinstance(obj, qml.measurements.MeasurementProcess) else obj.name
+
+
 def kron(*args):
     """Multi-argument kronecker product"""
     if len(args) == 1:
@@ -220,27 +225,31 @@ def compare_nodes(nodes, expected_wires, expected_names):
         assert node.obj.wires.tolist() == exp_wire
 
     for node, exp_name in zip(nodes, expected_names):
-        assert node.obj.name == exp_name
+        assert get_name(node.obj) == exp_name
 
 
 def compare_fragment_nodes(node_data, expected_data):
     """Helper function to compare nodes of fragment graphs"""
     assert len(node_data) == len(expected_data)
-    expected = [(exp_data[0].name, exp_data[0].wires, exp_data[1]) for exp_data in expected_data]
+    expected = [
+        (get_name(exp_data[0]), exp_data[0].wires, exp_data[1]) for exp_data in expected_data
+    ]
 
     for data in node_data:
         # The exact ordering of node_data varies on each call
-        assert (data[0].obj.name, data[0].obj.wires, data[1]) in expected
+        assert (get_name(data[0].obj), data[0].obj.wires, data[1]) in expected
 
 
 def compare_fragment_edges(edge_data, expected_data):
     """Helper function to compare fragment edges"""
     assert len(edge_data) == len(expected_data)
-    expected = [(exp_data[0].name, exp_data[1].name, exp_data[2]) for exp_data in expected_data]
+    expected = [
+        (get_name(exp_data[0]), get_name(exp_data[1]), exp_data[2]) for exp_data in expected_data
+    ]
 
     for data in edge_data:
         # The exact ordering of edge_data varies on each call
-        assert (data[0].obj.name, data[1].obj.name, data[2]) in expected
+        assert (get_name(data[0].obj), get_name(data[1].obj), data[2]) in expected
 
 
 def compare_tapes(res_tape, expected_tape):
@@ -253,16 +262,16 @@ def compare_tapes(res_tape, expected_tape):
 
     for op, exp_op in zip(res_tape.operations, expected_tape.operations):
         if (
-            op.name == "PrepareNode"
+            get_name(op) == "PrepareNode"
         ):  # The exact ordering of PrepareNodes w.r.t wires varies on each call
-            assert exp_op.name == "PrepareNode"
+            assert get_name(exp_op) == "PrepareNode"
         else:
-            assert op.name == exp_op.name
+            assert get_name(op) == get_name(exp_op)
             assert op.wires.tolist() == exp_op.wires.tolist()
 
     for meas, exp_meas in zip(res_tape.measurements, expected_tape.measurements):
-        assert meas.return_type.name == exp_meas.return_type.name
-        assert meas.obs.name == exp_meas.obs.name
+        assert get_name(meas.return_type) == get_name(exp_meas.return_type)
+        assert get_name(meas.obs) == get_name(exp_meas.obs)
         assert meas.wires.tolist() == exp_meas.wires.tolist()
 
 
@@ -270,10 +279,10 @@ def compare_measurements(meas1, meas2):
     """
     Helper function to compare measurements
     """
-    assert meas1.return_type.name == meas2.return_type.name
+    assert get_name(meas1.return_type) == get_name(meas2.return_type)
     obs1 = meas1.obs
     obs2 = meas2.obs
-    assert np.array(obs1.name == obs2.name).all()
+    assert np.array(get_name(obs1) == get_name(obs2)).all()
     assert obs1.wires.tolist() == obs2.wires.tolist()
 
 
@@ -438,7 +447,7 @@ class TestTapeToGraph:
 
         for node_obs, exp_obs in zip(node_observables, expected_obs):
             assert node_obs.wires == exp_obs.wires
-            assert node_obs.obs.name == exp_obs.obs.name
+            assert get_name(node_obs.obs) == get_name(exp_obs.obs)
 
     @pytest.mark.parametrize(
         "measurement,expected_measurement",
@@ -470,7 +479,7 @@ class TestTapeToGraph:
 
         node_observables = [node.obj for node in nodes if hasattr(node.obj, "return_type")]
 
-        assert node_observables[0].return_type.name == expected_measurement
+        assert get_name(node_observables[0].return_type) == expected_measurement
 
     def test_multiple_observables(self):
         """
@@ -501,7 +510,7 @@ class TestTapeToGraph:
 
         for node_obs, exp_obs in zip(node_observables, expected_obs):
             assert node_obs.wires == exp_obs.wires
-            assert node_obs.obs.name == exp_obs.obs.name
+            assert get_name(node_obs.obs) == get_name(exp_obs.obs)
 
     def test_split_sample_measurement(self):
         """
@@ -532,12 +541,12 @@ class TestTapeToGraph:
         ]
 
         for node, expected_node in zip(g.nodes, expected_nodes):
-            assert node.obj.name == expected_node.name
+            assert get_name(node.obj) == get_name(expected_node)
             assert node.obj.wires == expected_node.wires
 
             if getattr(node.obj, "obs", None) is not None:
                 assert node.obj.return_type is qml.measurements.Sample
-                assert node.obj.obs.name == expected_node.obs.name
+                assert get_name(node.obj.obs) == get_name(expected_node.obs)
 
     def test_sample_tensor_obs(self):
         """
@@ -588,12 +597,12 @@ class TestTapeToGraph:
         ]
 
         for node, expected_node in zip(g.nodes, expected_nodes):
-            assert node.obj.name == expected_node.name
+            assert get_name(node.obj) == get_name(expected_node)
             assert node.obj.wires == expected_node.wires
 
             if getattr(node.obj, "obs", None) is not None:
                 assert node.obj.return_type is qml.measurements.Sample
-                assert node.obj.obs.name == expected_node.obs.name
+                assert get_name(node.obj.obs) == get_name(expected_node.obs)
 
 
 class TestReplaceWireCut:
@@ -614,17 +623,17 @@ class TestReplaceWireCut:
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.obj.name for op, _ in new_node_data]
+        op_names = [get_name(op.obj) for op, _ in new_node_data]
 
         assert "WireCut" not in op_names
         assert "MeasureNode" in op_names
         assert "PrepareNode" in op_names
 
         for op, order in new_node_data:
-            if op.obj.name == "MeasureNode":
+            if get_name(op.obj) == "MeasureNode":
                 assert op.obj.wires.tolist() == [wire_cut_num]
                 assert order == wire_cut_order
-            elif op.obj.name == "PrepareNode":
+            elif get_name(op.obj) == "PrepareNode":
                 assert op.obj.wires.tolist() == [wire_cut_num]
                 assert order == wire_cut_order
 
@@ -659,11 +668,11 @@ class TestReplaceWireCut:
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
-        wire_cut_order = [order for op, order in node_data if op.obj.name == "WireCut"]
+        wire_cut_order = [order for op, order in node_data if get_name(op.obj) == "WireCut"]
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.obj.name for op, _ in new_node_data]
+        op_names = [get_name(op.obj) for op, _ in new_node_data]
 
         assert "WireCut" not in op_names
         assert op_names.count("MeasureNode") == 3
@@ -672,11 +681,11 @@ class TestReplaceWireCut:
         measure_counter = prepare_counter = 0
 
         for op, order in new_node_data:
-            if op.obj.name == "MeasureNode":
+            if get_name(op.obj) == "MeasureNode":
                 assert op.obj.wires.tolist() == [wire_cut_num[measure_counter]]
                 assert order == wire_cut_order[measure_counter]
                 measure_counter += 1
-            elif op.obj.name == "PrepareNode":
+            elif get_name(op.obj) == "PrepareNode":
                 assert op.obj.wires.tolist() == [wire_cut_num[prepare_counter]]
                 assert order == wire_cut_order[prepare_counter]
                 prepare_counter += 1
@@ -704,16 +713,16 @@ class TestReplaceWireCut:
         nodes = list(g.nodes)
 
         for node in nodes:
-            if node.obj.name == "MeasureNode":
+            if get_name(node.obj) == "MeasureNode":
                 succ = list(g.succ[node])[0]
                 pred = list(g.pred[node])[0]
-                assert succ.obj.name == "PrepareNode"
-                assert pred.obj.name == "RZ"
-            if node.obj.name == "PrepareNode":
+                assert get_name(succ.obj) == "PrepareNode"
+                assert get_name(pred.obj) == "RZ"
+            if get_name(node.obj) == "PrepareNode":
                 succ = list(g.succ[node])[0]
                 pred = list(g.pred[node])[0]
-                assert succ.obj.name == "CNOT"
-                assert pred.obj.name == "MeasureNode"
+                assert get_name(succ.obj) == "CNOT"
+                assert get_name(pred.obj) == "MeasureNode"
 
     def test_wirecut_has_no_predecessor(self):
         """
@@ -733,18 +742,18 @@ class TestReplaceWireCut:
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.obj.name for op, _ in new_node_data]
+        op_names = [get_name(op.obj) for op, _ in new_node_data]
 
         assert "WireCut" not in op_names
         assert "MeasureNode" in op_names
         assert "PrepareNode" in op_names
 
         for op, order in new_node_data:
-            if op.obj.name == "MeasureNode":
+            if get_name(op.obj) == "MeasureNode":
                 assert order == {"order": 0}
                 pred = list(g.pred[op])
                 assert pred == []
-            elif op.obj.name == "PrepareNode":
+            elif get_name(op.obj) == "PrepareNode":
                 assert order == {"order": 0}
 
     def test_wirecut_has_no_successor(self):
@@ -764,16 +773,16 @@ class TestReplaceWireCut:
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.obj.name for op, order in new_node_data]
+        op_names = [get_name(op.obj) for op, order in new_node_data]
 
         assert "WireCut" not in op_names
         assert "MeasureNode" in op_names
         assert "PrepareNode" in op_names
 
         for op, order in new_node_data:
-            if op.obj.name == "MeasureNode":
+            if get_name(op.obj) == "MeasureNode":
                 assert order == {"order": 3}
-            elif op.obj.name == "PrepareNode":
+            elif get_name(op.obj) == "PrepareNode":
                 assert order == {"order": 3}
                 succ = list(g.succ[op])
                 assert succ == []
@@ -795,8 +804,8 @@ class TestReplaceWireCut:
         qcut.replace_wire_cut_nodes(g)
 
         nodes = list(g.nodes)
-        measure_nodes = [node for node in nodes if node.obj.name == "MeasureNode"]
-        prepare_nodes = [node for node in nodes if node.obj.name == "PrepareNode"]
+        measure_nodes = [node for node in nodes if get_name(node.obj) == "MeasureNode"]
+        prepare_nodes = [node for node in nodes if get_name(node.obj) == "PrepareNode"]
 
         assert len(measure_nodes) == len(prepare_nodes) == 3
 
@@ -998,7 +1007,7 @@ class TestFragmentGraph:
             assert edge[1] == exp_edge[1]
 
             for node, exp_node in zip(edge[2]["pair"], exp_edge[2]["pair"]):
-                assert node.obj.name == exp_node.name
+                assert get_name(node.obj) == get_name(exp_node)
                 assert node.obj.wires.tolist() == exp_node.wires.tolist()
 
     def test_fragment_wirecut_first_and_last(self):
@@ -1346,7 +1355,7 @@ class TestGraphToTape:
         m = tape_out.measurements
         assert len(m) == 1
         assert m[0].wires == Wires([2])
-        assert m[0].obs.name == "PauliZ"
+        assert get_name(m[0].obs) == "PauliZ"
 
     def test_single_sample_meas_conversion(self):
         """
@@ -1524,7 +1533,7 @@ class TestGetMeasurements:
 
         assert len(out) == len(group)
         assert out[0].return_type is qml.measurements.Expectation
-        assert out[0].obs.name == "Identity"
+        assert get_name(out[0].obs) == "Identity"
         assert out[0].obs.wires[0] == 0
 
     def test_single_measurement(self):
@@ -1545,8 +1554,8 @@ class TestGetMeasurements:
         assert obs[0].wires.tolist() == [1, 0, 2]
         assert obs[1].wires.tolist() == [1, 0]
 
-        assert [o.name for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
-        assert [o.name for o in obs[1].obs] == ["PauliZ", "PauliX"]
+        assert [get_name(o) for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
+        assert [get_name(o) for o in obs[1].obs] == ["PauliZ", "PauliX"]
 
 
 class TestExpandFragmentTapes:
@@ -2028,7 +2037,7 @@ class TestExpandFragmentTapesMC:
 
         for ops, expected_ops in zip(operations, expected_operations):
             for op, exp_op in zip(ops, expected_ops):
-                assert op.name == exp_op.name
+                assert get_name(op) == get_name(exp_op)
                 assert op.wires == exp_op.wires
 
 

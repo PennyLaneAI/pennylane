@@ -209,10 +209,11 @@ class CircuitGraph:
 
         for mp in self.observables_in_order:
             obs = mp.obs or mp
+            data, name = ([], "Identity") if obs is mp else (obs.data, str(obs.name))
             serialization_string += str(mp.return_type)
             serialization_string += delimiter
-            serialization_string += str(obs.name)
-            for param in obs.data:
+            serialization_string += name
+            for param in data:
                 serialization_string += delimiter
                 serialization_string += str(param)
                 serialization_string += delimiter
@@ -553,13 +554,13 @@ class CircuitGraph:
 
         >>> dev = qml.device('default.qubit', wires=3)
         >>> def circuit_measure_max_once():
-        ...     return qml.expval(qml.PauliX(wires=0))
+        ...     return qml.expval(qml.X(0))
         >>> qnode = qml.QNode(circuit_measure_max_once, dev)
         >>> qnode()
         >>> qnode.qtape.graph.max_simultaneous_measurements
         1
         >>> def circuit_measure_max_twice():
-        ...     return qml.expval(qml.PauliX(wires=0)), qml.probs(wires=0)
+        ...     return qml.expval(qml.X(0)), qml.probs(wires=0)
         >>> qnode = qml.QNode(circuit_measure_max_twice, dev)
         >>> qnode()
         >>> qnode.qtape.graph.max_simultaneous_measurements

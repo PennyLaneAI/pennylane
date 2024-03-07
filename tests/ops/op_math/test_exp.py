@@ -458,7 +458,8 @@ class TestDecomposition:
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
-    def test_generator_decomposition(self, op_name):
+    @pytest.mark.parametrize("str_wires", (True, False))
+    def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
         op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
@@ -481,6 +482,9 @@ class TestDecomposition:
             if op_class.num_wires in {AnyWires, AllWires}
             else list(range(op_class.num_wires))
         )
+        if str_wires:
+            alphabet = ("a", "b", "c", "d", "e", "f", "g")
+            wires = [alphabet[w] for w in wires]
 
         # PauliRot and PCPhase each have an extra required arg
         if op_class is qml.PauliRot:
@@ -649,14 +653,14 @@ class TestMiscMethods:
         t = qml.PauliX(0) @ qml.PauliX(1)
         isingxx = Exp(t, 0.25j)
 
-        assert repr(isingxx) == "Exp(0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
+        assert repr(isingxx) == "Exp(0.25j X(0) @ X(1))"
 
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qml.S(0) @ qml.PauliX(0)
         op = qml.ops.Exp(base, 3)  # pylint:disable=no-member
 
-        assert repr(op) == "Exp(3 S(wires=[0]) @ PauliX(wires=[0]))"
+        assert repr(op) == "Exp(3 S(wires=[0]) @ X(0))"
 
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are the same as the base diagonalizing gates."""
