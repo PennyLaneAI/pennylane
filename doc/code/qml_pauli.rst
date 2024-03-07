@@ -106,6 +106,7 @@ We can also displace the Hamiltonian by an arbitrary amount. Here, for example, 
 
 >>> H = H - np.min(np.linalg.eigvalsh(H.to_mat()))
 
+.. _graph_colouring:
 
 Graph colouring
 ---------------

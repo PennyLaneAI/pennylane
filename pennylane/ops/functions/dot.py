@@ -127,9 +127,8 @@ def dot(
         ((2,), (0, 1))
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
-        ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, check out the
-        `Pauli grouping <https://docs.pennylane.ai/en/stable/code/qml_pauli.html#module-pennylane.pauli.grouping.graph_colouring>`_
-        documentation and :func:`~pennylane.pauli.group_observables`.
+        ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, see
+        :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.group_observables`.
     """
 
     if len(coeffs) != len(ops):
