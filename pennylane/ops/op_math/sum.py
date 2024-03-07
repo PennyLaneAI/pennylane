@@ -266,6 +266,7 @@ class Sum(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
+        print("Hello from Sum._build_pauli_rep")
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
             new_rep = qml.pauli.PauliSentence()
             for operand_rep in operand_pauli_reps:
@@ -634,6 +635,7 @@ class LinearCombination(Sum):
             )
 
         self._coeffs = coeffs
+        print(f"coeffs1: {self._coeffs}")
         self._ops = [convert_to_opmath(op) for op in observables]
 
         # TODO: avoid having multiple ways to store ops and coeffs,
@@ -649,18 +651,22 @@ class LinearCombination(Sum):
 
         # TODO use grouping functionality of Sum once that is merged
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
-
+        print(f"coeffs after super().__init__: {self._coeffs}")
         # self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
 
         if simplify:
             # TODO clean up this logic, seems unnecesssarily complicated
-            simplified = self.simplify()
-            self._coeffs = simplified.coeffs
-            self._ops = simplified.ops
+            simplified_coeffs, simplified_ops, pr = self._simplify_coeffs_ops()
+            print(f"coeffs after self._simplify_coeffs_ops: {self._coeffs}")
+            self._coeffs = simplified_coeffs
+            print(f"coeffs after reassignment: {self._coeffs}")
+            self._ops = simplified_ops
             with qml.QueuingManager().stop_recording():
                 operands = [qml.s_prod(c, op) for c, op in zip(self._coeffs, self._ops)]
 
-            super().__init__(*operands, id=id, _pauli_rep=self._pauli_rep)
+            super().__init__(*operands, id=id, _pauli_rep=pr)
+            print(f"coeffs after second super().__init__: {self._coeffs}")
+            
 
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():
@@ -802,7 +808,41 @@ class LinearCombination(Sum):
             self._grouping_indices = _compute_grouping_indices(
                 self.ops, grouping_type=grouping_type, method=method
             )
+    
+    
+    @qml.QueuingManager.stop_recording()
+    def _simplify_coeffs_ops(self):
+        """Simplify coeffs and ops"""
 
+        if len(self.ops) == 0:
+            return self
+
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+
+            wire_order = self.wires
+            if len(pr) == 0:
+                return [], [], pr
+
+            # collect coefficients and ops
+            coeffs = []
+            ops = []
+
+            for pw, coeff in pr.items():
+                pw_op = pw.operation(wire_order=wire_order)
+                ops.append(pw_op)
+                coeffs.append(coeff)
+
+            return coeffs, ops, pr
+
+        if len(self.ops) == 1:
+            return self.coeffs, [self.ops[0].simplify()], pr
+
+        op_as_sum = qml.sum(*self.operands)
+        op_as_sum = op_as_sum.simplify()
+        coeffs, ops = op_as_sum.terms()
+        return coeffs, ops, None
+    
     def simplify(self):
         r"""Simplifies the LinearCombination by combining like-terms.
 
@@ -819,37 +859,8 @@ class LinearCombination(Sum):
             Calling this method will reset ``grouping_indices`` to None, since
             the observables it refers to are updated.
         """
-
-        if len(self.ops) == 0:
-            return self
-
-        # try using pauli_rep:
-        if pr := self.pauli_rep:
-
-            wire_order = self.wires
-            if len(pr) == 0:
-                return LinearCombination([], [], _pauli_rep=pr)
-
-            # collect coefficients and ops
-            coeffs = []
-            ops = []
-
-            for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=wire_order)
-                ops.append(pw_op)
-                coeffs.append(coeff)
-
-            res = LinearCombination(coeffs, ops, _pauli_rep=pr)
-            return res
-
-        if len(self.ops) == 1:
-            return LinearCombination(self.coeffs, [self.ops[0].simplify()], _pauli_rep=pr)
-
-        # TODO use super
-        # Fallback on logic from Sum when there is no pauli_rep
-        op_as_sum = qml.sum(*self.operands)
-        op_as_sum = op_as_sum.simplify()
-        return LinearCombination(*op_as_sum.terms())
+        coeffs, ops, pr = self._simplify_coeffs_ops()
+        return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def _obs_data(self):
         r"""Extracts the data from a LinearCombination and serializes it in an order-independent fashion.

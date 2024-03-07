@@ -503,20 +503,6 @@ def circuit2(param):
 dev = qml.device("default.qubit", wires=2)
 
 
-class TestToDo:
-    """Test that currently xfail but ideally shouldnt"""
-
-    def test_integer_coefficients(self):
-        """Test that handling integers is not a problem"""
-        H1, H2, true_res = (
-            qml.LinearCombination([1, 2], [X(4), Z(2)]),  # not failing with float coeffs
-            qml.LinearCombination([1, 2], [X(4), Z(2)]),
-            qml.LinearCombination([], []),
-        )
-        res = H1 - H2
-        assert res.compare(true_res)
-
-
 class TestLinearCombination:
     """Test the LinearCombination class"""
 
@@ -559,16 +545,16 @@ class TestLinearCombination:
         combination of coefficients and ops"""
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
             qml.LinearCombination(coeffs, ops)
-
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("obs", [[X(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, Z(0)]])
-    def test_LinearCombination_invalid_observables(self, obs):
-        """Tests that an exception is raised when
-        a complex LinearCombination is given"""
-        coeffs = [0.1, 0.2]
-
-        with pytest.raises(ValueError, match="observables are not valid"):
-            qml.LinearCombination(coeffs, obs)
+    
+    def test_integer_coefficients(self):
+        """Test that handling integers is not a problem"""
+        H1, H2, true_res = (
+            qml.LinearCombination([1, 2], [X(4), Z(2)]),  # not failing with float coeffs
+            qml.LinearCombination([1, 2], [X(4), Z(2)]),
+            qml.LinearCombination([], []),
+        )
+        res = H1 - H2
+        assert res.compare(true_res)
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
