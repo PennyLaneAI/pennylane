@@ -1227,7 +1227,7 @@ def diagonalize_pauli_word(pauli_word):
 
     pw = next(iter(pauli_word.pauli_rep))
 
-    # ordered as pauli_word, with identities eliminateds
+    # ordered as pauli_word, with identities eliminated
     components = [qml.Z(w) for w in pauli_word.wires if w in pw]
     if not components:
         return qml.Identity(wires=pauli_word.wires)
