@@ -6,6 +6,7 @@
 
 * Added new `SpectralNormError` class to the new error tracking functionality.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
+
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
@@ -55,6 +56,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
+  [(#5321)](https://github.com/PennyLaneAI/pennylane/pull/5321)
+
 * `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
   [(#5311)](https://github.com/PennyLaneAI/pennylane/pull/5311)
 
@@ -62,6 +66,9 @@
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
 <h3>Deprecations 👋</h3>
+
+* ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
+  [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
 
 <h3>Documentation 📝</h3>
 
