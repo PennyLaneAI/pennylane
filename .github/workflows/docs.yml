@@ -91,6 +91,6 @@ jobs:
           major version of Lightning is released. 
           
           If pip install fails with a not found error when installing because of this, it can be fixed by manually 
-          downgrading by 1 version and trying again.
+          downgrading the PennyLane-Lightning version number in the file by 1 version and trying again.
         pr_allow_empty: false
         pr_draft: false
