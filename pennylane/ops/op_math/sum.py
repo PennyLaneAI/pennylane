@@ -668,7 +668,6 @@ class LinearCombination(Sum):
                     self.ops, grouping_type=grouping_type, method=method
                 )
 
-
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
 
