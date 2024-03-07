@@ -192,7 +192,6 @@ return newer arithmetic operators, the ``operation`` module provides the followi
     ~disable_new_opmath
     ~active_new_opmath
     ~convert_to_opmath
-    ~convert_to_legacy_H
 
 Other
 ~~~~~
