@@ -209,11 +209,11 @@ class QuantumPhaseEstimation(Operation):
         >>> class CustomOP(qml.resource.ErrorOperation):
         ...    @property
         ...    def error(self):
-        ...       return 0.1
+        ...       return 0.005
         >>> Op = CustomOP(wires=[0])
         >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
         >>> QPE.error
-        0.11010001000000001
+        0.075
         """
         unitary_error = self._hyperparameters["unitary"].error
         sequence_error = [
