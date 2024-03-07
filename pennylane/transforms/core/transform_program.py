@@ -17,6 +17,8 @@ This module contains the ``TransformProgram`` class.
 from functools import partial
 from typing import Callable, List, Tuple, Optional, Sequence, Union
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.typing import Result, ResultBatch
 from pennylane.tape import QuantumTape
@@ -340,6 +342,25 @@ class TransformProgram:
             bool: Boolean
         """
         return any(t.classical_cotransform is not None for t in self)
+
+    def prune_dynamic_transform(self):
+        """Ensure a single ``dynamic_one_shot`` transform is applied."""
+        trans_type = np.zeros(len(self._transform_program), dtype=np.int32)
+        for i, t in enumerate(self._transform_program):
+            if "dynamic_one_shot" in str(t):
+                trans_type[i] = 1
+            if "mid_circuit_measurements" in str(t):
+                trans_type[i] = 2
+        if sum(trans_type) < 2:
+            return
+        keep = 2 if 2 in trans_type else 1
+        found = False
+        for i, ttype in enumerate(reversed(trans_type)):
+            if not found and ttype == keep:
+                found = True
+                continue
+            if found and ttype in [1, 2]:
+                self._transform_program.pop(len(self._transform_program) - 1 - i)
 
     def _set_all_classical_jacobians(
         self, qnode, args, kwargs, argnums
