@@ -73,51 +73,6 @@ def _id(p):
     return p
 
 
-@pytest.mark.parametrize("pauli1", words)
-@pytest.mark.parametrize("pauli2", words)
-def test_legacy_multiplication_pwords(pauli1, pauli2):
-    """Test the legacy behavior for using the star operator for matrix multiplication of pauli words"""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        res1, coeff1 = pauli1 * pauli2
-    res2, coeff2 = pauli1._matmul(pauli2)
-    assert res1 == res2
-    assert coeff1 == coeff2
-
-
-@pytest.mark.parametrize("pauli1", sentences)
-@pytest.mark.parametrize("pauli2", sentences)
-def test_legacy_multiplication_psentences(pauli1, pauli2):
-    """Test the legacy behavior for using the star operator for matrix multiplication of pauli sentences"""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        assert pauli1 * pauli2 == pauli1 @ pauli2
-
-
-def test_legacy_pw_pw_multiplication_non_commutativity():
-    """Test that legacy pauli word matrix multiplication is non-commutative and returns correct result"""
-    pauliX = PauliWord({0: "X"})
-    pauliY = PauliWord({0: "Y"})
-    pauliZ = PauliWord({0: "Z"})
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        res1 = pauliX * pauliY
-        res2 = pauliY * pauliX
-    assert res1 == (pauliZ, 1j)
-    assert res2 == (pauliZ, -1j)
-
-
-def test_legacy_ps_ps_multiplication_non_commutativity():
-    """Test that legacy pauli sentence matrix multiplication is non-commutative and returns correct result"""
-    pauliX = PauliSentence({PauliWord({0: "X"}): 1.0})
-    pauliY = PauliSentence({PauliWord({0: "Y"}): 1.0})
-    pauliZ = PauliSentence({PauliWord({0: "Z"}): 1j})
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        res1 = pauliX * pauliY
-        res2 = pauliY * pauliX
-    assert res1 == pauliZ
-    assert res2 == -1 * pauliZ
-
-
 class TestPauliWord:
     def test_identity_removed_on_init(self):
         """Test that identities are removed on init."""
