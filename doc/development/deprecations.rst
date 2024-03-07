@@ -9,9 +9,8 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* ``qml.from_qasm_file`` is an additional function to maintain that does not add much to the already existing
-  ``qml.from_qasm``. It is being deprecated, and users are directed to open the file themselves and load its
-  content using ``qml.from_qasm``.
+* ``qml.from_qasm_file`` is now deprecated and users are instead directed to open the file
+  themselves and load its content using ``qml.from_qasm``.
 
   - Deprecated in v0.36
   - Will be removed in v0.37
