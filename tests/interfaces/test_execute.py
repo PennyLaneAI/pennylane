@@ -26,16 +26,3 @@ def test_old_interface_no_device_jacobian_products():
     tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
     with pytest.raises(qml.QuantumFunctionError):
         qml.execute((tape,), dev, device_vjp=True)
-
-
-def test_deprecated_location_warnings():
-    """Test that deprecation warnings are raised when something is imported from pennylane.interfaces."""
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning):
-        assert qml.interfaces.execute is qml.workflow.execute
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning):
-        assert qml.interfaces.set_shots is qml.workflow.set_shots
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning):
-        assert qml.interfaces.cache_execute is qml.workflow.cache_execute
