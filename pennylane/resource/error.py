@@ -94,7 +94,7 @@ class SpectralNormError(AlgorithmicError):
     >>> s1 = SpectralNormError(0.01)
     >>> s2 = SpectralNormError(0.02)
     >>> s1.combine(s2)
-    <SpectralNormError(0.03)>
+    SpectralNormError(0.03)
     """
 
     def __repr__(self):
