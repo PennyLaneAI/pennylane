@@ -947,7 +947,7 @@ class QNode:
             and not isinstance(self.device, qml.devices.Device)
             and not self.device.capabilities().get("supports_mid_measure", False)
         )
-        if expand_mid_measure:
+        if expand_mid_measure or self.expansion_strategy == "device":
             # Assume that tapes are not split if old device is used since postselection is not supported.
             tapes, _ = qml.defer_measurements(self._tape, device=self.device)
             self._tape = tapes[0]
@@ -1043,7 +1043,7 @@ class QNode:
                 full_transform_program._set_all_argnums(
                     self, args, kwargs, argnums
                 )  # pylint: disable=protected-access
-
+        full_transform_program.prune_dynamic_transform()
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
