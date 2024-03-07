@@ -67,6 +67,7 @@ class _FlexShots(qml.measurements.Shots):
 
 def _get_postselected_shots_jax(norm, shots, prng_key):
     """Compute postselected shots using a JAX PRNGKey"""
+    # pylint: disable=import-outside-toplevel
     import jax
 
     return (
@@ -121,7 +122,7 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_ke
 
 def get_final_state(
     circuit, debugger=None, interface=None, mid_measurements=None, rng=None, prng_key=None
-):
+):  # pylint: disable=too-many-arguments
     """
     Get the final state that results from executing the given quantum script.
 
@@ -161,6 +162,8 @@ def get_final_state(
             is_state_batched=is_state_batched,
             debugger=debugger,
             mid_measurements=mid_measurements,
+            rng=rng,
+            prng_key=prng_key,
         )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):

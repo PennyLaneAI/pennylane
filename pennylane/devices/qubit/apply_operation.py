@@ -259,7 +259,7 @@ def apply_mid_measure(
     mid_measurements=None,
     rng=None,
     prng_key=None,
-):
+):  # pylint: disable=too-many-arguments
     """Applies a native mid-circuit measurement.
 
     Args:
@@ -287,6 +287,7 @@ def apply_mid_measure(
     probs = qml.devices.qubit.measure(qml.probs(wire), state)
 
     if prng_key is not None:
+        # pylint: disable=import-outside-toplevel
         import jax
 
         sample = jax.random.binomial(prng_key, 1, probs[1])
