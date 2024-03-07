@@ -489,6 +489,13 @@ def from_qasm(quantum_circuit: str):
         ...                 'h q[0];'
         >>> my_circuit = qml.from_qasm(hadamard_qasm)
 
+    You can also load the contents of a QASM file:
+
+    .. code-block:: python
+
+        >>> with open("hadamard_circuit.qasm", "r") as f:
+        ...     my_circuit = qml.from_qasm(f.read())
+
     The ``my_circuit`` template can now be used within QNodes, as a
     two-wire quantum template.
 
@@ -514,7 +521,7 @@ def from_qasm_file(qasm_filename: str):
 
     **Example:**
 
-    >>> my_circuit = qml.from_qasm("hadamard_circuit.qasm")
+    >>> my_circuit = qml.from_qasm_file("hadamard_circuit.qasm")
 
     The ``my_circuit`` template can now be used within QNodes, as a
     two-wire quantum template.
@@ -530,7 +537,18 @@ def from_qasm_file(qasm_filename: str):
 
     Returns:
         function: the PennyLane template created based on the QASM file
+
+    .. warning::
+        qml.from_qasm_file is deprecated and will be removed in a future release.
+        Please use qml.from_qasm instead.
+
     """
+    warnings.warn(
+        "qml.from_qasm_file is deprecated and will be removed in a future release. "
+        "Please use qml.from_qasm instead.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     plugin_converter = plugin_converters["qasm_file"].load()
     return plugin_converter(qasm_filename)
 
