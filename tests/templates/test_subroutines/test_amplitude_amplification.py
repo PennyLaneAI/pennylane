@@ -160,7 +160,7 @@ class TestIntegration:
 
         res = qnode()
         assert res.shape == (8,)
-        assert np.allclose(res, self.exp_result, atol=0.002)
+        assert np.allclose(res, self.exp_result, atol=1e-5)
 
     def test_lightning_qubit(self):
         """Test that the QNode executes with the Lightning Qubit simulator."""
@@ -169,7 +169,7 @@ class TestIntegration:
 
         res = qnode()
         assert res.shape == (8,)
-        assert np.allclose(res, self.exp_result, atol=0.002)
+        assert np.allclose(res, self.exp_result, atol=1e-5)
 
 
 def test_correct_queueing():
@@ -239,6 +239,8 @@ def test_amplification():
         return qml.probs(wires=range(3))
 
     res = np.round(circuit(), 3)
+
+    #
     expected = np.array([0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013])
 
     assert np.allclose(res, expected)

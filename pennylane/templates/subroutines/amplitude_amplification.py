@@ -46,19 +46,19 @@ class AmplitudeAmplification(Operation):
 
     .. math::
 
-            \text{AmplitudeAmplification}(U, O)|\Psi\rangle \sim |\phi\rangle
+            \text{A}(U, O)|\Psi\rangle \sim |\phi\rangle
 
     The implementation of the algorithm is based on `[arXiv:quant-ph/0005055] <https://arxiv.org/abs/quant-ph/0005055>`__.
     The template also unlocks advanced techniques such as fixed-point quantum search [`arXiv:1409.3305 <https://arxiv.org/abs/1409.3305>`__] and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__] by reflecting on a subset of the wires.
 
     Args:
-        U (Operator): Operator that prepares the state :math:`|\Psi\rangle`.
-        O (Operator): The oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`.
-        iters (int): the number of iterations of the amplitude amplification subroutine. Default is 1.
-        fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm. Default is False.
-        work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm. Default is None.
-        reflection_wires (Wires): the wires to reflect on. Default is the wires of U.
-        p_min (int): the lower bound for the probability of success in fixed-point amplitude amplification. Default is 0.9
+        U (Operator): operator that prepares the state :math:`|\Psi\rangle`
+        O (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+        iters (int): the number of iterations of the amplitude amplification subroutine, default is 1
+        fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm, default is False
+        work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm, default is None
+        reflection_wires (Wires): the wires to reflect on, default is the wires of U
+        p_min (int): the lower bound for the probability of success in fixed-point amplitude amplification, default is 0.9
 
     Raises:
         ValueError: work_wire must be specified if ``fixed_point == True``.
@@ -66,7 +66,8 @@ class AmplitudeAmplification(Operation):
 
     **Example**
 
-    Amplification of state :math:`|2\rangle` using Grover's algorithm with 3 qubits:
+    Amplification of state :math:`|2\rangle` using Grover's algorithm with 3 qubits.
+    Uniform overlapping will be taken as :math:`|\Psi\rangle`:
 
     .. code-block::
 
@@ -146,14 +147,14 @@ class AmplitudeAmplification(Operation):
 
     # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(*_, **hyperparameters):
-        U = hyperparameters["U"]
-        O = hyperparameters["O"]
-        iters = hyperparameters["iters"]
-        fixed_point = hyperparameters["fixed_point"]
-        work_wire = hyperparameters["work_wire"]
-        p_min = hyperparameters["p_min"]
-        reflection_wires = hyperparameters["reflection_wires"]
+    def compute_decomposition(**kwargs):
+        U = kwargs["U"]
+        O = kwargs["O"]
+        iters = kwargs["iters"]
+        fixed_point = kwargs["fixed_point"]
+        work_wire = kwargs["work_wire"]
+        p_min = kwargs["p_min"]
+        reflection_wires = kwargs["reflection_wires"]
 
         ops = []
 
