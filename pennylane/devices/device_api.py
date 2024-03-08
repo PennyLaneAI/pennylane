@@ -16,6 +16,7 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 # pylint: disable=comparison-with-callable
 import abc
+from dataclasses import replace
 
 from collections.abc import Iterable
 from numbers import Number
@@ -292,6 +293,11 @@ class Device(abc.ABC):
             Only then is the classical postprocessing called on the result object.
 
         """
+        if self.supports_derivatives(execution_config) and execution_config.gradient_method in {
+            "best",
+            None,
+        }:
+            return TransformProgram(), replace(execution_config, gradient_method="device")
         return TransformProgram(), execution_config
 
     @abc.abstractmethod
@@ -451,7 +457,10 @@ class Device(abc.ABC):
         if execution_config is None:
             return type(self).compute_derivatives != Device.compute_derivatives
 
-        if execution_config.gradient_method != "device" or execution_config.derivative_order != 1:
+        if (
+            execution_config.gradient_method not in {"device", "best"}
+            or execution_config.derivative_order != 1
+        ):
             return False
 
         return type(self).compute_derivatives != Device.compute_derivatives
