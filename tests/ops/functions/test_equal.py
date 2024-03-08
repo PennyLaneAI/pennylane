@@ -113,7 +113,6 @@ PARAMETRIZED_OPERATIONS_COMBINATIONS = list(
     )
 )
 
-
 PARAMETRIZED_MEASUREMENTS = [
     qml.sample(qml.PauliY(0)),
     qml.sample(wires=0),
@@ -1309,7 +1308,7 @@ class TestMeasurementsEqual:
         assert qml.equal(mp1, mp3)
         assert not qml.equal(mp1, mp4)
 
-
+@pytest.mark.fixture("use_legacy_and_new_opmath")
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
 
@@ -1705,11 +1704,10 @@ class TestProdComparisons:
     def test_prod_of_prods(self):
         """Test that prod of prods and just an equivalent Prod get compared correctly"""
         X = qml.PauliX
-        qml.operation.enable_new_opmath()
+
         op1 = (0.5 * X(0)) @ (0.5 * X(1)) @ (0.5 * X(2)) @ (0.5 * X(3)) @ (0.5 * X(4))
         op2 = qml.prod(*[0.5 * X(i) for i in range(5)])
         assert qml.equal(op1, op2)
-        qml.operation.disable_new_opmath()
 
 
 class TestSumComparisons:
@@ -1807,7 +1805,6 @@ class TestSumComparisons:
     def test_sum_of_sums(self):
         """Test that sum of sums and just an equivalent sum get compared correctly"""
         X = qml.PauliX
-        qml.operation.enable_new_opmath()
         op1 = (
             0.5 * X(0)
             + 0.5 * X(1)
@@ -1822,7 +1819,6 @@ class TestSumComparisons:
         )
         op2 = qml.sum(*[0.5 * X(i) for i in range(10)])
         assert qml.equal(op1, op2)
-        qml.operation.disable_new_opmath()
 
 
 def f1(p, t):
