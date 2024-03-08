@@ -8,7 +8,7 @@ cachetools==5.3.3
 certifi==2024.2.2
 cfgv==3.4.0
 charset-normalizer==3.3.2
-clarabel==0.7.0
+clarabel==0.7.1
 click==8.1.7
 contourpy==1.2.0
 coverage==7.4.3
@@ -21,7 +21,7 @@ exceptiongroup==1.2.0
 execnet==2.0.2
 filelock==3.13.1
 flaky==3.7.0
-flatbuffers==23.5.26
+flatbuffers==24.3.7
 fonttools==4.49.0
 fsspec==2024.2.0
 future==1.0.0
@@ -33,8 +33,8 @@ grpcio==1.62.0
 h5py==3.10.0
 identify==2.5.35
 idna==3.6
-importlib-metadata==7.0.1
-importlib_resources==6.1.2
+importlib_metadata==7.0.2
+importlib_resources==6.1.3
 iniconfig==2.0.0
 jax==0.4.23
 jaxlib==0.4.23
@@ -56,7 +56,7 @@ opt-einsum==3.3.0
 osqp==0.6.5
 packaging==23.2
 pathspec==0.12.1
-PennyLane-Lightning==0.34.0
+PennyLane_Lightning==0.35.0
 pillow==10.2.0
 platformdirs==4.2.0
 pluggy==1.4.0
@@ -67,14 +67,14 @@ py-cpuinfo==9.0.0
 pyasn1==0.5.1
 pyasn1-modules==0.3.0
 pybind11==2.11.1
-pyparsing==3.1.1
+pyparsing==3.1.2
 pytest==8.0.2
 pytest-benchmark==4.0.0
 pytest-cov==4.1.0
 pytest-forked==1.6.0
 pytest-mock==3.12.0
 pytest-xdist==3.5.0
-python-dateutil==2.9.0
+python-dateutil==2.9.0.post0
 pytorch-triton-rocm==2.2.0
 PyYAML==6.0.1
 qdldl==0.1.7.post0
