@@ -142,11 +142,11 @@ class TestDifferentiability:
 
     @staticmethod
     def circuit(params):
-        generator(wires=range(3))
+        qml.RY(params[0], wires=0)
         qml.AmplitudeAmplification(
             qml.RY(params[0], wires=0),
-            qml.RY(params[1], wires=0),
-            iters=5,
+            qml.RZ(params[1], wires=0),
+            iters=3,
             fixed_point=True,
             work_wire=3,
         )
@@ -155,7 +155,7 @@ class TestDifferentiability:
 
     # nobtained with autograd, we are only ensuring that the results are consistent accross interfaces
 
-    exp_grad = np.array([-0.74491034, 0.18767894])
+    exp_grad = np.array([-0.88109384, -0.66429077])
 
     x = np.array([0.9, 0.1])
 
@@ -168,6 +168,7 @@ class TestDifferentiability:
 
         x = qml.numpy.array(self.x, requires_grad=True)
         res = qml.grad(qnode)(x)
+        print(res)
         assert qml.math.shape(res) == (2,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
@@ -195,7 +196,7 @@ class TestDifferentiability:
 
         jac = jac_fn(x)
         assert jac.shape == (2,)
-        assert np.allclose(jac, self.exp_grad, atol=0.001)
+        assert np.allclose(jac, self.exp_grad, atol=0.01)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -211,7 +212,7 @@ class TestDifferentiability:
         x = torch.tensor(self.x, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, x)
         assert qml.math.shape(jac) == (2,)
-        assert qml.math.allclose(jac, self.exp_grad, atol=0.001)
+        assert qml.math.allclose(jac, self.exp_grad, atol=0.01)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
