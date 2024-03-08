@@ -144,7 +144,11 @@ class TestDifferentiability:
     def circuit(params):
         generator(wires=range(3))
         qml.AmplitudeAmplification(
-            qml.RY(params[0]), qml.RY(params[1]), iters=5, fixed_point=True, work_wire=3
+            qml.RY(params[0], wires=0),
+            qml.RY(params[1], wires=0),
+            iters=5,
+            fixed_point=True,
+            work_wire=3,
         )
 
         return qml.expval(qml.PauliZ(0))
