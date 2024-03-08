@@ -14,7 +14,7 @@
 """
 This module contains the qml.equal function.
 """
-# pylint: disable=too-many-arguments,too-many-return-statements
+# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
 from collections.abc import Iterable
 from functools import singledispatch
 from typing import Union
@@ -233,6 +233,12 @@ def _equal_operators(
         op2, type(op1)
     ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
         return False
+
+    if isinstance(op1, qml.Identity):
+        # All Identities are equivalent, independent of wires.
+        # We already know op1 and op2 are of the same type, so no need to check
+        # that op2 is also an Identity
+        return True
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False

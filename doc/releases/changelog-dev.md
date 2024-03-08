@@ -4,10 +4,59 @@
 
 <h3>New features since last release</h3>
 
+* `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
+  specified during construction using the `grouping_type` and `method` keyword arguments of
+  `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
+  [(#5179)](https://github.com/PennyLaneAI/pennylane/pull/5179)
+
+  ```python
+  import pennylane as qml
+
+  a = qml.X(0)
+  b = qml.prod(qml.X(0), qml.X(1))
+  c = qml.Z(0)
+  obs = [a, b, c]
+  coeffs = [1.0, 2.0, 3.0]
+
+  op = qml.dot(coeffs, obs, grouping_type="qwc")
+  ```
+  ```pycon
+  >>> op.grouping_indices
+  ((2,), (0, 1))
+  ```
+
+  Additionally, grouping type and method can be set or changed after construction using
+  `Sum.compute_grouping()`:
+
+  ```python
+  import pennylane as qml
+
+  a = qml.X(0)
+  b = qml.prod(qml.X(0), qml.X(1))
+  c = qml.Z(0)
+  obs = [a, b, c]
+  coeffs = [1.0, 2.0, 3.0]
+
+  op = qml.dot(coeffs, obs)
+  ```
+  ```pycon
+  >>> op.grouping_indices is None
+  True
+  >>> op.compute_grouping(grouping_type="qwc")
+  >>> op.grouping_indices
+  ((2,), (0, 1))
+  ```
+
+  Note that the grouping indices refer to the lists returned by `Sum.terms()`, not `Sum.operands`.
+
 * Added new `SpectralNormError` class to the new error tracking functionality.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
+
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
+
+* Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
+  [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)    
 
 <h3>Improvements 🛠</h3>
 
@@ -53,7 +102,13 @@
 * The `QNode` now defers `diff_method` validation to the device under the new device api `qml.devices.Device`.
   [(#5176)](https://github.com/PennyLaneAI/pennylane/pull/5176)
 
+* `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
+  [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
+
 <h3>Breaking changes 💔</h3>
+
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
+  [(#5321)](https://github.com/PennyLaneAI/pennylane/pull/5321)
 
 * `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
   [(#5311)](https://github.com/PennyLaneAI/pennylane/pull/5311)
@@ -62,6 +117,9 @@
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
 <h3>Deprecations 👋</h3>
+
+* ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
+  [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
 
 <h3>Documentation 📝</h3>
 
@@ -77,6 +135,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Korbinian Kottmann,
 Guillermo Alonso,
 Astral Cai,
 Amintor Dusko,
@@ -84,4 +143,5 @@ Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Mudit Pandey,
 Matthew Silverman.
