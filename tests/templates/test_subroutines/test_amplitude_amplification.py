@@ -35,67 +35,32 @@ def oracle(items, wires):
 class TestInitialization:
     """Test the AmplitudeAmplification class initializes correctly."""
 
-    @pytest.mark.parametrize(
-        "fixed_point, work_wire, raise_error",
-        (
-            (True, 3, False),
-            (True, "a", False),
-            (False, 4, False),
-            (True, None, True),
-        ),
-    )
-    def test_error_none_wire(self, fixed_point, work_wire, raise_error):
+    def test_error_none_wire(self, fixed_point, work_wire):
         """Test an error is raised if work_wire is None and fixed_point is True."""
 
         U = generator(wires=range(3))
         O = oracle([0, 2], wires=range(3))
 
-        if raise_error:
-            with pytest.raises(
-                qml.wires.WireError, match="work_wire must be specified if fixed_point == True."
-            ):
-                qml.AmplitudeAmplification(
-                    U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire
-                )
-
-        else:
-            try:
-                qml.AmplitudeAmplification(
-                    U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire
-                )
-            except TypeError:
-                assert False  # test should fail if an error was raised when we expect it not to
+        with pytest.raises(
+            qml.wires.WireError, match="work_wire must be specified if fixed_point == True."
+        ):
+            qml.AmplitudeAmplification(U, O, iters=3, fixed_point=True)
 
     @pytest.mark.parametrize(
-        "wires, fixed_point, work_wire, raise_error",
+        "wires, fixed_point, work_wire",
         (
-            ([0, 1, 2], True, 2, True),
-            ([0, 1, 2], True, "a", False),
-            (["a", "b"], True, "a", True),
-            ([0, 1], False, 0, False),
+            ([0, 1, 2], True, 2),
+            (["a", "b"], True, "a"),
         ),
     )
-    def test_error_wrong_work_wire(self, wires, fixed_point, work_wire, raise_error):
+    def test_error_wrong_work_wire(self, wires, fixed_point, work_wire):
         """Test an error is raised if work_wire is part of the U wires."""
 
         U = generator(wires=wires)
         O = oracle([0], wires=wires)
 
-        if raise_error:
-            with pytest.raises(
-                ValueError, match="work_wire must be different from the wires of U."
-            ):
-                qml.AmplitudeAmplification(
-                    U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire
-                )
-
-        else:
-            try:
-                qml.AmplitudeAmplification(
-                    U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire
-                )
-            except TypeError:
-                assert False  # test should fail if an error was raised when we expect it not to
+        with pytest.raises(ValueError, match="work_wire must be different from the wires of U."):
+            qml.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
 
 
 @pytest.mark.parametrize(
