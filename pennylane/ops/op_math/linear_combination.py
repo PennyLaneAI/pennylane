@@ -14,7 +14,7 @@
 """
 LinearCombination class
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, protected-access
 
 import itertools
 import numbers
@@ -242,7 +242,7 @@ class LinearCombination(Sum):
             )
 
     @qml.QueuingManager.stop_recording()
-    def _simplify_coeffs_ops(self):
+    def _simplify_coeffs_ops(self, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
         Returns:
@@ -273,13 +273,13 @@ class LinearCombination(Sum):
             return self.coeffs, [self.ops[0].simplify()], pr
 
         op_as_sum = qml.sum(*self.operands)
-        op_as_sum = op_as_sum.simplify()
+        op_as_sum = op_as_sum.simplify(cutoff)
         coeffs, ops = op_as_sum.terms()
         return coeffs, ops, None
 
-    def simplify(self):
+    def simplify(self, cutoff=1.0e-12):
         r"""TODO"""
-        coeffs, ops, pr = self._simplify_coeffs_ops()
+        coeffs, ops, pr = self._simplify_coeffs_ops(cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def _obs_data(self):
