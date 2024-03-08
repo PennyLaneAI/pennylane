@@ -102,6 +102,9 @@
 * Replaced `cache_execute` with an alternate implementation based on `@transform`.
   [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
 
+* The `QNode` now defers `diff_method` validation to the device under the new device api `qml.devices.Device`.
+  [(#5176)](https://github.com/PennyLaneAI/pennylane/pull/5176)
+
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
