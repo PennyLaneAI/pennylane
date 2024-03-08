@@ -137,8 +137,7 @@ class Evolution(Exp):
         we get the generator
 
         >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
+          0.5 * Y(0) + Z(0) @ X(1)
 
         """
         if not self.base.is_hermitian:

@@ -31,11 +31,10 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Currently, only the :doc:`Catalyst <catalyst:index>` hybrid quantum-classical
-        compiler is supported. The Catalyst compiler works with the JAX interface.
+        Currently, only two compilers are supported; the :doc:`Catalyst <catalyst:index>` hybrid
+        quantum-classical compiler, which works with the JAX interface, and CUDA Quantum.
 
-
-        For more details, see the :doc:`Catalyst documentation <catalyst:index>` and
+        For more details on Catalyst, see the :doc:`Catalyst documentation <catalyst:index>` and
         :func:`catalyst.qjit`.
 
     .. note::
@@ -47,9 +46,12 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on
         supported devices, operations, and measurements.
 
+        CUDA Quantum supports ``softwareq.qpp``, ``nvidida.custatevec``, and ``nvidia.cutensornet``.
+
     Args:
         fn (Callable): Hybrid (quantum-classical) function to compile
-        compiler (str): Name of the compiler to use for just-in-time compilation
+        compiler (str): Name of the compiler to use for just-in-time compilation. Available
+            options include ``catalyst`` and ``cuda_quantum``.
         autograph (bool): Experimental support for automatically converting Python control
             flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
             ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
@@ -68,6 +70,14 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             elements of this list are named sequences of MLIR passes to be executed. A ``None``
             value (the default) results in the execution of the default pipeline. This option is
             considered to be used by advanced users for low-level debugging purposes.
+        static_argnums(int or Seqence[Int]): an index or a sequence of indices that specifies the
+            positions of static arguments.
+        abstracted_axes (Sequence[Sequence[str]] or Dict[int, str] or Sequence[Dict[int, str]]):
+            An experimental option to specify dynamic tensor shapes.
+            This option affects the compilation of the annotated function.
+            Function arguments with ``abstracted_axes`` specified will be compiled to ranked tensors
+            with dynamic shapes. For more details, please see the Dynamically-shaped Arrays section
+            below.
 
     Returns:
         catalyst.QJIT: A class that, when executed, just-in-time compiles and executes the
@@ -133,6 +143,151 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     page for an overview of the differences between Catalyst and PennyLane, and
     how to best structure your workflows to improve performance when
     using Catalyst.
+
+    .. details::
+        :title: Static arguments
+
+        ``static_argnums`` defines which elements should be treated as static. If it takes an
+        integer, it means the argument whose index is equal to the integer is static. If it takes
+        an iterable of integers, arguments whose index is contained in the iterable are static.
+        Changing static arguments will trigger re-compilation.
+
+        A valid static argument must be hashable and its ``__hash__`` method must be able to
+        reflect any changes of its attributes.
+
+        .. code-block:: python
+
+            @dataclass
+            class MyClass:
+                val: int
+
+                def __hash__(self):
+                    return hash(str(self))
+
+            @qjit(static_argnums=1)
+            def f(
+                x: int,
+                y: MyClass,
+            ):
+                return x + y.val
+
+            f(1, MyClass(5))
+            f(1, MyClass(6)) # re-compilation
+            f(2, MyClass(5)) # no re-compilation
+
+        In the example above, ``y`` is static. Note that the second function call triggers
+        re-compilation since the input object is different from the previous one. However,
+        the third function call directly uses the previous compiled one and does not introduce
+        re-compilation.
+
+        .. code-block:: python
+
+            @dataclass
+            class MyClass:
+                val: int
+
+                def __hash__(self):
+                    return hash(str(self))
+
+            @qjit(static_argnums=(1, 2))
+            def f(
+                x: int,
+                y: MyClass,
+                z: MyClass,
+            ):
+                return x + y.val + z.val
+
+            my_obj_1 = MyClass(5)
+            my_obj_2 = MyClass(6)
+            f(1, my_obj_1, my_obj_2)
+            my_obj_1.val = 7
+            f(1, my_obj_1, my_obj_2) # re-compilation
+
+        In the example above, ``y`` and ``z`` are static. The second function will cause
+        function ``f`` to re-compile because ``my_obj_1`` is changed. This requires that
+        the mutation is properly reflected in the hash value.
+
+        Note that when ``static_argnums`` is used in conjunction with type hinting,
+        ahead-of-time compilation will not be possible since the static argument values
+        are not yet available. Instead, compilation will be just-in-time.
+
+
+    .. details::
+        :title: Dynamically-shaped arrays
+
+        There are three ways to use ``abstracted_axes``; by passing a sequence of tuples, a
+        dictionary, or a sequence of dictionaries. Passing a sequence of tuples:
+
+        .. code-block:: python
+
+            abstracted_axes=((), ('n',), ('m', 'n'))
+
+        Each tuple in the sequence corresponds to one of the arguments in the annotated
+        function. Empty tuples can
+        be used and correspond to parameters with statically known shapes.
+        Non-empty tuples correspond to parameters with dynamically known shapes.
+
+        In this example above,
+
+        - the first argument will have a statically known shape,
+
+        - the second argument will have dynamic
+          shape ``n``  for the zeroth axis, and
+
+        - the third argument will have dynamic shape
+          ``m`` for its zeroth axis and dynamic shape ``n`` for
+          its first axis.
+
+        Passing a dictionary:
+
+        .. code-block:: python
+
+            abstracted_axes={0: 'n'}
+
+        This approach allows a concise expression of the relationships
+        between axes for different function arguments. In this example,
+        it specifies that for all function arguments, the zeroth axis will
+        have dynamic shape ``n``.
+
+        Passing a sequence of dictionaries:
+
+        .. code-block:: python
+
+            abstracted_axes=({}, {0: 'n'}, {1: 'm', 0: 'n'})
+
+        The example here is a more verbose version of the tuple example. This convention
+        allows axes to be omitted from the list of abstracted axes.
+
+        Using ``abstracted_axes`` can help avoid the cost of recompilation.
+        By using ``abstracted_axes``, a more general version of the compiled function will be
+        generated. This more general version is parametrized over the abstracted axes and
+        allows results to be computed over tensors independently of their axes lengths.
+
+        For example:
+
+        .. code-block:: python
+
+            @qjit
+            def sum(arr):
+                return jnp.sum(arr)
+
+            sum(jnp.array([1]))     # Compilation happens here.
+            sum(jnp.array([1, 1]))  # And here!
+
+        The ``sum`` function would recompile each time an array of different size is passed
+        as an argument.
+
+        .. code-block:: python
+
+            @qjit(abstracted_axes={0: "n"})
+            def sum_abstracted(arr):
+                return jnp.sum(arr)
+
+            sum(jnp.array([1]))     # Compilation happens here.
+            sum(jnp.array([1, 1]))  # No need to recompile.
+
+        The ``sum_abstracted`` function would only compile once and its definition would be
+        reused for subsequent function calls.
     """
 
     if not available(compiler):

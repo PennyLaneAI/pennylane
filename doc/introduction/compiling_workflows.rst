@@ -7,12 +7,15 @@ Compiling workflows
 ===================
 
 In addition to :doc:`quantum circuit transformations </introduction/compiling_circuits>`, PennyLane also supports full
-hybrid just-in-time (JIT) compilation via the :func:`~.qjit` decorator and
-the `Catalyst hybrid compiler <https://github.com/pennylaneai/catalyst>`__.
-Catalyst allows you to compile the entire quantum-classical workflow,
-including any optimization loops, which allows for optimized performance, and
-the ability to run the entire workflow on accelerator devices as
-appropriate.
+hybrid just-in-time (JIT) compilation via the :func:`~.qjit` decorator and various
+hybrid compilers, which can be installed separately.
+
+The best supported and default compiler is the `Catalyst hybrid compiler
+<https://github.com/pennylaneai/catalyst>`__. Catalyst allows you to compile the entire
+quantum-classical workflow, including any optimization loops. This maximizes
+performance and enables running the entire workflow on accelerator devices.
+
+In addition, PennyLane also supports compiling restricted programs via CUDA Quantum; see the CUDA Quantum section below for more details.
 
 Installing compilers
 --------------------
@@ -59,7 +62,7 @@ that is, functions that include both QNodes and classical processing.
 
     @qml.qjit
     def hybrid_function(params, x):
-        grad = qml.grad(circuit)(params)[0]
+        grad = qml.grad(circuit)(params)
         return jnp.abs(grad - x) ** 2
 
 In addition, functions that are compiled with ``@jax.jit`` can contain calls
@@ -119,6 +122,47 @@ Note that AutoGraph results in additional restrictions, in particular whenever
 global state is involved.
 Please refer to the :doc:`AutoGraph guide<catalyst:dev/autograph>` for a
 complete discussion of the supported and unsupported use-cases.
+
+CUDA Quantum
+------------
+
+The PennyLane :func:`.qjit` decorator  can also be used to compile programs
+using `CUDA Quantum <https://pennylane.ai/qml/glossary/what-is-cuda-quantum/>`__,
+a hybrid compiler toolchain by NVIDIA.
+
+First, Catalyst and CUDA Quantum need to be installed:
+
+.. code-block:: bash
+
+    pip install pennylane-catalyst cuda_quantum
+
+Then, simply specify ``compiler="cuda_quantum"`` in the ``@qjit``
+decorator:
+
+.. code-block:: python
+
+    dev = qml.device("softwareq.qpp", wires=2)
+
+    @qml.qjit(compiler="cuda_quantum")
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x[0], wires=0)
+        qml.RY(x[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliY(0))
+
+>>> circuit(jnp.array([0.5, 1.4]))
+-0.47244976756708373
+
+The following devices are available when compiling with CUDA Quantum:
+
+* ``softwareq.qpp``: a modern C++ statevector simulator
+* ``nvidia.custatevec``: The NVIDIA CuStateVec GPU simulator (with support for multi-gpu)
+* ``nvidia.cutensornet``: The NVIDIA CuTensorNet GPU simulator (with support for matrix product state)
+
+Note that CUDA Quantum compilation currently does not have feature parity with Catalyst compilation;
+in particular, AutoGraph, control flow, differentiation, and various measurement statistics (such as
+probabilities and variance) are not yet supported.
 
 Additional resources
 --------------------

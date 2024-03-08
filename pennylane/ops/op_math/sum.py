@@ -15,19 +15,22 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+# pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
+
 import warnings
 import itertools
+import numbers
+from collections.abc import Iterable
 from copy import copy
 from typing import List
 
+import numpy as np
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
-from .linear_combination import LinearCombination
-from ..qubit.hamiltonian import Hamiltonian
 
 
 def sum(*summands, id=None, lazy=True):
@@ -215,7 +218,11 @@ class Sum(CompositeOp):
         """
         gen = (
             (
-                qml.matrix(op) if isinstance(op, (Hamiltonian, LinearCombination)) else op.matrix(),
+                (
+                    qml.matrix(op)
+                    if isinstance(op, (qml.Hamiltonian, qml.LinearCombination))
+                    else op.matrix()
+                ),
                 op.wires,
             )
             for op in self
@@ -259,6 +266,7 @@ class Sum(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
+
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
             new_rep = qml.pauli.PauliSentence()
             for operand_rep in operand_pauli_reps:
@@ -337,10 +345,12 @@ class Sum(CompositeOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            ops = [pauli.operation() for pauli in pr.keys()]
+            with qml.QueuingManager.stop_recording():
+                ops = [pauli.operation() for pauli in pr.keys()]
             return list(pr.values()), ops
 
-        new_summands = self._simplify_summands(summands=self.operands).get_summands()
+        with qml.QueuingManager.stop_recording():
+            new_summands = self._simplify_summands(summands=self.operands).get_summands()
 
         coeffs = []
         ops = []
