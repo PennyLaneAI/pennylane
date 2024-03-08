@@ -35,6 +35,8 @@ from .utils import (
     reshape_state_as_matrix,
     get_num_wires,
     get_new_state_einsum_indices,
+    get_diagonalizing_gates,
+    get_eigvals,
     QUDIT_DIM,
 )
 from .apply_operation import apply_operation
@@ -96,18 +98,22 @@ def calculate_expval(
     Returns:
         TensorLike: expectation value of observable wrt the state.
     """
-    obs = measurementprocess.obs
-    rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
-
-    # using einsum since trace function axis selection parameter names
-    # are not consistent across interfaces, they don't exist for torch
-
-    num_wires = get_num_wires(state, is_state_batched)
-    rho_mult_obs_reshaped = reshape_state_as_matrix(rho_mult_obs, num_wires)
-    if is_state_batched:
-        return math.real(math.stack([math.sum(math.diagonal(dm)) for dm in rho_mult_obs_reshaped]))
-
-    return math.real(math.sum(math.diagonal(rho_mult_obs_reshaped)))
+    # obs = measurementprocess.obs
+    # rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
+    #
+    # # using einsum since trace function axis selection parameter names
+    # # are not consistent across interfaces, they don't exist for torch
+    #
+    # num_wires = get_num_wires(state, is_state_batched)
+    # rho_mult_obs_reshaped = reshape_state_as_matrix(rho_mult_obs, num_wires)
+    # if is_state_batched:
+    #     return math.real(math.stack([math.sum(math.diagonal(dm)) for dm in rho_mult_obs_reshaped]))
+    #
+    # return math.real(math.sum(math.diagonal(rho_mult_obs_reshaped)))
+    probs = calculate_probability(measurementprocess, state, is_state_batched)
+    eigvals = math.asarray(get_eigvals(measurementprocess.obs), dtype="float64")
+    # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
+    return math.dot(probs, eigvals)
 
 
 def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagonalization gates?
@@ -159,7 +165,8 @@ def calculate_probability(
     Returns:
         TensorLike: the probability of the state being in each measurable state.
     """
-    for op in measurementprocess.diagonalizing_gates():
+    #measurementprocess.diagonalizing_gates()
+    for op in get_diagonalizing_gates(measurementprocess):
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     num_state_wires = get_num_wires(state, is_state_batched)
@@ -209,7 +216,7 @@ def calculate_variance(
         TensorLike: the variance of the observable wrt the state.
     """
     probs = calculate_probability(measurementprocess, state, is_state_batched)
-    eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
+    eigvals = math.asarray(get_eigvals(measurementprocess.obs), dtype="float64")
     # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
     return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
 
@@ -238,10 +245,17 @@ def calculate_expval_sum_of_terms(
             for term in measurementprocess.obs
         )
     # else hamiltonian
-    return sum(
-        c * measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
-        for c, t in zip(*measurementprocess.obs.terms())
-    )
+    res = []
+    for c, t in zip(*measurementprocess.obs.terms()):
+        measurement = measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
+        measurement_coeffed = c * measurement
+        res.append(measurement_coeffed)
+    return sum(res)
+
+    # return sum(
+    #     c * measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
+    #     for c, t in zip(*measurementprocess.obs.terms())
+    # )
 
 
 # pylint: disable=too-many-return-statements

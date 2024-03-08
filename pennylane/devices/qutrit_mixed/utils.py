@@ -115,3 +115,95 @@ def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
         zip(old_indices, new_indices),
         state_indices,
     )
+
+
+def get_diagonalizing_gates(mp):
+    if isinstance(mp.obs, qml.ops.op_math.Prod):
+        print("prod")
+        return mp.obs.diagonalizing_gates()
+    if isinstance(mp.obs, qml.ops.op_math.SProd):
+        print("s_prod")
+        return mp.obs.diagonalizing_gates()
+
+    return mp.diagonalizing_gates()
+
+
+import numbers
+def _expand_vector(vector, original_wires, expanded_wires):
+    r"""Expand a vector to more wires.
+
+    Args:
+        vector (array): :math:`QUDIT_DIM^n` vector where n = len(original_wires).
+        original_wires (Sequence[int]): original wires of vector
+        expanded_wires (Union[Sequence[int], int]): expanded wires of vector, can be shuffled
+            If a single int m is given, corresponds to list(range(m))
+
+    Returns:
+        array: :math:`QUDIT_DIM^m` vector where m = len(expanded_wires).
+    """
+    if isinstance(expanded_wires, numbers.Integral):
+        expanded_wires = list(range(expanded_wires))
+
+    N = len(original_wires)
+    M = len(expanded_wires)
+    D = M - N
+
+    if not set(expanded_wires).issuperset(original_wires):
+        raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
+
+    if qml.math.shape(vector) != (QUDIT_DIM**N,):
+        raise ValueError("Vector parameter must be of length QUDIT_DIM**len(original_wires)")
+
+    dims = [QUDIT_DIM] * N
+    tensor = qml.math.reshape(vector, dims)
+
+    if D > 0:
+        extra_dims = [QUDIT_DIM] * D
+        ones = qml.math.ones(QUDIT_DIM**D).reshape(extra_dims)
+        expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
+    else:
+        expanded_tensor = tensor
+
+    wire_indices = []
+    for wire in original_wires:
+        wire_indices.append(expanded_wires.index(wire))
+
+    wire_indices = np.array(wire_indices)
+
+    # Order tensor factors according to wires
+    original_indices = np.array(range(N))
+    expanded_tensor = qml.math.moveaxis(
+        expanded_tensor, tuple(original_indices), tuple(wire_indices)
+    )
+
+    return qml.math.reshape(expanded_tensor, QUDIT_DIM**M)
+
+
+def get_eigvals(obs):
+    if isinstance(obs, qml.ops.op_math.Prod):
+        print("prod")
+        eigvals = []
+        for ops in obs.overlapping_ops:
+            if len(ops) == 1:
+                eigvals.append(
+                    _expand_vector(ops[0].eigvals(), list(ops[0].wires), list(obs.wires))
+                )
+            else:
+                tmp_composite = obs.__class__(*ops)
+                eigvals.append(
+                    _expand_vector(
+                        tmp_composite.eigendecomposition["eigval"],
+                        list(tmp_composite.wires),
+                        list(obs.wires),
+                    )
+                )
+
+        return obs._math_op(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
+    if isinstance(obs, qml.ops.op_math.SProd):
+        print("s_prod")
+        base_eigs = get_eigvals(obs.base)
+        if qml.math.get_interface(obs.scalar) == "torch" and obs.scalar.requires_grad:
+            base_eigs = qml.math.convert_like(base_eigs, obs.scalar)
+        return obs.scalar * base_eigs
+
+    return obs.eigvals()
