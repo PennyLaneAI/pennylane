@@ -158,7 +158,7 @@ class PauliVSpace:
 
         Returns:
             bool: whether ``pauli_sentence`` was linearly independent
-        
+
         **Example**
 
         >>> ops = [X(0), X(1)]
