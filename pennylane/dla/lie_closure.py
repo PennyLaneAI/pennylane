@@ -143,7 +143,7 @@ class PauliVSpace:
         for ps in other:
             # TODO: Potential speed-up by computing the maximal linear independent set for all current basis vectors + other, essentially algorithm1 in https://arxiv.org/abs/1012.5256
             self._M, self._pw_to_idx, self._rank, self._num_pw, is_independent = (
-                self._is_independent(self._M, ps, self._pw_to_idx, self._rank, self._num_pw)
+                self._check_independence(self._M, ps, self._pw_to_idx, self._rank, self._num_pw)
             )
             if is_independent:
                 self._basis.append(ps)
@@ -152,33 +152,30 @@ class PauliVSpace:
     def is_independent(self, pauli_sentence, tol=1e-15):
         r"""Check if the :class:`~PauliSentence` ``pauli_sentence`` is linearly independent with all vectors in ``PauliVSpace``.
 
-        This is done in the following way: ``M`` (see description in class) is extended by ``pauli_sentence``.
-        If the added operator has a PauliWord (key) that is new to ``pw_to_idx``, then we have to add a new row
-        and already know that it has to be linearly independent.
-        If it contains the same PauliWords, we need to compute the new rank and compare it with the old rank.
-        If the rank is the same, the operator is linearly dependent and not added. Else, the rank is incrased by 1
-        and the extended M becomes our new M.
-
         Args:
             pauli_sentence (`~.PauliSentence`): Pauli sentence for which to add a column if independent.
             tol (float): Numerical tolerance for linear independence check.
 
         Returns:
-            ndarray: updated coefficient matrix for the LIS
-            dict: updated map from ``PauliWord`` to row index in ``M``. Includes new ``PauliWord`` keys
-                from the input ``pauli_sentence`` if it was linearly independent
-            int: updated rank/number of columns of ``M``
-            int: updated number of ``PauliWord``\ s/number of rows of ``M``
-            bool: whether ``pauli_sentence`` was linearly independent and its column was added to ``M``
+            bool: whether ``pauli_sentence`` was linearly independent
+        
+        **Example**
+
+        >>> ops = [X(0), X(1)]
+        >>> vspace = PauliVSpace([op.pauli_rep for op in ops])
+        >>> vspace.is_independent(X(0).pauli_rep)
+        False
+        >>> vspace.is_independent(Y(0).pauli_rep)
+        True
 
         """
-        _, _, _, _, is_independent = self._is_independent(
+        _, _, _, _, is_independent = self._check_independence(
             self._M, pauli_sentence, self._pw_to_idx, self._rank, self._num_pw, tol
         )
         return is_independent
 
     @staticmethod
-    def _is_independent(M, pauli_sentence, pw_to_idx, rank, num_pw, tol=1e-15):
+    def _check_independence(M, pauli_sentence, pw_to_idx, rank, num_pw, tol=1e-15):
         r"""
         Checks if :class:`~PauliSentence` ``pauli_sentence`` is linearly independent and provides the updated class attributes in case the vector is added.
 
@@ -203,7 +200,7 @@ class PauliVSpace:
                 from the input ``pauli_sentence`` if it was linearly independent
             int: updated rank/number of columns of ``M``
             int: updated number of ``PauliWord``\ s/number of rows of ``M``
-            bool: whether ``pauli_sentence`` was linearly independent and its column was added to ``M``
+            bool: whether ``pauli_sentence`` was linearly independent and whether its column was added to ``M``
         """
         new_pws = [pw for pw in pauli_sentence.keys() if pw not in pw_to_idx]
         new_num_pw = num_pw + len(new_pws)
