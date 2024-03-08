@@ -1313,6 +1313,20 @@ class TestMeasurementsEqual:
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
 
+    def test_identity_equal(self):
+        """Test that comparing two Identities always returns True regardless of wires"""
+        I1 = qml.Identity()
+        I2 = qml.Identity(wires=[-1])
+        I3 = qml.Identity(wires=[0, 1, 2, 3])
+        I4 = qml.Identity(wires=["a", "b"])
+
+        assert qml.equal(I1, I2)
+        assert qml.equal(I1, I3)
+        assert qml.equal(I1, I4)
+        assert qml.equal(I2, I3)
+        assert qml.equal(I2, I4)
+        assert qml.equal(I3, I4)
+
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
     def test_hamiltonian_equal(self, H1, H2, res):
         """Tests that equality can be checked between Hamiltonians"""
