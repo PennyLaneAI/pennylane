@@ -431,17 +431,18 @@ class DefaultQubit(Device):
         if execution_config is None:
             return True
 
-        if (
-            execution_config.gradient_method in {"backprop", "best"}
-            and execution_config.device_options.get("max_workers", self._max_workers) is None
-        ):
+        no_max_workers = (
+            execution_config.device_options.get("max_workers", self._max_workers) is None
+        )
+
+        if execution_config.gradient_method in {"backprop", "best"} and no_max_workers:
             if circuit is None:
                 return True
             return not circuit.shots and not any(
                 isinstance(m.obs, qml.SparseHamiltonian) for m in circuit.measurements
             )
 
-        if execution_config.gradient_method == "adjoint":
+        if execution_config.gradient_method in {"adjoint", "best"}:
             return _supports_adjoint(circuit=circuit)
         return False
 
@@ -511,20 +512,29 @@ class DefaultQubit(Device):
 
         """
         updated_values = {}
+
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
+
+        gradient_method = execution_config.gradient_method
         if execution_config.gradient_method == "best":
-            updated_values["gradient_method"] = "backprop"
+            no_max_workers = (
+                execution_config.device_options.get("max_workers", self._max_workers) is None
+            )
+            gradient_method = "backprop" if no_max_workers else "adjoint"
+            updated_values["gradient_method"] = gradient_method
+
         if execution_config.use_device_gradient is None:
-            updated_values["use_device_gradient"] = execution_config.gradient_method in {
-                "best",
+            updated_values["use_device_gradient"] = gradient_method in {
                 "adjoint",
                 "backprop",
             }
         if execution_config.use_device_jacobian_product is None:
-            updated_values["use_device_jacobian_product"] = (
-                execution_config.gradient_method == "adjoint"
-            )
+            updated_values["use_device_jacobian_product"] = gradient_method == "adjoint"
         if execution_config.grad_on_execution is None:
-            updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+            updated_values["grad_on_execution"] = gradient_method == "adjoint"
+
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
         for option in self._device_options:
             if option not in updated_values["device_options"]:
