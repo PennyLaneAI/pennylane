@@ -39,7 +39,7 @@ executing==2.0.1
 fastjsonschema==2.19.1
 filelock==3.13.1
 flaky==3.7.0
-flatbuffers==24.3.6
+flatbuffers==24.3.7
 fonttools==4.49.0
 fqdn==1.5.1
 future==1.0.0
