@@ -107,7 +107,7 @@ def calculate_expval(
     if is_state_batched:
         return math.real(math.stack([math.sum(math.diagonal(dm)) for dm in rho_mult_obs_reshaped]))
 
-    return math.real(math.sum(math.diagonal(rho_mult_obs_reshaped)))
+    return math.asarray(math.real(math.sum(math.diagonal(rho_mult_obs_reshaped))))
 
 
 def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagonalization gates?
