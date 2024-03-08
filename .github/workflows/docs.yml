@@ -74,6 +74,7 @@ jobs:
         destination_branch: "master"
         github_token: "${{ secrets.GITHUB_TOKEN }}"
         pr_title: "Update stable dependency files"
+        # if updating the pr_body, please also update the same text in the tests.yml file
         pr_body: |
           Automatic update of stable requirement files to snapshot valid python environments.
 
@@ -84,5 +85,12 @@ jobs:
           ```
 
           Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
+          
+          Note that it is expected that the PennyLane-Lightning repo is a version ahead of the release, because the 
+          version number is taken from the dev branch. Trying to `pip install` from the files will fail until that 
+          major version of Lightning is released. 
+          
+          If pip install fails with a not found error when installing because of this, it can be fixed by manually 
+          downgrading the PennyLane-Lightning version number in the file by 1 version and trying again.
         pr_allow_empty: false
         pr_draft: false
