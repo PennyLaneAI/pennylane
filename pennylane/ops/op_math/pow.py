@@ -329,7 +329,7 @@ class Pow(ScalarSymbolicOp):
 
         See also :func:`~.generator`
         """
-        return self.z * self.base.generator()
+        return qml.s_prod(self.z, self.base.generator(), lazy=False)
 
     def pow(self, z):
         return [Pow(base=self.base, z=self.z * z)]

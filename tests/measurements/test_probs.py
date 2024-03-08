@@ -247,7 +247,7 @@ class TestProbs:
         expected = np.array([0, 0, 0, 0, 1, 0, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_measurement_value(
         self, shots, phi, tol, tol_stochastic
@@ -273,7 +273,7 @@ class TestProbs:
                 for r in res:  # pylint: disable=not-an-iterable
                     assert np.allclose(r, expected, atol=atol, rtol=0)
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi])
     def test_observable_is_measurement_value_list(
         self, shots, phi, tol, tol_stochastic

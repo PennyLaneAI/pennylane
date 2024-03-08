@@ -14,7 +14,7 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-# pylint: disable=eval-used
+# pylint: disable=eval-used, unused-argument
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -229,7 +229,7 @@ class TestInitialization:
     ]
     Hamiltonian_mixed = qml.dot(coeffs_, ops_)
 
-    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # all operands have pauli representation
+    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # not all operands have pauli representation
         (
             qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))),
             [float(i) for i in range(1, 5)],
@@ -272,6 +272,17 @@ class TestInitialization:
         coeffs, ops1 = op.terms()
         assert coeffs == coeffs_true
         assert ops1 == ops_true
+
+    @pytest.mark.parametrize(
+        "op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_PAULI + SUM_TERMS_OP_PAIRS_MIXEDPAULI
+    )
+    def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
+        """Test that calling Prod.terms does not queue anything."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.apply(op)
+            _, _ = op.terms()
+
+        assert q.queue == [op]
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
@@ -1145,20 +1156,6 @@ class TestIntegration:
         true_var = qnp.array(3 / 2)
         assert qnp.allclose(var, true_var)
 
-    # def test_measurement_process_probs(self):
-    #     dev = qml.device("default.qubit", wires=2)
-    #     sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
-    #
-    #     @qml.qnode(dev)
-    #     def my_circ():
-    #         qml.PauliX(0)
-    #         return qml.probs(op=sum_op)
-    #
-    #     hand_computed_probs = qnp.array([0.573223935039, 0.073223277604, 0.573223935039, 0.073223277604])
-    #     returned_probs = qnp.array([0.0732233, 0.43898224, 0.06101776, 0.4267767])
-    #     # TODO[Jay]: which of these two is correct?
-    #     assert qnp.allclose(my_circ(), returned_probs)
-
     def test_measurement_process_probs(self):
         """Test Sum class instance in probs measurement process raises error."""
         dev = qml.device("default.qubit", wires=2)
@@ -1169,11 +1166,11 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.probs(op=sum_op)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        x_probs = np.array([0.5, 0.5])
+        h_probs = np.array([np.cos(-np.pi / 4 / 2) ** 2, np.sin(-np.pi / 4 / 2) ** 2])
+        expected = np.tensordot(x_probs, h_probs, axes=0).flatten()
+        out = my_circ()
+        assert qml.math.allclose(out, expected)
 
     def test_measurement_process_sample(self):
         """Test Sum class instance in sample measurement process."""
