@@ -93,8 +93,6 @@ class AmplitudeAmplification(Operation):
 
         >>> print(np.round(circuit(),3))
         [0.009 0.009 0.94  0.009 0.009 0.009 0.009 0.009]
-
-
     """
 
     def _flatten(self):
