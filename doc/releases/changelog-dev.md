@@ -99,6 +99,9 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
 
+* The `QNode` now defers `diff_method` validation to the device under the new device api `qml.devices.Device`.
+  [(#5176)](https://github.com/PennyLaneAI/pennylane/pull/5176)
+
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 

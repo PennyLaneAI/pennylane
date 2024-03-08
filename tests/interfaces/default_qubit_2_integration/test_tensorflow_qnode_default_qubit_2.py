@@ -23,7 +23,7 @@ from pennylane.devices import DefaultQubit
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
 
-
+# device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [DefaultQubit(), "finite-diff", False, False],
     [DefaultQubit(), "parameter-shift", False, False],
@@ -535,11 +535,12 @@ class TestShotsIntegration:
         circuit(weights, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert circuit.gradient_fn == "backprop"
+        assert circuit.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
+        assert circuit.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
