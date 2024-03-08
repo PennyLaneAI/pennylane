@@ -24,6 +24,7 @@ from pennylane.devices import DefaultQubit
 
 device_seed = 42
 
+# device, diff_method, grad_on_execution, device_vjp
 device_and_diff_method = [
     [DefaultQubit(seed=device_seed), "backprop", True, False],
     [DefaultQubit(seed=device_seed), "finite-diff", False, False],
@@ -775,11 +776,12 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
+        assert cost_fn.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
+        assert cost_fn.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 

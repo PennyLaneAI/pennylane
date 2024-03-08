@@ -23,6 +23,9 @@ from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
+from tests.param_shift_dev import ParamShiftDerivativesDevice
+
+# dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [qml.device("default.qubit"), "finite-diff", False, False],
     [qml.device("default.qubit"), "parameter-shift", False, False],
@@ -31,6 +34,10 @@ qubit_device_and_diff_method = [
     [qml.device("default.qubit"), "adjoint", False, False],
     [qml.device("default.qubit"), "spsa", False, False],
     [qml.device("default.qubit"), "hadamard", False, False],
+    [ParamShiftDerivativesDevice(), "parameter-shift", False, False],
+    [ParamShiftDerivativesDevice(), "best", False, False],
+    [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
+    [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
 ]
 
 interface_qubit_device_and_diff_method = [
@@ -530,14 +537,17 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
+        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
+
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
+        assert cost_fn.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
@@ -1543,7 +1553,11 @@ class TestTapeExpansion:
         assert np.allclose(grad[1], expected_c, atol=tol)
 
         # test second-order derivatives
-        if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
+        if (
+            diff_method in ("parameter-shift", "backprop")
+            and max_diff == 2
+            and dev.name != "param_shift.qubit"
+        ):
             if diff_method == "backprop":
                 with pytest.warns(UserWarning, match=r"Output seems independent of input."):
                     grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
@@ -1622,7 +1636,7 @@ class TestTapeExpansion:
         assert np.allclose(grad[1], expected_c, atol=tol)
 
         # test second-order derivatives
-        if diff_method == "parameter-shift" and max_diff == 2:
+        if diff_method == "parameter-shift" and max_diff == 2 and dev.name != "param_shift.qubit":
             grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c, shots=50000)
             assert np.allclose(grad2_c, 0, atol=tol)
 
@@ -1647,7 +1661,9 @@ class TestSample:
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        with pytest.raises(qml.QuantumFunctionError, match="only supported when shots=None"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="does not support backprop with requested"
+        ):
             circuit(shots=10)
 
     def test_sample_dimension(self):
