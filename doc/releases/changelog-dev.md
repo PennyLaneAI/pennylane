@@ -87,7 +87,6 @@
   ```pycon
   >>> circuit()
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
-
   ```
   
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
