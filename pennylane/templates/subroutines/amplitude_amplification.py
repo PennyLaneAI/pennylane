@@ -58,7 +58,7 @@ class AmplitudeAmplification(Operation):
         fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm, default is False
         work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm, default is None
         reflection_wires (Wires): the wires to reflect on, default is the wires of U
-        p_min (int): the lower bound for the probability of success in fixed-point amplitude amplification, default is 0.9
+        p_min (int): the lower bound for the probability of success in fixed-point amplitude amplification, default is ``0.9``
 
     Raises:
         ValueError: work_wire must be specified if ``fixed_point == True``.
