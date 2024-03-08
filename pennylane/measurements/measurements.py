@@ -18,7 +18,6 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
-from warnings import warn
 
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -189,28 +188,6 @@ class MeasurementProcess(ABC):
 
         # Queue the measurement process
         self.queue()
-
-    @property
-    def name(self):
-        """A deprecated property that always returns 'Identity'."""
-        warn(
-            "MeasurementProcess.name is deprecated, and will be removed "
-            "in an upcoming release. To get the name of an observable "
-            "from a measurement, use MeasurementProcess.obs.name instead",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return "Identity"
-
-    @property
-    def data(self):
-        """A deprecated property that always returns an empty list."""
-        warn(
-            "MeasurementProcess.data is deprecated, and will be removed "
-            "in an upcoming release. To get the data of an observable "
-            "from a measurement, use MeasurementProcess.obs.data instead",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return []
 
     @property
     def return_type(self) -> Optional[ObservableReturnTypes]:

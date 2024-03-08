@@ -137,8 +137,6 @@ import pennylane.compiler
 
 import pennylane.data
 
-import pennylane.interfaces
-
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
