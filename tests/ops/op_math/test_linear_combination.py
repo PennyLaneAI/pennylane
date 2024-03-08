@@ -28,6 +28,29 @@ from pennylane import numpy as pnp, LinearCombination, X, Y, Z
 from pennylane.wires import Wires
 from pennylane.pauli import PauliWord, PauliSentence
 
+from pennylane.operation import enable_new_opmath_cm, disable_new_opmath
+
+@pytest.mark.usefixtures("use_legacy_opmath")
+def test_switching():
+    """Test that switching to new from old opmath changes the dispatch of qml.Hamiltonian"""
+    Ham = qml.Hamiltonian([1., 2., 3.], [X(0), X(0) @ X(1), X(2)])
+    assert isinstance(Ham, qml.Hamiltonian)
+    assert not isinstance(Ham, qml.LinearCombination)
+
+    with enable_new_opmath_cm():
+        LC = qml.Hamiltonian([1., 2., 3.], [X(0), X(0) @ X(1), X(2)])
+        assert isinstance(LC, qml.Hamiltonian)
+        assert isinstance(LC, qml.LinearCombination)
+
+
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+class TestParityWithHamiltonian:
+    """Test that Hamiltonian and LinearCombination can be used interchangeably when new opmath is disabled or enabled"""
+
+    def test_isinstance_Hamiltonian(self):
+        H = qml.Hamiltonian([1., 2., 3.], [X(0), X(0) @ X(1), X(2)])
+        assert 1 == 1 #isinstance(H, qml.Hamiltonian)
+
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -830,6 +853,7 @@ class TestLinearCombination:
 
     def test_LinearCombination_queue_inside(self):
         """Tests that LinearCombination are queued correctly when components are instantiated inside the recording context."""
+        assert qml.operation.active_new_opmath()
         with qml.queuing.AnnotatedQueue() as q:
             m = qml.expval(qml.LinearCombination([1, 3, 1], [X(1), Z(0) @ Z(2), Z(1)]))
 

@@ -3046,13 +3046,31 @@ def convert_to_opmath(op):
 
 @contextmanager
 def disable_new_opmath_cm():
-    r"""Allows to use the new arithmetic operator dunders within a
+    r"""Allows to use the old operator arithmetic within a
     temporary context using the `with` statement."""
 
     was_active = qml.operation.active_new_opmath()
     try:
         if was_active:
             disable_new_opmath()
+        yield
+    except Exception as e:
+        raise e
+    finally:
+        if was_active:
+            enable_new_opmath()
+        else:
+            disable_new_opmath()
+
+@contextmanager
+def enable_new_opmath_cm():
+    r"""Allows to use the new operator arithmetic within a
+    temporary context using the `with` statement."""
+
+    was_active = qml.operation.active_new_opmath()
+    try:
+        if not was_active:
+            enable_new_opmath()
         yield
     except Exception as e:
         raise e
