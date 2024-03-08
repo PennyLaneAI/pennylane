@@ -57,7 +57,7 @@ Completed deprecation cycles
 ----------------------------
 
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``,
-  `` gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
+  ``gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
   ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
   to see how this can be done.
