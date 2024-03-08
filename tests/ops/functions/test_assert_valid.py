@@ -348,7 +348,6 @@ def create_op_instance(c):
 
     return c(*params, wires=wires) if wires else c(*params)
 
-
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[14:20] == "qutrit":
