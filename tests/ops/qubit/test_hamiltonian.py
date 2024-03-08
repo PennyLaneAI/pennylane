@@ -24,7 +24,7 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.ops.qubit.hamiltonian import Hamiltonian
+
 from pennylane.wires import Wires
 from pennylane.operation import enable_new_opmath, disable_new_opmath
 

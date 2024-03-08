@@ -16,7 +16,6 @@ Tests for the LinearCombination class.
 """
 # pylint: disable=too-many-public-methods, too-few-public-methods
 from collections.abc import Iterable
-from unittest.mock import patch
 from copy import copy
 
 import numpy as np
@@ -28,7 +27,7 @@ from pennylane import numpy as pnp, LinearCombination, X, Y, Z
 from pennylane.wires import Wires
 from pennylane.pauli import PauliWord, PauliSentence
 
-from pennylane.operation import enable_new_opmath_cm, disable_new_opmath
+from pennylane.operation import enable_new_opmath_cm
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -50,7 +49,7 @@ class TestParityWithHamiltonian:
 
     def test_isinstance_Hamiltonian(self):
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
-        assert 1 == 1  # isinstance(H, qml.Hamiltonian)
+        assert isinstance(H, qml.Hamiltonian)
 
 
 # Make test data in different interfaces, if installed
