@@ -62,12 +62,12 @@ class AmplitudeAmplification(Operation):
 
     Raises:
         ValueError: work_wire must be specified if ``fixed_point == True``.
-        ValueError: work_wire must be different from the wires of U.
+        ValueError: work_wire must be different from the wires of O.
 
     **Example**
 
     Amplification of state :math:`|2\rangle` using Grover's algorithm with 3 qubits.
-    Uniform overlapping will be taken as :math:`|\Psi\rangle`:
+    Uniform superposition will be taken as :math:`|\Psi\rangle`:
 
     .. code-block::
 
@@ -127,8 +127,8 @@ class AmplitudeAmplification(Operation):
         if fixed_point and work_wire is None:
             raise qml.wires.WireError("work_wire must be specified if fixed_point == True.")
 
-        if fixed_point and len(U.wires + qml.wires.Wires(work_wire)) == len(U.wires):
-            raise ValueError("work_wire must be different from the wires of U.")
+        if fixed_point and len(O.wires + qml.wires.Wires(work_wire)) == len(O.wires):
+            raise ValueError("work_wire must be different from the wires of O.")
 
         if fixed_point:
             wires = U.wires + qml.wires.Wires(work_wire)

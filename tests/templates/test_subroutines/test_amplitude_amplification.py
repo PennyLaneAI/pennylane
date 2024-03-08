@@ -35,7 +35,7 @@ def oracle(items, wires):
 class TestInitialization:
     """Test the AmplitudeAmplification class initializes correctly."""
 
-    def test_error_none_wire(self, fixed_point, work_wire):
+    def test_error_none_wire(self):
         """Test an error is raised if work_wire is None and fixed_point is True."""
 
         U = generator(wires=range(3))
@@ -54,12 +54,12 @@ class TestInitialization:
         ),
     )
     def test_error_wrong_work_wire(self, wires, fixed_point, work_wire):
-        """Test an error is raised if work_wire is part of the U wires."""
+        """Test an error is raised if work_wire is part of the O wires."""
 
         U = generator(wires=wires)
         O = oracle([0], wires=wires)
 
-        with pytest.raises(ValueError, match="work_wire must be different from the wires of U."):
+        with pytest.raises(ValueError, match="work_wire must be different from the wires of O."):
             qml.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
 
 

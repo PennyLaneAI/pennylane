@@ -215,7 +215,7 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`Reflection Operator <../code/api/pennylane.Reflection>`
     :figure: _static/templates/subroutines/reflection.png
 
-
+.. gallery-item::
     :description: :doc:`Amplitude Amplification <../code/api/pennylane.AmplitudeAmplification>`
     :figure: _static/templates/subroutines/ampamp.png
 

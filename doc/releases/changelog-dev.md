@@ -9,8 +9,6 @@
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
-<h3>Improvements 🛠</h3>
-
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
   [(##5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
@@ -40,6 +38,38 @@
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
 
   ```
+  
+* The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
+  [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
+
+  ```python
+  @qml.prod
+  def generator(wires):
+    for wire in wires:
+        qml.Hadamard(wires = wire)
+
+  U = generator(wires = range(3))
+  O = qml.FlipSign(2, wires = range(3))
+
+  dev = qml.device("default.qubit")
+
+  @qml.qnode(dev)
+  def circuit():
+
+    generator(wires = range(3))
+    qml.AmplitudeAmplification(U, O, iters = 5, fixed_point=True, work_wire=3)
+
+    return qml.probs(wires = range(3))
+
+  ```
+  
+  ```pycon
+  >>> print(np.round(circuit(),3))
+  [0.009 0.009 0.94  0.009 0.009 0.009 0.009 0.009]
+
+  ```
+
+<h3>Improvements 🛠</h3>
   
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
