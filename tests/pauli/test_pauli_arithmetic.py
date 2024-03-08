@@ -57,6 +57,28 @@ Y0 = PauliWord({0: "Y"})
 Z0 = PauliWord({0: "Z"})
 
 
+def test_pw_pw_multiplication_non_commutativity():
+    """Test that pauli word matrix multiplication is non-commutative and returns correct result"""
+
+    res1 = X0 @ Y0
+    res2 = Y0 @ X0
+    assert res1 == 1j * Z0
+    assert res2 == -1j * Z0
+
+
+def test_ps_ps_multiplication_non_commutativity():
+    """Test that pauli sentence matrix multiplication is non-commutative and returns correct result"""
+
+    pauliX = PauliSentence({PauliWord({0: "X"}): 1.0})
+    pauliY = PauliSentence({PauliWord({0: "Y"}): 1.0})
+    pauliZ = PauliSentence({PauliWord({0: "Z"}): 1j})
+
+    res1 = pauliX @ pauliY
+    res2 = pauliY @ pauliX
+    assert res1 == pauliZ
+    assert res2 == -1 * pauliZ
+
+
 def _pauli_to_op(p):
     """convert PauliWord or PauliSentence to Operator"""
     return p.operation()
