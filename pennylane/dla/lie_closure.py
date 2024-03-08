@@ -188,7 +188,7 @@ class PauliVSpace:
 
         Args:
             M (ndarray): coefficient matrix for current LIS
-            ps (`~.PauliSentence`): Pauli sentence for which to add a column if independent
+            pauli_sentence (`~.PauliSentence`): Pauli sentence for which to add a column if independent
             pw_to_idx (dict): map from ``PauliWord`` to row index in ``M``
             rank (int): current rank of ``M``, equal to its number of columns
             num_pw (int): current number of ``PauliWord``\ s, equal to the number of rows in ``M``
