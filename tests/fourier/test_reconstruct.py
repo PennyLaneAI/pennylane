@@ -424,6 +424,8 @@ class TestReconstructGen:
         functions are differentiable for JAX input variables."""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="jax")
         grad = jax.grad(rec)
