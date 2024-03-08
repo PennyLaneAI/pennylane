@@ -1,3 +1,21 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+LinearCombination class
+"""
+# pylint: disable=too-many-arguments, protected-access
+
 import itertools
 import numbers
 from collections.abc import Iterable
@@ -224,7 +242,7 @@ class LinearCombination(Sum):
             )
 
     @qml.QueuingManager.stop_recording()
-    def _simplify_coeffs_ops(self):
+    def _simplify_coeffs_ops(self, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
         Returns:
@@ -255,13 +273,13 @@ class LinearCombination(Sum):
             return self.coeffs, [self.ops[0].simplify()], pr
 
         op_as_sum = qml.sum(*self.operands)
-        op_as_sum = op_as_sum.simplify()
+        op_as_sum = op_as_sum.simplify(cutoff)
         coeffs, ops = op_as_sum.terms()
         return coeffs, ops, None
 
-    def simplify(self):
+    def simplify(self, cutoff=1.0e-12):
         r"""TODO"""
-        coeffs, ops, pr = self._simplify_coeffs_ops()
+        coeffs, ops, pr = self._simplify_coeffs_ops(cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def _obs_data(self):
