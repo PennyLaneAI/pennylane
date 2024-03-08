@@ -3062,6 +3062,7 @@ def disable_new_opmath_cm():
         else:
             disable_new_opmath()
 
+
 @contextmanager
 def enable_new_opmath_cm():
     r"""Allows to use the new operator arithmetic within a

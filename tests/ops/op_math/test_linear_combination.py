@@ -30,15 +30,16 @@ from pennylane.pauli import PauliWord, PauliSentence
 
 from pennylane.operation import enable_new_opmath_cm, disable_new_opmath
 
+
 @pytest.mark.usefixtures("use_legacy_opmath")
 def test_switching():
     """Test that switching to new from old opmath changes the dispatch of qml.Hamiltonian"""
-    Ham = qml.Hamiltonian([1., 2., 3.], [X(0), X(0) @ X(1), X(2)])
+    Ham = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
     assert isinstance(Ham, qml.Hamiltonian)
     assert not isinstance(Ham, qml.LinearCombination)
 
     with enable_new_opmath_cm():
-        LC = qml.Hamiltonian([1., 2., 3.], [X(0), X(0) @ X(1), X(2)])
+        LC = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
         assert isinstance(LC, qml.Hamiltonian)
         assert isinstance(LC, qml.LinearCombination)
 
@@ -48,8 +49,8 @@ class TestParityWithHamiltonian:
     """Test that Hamiltonian and LinearCombination can be used interchangeably when new opmath is disabled or enabled"""
 
     def test_isinstance_Hamiltonian(self):
-        H = qml.Hamiltonian([1., 2., 3.], [X(0), X(0) @ X(1), X(2)])
-        assert 1 == 1 #isinstance(H, qml.Hamiltonian)
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
+        assert 1 == 1  # isinstance(H, qml.Hamiltonian)
 
 
 # Make test data in different interfaces, if installed
