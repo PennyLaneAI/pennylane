@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.ops import Hamiltonian, SProd, Prod, Sum
+from pennylane.operation import convert_to_legacy_H
 
 
 # pylint: disable=too-many-branches
@@ -44,14 +45,8 @@ def _generator_hamiltonian(gen, op):
     elif isinstance(gen, qml.operation.Observable):
         H = 1.0 * gen
 
-    # TODO: remove this once test_tapering supports new opmath
-    elif isinstance(gen, SProd):
-
-        if gen.arithmetic_depth == 1:
-            H = gen.scalar * gen.base
-        elif gen.arithmetic_depth == 2:
-            if isinstance(gen.base, Prod):
-                H = qml.Hamiltonian([gen.scalar], [gen.base[0] @ gen.base[1]])
+    elif isinstance(gen, (SProd, Prod, Sum)):
+        H = convert_to_legacy_H(gen)
 
     return H
 

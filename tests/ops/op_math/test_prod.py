@@ -1411,11 +1411,11 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.probs(op=prod_op)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        x_probs = np.array([0.5, 0.5])
+        h_probs = np.array([np.cos(-np.pi / 4 / 2) ** 2, np.sin(-np.pi / 4 / 2) ** 2])
+        expected = np.tensordot(x_probs, h_probs, axes=0).flatten()
+        out = my_circ()
+        assert qml.math.allclose(out, expected)
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""

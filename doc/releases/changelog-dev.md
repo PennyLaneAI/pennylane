@@ -10,6 +10,9 @@
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
+* Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
+  [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)    
+
 <h3>Improvements 🛠</h3>
 
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
@@ -51,6 +54,9 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
 
+* `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
+  [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
+
 <h3>Breaking changes 💔</h3>
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
@@ -87,4 +93,5 @@ Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
+Christina Lee,
 Matthew Silverman.
