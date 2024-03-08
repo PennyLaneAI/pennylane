@@ -2946,7 +2946,8 @@ def gen_is_multi_term_hamiltonian(obj):
     return isinstance(o, (qml.Hamiltonian, qml.LinearCombination)) and len(o.coeffs) > 1
 
 
-_mock_opmath_stack = []
+_mock_lc_stack = []
+_mock_ham_stack = []
 
 
 def enable_new_opmath():
@@ -2966,7 +2967,9 @@ def enable_new_opmath():
     global __use_new_opmath
     __use_new_opmath = True
 
-    if _mock_opmath_stack:
+    if _mock_lc_stack:
+        _mock_lc_stack.pop().close()
+    if _mock_ham_stack:
         return
 
     mocks = [
@@ -2980,7 +2983,7 @@ def enable_new_opmath():
         for m in mocks:
             stack.enter_context(m)
 
-        _mock_opmath_stack.append(stack.pop_all())
+        _mock_ham_stack.append(stack.pop_all())
 
 
 def disable_new_opmath():
@@ -3000,7 +3003,15 @@ def disable_new_opmath():
     global __use_new_opmath
     __use_new_opmath = False
 
-    _mock_opmath_stack.pop().close()
+    if _mock_ham_stack:
+        _mock_ham_stack.pop().close()
+    if _mock_lc_stack:
+        return
+
+    with contextlib.ExitStack() as stack:
+        _mock = mock.patch("__main__.Hamiltonian", qml.Hamiltonian)
+        stack.enter_context(_mock)
+        _mock_lc_stack.append(stack.pop_all())
 
 
 def active_new_opmath():
