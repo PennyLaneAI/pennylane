@@ -633,6 +633,7 @@ class Controlled(SymbolicOp):
         return False
 
     def decomposition(self):
+
         if self.compute_decomposition is not Operator.compute_decomposition:
             return self.compute_decomposition(*self.data, self.wires)
 

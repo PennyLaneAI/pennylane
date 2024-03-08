@@ -53,7 +53,6 @@ class Reflection(Operation):
         U = generator(wires=0)
 
         dev = qml.device('default.qubit')
-
         @qml.qnode(dev)
         def circuit():
 
@@ -67,6 +66,7 @@ class Reflection(Operation):
 
     >>> circuit()
     tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
+
 
 
     .. details::
