@@ -1305,6 +1305,7 @@ class TestOperatorIntegration:
         assert '"test_with_id"' not in op.label()
         assert '"test_with_id"' not in op.label(decimals=2)
 
+
 @pytest.mark.usefixtures("use_legacy_opmath")
 class TestTensor:
     """Unit tests for the Tensor class"""
@@ -2010,6 +2011,7 @@ class TestTensor:
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = op @ 1.0
 
+
 with qml.operation.disable_new_opmath_cm():
     equal_obs = [
         (qml.PauliZ(0), qml.PauliZ(0), True),
@@ -2070,7 +2072,11 @@ with qml.operation.disable_new_opmath_cm():
     mul_obs = [
         (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
         (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
-        (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)])),
+        (
+            qml.PauliZ(0) @ qml.PauliX(1),
+            4.5,
+            qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)]),
+        ),
         (
             qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"),
             3,
@@ -2107,7 +2113,9 @@ with qml.operation.disable_new_opmath_cm():
         (
             qml.PauliX(0) @ qml.PauliZ(1),
             qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
-            qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]),
+            qml.Hamiltonian(
+                [1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]
+            ),
         ),
         (
             qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
@@ -2115,6 +2123,7 @@ with qml.operation.disable_new_opmath_cm():
             qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
         ),
     ]
+
 
 @pytest.mark.usefixtures("use_legacy_opmath")
 class TestTensorObservableOperations:
@@ -2576,7 +2585,6 @@ pairs_of_ops = [
 class TestNewOpMath:
     """Tests dunder operations with new operator arithmetic enabled."""
 
-
     class TestAdd:
         """Test the __add__/__radd__/__sub__ dunders."""
 
@@ -2838,7 +2846,6 @@ CONVERT_HAMILTONAIN = [
     ),
     ([0.5], [qml.X(1)]),
     ([1], [Tensor(qml.X(0), qml.Y(1))]),
-
     (
         [-0.5, 0.4, -0.3, 0.2],
         [
@@ -2850,10 +2857,8 @@ CONVERT_HAMILTONAIN = [
     ),
 ]
 
-@pytest.mark.parametrize(
-    "coeffs, obs",
-    CONVERT_HAMILTONAIN
-)
+
+@pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONAIN)
 def test_convert_to_hamiltonian(coeffs, obs):
     """Test that arithmetic operators can be converted to Hamiltonian instances"""
 
@@ -2865,7 +2870,8 @@ def test_convert_to_hamiltonian(coeffs, obs):
 
     assert qml.equal(hamiltonian_instance, converted_opmath)
 
-@pytest.mark.xfail # TODO fails because some orders are changed
+
+@pytest.mark.xfail  # TODO fails because some orders are changed
 def test_convert_to_hamiltonian_xfail(coeffs, obs):
     """Test that arithmetic operators can be converted to Hamiltonian instances"""
 
@@ -2890,6 +2896,7 @@ def test_convert_to_hamiltonian_xfail(coeffs, obs):
     hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
 
     assert qml.equal(hamiltonian_instance, converted_opmath)
+
 
 @pytest.mark.parametrize(
     "coeffs, obs", [([1], [qml.Hadamard(1)]), ([0.5, 0.5], [qml.Identity(1), qml.Identity(1)])]
