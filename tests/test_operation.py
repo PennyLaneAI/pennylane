@@ -2833,15 +2833,18 @@ def test_custom_operator_is_jax_pytree():
     new_op = jax.tree_util.tree_unflatten(structure, [2.3])
     assert qml.equal(new_op, CustomOperator(2.3, wires=0))
 
+
 @pytest.mark.usefixtures("use_new_opmath")
 def test_use_new_opmath_fixture():
     """Test that the fixture for using new opmath in a context works as expected"""
     assert qml.operation.active_new_opmath()
 
+
 @pytest.mark.usefixtures("use_legacy_opmath")
 def test_use_legacy_opmath_fixture():
     """Test that the fixture for using new opmath in a context works as expected"""
     assert not qml.operation.active_new_opmath()
+
 
 CONVERT_HAMILTONAIN = [
     (
