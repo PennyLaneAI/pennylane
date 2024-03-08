@@ -163,7 +163,7 @@ class TestInheritanceMixins:
 
         # check the dir
         assert "grad_recipe" not in dir(ob)
-    
+
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_observable_legacy(self, power_method):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
@@ -261,7 +261,7 @@ class TestInitialization:
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_base(self, power_method):
         """Test pow initialization for a hamiltonian."""
-        base = qml.Hamiltonian([2., 1.], [qml.PauliX(0) @ qml.PauliY(0), qml.PauliZ("b")])
+        base = qml.Hamiltonian([2.0, 1.0], [qml.PauliX(0) @ qml.PauliY(0), qml.PauliZ("b")])
 
         op: Pow = power_method(base=base, z=3.4)
 

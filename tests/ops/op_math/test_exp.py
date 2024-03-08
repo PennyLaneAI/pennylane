@@ -458,7 +458,7 @@ class TestDecomposition:
         pr = op.decomposition()[0]
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
-    # TODO: currently fail, related to generators, waiting for 
+    # TODO: currently fail, related to generators, waiting for
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
     def test_generator_decomposition(self, op_name, str_wires):

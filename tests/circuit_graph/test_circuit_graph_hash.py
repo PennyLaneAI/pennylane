@@ -22,6 +22,7 @@ from pennylane.operation import Tensor
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
+
 @pytest.mark.usefixtures("use_legacy_opmath")
 class TestCircuitGraphHash:
     """Test the creation of a hash on a CircuitGraph"""
@@ -75,7 +76,11 @@ class TestCircuitGraphHash:
                 observable2,
                 "|||ObservableReturnTypes.Variance!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
             ),
-            (returntype2, observable3, "|||ObservableReturnTypes.Variance!['PauliZ', 'PauliZ'][0, 1]"),
+            (
+                returntype2,
+                observable3,
+                "|||ObservableReturnTypes.Variance!['PauliZ', 'PauliZ'][0, 1]",
+            ),
         ]
 
     @pytest.mark.parametrize("obs, op, expected_string", numeric_observable_queue)
