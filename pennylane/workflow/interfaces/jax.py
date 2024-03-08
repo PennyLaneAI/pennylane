@@ -153,7 +153,7 @@ class _NonPytreeWrapper:
 
     * Operators that aren't valid pytrees: ex. ParametrizedEvolution, ParametrizedHamiltonian, HardwareHamiltonian
     * Validation checks on initialization: see BasisStateProjector, StatePrep that does not allow the operator to store the cotangents
-    * Jitting non-jax parametrized circuits.  Numpy parameters turn into abstract parameters during the pytree process.
+    * Jitting non-jax parametrized circuits.  NumPy parameters turn into abstract parameters during the pytree process.
 
     ``jax.custom_vjp`` forbids any non-differentiable argument to be a pytree, so we need to wrap it in a non-pytree type.
 

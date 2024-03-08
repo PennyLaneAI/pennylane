@@ -72,12 +72,12 @@ def mock_plugin_converters_fixture(monkeypatch):
 class TestLoad:
     """Test that the convenience load functions access the correct entrypoint."""
 
-    def test_converter_does_not_exist(self):
-        """Test that the proper error is raised if the converter does not exist."""
-        with pytest.raises(
-            ValueError, match="Converter does not exist. Make sure the required plugin is installed"
-        ):
-            qml.load("Test", format="some_non_existing_format")
+    def test_load_is_deprecated(self, monkeypatch):
+        """Test that qml.load is deprecated"""
+        mock_converter_dict = {entry: MockPluginConverter(entry) for entry in load_entry_points}
+        monkeypatch.setattr(qml.io, "plugin_converters", mock_converter_dict)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="deprecated"):
+            _ = qml.load("test", format="qiskit")
 
     @pytest.mark.parametrize(
         "method, entry_point_name",

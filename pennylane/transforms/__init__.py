@@ -298,6 +298,7 @@ from .compile import compile
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
+from .dynamic_one_shot import dynamic_one_shot
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
@@ -330,6 +331,7 @@ from .tape_expand import (
     expand_trainable_multipar,
     create_expand_fn,
     create_decomp_expand_fn,
+    create_expand_trainable_multipar,
     set_decomposition,
 )
 from .transpile import transpile

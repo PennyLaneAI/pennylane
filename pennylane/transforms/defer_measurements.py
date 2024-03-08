@@ -23,7 +23,7 @@ from pennylane.transforms import transform
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 
-# pylint: disable=too-many-branches, protected-access
+# pylint: disable=too-many-branches, protected-access, too-many-statements
 
 
 def _check_tape_validity(tape: QuantumTape):
@@ -117,8 +117,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         Devices that inherit from :class:`~pennylane.QubitDevice` **must** be initialized
         with an additional wire for each mid-circuit measurement after which the measured
         wire is reused or reset for ``defer_measurements`` to transform the quantum tape
-        correctly. Hence, devices and quantum tapes must also be initialized without custom
-        wire labels for correct behaviour.
+        correctly.
 
     .. note::
 
@@ -139,12 +138,24 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         :func:`~.pennylane.counts` can only be used with ``defer_measurements`` if wires
         or an observable are explicitly specified.
 
+    .. warning::
+
+        ``defer_measurements`` does not support using custom wire labels if any measured
+        wires are reused or reset.
+
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
         transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    Raises:
+        ValueError: If custom wire labels are used with qubit reuse or reset
+        ValueError: If any measurements with no wires or observable are present
+        ValueError: If continuous variable operations or measurements are present
+        ValueError: If using the transform with any device other than
+            :class:`default.qubit <~pennylane.devices.DefaultQubit>` and postselection is used
 
     **Example**
 
@@ -220,6 +231,11 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
     if is_postselecting and device is not None and not isinstance(device, qml.devices.DefaultQubit):
         raise ValueError(f"Postselection is not supported on the {device} device.")
+
+    if len(reused_measurement_wires) > 0 and not all(isinstance(w, int) for w in tape.wires):
+        raise ValueError(
+            "qml.defer_measurements does not support custom wire labels with qubit reuse/reset."
+        )
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
