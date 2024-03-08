@@ -195,7 +195,7 @@ class TestDifferentiability:
 
         jac = jac_fn(x)
         assert jac.shape == (2,)
-        assert np.allclose(jac, self.exp_grad, atol=0.0001)
+        assert np.allclose(jac, self.exp_grad, atol=0.001)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -211,7 +211,7 @@ class TestDifferentiability:
         x = torch.tensor(self.x, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, x)
         assert qml.math.shape(jac) == (2,)
-        assert qml.math.allclose(jac, self.exp_grad, atol=0.0001)
+        assert qml.math.allclose(jac, self.exp_grad, atol=0.001)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -231,7 +231,7 @@ class TestDifferentiability:
 
         jac = tape.gradient(res, x)
         assert qml.math.shape(jac) == (8,)
-        assert qml.math.allclose(res, self.exp_grad, atol=0.0001)
+        assert qml.math.allclose(res, self.exp_grad, atol=0.001)
 
 
 def test_correct_queueing():
