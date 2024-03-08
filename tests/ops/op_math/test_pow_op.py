@@ -575,11 +575,19 @@ class TestMiscMethods:
         base = qml.RX(2.34, wires=0)
         op = Pow(base, z)
 
+        opmath_was_active = qml.operation.active_new_opmath()
+        qml.operation.enable_new_opmath()
+
         base_gen_op, base_gen_coeff = qml.generator(base, format="prefactor")
         op_gen_op, op_gen_coeff = qml.generator(op, format="prefactor")
 
         assert qml.math.allclose(base_gen_coeff * z, op_gen_coeff)
         assert base_gen_op.__class__ is op_gen_op.__class__
+
+        if opmath_was_active:
+            qml.operation.enable_new_opmath()
+        else:
+            qml.operation.disable_new_opmath()
 
 
 class TestDiagonalizingGates:

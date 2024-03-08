@@ -30,8 +30,6 @@ from pennylane.ops.qubit import (
     MultiRZ as old_loc_MultiRZ,
 )
 
-from pennylane.ops.op_math.sprod import SProd
-
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -2979,8 +2977,6 @@ class TestPauliRot:
         op = qml.PauliRot(0.3, pauli_word, wires=range(len(pauli_word)))
         gen = op.generator()
 
-        assert isinstance(gen, SProd)
-
         if pauli_word[0] == "I":
             # this is the identity
             expected_gen = qml.Identity(wires=0)
@@ -2994,7 +2990,7 @@ class TestPauliRot:
             else:
                 expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
 
-        assert qml.equal(gen, qml.s_prod(-0.5, expected_gen))
+        assert qml.equal(gen, -0.5 * expected_gen)
 
     @pytest.mark.torch
     @pytest.mark.gpu
@@ -3183,13 +3179,11 @@ class TestMultiRZ:
         op = qml.MultiRZ(0.3, wires=range(qubits))
         gen = op.generator()
 
-        assert isinstance(gen, SProd)
-
         expected_gen = qml.PauliZ(wires=0)
         for i in range(1, qubits):
             expected_gen = expected_gen @ qml.PauliZ(wires=i)
 
-        assert qml.equal(gen, qml.s_prod(-0.5, expected_gen))
+        assert qml.equal(gen, -0.5 * expected_gen)
 
         spy = mocker.spy(qml.utils, "pauli_eigs")
 
