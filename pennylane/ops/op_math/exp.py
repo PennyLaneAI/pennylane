@@ -34,9 +34,9 @@ from pennylane.operation import (
 )
 from pennylane.wires import Wires
 
-from .linear_combination import LinearCombination
 from .sprod import SProd
 from .sum import Sum
+from .linear_combination import LinearCombination
 from .symbolicop import ScalarSymbolicOp
 from ..qubit.hamiltonian import Hamiltonian
 
@@ -489,8 +489,7 @@ class Exp(ScalarSymbolicOp, Operation):
         we get the generator
 
         >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
+          0.5 * Y(0) + Z(0) @ X(1)
 
         """
         if self.base.is_hermitian and not np.real(self.coeff):

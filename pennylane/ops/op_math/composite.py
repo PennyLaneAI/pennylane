@@ -57,8 +57,8 @@ class CompositeOp(Operator):
         self.queue_idx = None
         self._name = self.__class__.__name__
 
-        if len(operands) < 2:
-            raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
+        # if len(operands) < 2:
+        #     raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
 
         self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])

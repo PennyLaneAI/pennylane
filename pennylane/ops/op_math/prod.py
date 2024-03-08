@@ -30,13 +30,13 @@ from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
+from pennylane.ops.op_math.linear_combination import LinearCombination
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .composite import CompositeOp
-from .linear_combination import LinearCombination
 from ..qubit.hamiltonian import Hamiltonian
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
@@ -474,14 +474,17 @@ class Prod(CompositeOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            ops = [pauli.operation() for pauli in pr.keys()]
+            with qml.QueuingManager.stop_recording():
+                ops = [pauli.operation() for pauli in pr.keys()]
             return list(pr.values()), ops
 
-        global_phase, factors = self._simplify_factors(factors=self.operands)
+        with qml.QueuingManager.stop_recording():
+            global_phase, factors = self._simplify_factors(factors=self.operands)
+            factors = list(itertools.product(*factors))
 
-        factors = list(itertools.product(*factors))
-
-        factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
+            factors = [
+                Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors
+            ]
 
         # harvest coeffs and ops
         coeffs = []
