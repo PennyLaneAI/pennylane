@@ -505,6 +505,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert qml.equal(prod_op, qml.PauliX(0))
         assert not isinstance(prod_op, Prod)
 
+    @pytest.mark.xfail # this requirement has been lifted
     def test_prod_accepts_single_operator_but_Prod_does_not(self):
         """Tests that the prod wrapper can accept a single operator, and return it."""
 

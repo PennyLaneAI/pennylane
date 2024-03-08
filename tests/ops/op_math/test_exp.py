@@ -445,8 +445,8 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "base, base_string",
         (
-            (qml.PauliZ(0) @ qml.PauliY(1), "ZY"),
-            (qml.PauliY(0) @ qml.Identity(1) @ qml.PauliZ(2), "YIZ"),
+            (qml.prod(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
+            (qml.prod(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
         ),
     )
     def test_decomposition_into_pauli_rot(self, base, base_string):
@@ -458,11 +458,13 @@ class TestDecomposition:
         pr = op.decomposition()[0]
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
+    # TODO: currently fail, related to generators, waiting for 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
     def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
+        assert qml.operation.active_new_opmath()
         op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
 
         if not op_class.has_generator:

@@ -863,6 +863,7 @@ class TestAdjointConstructorPreconstructedOp:
         assert len(q) == 1
         assert q.queue[0] is out
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_single_observable(self):
         """Test passing a single preconstructed observable in a queuing context."""
 

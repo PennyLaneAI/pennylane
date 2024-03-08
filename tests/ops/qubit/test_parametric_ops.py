@@ -3016,7 +3016,8 @@ class TestPauliRot:
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
         assert qml.math.allclose(mat, exp)
 
-    def test_pauli_rot_generator(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_pauli_rot_generator_legacy(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""
         op = qml.PauliRot(0.65, "ZY", wires=["a", 7])
@@ -3026,6 +3027,16 @@ class TestPauliRot:
         assert coeff == -0.5
         assert gen.operands[0].name == expected.obs[0].name
         assert gen.operands[1].wires == expected.obs[1].wires
+
+    def test_pauli_rot_generator(self):
+        """Test that the generator of the PauliRot operation
+        is correctly returned."""
+        op = qml.PauliRot(0.65, "ZY", wires=["a", 7])
+        gen, coeff = qml.generator(op)
+        expected = qml.PauliZ("a") @ qml.PauliY(7)
+
+        assert coeff == -0.5
+        assert gen == expected
 
 
 class TestMultiRZ:
