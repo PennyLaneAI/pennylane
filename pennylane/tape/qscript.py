@@ -1129,9 +1129,11 @@ class QuantumScript:
         return qasm_str
 
     @classmethod
-    def from_queue(cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None):
+    def from_queue(
+        cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None, trainable_params=None
+    ):
         """Construct a QuantumScript from an AnnotatedQueue."""
-        return cls(*process_queue(queue), shots=shots)
+        return cls(*process_queue(queue), shots=shots, trainable_params=trainable_params)
 
     def map_to_standard_wires(self):
         """

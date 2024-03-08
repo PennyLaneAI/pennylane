@@ -867,6 +867,7 @@ class TestStochPulseGrad:
         ops = ops(arg)
         measurements = [qml.expval(qml.PauliZ("a")), qml.probs(["b", "c"])]
         tape = qml.tape.QuantumScript(ops, measurements=measurements)
+        tape.trainable_params = list(range(len(tape.get_parameters(trainable_only=False))))
         tapes, fn = stoch_pulse_grad(tape)
         assert not tapes
 

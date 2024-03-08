@@ -109,17 +109,16 @@ class TestFiniteDiff:
     def test_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a non-differentiable argument"""
-        psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
+        psi = qml.numpy.array([1, 0, 1, 0], requires_grad=True) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(psi, wires=[0, 1])
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
+            qml.RX(qml.numpy.array(0.543), wires=[0])
+            qml.RY(qml.numpy.array(-0.654), wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        # by default all parameters are assumed to be trainable
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
@@ -150,6 +149,7 @@ class TestFiniteDiff:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1]
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = finite_diff(tape)
         res = fn(dev.execute(tapes))
@@ -361,6 +361,7 @@ class TestFiniteDiff:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1]
         tapes, _ = finite_diff(tape, approx_order=1)
 
         # one tape per parameter, plus one global call
@@ -391,13 +392,13 @@ class TestFiniteDiff:
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        tape1 = qml.tape.QuantumScript.from_queue(q1, trainable_params=[0, 1])
         with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(1.0, wires=[0])
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qml.tape.QuantumScript.from_queue(q2, trainable_params=[0, 1])
         tapes, fn = finite_diff(tape1, approx_order=1)
         with qml.Tracker(dev) as tracker:
             j1 = fn(dev.execute(tapes))
@@ -565,7 +566,7 @@ class TestFiniteDiffIntegration:
             qml.probs(wires=0)
             qml.probs(wires=[1, 2])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, trainable_params=[0, 1, 2])
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
@@ -598,7 +599,7 @@ class TestFiniteDiffIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, trainable_params=[0, 1])
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
@@ -630,7 +631,7 @@ class TestFiniteDiffIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, trainable_params=[0, 1])
         # we choose both trainable parameters
         tapes, fn = finite_diff(
             tape,
@@ -671,7 +672,7 @@ class TestFiniteDiffIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, trainable_params=[0, 1])
         # we choose only 1 trainable parameter
         tapes, fn = finite_diff(
             tape, argnum=1, approx_order=approx_order, strategy=strategy, validate_params=validate
@@ -712,7 +713,7 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, trainable_params=[0, 1])
         # we choose only 1 trainable parameter
         tapes, fn = finite_diff(
             tape, argnum=1, approx_order=approx_order, strategy=strategy, validate_params=validate
@@ -739,7 +740,7 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, trainable_params=[0, 1])
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
@@ -774,7 +775,7 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, trainable_params=[0, 1])
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
@@ -809,7 +810,7 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, trainable_params=[0, 1])
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )

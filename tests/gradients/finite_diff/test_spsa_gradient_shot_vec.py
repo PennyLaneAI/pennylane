@@ -61,7 +61,9 @@ class TestSpsaGradient:
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=default_shot_vector, trainable_params=[0, 1, 2]
+        )
         # by default all parameters are assumed to be trainable
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
@@ -98,7 +100,9 @@ class TestSpsaGradient:
             qml.RY(-0.654, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=default_shot_vector, trainable_params=[0, 1]
+        )
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
         tapes, fn = spsa_grad(tape, h=h_val, num_directions=num_directions)
         all_res = fn(dev.execute(tapes))
@@ -132,7 +136,9 @@ class TestSpsaGradient:
             qml.RY(weights[1], wires=0)
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=default_shot_vector, trainable_params=[0, 1]
+        )
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
@@ -157,7 +163,9 @@ class TestSpsaGradient:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=default_shot_vector, trainable_params=[0, 1]
+        )
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = spsa_grad(tape, h=h_val)
@@ -334,7 +342,9 @@ class TestSpsaGradient:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=default_shot_vector, trainable_params=[0, 1]
+        )
         n = 5
         tapes, _ = spsa_grad(
             tape,
@@ -356,7 +366,9 @@ class TestSpsaGradient:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=default_shot_vector, trainable_params=[0, 1]
+        )
         f0 = dev.execute(tape)
         n = 3
         tapes, _ = spsa_grad(
@@ -381,13 +393,17 @@ class TestSpsaGradient:
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1, shots=many_shots_shot_vector)
+        tape1 = qml.tape.QuantumScript.from_queue(
+            q1, shots=many_shots_shot_vector, trainable_params=[0, 1]
+        )
         with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(1.0, wires=[0])
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2, shots=many_shots_shot_vector)
+        tape2 = qml.tape.QuantumScript.from_queue(
+            q2, shots=many_shots_shot_vector, trainable_params=[0, 1]
+        )
         n1 = 5
         tapes, fn = spsa_grad(
             tape1,
@@ -563,7 +579,9 @@ class TestSpsaGradientIntegration:
             qml.probs(wires=0)
             qml.probs(wires=[1, 2])
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=many_shots_shot_vector, trainable_params=[0, 1, 2]
+        )
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -605,7 +623,9 @@ class TestSpsaGradientIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=many_shots_shot_vector, trainable_params=[0, 1]
+        )
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -652,7 +672,9 @@ class TestSpsaGradientIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=many_shots_shot_vector, trainable_params=[0, 1]
+        )
         # we choose both trainable parameters
         tapes, fn = spsa_grad(
             tape,
@@ -705,7 +727,9 @@ class TestSpsaGradientIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=many_shots_shot_vector, trainable_params=[0, 1]
+        )
         # we choose only 1 trainable parameter
         tapes, fn = spsa_grad(
             tape,
@@ -759,7 +783,9 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=many_shots_shot_vector, trainable_params=[0, 1]
+        )
         # we choose only 1 trainable parameter
         tapes, fn = spsa_grad(
             tape,
@@ -801,7 +827,9 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=many_shots_shot_vector, trainable_params=[0, 1]
+        )
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -855,7 +883,9 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=many_shots_shot_vector, trainable_params=[0, 1]
+        )
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -910,7 +940,9 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(
+            q, shots=many_shots_shot_vector, trainable_params=[0, 1]
+        )
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
