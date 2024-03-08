@@ -871,7 +871,10 @@ class TestQubitIntegration:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliX(1))
+            return (
+                qml.counts(qml.PauliZ(0), all_outcomes=True),
+                qml.counts(qml.PauliX(1), all_outcomes=True),
+            )
 
         res = circuit()
 
