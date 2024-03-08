@@ -1164,28 +1164,6 @@ class Operator(abc.ABC):
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
 
-    @staticmethod
-    def validate_subspace(subspace):
-        """Validate the subspace for qutrit operations.
-
-        This method determines whether a given subspace for qutrit operations
-        is defined correctly or not. If not, a `ValueError` is thrown.
-
-        Args:
-            subspace (tuple[int]): Subspace to check for correctness
-
-        .. warning::
-
-            ``Operator.validate_subspace(subspace)`` has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed from the Operator class in an upcoming release.
-        """
-
-        warnings.warn(
-            "Operator.validate_subspace(subspace) has been relocated to the qml.ops.qutrit.parametric_ops module and will be removed from the Operator class in an upcoming release.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-        return qml.ops.qutrit.validate_subspace(subspace)
-
     @property
     def num_params(self):
         """Number of trainable parameters that the operator depends on.
@@ -3032,6 +3010,75 @@ def convert_to_opmath(op):
     if isinstance(op, Tensor):
         return qml.prod(*op.obs)
     return op
+
+
+# pylint: disable=too-many-branches
+def convert_to_legacy_H(op):
+    """
+    Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
+    Objects of any other type are returned directly.
+
+    Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
+    :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
+
+    Args:
+        op (Operator): The operator instance to convert.
+
+    Returns:
+        Operator: The operator as a :class:`~pennylane.Hamiltonian` instance
+    """
+    if not isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
+        return op
+
+    coeffs = []
+    ops = []
+
+    op = qml.simplify(op)
+
+    if isinstance(op, Observable):
+        coeffs.append(1.0)
+        ops.append(op)
+
+    elif isinstance(op, qml.ops.SProd):
+        coeffs.append(op.scalar)
+        if isinstance(op.base, Observable):
+            ops.append(op.base)
+        elif isinstance(op.base, qml.ops.op_math.Prod):
+            ops.append(qml.operation.Tensor(*op.base))
+        else:
+            raise ValueError("The base of scalar product must be an observable or a product.")
+
+    elif isinstance(op, qml.ops.Prod):
+        coeffs.append(1.0)
+        ops.append(qml.operation.Tensor(*op))
+
+    elif isinstance(op, qml.ops.Sum):
+        for factor in op:
+            if isinstance(factor, (qml.ops.SProd)):
+                coeffs.append(factor.scalar)
+                if isinstance(factor.base, Observable):
+                    ops.append(factor.base)
+                elif isinstance(factor.base, qml.ops.op_math.Prod):
+                    ops.append(qml.operation.Tensor(*factor.base))
+                else:
+                    raise ValueError(
+                        "The base of scalar product must be an observable or a product."
+                    )
+            elif isinstance(factor, (qml.ops.Prod)):
+                coeffs.append(1.0)
+                ops.append(qml.operation.Tensor(*factor))
+            elif isinstance(factor, Observable):
+                coeffs.append(1.0)
+                ops.append(factor)
+            else:
+                raise ValueError(
+                    "Could not convert to Hamiltonian. Some or all observables are not valid."
+                )
+
+    else:
+        raise ValueError("Could not convert to Hamiltonian. Some or all observables are not valid.")
+
+    return qml.Hamiltonian(coeffs, ops)
 
 
 def __getattr__(name):
