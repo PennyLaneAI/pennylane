@@ -220,7 +220,6 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/ampamp.png
 
 .. gallery-item::
-
     :description: :doc:`Interferometer <../code/api/pennylane.Interferometer>`
     :figure: _static/templates/subroutines/interferometer.png
 

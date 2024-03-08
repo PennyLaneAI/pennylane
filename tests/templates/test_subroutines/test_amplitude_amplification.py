@@ -204,6 +204,7 @@ class TestDifferentiability:
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
+        x = torch.tensor(self.x, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, x)
         assert qml.math.shape(jac) == (2,)
         assert qml.math.allclose(jac, self.exp_grad, atol=0.0001)
