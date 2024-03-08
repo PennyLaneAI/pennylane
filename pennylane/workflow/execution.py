@@ -274,22 +274,26 @@ def _make_inner_execute(
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    cached_device_execution = _apply_cache_transform(fn=device_execution, cache=cache)
-
     def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
 
         Closure Variables:
             expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
             numpy_only (bool): whether or not to convert the data to numpy or leave as is
-            cached_device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
-
+            device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
+            cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
         """
+        transform_program = qml.transforms.core.TransformProgram()
+        transform_program.add_transform(_cache_transform, cache=cache)
+
+        # TODO: Apply expand_fn() and convert_to_numpy_parameters() as transforms.
         if expand_fn:
             tapes = tuple(expand_fn(t) for t in tapes)
         if numpy_only:
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        return cached_device_execution(tapes)
+
+        transformed_tapes, transform_post_processing = transform_program(tapes)
+        return transform_post_processing(device_execution(transformed_tapes))
 
     return inner_execute
 
