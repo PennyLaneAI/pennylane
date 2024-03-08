@@ -1308,7 +1308,7 @@ class TestMeasurementsEqual:
         assert not qml.equal(mp1, mp4)
 
 
-@pytest.mark.usefixtures("use_legacy_opmath") # TODO update qml.equal with new opmath
+@pytest.mark.usefixtures("use_legacy_opmath")  # TODO update qml.equal with new opmath
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
 

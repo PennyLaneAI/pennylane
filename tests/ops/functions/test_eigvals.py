@@ -123,11 +123,11 @@ class TestSingleOperation:
         res = qml.eigvals(qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(1))
         expected = reduce(np.kron, [[1, -1], [1, 1], [1, -1]])
         assert np.allclose(res, expected)
-    
+
     def test_tensor_product(self):
         """Test a tensor product"""
         res = qml.eigvals(qml.prod(qml.PauliX(0), qml.Identity(1), qml.PauliZ(1), lazy=False))
-        expected = [1., -1., -1.,  1.]
+        expected = [1.0, -1.0, -1.0, 1.0]
         assert np.allclose(res, expected)
 
     def test_hamiltonian(self):
@@ -138,7 +138,7 @@ class TestSingleOperation:
 
         expected = np.linalg.eigvalsh(reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [I, X]))
         assert np.allclose(res, expected)
-    
+
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_legacy(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
