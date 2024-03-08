@@ -140,6 +140,7 @@ def compile(
     .. code-block:: python3
 
         compiled_qfunc = qml.compile(
+            qfunc,
             pipeline=[
                 partial(qml.transforms.commute_controlled, direction="left"),
                 partial(qml.transforms.merge_rotations, atol=1e-6),
@@ -147,7 +148,7 @@ def compile(
             ],
             basis_set=["CNOT", "RX", "RY", "RZ"],
             num_passes=2
-        )(qfunc)
+        )
 
         compiled_qnode = qml.QNode(compiled_qfunc, dev)
 
