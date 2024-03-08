@@ -204,11 +204,6 @@ def pytest_generate_tests(metafunc):
     if jax_available:
         jax.config.update("jax_enable_x64", True)
 
-@pytest.fixture(scope="function", autouse=True)
-def update_jax_config():
-    if jax_available:
-        jax.config.update("jax_enable_x64", True)
-
 
 def pytest_collection_modifyitems(items, config):
     rootdir = pathlib.Path(config.rootdir)
