@@ -279,7 +279,18 @@ class QubitDevice(Device):
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
+            # Lightning does not support apply(rotations) anymore, so we need to rotate here
+            if hasattr(self, "name") and isinstance(self.name, str) and "Lightning" in self.name:
+                diagonalizing_gates = self._get_diagonalizing_gates(circuit)
+                if diagonalizing_gates:
+                    self.apply_lightning(diagonalizing_gates)
             self._samples = self.generate_samples()
+            if hasattr(self, "name") and isinstance(self.name, str) and "Lightning" in self.name:
+                diagonalizing_gates = self._get_diagonalizing_gates(circuit)
+                if diagonalizing_gates:
+                    self.apply_lightning(
+                        [qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)]
+                    )
 
         # compute the required statistics
         if self._shot_vector is not None:
