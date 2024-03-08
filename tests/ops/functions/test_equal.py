@@ -189,132 +189,131 @@ PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
     )
 )
 
-with qml.operation.disable_new_opmath_cm():
-    equal_hamiltonians = [
-        (
-            qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0)]),
-            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
-            True,
+equal_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        True,
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]),
+        True,
+    ),
+    (
+        qml.Hamiltonian(
+            [1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0), qml.Identity(1)]
         ),
-        (
-            qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]),
-            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]),
-            True,
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        False,
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(1), qml.PauliZ(0)]),
+        False,
+    ),
+    (
+        qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        False,
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
+        qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
+        True,
+    ),
+    (
+        qml.Hamiltonian([1, 2], [qml.PauliX("a"), qml.PauliZ("b")]),
+        qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.PauliZ("a")]),
+        False,
+    ),
+    (qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]), qml.PauliZ(0) @ qml.PauliX(1), True),
+    (qml.Hamiltonian([1], [qml.PauliZ(0)]), qml.PauliZ(0), True),
+    (
+        qml.Hamiltonian(
+            [1, 1, 1],
+            [
+                qml.Hermitian(np.array([[1, 0], [0, -1]]), "b") @ qml.Identity(7),
+                qml.PauliZ(3),
+                qml.Identity(1.2),
+            ],
         ),
-        (
-            qml.Hamiltonian(
-                [1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0), qml.Identity(1)]
-            ),
-            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
-            False,
+        qml.Hamiltonian(
+            [1, 1, 1],
+            [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(3), qml.Identity(1.2)],
         ),
-        (
-            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
-            qml.Hamiltonian([1, 1], [qml.PauliX(1), qml.PauliZ(0)]),
-            False,
-        ),
-        (
-            qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(1)]),
-            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
-            False,
-        ),
-        (
-            qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
-            qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
-            True,
-        ),
-        (
-            qml.Hamiltonian([1, 2], [qml.PauliX("a"), qml.PauliZ("b")]),
-            qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.PauliZ("a")]),
-            False,
-        ),
-        (qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]), qml.PauliZ(0) @ qml.PauliX(1), True),
-        (qml.Hamiltonian([1], [qml.PauliZ(0)]), qml.PauliZ(0), True),
-        (
-            qml.Hamiltonian(
-                [1, 1, 1],
-                [
-                    qml.Hermitian(np.array([[1, 0], [0, -1]]), "b") @ qml.Identity(7),
-                    qml.PauliZ(3),
-                    qml.Identity(1.2),
-                ],
-            ),
-            qml.Hamiltonian(
-                [1, 1, 1],
-                [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(3), qml.Identity(1.2)],
-            ),
-            True,
-        ),
-        (
-            qml.Hamiltonian([1, 1], [qml.PauliZ(3) @ qml.Identity(1.2), qml.PauliZ(3)]),
-            qml.Hamiltonian([2], [qml.PauliZ(3)]),
-            True,
-        ),
-    ]
+        True,
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliZ(3) @ qml.Identity(1.2), qml.PauliZ(3)]),
+        qml.Hamiltonian([2], [qml.PauliZ(3)]),
+        True,
+    ),
+]
 
-    equal_tensors = [
-        (qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliX(0), True),
-        (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliX(0) @ qml.PauliZ(2), True),
-        (qml.PauliX(0) @ qml.Identity(2) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
-        (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
-        (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("a") @ qml.PauliZ("b"), True),
-        (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("c") @ qml.PauliZ("d"), False),
-        (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("b") @ qml.PauliZ("a"), False),
-        (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.1) @ qml.PauliZ(1.2), True),
-        (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.2) @ qml.PauliZ(0.9), False),
-    ]
+equal_tensors = [
+    (qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliX(0), True),
+    (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliX(0) @ qml.PauliZ(2), True),
+    (qml.PauliX(0) @ qml.Identity(2) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
+    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
+    (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("a") @ qml.PauliZ("b"), True),
+    (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("c") @ qml.PauliZ("d"), False),
+    (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("b") @ qml.PauliZ("a"), False),
+    (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.1) @ qml.PauliZ(1.2), True),
+    (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.2) @ qml.PauliZ(0.9), False),
+]
 
-    equal_hamiltonians_and_tensors = [
-        (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliY(1) @ qml.PauliX(0), True),
-        (
-            qml.Hamiltonian(
-                [0.5, 0.5],
-                [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")],
-            ),
-            qml.PauliZ(0) @ qml.PauliY(1),
-            True,
+equal_hamiltonians_and_tensors = [
+    (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliY(1) @ qml.PauliX(0), True),
+    (
+        qml.Hamiltonian(
+            [0.5, 0.5],
+            [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")],
         ),
-        (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), True),
-        (qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), False),
-        (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(4) @ qml.PauliY(1), False),
-        (
-            qml.Hamiltonian([1], [qml.PauliX("a") @ qml.PauliZ("b")]),
-            qml.PauliX("a") @ qml.PauliZ("b"),
-            True,
-        ),
-        (
-            qml.Hamiltonian([1], [qml.PauliX("a") @ qml.PauliZ("b")]),
-            qml.PauliX("b") @ qml.PauliZ("a"),
-            False,
-        ),
-        (
-            qml.Hamiltonian([1], [qml.PauliX(1.2) @ qml.PauliZ(0.2)]),
-            qml.PauliX(1.2) @ qml.PauliZ(0.2),
-            True,
-        ),
-        (
-            qml.Hamiltonian([1], [qml.PauliX(1.2) @ qml.PauliZ(0.2)]),
-            qml.PauliX(1.3) @ qml.PauliZ(2),
-            False,
-        ),
-    ]
+        qml.PauliZ(0) @ qml.PauliY(1),
+        True,
+    ),
+    (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), True),
+    (qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), False),
+    (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(4) @ qml.PauliY(1), False),
+    (
+        qml.Hamiltonian([1], [qml.PauliX("a") @ qml.PauliZ("b")]),
+        qml.PauliX("a") @ qml.PauliZ("b"),
+        True,
+    ),
+    (
+        qml.Hamiltonian([1], [qml.PauliX("a") @ qml.PauliZ("b")]),
+        qml.PauliX("b") @ qml.PauliZ("a"),
+        False,
+    ),
+    (
+        qml.Hamiltonian([1], [qml.PauliX(1.2) @ qml.PauliZ(0.2)]),
+        qml.PauliX(1.2) @ qml.PauliZ(0.2),
+        True,
+    ),
+    (
+        qml.Hamiltonian([1], [qml.PauliX(1.2) @ qml.PauliZ(0.2)]),
+        qml.PauliX(1.3) @ qml.PauliZ(2),
+        False,
+    ),
+]
 
-    equal_pauli_operators = [
-        (qml.PauliX(0), qml.PauliX(0), True),
-        (qml.PauliY("a"), qml.PauliY("a"), True),
-        (qml.PauliY(0.3), qml.PauliY(0.3), True),
-        (qml.PauliX(0), qml.PauliX(1), False),
-        (qml.PauliY("a"), qml.PauliY("b"), False),
-        (qml.PauliY(0.3), qml.PauliY(0.7), False),
-        (qml.PauliY(0), qml.PauliX(0), False),
-        (qml.PauliY("a"), qml.PauliX("a"), False),
-        (qml.PauliZ(0.3), qml.PauliY(0.3), False),
-        (qml.PauliZ(0), qml.RX(1.23, 0), False),
-        (qml.Hamiltonian([1], [qml.PauliX("a")]), qml.PauliX("a"), True),
-        (qml.Hamiltonian([1], [qml.PauliX("a")]), qml.PauliX("b"), False),
-        (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.2), True),
-        (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.3), False),
-    ]
+equal_pauli_operators = [
+    (qml.PauliX(0), qml.PauliX(0), True),
+    (qml.PauliY("a"), qml.PauliY("a"), True),
+    (qml.PauliY(0.3), qml.PauliY(0.3), True),
+    (qml.PauliX(0), qml.PauliX(1), False),
+    (qml.PauliY("a"), qml.PauliY("b"), False),
+    (qml.PauliY(0.3), qml.PauliY(0.7), False),
+    (qml.PauliY(0), qml.PauliX(0), False),
+    (qml.PauliY("a"), qml.PauliX("a"), False),
+    (qml.PauliZ(0.3), qml.PauliY(0.3), False),
+    (qml.PauliZ(0), qml.RX(1.23, 0), False),
+    (qml.Hamiltonian([1], [qml.PauliX("a")]), qml.PauliX("a"), True),
+    (qml.Hamiltonian([1], [qml.PauliX("a")]), qml.PauliX("b"), False),
+    (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.2), True),
+    (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.3), False),
+]
 
 
 class TestEqual:
@@ -1309,13 +1308,17 @@ class TestMeasurementsEqual:
         assert not qml.equal(mp1, mp4)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("use_legacy_opmath") # TODO update qml.equal with new opmath
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
 
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
     def test_hamiltonian_equal(self, H1, H2, res):
         """Tests that equality can be checked between Hamiltonians"""
+        if not qml.operation.active_new_opmath():
+            H1 = qml.operation.convert_to_legacy_H(H1)
+            H2 = qml.operation.convert_to_legacy_H(H2)
+
         assert qml.equal(H1, H2) == qml.equal(H2, H1)
         assert qml.equal(H1, H2) == res
 
@@ -1328,12 +1331,20 @@ class TestObservablesComparisons:
     @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
     def test_hamiltonians_and_tensors_equal(self, H, T, res):
         """Tests that equality can be checked between a Hamiltonian and a Tensor"""
+        if not qml.operation.active_new_opmath():
+            H = qml.operation.convert_to_legacy_H(H)
+            T = qml.operation.Tensor(*T.operands)
+
         assert qml.equal(H, T) == qml.equal(T, H)
         assert qml.equal(H, T) == res
 
     @pytest.mark.parametrize(("op1", "op2", "res"), equal_pauli_operators)
     def test_pauli_operator_equals(self, op1, op2, res):
         """Tests that equality can be checked between PauliX/Y/Z operators, and between Pauli operators and Hamiltonians"""
+        if not qml.operation.active_new_opmath():
+            op1 = qml.operation.convert_to_legacy_H(op1)
+            op2 = qml.operation.convert_to_legacy_H(op2)
+
         assert qml.equal(op1, op2) == qml.equal(op2, op1)
         assert qml.equal(op1, op2) == res
 
