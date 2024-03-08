@@ -26,16 +26,10 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.wires import Wires
-from pennylane.operation import enable_new_opmath, disable_new_opmath, disable_legacy_opmath_cm
+from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 
-@pytest.fixture(scope="function")
-def use_legacy_opmath():
-    with disable_legacy_opmath_cm() as cm:
-        yield cm
-
-
-disable_new_opmath()  # disable opmath during collection
+disable_new_opmath()  # disable opmath during collection, needs to be deactivated at the bottom
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -684,11 +678,11 @@ class TestHamiltonian:
     @pytest.mark.parametrize("grouping_type", (None, "qwc"))
     def test_flatten_unflatten(self, coeffs, ops, grouping_type):
         """Test the flatten and unflatten methods for hamiltonians"""
-
+        assert not qml.operation.active_new_opmath()
         if any(not qml.pauli.is_pauli_word(t) for t in ops) and grouping_type:
             pytest.skip("grouping type must be none if a term is not a pauli word.")
 
-        H = Hamiltonian(coeffs, ops, grouping_type=grouping_type)
+        H = qml.Hamiltonian(coeffs, ops, grouping_type=grouping_type)
         data, metadata = H._flatten()
         assert metadata[0] == H.grouping_indices
         assert hash(metadata)
@@ -696,7 +690,7 @@ class TestHamiltonian:
         assert data[0] is H.data
         assert data[1] is H._ops
 
-        new_H = Hamiltonian._unflatten(*H._flatten())
+        new_H = qml.Hamiltonian._unflatten(*H._flatten())
         assert qml.equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 
