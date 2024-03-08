@@ -86,6 +86,17 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 
+_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
+    "Cached execution with finite shots detected!\n"
+    "Note that samples as well as all noisy quantities computed via sampling "
+    "will be identical across executions. This situation arises where tapes "
+    "are executed with identical operations, measurements, and parameters.\n"
+    "To avoid this behaviour, provide 'cache=False' to the QNode or execution "
+    "function."
+)
+"""str: warning message to display when cached execution is used with finite shots"""
+
+
 def _adjoint_jacobian_expansion(
     tapes: Sequence[QuantumTape], grad_on_execution: bool, interface: str, max_expansion: int
 ):
@@ -383,15 +394,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
                 # Tape exists within the cache, store the cached result
                 cached_results[i] = cache[hashes[i]]
                 if tape.shots and getattr(cache, "_persistent_cache", True):
-                    warnings.warn(
-                        "Cached execution with finite shots detected!\n"
-                        "Note that samples as well as all noisy quantities computed via sampling "
-                        "will be identical across executions. This situation arises where tapes "
-                        "are executed with identical operations, measurements, and parameters.\n"
-                        "To avoid this behavior, provide 'cache=False' to the QNode or execution "
-                        "function.",
-                        UserWarning,
-                    )
+                    warnings.warn(_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS, UserWarning)
             else:
                 # Tape does not exist within the cache, store the tape
                 # for execution via the execution function.
@@ -443,6 +446,8 @@ def _cache_transform(tape: QuantumTape, cache: MutableMapping):
     def cache_hit_postprocessing(_results: Tuple[Tuple]) -> Tuple:
         result = cache[tape.hash]
         if result is not None:
+            if tape.shots and getattr(cache, "_persistent_cache", True):
+                warnings.warn(_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS, UserWarning)
             return result
 
         raise RuntimeError(
@@ -681,6 +686,7 @@ def execute(
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
     if cache is True:
         cache = LRUCache(maxsize=cachesize)
+        setattr(cache, "_persistent_cache", False)
 
     # Ensure that ``cache`` is not a Boolean to simplify downstream code.
     elif cache is False:
