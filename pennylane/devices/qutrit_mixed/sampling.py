@@ -28,7 +28,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.typing import TensorLike
-from .utils import QUDIT_DIM, get_num_wires
+from .utils import QUDIT_DIM, get_num_wires, get_eigvals, get_diagonalizing_gates
 from .measure import measure
 from .apply_operation import apply_operation
 
@@ -38,7 +38,7 @@ def _apply_diagonalizing_gates(
 ):
     """Applies diagonalizing gates when necessary"""
     if mp.obs:
-        for op in mp.diagonalizing_gates():
+        for op in get_diagonalizing_gates(mp.obs):
             state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     return state
@@ -67,7 +67,7 @@ def _process_samples(
     # Extract only the columns of the basis samples required based on ``wires``.
     powers_of_three = QUDIT_DIM ** qml.math.arange(num_wires)[::-1]
     indices = qml.math.array(samples @ powers_of_three)
-    return mp.eigvals()[indices]
+    return get_eigvals(mp.obs)[indices]
 
 
 def _process_counts_samples(processed_sample, mp_has_obs):

@@ -58,7 +58,7 @@ def calculate_expval(
     return math.dot(probs, eigvals)
 
 
-def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagonalization gates?
+def calculate_reduced_density_matrix(
     measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
     """Get the state or reduced density matrix.
@@ -107,7 +107,7 @@ def calculate_probability(
     Returns:
         TensorLike: the probability of the state being in each measurable state.
     """
-    for op in get_diagonalizing_gates(measurementprocess):
+    for op in get_diagonalizing_gates(measurementprocess.obs):
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     num_state_wires = get_num_wires(state, is_state_batched)

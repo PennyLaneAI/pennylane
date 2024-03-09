@@ -117,10 +117,10 @@ def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
     )
 
 
-def get_diagonalizing_gates(mp):
-    if mp.obs is None:
+def get_diagonalizing_gates(obs):
+    if obs is None:
         return []
-    return mp.obs.diagonalizing_gates()
+    return obs.diagonalizing_gates()
 
 
 import numbers
@@ -178,7 +178,6 @@ def _expand_vector(vector, original_wires, expanded_wires):
 
 def get_eigvals(obs):
     if isinstance(obs, qml.ops.op_math.Prod):
-        print("prod")
         eigvals = []
         for ops in obs.overlapping_ops:
             if len(ops) == 1:
@@ -197,7 +196,6 @@ def get_eigvals(obs):
 
         return obs._math_op(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
     if isinstance(obs, qml.ops.op_math.SProd):
-        print("s_prod")
         base_eigs = get_eigvals(obs.base)
         if qml.math.get_interface(obs.scalar) == "torch" and obs.scalar.requires_grad:
             base_eigs = qml.math.convert_like(base_eigs, obs.scalar)
