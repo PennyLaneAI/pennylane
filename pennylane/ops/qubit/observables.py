@@ -437,7 +437,7 @@ class BasisStateProjector(Projector, Operation):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state, wires, id=None):
+    def __init__(self, state, wires=0, id=None):
         wires = qml.wires.Wires(wires)
 
         if not qml.math.is_abstract(state):
@@ -535,7 +535,7 @@ class BasisStateProjector(Projector, Operation):
         """
         w = qml.math.zeros(2 ** len(basis_state), like=basis_state)
         idx = qml.math.dot(basis_state, 2 ** qml.math.arange(len(basis_state) - 1, -1, -1))
-        w = qml.math.where(w, idx, 1)
+        w = qml.math.put(w, idx, 1, inplace=False)
         return w
 
     @staticmethod

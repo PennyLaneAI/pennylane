@@ -17,7 +17,6 @@ import functools
 import pickle
 import pytest
 import numpy as np
-import jax
 from gate_data import I, X, Y, Z, H
 import pennylane as qml
 from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
@@ -650,6 +649,7 @@ class TestBasisStateProjector:
         res = circuit(x)
         assert qml.math.allclose(res, np.cos(x / 2) ** 2)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "basis_state", [qml.math.asarray([0, 1]), qml.math.asarray([0, qml.math.asarray(1)])]
     )
@@ -658,10 +658,11 @@ class TestBasisStateProjector:
         Tests if the BasisStateProjector works correctly with JAX arrays
         within a jitted QNode.
         """
+        import jax  # pylint: disable=C0415
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit(state):
-            return qml.expval(BasisStateProjector(state, wires=0))
+            return qml.expval(BasisStateProjector(state))
 
         # Apply JAX JIT to the circuit
         jitted_circuit = jax.jit(circuit)
