@@ -117,18 +117,9 @@ def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
     )
 
 
-def get_diagonalizing_gates(mp):
-    if isinstance(mp.obs, qml.ops.op_math.Prod):
-        print("prod")
-        return mp.obs.diagonalizing_gates()
-    if isinstance(mp.obs, qml.ops.op_math.SProd):
-        print("s_prod")
-        return mp.obs.diagonalizing_gates()
-
-    return mp.diagonalizing_gates()
-
-
 import numbers
+
+
 def _expand_vector(vector, original_wires, expanded_wires):
     r"""Expand a vector to more wires.
 
