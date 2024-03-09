@@ -662,7 +662,7 @@ class TestBasisStateProjector:
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit(state):
-            return qml.expval(BasisStateProjector(state))
+            return qml.expval(BasisStateProjector(state))  # pylint: disable=E1121
 
         # Apply JAX JIT to the circuit
         jitted_circuit = jax.jit(circuit)
