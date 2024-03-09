@@ -33,6 +33,7 @@ from .utils import (
     reshape_state_as_matrix,
     get_num_wires,
     get_eigvals,
+    get_diagonalizing_gates,
     QUDIT_DIM,
 )
 from .apply_operation import apply_operation
@@ -106,7 +107,7 @@ def calculate_probability(
     Returns:
         TensorLike: the probability of the state being in each measurable state.
     """
-    for op in measurementprocess.obs.diagonalizing_gates():
+    for op in get_diagonalizing_gates(measurementprocess):
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     num_state_wires = get_num_wires(state, is_state_batched)

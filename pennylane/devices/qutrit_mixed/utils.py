@@ -117,6 +117,12 @@ def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
     )
 
 
+def get_diagonalizing_gates(mp):
+    if mp.obs is None:
+        return []
+    return mp.obs.diagonalizing_gates()
+
+
 import numbers
 
 
