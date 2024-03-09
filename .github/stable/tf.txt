@@ -25,10 +25,10 @@ flatbuffers==24.3.7
 fonttools==4.49.0
 future==1.0.0
 gast==0.5.4
-google-auth==2.28.1
+google-auth==2.28.2
 google-auth-oauthlib==1.2.0
 google-pasta==0.2.0
-grpcio==1.62.0
+grpcio==1.62.1
 h5py==3.10.0
 identify==2.5.35
 idna==3.6
@@ -41,7 +41,7 @@ libclang==16.0.6
 Markdown==3.5.2
 MarkupSafe==2.1.5
 matplotlib==3.8.3
-ml-dtypes==0.2.0
+ml-dtypes==0.3.2
 mypy-extensions==1.0.0
 networkx==3.2.1
 nodeenv==1.8.0
@@ -83,7 +83,7 @@ semantic-version==2.10.0
 six==1.16.0
 tensorboard==2.15.2
 tensorboard-data-server==0.7.2
-tensorflow==2.15.0.post1
+tensorflow==2.15.1
 tensorflow-estimator==2.15.0
 tensorflow-io-gcs-filesystem==0.36.0
 termcolor==2.4.0
