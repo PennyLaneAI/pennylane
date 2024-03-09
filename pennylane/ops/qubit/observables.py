@@ -233,7 +233,7 @@ class SparseHamiltonian(Observable):
 
     >>> wires = range(20)
     >>> coeffs = [1 for _ in wires]
-    >>> observables = [qml.PauliZ(i) for i in wires]
+    >>> observables = [qml.Z(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = H.sparse_matrix()
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
@@ -437,8 +437,8 @@ class BasisStateProjector(Projector, Operation):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state, wires=0, id=None):
-        wires = qml.wires.Wires(wires)
+    def __init__(self, state, wires, id=None):
+        wires = Wires(wires)
 
         if not qml.math.is_abstract(state):
             # for cases like [jax.numpy.array(0), jax.numpy.array(1)]
