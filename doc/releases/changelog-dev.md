@@ -111,6 +111,10 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
+* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
+  Tests to confirm measurement and channel differentiation also added
+  [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
+
 <h3>Breaking changes 💔</h3>
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
