@@ -56,7 +56,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
     Returns:
-        (function or :class:`~.operation.Operator`): If an Operator is provided, returns a Controlled version of the Operator.
+        function or :class:`~.operation.Operator`: If an Operator is provided, returns a Controlled version of the Operator.
         If a function is provided, returns a function with the same call signature that creates a controlled version of the
         provided function.
 

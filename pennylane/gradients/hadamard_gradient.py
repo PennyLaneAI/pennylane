@@ -460,6 +460,9 @@ def _get_generators(trainable_op):
     elif isinstance(trainable_op, qml.Rot):
         generators = [qml.Z(trainable_op.wires)]
         coeffs = [-0.5]
+    elif isinstance(trainable_op, (qml.RX, qml.RY, qml.RZ)):
+        generators = [trainable_op.generator().base]
+        coeffs = [trainable_op.generator().scalar]
     else:
         generators = trainable_op.generator().ops
         coeffs = trainable_op.generator().coeffs

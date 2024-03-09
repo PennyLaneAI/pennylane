@@ -89,6 +89,7 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     defer_measurements,
+    dynamic_one_shot,
     qfunc_transform,
     op_transform,
     single_tape_transform,
@@ -134,8 +135,6 @@ from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
-
-import pennylane.interfaces
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

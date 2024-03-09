@@ -117,9 +117,9 @@ class TestSupportsDerivatives:
         assert dev.supports_vjp(config) is False
 
         config = ExecutionConfig(gradient_method="backprop", interface=None)
-        assert dev.supports_derivatives(config) is False
-        assert dev.supports_jvp(config) is False
-        assert dev.supports_vjp(config) is False
+        assert dev.supports_derivatives(config) is True
+        assert dev.supports_jvp(config) is True
+        assert dev.supports_vjp(config) is True
 
     def test_supports_adjoint(self):
         """Test that DefaultQubit says that it supports adjoint differentiation."""
@@ -133,15 +133,6 @@ class TestSupportsDerivatives:
         assert dev.supports_derivatives(config, qs) is True
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True
-
-        config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=False)
-        assert dev.supports_derivatives(config) is False
-        assert dev.supports_jvp(config) is False
-        assert dev.supports_vjp(config) is False
-
-        assert dev.supports_derivatives(config, qs) is False
-        assert dev.supports_jvp(config, qs) is False
-        assert dev.supports_vjp(config, qs) is False
 
     def test_doesnt_support_adjoint_with_invalid_tape(self):
         """Tests that DefaultQubit does not support adjoint differentiation with invalid circuits."""
@@ -720,7 +711,7 @@ class TestExecutingBatches:
         g0_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[0]))(phi)
         assert qml.math.allclose(g0, g0_expected)
 
-        g1 = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
+        g1 = qml.jacobian(lambda x: qml.numpy.array(self.f(dev, x)[1]))(phi)
         g1_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
         assert qml.math.allclose(g1, g1_expected)
 
