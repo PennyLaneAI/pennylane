@@ -347,6 +347,27 @@ class CountsMP(SampleMeasurement):
         mapped_counts = self._map_counts(counts, wire_order)
         if self.all_outcomes:
             self._include_all_outcomes(mapped_counts)
+        else:
+            self._remove_unobserved_outcomes(mapped_counts)
+        return mapped_counts
+
+    def _map_counts(self, counts_to_map: dict, wire_order: Wires) -> dict:
+        """
+        Args:
+            counts_to_map: Dictionary where key is binary representation of the outcome and value is its count
+            wire_order: Order of wires to which counts_to_map should be ordered in
+
+        Returns:
+            Dictionary where counts_to_map has been reordered according to wire_order
+        """
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+
+        mapped_counts = {}
+        for outcome, occurrence in counts_to_map.items():
+            mapped_outcome = "".join(outcome[i] for i in mapped_wires)
+            mapped_counts[mapped_outcome] = mapped_counts.get(mapped_outcome, 0) + occurrence
+
         return mapped_counts
 
     def _include_all_outcomes(self, outcome_counts: dict) -> None:
@@ -368,21 +389,13 @@ class CountsMP(SampleMeasurement):
             if outcome_binary not in outcome_counts:
                 outcome_counts[outcome_binary] = 0
 
-    def _map_counts(self, counts_to_map: dict, wire_order: Wires) -> dict:
+    def _remove_unobserved_outcomes(self, outcome_counts: dict):
         """
+        Removes unobserved outcomes, i.e. whose count is 0 from the outcome_count dictionary.
+
         Args:
-            counts_to_map: Dictionary where key is binary representation of the outcome and value is its count
-            wire_order: Order of wires to which counts_to_map should be ordered in
-
-        Returns:
-            Dictionary where counts_to_map has been reordered according to wire_order
+            outcome_counts(dict): Dictionary where key is binary representation of the outcome and value is its count
         """
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
-
-        mapped_counts = {}
-        for outcome, occurrence in counts_to_map.items():
-            mapped_outcome = "".join(outcome[i] for i in mapped_wires)
-            mapped_counts[mapped_outcome] = mapped_counts.get(mapped_outcome, 0) + occurrence
-
-        return mapped_counts
+        for outcome in list(outcome_counts.keys()):
+            if outcome_counts[outcome] == 0:
+                del outcome_counts[outcome]

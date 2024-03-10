@@ -884,24 +884,31 @@ class TestProcessCounts:
 
         assert counts == expected
 
-    @pytest.mark.parametrize(
-        "all_outcomes, expected",
-        [
-            (True, {"00": 100, "01": 0, "10": 100, "11": 0}),
-            (False, {"00": 100, "10": 100}),
-        ],
-    )
-    def test_all_outcomes(self, all_outcomes, expected):
-        """Test impact of all_outcome in qml.counts"""
+    def test_all_outcomes_is_true(self):
+        """When all_outcomes is True, 0 count should be added to missing outcomes in the counts dictionary"""
 
-        counts = {"00": 100, "10": 100}
+        counts_to_process = {"00": 100, "10": 100}
         wire_order = qml.wires.Wires((0, 1))
 
-        actual = qml.counts(wires=wire_order, all_outcomes=all_outcomes).process_counts(
-            counts, wire_order=wire_order
+        actual = qml.counts(wires=wire_order, all_outcomes=True).process_counts(
+            counts_to_process, wire_order=wire_order
         )
 
-        assert actual == expected
+        expected_counts = {"00": 100, "01": 0, "10": 100, "11": 0}
+        assert actual == expected_counts
+
+    def test_all_outcomes_is_false(self):
+        """When all_outcomes is True, 0 count should be removed from the counts dictionary"""
+
+        counts_to_process = {"00": 0, "01": 0, "10": 0, "11": 100}
+        wire_order = qml.wires.Wires((0, 1))
+
+        actual = qml.counts(wires=wire_order, all_outcomes=False).process_counts(
+            counts_to_process, wire_order=wire_order
+        )
+
+        expected_counts = {"11": 100}
+        assert actual == expected_counts
 
     @pytest.mark.parametrize(
         "wires, expected",
@@ -919,11 +926,15 @@ class TestProcessCounts:
 
         assert actual == expected
 
-    def test_process_count_returns_same_count_dictionary(self):
-        """Test process_count returns same dictionary when all_outcomes=True and wire_order is same"""
-        expected = {"0": 1, "1": 0}
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_process_count_returns_same_count_dictionary(self, all_outcomes):
+        """
+        Test that process_count returns same dictionary when all outcomes are in count dictionary and wire_order is same
+        """
+
+        expected = {"0": 100, "1": 100}
         wires = qml.wires.Wires(0)
 
-        actual = qml.counts(wires=wires, all_outcomes=True).process_counts(expected, wires)
+        actual = qml.counts(wires=wires, all_outcomes=all_outcomes).process_counts(expected, wires)
 
         assert actual == expected
