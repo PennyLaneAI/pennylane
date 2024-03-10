@@ -20,7 +20,6 @@ from typing import Sequence, Tuple, Union
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
@@ -136,7 +135,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         return self._calculate_expectation(prob)
 
     def process_counts(self, counts: dict, wire_order: Wires):
-        probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
+        with qml.QueuingManager.stop_recording():
+            probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
         return self._calculate_expectation(probs)
 
     def _calculate_expectation(self, probabilities):

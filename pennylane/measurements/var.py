@@ -21,7 +21,6 @@ from typing import Sequence, Tuple, Union
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-
 from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
 
@@ -130,8 +129,9 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         return self._calculate_variance(prob)
 
     def process_counts(self, counts: dict, wire_order: Wires):
-        prob = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
-        return self._calculate_variance(prob)
+        with qml.QueuingManager.stop_recording():
+            probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
+        return self._calculate_variance(probs)
 
     def _calculate_variance(self, probabilities):
         """
