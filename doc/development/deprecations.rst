@@ -58,7 +58,7 @@ Completed deprecation cycles
 ----------------------------
 
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
-  ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
+  ``pauli`` module have been removed, as they are no longer used anywhere and the same
   functionality can be achieved using newer features in the ``pauli`` module.
     
   - Deprecated in v0.35
