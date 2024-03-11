@@ -60,7 +60,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances of Pauli words.
+* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
