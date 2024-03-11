@@ -337,10 +337,11 @@ non_commuting_operations = [
 
 def is_commuting(operation1, operation2, wire_map=None):
     r"""Check if two operations are commuting using a lookup table.
-    If one operation is a :class:`~.Sum`, the commutator is computed to evaluate if it is null.
 
     A lookup table is used to check the commutation between the
     controlled, targeted part of operation 1 with the controlled, targeted part of operation 2.
+
+    If at least one operation is an instance of :class:`~.Sum` and only Pauli words are involved, the commutator is computed to evaluate if it is null.
 
     .. note::
 
@@ -396,6 +397,10 @@ def is_commuting(operation1, operation2, wire_map=None):
     # Arithmetic non-disjoint operations only contain Pauli words
     _check_opmath_operations(operation1, operation2)
 
+    # For sum of Pauli words the commutator is evaluated.
+    if isinstance(operation1, Sum) or isinstance(operation2, Sum):
+        return qml.commutator(operation1, operation2) == qml.s_prod(0, qml.Identity())
+
     # Operation is in the non commuting list
     if operation1.name in non_commuting_operations or operation2.name in non_commuting_operations:
         return False
@@ -411,10 +416,6 @@ def is_commuting(operation1, operation2, wire_map=None):
     op_set = {"U2", "U3", "Rot", "CRot"}
     if operation1.name in op_set and operation2.name in op_set:
         return check_commutation_two_non_simplified_rotations(operation1, operation2)
-
-    # For Sum of Pauli words the commutator is evaluated.
-    if isinstance(operation1, Sum) or isinstance(operation2, Sum):
-        return qml.commutator(operation1, operation2) == qml.s_prod(0, qml.Identity())
 
     ctrl_base_1 = _get_target_name(operation1)
     ctrl_base_2 = _get_target_name(operation2)
