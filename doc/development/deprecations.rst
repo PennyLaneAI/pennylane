@@ -16,19 +16,6 @@ Pending deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
-* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now deprecated. Instead, you
-  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
-
-  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-  >>> op
-  -1j*(PauliY(wires=[0]))
-  >>> [phase], [base] = op.terms()
-  >>> phase, base
-  (-1j, PauliY(wires=[0]))
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
 * Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
   ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
   does not provide wires, or quantum functions.
@@ -60,7 +47,20 @@ Completed deprecation cycles
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
   ``pauli`` module have been removed, as they are no longer used anywhere and the same
   functionality can be achieved using newer features in the ``pauli`` module.
-    
+
+  - Deprecated in v0.35
+  - Removed in v0.36
+
+* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you
+  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
+
+  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+  >>> op
+  -1j*(PauliY(wires=[0]))
+  >>> [phase], [base] = op.terms()
+  >>> phase, base
+  (-1j, PauliY(wires=[0]))
+
   - Deprecated in v0.35
   - Removed in v0.36
 
