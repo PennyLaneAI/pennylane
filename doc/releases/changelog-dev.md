@@ -113,6 +113,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the ``pauli`` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
+  [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
+
 * `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
   * tapes with more than one wire.
   * quantum functions.
@@ -147,6 +150,14 @@
 
 * ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
   [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
+
+* ``qml.from_qasm_file`` is deprecated. Instead, please open the file and then load its content using ``qml.from_qasm``.
+  [(#5331)](https://github.com/PennyLaneAI/pennylane/pull/5331)
+
+  ```pycon
+  >>> with open("test.qasm", "r") as f:
+  ...     circuit = qml.from_qasm(f.read())
+  ```
 
 <h3>Documentation 📝</h3>
 

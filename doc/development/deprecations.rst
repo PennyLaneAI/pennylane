@@ -9,6 +9,14 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``qml.from_qasm_file`` is deprecated. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
+
+  >>> with open("test.qasm", "r") as f:
+  ...     circuit = qml.from_qasm(f.read())
+
+  - Deprecated in v0.36
+  - Will be removed in v0.37
+
 * The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
   libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
   ``from_qasm``, etc.
@@ -16,12 +24,12 @@ Pending deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
-* The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
-  ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
-  functionality can be achieved using newer features in the ``pauli`` module.
+* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
+  ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
+  does not provide wires, or quantum functions.
 
   - Deprecated in v0.35
-  - Will be removed in v0.36
+  - Will raise an error in v0.36
 
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
@@ -40,6 +48,13 @@ Completed deprecation cycles
 
 * ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
   but instead use ``@`` to conform with the PennyLane convention.
+
+  - Deprecated in v0.35
+  - Removed in v0.36
+
+* The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
+  ``pauli`` module have been removed, as they are no longer used anywhere and the same
+  functionality can be achieved using newer features in the ``pauli`` module.
 
   - Deprecated in v0.35
   - Removed in v0.36
