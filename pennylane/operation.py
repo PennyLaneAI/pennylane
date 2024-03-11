@@ -1087,7 +1087,7 @@ class Operator(abc.ABC):
                         qml.Barrier,
                         qml.Snapshot,
                         qml.Hamiltonian,
-                        qml.LinearCombination,
+                        qml.ops.LinearCombination,
                         qml.GlobalPhase,
                         qml.Identity,
                     ),
@@ -1903,7 +1903,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__matmul__(other=other)
 
-        if isinstance(other, (Tensor, qml.Hamiltonian, qml.LinearCombination)):
+        if isinstance(other, (Tensor, qml.Hamiltonian, qml.ops.LinearCombination)):
             return other.__rmatmul__(self)
 
         if isinstance(other, Observable):
@@ -1964,7 +1964,7 @@ class Observable(Operator):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, (qml.Hamiltonian, qml.LinearCombination)):
+        if isinstance(other, (qml.Hamiltonian, qml.ops.LinearCombination)):
             return other.compare(self)
         if isinstance(other, (Tensor, Observable)):
             return other._obs_data() == self._obs_data()
@@ -1978,7 +1978,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__add__(other=other)
 
-        if isinstance(other, (qml.Hamiltonian, qml.LinearCombination)):
+        if isinstance(other, (qml.Hamiltonian, qml.ops.LinearCombination)):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
@@ -2004,7 +2004,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__sub__(other=other)
 
-        if isinstance(other, (Observable, Tensor, qml.Hamiltonian, qml.LinearCombination)):
+        if isinstance(other, (Observable, Tensor, qml.Hamiltonian, qml.ops.LinearCombination)):
             return self + (-1 * other)
         return super().__sub__(other=other)
 
@@ -2222,7 +2222,7 @@ class Tensor(Observable):
         return 1 + max(o.arithmetic_depth for o in self.obs)
 
     def __matmul__(self, other):
-        if isinstance(other, (qml.Hamiltonian, qml.LinearCombination)):
+        if isinstance(other, (qml.Hamiltonian, qml.ops.LinearCombination)):
             return other.__rmatmul__(self)
 
         if isinstance(other, Observable):
@@ -2942,7 +2942,7 @@ def gen_is_multi_term_hamiltonian(obj):
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
-    return isinstance(o, (qml.Hamiltonian, qml.LinearCombination)) and len(o.coeffs) > 1
+    return isinstance(o, (qml.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
 
 
 _mock_lc_stack = []
@@ -3045,7 +3045,7 @@ def convert_to_opmath(op):
     Returns:
         Operator: An operator using the new arithmetic operations, if relevant
     """
-    if isinstance(op, (qml.Hamiltonian, qml.LinearCombination)):
+    if isinstance(op, (qml.Hamiltonian, qml.ops.LinearCombination)):
         c, ops = op.terms()
         ops = tuple(convert_to_opmath(o) for o in ops)
         return qml.dot(c, ops)

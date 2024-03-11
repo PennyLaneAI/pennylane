@@ -20,12 +20,15 @@ import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
+from tests.param_shift_dev import ParamShiftDerivativesDevice
+
 pytestmark = pytest.mark.torch
 
 torch = pytest.importorskip("torch", minversion="1.3")
 jacobian = torch.autograd.functional.jacobian
 hessian = torch.autograd.functional.hessian
 
+# device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [DefaultQubit(), "finite-diff", False, False],
     [DefaultQubit(), "parameter-shift", False, False],
@@ -37,6 +40,10 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    [ParamShiftDerivativesDevice(), "parameter-shift", False, False],
+    [ParamShiftDerivativesDevice(), "best", False, False],
+    [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
+    [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
 ]
 
 interface_and_qubit_device_and_diff_method = [
@@ -631,7 +638,7 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == "backprop"
+        assert cost_fn.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
@@ -808,7 +815,7 @@ class TestQubitIntegration:
 
     def test_hessian(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test hessian calculation of a scalar valued QNode"""
-        if diff_method in {"adjoint", "spsa"}:
+        if diff_method in {"adjoint", "spsa"} or dev.name == "param_shift.qubit":
             pytest.skip("Adjoint and SPSA do not support second derivative.")
 
         options = {}
@@ -861,7 +868,7 @@ class TestQubitIntegration:
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
     ):
         """Test hessian calculation of a vector valued QNode"""
-        if diff_method in {"adjoint", "spsa"}:
+        if diff_method in {"adjoint", "spsa"} or dev.name == "param_shift.qubit":
             pytest.skip("Adjoint and SPSA do not support second derivative.")
 
         options = {}
@@ -923,7 +930,7 @@ class TestQubitIntegration:
 
     def test_hessian_ragged(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test hessian calculation of a ragged QNode"""
-        if diff_method in {"adjoint", "spsa"}:
+        if diff_method in {"adjoint", "spsa"} or dev.name == "param_shift.qubit":
             pytest.skip("Adjoint and SPSA do not support second derivative.")
 
         options = {}
@@ -998,7 +1005,7 @@ class TestQubitIntegration:
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
     ):
         """Test hessian calculation of a vector valued QNode with post-processing"""
-        if diff_method in {"adjoint", "spsa"}:
+        if diff_method in {"adjoint", "spsa"} or dev.name == "param_shift.qubit":
             pytest.skip("Adjoint and SPSA do not support second derivative.")
 
         options = {}
@@ -1058,6 +1065,9 @@ class TestQubitIntegration:
 
     def test_state(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test that the state can be returned and differentiated"""
+
+        if dev.name == "param_shift.qubit":
+            pytest.skip("parameter shift does not support measuring the state.")
 
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
@@ -1225,7 +1235,7 @@ class TestTapeExpansion:
 
         assert torch.allclose(res, -3 * torch.sin(3 * x))
 
-        if diff_method == "parameter-shift":
+        if diff_method == "parameter-shift" and dev.name != "param_shift.qubit":
             # test second order derivatives
             res = torch.autograd.functional.hessian(circuit, x)
             assert torch.allclose(res, -9 * torch.cos(3 * x))
@@ -1332,7 +1342,11 @@ class TestTapeExpansion:
         assert torch.allclose(grad[1], expected_c, atol=tol)
 
         # test second-order derivatives
-        if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
+        if (
+            diff_method in ("parameter-shift", "backprop")
+            and max_diff == 2
+            and dev.name != "param_shift.qubit"
+        ):
             hessians = torch.autograd.functional.hessian(circuit, (d, w, c))
 
             grad2_c = hessians[2][2]
@@ -1427,7 +1441,7 @@ class TestTapeExpansion:
         assert torch.allclose(grad[1], expected_c, atol=tol)
 
         # test second-order derivatives
-        if diff_method == "parameter-shift" and max_diff == 2:
+        if diff_method == "parameter-shift" and max_diff == 2 and dev.name != "param_shift.qubit":
             hessians = torch.autograd.functional.hessian(
                 lambda _d, _w, _c: circuit(_d, _w, _c, shots=50000), (d, w, c)
             )
