@@ -594,7 +594,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     # If there is no wire map, we must infer from the structure of Paulis
     if wire_map is None:
         wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
-    
+
     return pauli_word.matrix(wire_map)
 
 
