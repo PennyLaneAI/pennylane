@@ -139,6 +139,10 @@
 * ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
   [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
 
+* The ``control_wires`` argument to ``qml.MultiControlledX`` is deprecated. Instead, use the ``wires`` argument to specify all wires, the same as in other controlled operations such as ``Toffoli``. 
+
+* Specifying ``control_values`` with a bit string to ``qml.MultiControlledX`` is deprecated. Instead, use a list of booleans or 1s and 0s.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
