@@ -439,7 +439,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     if not is_pauli_word(pauli_word):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_word}")
-    if isinstance(pauli_word, Hamiltonian):
+    if isinstance(pauli_word, qml.Hamiltonian):
         # hamiltonian contains only one term
         pauli_word = pauli_word.ops[0]
     elif isinstance(pauli_word, SProd):
