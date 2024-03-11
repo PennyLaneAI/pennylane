@@ -394,7 +394,7 @@ class LinearCombination(Sum):
                 _pauli_rep = None
             return qml.ops.LinearCombination(coeffs, ops, _pauli_rep=_pauli_rep)
 
-        if isinstance(H, (Tensor, Observable, qml.ops.Prod, qml.ops.SProd)):
+        if isinstance(H, qml.operation.Operator):
             coeffs = qml.math.concatenate(
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )
