@@ -237,7 +237,6 @@ class LinearCombination(Sum):
         return coeffs, ops, None
 
     def simplify(self, cutoff=1.0e-12):
-        r"""TODO"""
         coeffs, ops, pr = self._simplify_coeffs_ops(cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
@@ -245,8 +244,8 @@ class LinearCombination(Sum):
         r"""Extracts the data from a LinearCombination and serializes it in an order-independent fashion.
 
         This allows for comparison between LinearCombinations that are equivalent, but are defined with terms and tensors
-        expressed in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
-        `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
+        expressed in different orders. For example, `qml.X(0) @ qml.Z(1)` and
+        `qml.Z(1) @ qml.X(0)` are equivalent observables with different orderings.
 
         .. Note::
 
@@ -256,9 +255,9 @@ class LinearCombination(Sum):
 
         **Example**
 
-        >>> H = qml.ops.LinearCombination([1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)])
+        >>> H = qml.ops.LinearCombination([1, 1], [qml.X(0) @ qml.X(1), qml.Z(0)])
         >>> print(H._obs_data())
-        {(1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())})),
+        {(1, frozenset({('Prod', <Wires = [0, 1]>, ())})),
          (1, frozenset({('PauliZ', <Wires = [0]>, ())}))}
         """
         data = set()
