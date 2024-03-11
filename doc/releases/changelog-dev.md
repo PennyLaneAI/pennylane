@@ -56,7 +56,7 @@
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
 * Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
-  [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)    
+  [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
 <h3>Improvements 🛠</h3>
 
@@ -83,16 +83,16 @@
         return qml.state()
 
   ```
-  
+
   ```pycon
   >>> circuit()
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
   ```
-  
+
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
-  
-* All generators in the source code (except those in the `qchem` module) no longer return 
+
+* All generators in the source code (except those in the `qchem` module) no longer return
   `Hamiltonian` or `Tensor` instances. Wherever possible, these return `Sum`, `SProd`, and `Prod` instances.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
 
@@ -164,6 +164,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated the final example in the `compile` docstring to use transforms correctly.
+  [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
+
 <h3>Bug fixes 🐛</h3>
 
 * We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
@@ -176,8 +179,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Korbinian Kottmann,
 Guillermo Alonso,
+Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
