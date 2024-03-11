@@ -442,6 +442,7 @@ class TestSPSAOptimizer:
         ):
             opt.step(cost, params)
 
+    @pytest.mark.slow
     def test_lighting_device(self):
         """Test SPSAOptimizer implementation with lightning.qubit device."""
         coeffs = [0.2, -0.543, 0.4514]
@@ -477,6 +478,7 @@ class TestSPSAOptimizer:
         assert np.all(params != init_params)
         assert energy < init_energy
 
+    @pytest.mark.slow
     def test_default_mixed_device(self):
         """Test SPSAOptimizer implementation with default.mixed device."""
         n_qubits = 1
