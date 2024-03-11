@@ -58,7 +58,7 @@ Completed deprecation cycles
 ----------------------------
 
 * Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
-  ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
+  ambiguous now raises an error. This includes tapes with multiple wires, QNodes with a device that
   does not provide wires, or quantum functions.
 
   - Deprecated in v0.35
