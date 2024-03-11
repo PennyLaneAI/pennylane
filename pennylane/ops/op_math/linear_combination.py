@@ -382,8 +382,8 @@ class LinearCombination(Sum):
     def __matmul__(self, other):
         """The product operation between Operator objects."""
         if isinstance(other, LinearCombination):
-            coeffs1 = copy(self.coeffs)
-            ops1 = self.ops.copy()
+            coeffs1 = self.coeffs
+            ops1 = self.ops
             shared_wires = qml.wires.Wires.shared_wires([self.wires, other.wires])
             if len(shared_wires) > 0:
                 raise ValueError(
@@ -415,15 +415,15 @@ class LinearCombination(Sum):
 
     def __add__(self, H):
         r"""The addition operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
-        ops = self.ops.copy()
-        self_coeffs = copy(self.coeffs)
+        ops = copy(self.ops)
+        self_coeffs = self.coeffs
 
         if isinstance(H, numbers.Number) and H == 0:
             return self
 
         if isinstance(H, (LinearCombination, qml.Hamiltonian)):
-            coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
-            ops.extend(H.ops.copy())
+            coeffs = qml.math.concatenate([self_coeffs, H.coeffs], axis=0)
+            ops.extend(H.ops)
             if (pr1 := self.pauli_rep) is not None and (pr2 := H.pauli_rep) is not None:
                 _pauli_rep = pr1 + pr2
             else:
@@ -445,9 +445,9 @@ class LinearCombination(Sum):
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a LinearCombination."""
         if isinstance(a, (int, float)):
-            self_coeffs = copy(self.coeffs)
+            self_coeffs = self.coeffs
             coeffs = qml.math.multiply(a, self_coeffs)
-            return qml.LinearCombination(coeffs, self.ops.copy())
+            return qml.LinearCombination(coeffs, self.ops)
 
         return NotImplemented
 

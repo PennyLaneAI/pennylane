@@ -715,7 +715,7 @@ class TestLinearCombination:
         assert H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2)) is False
         assert H2.compare(H4) is False
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail # TODO: decide whether we want to continue to have this legacy behavior
     def test_LinearCombination_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
@@ -1724,7 +1724,7 @@ class TestLinearCombinationDifferentiation:
 
         assert np.allclose(grad, grad_expected)
 
-    @pytest.mark.xfail  # TODO simplify doesnt work with differentiation
+    @pytest.mark.xfail  # TODO simplify doesnt work with differentiation in torch
     @pytest.mark.torch
     @pytest.mark.parametrize("group", [None, "qwc"])
     def test_trainable_coeffs_torch_simplify(self, group):
