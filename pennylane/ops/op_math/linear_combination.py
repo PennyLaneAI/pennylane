@@ -444,7 +444,7 @@ class LinearCombination(Sum):
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a LinearCombination."""
-        if isinstance(a, (int, float)):
+        if isinstance(a, (int, float, complex)):
             self_coeffs = self.coeffs
             coeffs = qml.math.multiply(a, self_coeffs)
             return qml.LinearCombination(coeffs, self.ops)
@@ -461,9 +461,10 @@ class LinearCombination(Sum):
 
     def queue(self, context=qml.QueuingManager):
         """Queues a qml.LinearCombination instance"""
-        for o in self.ops:
-            context.remove(o)
-        context.append(self)
+        if qml.QueuingManager.recording():
+            for o in self.ops:
+                context.remove(o)
+            context.append(self)
         return self
 
     def map_wires(self, wire_map: dict):
