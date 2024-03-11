@@ -407,6 +407,8 @@ class TestAdjointMetricTensorQNode:
 
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
         dev = qml.device("default.qubit", wires=self.num_wires)

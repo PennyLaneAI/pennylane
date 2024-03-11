@@ -840,6 +840,25 @@ class TestProperties:
         assert old_coeffs == new_coeffs
         assert old_ops == new_ops
 
+    def test_grouping_indices_setter(self):
+        """Test that grouping indices can be set"""
+        H = qml.sum(*[qml.X("a"), qml.X("b"), qml.Y("b")])
+
+        H.grouping_indices = [[0, 1], [2]]
+
+        assert isinstance(H.grouping_indices, tuple)
+        assert H.grouping_indices == ((0, 1), (2,))
+
+    def test_grouping_indices_setter_error(self):
+        """Test that setting incompatible indices raises an error"""
+        H = qml.sum(*[qml.X("a"), qml.X("b"), qml.Y("b")])
+
+        with pytest.raises(
+            ValueError,
+            match="The grouped index value needs to be a tuple of tuples of integers between 0",
+        ):
+            H.grouping_indices = [[0, 1, 3], [2]]
+
 
 class TestSimplify:
     """Test Sum simplify method and depth property."""
