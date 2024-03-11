@@ -236,7 +236,7 @@ class TestDifferentiability:
 
 
 def test_correct_queueing():
-    """Test that the AmplitudeAmplification operator is correctly queued in the circuit"""
+    """Test that operations in a circuit containing AmplitudeAmplification are correctly queued"""
     dev = qml.device("default.qubit")
 
     @qml.qnode(dev)
