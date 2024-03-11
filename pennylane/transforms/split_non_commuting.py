@@ -181,7 +181,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
     obs_list = []
     for obs in tape.observables:
         # observable provided for a measurement
-        if isinstance(obs, qml.operation.Observable):
+        if isinstance(obs, qml.operation.Operator):
             obs_list.append(obs)
         # measurements using wires instead of observables
         else:

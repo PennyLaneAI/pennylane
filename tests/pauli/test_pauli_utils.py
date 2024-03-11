@@ -44,8 +44,6 @@ from pennylane.pauli import (
     observables_to_binary_matrix,
     partition_pauli_group,
     pauli_group,
-    pauli_mult,
-    pauli_mult_with_phase,
     pauli_to_binary,
     pauli_word_to_matrix,
     pauli_word_to_string,
@@ -722,26 +720,6 @@ class TestPauliGroup:
         obtained_phase = prod.scalar if isinstance(prod, qml.ops.SProd) else 1
         assert obtained_phase == expected_phase
 
-    def test_deprecated_pauli_mult(self):
-        """Test that pauli_mult is deprecated."""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`pauli_mult` is deprecated"):
-            pauli_mult(PauliX(0), PauliY(1))
-
-    @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,expected_phase",
-        [
-            (PauliZ(0), PauliY(0), -1j),
-            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), -1),
-            (PauliZ(0), PauliZ(0), 1),
-            (PauliZ(0), PauliZ(1), 1),
-        ],
-    )
-    def test_deprecated_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, expected_phase):
-        """Test that pauli_mult_with_phase is deprecated."""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="pauli_mult"):
-            _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2)
-        assert obtained_phase == expected_phase
-
 
 class TestPartitionPauliGroup:
     """Tests for the partition_pauli_group function"""
@@ -904,7 +882,10 @@ class TestMeasurementTransformations:
         (
             [PauliX(0) @ PauliY(1), PauliX(0) @ PauliZ(2)],
             (
-                [RY(-np.pi / 2, wires=[0]), RX(np.pi / 2, wires=[1])],
+                [
+                    RX(np.pi / 2, wires=[1]),
+                    RY(-np.pi / 2, wires=[0]),
+                ],
                 [PauliZ(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[0]) @ PauliZ(wires=[2])],
             ),
         ),
@@ -940,9 +921,15 @@ class TestMeasurementTransformations:
         ),
     ]
 
+    @pytest.mark.parametrize("convert_to_opmath", (True, False))
     @pytest.mark.parametrize("qwc_grouping,qwc_sol_tuple", qwc_diagonalization_io)
-    def test_diagonalize_qwc_pauli_words(self, qwc_grouping, qwc_sol_tuple):
+    def test_diagonalize_qwc_pauli_words(self, qwc_grouping, qwc_sol_tuple, convert_to_opmath):
         """Tests for validating diagonalize_qwc_pauli_words solutions."""
+
+        if convert_to_opmath:
+            qwc_grouping = [qml.operation.convert_to_opmath(o) for o in qwc_grouping]
+            diag_terms = [qml.operation.convert_to_opmath(o) for o in qwc_sol_tuple[1]]
+            qwc_sol_tuple = (qwc_sol_tuple[0], diag_terms)
 
         qwc_rot, diag_qwc_grouping = diagonalize_qwc_pauli_words(qwc_grouping)
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple
@@ -951,10 +938,8 @@ class TestMeasurementTransformations:
             self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
             for i in range(len(qwc_rot))
         )
-        assert all(
-            are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
-            for i in range(len(diag_qwc_grouping))
-        )
+        for diag_op, expected in zip(diag_qwc_grouping, diag_qwc_grouping_sol):
+            assert qml.equal(diag_op, expected)
 
     not_qwc_groupings = [
         [PauliX("a"), PauliY("a")],
@@ -976,9 +961,7 @@ class TestMeasurementTransformations:
         containing invalid operator types."""
         invalid_ops = [qml.PauliX(0), qml.Hamiltonian([1.0], [qml.PauliZ(1)])]
 
-        with pytest.raises(
-            ValueError, match="This function only supports Tensor products of pauli ops"
-        ):
+        with pytest.raises(ValueError, match="This function only supports pauli words."):
             _ = diagonalize_qwc_pauli_words(invalid_ops)
 
 

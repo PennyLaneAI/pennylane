@@ -414,18 +414,6 @@ class TestProperties:
         mapped_mp2 = mp2.map_wires(wire_map)
         assert qml.equal(mapped_mp2, qml.sample(op=m2 * m3))
 
-    def test_name_and_data_are_deprecated(self):
-        """Test that MP.name and MP.data are deprecated."""
-        mp = qml.expval(qml.PauliZ(0))
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="MeasurementProcess.name is deprecated"
-        ):
-            _ = mp.name
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="MeasurementProcess.data is deprecated"
-        ):
-            _ = mp.data
-
 
 class TestExpansion:
     """Test for measurement expansion"""
