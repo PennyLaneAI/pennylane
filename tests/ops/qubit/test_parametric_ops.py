@@ -3017,7 +3017,7 @@ class TestPauliRot:
         assert qml.math.allclose(mat, exp)
 
     @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_pauli_rot_generator_legacy(self):
+    def test_pauli_rot_generator_legacy_opmath(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""
         op = qml.PauliRot(0.65, "ZY", wires=["a", 7])

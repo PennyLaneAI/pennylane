@@ -489,7 +489,7 @@ class TestControlledMiscMethods:
         )
 
     @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_generator_legacy(self):
+    def test_generator_legacy_opmath(self):
         """Test that the generator is a tensor product of projectors and the base's generator."""
 
         base = qml.RZ(-0.123, wires="a")

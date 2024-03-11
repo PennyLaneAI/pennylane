@@ -89,7 +89,7 @@ class TestDecomposition:
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types_legacy(self, hamiltonian, hide_identity):
+    def test_observable_types_legacy_opmath(self, hamiltonian, hide_identity):
         """Tests that the Hamiltonian decomposes into a linear combination of Pauli words."""
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
@@ -209,7 +209,7 @@ class TestPhasedDecomposition:
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types_legacy(self, hamiltonian, hide_identity):
+    def test_observable_types_legacy_opmath(self, hamiltonian, hide_identity):
         """Tests that the Hamiltonian decomposes into a linear combination of tensors,
         the identity matrix, and Pauli matrices."""
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
@@ -270,7 +270,7 @@ class TestPhasedDecomposition:
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
-    def test_observable_types_general_legacy(self, matrix, hide_identity):
+    def test_observable_types_general_legacy_opmath(self, matrix, hide_identity):
         """Tests that the matrix decomposes into a linear combination of tensors,
         the identity matrix, and Pauli matrices."""
         shape = matrix.shape

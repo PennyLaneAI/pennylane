@@ -165,7 +165,7 @@ class TestInheritanceMixins:
         assert "grad_recipe" not in dir(ob)
 
     @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_observable_legacy(self, power_method):
+    def test_observable_legacy_opmath(self, power_method):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
 
         class CustomObs(qml.operation.Observable):
