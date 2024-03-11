@@ -113,6 +113,25 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
+  * tapes with more than one wire.
+  * quantum functions.
+  * QNodes if the device does not have wires specified.
+  * PauliWords and PauliSentences with more than one wire.
+  [(#5328)](https://github.com/PennyLaneAI/pennylane/pull/5328)
+
+* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
+  [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
+  
+  ```pycon
+  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+  >>> op
+  -1j*(PauliY(wires=[0]))
+  >>> [phase], [base] = op.terms()
+  >>> phase, base
+  (-1j, PauliY(wires=[0]))
+  ```
+
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
   [(#5321)](https://github.com/PennyLaneAI/pennylane/pull/5321)
 
