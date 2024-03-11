@@ -335,7 +335,7 @@ def pauli_decompose(
             }
         )
 
-    return Hamiltonian(coeffs, obs)
+    return qml.Hamiltonian(coeffs, obs)
 
 
 def pauli_sentence(op):
