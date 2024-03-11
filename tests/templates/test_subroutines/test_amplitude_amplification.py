@@ -33,7 +33,7 @@ def oracle(items, wires):
 
 
 class TestInitialization:
-    """Test the AmplitudeAmplification class initializes correctly."""
+    """Test that AmplitudeAmplification initializes correctly."""
 
     def test_error_none_wire(self):
         """Test an error is raised if work_wire is None and fixed_point is True."""
