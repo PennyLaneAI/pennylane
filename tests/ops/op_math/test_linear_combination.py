@@ -208,8 +208,12 @@ add_LinearCombinations = [
     ),
     (
         qml.ops.LinearCombination([1, 1], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.ops.LinearCombination([0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.ops.LinearCombination([1.5, 1.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.ops.LinearCombination(
+            [0.5, 0.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+        ),
+        qml.ops.LinearCombination(
+            [1.5, 1.5], [X(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+        ),
     ),
     (
         qml.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
