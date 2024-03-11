@@ -67,7 +67,7 @@ class AmplitudeAmplification(Operation):
     **Example**
 
     Amplification of state :math:`|2\rangle` using Grover's algorithm with 3 qubits.
-    Uniform superposition will be taken as :math:`|\Psi\rangle`:
+    The state :math:`|\Psi\rangle` is constructed as a uniform superposition of basis states.
 
     .. code-block::
 
