@@ -694,13 +694,13 @@ class TestLinearCombination:
         }
 
         assert data == expected
-    
+
     COMPARE_WITH_OPS = (
         (qml.LinearCombination([0.5], [X(0) @ X(1)]), qml.s_prod(0.5, X(0) @ X(1))),
         (qml.LinearCombination([0.5], [X(0) + X(1)]), qml.s_prod(0.5, qml.sum(X(0), X(1)))),
-        (qml.LinearCombination([1.], [X(0)]), X(0)),
-        (qml.LinearCombination([1.], [qml.Hadamard(0)]), qml.Hadamard(0)),
-        (qml.LinearCombination([1.], [X(0) @ X(1)]), X(0) @ X(1)),
+        (qml.LinearCombination([1.0], [X(0)]), X(0)),
+        (qml.LinearCombination([1.0], [qml.Hadamard(0)]), qml.Hadamard(0)),
+        (qml.LinearCombination([1.0], [X(0) @ X(1)]), X(0) @ X(1)),
     )
 
     @pytest.mark.parametrize("H, op", COMPARE_WITH_OPS)
