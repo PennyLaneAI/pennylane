@@ -107,7 +107,7 @@ class LinearCombination(Sum):
             operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
 
         # TODO use grouping functionality of Sum once https://github.com/PennyLaneAI/pennylane/pull/5179 is merged
-        super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
+        super().__init__(*operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep)
 
         if simplify:
             # TODO clean up this logic, seems unnecesssarily complicated
@@ -124,11 +124,11 @@ class LinearCombination(Sum):
 
             super().__init__(*operands, id=id, _pauli_rep=pr)
 
-        if grouping_type is not None:
-            with qml.QueuingManager.stop_recording():
-                self._grouping_indices = _compute_grouping_indices(
-                    self.ops, grouping_type=grouping_type, method=method
-                )
+        # if grouping_type is not None:
+        #     with qml.QueuingManager.stop_recording():
+        #         self._grouping_indices = _compute_grouping_indices(
+        #             self.ops, grouping_type=grouping_type, method=method
+        #         )
 
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
@@ -174,72 +174,31 @@ class LinearCombination(Sum):
     def name(self):
         return "LinearCombination"
 
-    @property
-    def grouping_indices(self):
-        """Return the grouping indices attribute.
+    # @property
+    # def grouping_indices(self):
+    #     """Return the grouping indices attribute.
 
-        Returns:
-            list[list[int]]: indices needed to form groups of commuting observables
-        """
-        return self._grouping_indices
+    #     Returns:
+    #         list[list[int]]: indices needed to form groups of commuting observables
+    #     """
+    #     return self._grouping_indices
 
-    @grouping_indices.setter
-    def grouping_indices(self, value):
-        """Set the grouping indices, if known without explicit computation, or if
-        computation was done externally. The groups are not verified.
+    # def compute_grouping(self, grouping_type="qwc", method="rlf"):
+    #     """
+    #     Compute groups of indices corresponding to commuting observables of this
+    #     LinearCombination, and store it in the ``grouping_indices`` attribute.
 
-        **Example**
+    #     Args:
+    #         grouping_type (str): The type of binary relation between Pauli words used to compute the grouping.
+    #             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+    #         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
+    #             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
+    #     """
 
-        Examples of valid groupings for the LinearCombination
-
-        >>> H = qml.LinearCombination([qml.PauliX('a'), qml.PauliX('b'), qml.PauliY('b')])
-
-        are
-
-        >>> H.grouping_indices = [[0, 1], [2]]
-
-        or
-
-        >>> H.grouping_indices = [[0, 2], [1]]
-
-        since both ``qml.PauliX('a'), qml.PauliX('b')`` and ``qml.PauliX('a'), qml.PauliY('b')`` commute.
-
-
-        Args:
-            value (list[list[int]]): List of lists of indexes of the observables in ``self.ops``. Each sublist
-                represents a group of commuting observables.
-        """
-        if value is None:
-            return
-
-        if (
-            not isinstance(value, Iterable)
-            or any(not isinstance(sublist, Iterable) for sublist in value)
-            or any(i not in range(len(self.ops)) for i in [i for sl in value for i in sl])
-        ):
-            raise ValueError(
-                f"The grouped index value needs to be a tuple of tuples of integers between 0 and the "
-                f"number of observables in the LinearCombination; got {value}"
-            )
-        # make sure all tuples so can be hashable
-        self._grouping_indices = tuple(tuple(sublist) for sublist in value)
-
-    def compute_grouping(self, grouping_type="qwc", method="rlf"):
-        """
-        Compute groups of indices corresponding to commuting observables of this
-        LinearCombination, and store it in the ``grouping_indices`` attribute.
-
-        Args:
-            grouping_type (str): The type of binary relation between Pauli words used to compute the grouping.
-                Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-            method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
-                can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
-        """
-
-        with qml.QueuingManager.stop_recording():
-            self._grouping_indices = _compute_grouping_indices(
-                self.ops, grouping_type=grouping_type, method=method
-            )
+    #     with qml.QueuingManager.stop_recording():
+    #         self._grouping_indices = _compute_grouping_indices(
+    #             self.ops, grouping_type=grouping_type, method=method
+    #         )
 
     @qml.QueuingManager.stop_recording()
     def _simplify_coeffs_ops(self, cutoff=1.0e-12):

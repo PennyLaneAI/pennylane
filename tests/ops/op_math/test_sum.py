@@ -845,6 +845,15 @@ class TestProperties:
 
         assert old_coeffs == new_coeffs
         assert old_ops == new_ops
+    
+    def test_grouping_indices_setter(self):
+        """Test that grouping indices can be set"""
+        H = qml.sum(*[qml.X('a'), qml.X('b'), qml.Y('b')])
+
+        H.grouping_indices = [[0, 1], [2]]
+
+        assert isinstance(H.grouping_indices, tuple)
+        assert H.grouping_indices == ((0, 1), (2,))
 
 
 class TestSimplify:

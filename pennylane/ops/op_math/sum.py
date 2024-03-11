@@ -245,6 +245,32 @@ class Sum(CompositeOp):
         """
         return self._grouping_indices
 
+    @grouping_indices.setter
+    def grouping_indices(self, value):
+        """Set the grouping indices, if known without explicit computation, or if
+        computation was done externally. The groups are not verified.
+
+        Args:
+            value (list[list[int]]): List of lists of indexes of the observables in ``self.ops``. Each sublist
+                represents a group of commuting observables.
+        """
+        if value is None:
+            return
+        
+        _, ops = self.terms()
+
+        if (
+            not isinstance(value, Iterable)
+            or any(not isinstance(sublist, Iterable) for sublist in value)
+            or any(i not in range(len(ops)) for i in [i for sl in value for i in sl])
+        ):
+            raise ValueError(
+                f"The grouped index value needs to be a tuple of tuples of integers between 0 and the "
+                f"number of observables in the LinearCombination; got {value}"
+            )
+        # make sure all tuples so can be hashable
+        self._grouping_indices = tuple(tuple(sublist) for sublist in value)
+
     def __str__(self):
         """String representation of the Sum."""
         ops = self.operands
