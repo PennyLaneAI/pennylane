@@ -26,6 +26,8 @@ from pennylane.transforms.dynamic_one_shot import (
     parse_native_mid_circuit_measurements,
 )
 
+pytestmark = pytest.mark.slow
+
 
 def validate_counts(shots, results1, results2):
     """Compares two counts.
