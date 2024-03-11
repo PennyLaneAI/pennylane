@@ -56,8 +56,8 @@ class LinearCombination(Sum):
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.ops.LinearCombination(coeffs, obs)
     >>> print(H)
-      (-0.543) [Z0 H2]
-    + (0.2) [X0 Z1]
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+
 
     The coefficients can be a trainable tensor, for example:
 
@@ -65,43 +65,8 @@ class LinearCombination(Sum):
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.ops.LinearCombination(coeffs, obs)
     >>> print(H)
-      (-0.543) [Z0 H2]
-    + (0.2) [X0 Z1]
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
 
-    The user can also provide custom observables:
-
-    >>> obs_matrix = np.array([[0.5, 1.0j, 0.0, -3j],
-                               [-1.0j, -1.1, 0.0, -0.1],
-                               [0.0, 0.0, -0.9, 12.0],
-                               [3j, -0.1, 12.0, 0.0]])
-    >>> obs = qml.Hermitian(obs_matrix, wires=[0, 1])
-    >>> H = qml.ops.LinearCombination((0.8, ), (obs, ))
-    >>> print(H)
-    (0.8) [Hermitian0,1]
-
-    Alternatively, the :func:`~.molecular_hamiltonian` function from the
-    :doc:`/introduction/chemistry` module can be used to generate a molecular
-    LinearCombination.
-
-    In many cases, LinearCombinations can be constructed using Pythonic arithmetic operations.
-    For example:
-
-    >>> qml.ops.LinearCombination([1.], [qml.X(0)]) + 2 * qml.Z(0) @ qml.Z(1)
-
-    is equivalent to the following LinearCombination:
-
-    >>> qml.ops.LinearCombination([1, 2], [qml.X(0), qml.Z(0) @ qml.Z(1)])
-
-    While scalar multiplication requires native python floats or integer types,
-    addition, subtraction, and tensor multiplication of LinearCombinations with LinearCombinations or
-    other observables is possible with tensor-valued coefficients, i.e.,
-
-    >>> H1 = qml.ops.LinearCombination(torch.tensor([1.]), [qml.X(0)])
-    >>> H2 = qml.ops.LinearCombination(torch.tensor([2., 3.]), [qml.Y(0), qml.X(1)])
-    >>> obs3 = [qml.X(0), qml.Y(0), qml.X(1)]
-    >>> H3 = qml.ops.LinearCombination(torch.tensor([1., 2., 3.]), obs3)
-    >>> H3.compare(H1 + H2)
-    True
 
     A LinearCombination can store information on which commuting observables should be measured together in
     a circuit:
@@ -110,16 +75,16 @@ class LinearCombination(Sum):
     >>> coeffs = np.array([1., 2., 3.])
     >>> H = qml.ops.LinearCombination(coeffs, obs, grouping_type='qwc')
     >>> H.grouping_indices
-    [[0, 1], [2]]
+    ((0, 1), (2,))
 
     This attribute can be used to compute groups of coefficients and observables:
 
-    >>> grouped_coeffs = [coeffs[indices] for indices in H.grouping_indices]
+    >>> grouped_coeffs = [coeffs[list(indices)] for indices in H.grouping_indices]
     >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
     >>> grouped_coeffs
-    [tensor([1., 2.], requires_grad=True), tensor([3.], requires_grad=True)]
+    [array([1., 2.]), array([3.])]
     >>> grouped_obs
-    [[qml.X(0), qml.X(1)], [qml.Z(0)]]
+    [[X(0), X(1)], [Z(0)]]
 
     Devices that evaluate a LinearCombination expectation by splitting it into its local observables can
     use this information to reduce the number of circuits evaluated.
