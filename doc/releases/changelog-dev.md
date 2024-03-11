@@ -56,7 +56,7 @@
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
 * Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
-  [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)    
+  [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
 <h3>Improvements 🛠</h3>
 
@@ -86,16 +86,16 @@
         return qml.state()
 
   ```
-  
+
   ```pycon
   >>> circuit()
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
   ```
-  
+
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
-  
-* All generators in the source code (except those in the `qchem` module) no longer return 
+
+* All generators in the source code (except those in the `qchem` module) no longer return
   `Hamiltonian` or `Tensor` instances. Wherever possible, these return `Sum`, `SProd`, and `Prod` instances.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
 
@@ -110,6 +110,9 @@
 
 * The `QNode` now defers `diff_method` validation to the device under the new device api `qml.devices.Device`.
   [(#5176)](https://github.com/PennyLaneAI/pennylane/pull/5176)
+
+* `taper_operation` method is compatible with new operator arithmetic.
+  [(#5326)](https://github.com/PennyLaneAI/pennylane/pull/5326)
 
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
@@ -147,6 +150,8 @@
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``. The old import path no longer exists.
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
+* Attempting to multiply ``PauliWord`` and ``PauliSentence`` with ``*`` will raise an error. Instead, use ``@`` to conform with the PennyLane convention.
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
@@ -162,6 +167,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated the final example in the `compile` docstring to use transforms correctly.
+  [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
+
 <h3>Bug fixes 🐛</h3>
 
 * We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
@@ -174,8 +182,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Korbinian Kottmann,
 Guillermo Alonso,
+Mikhail Andrenkov,
+Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
 Amintor Dusko,
