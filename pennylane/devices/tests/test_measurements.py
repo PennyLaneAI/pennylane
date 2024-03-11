@@ -1744,7 +1744,7 @@ class TestStateMeasurement:
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is specific to old device interface")
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd", diff_method=None)
         def circuit():
             qml.X(0)
             return qml.state()
