@@ -303,7 +303,6 @@ def test_amplification():
 
     res = np.round(circuit(), 3)
 
-    #
     expected = np.array([0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013])
 
     assert np.allclose(res, expected)
