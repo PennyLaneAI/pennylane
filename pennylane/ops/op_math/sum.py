@@ -256,7 +256,7 @@ class Sum(CompositeOp):
         """
         if value is None:
             return
-        
+
         _, ops = self.terms()
 
         if (

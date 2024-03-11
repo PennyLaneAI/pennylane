@@ -107,7 +107,9 @@ class LinearCombination(Sum):
             operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
 
         # TODO use grouping functionality of Sum once https://github.com/PennyLaneAI/pennylane/pull/5179 is merged
-        super().__init__(*operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep)
+        super().__init__(
+            *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
+        )
 
         if simplify:
             # TODO clean up this logic, seems unnecesssarily complicated
@@ -123,7 +125,6 @@ class LinearCombination(Sum):
                 operands = [qml.s_prod(c, op) for c, op in zip(self._coeffs, self._ops)]
 
             super().__init__(*operands, id=id, _pauli_rep=pr)
-
 
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
