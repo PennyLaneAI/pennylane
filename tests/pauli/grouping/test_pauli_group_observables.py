@@ -412,7 +412,7 @@ class TestGroupObservables:
 
         assert all(isinstance(o, qml.ops.Prod) for g in new_groups for o in g)
         assert all(isinstance(o, qml.ops.Prod) for g in mixed_groups for o in g)
-    
+
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_return_new_opmath_legacy(self):
         """Test that using new opmath causes grouped observables to have Prods instead of

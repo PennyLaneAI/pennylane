@@ -95,7 +95,7 @@ class TestDecomposition:
 
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
-    
+
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -218,7 +218,6 @@ class TestPhasedDecomposition:
             hamiltonian, hide_identity, check_hermitian=False
         ).terms()
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
-
 
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
