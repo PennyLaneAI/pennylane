@@ -17,7 +17,6 @@ This module contains the qml.matrix function.
 # pylint: disable=protected-access,too-many-branches
 from typing import Sequence, Callable, Union
 from functools import partial
-from warnings import warn
 
 import pennylane as qml
 from pennylane.transforms.op_transforms import OperationTransformError
@@ -25,13 +24,6 @@ from pennylane import transform
 from pennylane.typing import TensorLike
 from pennylane.operation import Operator
 from pennylane.pauli import PauliWord, PauliSentence
-
-_wire_order_none_warning = (
-    "Calling qml.matrix() on a QuantumTape, quantum functions, or certain QNodes without "
-    "specifying a value for wire_order is deprecated. Please provide a wire_order value to avoid "
-    "future issues. Note that a wire order is not required for QNodes with devices that have "
-    "wires specified, because the wire order is taken from the device."
-)
 
 
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
@@ -185,24 +177,37 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 
     """
     if not isinstance(op, Operator):
+
         if isinstance(op, (PauliWord, PauliSentence)):
             if wire_order is None and len(op.wires) > 1:
-                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+                raise ValueError(
+                    "wire_order is required by qml.matrix() for PauliWords "
+                    "or PauliSentences with more than one wire."
+                )
             return op.to_mat(wire_order=wire_order)
 
         if isinstance(op, qml.tape.QuantumScript):
             if wire_order is None and len(op.wires) > 1:
-                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+                raise ValueError(
+                    "wire_order is required by qml.matrix() for tapes with more than one wire."
+                )
+
         elif isinstance(op, qml.QNode):
             if wire_order is None and op.device.wires is None:
-                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+                raise ValueError(
+                    "wire_order is required by qml.matrix() for QNodes if the device does "
+                    "not have wires specified."
+                )
+
         elif callable(op):
             if wire_order is None:
-                warn(_wire_order_none_warning, qml.PennyLaneDeprecationWarning)
+                raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
+
         else:
             raise OperationTransformError(
                 "Input is not an Operator, tape, QNode, or quantum function"
             )
+
         return _matrix_transform(op, wire_order=wire_order)
 
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
