@@ -152,6 +152,14 @@
 * Specifying ``control_values`` with a bit string to ``qml.MultiControlledX`` is deprecated. Instead, use a list of booleans or 1s and 0s.
   [(#5352)](https://github.com/PennyLaneAI/pennylane/pull/5352)
 
+* ``qml.from_qasm_file`` is deprecated. Instead, please open the file and then load its content using ``qml.from_qasm``.
+  [(#5331)](https://github.com/PennyLaneAI/pennylane/pull/5331)
+
+  ```pycon
+  >>> with open("test.qasm", "r") as f:
+  ...     circuit = qml.from_qasm(f.read())
+  ```
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>

@@ -16,6 +16,14 @@ Pending deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
+* ``qml.from_qasm_file`` is deprecated. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
+
+  >>> with open("test.qasm", "r") as f:
+  ...     circuit = qml.from_qasm(f.read())
+
+  - Deprecated in v0.36
+  - Will be removed in v0.37
+
 * The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
   libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
   ``from_qasm``, etc.
