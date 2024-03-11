@@ -23,19 +23,6 @@ Pending deprecations
   - Deprecated in v0.35
   - Will be removed in v0.36
 
-* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now deprecated. Instead, you
-  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
-
-  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-  >>> op
-  -1j*(PauliY(wires=[0]))
-  >>> [phase], [base] = op.terms()
-  >>> phase, base
-  (-1j, PauliY(wires=[0]))
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
@@ -63,6 +50,19 @@ Completed deprecation cycles
 
   - Deprecated in v0.35
   - Raises an error in v0.36
+
+* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you
+  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
+
+  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+  >>> op
+  -1j*(PauliY(wires=[0]))
+  >>> [phase], [base] = op.terms()
+  >>> phase, base
+  (-1j, PauliY(wires=[0]))
+
+  - Deprecated in v0.35
+  - Removed in v0.36
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
   dummy values that are no longer needed.
