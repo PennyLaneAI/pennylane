@@ -36,13 +36,6 @@ Pending deprecations
   - Deprecated in v0.35
   - Will be removed in v0.36
 
-* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
-  ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
-  does not provide wires, or quantum functions.
-
-  - Deprecated in v0.35
-  - Will raise an error in v0.36
-
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
