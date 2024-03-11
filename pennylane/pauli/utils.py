@@ -594,11 +594,8 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     # If there is no wire map, we must infer from the structure of Paulis
     if wire_map is None:
         wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
-
-    # pauli_word = pauli_word.map_wires(wire_map)
-    pr = pauli_word.pauli_rep
-
-    return pr.to_mat(wire_order=wire_map)
+    
+    return pauli_word.matrix(wire_map)
 
 
 def is_qwc(pauli_vec_1, pauli_vec_2):
