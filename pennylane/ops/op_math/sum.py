@@ -19,6 +19,7 @@ computing the sum of operations.
 
 import warnings
 import itertools
+from collections.abc import Iterable
 from copy import copy
 from typing import List
 
