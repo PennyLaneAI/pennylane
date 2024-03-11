@@ -2089,4 +2089,5 @@ class TestHamiltonianDifferentiation:
         ):
             grad_fn(coeffs, param)
 
+
 enable_new_opmath()

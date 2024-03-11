@@ -443,11 +443,15 @@ class TestGroupingUtils:
         """Test that Pauli words are correctly converted into strings."""
         obtained_string = pauli_word_to_string(pauli_word, wire_map)
         assert obtained_string == expected_string
-    
+
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_pauli_word_to_string_legacy_opmath(self):
         """Test that Pauli words are correctly converted into strings."""
-        pauli_word, wire_map, expected_string = qml.Hamiltonian([4], [qml.PauliX(0) @ qml.PauliZ(1)]), {0: 0, 1: 1}, "XZ"
+        pauli_word, wire_map, expected_string = (
+            qml.Hamiltonian([4], [qml.PauliX(0) @ qml.PauliZ(1)]),
+            {0: 0, 1: 1},
+            "XZ",
+        )
         obtained_string = pauli_word_to_string(pauli_word, wire_map)
         assert obtained_string == expected_string
 
@@ -493,7 +497,11 @@ class TestGroupingUtils:
         "pauli_word,wire_map,expected_matrix",
         [
             (PauliX(0), {0: 0}, PauliX(0).matrix()),
-            (Identity(0), {0: 0}, np.eye(2)), # TODO update PauliSentence.to_mat to handle Identities better
+            (
+                Identity(0),
+                {0: 0},
+                np.eye(2),
+            ),  # TODO update PauliSentence.to_mat to handle Identities better
             (
                 PauliZ(0) @ PauliY(1),
                 {0: 0, 1: 1},
@@ -806,8 +814,8 @@ class TestPartitionPauliGroup:
                     w1 = string_to_pauli_word(s1)
                     w2 = string_to_pauli_word(s2)
                     assert is_commuting(w1, w2)
-    
-    @pytest.mark.xfail # TODO update qml.is_commuting to handle Prods
+
+    @pytest.mark.xfail  # TODO update qml.is_commuting to handle Prods
     @pytest.mark.parametrize("n", range(2, 6))
     def test_is_qwc(self, n):
         """Test if each group contains only qubit-wise commuting terms"""
@@ -1002,7 +1010,9 @@ class TestMeasurementTransformations:
 
         assert pytest.raises(ValueError, diagonalize_qwc_pauli_words, not_qwc_grouping)
 
-    @pytest.mark.usefixtures("use_legacy_opmath") # Handling a LinearCombination is not a problem under new opmath anymore
+    @pytest.mark.usefixtures(
+        "use_legacy_opmath"
+    )  # Handling a LinearCombination is not a problem under new opmath anymore
     def test_diagonalize_qwc_pauli_words_catch_invalid_type(self):
         """Test for ValueError raise when diagonalize_qwc_pauli_words is given a list
         containing invalid operator types."""
@@ -1033,49 +1043,46 @@ class TestObservableHF:
 
     with qml.operation.disable_new_opmath_cm():
         HAMILTONIAN_SIMPLIFY = [
-                (
-                    qml.Hamiltonian(
-                        np.array([0.5, 0.5]),
-                        [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
-                    ),
-                    qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
+            (
+                qml.Hamiltonian(
+                    np.array([0.5, 0.5]),
+                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
                 ),
-                (
-                    qml.Hamiltonian(
-                        np.array([0.5, -0.5]),
-                        [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
-                    ),
-                    qml.Hamiltonian([], []),
+                qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
+            ),
+            (
+                qml.Hamiltonian(
+                    np.array([0.5, -0.5]),
+                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
                 ),
-                (
-                    qml.Hamiltonian(
-                        np.array([0.0, -0.5]),
-                        [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-                    ),
-                    qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([], []),
+            ),
+            (
+                qml.Hamiltonian(
+                    np.array([0.0, -0.5]),
+                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
                 ),
-                (
-                    qml.Hamiltonian(
-                        np.array([0.25, 0.25, 0.25, -0.25]),
-                        [
-                            qml.PauliX(0) @ qml.PauliY(1),
-                            qml.PauliX(0) @ qml.PauliZ(1),
-                            qml.PauliX(0) @ qml.PauliY(1),
-                            qml.PauliX(0) @ qml.PauliY(1),
-                        ],
-                    ),
-                    qml.Hamiltonian(
-                        np.array([0.25, 0.25]),
-                        [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-                    ),
+                qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
+            ),
+            (
+                qml.Hamiltonian(
+                    np.array([0.25, 0.25, 0.25, -0.25]),
+                    [
+                        qml.PauliX(0) @ qml.PauliY(1),
+                        qml.PauliX(0) @ qml.PauliZ(1),
+                        qml.PauliX(0) @ qml.PauliY(1),
+                        qml.PauliX(0) @ qml.PauliY(1),
+                    ],
                 ),
-            ]
+                qml.Hamiltonian(
+                    np.array([0.25, 0.25]),
+                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+                ),
+            ),
+        ]
 
     @pytest.mark.usefixtures("use_legacy_opmath")
-    @pytest.mark.parametrize(
-        ("hamiltonian", "result"),
-        HAMILTONIAN_SIMPLIFY
-    )
+    @pytest.mark.parametrize(("hamiltonian", "result"), HAMILTONIAN_SIMPLIFY)
     def test_simplify(self, hamiltonian, result):
         r"""Test that simplify returns the correct hamiltonian."""
         h = simplify(hamiltonian)
