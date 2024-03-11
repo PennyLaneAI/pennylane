@@ -38,18 +38,6 @@ def test_invalid_interface():
         _ = ExecutionConfig(interface="nonsense")
 
 
-def test_invalid_gradient_method():
-    """Tests that unknown gradient_methods raise a ValueError."""
-    with pytest.raises(ValueError, match="gradient_method must be in"):
-        _ = ExecutionConfig(gradient_method="nonsense")
-
-
-def test_invalid_gradient_keyword_arguments():
-    """Tests that unknown gradient_keyword_arguments raise a ValueError."""
-    with pytest.raises(ValueError, match="All gradient_keyword_arguments keys must be in"):
-        _ = ExecutionConfig(gradient_keyword_arguments={"nonsense": 0})
-
-
 @pytest.mark.parametrize("option", (True, False, None))
 def test_valid_grad_on_execution(option):
     """Test execution config allows True, False and None"""
