@@ -146,6 +146,14 @@
 * ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
   [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
 
+* ``qml.from_qasm_file`` is deprecated. Instead, please open the file and then load its content using ``qml.from_qasm``.
+  [(#5331)](https://github.com/PennyLaneAI/pennylane/pull/5331)
+
+  ```pycon
+  >>> with open("test.qasm", "r") as f:
+  ...     circuit = qml.from_qasm(f.read())
+  ```
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
