@@ -498,18 +498,22 @@ class TestPauliWord:
         ),
     )
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("pw, h", tup_pw_hamiltonian)
     def test_hamiltonian(self, pw, h):
         """Test that a PauliWord can be cast to a Hamiltonian."""
         pw_h = pw.hamiltonian()
+        h = qml.operation.convert_to_legacy_H(h)
         assert pw_h.compare(h)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity Hamiltonian."""
         op = PauliWord({}).hamiltonian(wire_order=[0, 1])
         id = qml.Hamiltonian([1], [qml.Identity(wires=[0, 1])])
         assert op.compare(id)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliWord is
         cast to a Hamiltonian."""
@@ -1149,18 +1153,22 @@ class TestPauliSentence:
         ),
     )
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("ps, h", tup_ps_hamiltonian)
     def test_hamiltonian(self, ps, h):
         """Test that a PauliSentence can be cast to a Hamiltonian."""
         ps_h = ps.hamiltonian()
+        h = qml.operation.convert_to_legacy_H(h)
         assert ps_h.compare(h)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
         op = ps5.hamiltonian(wire_order=[0, 1])
         id = qml.Hamiltonian([], [])
         assert op.compare(id)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a Hamiltonian."""
@@ -1169,6 +1177,7 @@ class TestPauliSentence:
         ):
             ps5.hamiltonian()
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""
         op = ps5.hamiltonian(wire_order=["a", "b"])
