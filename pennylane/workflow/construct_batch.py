@@ -59,7 +59,7 @@ def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformP
             **qnode.gradient_kwargs,
         )
     if isinstance(qnode.device, qml.devices.Device):
-        config = _make_execution_config(qnode)
+        config = _make_execution_config(qnode, qnode.gradient_fn)
         return program + qnode.device.preprocess(config)[0]
     program.add_transform(qml.transform(qnode.device.batch_transform))
     program.add_transform(expand_fn_transform(qnode.device.expand_fn))
@@ -286,8 +286,8 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         + (1) [Y0])]
 
     """
-    program = get_transform_program(qnode, level=level)
 
+    # pylint: disable=protected-access
     def batch_constructor(*args, **kwargs) -> Tuple[Tuple["qml.tape.QuantumTape", Callable]]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
@@ -296,6 +296,9 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))
 
         initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+
+        qnode._update_gradient_fn(tape=initial_tape)
+        program = get_transform_program(qnode, level=level)
         return program((initial_tape,))
 
     return batch_constructor

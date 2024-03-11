@@ -1959,7 +1959,7 @@ class TestBroadcastingSupportViaExpansion:
         single parametrized operation works."""
         dev = mock_default_qubit(wires=2, shots=shots)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -1979,7 +1979,7 @@ class TestBroadcastingSupportViaExpansion:
         single parametrized operation works."""
         dev = mock_default_qubit(wires=2, shots=shots)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RX(y, wires=1)
@@ -2005,7 +2005,7 @@ class TestBroadcastingSupportViaExpansion:
         Ham = qml.Hamiltonian([0.3, 0.9], [qml.PauliZ(0), qml.PauliY(1)])
         Ham.compute_grouping()
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RX(y, wires=1)
