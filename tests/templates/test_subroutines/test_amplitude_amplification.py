@@ -36,7 +36,7 @@ class TestInitialization:
     """Test that AmplitudeAmplification initializes correctly."""
 
     def test_error_none_wire(self):
-        """Test an error is raised if work_wire is None and fixed_point is True."""
+        """Test that an error is raised if work_wire is None and fixed_point is True."""
 
         U = generator(wires=range(3))
         O = oracle([0, 2], wires=range(3))
