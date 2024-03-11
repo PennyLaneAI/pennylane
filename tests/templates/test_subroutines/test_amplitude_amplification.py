@@ -98,7 +98,7 @@ def test_compare_grover(n_wires, items, iters):
 
 
 class TestIntegration:
-    """Tests that the AmplitudeAmplification is executable in a QNode context"""
+    """Tests that AmplitudeAmplification is executable in a QNode context"""
 
     @staticmethod
     def circuit():
