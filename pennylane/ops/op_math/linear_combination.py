@@ -375,6 +375,11 @@ class LinearCombination(Sum):
                 (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
             }
 
+        if isinstance(other, (Operator)):
+            op1 = self.simplify()
+            op2 = other.simplify()
+            return qml.equal(op1, op2)
+
         raise ValueError(
             "Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor."
         )
