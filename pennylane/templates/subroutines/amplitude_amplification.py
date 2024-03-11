@@ -42,7 +42,7 @@ def get_fixed_point_angles(iters, p_min):
 class AmplitudeAmplification(Operation):
     r"""Applies amplitude amplification.
 
-    Given a state :math:`|\Psi\rangle = \alpha |\phi\rangle + \beta|\phi^{\perp}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\phi\rangle`
+    Given a state :math:`|\Psi\rangle = \alpha |\phi\rangle + \beta|\phi^{\perp}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\phi\rangle` such that
 
     .. math::
 
