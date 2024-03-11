@@ -343,6 +343,17 @@ class TransformProgram:
         """
         return any(t.classical_cotransform is not None for t in self)
 
+    def set_classical_component(self, qnode, args, kwargs):
+        """Set the classical jacobians and argnums if the transform is hybrid with a classical cotransform."""
+        if not self.has_classical_cotransform():
+            return
+        hybrid = self[-1].kwargs.pop("hybrid", True)  # pylint: disable=no-member
+
+        if hybrid:
+            argnums = self[-1].kwargs.pop("argnums", None)  # pylint: disable=no-member
+            self._set_all_classical_jacobians(qnode, args, kwargs, argnums)
+            self._set_all_argnums(qnode, args, kwargs, argnums)
+
     def prune_dynamic_transform(self):
         """Ensure a single ``dynamic_one_shot`` transform is applied."""
         trans_type = np.zeros(len(self._transform_program), dtype=np.int32)
