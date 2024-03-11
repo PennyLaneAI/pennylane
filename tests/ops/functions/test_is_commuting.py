@@ -840,8 +840,8 @@ class TestCommutingFunction:
                 "Sum",
             ),
             (
-                qml.prod(qml.PauliX(0), qml.PauliY(2)),
-                qml.s_prod(0.5, qml.PauliX(0) + qml.prod(qml.Hadamard(1), qml.Identity(2))),
+                qml.prod(qml.PauliX(1), qml.PauliY(2)),
+                qml.s_prod(0.5, qml.Hadamard(1)),
                 "SProd",
             ),
         ],

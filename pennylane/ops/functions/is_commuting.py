@@ -165,7 +165,11 @@ _commutes = _create_commute_function()
 def _check_opmath_operations(operation1, operation2):
     """Check that `Tensor`, `SProd`, `Prod`, and `Sum` instances only contain Pauli words."""
 
-    def _check_single_opmath_operation(op):
+    for op in [operation1, operation2]:
+
+        if op.pauli_rep is not None:
+            continue
+
         if isinstance(op, qml.operation.Tensor):
             raise qml.QuantumFunctionError("Tensor operations are only supported for Pauli words.")
 
@@ -175,21 +179,8 @@ def _check_opmath_operations(operation1, operation2):
         if isinstance(op, Prod):
             raise qml.QuantumFunctionError("Prod operations are only supported for Pauli words.")
 
-    for op in [operation1, operation2]:
-
-        if is_pauli_word(op):
-            continue
-
         if isinstance(op, Sum):
-            for op_summand in op:
-                if not is_pauli_word(op_summand):
-                    raise qml.QuantumFunctionError(
-                        "Sum operations are only supported for Pauli words."
-                    )
-                _check_single_opmath_operation(op_summand)
-
-        else:
-            _check_single_opmath_operation(op)
+            raise qml.QuantumFunctionError("Sum operations are only supported for Pauli words.")
 
 
 def intersection(wires1, wires2):
