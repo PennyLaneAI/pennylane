@@ -140,8 +140,10 @@
   [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
 
 * The ``control_wires`` argument to ``qml.MultiControlledX`` is deprecated. Instead, use the ``wires`` argument to specify all wires, the same as in other controlled operations such as ``Toffoli``. 
+  [(#5352)](https://github.com/PennyLaneAI/pennylane/pull/5352)
 
 * Specifying ``control_values`` with a bit string to ``qml.MultiControlledX`` is deprecated. Instead, use a list of booleans or 1s and 0s.
+  [(#5352)](https://github.com/PennyLaneAI/pennylane/pull/5352)
 
 <h3>Documentation 📝</h3>
 
