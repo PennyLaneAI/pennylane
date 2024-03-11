@@ -116,6 +116,13 @@
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the ``pauli`` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
 
+* `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
+  * tapes with more than one wire.
+  * quantum functions.
+  * QNodes if the device does not have wires specified.
+  * PauliWords and PauliSentences with more than one wire.
+  [(#5328)](https://github.com/PennyLaneAI/pennylane/pull/5328)
+
 * ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
   [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
   

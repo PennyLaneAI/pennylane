@@ -795,49 +795,49 @@ class TestMeasurements:
         assert np.array_equal(qml.matrix(qscript, wire_order=qscript.wires), np.eye(N))
 
 
-class TestWireOrderDeprecation:
-    """Test that wire_order=None is deprecated for the qml.matrix transform."""
+class TestWireOrderErrors:
+    """Test that wire_order=None raises an error in qml.matrix transform."""
 
-    def test_warning_pauli_word(self):
-        """Test that a warning is raised when calling qml.matrix without wire_order on a PauliWord"""
+    def test_error_pauli_word(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a PauliWord"""
         pw = PauliWord({0: "X", 1: "X"})
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+        with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(pw)
 
-    def test_warning_pauli_sentence(self):
-        """Test that a warning is raised when calling qml.matrix without wire_order on a PauliSentence"""
+    def test_error_pauli_sentence(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a PauliSentence"""
         ps = PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0})
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+        with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(ps)
 
-    def test_warning_tape(self):
-        """Test that a warning is raised when calling qml.matrix without wire_order on a tape."""
+    def test_error_tape(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a tape."""
         qs = qml.tape.QuantumScript([qml.PauliX(1), qml.PauliX(0)])
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+        with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(qs)
 
-    def test_warning_qnode(self):
-        """Test that a warning is raised when calling qml.matrix without wire_order on a QNode."""
+    def test_error_qnode(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a QNode."""
 
         @qml.qnode(qml.device("default.qubit"))  # devices does not provide wire_order
         def circuit():
             qml.PauliX(0)
             return qml.state()
 
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+        with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(circuit)
 
-    def test_warning_qfunc(self):
-        """Test that a warning is raised when calling qml.matrix without wire_order on a qfunc."""
+    def test_error_qfunc(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a qfunc."""
 
         def circuit():
             qml.PauliX(0)
 
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match=r"Calling qml\.matrix\(\) on"):
+        with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(circuit)
 
-    def test_no_warning_cases(self):
-        """Test that a warning is not raised when calling qml.matrix on an operator, a
+    def test_no_error_cases(self):
+        """Test that an error is not raised when calling qml.matrix on an operator, a
         single-wire tape, or a QNode with a device that provides wires."""
 
         @qml.qnode(qml.device("default.qubit", wires=2))  # device provides wire_order
