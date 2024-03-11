@@ -634,7 +634,7 @@ def taper_operation(
     The qubit operator for the generator of the gate operation is computed either internally or can be provided
     manually via the ``op_gen`` argument. If this operator commutes with all the :math:`\mathbb{Z}_2` symmetries of
     the molecular Hamiltonian, then this operator is transformed using the Clifford operators :math:`U` and
-    tapered; otherwise it is discarded. Finally, the tapered generator is exponentiated using :class:`~.pennylane.Exp`
+    tapered; otherwise it is discarded. Finally, the tapered generator is exponentiated using :class:`~.Exp`
     for building the tapered unitary.
 
     Args:
@@ -780,8 +780,7 @@ def taper_operation(
             list(op_gen.values()), 0.0, rtol=1e-8
         ):
             gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
-
-        gen_tapered = convert_to_opmath(gen_tapered).pauli_rep
+            gen_tapered = pauli_sentence(gen_tapered)
         gen_tapered.simplify()
 
     def _tapered_op(params):
