@@ -150,6 +150,9 @@
   to see how this can be done.
   [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
 
+* Attempting to multiply ``PauliWord`` and ``PauliSentence`` with ``*`` will raise an error. Instead, use ``@`` to conform with the PennyLane convention.
+  [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.

@@ -24,19 +24,6 @@ Pending deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
-* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
-  ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
-  does not provide wires, or quantum functions.
-
-  - Deprecated in v0.35
-  - Will raise an error in v0.36
-
-* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
-  but instead use ``@`` to conform with the PennyLane convention.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
 * ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
 
   - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
@@ -51,6 +38,12 @@ Completed deprecation cycles
   to see how this can be done.
 
   - Deprecated in v0.34
+  - Removed in v0.36
+
+* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
+  but instead use ``@`` to conform with the PennyLane convention.
+
+  - Deprecated in v0.35
   - Removed in v0.36
 
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
