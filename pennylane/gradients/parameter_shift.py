@@ -686,22 +686,27 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     var_indices = np.where(var_mask)[0]
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
-    expval_tape = tape.copy(copy_operations=True)
 
+    new_measurements = list(tape.measurements)
     # Convert all variance measurements on the tape into expectation values
+
     for i in var_indices:
-        obs = expval_tape.measurements[i].obs
-        expval_tape._measurements[i] = qml.expval(op=obs)
-        if obs.name in ["Hamiltonian", "LinearCombination"]:
-            first_obs_idx = len(expval_tape.operations)
-            for t_idx in reversed(range(len(expval_tape.trainable_params))):
-                op, op_idx, _ = expval_tape.get_operation(t_idx)
+        obs = new_measurements[i].obs
+        new_measurements[i] = qml.expval(op=obs)
+        if obs.name in {"Hamiltonian", "LinearCombination", "Sum"}:
+            first_obs_idx = len(tape.operations)
+            for t_idx in reversed(range(len(tape.trainable_params))):
+                op, op_idx, _ = tape.get_operation(t_idx)
                 if op_idx < first_obs_idx:
                     break  # already seen all observables
                 if op is obs:
                     raise ValueError(
                         "Can only differentiate Hamiltonian coefficients for expectations, not variances"
                     )
+
+    expval_tape = qml.tape.QuantumScript(
+        tape.operations, new_measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
 
     # evaluate the analytic derivative of <A>
     pdA_tapes, pdA_fn = expval_param_shift(
