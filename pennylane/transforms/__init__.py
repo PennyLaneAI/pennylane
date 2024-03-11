@@ -19,8 +19,6 @@ This subpackage contains PennyLane transforms and their building blocks.
 Custom transforms
 -----------------
 
-.. _transforms_custom_transforms:
-
 :func:`qml.transform <pennylane.transform>` can be used to define custom transformations
 that work with PennyLane QNodes; such transformations can map a circuit
 to one or many new circuits alongside associated classical post-processing.
