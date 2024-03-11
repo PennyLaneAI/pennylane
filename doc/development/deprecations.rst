@@ -39,18 +39,18 @@ Pending deprecations
   - Deprecated in v0.34
   - Will be removed in v0.36
 
-* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
-  but instead use ``@`` to conform with the PennyLane convention.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.36
-
 * ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
 
   - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
 
 Completed deprecation cycles
 ----------------------------
+
+* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
+  but instead use ``@`` to conform with the PennyLane convention.
+
+  - Deprecated in v0.35
+  - Removed in v0.36
 
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
   ``pauli`` module have been removed, as they are no longer used anywhere and the same
