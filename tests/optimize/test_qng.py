@@ -168,6 +168,7 @@ class TestOptimize:
         assert np.isclose(cost1, expected_cost)
         assert np.isclose(cost2, expected_cost)
 
+    @pytest.mark.slow
     def test_qubit_rotation(self, tol):
         """Test qubit rotation has the correct QNG value
         every step, the correct parameter updates,

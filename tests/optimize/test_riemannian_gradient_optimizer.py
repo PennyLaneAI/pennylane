@@ -303,6 +303,7 @@ def test_riemannian_gradient_restriction_check():
         RiemannianGradientOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
 
 
+@pytest.mark.slow
 def test_docstring_example():
     """Test the docstring example with Trotterized evolution."""
     hamiltonian = qml.Hamiltonian(
