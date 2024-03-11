@@ -98,11 +98,32 @@
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
+  
+<h4>Community contributions 🥳</h4>
+
+* Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
+ `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
+  [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
+
+* The `QNode` now defers `diff_method` validation to the device under the new device api `qml.devices.Device`.
+  [(#5176)](https://github.com/PennyLaneAI/pennylane/pull/5176)
 
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
 <h3>Breaking changes 💔</h3>
+
+* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
+  [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
+  
+  ```pycon
+  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+  >>> op
+  -1j*(PauliY(wires=[0]))
+  >>> [phase], [base] = op.terms()
+  >>> phase, base
+  (-1j, PauliY(wires=[0]))
+  ```
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed. Use ``MeasurementProcess.obs.name`` and ``MeasurementProcess.obs.data`` instead.
   [(#5321)](https://github.com/PennyLaneAI/pennylane/pull/5321)
@@ -136,6 +157,7 @@ This release contains contributions from (in alphabetical order):
 
 Korbinian Kottmann,
 Guillermo Alonso,
+Gabriel Bottrill,
 Astral Cai,
 Amintor Dusko,
 Pietropaolo Frisoni,

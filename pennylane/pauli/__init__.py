@@ -28,8 +28,6 @@ from .utils import (
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
     pauli_group,
-    pauli_mult,
-    pauli_mult_with_phase,
     partition_pauli_group,
     qwc_rotation,
     diagonalize_pauli_word,
