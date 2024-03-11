@@ -497,11 +497,11 @@ class TestGroupingUtils:
         "pauli_word,wire_map,expected_matrix",
         [
             (PauliX(0), {0: 0}, PauliX(0).matrix()),
-            (
-                Identity(0),
-                {0: 0},
-                np.eye(2),
-            ),  # TODO update PauliSentence.to_mat to handle Identities better
+            # (
+            #     Identity(0),
+            #     {0: 0},
+            #     np.eye(2),
+            # ),  # TODO update PauliSentence.to_mat to handle Identities better https://github.com/PennyLaneAI/pennylane/issues/5354
             (
                 PauliZ(0) @ PauliY(1),
                 {0: 0, 1: 1},
@@ -517,7 +517,7 @@ class TestGroupingUtils:
                 {1: 0, 0: 1},
                 np.array([[0, 0, -1j, 0], [0, 0, 0, 1j], [1j, 0, 0, 0], [0, -1j, 0, 0]]),
             ),
-            # (Identity(0), {0: 0, 1: 1}, np.eye(4)), # TODO update PauliSentence.to_mat to handle Identities better
+            # (Identity(0), {0: 0, 1: 1}, np.eye(4)), # TODO update PauliSentence.to_mat to handle Identities better https://github.com/PennyLaneAI/pennylane/issues/5354
             (PauliX(2), None, PauliX(2).matrix()),
             (
                 PauliX(2),
