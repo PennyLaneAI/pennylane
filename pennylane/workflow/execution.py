@@ -284,7 +284,9 @@ def _make_inner_execute(
             cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
         """
         transform_program = qml.transforms.core.TransformProgram()
-        transform_program.add_transform(_cache_transform, cache=cache)
+
+        if cache is not None:
+            transform_program.add_transform(_cache_transform, cache=cache)
 
         # TODO: Apply expand_fn() and convert_to_numpy_parameters() as transforms.
         if expand_fn:
