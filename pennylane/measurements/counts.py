@@ -348,7 +348,7 @@ class CountsMP(SampleMeasurement):
         if self.all_outcomes:
             self._include_all_outcomes(mapped_counts)
         else:
-            self._remove_unobserved_outcomes(mapped_counts)
+            _remove_unobserved_outcomes(mapped_counts)
         return mapped_counts
 
     def _map_counts(self, counts_to_map: dict, wire_order: Wires) -> dict:
@@ -389,13 +389,14 @@ class CountsMP(SampleMeasurement):
             if outcome_binary not in outcome_counts:
                 outcome_counts[outcome_binary] = 0
 
-    def _remove_unobserved_outcomes(self, outcome_counts: dict):
-        """
-        Removes unobserved outcomes, i.e. whose count is 0 from the outcome_count dictionary.
 
-        Args:
-            outcome_counts(dict): Dictionary where key is binary representation of the outcome and value is its count
-        """
-        for outcome in list(outcome_counts.keys()):
-            if outcome_counts[outcome] == 0:
-                del outcome_counts[outcome]
+def _remove_unobserved_outcomes(outcome_counts: dict):
+    """
+    Removes unobserved outcomes, i.e. whose count is 0 from the outcome_count dictionary.
+
+    Args:
+        outcome_counts(dict): Dictionary where key is binary representation of the outcome and value is its count
+    """
+    for outcome in list(outcome_counts.keys()):
+        if outcome_counts[outcome] == 0:
+            del outcome_counts[outcome]

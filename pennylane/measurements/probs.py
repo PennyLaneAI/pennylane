@@ -243,7 +243,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
         num_shots = sum(mapped_counts.values())
         num_wires = len(next(iter(mapped_counts)))
-        dim = 2 ** num_wires
+        dim = 2**num_wires
 
         # constructs the probability vector
         # converts outcomes from binary strings to integers (base 10 representation)
