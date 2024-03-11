@@ -266,7 +266,7 @@ class Sum(CompositeOp):
         ):
             raise ValueError(
                 f"The grouped index value needs to be a tuple of tuples of integers between 0 and the "
-                f"number of observables in the LinearCombination; got {value}"
+                f"number of observables in the Sum; got {value}"
             )
         # make sure all tuples so can be hashable
         self._grouping_indices = tuple(tuple(sublist) for sublist in value)

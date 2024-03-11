@@ -124,11 +124,6 @@ class LinearCombination(Sum):
 
             super().__init__(*operands, id=id, _pauli_rep=pr)
 
-        # if grouping_type is not None:
-        #     with qml.QueuingManager.stop_recording():
-        #         self._grouping_indices = _compute_grouping_indices(
-        #             self.ops, grouping_type=grouping_type, method=method
-        #         )
 
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
@@ -173,32 +168,6 @@ class LinearCombination(Sum):
     @property
     def name(self):
         return "LinearCombination"
-
-    # @property
-    # def grouping_indices(self):
-    #     """Return the grouping indices attribute.
-
-    #     Returns:
-    #         list[list[int]]: indices needed to form groups of commuting observables
-    #     """
-    #     return self._grouping_indices
-
-    # def compute_grouping(self, grouping_type="qwc", method="rlf"):
-    #     """
-    #     Compute groups of indices corresponding to commuting observables of this
-    #     LinearCombination, and store it in the ``grouping_indices`` attribute.
-
-    #     Args:
-    #         grouping_type (str): The type of binary relation between Pauli words used to compute the grouping.
-    #             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-    #         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
-    #             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
-    #     """
-
-    #     with qml.QueuingManager.stop_recording():
-    #         self._grouping_indices = _compute_grouping_indices(
-    #             self.ops, grouping_type=grouping_type, method=method
-    #         )
 
     @qml.QueuingManager.stop_recording()
     def _simplify_coeffs_ops(self, cutoff=1.0e-12):
