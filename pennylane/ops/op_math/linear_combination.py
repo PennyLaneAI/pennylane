@@ -18,7 +18,6 @@ LinearCombination class
 
 import itertools
 import numbers
-from collections.abc import Iterable
 from copy import copy
 from typing import List
 
@@ -28,40 +27,106 @@ from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
 from .composite import CompositeOp
 from .sum import Sum
 
-# LinearCombination class as special case of Sum
-
-OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
-
-
-def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
-    # todo: directly compute the
-    # indices, instead of extracting groups of observables first
-    observable_groups = qml.pauli.group_observables(
-        observables, coefficients=None, grouping_type=grouping_type, method=method
-    )
-
-    observables = copy(observables)
-
-    indices = []
-    available_indices = list(range(len(observables)))
-    for partition in observable_groups:  # pylint:disable=too-many-nested-blocks
-        indices_this_group = []
-        for pauli_word in partition:
-            # find index of this pauli word in remaining original observables,
-            for ind, observable in enumerate(observables):
-                if qml.pauli.are_identical_pauli_words(pauli_word, observable):
-                    indices_this_group.append(available_indices[ind])
-                    # delete this observable and its index, so it cannot be found again
-                    observables.pop(ind)
-                    available_indices.pop(ind)
-                    break
-        indices.append(tuple(indices_this_group))
-
-    return tuple(indices)
-
 
 class LinearCombination(Sum):
-    r"""TODO"""
+    r"""Operator representing a linear combination of operators.
+
+    The LinearCombination is represented as a linear combination of other operators, e.g.,
+    :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
+
+    Args:
+        coeffs (tensor_like): coefficients of the LinearCombination expression
+        observables (Iterable[Observable]): observables in the LinearCombination expression, of same length as coeffs
+        simplify (bool): Specifies whether the LinearCombination is simplified upon initialization
+                         (like-terms are combined). The default value is `False`.
+        grouping_type (str): If not None, compute and store information on how to group commuting
+            observables upon initialization. This information may be accessed when QNodes containing this
+            LinearCombination are executed on devices. The string refers to the type of binary relation between Pauli words.
+            Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
+        method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
+            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
+        id (str): name to be assigned to this LinearCombination instance
+
+    **Example:**
+
+    A LinearCombination can be created by simply passing the list of coefficients
+    as well as the list of observables:
+
+    >>> coeffs = [0.2, -0.543]
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+    >>> H = qml.ops.LinearCombination(coeffs, obs)
+    >>> print(H)
+      (-0.543) [Z0 H2]
+    + (0.2) [X0 Z1]
+
+    The coefficients can be a trainable tensor, for example:
+
+    >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+    >>> H = qml.ops.LinearCombination(coeffs, obs)
+    >>> print(H)
+      (-0.543) [Z0 H2]
+    + (0.2) [X0 Z1]
+
+    The user can also provide custom observables:
+
+    >>> obs_matrix = np.array([[0.5, 1.0j, 0.0, -3j],
+                               [-1.0j, -1.1, 0.0, -0.1],
+                               [0.0, 0.0, -0.9, 12.0],
+                               [3j, -0.1, 12.0, 0.0]])
+    >>> obs = qml.Hermitian(obs_matrix, wires=[0, 1])
+    >>> H = qml.ops.LinearCombination((0.8, ), (obs, ))
+    >>> print(H)
+    (0.8) [Hermitian0,1]
+
+    Alternatively, the :func:`~.molecular_hamiltonian` function from the
+    :doc:`/introduction/chemistry` module can be used to generate a molecular
+    LinearCombination.
+
+    In many cases, LinearCombinations can be constructed using Pythonic arithmetic operations.
+    For example:
+
+    >>> qml.ops.LinearCombination([1.], [qml.X(0)]) + 2 * qml.Z(0) @ qml.Z(1)
+
+    is equivalent to the following LinearCombination:
+
+    >>> qml.ops.LinearCombination([1, 2], [qml.X(0), qml.Z(0) @ qml.Z(1)])
+
+    While scalar multiplication requires native python floats or integer types,
+    addition, subtraction, and tensor multiplication of LinearCombinations with LinearCombinations or
+    other observables is possible with tensor-valued coefficients, i.e.,
+
+    >>> H1 = qml.ops.LinearCombination(torch.tensor([1.]), [qml.X(0)])
+    >>> H2 = qml.ops.LinearCombination(torch.tensor([2., 3.]), [qml.Y(0), qml.X(1)])
+    >>> obs3 = [qml.X(0), qml.Y(0), qml.X(1)]
+    >>> H3 = qml.ops.LinearCombination(torch.tensor([1., 2., 3.]), obs3)
+    >>> H3.compare(H1 + H2)
+    True
+
+    A LinearCombination can store information on which commuting observables should be measured together in
+    a circuit:
+
+    >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
+    >>> coeffs = np.array([1., 2., 3.])
+    >>> H = qml.ops.LinearCombination(coeffs, obs, grouping_type='qwc')
+    >>> H.grouping_indices
+    [[0, 1], [2]]
+
+    This attribute can be used to compute groups of coefficients and observables:
+
+    >>> grouped_coeffs = [coeffs[indices] for indices in H.grouping_indices]
+    >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
+    >>> grouped_coeffs
+    [tensor([1., 2.], requires_grad=True), tensor([3.], requires_grad=True)]
+    >>> grouped_obs
+    [[qml.X(0), qml.X(1)], [qml.Z(0)]]
+
+    Devices that evaluate a LinearCombination expectation by splitting it into its local observables can
+    use this information to reduce the number of circuits evaluated.
+
+    Note that one can compute the ``grouping_indices`` for an already initialized LinearCombination by
+    using the :func:`compute_grouping <pennylane.LinearCombination.compute_grouping>` method.
+    """
 
     num_wires = qml.operation.AnyWires
     grad_method = "A"  # supports analytic gradients
@@ -226,7 +291,7 @@ class LinearCombination(Sum):
 
         **Example**
 
-        >>> H = qml.LinearCombination([1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)])
+        >>> H = qml.ops.LinearCombination([1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)])
         >>> print(H._obs_data())
         {(1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())})),
          (1, frozenset({('PauliZ', <Wires = [0]>, ())}))}
@@ -269,7 +334,7 @@ class LinearCombination(Sum):
 
         **Examples**
 
-        >>> H = qml.LinearCombination(
+        >>> H = qml.ops.LinearCombination(
         ...     [0.5, 0.5],
         ...     [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")]
         ... )
@@ -277,12 +342,12 @@ class LinearCombination(Sum):
         >>> print(H.compare(obs))
         True
 
-        >>> H1 = qml.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
-        >>> H2 = qml.LinearCombination([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
+        >>> H1 = qml.ops.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
+        >>> H2 = qml.ops.LinearCombination([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
         >>> H1.compare(H2)
         False
 
-        >>> ob1 = qml.LinearCombination([1], [qml.PauliX(0)])
+        >>> ob1 = qml.ops.LinearCombination([1], [qml.PauliX(0)])
         >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
         >>> ob1.compare(ob2)
         False
@@ -331,7 +396,7 @@ class LinearCombination(Sum):
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.prod(t[0], t[1], lazy=False) for t in ops_list]
-            return qml.LinearCombination(coeffs, terms)
+            return qml.ops.LinearCombination(coeffs, terms)
 
         if isinstance(other, Operator):
             if other.arithmetic_depth == 0:
@@ -362,7 +427,7 @@ class LinearCombination(Sum):
                 _pauli_rep = pr1 + pr2
             else:
                 _pauli_rep = None
-            return qml.LinearCombination(coeffs, ops, _pauli_rep=_pauli_rep)
+            return qml.ops.LinearCombination(coeffs, ops, _pauli_rep=_pauli_rep)
 
         if isinstance(H, (Tensor, Observable, qml.ops.Prod, qml.ops.SProd)):
             coeffs = qml.math.concatenate(
@@ -370,7 +435,7 @@ class LinearCombination(Sum):
             )
             ops.append(H)
 
-            return qml.LinearCombination(coeffs, ops)
+            return qml.ops.LinearCombination(coeffs, ops)
 
         return NotImplemented
 
@@ -381,7 +446,7 @@ class LinearCombination(Sum):
         if isinstance(a, (int, float, complex)):
             self_coeffs = self.coeffs
             coeffs = qml.math.multiply(a, self_coeffs)
-            return qml.LinearCombination(coeffs, self.ops)
+            return qml.ops.LinearCombination(coeffs, self.ops)
 
         return NotImplemented
 
@@ -394,7 +459,7 @@ class LinearCombination(Sum):
         return NotImplemented
 
     def queue(self, context=qml.QueuingManager):
-        """Queues a qml.LinearCombination instance"""
+        """Queues a qml.ops.LinearCombination instance"""
         if qml.QueuingManager.recording():
             for o in self.ops:
                 context.remove(o)

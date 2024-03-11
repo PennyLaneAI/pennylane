@@ -9,7 +9,8 @@ import networkx as nx
 
 import pennylane as qml
 from pennylane.transforms import transform
-from pennylane import Hamiltonian, LinearCombination
+from pennylane import Hamiltonian
+from pennylane.ops import LinearCombination
 from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP

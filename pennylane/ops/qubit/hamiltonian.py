@@ -607,7 +607,7 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, (Hamiltonian, qml.LinearCombination)):
+        if isinstance(other, (Hamiltonian, qml.ops.LinearCombination)):
             self.simplify()
             other.simplify()
             return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
