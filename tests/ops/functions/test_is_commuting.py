@@ -785,16 +785,34 @@ class TestCommutingFunction:
             (qml.PauliX(0), qml.PauliX(1), {0: 0, 1: 1}, True),
             (qml.PauliY("x"), qml.PauliX("y"), None, True),
             (
-                qml.PauliZ("a") @ qml.PauliY("b") @ qml.PauliZ("d"),
-                qml.PauliX("a") @ qml.PauliZ("c") @ qml.PauliY("d"),
+                qml.prod(qml.PauliZ("a"), qml.PauliY("b"), qml.PauliZ("d")),
+                qml.prod(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
                 {"a": 0, "b": 1, "c": 2, "d": 3},
                 True,
             ),
             (
-                qml.PauliX("a") @ qml.PauliY("b") @ qml.PauliZ("d"),
-                qml.PauliX("a") @ qml.PauliZ("c") @ qml.PauliY("d"),
+                qml.prod(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ("d")),
+                qml.prod(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
                 {"a": 0, "b": 1, "c": 2, "d": 3},
                 False,
+            ),
+            (
+                qml.operation.Tensor(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ("d")),
+                qml.operation.Tensor(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
+                {"a": 0, "b": 1, "c": 2, "d": 3},
+                False,
+            ),
+            (
+                qml.sum(qml.PauliZ("a"), qml.PauliY("b"), qml.PauliZ("d")),
+                qml.sum(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
+                {"a": 0, "b": 1, "c": 2, "d": 3},
+                False,
+            ),
+            (
+                qml.sum(qml.PauliZ("a"), qml.PauliY("b"), qml.PauliZ("d")),
+                qml.sum(qml.PauliZ("a"), qml.PauliY("c"), qml.PauliZ("d")),
+                {"a": 0, "b": 1, "c": 2, "d": 3},
+                True,
             ),
         ],
     )
@@ -804,15 +822,36 @@ class TestCommutingFunction:
         assert do_they_commute == commute_status
 
     @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2",
+        "pauli_word_1,pauli_word_2,op_type",
         [
-            (qml.PauliX(0) @ qml.Hadamard(1) @ qml.Identity(2), qml.PauliX(0) @ qml.PauliY(2)),
-            (qml.PauliX(0) @ qml.PauliY(2), qml.PauliX(0) @ qml.Hadamard(1) @ qml.Identity(2)),
+            (
+                qml.prod(qml.PauliX(0), qml.Hadamard(1), qml.Identity(2)),
+                qml.sum(qml.PauliX(0), qml.PauliY(2)),
+                "Prod",
+            ),
+            (
+                qml.sum(qml.PauliX(0), qml.PauliY(2)),
+                qml.operation.Tensor(qml.PauliX(0), qml.Hadamard(1), qml.Identity(2)),
+                "Tensor",
+            ),
+            (
+                qml.PauliX(2),
+                qml.sum(qml.Hadamard(1), qml.prod(qml.PauliX(1), qml.Identity(2))),
+                "Sum",
+            ),
+            (
+                qml.prod(qml.PauliX(0), qml.PauliY(2)),
+                qml.s_prod(0.5, qml.PauliX(0) + qml.prod(qml.Hadamard(1), qml.Identity(2))),
+                "SProd",
+            ),
         ],
     )
-    def test_non_pauli_word_tensors_not_supported(self, pauli_word_1, pauli_word_2):
+    def test_non_pauli_word_ops_not_supported(self, pauli_word_1, pauli_word_2, op_type):
         """Ensure invalid inputs are handled properly when determining commutativity."""
-        with pytest.raises(qml.QuantumFunctionError, match="Tensor operations are not supported."):
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match=f"{op_type} operations are only supported for Pauli words.",
+        ):
             qml.is_commuting(pauli_word_1, pauli_word_2)
 
     def test_operation_1_not_supported(self):
@@ -830,14 +869,12 @@ class TestCommutingFunction:
         with pytest.raises(qml.QuantumFunctionError, match="Operation PauliRot not supported."):
             qml.is_commuting(qml.PauliX(wires=0), qml.PauliRot(1, "X", wires=0))
 
-    arithmetic_ops = (
-        (qml.sum(qml.PauliX(0), qml.Identity(1)), "Sum"),
-        (qml.prod(qml.PauliX(0), qml.Identity(1)), "Prod"),
-        (qml.s_prod(1.23, qml.PauliX(0)), "SProd"),
-        (qml.exp(qml.PauliX(0), 1.2), "Exp"),
+    @pytest.mark.parametrize(
+        "op, name",
+        [
+            (qml.exp(qml.PauliX(0), 1.2), "Exp"),
+        ],
     )
-
-    @pytest.mark.parametrize("op, name", arithmetic_ops)
     def test_composite_arithmetic_ops_not_supported(self, op, name):
         """Test that giving a non supported operation raises an error."""
 

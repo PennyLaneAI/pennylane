@@ -18,6 +18,7 @@ Defines `is_commuting`, an function for determining if two functions commute.
 import numpy as np
 import pennylane as qml
 from pennylane.pauli.utils import is_pauli_word, pauli_to_binary, _wire_map_from_pauli_pair
+from pennylane.ops.op_math import SProd, Prod, Sum
 
 
 def _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
@@ -161,6 +162,36 @@ def _create_commute_function():
 _commutes = _create_commute_function()
 
 
+def _check_opmath_operations(operation1, operation2):
+    """Check that `Tensor`, `SProd`, `Prod`, and `Sum` instances only contain Pauli words."""
+
+    def _check_single_opmath_operation(op):
+        if isinstance(op, qml.operation.Tensor):
+            raise qml.QuantumFunctionError("Tensor operations are only supported for Pauli words.")
+
+        if isinstance(op, SProd):
+            raise qml.QuantumFunctionError("SProd operations are only supported for Pauli words.")
+
+        if isinstance(op, Prod):
+            raise qml.QuantumFunctionError("Prod operations are only supported for Pauli words.")
+
+    for op in [operation1, operation2]:
+
+        if is_pauli_word(op):
+            continue
+
+        if isinstance(op, Sum):
+            for op_summand in op:
+                if not is_pauli_word(op_summand):
+                    raise qml.QuantumFunctionError(
+                        "Sum operations are only supported for Pauli words."
+                    )
+                _check_single_opmath_operation(op_summand)
+
+        else:
+            _check_single_opmath_operation(op)
+
+
 def intersection(wires1, wires2):
     r"""Check if two sets of wires intersect.
 
@@ -254,10 +285,7 @@ unsupported_operations = [
     "CommutingEvolution",
     "DisplacementEmbedding",
     "SqueezingEmbedding",
-    "Prod",
-    "Sum",
     "Exp",
-    "SProd",
 ]
 non_commuting_operations = [
     # StatePrepBase
@@ -309,6 +337,7 @@ non_commuting_operations = [
 
 def is_commuting(operation1, operation2, wire_map=None):
     r"""Check if two operations are commuting using a lookup table.
+    If one operation is a :class:`~.Sum`, the commutator is computed to evaluate if it is null.
 
     A lookup table is used to check the commutation between the
     controlled, targeted part of operation 1 with the controlled, targeted part of operation 2.
@@ -322,8 +351,8 @@ def is_commuting(operation1, operation2, wire_map=None):
 
         :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`, :class:`~.CVNeuralNetLayers`,
         :class:`~.ApproxTimeEvolution`, :class:`~.ArbitraryUnitary`, :class:`~.CommutingEvolution`,
-        :class:`~.DisplacementEmbedding`, :class:`~.SqueezingEmbedding`, :class:`~.Prod`,
-        :class:`~.Sum`, :class:`~.Exp` and :class:`~.SProd`.
+        :class:`~.DisplacementEmbedding`, :class:`~.SqueezingEmbedding`
+        :class:`~.Exp`
 
     Args:
         operation1 (.Operation): A first quantum operation.
@@ -355,11 +384,6 @@ def is_commuting(operation1, operation2, wire_map=None):
     if is_pauli_word(operation1) and is_pauli_word(operation2):
         return _pword_is_commuting(operation1, operation2, wire_map)
 
-    # aside from Pauli words, Tensor commutation evaluation is not supported
-    if isinstance(operation1, qml.operation.Tensor) or isinstance(operation2, qml.operation.Tensor):
-        # pylint: disable=raise-missing-from
-        raise qml.QuantumFunctionError("Tensor operations are not supported.")
-
     # operations are disjoints
     if not intersection(operation1.wires, operation2.wires):
         return True
@@ -368,6 +392,9 @@ def is_commuting(operation1, operation2, wire_map=None):
     with qml.QueuingManager.stop_recording():
         operation1 = qml.simplify(operation1)
         operation2 = qml.simplify(operation2)
+
+    # Arithmetic non-disjoint operations only contain Pauli words
+    _check_opmath_operations(operation1, operation2)
 
     # Operation is in the non commuting list
     if operation1.name in non_commuting_operations or operation2.name in non_commuting_operations:
@@ -384,6 +411,10 @@ def is_commuting(operation1, operation2, wire_map=None):
     op_set = {"U2", "U3", "Rot", "CRot"}
     if operation1.name in op_set and operation2.name in op_set:
         return check_commutation_two_non_simplified_rotations(operation1, operation2)
+
+    # For Sum of Pauli words the commutator is evaluated.
+    if isinstance(operation1, Sum) or isinstance(operation2, Sum):
+        return qml.commutator(operation1, operation2) == qml.s_prod(0, qml.Identity())
 
     ctrl_base_1 = _get_target_name(operation1)
     ctrl_base_2 = _get_target_name(operation2)
