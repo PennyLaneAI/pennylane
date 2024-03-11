@@ -3008,9 +3008,12 @@ def disable_new_opmath():
         return
 
     with contextlib.ExitStack() as stack:
-        _mock = mock.patch("__main__.Hamiltonian", qml.Hamiltonian)
-        stack.enter_context(_mock)
-        _mock_lc_stack.append(stack.pop_all())
+        try:
+            _mock = mock.patch("__main__.Hamiltonian", qml.Hamiltonian)
+            stack.enter_context(_mock)
+            _mock_lc_stack.append(stack.pop_all())
+        except:
+            return
 
 
 def active_new_opmath():
