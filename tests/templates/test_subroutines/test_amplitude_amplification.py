@@ -54,7 +54,7 @@ class TestInitialization:
         ),
     )
     def test_error_wrong_work_wire(self, wires, fixed_point, work_wire):
-        """Test an error is raised if work_wire is part of the O wires."""
+        """Test that an error is raised if work_wire is part of the O wires."""
 
         U = generator(wires=wires)
         O = oracle([0], wires=wires)
