@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
+# pylint:disable=use-implicit-booleaness-not-comparison
 from functools import partial
 import pytest
 from flaky import flaky
@@ -2028,7 +2029,7 @@ class TestHamiltonianExpvalGradients:
             qml.CNOT(wires=[0, 1])
             obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             coeffs = np.array([0.1, 0.2, 0.3])
-            H = np.dot(obs, coeffs)
+            H = qml.dot(coeffs, obs)
             qml.var(H)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)

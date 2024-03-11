@@ -63,17 +63,16 @@ def _square_observable(obs):
         # Observable is a tensor, we must consider its
         # component observables independently. Note that
         # we assume all component observables are on distinct wires.
-
-        components_squared = []
-
-        for comp in obs.obs:
-            try:
-                components_squared.append(NONINVOLUTORY_OBS[comp.name](comp))
-            except KeyError:
-                # component is involutory
-                pass
-
+        components_squared = [
+            NONINVOLUTORY_OBS[o.name](o) for o in obs if o.name in NONINVOLUTORY_OBS
+        ]
         return qml.operation.Tensor(*components_squared)
+
+    if isinstance(obs, qml.ops.Prod):
+        components_squared = [
+            NONINVOLUTORY_OBS[o.name](o) for o in obs if o.name in NONINVOLUTORY_OBS
+        ]
+        return qml.prod(*components_squared)
 
     return NONINVOLUTORY_OBS[obs.name](obs)
 
@@ -627,6 +626,27 @@ def _create_variance_proc_fn(
     return processing_fn
 
 
+def _get_non_involuntory_indices(tape, var_indices):
+    non_involutory_indices = []
+
+    for i in var_indices:
+        obs = tape.measurements[i].obs
+
+        if isinstance(obs, qml.operation.Tensor):
+            # Observable is a tensor product, we must investigate all constituent observables.
+            if any(o.name in NONINVOLUTORY_OBS for o in tape.measurements[i].obs.obs):
+                non_involutory_indices.append(i)
+
+        elif isinstance(tape.measurements[i].obs, qml.ops.Prod):
+            if any(o.name in NONINVOLUTORY_OBS for o in tape.measurements[i].obs):
+                non_involutory_indices.append(i)
+
+        elif obs.name in NONINVOLUTORY_OBS:
+            non_involutory_indices.append(i)
+
+    return non_involutory_indices
+
+
 def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, broadcast=False):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to a
@@ -697,29 +717,25 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     # Get the indices in the measurement queue of all non-involutory
     # observables.
-    non_involutory_indices = []
 
-    for i in var_indices:
-        obs_name = tape.observables[i].name
-
-        if isinstance(obs_name, list):
-            # Observable is a tensor product, we must investigate all constituent observables.
-            if any(name in NONINVOLUTORY_OBS for name in obs_name):
-                non_involutory_indices.append(i)
-
-        elif obs_name in NONINVOLUTORY_OBS:
-            non_involutory_indices.append(i)
+    non_involutory_indices = _get_non_involuntory_indices(tape, var_indices)
 
     pdA2_fn = None
     if non_involutory_indices:
-        tape_with_obs_squared_expval = tape.copy(copy_operations=True)
 
+        new_measurements = list(tape.measurements)
         for i in non_involutory_indices:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            obs = _square_observable(tape_with_obs_squared_expval.measurements[i].obs)
-            tape_with_obs_squared_expval._measurements[i] = qml.expval(op=obs)
+            obs = _square_observable(tape.measurements[i].obs)
+            new_measurements[i] = qml.expval(obs)
 
+        tape_with_obs_squared_expval = qml.tape.QuantumScript(
+            tape.operations,
+            new_measurements,
+            shots=tape.shots,
+            trainable_params=tape.trainable_params,
+        )
         # Non-involutory observables are present; the partial derivative of <A^2>
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
         # observables.
