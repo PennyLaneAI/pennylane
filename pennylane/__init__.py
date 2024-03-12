@@ -89,6 +89,7 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     defer_measurements,
+    dynamic_one_shot,
     qfunc_transform,
     op_transform,
     single_tape_transform,
@@ -134,8 +135,6 @@ from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
-
-import pennylane.interfaces
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -273,7 +272,7 @@ def device(name, *args, **kwargs):
         @qml.qnode(dev)
         def circuit(a):
           qml.RX(a, wires=0)
-          return qml.sample(qml.PauliZ(wires=0))
+          return qml.sample(qml.Z(0))
 
     >>> circuit(0.8)  # 10 samples are returned
     array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
@@ -295,7 +294,7 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        def ion_trap_cnot(wires):
+        def ion_trap_cnot(wires, **_):
             return [
                 qml.RY(np.pi/2, wires=wires[0]),
                 qml.IsingXX(np.pi/2, wires=wires),
@@ -307,6 +306,8 @@ def device(name, *args, **kwargs):
     Next, we create a device, and a QNode for testing. When constructing the
     QNode, we can set the expansion strategy to ``"device"`` to ensure the
     decomposition is applied and will be viewable when we draw the circuit.
+    Note that custom decompositions should accept keyword arguments even when
+    it is not used.
 
     .. code-block:: python
 
@@ -319,7 +320,7 @@ def device(name, *args, **kwargs):
         @qml.qnode(dev, expansion_strategy="device")
         def run_cnot():
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliX(wires=1))
+            return qml.expval(qml.X(1))
 
     >>> print(qml.draw(run_cnot)())
     0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤

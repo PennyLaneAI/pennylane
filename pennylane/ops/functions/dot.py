@@ -29,6 +29,8 @@ def dot(
     coeffs: Sequence[Union[float, Callable]],
     ops: Sequence[Union[Operator, PauliWord, PauliSentence]],
     pauli=False,
+    grouping_type=None,
+    method="rlf",
 ) -> Union[Operator, ParametrizedHamiltonian, PauliSentence]:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
@@ -42,6 +44,12 @@ def dot(
             operator is used to represent the linear combination. If False, a :class:`Sum` operator
             is returned. Defaults to ``False``. Note that when ``ops`` consists solely of ``PauliWord``
             and ``PauliSentence`` instances, the function still returns a PennyLane operator when ``pauli=False``.
+        grouping_type (str): The type of binary relation between Pauli words used to compute
+            the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Note that if
+            ``pauli=True``, the grouping will be ignored.
+        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+            grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
+            First). This keyword argument is ignored if ``grouping_type`` is ``None``.
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty
@@ -49,32 +57,38 @@ def dot(
     Returns:
         Operator or ParametrizedHamiltonian: operator describing the linear combination
 
+    .. note::
+
+        If grouping is requested, the computed groupings are stored as a list of list of indices
+        in ``Sum.grouping_indices``. The indices refer to the operators and coefficients returned
+        by ``Sum.terms()``, not ``Sum.operands``, as these are not guaranteed to be equivalent.
+
     **Example**
 
     >>> coeffs = np.array([1.1, 2.2])
-    >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+    >>> ops = [qml.X(0), qml.Y(0)]
     >>> qml.dot(coeffs, ops)
-    (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+    1.1 * X(0) + 2.2 * Y(0)
     >>> qml.dot(coeffs, ops, pauli=True)
     1.1 * X(0)
     + 2.2 * Y(0)
 
     Note that additions of the same operator are not executed by default.
 
-    >>> qml.dot([1., 1.], [qml.PauliX(0), qml.PauliX(0)])
-    PauliX(wires=[0]) + PauliX(wires=[0])
+    >>> qml.dot([1., 1.], [qml.X(0), qml.X(0)])
+    X(0) + X(0)
 
     You can obtain a cleaner version by simplifying the resulting expression.
 
-    >>> qml.dot([1., 1.], [qml.PauliX(0), qml.PauliX(0)]).simplify()
-    2.0*(PauliX(wires=[0]))
+    >>> qml.dot([1., 1.], [qml.X(0), qml.X(0)]).simplify()
+    2.0 * X(0)
 
     ``pauli=True`` can be used to construct a more efficient, simplified version of the operator.
     Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
     specialized representation can be converted to an operator:
 
-    >>> qml.dot([1, 2], [qml.PauliX(0), qml.PauliX(0)], pauli=True).operation()
-    3.0*(PauliX(wires=[0]))
+    >>> qml.dot([1, 2], [qml.X(0), qml.X(0)], pauli=True).operation()
+    3.0 * X(0)
 
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
     than using ``pauli=False``, but it only works for pauli words
@@ -84,10 +98,37 @@ def dot(
     :class:`~.ParametrizedHamiltonian`:
 
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
-    >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+    >>> ops = [qml.X(0), qml.Y(0)]
     >>> qml.dot(coeffs, ops)
-      (<lambda>(params_0, t)*(PauliX(wires=[0])))
-    + (<lambda>(params_1, t)*(PauliY(wires=[0])))
+    (
+        <lambda>(params_0, t) * X(0)
+      + <lambda>(params_1, t) * Y(0)
+    )
+
+    .. details::
+        :title: Grouping
+
+        Grouping information can be collected during construction using the ``grouping_type`` and ``method``
+        keyword arguments. For example:
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            a = qml.X(0)
+            b = qml.prod(qml.X(0), qml.X(1))
+            c = qml.Z(0)
+            obs = [a, b, c]
+            coeffs = [1.0, 2.0, 3.0]
+
+            op = qml.dot(coeffs, obs, grouping_type="qwc")
+
+        >>> op.grouping_indices
+        ((2,), (0, 1))
+
+        ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
+        ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, see
+        :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.group_observables`.
     """
 
     if len(coeffs) != len(ops):
@@ -114,7 +155,11 @@ def dot(
     ops = (convert_to_opmath(op) for op in ops)
 
     operands = [op if coeff == 1 else qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
-    return operands[0] if len(operands) == 1 else qml.sum(*operands)
+    return (
+        operands[0]
+        if len(operands) == 1
+        else qml.sum(*operands, grouping_type=grouping_type, method=method)
+    )
 
 
 def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):

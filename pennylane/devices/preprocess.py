@@ -153,10 +153,12 @@ def mid_circuit_measurements(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Provide the transform to handle mid-circuit measurements.
 
-    If the tape of device uses finite-shot, use the native implementation (i.e. no transform), and use defer measurements transforms otherwise.
+    If the tape or device uses finite-shot, use the native implementation (i.e. no transform),
+    and use the ``qml.defer_measurements`` transform otherwise.
     """
+
     if tape.shots and tape.batch_size is None:
-        return (tape,), null_postprocessing
+        return qml.dynamic_one_shot(tape)
     return qml.defer_measurements(tape, device=device)
 
 
@@ -270,7 +272,7 @@ def decompose(
             a ``DecompositionUndefinedError`` will be raised.
         stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape as shots.
+            a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape has shots.
         skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
             If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
@@ -291,13 +293,13 @@ def decompose(
 
     >>> def stopping_condition(obj):
     ...     return obj.name in {"CNOT", "RX", "RZ"}
-    >>> tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.PauliZ(0))])
+    >>> tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.Z(0))])
     >>> batch, fn = decompose(tape, stopping_condition)
     >>> batch[0].circuit
     [CNOT(wires=[0, 1]),
     RX(1.2, wires=[0]),
     CNOT(wires=[0, 1]),
-    expval(PauliZ(wires=[0]))]
+    expval(Z(0))]
 
     If an operator cannot be decomposed into a supported operation, an error is raised:
 
@@ -385,7 +387,7 @@ def validate_observables(
 
     >>> def accepted_observable(obj):
     ...    return obj.name in {"PauliX", "PauliY", "PauliZ"}
-    >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0) + qml.PauliY(0))])
+    >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0) + qml.Y(0))])
     >>> validate_observables(tape, accepted_observable)
     DeviceError: Observable <Hamiltonian: terms=2, wires=[0]> not supported on device
 
@@ -430,9 +432,9 @@ def validate_measurements(
     ...     return isinstance(m, qml.measurements.StateMP)
     >>> def shots_measurements(m):
     ...     return isinstance(m, qml.measurements.CountsMP)
-    >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+    >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
-    DeviceError: Measurement expval(PauliZ(wires=[0])) not accepted for analytic simulation on device.
+    DeviceError: Measurement expval(Z(0)) not accepted for analytic simulation on device.
     >>> tape = qml.tape.QuantumScript([], [qml.sample()], shots=10)
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
     DeviceError: Measurement sample(wires=[]) not accepted with finite shots on device

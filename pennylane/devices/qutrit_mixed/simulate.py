@@ -13,10 +13,6 @@
 # limitations under the License.
 """Simulate a quantum script for a qutrit mixed state device."""
 # pylint: disable=protected-access
-from typing import Optional
-
-from numpy.random import default_rng
-
 import pennylane as qml
 from pennylane.typing import Result
 
@@ -127,7 +123,6 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
         return tuple(measure(mp, state, is_state_batched) for mp in circuit.measurements)
 
     # finite-shot case
-    rng = default_rng(rng)  # TODO: Done in sampling anyway should I have it here too?
     results = tuple(
         measure_with_samples(
             mp,
@@ -154,7 +149,7 @@ def simulate(
     prng_key=None,
     debugger=None,
     interface=None,
-    state_cache: Optional[dict] = None,
+    # state_cache: Optional[dict] = None, TODO: remove?
 ) -> Result:
     """Simulate a single quantum script.
 
@@ -170,8 +165,8 @@ def simulate(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
-        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the
-            pre-rotated state. Used to pass the state between forward passes and vjp calculations.
+        # state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the       TODO: remove?
+        #     pre-rotated state. Used to pass the state between forward passes and vjp calculations.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -187,6 +182,6 @@ def simulate(
 
     """
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
-    if state_cache is not None:
-        state_cache[circuit.hash] = state
+    # if state_cache is not None:           TODO: remove?
+    #     state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)

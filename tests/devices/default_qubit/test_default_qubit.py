@@ -15,6 +15,7 @@
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
 from unittest import mock
+from flaky import flaky
 import pytest
 
 import numpy as np
@@ -24,6 +25,13 @@ import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
 np.random.seed(0)
+
+
+max_workers_list = [
+    None,
+    pytest.param(1, marks=pytest.mark.slow),
+    pytest.param(2, marks=pytest.mark.slow),
+]
 
 
 def test_name():
@@ -78,6 +86,18 @@ def test_snapshot_multiprocessing_qnode():
         qml.snapshots(circuit)()
 
 
+# pylint: disable=protected-access
+def test_applied_modifiers():
+    """Test that defualt qubit has the `single_tape_support` and `simulator_tracking`
+    modifiers applied.
+    """
+    dev = DefaultQubit()
+    assert dev._applied_modifiers == [
+        qml.devices.modifiers.single_tape_support,
+        qml.devices.modifiers.simulator_tracking,
+    ]
+
+
 class TestSupportsDerivatives:
     """Test that DefaultQubit states what kind of derivatives it supports."""
 
@@ -104,9 +124,9 @@ class TestSupportsDerivatives:
         assert dev.supports_vjp(config) is False
 
         config = ExecutionConfig(gradient_method="backprop", interface=None)
-        assert dev.supports_derivatives(config) is False
-        assert dev.supports_jvp(config) is False
-        assert dev.supports_vjp(config) is False
+        assert dev.supports_derivatives(config) is True
+        assert dev.supports_jvp(config) is True
+        assert dev.supports_vjp(config) is True
 
     def test_supports_adjoint(self):
         """Test that DefaultQubit says that it supports adjoint differentiation."""
@@ -120,15 +140,6 @@ class TestSupportsDerivatives:
         assert dev.supports_derivatives(config, qs) is True
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True
-
-        config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=False)
-        assert dev.supports_derivatives(config) is False
-        assert dev.supports_jvp(config) is False
-        assert dev.supports_vjp(config) is False
-
-        assert dev.supports_derivatives(config, qs) is False
-        assert dev.supports_jvp(config, qs) is False
-        assert dev.supports_vjp(config, qs) is False
 
     def test_doesnt_support_adjoint_with_invalid_tape(self):
         """Tests that DefaultQubit does not support adjoint differentiation with invalid circuits."""
@@ -152,7 +163,7 @@ class TestSupportsDerivatives:
 class TestBasicCircuit:
     """Tests a basic circuit with one RX gate and two simple expectation values."""
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_basic_circuit_numpy(self, max_workers):
         """Test execution with a basic circuit."""
         phi = np.array(0.397)
@@ -169,7 +180,7 @@ class TestBasicCircuit:
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_basic_circuit_numpy_with_config(self, max_workers):
         """Test execution with a basic circuit."""
         phi = np.array(0.397)
@@ -190,7 +201,7 @@ class TestBasicCircuit:
         assert np.allclose(result[1], np.cos(phi))
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_autograd_results_and_backprop(self, max_workers):
         """Tests execution and gradients with autograd"""
         phi = qml.numpy.array(-0.52)
@@ -216,7 +227,7 @@ class TestBasicCircuit:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_jax_results_and_backprop(self, use_jit, max_workers):
         """Tests execution and gradients with jax."""
         import jax
@@ -248,7 +259,7 @@ class TestBasicCircuit:
         assert qml.math.allclose(g[1], -np.sin(phi))
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_torch_results_and_backprop(self, max_workers):
         """Tests execution and gradients of a simple circuit with torch."""
 
@@ -277,7 +288,7 @@ class TestBasicCircuit:
 
     # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_tf_results_and_backprop(self, max_workers):
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
@@ -334,7 +345,7 @@ class TestBasicCircuit:
 class TestSampleMeasurements:
     """A copy of the `qubit.simulate` tests, but using the device"""
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_single_expval(self, max_workers):
         """Test a simple circuit with a single expval measurement"""
         x = np.array(0.732)
@@ -347,7 +358,7 @@ class TestSampleMeasurements:
         assert result.shape == ()
         assert np.allclose(result, np.cos(x), atol=0.1)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_single_probs(self, max_workers):
         """Test a simple circuit with a single prob measurement"""
         x = np.array(0.732)
@@ -360,7 +371,7 @@ class TestSampleMeasurements:
         assert result.shape == (2,)
         assert np.allclose(result, [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2], atol=0.1)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_single_sample(self, max_workers):
         """Test a simple circuit with a single sample measurement"""
         x = np.array(0.732)
@@ -375,7 +386,7 @@ class TestSampleMeasurements:
             np.sum(result, axis=0).astype(np.float32) / 10000, [np.sin(x / 2) ** 2, 0], atol=0.1
         )
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_multi_measurements(self, max_workers):
         """Test a simple circuit containing multiple measurements"""
         x, y = np.array(0.732), np.array(0.488)
@@ -419,7 +430,7 @@ class TestSampleMeasurements:
     ]
 
     @pytest.mark.parametrize("shots", shots_data)
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_expval_shot_vector(self, max_workers, shots):
         """Test a simple circuit with a single expval measurement for shot vectors"""
         x = np.array(0.732)
@@ -437,7 +448,7 @@ class TestSampleMeasurements:
         assert all(np.allclose(res, np.cos(x), atol=0.1) for res in result)
 
     @pytest.mark.parametrize("shots", shots_data)
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_probs_shot_vector(self, max_workers, shots):
         """Test a simple circuit with a single prob measurement for shot vectors"""
         x = np.array(0.732)
@@ -457,7 +468,7 @@ class TestSampleMeasurements:
         )
 
     @pytest.mark.parametrize("shots", shots_data)
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_sample_shot_vector(self, max_workers, shots):
         """Test a simple circuit with a single sample measurement for shot vectors"""
         x = np.array(0.732)
@@ -480,7 +491,7 @@ class TestSampleMeasurements:
         )
 
     @pytest.mark.parametrize("shots", shots_data)
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_multi_measurement_shot_vector(self, max_workers, shots):
         """Test a simple circuit containing multiple measurements for shot vectors"""
         x, y = np.array(0.732), np.array(0.488)
@@ -520,7 +531,7 @@ class TestSampleMeasurements:
 
             assert shot_res[2].shape == (s, 2)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_custom_wire_labels(self, max_workers):
         """Test that custom wire labels works as expected"""
         x, y = np.array(0.732), np.array(0.488)
@@ -559,7 +570,7 @@ class TestSampleMeasurements:
 
         assert result[2].shape == (10000, 2)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_batch_tapes(self, max_workers):
         """Test that a batch of tapes with sampling works as expected"""
         x = np.array(0.732)
@@ -575,7 +586,7 @@ class TestSampleMeasurements:
         assert results[0].shape == (100, 2)
         assert results[1].shape == (50,)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_counts_wires(self, max_workers):
         """Test that a Counts measurement with wires works as expected"""
         x = np.array(np.pi / 2)
@@ -591,7 +602,7 @@ class TestSampleMeasurements:
         values = list(result.values())
         assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     @pytest.mark.parametrize("all_outcomes", [False, True])
     def test_counts_obs(self, all_outcomes, max_workers):
         """Test that a Counts measurement with an observable works as expected"""
@@ -677,7 +688,7 @@ class TestExecutingBatches:
         assert qml.math.allclose(x1[0][1], x2[0][1])
         assert qml.math.allclose(x1[1], x2[1])
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_numpy(self, max_workers):
         """Test that results are expected when the parameter does not have a parameter."""
         dev = DefaultQubit(max_workers=max_workers)
@@ -689,7 +700,7 @@ class TestExecutingBatches:
         self.nested_compare(results, expected)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_autograd(self, max_workers):
         """Test batches can be executed and have backprop derivatives in autograd."""
         dev = DefaultQubit(max_workers=max_workers)
@@ -707,7 +718,7 @@ class TestExecutingBatches:
         g0_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[0]))(phi)
         assert qml.math.allclose(g0, g0_expected)
 
-        g1 = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
+        g1 = qml.jacobian(lambda x: qml.numpy.array(self.f(dev, x)[1]))(phi)
         g1_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
         assert qml.math.allclose(g1, g1_expected)
 
@@ -731,7 +742,7 @@ class TestExecutingBatches:
         self.nested_compare(g, g_expected)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_torch(self, max_workers):
         """Test batches can be executed and have backprop derivatives in torch."""
         import torch
@@ -758,7 +769,7 @@ class TestExecutingBatches:
         assert qml.math.allclose(g1, g3)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_tf(self, max_workers):
         """Test batches can be executed and have backprop derivatives in tf."""
 
@@ -902,7 +913,7 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(g1, g2)
 
 
-@pytest.mark.parametrize("max_workers", [None, 1, 2])
+@pytest.mark.parametrize("max_workers", max_workers_list)
 class TestAdjointDifferentiation:
     """Tests adjoint differentiation integration with DefaultQubit."""
 
@@ -1180,7 +1191,7 @@ class TestAdjointDifferentiation:
 class TestRandomSeed:
     """Test that the device behaves correctly when provided with a random seed"""
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     @pytest.mark.parametrize(
         "measurements",
         [
@@ -1206,7 +1217,8 @@ class TestRandomSeed:
 
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.slow
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_different_seed(self, max_workers):
         """Test that different devices given different random seeds will produce
         different results (with almost certainty)"""
@@ -1226,7 +1238,7 @@ class TestRandomSeed:
         assert np.any(result1 != result3)
         assert np.any(result2 != result3)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     @pytest.mark.parametrize(
         "measurements",
         [
@@ -1249,7 +1261,7 @@ class TestRandomSeed:
 
         assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2))
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     @pytest.mark.parametrize(
         "measurements",
         [
@@ -1326,7 +1338,7 @@ class TestRandomSeed:
 class TestPRNGKeySeed:
     """Test that the device behaves correctly when provided with a PRNG key and using the JAX interface"""
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_same_prng_key(self, max_workers):
         """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
         the same results for sample, even with different seeds"""
@@ -1343,7 +1355,7 @@ class TestPRNGKeySeed:
 
         assert np.all(result1 == result2)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_different_prng_key(self, max_workers):
         """Test that different devices given different jax.random.PRNGKey values will produce
         different results"""
@@ -1360,7 +1372,7 @@ class TestPRNGKeySeed:
 
         assert np.any(result1 != result2)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_different_executions_same_prng_key(self, max_workers):
         """Test that the same device will produce the same results every execution if
         the seed is a jax.random.PRNGKey"""
@@ -1382,7 +1394,7 @@ class TestHamiltonianSamples:
 
     This is a copy of the tests in test_sampling.py, but using the device instead"""
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_hamiltonian_expval(self, max_workers):
         """Test that sampling works well for Hamiltonian observables"""
         x, y = np.array(0.67), np.array(0.95)
@@ -1396,7 +1408,7 @@ class TestHamiltonianSamples:
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_sum_expval(self, max_workers):
         """Test that sampling works well for Sum observables"""
         x, y = np.array(0.67), np.array(0.95)
@@ -1410,7 +1422,7 @@ class TestHamiltonianSamples:
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_multi_wires(self, max_workers):
         """Test that sampling works for Sums with large numbers of wires"""
         n_wires = 10
@@ -1434,7 +1446,7 @@ class TestHamiltonianSamples:
 
         assert np.allclose(res, expected, atol=0.05)
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_complex_hamiltonian(self, max_workers):
         """Test that sampling works for complex Hamiltonians"""
         scale = 0.05
@@ -1506,7 +1518,7 @@ class TestClassicalShadows:
     """Test that classical shadow measurements works with the new device"""
 
     @pytest.mark.parametrize("n_qubits", [1, 2, 3])
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_shape_and_dtype(self, max_workers, n_qubits):
         """Test that the shape and dtype of the measurement is correct"""
         dev = DefaultQubit(max_workers=max_workers)
@@ -1524,7 +1536,7 @@ class TestClassicalShadows:
         # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
         assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_expval(self, max_workers):
         """Test that shadow expval measurements work as expected"""
         dev = DefaultQubit(seed=100, max_workers=max_workers)
@@ -1538,7 +1550,7 @@ class TestClassicalShadows:
         assert np.allclose(res, 1.0, atol=0.05)
 
     @pytest.mark.parametrize("n_qubits", [1, 2, 3])
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_multiple_shadow_measurements(self, n_qubits, max_workers):
         """Test that multiple classical shadow measurements work as expected"""
         dev = DefaultQubit(max_workers=max_workers)
@@ -1564,7 +1576,7 @@ class TestClassicalShadows:
         # check that the samples are different
         assert not np.all(res[0] == res[1])
 
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_reconstruct_bell_state(self, max_workers):
         """Test that a bell state can be faithfully reconstructed"""
         dev = DefaultQubit(seed=100, max_workers=max_workers)
@@ -1611,7 +1623,7 @@ class TestClassicalShadows:
             [(1000, 3), 2000, (3000, 2)],
         ],
     )
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_shot_vectors(self, max_workers, n_qubits, shots):
         """Test that classical shadows works when given a shot vector"""
         dev = DefaultQubit(max_workers=max_workers)
@@ -1636,7 +1648,7 @@ class TestClassicalShadows:
 
 
 @pytest.mark.parametrize("n_wires", [1, 2, 3])
-@pytest.mark.parametrize("max_workers", [None, 1, 2])
+@pytest.mark.parametrize("max_workers", max_workers_list)
 def test_projector_dynamic_type(max_workers, n_wires):
     """Test that qml.Projector yields the expected results for both of its subclasses."""
     wires = list(range(n_wires))
@@ -1706,6 +1718,7 @@ class TestPostselection:
         assert qml.math.allclose(res, expected)
         assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
+    @flaky(max_runs=5)
     @pytest.mark.parametrize(
         "mp",
         [
@@ -2033,7 +2046,7 @@ class TestIntegration:
         assert circuit() == expected
 
 
-@pytest.mark.parametrize("max_workers", [None, 1, 2])
+@pytest.mark.parametrize("max_workers", max_workers_list)
 def test_broadcasted_parameter(max_workers):
     """Test that DefaultQubit handles broadcasted parameters as expected."""
     dev = DefaultQubit(max_workers=max_workers)

@@ -106,7 +106,7 @@ class TrotterProduct(Operation):
     .. code-block:: python3
 
         coeffs = [0.25, 0.75]
-        ops = [qml.PauliX(0), qml.PauliZ(0)]
+        ops = [qml.X(0), qml.Z(0)]
         H = qml.dot(coeffs, ops)
 
         dev = qml.device("default.qubit", wires=2)
@@ -124,6 +124,11 @@ class TrotterProduct(Operation):
     >>> my_circ()
     array([-0.13259524+0.59790098j,  0.        +0.j        , -0.13259524-0.77932754j,  0.        +0.j        ])
 
+    .. warning::
+
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
+        due to the order in which those observables are stored.
+
     .. details::
         :title: Usage Details
 
@@ -140,7 +145,7 @@ class TrotterProduct(Operation):
             @qml.qnode(dev)
             def my_circ(c1, c2, time):
                 # Prepare H:
-                H = qml.dot([c1, c2], [qml.PauliX(0), qml.PauliZ(0)])
+                H = qml.dot([c1, c2], [qml.X(0), qml.Z(0)])
 
                 # Prepare some state
                 qml.Hadamard(0)
@@ -149,7 +154,7 @@ class TrotterProduct(Operation):
                 qml.TrotterProduct(H, time, order=2)
 
                 # Measure some quantity
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                return qml.expval(qml.Z(0) @ qml.Z(1))
 
         >>> args = np.array([1.23, 4.5, 0.1])
         >>> qml.grad(my_circ)(*tuple(args))

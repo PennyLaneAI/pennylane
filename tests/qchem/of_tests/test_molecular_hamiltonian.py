@@ -14,7 +14,7 @@
 """
 Unit tests for molecular Hamiltonians.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, protected-access
 import pytest
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -388,7 +388,9 @@ def test_diff_hamiltonian_error(symbols, geometry):
     with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
         qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
-    with pytest.raises(ValueError, match="Only 'dhf' and 'pyscf' backends are supported"):
+    with pytest.raises(
+        ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
+    ):
         qchem.molecular_hamiltonian(symbols, geometry, method="psi4")
 
     with pytest.raises(ValueError, match="Openshell systems are not supported"):
@@ -440,3 +442,37 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir, op_arithmetic
 
     else:
         assert np.isrealobj(hamiltonian.coeffs)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "core_ref", "one_ref", "two_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 2.0]),
+            np.array([0.5]),
+            np.array([[-1.08269537e00, 1.88626892e-13], [1.88848936e-13, -6.04947784e-01]]),
+            np.array(
+                [
+                    [
+                        [[6.16219836e-01, -1.93289829e-13], [-1.93373095e-13, 2.00522469e-01]],
+                        [[-1.93345340e-13, 2.00522469e-01], [6.13198399e-01, -1.86684002e-13]],
+                    ],
+                    [
+                        [[-1.93289829e-13, 6.13198399e-01], [2.00522469e-01, -1.86572979e-13]],
+                        [[2.00522469e-01, -1.86961557e-13], [-1.86684002e-13, 6.43874664e-01]],
+                    ],
+                ]
+            ),
+        ),
+    ],
+)
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
+def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
+    r"""Test that _pyscf_integrals returns correct integrals."""
+
+    core, one, two = qchem.openfermion_obs._pyscf_integrals(symbols, geometry)
+
+    assert np.allclose(core, core_ref)
+    assert np.allclose(one, one_ref)
+    assert np.allclose(two, two_ref)

@@ -103,9 +103,9 @@ def _approximate_set(basis_gates, max_length=10):
     # Defining Clifford+T basis
     _CLIFFORD_T_BASIS = {
         "I": qml.Identity(0),
-        "X": qml.PauliX(0),
-        "Y": qml.PauliY(0),
-        "Z": qml.PauliZ(0),
+        "X": qml.X(0),
+        "Y": qml.Y(0),
+        "Z": qml.Z(0),
         "H": qml.Hadamard(0),
         "T": qml.T(0),
         "T*": qml.adjoint(qml.T(0)),
