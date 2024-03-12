@@ -809,6 +809,12 @@ class TestCommutingFunction:
                 False,
             ),
             (
+                qml.sum(qml.PauliZ("a"), qml.PauliY("a"), qml.PauliZ("b")),
+                qml.sum(qml.PauliX("c"), qml.PauliZ("c"), qml.PauliY("d")),
+                {"a": 0, "b": 0, "c": 1, "d": 1},
+                True,
+            ),
+            (
                 qml.sum(qml.PauliZ("a"), qml.PauliY("b"), qml.PauliZ("d")),
                 qml.sum(qml.PauliZ("a"), qml.PauliY("c"), qml.PauliZ("d")),
                 {"a": 0, "b": 1, "c": 2, "d": 3},
