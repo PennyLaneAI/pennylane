@@ -325,7 +325,7 @@ def test_p_min(p_min):
     ),
 )
 def test_fixed_point_angles_function(iters, p_min):
-    """Test that the fixed_point_angles function works correctly."""
+    """Test that the _get_fixed_point_angles function works correctly."""
 
     alphas, betas = _get_fixed_point_angles(iters, p_min)
 
