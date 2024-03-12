@@ -89,7 +89,7 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert repr(obs_out) == repr(obs_in)
+        assert qml.equal(obs_out, obs_in)
         assert obs_in.compare(obs_out)
 
     def test_bind_init(self, obs_in):
@@ -103,7 +103,7 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert repr(obs_out) == repr(obs_in)
+        assert qml.equal(obs_out, obs_in)
         assert obs_in.compare(obs_out)
 
 

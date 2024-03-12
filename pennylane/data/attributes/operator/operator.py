@@ -62,6 +62,12 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.QubitSum,
                 # pennylane/ops/qubit/hamiltonian.py
                 qml.Hamiltonian,
+                # pennylane/ops/op_math/linear_combination.py
+                qml.ops.LinearCombination,
+                # pennylane/ops/op_math - prod.py, s_prod.py, sum.py
+                qml.ops.Prod,
+                qml.ops.SProd,
+                qml.ops.Sum,
                 # pennylane/ops/qubit/matrix_qml.py
                 qml.QubitUnitary,
                 qml.DiagonalQubitUnitary,
@@ -211,13 +217,20 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                     f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
 
+            # if isinstance(op, (qml.ops.Prod)):
+            #     with qml.operation.disable_new_opmath_cm():
+            #         op = qml.operation.convert_to_legacy_H(op)
+
             if isinstance(op, Tensor):
                 self._ops_to_hdf5(bind, op_key, op.obs)
                 op_wire_labels.append("null")
-            elif isinstance(op, qml.Hamiltonian):
+            elif isinstance(op, (qml.Hamiltonian, qml.ops.LinearCombination)):
                 coeffs, ops = op.terms()
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
+                op_wire_labels.append("null")
+            elif isinstance(op, qml.ops.Prod):
+                self._ops_to_hdf5(bind, op_key, op.simplify().operands)
                 op_wire_labels.append("null")
             else:
                 bind[op_key] = op.data if len(op.data) else h5py.Empty("f")
@@ -246,13 +259,15 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 op_cls = self._supported_ops_dict()[op_class_name]
                 if op_cls is Tensor:
                     ops.append(Tensor(*self._hdf5_to_ops(bind[op_key])))
-                elif op_cls is qml.Hamiltonian:
+                elif op_cls in (qml.Hamiltonian, qml.ops.LinearCombination):
                     ops.append(
                         qml.Hamiltonian(
                             coeffs=list(bind[op_key]["hamiltonian_coeffs"]),
                             observables=self._hdf5_to_ops(bind[op_key]),
                         )
                     )
+                elif op_cls is qml.ops.Prod:
+                    ops.append(qml.ops.Prod(*self._hdf5_to_ops(bind[op_key])))
                 else:
                     wire_labels = json.loads(op_wire_labels[i])
                     op_data = bind[op_key]
