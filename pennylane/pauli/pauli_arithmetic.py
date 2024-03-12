@@ -608,11 +608,6 @@ class PauliSentence(dict):
         associated with it should be 0."""
         return 0.0
 
-    @property
-    def pauli_rep(self):
-        """Trivial pauli_rep property"""
-        return self
-
     def __add__(self, other):
         """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.
 
