@@ -92,7 +92,7 @@ with qml.queuing.AnnotatedQueue() as q_multi_cut_tape:
     qml.CNOT(wires=[2, 3])
     qml.RY(0.543, wires=2)
     qml.RZ(0.876, wires=3)
-    qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]))
+    qml.expval(qml.operation.Tensor(qml.PauliZ(wires=[0]), qml.PauliZ(wires=[3])))
 
 multi_cut_tape = qml.tape.QuantumScript.from_queue(q_multi_cut_tape)
 
@@ -548,6 +548,7 @@ class TestTapeToGraph:
                 assert node.obj.return_type is qml.measurements.Sample
                 assert get_name(node.obj.obs) == get_name(expected_node.obs)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_sample_tensor_obs(self):
         """
         Test that a circuit with a sample measurement of a tensor product of
@@ -1536,6 +1537,7 @@ class TestGetMeasurements:
         assert get_name(out[0].obs) == "Identity"
         assert out[0].obs.wires[0] == 0
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_single_measurement(self):
         """Tests if the function behaves as expected for a typical example"""
         group = [qml.PauliX(0) @ qml.PauliZ(2), qml.PauliX(0)]
@@ -1563,6 +1565,7 @@ class TestExpandFragmentTapes:
     Tests that fragment tapes are correctly expanded to all configurations
     """
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_expand_fragment_tape(self):
         """
         Tests that a fragment tape expands correctly
@@ -4387,6 +4390,7 @@ class TestCutCircuitTransform:
         assert np.allclose(grad, grad_expected)
 
     @flaky(max_runs=3)
+    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("shots", [None, int(1e7)])
     def test_standard_circuit(self, mocker, use_opt_einsum, shots):
         """
@@ -5424,6 +5428,7 @@ class TestAutoCutCircuit:
 class TestCutCircuitWithHamiltonians:
     """Integration tests for `cut_circuit` transform with Hamiltonians."""
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_circuit_with_hamiltonian(self, mocker):
         """
         Tests that the full automatic circuit cutting pipeline returns the correct value and
