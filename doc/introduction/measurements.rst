@@ -300,6 +300,37 @@ The decorator syntax applies equally well:
     def qnode(x, y):
         (...)
 
+The one-shot transform
+**********************
+
+Devices supporting mid-circuit measurements (defined using
+:func:`~.pennylane.measure`) and conditional operations (defined using
+:func:`~.pennylane.cond`) natively can estimate dynamic circuits by executing
+them one shot at the time. This is the default behaviour of a QNode that has a
+device supporting mid-circuit measurements, as well as any QNode with the
+:func:`~.pennylane.dynamic_one_shot` quantum function transform.
+
+The :func:`~.pennylane.dynamic_one_shot` transform is usually advantageous compared
+with the :func:`~.pennylane.defer_measurements` transform in the large-number-of-mid-circuit-measurements
+and small-number-of-shots limit. This is because, unlike the deferred
+measurement principle, the method does not need an additional wire for every mid-circuit
+measurement present in the circuit. Otherwise, one generally gets equivalent results, so
+you may try both in an attempt to improve performance without worrying further about
+accuracy.
+
+The transform can be applied to a QNode as follows:
+
+.. code-block:: python
+
+    @qml.dynamic_one_shot
+    @qml.qnode(dev)
+    def my_quantum_function(x, y):
+        (...)
+
+.. warning::
+
+    The resulting function is not differentiable.
+
 Resetting wires
 ***************
 
