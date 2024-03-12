@@ -143,9 +143,8 @@ class TestDifferentiability:
 
         return qml.expval(qml.PauliZ(0))
 
-    # nobtained with autograd, we are only ensuring that the results are consistent accross interfaces
-
-    exp_grad = np.array([-0.88109384, -0.66429077])
+    # calculated numerically with finite diff method (h = 1e-5)
+    exp_grad = np.array([-0.88109663, -0.66429297])
 
     params = np.array([0.9, 0.1])
 
