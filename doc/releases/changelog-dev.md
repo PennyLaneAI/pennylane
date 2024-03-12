@@ -145,6 +145,7 @@
 This release contains contributions from (in alphabetical order):
 
 Korbinian Kottmann,
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Gabriel Bottrill,
 Astral Cai,
@@ -154,5 +155,4 @@ Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Mudit Pandey,
-Matthew Silverman,
-Tarun Kumar Allamsetty.
+Matthew Silverman.
