@@ -89,7 +89,7 @@ class TestTranspile:
         def circuit():
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 3])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.operation.Tensor(qml.PauliZ(0), qml.PauliZ(1)))
 
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
