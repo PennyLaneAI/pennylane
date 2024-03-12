@@ -17,6 +17,7 @@ cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
 from scipy import sparse
+import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
@@ -100,7 +101,7 @@ class Identity(CVObservable, Operation):
         >>> print(qml.I.compute_eigvals())
         [ 1 1]
         """
-        return qml.math.ones(2**n_wires)
+        return np.ones(2**n_wires, dtype=np.int64)
 
     @staticmethod
     @lru_cache()
