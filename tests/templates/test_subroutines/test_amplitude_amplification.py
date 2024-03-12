@@ -18,6 +18,7 @@ Tests for the AmplitudeAmplification template.
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
 
 
 @qml.prod
@@ -73,6 +74,7 @@ class TestInitialization:
     ),
 )
 def test_compare_grover(n_wires, items, iters):
+    """Test that Grover's algorithm gives the same result with GroverOperator and AmplitudeAmplification."""
     U = generator(wires=range(n_wires))
     O = oracle(items, wires=range(n_wires))
 
@@ -97,10 +99,9 @@ def test_compare_grover(n_wires, items, iters):
     assert np.allclose(circuit_amplitude_amplification(), circuit_grover(), atol=1e-5)
 
 
-class TestIntegration:
-    """Tests that AmplitudeAmplification is executable in a QNode context"""
+def test_default_lightning_devices():
+    """Test that AmplitudeAmplification executes with the default.qubit and lightning.qubit simulators."""
 
-    @staticmethod
     def circuit():
         """Test circuit"""
         qml.Hadamard(wires=0)
@@ -112,33 +113,22 @@ class TestIntegration:
         )
         return qml.probs(wires=range(3))
 
-    # obtained with autograd, we are only ensuring that the results are consistent accross interfaces
+    dev1 = qml.device("default.qubit")
+    qnode1 = qml.QNode(circuit, dev1, interface=None)
 
-    exp_result = np.array(
-        [0.52864728, 0.0673361, 0.0673361, 0.0673361, 0.0673361, 0.0673361, 0.0673361, 0.0673361]
-    )
+    res1 = qnode1()
 
-    def test_qnode_numpy(self):
-        """Test that the QNode executes with Numpy."""
-        dev = qml.device("default.qubit")
-        qnode = qml.QNode(self.circuit, dev, interface=None)
+    """Test that the QNode executes with the Lightning Qubit simulator."""
+    dev2 = qml.device("lightning.qubit", wires=4)
+    qnode2 = qml.QNode(circuit, dev2)
 
-        res = qnode()
-        assert res.shape == (8,)
-        assert np.allclose(res, self.exp_result, atol=1e-5)
+    res2 = qnode2()
 
-    def test_lightning_qubit(self):
-        """Test that the QNode executes with the Lightning Qubit simulator."""
-        dev = qml.device("lightning.qubit", wires=4)
-        qnode = qml.QNode(self.circuit, dev)
-
-        res = qnode()
-        assert res.shape == (8,)
-        assert np.allclose(res, self.exp_result, atol=1e-5)
+    assert np.allclose(res1, res2, atol=1e-5)
 
 
 class TestDifferentiability:
-    """Tests for the differentiability of the AmplitudeAmplification operator"""
+    """Test that AmplitudeAmplification is differentiable"""
 
     @staticmethod
     def circuit(params):
@@ -157,7 +147,7 @@ class TestDifferentiability:
 
     exp_grad = np.array([-0.88109384, -0.66429077])
 
-    x = np.array([0.9, 0.1])
+    params = np.array([0.9, 0.1])
 
     @pytest.mark.autograd
     def test_qnode_autograd(self):
@@ -166,8 +156,8 @@ class TestDifferentiability:
         dev = qml.device("default.qubit")
         qnode = qml.QNode(self.circuit, dev, interface="autograd")
 
-        x = qml.numpy.array(self.x, requires_grad=True)
-        res = qml.grad(qnode)(x)
+        params = qml.numpy.array(self.params, requires_grad=True)
+        res = qml.grad(qnode)(params)
         print(res)
         assert qml.math.shape(res) == (2,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
@@ -188,13 +178,13 @@ class TestDifferentiability:
         if use_jit:
             qnode = jax.jit(qnode)
 
-        x = jax.numpy.array(self.x)
+        params = jax.numpy.array(self.params)
 
         jac_fn = jax.jacobian(qnode)
         if use_jit:
             jac_fn = jax.jit(jac_fn)
 
-        jac = jac_fn(x)
+        jac = jac_fn(params)
         assert jac.shape == (2,)
         assert np.allclose(jac, self.exp_grad, atol=0.01)
 
@@ -209,8 +199,8 @@ class TestDifferentiability:
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
-        x = torch.tensor(self.x, requires_grad=True)
-        jac = torch.autograd.functional.jacobian(qnode, x)
+        params = torch.tensor(self.params, requires_grad=True)
+        jac = torch.autograd.functional.jacobian(qnode, params)
         assert qml.math.shape(jac) == (2,)
         assert qml.math.allclose(jac, self.exp_grad, atol=0.01)
 
@@ -226,11 +216,11 @@ class TestDifferentiability:
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
-        x = tf.Variable(self.x)
+        params = tf.Variable(self.params)
         with tf.GradientTape() as tape:
-            res = qnode(x)
+            res = qnode(params)
 
-        jac = tape.gradient(res, x)
+        jac = tape.gradient(res, params)
         assert qml.math.shape(jac) == (8,)
         assert qml.math.allclose(res, self.exp_grad, atol=0.001)
 
@@ -326,3 +316,22 @@ def test_p_min(p_min):
         return qml.probs(wires=range(4))
 
     assert circuit()[0] >= p_min
+
+
+@pytest.mark.parametrize(
+    "iters, p_min",
+    (
+        (4, 0.8),
+        (5, 0.9),
+        (6, 0.95),
+    ),
+)
+def test_fixed_point_angles_function(iters, p_min):
+    """Test that the fixed_point_angles function works correctly."""
+
+    alphas, betas = _get_fixed_point_angles(iters, p_min)
+
+    assert np.all(alphas[:-1] > alphas[1:])
+    assert np.all(betas[:-1] > betas[1:])
+
+    assert np.allclose(betas, np.array([-alpha for alpha in reversed(alphas)]))

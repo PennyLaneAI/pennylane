@@ -22,7 +22,7 @@ from pennylane.operation import Operation
 import pennylane as qml
 
 
-def get_fixed_point_angles(iters, p_min):
+def _get_fixed_point_angles(iters, p_min):
     """
     Returns the angles needed for the fixed-point amplitude amplification algorithm.
     The angles are computed using equation (11) of  `arXiv:1409.3305v2 <https://arxiv.org/abs/1409.3305>`__.
@@ -157,7 +157,7 @@ class AmplitudeAmplification(Operation):
         ops = []
 
         if fixed_point:
-            alphas, betas = get_fixed_point_angles(iters, p_min)
+            alphas, betas = _get_fixed_point_angles(iters, p_min)
 
             for iter in range(iters // 2):
                 ops.append(qml.Hadamard(wires=work_wire))
