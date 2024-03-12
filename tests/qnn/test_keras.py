@@ -922,6 +922,8 @@ def test_specs():
     assert info["device_name"] == "default.qubit"
 
 
+@pytest.mark.slow
+@pytest.mark.tf
 def test_save_and_load_preserves_weights(tmpdir):
     """
     Test that saving and loading a model doesn't lose the weights. This particular

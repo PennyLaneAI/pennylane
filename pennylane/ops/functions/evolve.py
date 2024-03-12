@@ -45,10 +45,6 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     Returns:
         .Evolution: evolution operator
 
-    .. seealso::
-
-        :class:`~.Evolution`
-
     **Examples**
 
     We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
@@ -82,10 +78,6 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
     The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
     solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_).
-
-    .. seealso::
-
-        :class:`~.ParametrizedEvolution`
 
     **Examples**
 
@@ -159,8 +151,6 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         the first execution will typically take a little longer with the benefit that all following executions
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.
-
-    Please check the :class:`.ParametrizedEvolution` class for more usage details.
     """
 
 
