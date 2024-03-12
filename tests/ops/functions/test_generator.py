@@ -381,8 +381,8 @@ class TestLinearCombinationReturn:
     def test_observable_no_coeff(self):
         """Test a generator that returns an observable with no coefficient is correct"""
         gen = qml.generator(qml.PhaseShift, format="hamiltonian")(0.5, wires=0)
-        assert gen.name == "SProd"
-        assert qml.equal(gen, 1.0 * qml.PhaseShift(0.5, wires=0).generator())
+        assert gen.name == "LinearCombination"
+        assert qml.equal(gen.ops[0], qml.PhaseShift(0.5, wires=0).generator())
 
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
@@ -431,7 +431,7 @@ class TestArithmeticReturn:
     def test_observable_no_coeff(self):
         """Test a generator that returns an observable with no coefficient is correct"""
         gen = qml.generator(qml.PhaseShift, format="arithmetic")(0.5, wires=0)
-        assert qml.equal(gen.base, qml.Projector(np.array([1]), wires=0))
+        assert qml.equal(gen, qml.Projector(np.array([1]), wires=0))
 
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
