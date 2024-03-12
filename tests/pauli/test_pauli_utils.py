@@ -44,8 +44,6 @@ from pennylane.pauli import (
     observables_to_binary_matrix,
     partition_pauli_group,
     pauli_group,
-    pauli_mult,
-    pauli_mult_with_phase,
     pauli_to_binary,
     pauli_word_to_matrix,
     pauli_word_to_string,
@@ -739,26 +737,6 @@ class TestPauliGroup:
         obtained_phase = prod.scalar if isinstance(prod, qml.ops.SProd) else 1
         assert obtained_phase == expected_phase
 
-    def test_deprecated_pauli_mult(self):
-        """Test that pauli_mult is deprecated."""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`pauli_mult` is deprecated"):
-            pauli_mult(PauliX(0), PauliY(1))
-
-    @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,expected_phase",
-        [
-            (PauliZ(0), PauliY(0), -1j),
-            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), -1),
-            (PauliZ(0), PauliZ(0), 1),
-            (PauliZ(0), PauliZ(1), 1),
-        ],
-    )
-    def test_deprecated_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, expected_phase):
-        """Test that pauli_mult_with_phase is deprecated."""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="pauli_mult"):
-            _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2)
-        assert obtained_phase == expected_phase
-
 
 class TestPartitionPauliGroup:
     """Tests for the partition_pauli_group function"""
@@ -1023,23 +1001,6 @@ class TestMeasurementTransformations:
 
 
 class TestObservableHF:
-    @pytest.mark.parametrize(
-        ("p1", "p2", "p_ref"),
-        [
-            (
-                [(0, "X"), (1, "Y")],  # X_0 @ Y_1
-                [(0, "X"), (2, "Y")],  # X_0 @ Y_2
-                ([(0, "I"), (2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
-            ),
-        ],
-    )
-    def test_deprecated_pauli_mult(self, p1, p2, p_ref):
-        r"""Test that _pauli_mult raises a deprecation warning."""
-        # pylint: disable=protected-access
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="_pauli_mult is deprecated"):
-            result = qml.pauli.utils._pauli_mult(p1, p2)
-
-        assert result == p_ref
 
     with qml.operation.disable_new_opmath_cm():
         HAMILTONIAN_SIMPLIFY = [
@@ -1158,23 +1119,9 @@ class TestTapering:
 
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
-    def test_binary_matrix(self, terms, num_qubits, result):
-        r"""Test that _binary_matrix returns the correct result."""
-        # pylint: disable=protected-access
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="_binary_matrix is deprecated"):
-            binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
-        assert (binary_matrix == result).all()
-
-    @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix_from_pws(self, terms, num_qubits, result):
         r"""Test that _binary_matrix_from_pws returns the correct result."""
         # pylint: disable=protected-access
         pws_lst = [list(qml.pauli.pauli_sentence(t))[0] for t in terms]
         binary_matrix = qml.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
         assert (binary_matrix == result).all()
-
-
-def test_deprecated_get_pauli_map():
-    """Test that _get_pauli_map is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="_get_pauli_map is deprecated"):
-        _ = qml.pauli.utils._get_pauli_map(0)  # pylint:disable=protected-access
