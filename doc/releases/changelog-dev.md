@@ -125,9 +125,11 @@
 * `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
   * tapes with more than one wire.
   * quantum functions.
+  * Operator class where ``num_wires`` does not equal to 1
   * QNodes if the device does not have wires specified.
   * PauliWords and PauliSentences with more than one wire.
   [(#5328)](https://github.com/PennyLaneAI/pennylane/pull/5328)
+  [(#5359)](https://github.com/PennyLaneAI/pennylane/pull/5359)
 
 * ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
   [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
@@ -166,6 +168,9 @@
   ```
 
 <h3>Documentation 📝</h3>
+
+* Removed some redundant documentation for the `evolve` function.
+  [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
 
 * Updated the final example in the `compile` docstring to use transforms correctly.
   [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
