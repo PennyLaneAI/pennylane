@@ -170,7 +170,7 @@ def _check_opmath_operations(operation1, operation2):
 
         if isinstance(op, (qml.operation.Tensor, SProd, Prod, Sum)):
             raise qml.QuantumFunctionError(
-                f"Operation {op} not supported (it must have a valid Pauli representation)."
+                f"Operation {op} currently not supported. Tensor, Prod, Sprod, and Sum instances must have a valid Pauli representation."
             )
 
 
