@@ -32,7 +32,7 @@ def hamiltonian_grad(tape, idx):
     new_measurements = list(tape.measurements)
 
     new_parameters = [0 * d for d in op.data]
-    new_parameters[p_idx] = 1.0
+    new_parameters[p_idx] = qml.math.ones_like(op.data[p_idx])
     new_obs = qml.ops.functions.bind_new_parameters(op, new_parameters)
     new_obs = qml.simplify(new_obs)
 
