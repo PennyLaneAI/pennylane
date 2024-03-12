@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the var module"""
+
 from flaky import flaky
 import numpy as np
 import pytest
@@ -23,9 +24,10 @@ from pennylane.measurements import Variance, Shots
 class TestVar:
     """Tests for the var function"""
 
-    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
+    @pytest.mark.parametrize("shots", [None, 5000, [5000, 5000]])
     def test_value(self, tol, shots):
         """Test that the var function works"""
+
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev, diff_method="parameter-shift")
