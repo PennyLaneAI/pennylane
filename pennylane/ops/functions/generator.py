@@ -209,7 +209,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
 
         if format == "arithmetic":
             h = _generator_hamiltonian(gen, gen_op)
-            return qml.dot(h.coeffs, h.ops)
+            return qml.operation.convert_to_opmath(h) 
 
         if format == "observable":
             return gen

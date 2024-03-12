@@ -344,19 +344,19 @@ class TestObservableReturn:
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="observable")(0.5, wires=0)
-        assert gen.name == "Hamiltonian"
-        assert gen.compare(ObservableOp(0.5, wires=0).generator())
+        assert gen.name == "SProd"
+        assert qml.equal(gen, ObservableOp(0.5, wires=0).generator())
 
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
         gen = qml.generator(TensorOp, format="observable")(0.5, wires=[0, 1])
-        assert gen.name == "Hamiltonian"
-        assert gen.compare(TensorOp(0.5, wires=[0, 1]).generator())
+        assert gen.name == "Prod"
+        assert qml.equal(gen, TensorOp(0.5, wires=[0, 1]).generator())
 
     def test_hamiltonian(self):
         """Test a generator that returns a Hamiltonian"""
         gen = qml.generator(HamiltonianOp, format="observable")(0.5, wires=[0, 1])
-        assert gen.name == "Hamiltonian"
+        assert gen.name == "LinearCombination"
         assert gen.compare(HamiltonianOp(0.5, wires=[0, 1]).generator())
 
     def test_hermitian(self):
@@ -374,39 +374,43 @@ class TestObservableReturn:
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
 
-class TestHamiltonianReturn:
+class TestLinearCombinationReturn:
     """Tests for format="hamiltonian". This format always returns the generator
-    as a Hamiltonian."""
+    as a LinearCombination."""
 
     def test_observable_no_coeff(self):
         """Test a generator that returns an observable with no coefficient is correct"""
         gen = qml.generator(qml.PhaseShift, format="hamiltonian")(0.5, wires=0)
-        assert gen.name == "Hamiltonian"
-        assert gen.compare(1.0 * qml.PhaseShift(0.5, wires=0).generator())
+        assert gen.name == "SProd"
+        assert qml.equal(gen, 1.0 * qml.PhaseShift(0.5, wires=0).generator())
 
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="hamiltonian")(0.5, wires=0)
-        assert gen.name == "Hamiltonian"
-        assert gen.compare(ObservableOp(0.5, wires=0).generator())
+        assert gen.name == "LinearCombination"
+        gen_compare = ObservableOp(0.5, wires=0).generator()
+        assert gen.coeffs[0] == gen_compare.scalar
+        assert gen.ops[0] == gen_compare.base
 
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
         gen = qml.generator(TensorOp, format="hamiltonian")(0.5, wires=[0, 1])
-        assert gen.name == "Hamiltonian"
-        assert gen.compare(TensorOp(0.5, wires=[0, 1]).generator())
+        assert gen.name == "LinearCombination"
+        gen_compare = TensorOp(0.5, wires=[0, 1]).generator()
+        assert gen.coeffs == gen_compare.terms()[0]
+        assert gen.ops == gen_compare.terms()[1]
 
-    def test_hamiltonian(self):
-        """Test a generator that returns a Hamiltonian"""
+    def test_linearcombination(self):
+        """Test a generator that returns a LinearCombination"""
         gen = qml.generator(HamiltonianOp, format="hamiltonian")(0.5, wires=[0, 1])
-        assert gen.name == "Hamiltonian"
+        assert gen.name == "LinearCombination"
         assert gen.compare(HamiltonianOp(0.5, wires=[0, 1]).generator())
 
     def test_hermitian(self):
         """Test a generator that returns a Hermitian observable
         is correct"""
         gen = qml.generator(HermitianOp, format="hamiltonian")(0.5, wires=0)
-        assert gen.name == "Hamiltonian"
+        assert gen.name == "LinearCombination"
 
         expected = qml.pauli_decompose(HermitianOp.H, hide_identity=True)
         assert gen.compare(expected)
@@ -415,7 +419,7 @@ class TestHamiltonianReturn:
         """Test a generator that returns a SparseHamiltonian observable
         is correct"""
         gen = qml.generator(SparseOp, format="hamiltonian")(0.5, wires=0)
-        assert gen.name == "Hamiltonian"
+        assert gen.name == "LinearCombination"
 
         expected = qml.pauli_decompose(SparseOp.H.toarray(), hide_identity=True)
         assert gen.compare(expected)
@@ -427,7 +431,7 @@ class TestArithmeticReturn:
     def test_observable_no_coeff(self):
         """Test a generator that returns an observable with no coefficient is correct"""
         gen = qml.generator(qml.PhaseShift, format="arithmetic")(0.5, wires=0)
-        assert qml.equal(gen, qml.Projector(np.array([1]), wires=0))
+        assert qml.equal(gen.base, qml.Projector(np.array([1]), wires=0))
 
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
