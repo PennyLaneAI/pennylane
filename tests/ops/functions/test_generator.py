@@ -60,8 +60,8 @@ class TensorOp(CustomOp):
         return self.coeff * self.obs[0](self.wires[0]) @ self.obs[1](self.wires[1])
 
 
-class HamiltonianOp(CustomOp):
-    """Returns the generator as a Hamiltonian"""
+class LinearCombinationOp(CustomOp):
+    """Returns the generator as a LinearCombination"""
 
     num_wires = 2
     coeff = [1.0, 0.5]
@@ -72,8 +72,8 @@ class HamiltonianOp(CustomOp):
         return qml.Hamiltonian(self.coeff, obs)
 
 
-class HamiltonianOpSameCoeff(CustomOp):
-    """Returns the generator as a Hamiltonian"""
+class LinearCombinationOpSameCoeff(CustomOp):
+    """Returns the generator as a LinearCombination"""
 
     num_wires = 2
     coeff = [0.5, 0.5]
@@ -84,8 +84,8 @@ class HamiltonianOpSameCoeff(CustomOp):
         return qml.Hamiltonian(self.coeff, obs)
 
 
-class HamiltonianOpSameAbsCoeff(CustomOp):
-    """Returns the generator as a Hamiltonian"""
+class LinearCombinationOpSameAbsCoeff(CustomOp):
+    """Returns the generator as a LinearCombination"""
 
     num_wires = 2
     coeff = [0.5, -0.5]
@@ -262,16 +262,16 @@ class TestPrefactorReturn:
         assert prefactor == 0.5
         assert gen.name == "Prod"
 
-    def test_hamiltonian(self):
-        """Test a generator that returns a Hamiltonian"""
-        gen, prefactor = qml.generator(HamiltonianOp, format="prefactor")(0.5, wires=[0, 1])
+    def test_linear_combination(self):
+        """Test a generator that returns a LinearCombination"""
+        gen, prefactor = qml.generator(LinearCombinationOp, format="prefactor")(0.5, wires=[0, 1])
         assert prefactor == 1.0
         assert gen.name == "Sum"
 
-    def test_hamiltonian_with_same_term(self):
-        """Test a generator that returns a Hamiltonian with multiple terms, all containing the same
+    def test_linear_combination_with_same_term(self):
+        """Test a generator that returns a LinearCombination with multiple terms, all containing the same
         coefficient."""
-        gen, prefactor = qml.generator(HamiltonianOpSameCoeff, format="prefactor")(
+        gen, prefactor = qml.generator(LinearCombinationOpSameCoeff, format="prefactor")(
             0.5, wires=[0, 1]
         )
         assert prefactor == 0.5
@@ -279,10 +279,10 @@ class TestPrefactorReturn:
         for op in gen:
             assert isinstance(op, Prod)
 
-    def test_hamiltonian_with_same_abs_term(self):
-        """Test a generator that returns a Hamiltonian with multiple terms, all containing the same
+    def test_linear_combination_with_same_abs_term(self):
+        """Test a generator that returns a LinearCombination with multiple terms, all containing the same
         absolute coefficient."""
-        gen, prefactor = qml.generator(HamiltonianOpSameAbsCoeff, format="prefactor")(
+        gen, prefactor = qml.generator(LinearCombinationOpSameAbsCoeff, format="prefactor")(
             0.5, wires=[0, 1]
         )
         assert prefactor == 0.5
@@ -353,11 +353,11 @@ class TestObservableReturn:
         assert gen.name == "Prod"
         assert qml.equal(gen, TensorOp(0.5, wires=[0, 1]).generator())
 
-    def test_hamiltonian(self):
-        """Test a generator that returns a Hamiltonian"""
-        gen = qml.generator(HamiltonianOp, format="observable")(0.5, wires=[0, 1])
+    def test_linear_combination(self):
+        """Test a generator that returns a LinearCombination"""
+        gen = qml.generator(LinearCombinationOp, format="observable")(0.5, wires=[0, 1])
         assert gen.name == "LinearCombination"
-        assert gen.compare(HamiltonianOp(0.5, wires=[0, 1]).generator())
+        assert gen.compare(LinearCombinationOp(0.5, wires=[0, 1]).generator())
 
     def test_hermitian(self):
         """Test a generator that returns a Hermitian observable
@@ -402,9 +402,9 @@ class TestLinearCombinationReturn:
 
     def test_linearcombination(self):
         """Test a generator that returns a LinearCombination"""
-        gen = qml.generator(HamiltonianOp, format="hamiltonian")(0.5, wires=[0, 1])
+        gen = qml.generator(LinearCombinationOp, format="hamiltonian")(0.5, wires=[0, 1])
         assert gen.name == "LinearCombination"
-        assert gen.compare(HamiltonianOp(0.5, wires=[0, 1]).generator())
+        assert gen.compare(LinearCombinationOp(0.5, wires=[0, 1]).generator())
 
     def test_hermitian(self):
         """Test a generator that returns a Hermitian observable
@@ -451,7 +451,7 @@ class TestArithmeticReturn:
 
     def test_hamiltonian(self):
         """Test a generator that returns a Hamiltonian"""
-        gen = qml.generator(HamiltonianOp, format="arithmetic")(0.5, wires=[0, 1])
+        gen = qml.generator(LinearCombinationOp, format="arithmetic")(0.5, wires=[0, 1])
         result = qml.sum(
             qml.PauliX(0) @ qml.Identity(1),
             qml.s_prod(0.5, qml.PauliX(0) @ qml.PauliY(1)),
