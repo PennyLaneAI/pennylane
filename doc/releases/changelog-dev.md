@@ -111,10 +111,8 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
-* Implemented the method `process_counts` in
-  * `ExpectationMp` [(#5241)](https://github.com/PennyLaneAI/pennylane/issues/5241)
-  * `VarianceMP` [(#5244)](https://github.com/PennyLaneAI/pennylane/issues/5244)
-  * `CountsMP` [(#5249)](https://github.com/PennyLaneAI/pennylane/issues/5249)
+* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, and `CountsMP`.
+  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
 
 <h3>Breaking changes 💔</h3>
 
