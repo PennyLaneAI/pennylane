@@ -597,18 +597,17 @@ class DoubleExcitation(Operation):
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
-        coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
-        obs = [
-            qml.X(w0) @ qml.X(w1) @ qml.X(w2) @ qml.Y(w3),
-            qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.X(w3),
-            qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.X(w3),
-            qml.X(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.Y(w3),
-            qml.Y(w0) @ qml.X(w1) @ qml.X(w2) @ qml.X(w3),
-            qml.Y(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Y(w3),
-            qml.Y(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Y(w3),
-            qml.Y(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.X(w3),
-        ]
-        return qml.Hamiltonian(coeffs, obs)
+        # coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
+        return 0.0625 * (
+            qml.X(w0) @ qml.X(w1) @ qml.X(w2) @ qml.Y(w3)
+            + qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.X(w3)
+            - qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.X(w3)
+            + qml.X(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.Y(w3)
+            - qml.Y(w0) @ qml.X(w1) @ qml.X(w2) @ qml.X(w3)
+            + qml.Y(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Y(w3)
+            - qml.Y(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Y(w3)
+            - qml.Y(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.X(w3)
+        )
 
     def pow(self, z):
         return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
