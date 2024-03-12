@@ -137,7 +137,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.workflow.execution, "_cache_transform")
+        spy = mocker.spy(qml.workflow.execution._cache_transform, "_transform")
         a = tf.Variable([0.1, 0.2])
 
         with tf.GradientTape() as t:
@@ -159,7 +159,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.workflow.execution, "_cache_transform")
+        spy = mocker.spy(qml.workflow.execution._cache_transform, "_transform")
         a = tf.Variable([0.1, 0.2])
         custom_cache = {}
 
