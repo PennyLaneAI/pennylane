@@ -1197,6 +1197,10 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+        prod_op2 = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op2, SProd)
+        assert prod_op.scalar is scalar
+
     def test_divide_with_scalar(self):
         """Test the __truediv__ dunder method with a scalar value."""
         sprod_op = qml.RX(1, 0) / 4

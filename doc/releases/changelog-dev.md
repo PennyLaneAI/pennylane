@@ -60,6 +60,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* Operators can now be left multiplied `x * op` by numpy arrays.
+
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
   [(##5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
