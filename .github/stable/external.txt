@@ -21,7 +21,7 @@ cfgv==3.4.0
 charset-normalizer==3.3.2
 clarabel==0.7.1
 click==8.1.7
-comm==0.2.1
+comm==0.2.2
 contourpy==1.2.0
 coverage==7.4.3
 cvxopt==1.3.2
@@ -70,12 +70,12 @@ json5==0.9.22
 jsonpointer==2.4
 jsonschema==4.21.1
 jsonschema-specifications==2023.12.1
-jupyter-events==0.9.0
+jupyter-events==0.9.1
 jupyter-lsp==2.2.4
 jupyter_client==8.6.1
 jupyter_core==5.7.2
 jupyter_server==2.13.0
-jupyter_server_terminals==0.5.2
+jupyter_server_terminals==0.5.3
 jupyterlab==4.1.4
 jupyterlab-widgets==1.1.7
 jupyterlab_pygments==0.3.0
@@ -91,9 +91,9 @@ matplotlib-inline==0.1.6
 mistune==3.0.2
 ml-dtypes==0.3.2
 mypy-extensions==1.0.0
-nbclient==0.9.0
+nbclient==0.9.1
 nbconvert==7.16.2
-nbformat==5.9.2
+nbformat==5.10.2
 nest-asyncio==1.6.0
 networkx==3.2.1
 nodeenv==1.8.0
@@ -165,7 +165,7 @@ tensorflow==2.15.1
 tensorflow-estimator==2.15.0
 tensorflow-io-gcs-filesystem==0.36.0
 termcolor==2.4.0
-terminado==0.18.0
+terminado==0.18.1
 tinycss2==1.2.1
 toml==0.10.2
 tomli==2.0.1
