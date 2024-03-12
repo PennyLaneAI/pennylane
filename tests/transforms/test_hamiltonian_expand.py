@@ -84,6 +84,7 @@ OUTPUTS = [-1.5, -6, -1.5, -8]
 class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_ham_with_no_terms_raises(self):
         """Tests that the hamiltonian_expand transform raises an error for a Hamiltonian with no terms."""
         mps = [qml.expval(qml.Hamiltonian([], []))]
