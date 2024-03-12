@@ -1201,7 +1201,7 @@ class TestOperatorIntegration:
         assert isinstance(prod_op2, SProd)
         assert prod_op.scalar is scalar
 
-    def test_mul_array_nupy(self):
+    def test_mul_array_numpy(self):
         """Test that the __mul__ dunder works with a batched scalar."""
 
         scalar = np.array([0.5, 0.6, 0.7])
