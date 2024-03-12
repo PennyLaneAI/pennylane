@@ -223,8 +223,8 @@ def drive(amplitude, phase, wires):
         amplitude_and_phase(qml.math.sin, amplitude, phase),
     ]
 
-    drive_x_term = qml.Hamiltonian([0.5]*len(wires), [qml.X(wire) for wire in wires])
-    drive_y_term = qml.Hamiltonian([-0.5]*len(wires), [qml.Y(wire) for wire in wires])
+    drive_x_term = qml.Hamiltonian([0.5] * len(wires), [qml.X(wire) for wire in wires])
+    drive_y_term = qml.Hamiltonian([-0.5] * len(wires), [qml.Y(wire) for wire in wires])
 
     observables = [drive_x_term, drive_y_term]
 
