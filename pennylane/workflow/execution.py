@@ -295,9 +295,13 @@ def _make_inner_execute(
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
 
         transformed_tapes, transform_post_processing = transform_program(tapes)
-        if len(transformed_tapes) == 0:
-            return transform_post_processing(tuple())
-        return transform_post_processing(device_execution(transformed_tapes))
+
+        if transformed_tapes:
+            results = device_execution(transformed_tapes)
+        else:
+            results = ()
+
+        return transform_post_processing(results)
 
     return inner_execute
 
