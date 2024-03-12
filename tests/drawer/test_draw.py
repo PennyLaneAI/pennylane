@@ -860,7 +860,6 @@ def test_nested_tapes():
     assert draw(circ)() == expected
 
 
-@pytest.mark.xfail(reason="ApproximateTimeEvolution needs updates to support new op_math")
 @pytest.mark.parametrize(
     "device",
     [qml.device("default.qubit.legacy", wires=2), qml.devices.DefaultQubit(wires=2)],
