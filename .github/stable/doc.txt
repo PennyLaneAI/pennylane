@@ -34,7 +34,7 @@ h5py==3.10.0
 idna==3.6
 imagesize==1.4.1
 importlib_metadata==7.0.2
-importlib_resources==6.2.0
+importlib_resources==6.3.0
 iniconfig==2.0.0
 jax==0.4.16
 jaxlib==0.4.16
