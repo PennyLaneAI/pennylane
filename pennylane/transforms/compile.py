@@ -124,8 +124,7 @@ def compile(
     We can compile it down to a smaller set of gates using the ``qml.compile``
     transform.
 
-    >>> compiled_qfunc = qml.compile(qfunc)
-    >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
+    >>> compiled_qnode = qml.compile(qnode)
     >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.60)─────────────────┤  <Z>
     1: ──H─╭X──────────────────╭●────┤
@@ -139,7 +138,8 @@ def compile(
 
     .. code-block:: python3
 
-        compiled_qfunc = qml.compile(
+        compiled_qnode = qml.compile(
+            qnode,
             pipeline=[
                 partial(qml.transforms.commute_controlled, direction="left"),
                 partial(qml.transforms.merge_rotations, atol=1e-6),
@@ -147,9 +147,7 @@ def compile(
             ],
             basis_set=["CNOT", "RX", "RY", "RZ"],
             num_passes=2
-        )(qfunc)
-
-        compiled_qnode = qml.QNode(compiled_qfunc, dev)
+        )
 
         print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
 
