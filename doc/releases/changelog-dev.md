@@ -117,6 +117,9 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
+* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, and `CountsMP`.
+  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
+
 <h3>Breaking changes 💔</h3>
 
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the ``pauli`` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
@@ -187,6 +190,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Mikhail Andrenkov,
 Utkarsh Azad,
