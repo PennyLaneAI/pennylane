@@ -23,7 +23,7 @@ differentiation support.
 
 import inspect
 import warnings
-from functools import wraps, partial
+from functools import partial
 from typing import Callable, MutableMapping, Sequence, Optional, Union, Tuple
 import logging
 
