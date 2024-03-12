@@ -100,6 +100,7 @@
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
   
 * `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
+  [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
 <h4>Community contributions 🥳</h4>
 
