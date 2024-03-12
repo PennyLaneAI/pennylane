@@ -92,7 +92,7 @@ class AmplitudeAmplification(Operation):
     .. code-block:: pycon
 
         >>> print(np.round(circuit(),3))
-        [0.009 0.009 0.94  0.009 0.009 0.009 0.009 0.009]
+        [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
     """
 
     def _flatten(self):
@@ -176,7 +176,6 @@ class AmplitudeAmplification(Operation):
 
         return ops
 
-    # pylint: disable=protected-access
     def queue(self, context=qml.QueuingManager):
         for op in [self.hyperparameters["U"], self.hyperparameters["O"]]:
             context.remove(op)
