@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import enable_new_opmath, disable_new_opmath
+from pennylane.operation import active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -116,6 +116,7 @@ def test_spin2_matrix_elements(n_spin_orbs, matrix_ref):
     assert np.allclose(s2_me_result, matrix_ref)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("electrons", "orbitals", "coeffs_ref", "ops_ref"),
     [
@@ -175,16 +176,15 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     """
     s2 = qchem.spin.spin2(electrons, orbitals)
     s2_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
-    assert s2.compare(s2_ref)
+    assert s2_ref.compare(s2)
 
-    enable_new_opmath()
-    s2_pl_op = qchem.spin.spin2(electrons, orbitals)
-    disable_new_opmath()
+    if active_new_opmath():
+        assert not isinstance(s2, qml.Hamiltonian)
+        assert isinstance(s2_ref, qml.ops.LinearCombination)
 
     wire_order = s2_ref.wires
-    assert not isinstance(s2_pl_op, qml.Hamiltonian)
     assert np.allclose(
-        qml.matrix(s2_pl_op, wire_order=wire_order),
+        qml.matrix(s2, wire_order=wire_order),
         qml.matrix(s2_ref, wire_order=wire_order),
     )
 
@@ -206,6 +206,7 @@ def test_exception_spin2(electrons, orbitals, msg_match):
         qchem.spin.spin2(electrons, orbitals)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("orbitals", "coeffs_ref", "ops_ref"),
     [
@@ -234,18 +235,16 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     """
     sz = qchem.spin.spinz(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
-    assert sz.compare(sz_ref)
+    assert sz_ref.compare(sz)
 
-    enable_new_opmath()
-    sz_pl_op = qchem.spin.spinz(orbitals)
-    disable_new_opmath()
-    sz_ref_pl_op = qml.dot(coeffs_ref, ops_ref)
+    if active_new_opmath():
+        assert not isinstance(sz, qml.Hamiltonian)
+        assert isinstance(sz_ref, qml.ops.LinearCombination)
 
     wire_order = sz_ref.wires
-    assert not isinstance(sz_pl_op, qml.Hamiltonian)
     assert np.allclose(
-        qml.matrix(sz_pl_op, wire_order=wire_order),
-        qml.matrix(sz_ref_pl_op, wire_order=wire_order),
+        qml.matrix(sz, wire_order=wire_order),
+        qml.matrix(sz_ref, wire_order=wire_order),
     )
 
 

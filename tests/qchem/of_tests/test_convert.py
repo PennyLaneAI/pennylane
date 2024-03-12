@@ -24,7 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import disable_new_opmath, enable_new_opmath
+from pennylane.operation import active_new_opmath
 
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
@@ -394,6 +394,7 @@ ops_wires = (
 )
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("pl_op, of_op, wire_order", ops_wires)
 def test_operation_conversion(pl_op, of_op, wire_order):
     """Assert the conversion between pennylane and openfermion operators"""
@@ -402,19 +403,11 @@ def test_operation_conversion(pl_op, of_op, wire_order):
 
     converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
     _, converted_of_op_terms = converted_of_op
-    assert all(isinstance(term, pauli_ops_and_tensor) for term in converted_of_op_terms)
-    assert np.allclose(
-        qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
-        qml.matrix(qml.dot(*converted_of_op), wire_order=wire_order),
-    )
 
-    # test arithmetic types
-    enable_new_opmath()
-    converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
-    disable_new_opmath()
-
-    _, converted_of_op_terms = converted_of_op
-    assert all(isinstance(term, pauli_ops_and_prod) for term in converted_of_op_terms)
+    if not active_new_opmath():
+        assert all(isinstance(term, pauli_ops_and_tensor) for term in converted_of_op_terms)
+    else:
+        assert all(isinstance(term, pauli_ops_and_prod) for term in converted_of_op_terms)
 
     assert np.allclose(
         qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
@@ -490,8 +483,8 @@ def test_types_consistency():
     # Build PL operator using 'import_operator'
     pl = qml.qchem.convert.import_operator(of, "openfermion")
 
-    ops = pl.ops
-    ops_ref = pl_ref.ops
+    ops = pl.terms()[1]
+    ops_ref = pl_ref.terms()[1]
 
     for i, op in enumerate(ops):
         assert op.name == ops_ref[i].name
@@ -536,25 +529,21 @@ of_pl_ops = (
 )
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("of_op, pl_h, pl_op, wires", of_pl_ops)
 def test_import_operator(of_op, pl_h, pl_op, wires):
     """Test the import_operator function correctly imports an OpenFermion operator into a PL one."""
     of_h = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
-    assert qml.equal(of_h, pl_h)
+    assert pl_h.compare(of_h)
 
-    enable_new_opmath()
-    of_arithmetic_op = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
-    disable_new_opmath()
+    assert isinstance(of_h, type(pl_op) if active_new_opmath() else qml.Hamiltonian)
 
-    assert isinstance(of_arithmetic_op, type(pl_op))
-    if isinstance(of_arithmetic_op, qml.ops.Sum):
+    if isinstance(of_h, qml.ops.Sum):
         assert all(
             isinstance(term, qml.ops.SProd) and isinstance(term.base, pauli_ops_and_prod)
-            for term in of_arithmetic_op.operands
+            for term in of_h.operands
         )
-    assert np.allclose(
-        qml.matrix(of_arithmetic_op, wire_order=wires), qml.matrix(pl_op, wire_order=wires)
-    )
+    assert np.allclose(qml.matrix(of_h, wire_order=wires), qml.matrix(pl_op, wire_order=wires))
 
 
 op_1 = (
@@ -781,7 +770,7 @@ def test_integration_mol_file_to_vqe_cost(
     vqe_hamiltonian = qml.qchem.convert.import_operator(
         qubit_hamiltonian, wires=custom_wires, format="openfermion"
     )
-    assert len(vqe_hamiltonian.ops) > 1  # just to check if this runs
+    assert len(vqe_hamiltonian.terms()[1]) > 1  # just to check if this runs
 
     num_qubits = len(vqe_hamiltonian.wires)
     assert num_qubits == 2 * len(active)

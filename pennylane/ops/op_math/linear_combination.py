@@ -322,19 +322,21 @@ class LinearCombination(Sum):
             pr2.simplify()
             return pr1 == pr2
 
+        op1 = self.simplify()
+        if isinstance(other, qml.Hamiltonian):
+            op2 = other.simplify()
+            return op1 == LinearCombination(op2.coeffs, op2.ops)
+
         if isinstance(other, (LinearCombination, qml.Hamiltonian)):
-            op1 = self.simplify()
             op2 = other.simplify()
             return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
 
         if isinstance(other, (Tensor, Observable)):
-            op1 = self.simplify()
             return op1._obs_data() == {
                 (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
             }
 
         if isinstance(other, (Operator)):
-            op1 = self.simplify()
             op2 = other.simplify()
             return qml.equal(op1, op2)
 

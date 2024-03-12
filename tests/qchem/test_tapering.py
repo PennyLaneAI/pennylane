@@ -33,7 +33,7 @@ from pennylane.qchem.tapering import (
     _split_pauli_sentence,
     _taper_pauli_sentence,
 )
-from pennylane.operation import enable_new_opmath, disable_new_opmath
+from pennylane.operation import enable_new_opmath, disable_new_opmath, active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -235,7 +235,6 @@ def test_symmetry_generators(symbols, geometry, res_generators):
     mol = qml.qchem.Molecule(symbols, geometry)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)()
     generators = qml.symmetry_generators(hamiltonian)
-
     for g1, g2 in zip(generators, res_generators):
         assert g1.compare(g2)
 
@@ -285,6 +284,7 @@ def test_symmetry_generators(symbols, geometry, res_generators):
 def test_clifford(generator, paulixops, result):
     r"""Test that clifford returns the correct operator."""
     u = clifford(generator, paulixops)
+    print(u)
     assert u.compare(result)
 
     # test arithmetic op compatibility:
@@ -530,7 +530,6 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
     assert np.all(tapered_hf_state == result)
 
 
-@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge"),
     [
@@ -565,11 +564,11 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         ),
     ],
 )
-def test_taper_obs(symbols, geometry, charge, op_arithmetic):
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_taper_obs(symbols, geometry, charge):
     r"""Test that the expectation values of tapered observables with respect to the
     tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
-    if op_arithmetic:
-        enable_new_opmath()
+
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
@@ -593,8 +592,6 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
         qml.qchem.spinz(len(hamiltonian.wires)),
     ]
     for observable in observables:
-        if op_arithmetic:
-            enable_new_opmath()
 
         obs_ps = qml.pauli.pauli_sentence(observable)
         tapered_obs = qml.taper(observable, generators, paulixops, paulix_sector)
@@ -610,9 +607,6 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
             @ tapered_obs.sparse_matrix(wire_order=range(len(tapered_obs.wires)))
             @ scipy.sparse.coo_matrix(state_tapered).T
         ).toarray()
-
-        if op_arithmetic:
-            disable_new_opmath()
 
         assert np.isclose(obs_val, obs_val_tapered)
         assert qml.equal(tapered_obs, tapered_ps)
@@ -666,6 +660,7 @@ def test_taper_obs(symbols, geometry, charge, op_arithmetic):
         ),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_taper_excitations(
     symbols, geometry, charge, generators, paulixops, paulix_sector, num_commuting
 ):
@@ -683,6 +678,7 @@ def test_taper_excitations(
         qml.qchem.spin2(num_electrons, num_wires),
         qml.qchem.spinz(num_wires),
     ]
+
     tapered_obs = [
         qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
     ]
@@ -719,12 +715,12 @@ def test_taper_excitations(
             for obs, tap_obs in zip(observables, tapered_obs):
                 expec_val = (
                     scipy.sparse.coo_matrix(excited_state)
-                    @ obs.sparse_matrix()
+                    @ obs.sparse_matrix(wire_order=range(len(hf_state)))
                     @ scipy.sparse.coo_matrix(excited_state).getH()
                 ).toarray()
                 expec_val_tapered = (
                     scipy.sparse.coo_matrix(excited_state_tapered)
-                    @ tap_obs.sparse_matrix()
+                    @ tap_obs.sparse_matrix(wire_order=range(len(hf_tapered)))
                     @ scipy.sparse.coo_matrix(excited_state_tapered).getH()
                 ).toarray()
                 assert np.isclose(expec_val, expec_val_tapered)
@@ -737,7 +733,7 @@ def test_taper_excitations(
         (
             qml.U2(1, 1, 2),
             np.identity(16),
-            "Generator for the operation needs to be a qml.Hamiltonian",
+            "Generator for the operation needs to be a valid operator",
         ),
         (
             qml.U2(1, 1, 2),
@@ -799,6 +795,7 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
         ),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_consistent_taper_ops(operation, op_gen):
     r"""Test that operations are tapered consistently when their generators are provided manually and when they are constructed internally"""
 
@@ -842,7 +839,7 @@ def test_consistent_taper_ops(operation, op_gen):
             hamiltonian,  # for energy
             sum(qml.PauliZ(wire) for wire in hamiltonian.wires),  # for local-cost 1
             # for local-cost 2
-            sum(qml.PauliZ(wire) @ qml.PauliZ(wire + 1) for wire in hamiltonian.wires),
+            sum(qml.PauliZ(wire) @ qml.PauliZ(wire + 1) for wire in hamiltonian.wires[:-1]),
         ]
         tapered_obs = [
             qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
@@ -874,32 +871,6 @@ def test_consistent_taper_ops(operation, op_gen):
                 @ scipy.sparse.coo_matrix(evolved_state_tapered).getH()
             ).toarray()
             assert np.isclose(expec_val, expec_val_tapered)
-
-
-def test_taper_ops_opmath_error():
-    """Test that an error is raised if taper_operations() is used with enable_new_opmath()."""
-    enable_new_opmath()
-    symbols, geometry, charge, operation, op_wires, op_gen = (
-        ["He", "H"],
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
-        1,
-        qml.RZ,
-        [3],
-        None,
-    )
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
-
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
-    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
-    wire_order = hamiltonian.wires
-
-    with pytest.raises(qml.QuantumFunctionError, match="This function is currently not supported"):
-        taper_operation(
-            operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
-        )
-    disable_new_opmath()
 
 
 @pytest.mark.parametrize(
@@ -977,12 +948,11 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
                 wires=wires,
             ),
             [0, 2],
-            lambda phi, wires: qml.Hamiltonian(
-                [-0.5 * phi], [qml.PauliX(wires=wires[0]) @ qml.PauliX(wires=wires[1])]
-            ),
+            lambda phi, wires: -0.5 * phi * qml.PauliX(wires=wires[0]) @ qml.PauliX(wires=wires[1]),
         ),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_taper_matrix_ops(operation, op_wires, op_gen):
     """Test that taper_operation can be used with gate operation built using matrices"""
 

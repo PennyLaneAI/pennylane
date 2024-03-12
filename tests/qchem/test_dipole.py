@@ -190,9 +190,12 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
     d_ref = qml.Hamiltonian(coeffs, ops)
 
-    assert np.allclose(sorted(d.coeffs), sorted(d_ref.coeffs))
-    assert qml.Hamiltonian(np.ones(len(d.coeffs)), d.ops).compare(
-        qml.Hamiltonian(np.ones(len(d_ref.coeffs)), d_ref.ops)
+    d_coeff, d_ops = d.terms()
+    dref_coeff, dref_ops = d_ref.terms()
+
+    assert np.allclose(sorted(d_coeff), sorted(dref_coeff))
+    assert qml.Hamiltonian(np.ones(len(d_coeff)), d_ops).compare(
+        qml.Hamiltonian(np.ones(len(dref_coeff)), dref_ops)
     )
 
     with enable_new_opmath_cm():
@@ -217,6 +220,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
         ),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     r"""Test that the dipole moment is constructed properly with basis sets having different numbers
     of primitive Gaussian functions."""
@@ -229,8 +233,7 @@ def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha, basis_name="6-31g")
     args = [alpha]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-
-    assert isinstance(d, qml.Hamiltonian)
+    assert isinstance(d, (qml.Hamiltonian, qml.ops.Sum))
 
 
 @pytest.mark.parametrize(

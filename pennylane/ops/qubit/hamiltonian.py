@@ -190,6 +190,15 @@ class Hamiltonian(Observable):
                 "number of coefficients and operators does not match."
             )
 
+        observables = [
+            (
+                qml.operation.Tensor(*obs.simplify())
+                if isinstance(obs.simplify(), (qml.ops.op_math.Prod))
+                else obs.simplify()
+            )
+            for obs in observables
+        ]
+
         for obs in observables:
             if not isinstance(obs, Observable):
                 raise ValueError(
@@ -568,6 +577,7 @@ class Hamiltonian(Observable):
 
         return data
 
+    # pylint: disable=protected-access
     def compare(self, other):
         r"""Determines whether the operator is equivalent to another.
 
@@ -607,16 +617,17 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, (Hamiltonian, qml.ops.LinearCombination)):
-            self.simplify()
-            other.simplify()
-            return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
+        op1 = self.simplify()
+        if isinstance(other, qml.ops.LinearCombination):
+            op2 = other.simplify()
+            return qml.ops.LinearCombination(op1.coeffs, op1.ops) == op2
+
+        if isinstance(other, Hamiltonian):
+            op2 = other.simplify()
+            return op1._obs_data() == op2._obs_data()
 
         if isinstance(other, (Tensor, Observable)):
-            self.simplify()
-            return self._obs_data() == {
-                (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
-            }
+            return op1._obs_data() == {(1, frozenset(other._obs_data()))}
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
