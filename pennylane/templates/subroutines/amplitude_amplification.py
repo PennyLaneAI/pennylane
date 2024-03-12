@@ -73,8 +73,8 @@ class AmplitudeAmplification(Operation):
 
         @qml.prod
         def generator(wires):
-          for wire in wires:
-            qml.Hadamard(wires = wire)
+            for wire in wires:
+                qml.Hadamard(wires = wire)
 
         U = generator(wires = range(3))
         O = qml.FlipSign(2, wires = range(3))
@@ -84,10 +84,10 @@ class AmplitudeAmplification(Operation):
         @qml.qnode(dev)
         def circuit():
 
-          generator(wires = range(3))
-          qml.AmplitudeAmplification(U, O, iters = 5, fixed_point=True, work_wire=3)
+            generator(wires = range(3))
+            qml.AmplitudeAmplification(U, O, iters = 5, fixed_point=True, work_wire=3)
 
-          return qml.probs(wires = range(3))
+            return qml.probs(wires = range(3))
 
     .. code-block:: pycon
 
