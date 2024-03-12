@@ -20,7 +20,6 @@ from typing import Sequence, Tuple, Union
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
@@ -128,11 +127,24 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
-        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
-
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
         with qml.queuing.QueuingManager.stop_recording():
             prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
-        return qml.math.dot(prob, eigvals)
+        return self._calculate_expectation(prob)
+
+    def process_counts(self, counts: dict, wire_order: Wires):
+        with qml.QueuingManager.stop_recording():
+            probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
+        return self._calculate_expectation(probs)
+
+    def _calculate_expectation(self, probabilities):
+        """
+        Calculate the of expectation set of probabilities.
+
+        Args:
+            probabilities (array): the probabilities of collapsing to eigen states
+        """
+        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
+        return qml.math.dot(probabilities, eigvals)
