@@ -118,7 +118,6 @@ def test_default_lightning_devices():
 
     res1 = qnode1()
 
-    """Test that the QNode executes with the Lightning Qubit simulator."""
     dev2 = qml.device("lightning.qubit", wires=4)
     qnode2 = qml.QNode(circuit, dev2)
 
