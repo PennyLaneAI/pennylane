@@ -535,7 +535,7 @@ class BasisStateProjector(Projector, Operation):
         """
         w = qml.math.zeros(2 ** len(basis_state), like=basis_state)
         idx = qml.math.dot(basis_state, 2 ** qml.math.arange(len(basis_state) - 1, -1, -1))
-        w = qml.math.put(w, idx, 1, inplace=False)
+        qml.math.put(w, idx, 1)
         return w
 
     @staticmethod
