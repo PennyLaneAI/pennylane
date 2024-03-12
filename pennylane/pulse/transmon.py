@@ -29,12 +29,12 @@ from pennylane.wires import Wires
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
-    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(0.5j, qml.PauliY(wire))
+    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(0.5j, qml.Y(wire))
 
 
 def ad(wire, d=2):
     """annihilation operator"""
-    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
+    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(-0.5j, qml.Y(wire))
 
 
 # pylint: disable=too-many-arguments
@@ -333,7 +333,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     :math:`2 \pi A \exp(0) \sin(\pi/2 + 0)\sigma^y = 2 \pi \sigma^y`.
 
     >>> H(params, t)
-    6.283185307179586*(PauliY(wires=[0]))
+    6.283185307179586 * Y(0)
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all
@@ -369,7 +369,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(H)(params, time)
-            return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
+            return qml.expval(qml.Z(0) + qml.Z(1) + qml.Z(2))
 
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of :math:`0.5 \times 2\pi \text{GHz}`)
     and set the drive frequency equal to the qubit frequencies. Note how the order of the construction
@@ -404,7 +404,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq)]
 
-    drive_y_term = sum(qml.PauliY(wire) for wire in wires)
+    drive_y_term = sum(qml.Y(wire) for wire in wires)
 
     observables = [drive_y_term]
 

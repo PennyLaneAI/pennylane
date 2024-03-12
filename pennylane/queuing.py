@@ -32,7 +32,7 @@ For example:
         qml.RX(x * scale_value, wires=0)
         if (1 != 2):
             qml.S(0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+        return qml.expval(qml.Z(0)), qml.expval(qml.X(1))
 
 To convert from a quantum function to a representation of a circuit, we use queuing.
 
@@ -82,39 +82,39 @@ Is q1 recording?  True
 If we construct an operator inside the recording context, we can see it is added to the queue:
 
 >>> with qml.queuing.AnnotatedQueue() as q:
-...     op = qml.PauliX(0)
+...     op = qml.X(0)
 >>> q.queue
-[PauliX(wires=[0])]
+[X(0)]
 
 If an operator is constructed outside of the context, we can manually add it to the queue by
 calling the :meth:`~.Operator.queue` method. The :meth:`~.Operator.queue` method is automatically
 called upon initialization, but it can also be manually called at a later time.
 
->>> op = qml.PauliX(0)
+>>> op = qml.X(0)
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     op.queue()
 >>> q.queue
-[PauliX(wires=[0])]
+[X(0)]
 
 An object can only exist up to *once* in the queue, so calling queue multiple times will
 not do anything.
 
->>> op = qml.PauliX(0)
+>>> op = qml.X(0)
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     op.queue()
 ...     op.queue()
 >>> q.queue
-[PauliX(wires=[0])]
+[X(0)]
 
 The :func:`~.apply` method allows a single object to be queued multiple times in a circuit.
 The function queues a copy of the original object if it already in the queue.
 
->>> op = qml.PauliX(0)
+>>> op = qml.X(0)
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     qml.apply(op)
 ...     qml.apply(op)
 >>> q.queue
-[PauliX(wires=[0]), PauliX(wires=[0])]
+[X(0), X(0)]
 >>> q.queue[0] is q.queue[1]
 False
 
@@ -123,26 +123,26 @@ In the case of operators composed of other operators, like with :class:`~.Symbol
 Only the operators that will end up in the circuit will remain.
 
 >>> with qml.queuing.AnnotatedQueue() as q:
-...     base = qml.PauliX(0)
+...     base = qml.X(0)
 ...     print(q.queue)
 ...     pow_op = base ** 1.5
 ...     print(q.queue)
-[PauliX(wires=[0])]
-[PauliX(wires=[0])**1.5]
+[X(0)]
+[X(0)**1.5]
 
 Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations
 and measurements in the final circuit. This step eliminates any object that has an owner.
 
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     qml.StatePrep(np.array([1.0, 0]), wires=0)
-...     base = qml.PauliX(0)
+...     base = qml.X(0)
 ...     pow_op = base ** 1.5
-...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+...     qml.expval(qml.Z(0) @ qml.X(1))
 >>> ops, measurements = qml.queuing.process_queue(q)
 >>> ops
-[StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), PauliX(wires=[0])**1.5]
+[StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), X(0)**1.5]
 >>> measurements
-[expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
+[expval(Z(0) @ X(1))]
 
 These lists can be used to construct a :class:`~.QuantumScript`:
 
@@ -154,7 +154,7 @@ use the :meth:`~.queuing.QueuingManager.stop_recording` context upon constructio
 
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     with qml.QueuingManager.stop_recording():
-...         qml.PauliY(1)
+...         qml.Y(1)
 >>> q.queue
 []
 
@@ -263,7 +263,7 @@ class QueuingManager:
         ... def circuit(params):
         ...     ops = list_of_ops(params, wires=0)
         ...     qml.apply(ops[-1])  # apply the last operation from the list again
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> print(qml.draw(circuit)([1, 2, 3]))
         0: ──RX(1.00)──RY(2.00)──RZ(3.00)──RZ(3.00)─┤  <Z>
 
@@ -274,7 +274,7 @@ class QueuingManager:
         ...     with qml.QueuingManager.stop_recording():
         ...         ops = list_of_ops(params, wires=0)
         ...     qml.apply(ops[-1])
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> print(qml.draw(circuit)([1, 2, 3]))
         0: ──RZ(3.00)─┤  <Z>
 
@@ -291,7 +291,7 @@ class QueuingManager:
         ... def circuit(params):
         ...     ops = list_of_ops(params, wires=0)
         ...     qml.apply(ops[-1])
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> print(qml.draw(circuit)([1, 2, 3]))
         0: ──RZ(3.00)─┤  <Z>
 
@@ -443,7 +443,7 @@ def apply(op, context=QueuingManager):
         def circuit(x):
             qml.RY(x, wires=0)  # applied during instantiation
             qml.apply(op)  # manually applied
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)(0.6))
     0: ──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
@@ -457,7 +457,7 @@ def apply(op, context=QueuingManager):
             qml.apply(op)
             qml.RY(x, wires=0)
             qml.apply(op)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)(0.6))
     0: ──RX(0.4)──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
@@ -473,7 +473,7 @@ def apply(op, context=QueuingManager):
             def circuit():
                 op = qml.Hadamard(0)
                 qml.apply(op)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         >>> print(qml.draw(circuit)())
         0: ──H──H─┤  <Z>
@@ -486,7 +486,7 @@ def apply(op, context=QueuingManager):
 
         .. code-block:: python
 
-            meas = qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+            meas = qml.expval(qml.Z(0) @ qml.Y(1))
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
@@ -517,7 +517,7 @@ def apply(op, context=QueuingManager):
 
                     # The following PauliX operation will be queued
                     # to the active queuing context, tape2, during instantiation.
-                    op1 = qml.PauliX(wires=0)
+                    op1 = qml.X(0)
 
                     # We can use qml.apply to apply the same operation to tape1
                     # without leaving the tape2 context.
@@ -528,9 +528,9 @@ def apply(op, context=QueuingManager):
                 qml.CNOT(wires=[0, 1])
 
         >>> tape1.operations
-        [Hadamard(wires=[1]), <QuantumTape: wires=[0], params=1>, PauliX(wires=[0]), CNOT(wires=[0, 1])]
+        [Hadamard(wires=[1]), <QuantumTape: wires=[0], params=1>, X(0), CNOT(wires=[0, 1])]
         >>> tape2.operations
-        [PauliX(wires=[0]), RZ(0.2, wires=[0])]
+        [X(0), RZ(0.2, wires=[0])]
     """
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")

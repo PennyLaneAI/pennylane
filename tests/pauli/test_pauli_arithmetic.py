@@ -57,6 +57,28 @@ Y0 = PauliWord({0: "Y"})
 Z0 = PauliWord({0: "Z"})
 
 
+def test_pw_pw_multiplication_non_commutativity():
+    """Test that pauli word matrix multiplication is non-commutative and returns correct result"""
+
+    res1 = X0 @ Y0
+    res2 = Y0 @ X0
+    assert res1 == 1j * Z0
+    assert res2 == -1j * Z0
+
+
+def test_ps_ps_multiplication_non_commutativity():
+    """Test that pauli sentence matrix multiplication is non-commutative and returns correct result"""
+
+    pauliX = PauliSentence({PauliWord({0: "X"}): 1.0})
+    pauliY = PauliSentence({PauliWord({0: "Y"}): 1.0})
+    pauliZ = PauliSentence({PauliWord({0: "Z"}): 1j})
+
+    res1 = pauliX @ pauliY
+    res2 = pauliY @ pauliX
+    assert res1 == pauliZ
+    assert res2 == -1 * pauliZ
+
+
 def _pauli_to_op(p):
     """convert PauliWord or PauliSentence to Operator"""
     return p.operation()
@@ -73,77 +95,6 @@ def _id(p):
     return p
 
 
-class TestDeprecations:
-    def test_deprecation_warning_PauliWord(
-        self,
-    ):
-        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliWords"""
-        pauli1 = PauliWord({0: "X"})
-        pauli2 = PauliWord({0: "Y"})
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
-        ):
-            _ = pauli1 * pauli2
-
-    def test_deprecation_warning_PauliSentence(
-        self,
-    ):
-        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliSentences"""
-        pauli1 = PauliSentence({PauliWord({0: "X"}): 1})
-        pauli2 = PauliSentence({PauliWord({0: "Y"}): 1})
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
-        ):
-            _ = pauli1 * pauli2
-
-
-@pytest.mark.parametrize("pauli1", words)
-@pytest.mark.parametrize("pauli2", words)
-def test_legacy_multiplication_pwords(pauli1, pauli2):
-    """Test the legacy behavior for using the star operator for matrix multiplication of pauli words"""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        res1, coeff1 = pauli1 * pauli2
-    res2, coeff2 = pauli1._matmul(pauli2)
-    assert res1 == res2
-    assert coeff1 == coeff2
-
-
-@pytest.mark.parametrize("pauli1", sentences)
-@pytest.mark.parametrize("pauli2", sentences)
-def test_legacy_multiplication_psentences(pauli1, pauli2):
-    """Test the legacy behavior for using the star operator for matrix multiplication of pauli sentences"""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        assert pauli1 * pauli2 == pauli1 @ pauli2
-
-
-def test_legacy_pw_pw_multiplication_non_commutativity():
-    """Test that legacy pauli word matrix multiplication is non-commutative and returns correct result"""
-    pauliX = PauliWord({0: "X"})
-    pauliY = PauliWord({0: "Y"})
-    pauliZ = PauliWord({0: "Z"})
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        res1 = pauliX * pauliY
-        res2 = pauliY * pauliX
-    assert res1 == (pauliZ, 1j)
-    assert res2 == (pauliZ, -1j)
-
-
-def test_legacy_ps_ps_multiplication_non_commutativity():
-    """Test that legacy pauli sentence matrix multiplication is non-commutative and returns correct result"""
-    pauliX = PauliSentence({PauliWord({0: "X"}): 1.0})
-    pauliY = PauliSentence({PauliWord({0: "Y"}): 1.0})
-    pauliZ = PauliSentence({PauliWord({0: "Z"}): 1j})
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        res1 = pauliX * pauliY
-        res2 = pauliY * pauliX
-    assert res1 == pauliZ
-    assert res2 == -1 * pauliZ
-
-
 class TestPauliWord:
     def test_identity_removed_on_init(self):
         """Test that identities are removed on init."""
@@ -155,6 +106,11 @@ class TestPauliWord:
         pw = PauliWord({0: I, 1: X, 2: Y})
         assert 3 not in pw.keys()
         assert pw[3] == I
+
+    def test_pauli_rep(self):
+        """Test trivial pauli_rep property"""
+        pw = PauliWord({0: "I", 1: "X", 2: Y})
+        assert pw.pauli_rep == PauliSentence({pw: 1})
 
     def test_set_items(self):
         """Test that setting items raises an error"""
@@ -536,6 +492,11 @@ class TestPauliSentence:
         ps[new_pw] = 3.45
         assert new_pw in ps.keys() and ps[new_pw] == 3.45
 
+    def test_pauli_rep(self):
+        """Test trivial pauli_rep property"""
+        ps = PauliSentence({PauliWord({0: "I", 1: "X", 2: Y}): 1j, X0: 2.0})
+        assert ps.pauli_rep == ps
+
     tup_ps_str = (
         (
             ps1,
@@ -620,6 +581,48 @@ class TestPauliSentence:
                     PauliWord({0: "Z", 1: "Y"}): np.array(1.0 - 1.0j),
                 }
             ),
+        ),
+        (
+            PauliSentence({PauliWord({0: "X"}): 1.0}),  # ps @ pw disjoint wires
+            PauliWord({1: "X"}),
+            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0}),
+        ),
+        (
+            PauliSentence({PauliWord({0: "X"}): 1.0}),  # ps @ pw same wires same op
+            PauliWord({0: "X"}),
+            PauliSentence({PauliWord({}): 1.0}),
+        ),
+        (
+            PauliSentence({PauliWord({0: "X"}): 1.0}),  # ps @ pw same wires different op
+            PauliWord({0: "Y"}),
+            PauliSentence({PauliWord({0: "Z"}): 1j}),
+        ),
+        (
+            PauliSentence(
+                {PauliWord({0: "Y"}): 1.0}
+            ),  # ps @ pw same wires different op check minus sign
+            PauliWord({0: "X"}),
+            PauliSentence({PauliWord({0: "Z"}): -1j}),
+        ),
+        (
+            PauliWord({1: "X"}),  # pw @ ps disjoint wires
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0}),
+        ),
+        (
+            PauliWord({0: "X"}),  # ps @ pw same wires same op
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliSentence({PauliWord({}): 1.0}),
+        ),
+        (
+            PauliWord({0: "X"}),  # ps @ pw same wires different op
+            PauliSentence({PauliWord({0: "Y"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z"}): 1j}),
+        ),
+        (
+            PauliWord({0: "Y"}),  # ps @ pw same wires different op check minus sign
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z"}): -1j}),
         ),
     )
 

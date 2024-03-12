@@ -68,7 +68,7 @@ These operator functions act on operators to produce new operators.
 >>> op = qml.sum(qml.Hadamard(0), op)
 >>> op = qml.s_prod(1.2, op)
 >>> op
-1.2*(Hadamard(wires=[0]) + (PauliX(wires=[0]) @ PauliZ(wires=[1])))
+1.2 * (Hadamard(wires=[0]) + X(0) @ Z(1))
 
 Operator to Other functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -110,7 +110,7 @@ quantum functions, QNodes or tapes:
 
 >>> def circuit(theta):
 ...     qml.RX(theta, wires=1)
-...     qml.PauliZ(wires=0)
+...     qml.Z(wires=0)
 >>> qml.matrix(circuit)(np.pi / 4)
 array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
 [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],

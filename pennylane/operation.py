@@ -509,7 +509,7 @@ class Operator(abc.ABC):
                 # The general signature of this function is (*parameters, wires, **hyperparameters).
                 op_list = []
                 if do_flip:
-                    op_list.append(qml.PauliX(wires=wires[1]))
+                    op_list.append(qml.X(wires[1]))
                 op_list.append(qml.RX(angle, wires=wires[0]))
                 return op_list
 
@@ -528,7 +528,7 @@ class Operator(abc.ABC):
         @qml.qnode(dev)
         def circuit(angle):
             FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-            return qml.expval(qml.PauliZ("q1"))
+            return qml.expval(qml.Z("q1"))
 
     >>> a = np.array(3.14)
     >>> circuit(a)
@@ -1164,28 +1164,6 @@ class Operator(abc.ABC):
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
 
-    @staticmethod
-    def validate_subspace(subspace):
-        """Validate the subspace for qutrit operations.
-
-        This method determines whether a given subspace for qutrit operations
-        is defined correctly or not. If not, a `ValueError` is thrown.
-
-        Args:
-            subspace (tuple[int]): Subspace to check for correctness
-
-        .. warning::
-
-            ``Operator.validate_subspace(subspace)`` has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed from the Operator class in an upcoming release.
-        """
-
-        warnings.warn(
-            "Operator.validate_subspace(subspace) has been relocated to the qml.ops.qutrit.parametric_ops module and will be removed from the Operator class in an upcoming release.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-        return qml.ops.qutrit.validate_subspace(subspace)
-
     @property
     def num_params(self):
         """Number of trainable parameters that the operator depends on.
@@ -1397,8 +1375,7 @@ class Operator(abc.ABC):
         we get the generator
 
         >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
+          0.5 * Y(0) + Z(0) @ X(1)
 
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
@@ -1928,12 +1905,12 @@ class Observable(Operator):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
 
         This allows for comparison between observables that are equivalent, but are expressed
-        in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
-        `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
+        in different orders. For example, `qml.X(0) @ qml.Z(1)` and
+        `qml.Z(1) @ qml.X(0)` are equivalent observables with different orderings.
 
         **Example**
 
-        >>> tensor = qml.PauliX(0) @ qml.PauliZ(1)
+        >>> tensor = qml.X(0) @ qml.Z(1)
         >>> print(tensor._obs_data())
         {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
         """
@@ -1968,11 +1945,11 @@ class Observable(Operator):
 
         **Examples**
 
-        >>> ob1 = qml.PauliX(0) @ qml.Identity(1)
-        >>> ob2 = qml.Hamiltonian([1], [qml.PauliX(0)])
+        >>> ob1 = qml.X(0) @ qml.Identity(1)
+        >>> ob2 = qml.Hamiltonian([1], [qml.X(0)])
         >>> ob1.compare(ob2)
         True
-        >>> ob1 = qml.PauliX(0)
+        >>> ob1 = qml.X(0)
         >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
         >>> ob1.compare(ob2)
         False
@@ -2027,15 +2004,15 @@ class Tensor(Observable):
 
     To create a tensor, simply initiate it like so:
 
-    >>> T = Tensor(qml.PauliX(0), qml.Hermitian(A, [1, 2]))
+    >>> T = Tensor(qml.X(0), qml.Hermitian(A, [1, 2]))
 
     You can also create a tensor from other Tensors:
 
-    >>> T = Tensor(T, qml.PauliZ(4))
+    >>> T = Tensor(T, qml.Z(4))
 
     The ``@`` symbol can be used as a tensor product operation:
 
-    >>> T = qml.PauliX(0) @ qml.Hadamard(2)
+    >>> T = qml.X(0) @ qml.Hadamard(2)
 
     .. note:
 
@@ -2089,7 +2066,7 @@ class Tensor(Observable):
         Returns:
             str: label to use in drawings
 
-        >>> T = qml.PauliX(0) @ qml.Hadamard(2)
+        >>> T = qml.X(0) @ qml.Hadamard(2)
         >>> T.label()
         'X@H'
         >>> T.label(base_label=["X0", "H2"])
@@ -2183,7 +2160,7 @@ class Tensor(Observable):
 
         **Example:**
 
-        >>> op = qml.PauliX(0) @ qml.Hermitian(np.eye(2), wires=1)
+        >>> op = qml.X(0) @ qml.Hermitian(np.eye(2), wires=1)
         >>> op.data
         [array([[1., 0.],
         [0., 1.]])]
@@ -2328,7 +2305,7 @@ class Tensor(Observable):
 
         **Example**
 
-        >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
+        >>> O = qml.Z(0) @ qml.Z(2)
         >>> O.matrix()
         array([[ 1,  0,  0,  0],
                [ 0, -1,  0,  0],
@@ -2339,7 +2316,7 @@ class Tensor(Observable):
         acting on the 3-qubit system, the identity on wire 1
         must be explicitly included:
 
-        >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
+        >>> O = qml.Z(0) @ qml.Identity(1) @ qml.Z(2)
         >>> O.matrix()
         array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
                [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
@@ -2432,7 +2409,7 @@ class Tensor(Observable):
 
         Consider the following tensor:
 
-        >>> t = qml.PauliX(0) @ qml.PauliZ(1)
+        >>> t = qml.X(0) @ qml.Z(1)
 
         Without passing wires, the sparse representation is given by:
 
@@ -2495,7 +2472,7 @@ class Tensor(Observable):
 
         Pruning that returns a :class:`~.Tensor`:
 
-        >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
+        >>> O = qml.Z(0) @ qml.Identity(1) @ qml.Z(2)
         >>> O.prune()
         <pennylane.operation.Tensor at 0x7fc1642d1590
         >>> [(o.name, o.wires) for o in O.prune().obs]
@@ -2503,7 +2480,7 @@ class Tensor(Observable):
 
         Pruning that returns a single observable:
 
-        >>> O = qml.PauliZ(0) @ qml.Identity(1)
+        >>> O = qml.Z(0) @ qml.Identity(1)
         >>> O_pruned = O.prune()
         >>> (O_pruned.name, O_pruned.wires)
         ('PauliZ', [0])
@@ -2966,10 +2943,10 @@ def enable_new_opmath():
 
     >>> qml.operation.active_new_opmath()
     False
-    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.operation.Tensor'>
     >>> qml.operation.enable_new_opmath()
-    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
     """
     global __use_new_opmath
@@ -2984,10 +2961,10 @@ def disable_new_opmath():
 
     >>> qml.operation.active_new_opmath()
     True
-    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
     >>> qml.operation.disable_new_opmath()
-    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.operation.Tensor'>
     """
     global __use_new_opmath
@@ -3033,6 +3010,75 @@ def convert_to_opmath(op):
     if isinstance(op, Tensor):
         return qml.prod(*op.obs)
     return op
+
+
+# pylint: disable=too-many-branches
+def convert_to_legacy_H(op):
+    """
+    Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
+    Objects of any other type are returned directly.
+
+    Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
+    :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
+
+    Args:
+        op (Operator): The operator instance to convert.
+
+    Returns:
+        Operator: The operator as a :class:`~pennylane.Hamiltonian` instance
+    """
+    if not isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
+        return op
+
+    coeffs = []
+    ops = []
+
+    op = qml.simplify(op)
+
+    if isinstance(op, Observable):
+        coeffs.append(1.0)
+        ops.append(op)
+
+    elif isinstance(op, qml.ops.SProd):
+        coeffs.append(op.scalar)
+        if isinstance(op.base, Observable):
+            ops.append(op.base)
+        elif isinstance(op.base, qml.ops.op_math.Prod):
+            ops.append(qml.operation.Tensor(*op.base))
+        else:
+            raise ValueError("The base of scalar product must be an observable or a product.")
+
+    elif isinstance(op, qml.ops.Prod):
+        coeffs.append(1.0)
+        ops.append(qml.operation.Tensor(*op))
+
+    elif isinstance(op, qml.ops.Sum):
+        for factor in op:
+            if isinstance(factor, (qml.ops.SProd)):
+                coeffs.append(factor.scalar)
+                if isinstance(factor.base, Observable):
+                    ops.append(factor.base)
+                elif isinstance(factor.base, qml.ops.op_math.Prod):
+                    ops.append(qml.operation.Tensor(*factor.base))
+                else:
+                    raise ValueError(
+                        "The base of scalar product must be an observable or a product."
+                    )
+            elif isinstance(factor, (qml.ops.Prod)):
+                coeffs.append(1.0)
+                ops.append(qml.operation.Tensor(*factor))
+            elif isinstance(factor, Observable):
+                coeffs.append(1.0)
+                ops.append(factor)
+            else:
+                raise ValueError(
+                    "Could not convert to Hamiltonian. Some or all observables are not valid."
+                )
+
+    else:
+        raise ValueError("Could not convert to Hamiltonian. Some or all observables are not valid.")
+
+    return qml.Hamiltonian(coeffs, ops)
 
 
 def __getattr__(name):
