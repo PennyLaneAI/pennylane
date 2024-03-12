@@ -164,6 +164,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Removed some redundant documentation for the `evolve` function.
+  [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
+
 * Updated the final example in the `compile` docstring to use transforms correctly.
   [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
 
