@@ -612,7 +612,6 @@ def test_taper_obs(symbols, geometry, charge):
         assert qml.equal(tapered_obs, tapered_ps)
 
 
-@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge", "generators", "paulixops", "paulix_sector", "num_commuting"),
     [
@@ -663,13 +662,10 @@ def test_taper_obs(symbols, geometry, charge):
 )
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_taper_excitations(
-    symbols, geometry, charge, generators, paulixops, paulix_sector, num_commuting, op_arithmetic
+    symbols, geometry, charge, generators, paulixops, paulix_sector, num_commuting
 ):
     r"""Test that the tapered excitation operators using :func:`~.taper_operation`
     are consistent with the tapered Hartree-Fock state."""
-
-    status_op_math = active_new_opmath()
-    _ = enable_new_opmath() if op_arithmetic else disable_new_opmath()
 
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     num_electrons, num_wires = mol.n_electrons, 2 * mol.n_orbitals
@@ -729,8 +725,6 @@ def test_taper_excitations(
                 ).toarray()
                 assert np.isclose(expec_val, expec_val_tapered)
 
-    _ = enable_new_opmath() if status_op_math else disable_new_opmath()
-
 
 @pytest.mark.parametrize(
     ("operation", "op_gen", "message_match"),
@@ -768,7 +762,6 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen)
 
 
-@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("operation", "op_gen"),
     [
@@ -805,9 +798,6 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_consistent_taper_ops(operation, op_gen):
     r"""Test that operations are tapered consistently when their generators are provided manually and when they are constructed internally"""
-
-    status_op_math = active_new_opmath()
-    _ = enable_new_opmath() if op_arithmetic else disable_new_opmath()
 
     symbols, geometry, charge = (
         ["He", "H"],
@@ -942,7 +932,6 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
         )
 
 
-@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("operation", "op_wires", "op_gen"),
     [
@@ -966,9 +955,6 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_taper_matrix_ops(operation, op_wires, op_gen):
     """Test that taper_operation can be used with gate operation built using matrices"""
-
-    status_op_math = active_new_opmath()
-    _ = enable_new_opmath() if op_arithmetic else disable_new_opmath()
 
     symbols, geometry, charge = (
         ["He", "H"],
