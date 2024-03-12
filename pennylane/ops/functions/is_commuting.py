@@ -168,17 +168,10 @@ def _check_opmath_operations(operation1, operation2):
         if op.pauli_rep is not None:
             continue
 
-        if isinstance(op, qml.operation.Tensor):
-            raise qml.QuantumFunctionError("Tensor operations are only supported for Pauli words.")
-
-        if isinstance(op, SProd):
-            raise qml.QuantumFunctionError("SProd operations are only supported for Pauli words.")
-
-        if isinstance(op, Prod):
-            raise qml.QuantumFunctionError("Prod operations are only supported for Pauli words.")
-
-        if isinstance(op, Sum):
-            raise qml.QuantumFunctionError("Sum operations are only supported for Pauli words.")
+        if isinstance(op, (qml.operation.Tensor, SProd, Prod, Sum)):
+            raise qml.QuantumFunctionError(
+                f"Operation {op} not supported (it must have a valid Pauli representation)."
+            )
 
 
 def intersection(wires1, wires2):

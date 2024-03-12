@@ -828,36 +828,23 @@ class TestCommutingFunction:
         assert do_they_commute == commute_status
 
     @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,op_type",
+        "pauli_word_1,pauli_word_2",
         [
             (
                 qml.prod(qml.PauliX(0), qml.Hadamard(1), qml.Identity(2)),
                 qml.sum(qml.PauliX(0), qml.PauliY(2)),
-                "Prod",
             ),
             (
                 qml.sum(qml.PauliX(0), qml.PauliY(2)),
                 qml.operation.Tensor(qml.PauliX(0), qml.Hadamard(1), qml.Identity(2)),
-                "Tensor",
             ),
-            (
-                qml.PauliX(2),
-                qml.sum(qml.Hadamard(1), qml.prod(qml.PauliX(1), qml.Identity(2))),
-                "Sum",
-            ),
-            (
-                qml.prod(qml.PauliX(1), qml.PauliY(2)),
-                qml.s_prod(0.5, qml.Hadamard(1)),
-                "SProd",
-            ),
+            (qml.PauliX(2), qml.sum(qml.Hadamard(1), qml.prod(qml.PauliX(1), qml.Identity(2)))),
+            (qml.prod(qml.PauliX(1), qml.PauliY(2)), qml.s_prod(0.5, qml.Hadamard(1))),
         ],
     )
-    def test_non_pauli_word_ops_not_supported(self, pauli_word_1, pauli_word_2, op_type):
+    def test_non_pauli_word_ops_not_supported(self, pauli_word_1, pauli_word_2):
         """Ensure invalid inputs are handled properly when determining commutativity."""
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match=f"{op_type} operations are only supported for Pauli words.",
-        ):
+        with pytest.raises(qml.QuantumFunctionError):
             qml.is_commuting(pauli_word_1, pauli_word_2)
 
     def test_operation_1_not_supported(self):
