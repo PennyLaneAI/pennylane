@@ -119,6 +119,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Operators can now be left multiplied `x * op` by numpy arrays.
+  [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
+
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
@@ -143,6 +146,9 @@
 
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
+
+* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, and `CountsMP`.
+  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
 
 <h3>Breaking changes 💔</h3>
 
@@ -214,6 +220,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Mikhail Andrenkov,
 Utkarsh Azad,
