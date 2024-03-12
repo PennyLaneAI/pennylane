@@ -2969,10 +2969,10 @@ def enable_new_opmath():
         return
 
     mocks = [
-        mock.patch("pennylane.Hamiltonian", qml.LinearCombination),
-        mock.patch("pennylane.ops.Hamiltonian", qml.LinearCombination),
-        mock.patch("pennylane.ops.qubit.Hamiltonian", qml.LinearCombination),
-        mock.patch("pennylane.ops.qubit.hamiltonian.Hamiltonian", qml.LinearCombination),
+        mock.patch("pennylane.Hamiltonian", qml.ops.LinearCombination),
+        mock.patch("pennylane.ops.Hamiltonian", qml.ops.LinearCombination),
+        mock.patch("pennylane.ops.qubit.Hamiltonian", qml.ops.LinearCombination),
+        mock.patch("pennylane.ops.qubit.hamiltonian.Hamiltonian", qml.ops.LinearCombination),
     ]
 
     with contextlib.ExitStack() as stack:

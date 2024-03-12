@@ -2695,7 +2695,7 @@ class TestNewOpMath:
             assert qml.equal(op[1], op2)
 
         def test_hamiltonian_alias_linear_combination_with_enabled_opmath(self):
-            """Test that qml.Hamiltonian is an alias for qml.LinearCombination when new operator
+            """Test that qml.Hamiltonian is an alias for qml.ops.LinearCombination when new operator
             arithmetic is enabled"""
             op = qml.Hamiltonian([1.0], [qml.X(0)])
 
@@ -2703,7 +2703,7 @@ class TestNewOpMath:
             assert isinstance(op, qml.ops.Hamiltonian)
             assert isinstance(op, qml.ops.qubit.Hamiltonian)
             assert isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
-            assert isinstance(op, qml.LinearCombination)
+            assert isinstance(op, qml.ops.LinearCombination)
             assert op.__class__.__name__ == "LinearCombination"
 
 
