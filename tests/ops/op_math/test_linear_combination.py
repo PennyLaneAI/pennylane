@@ -102,6 +102,10 @@ invalid_LinearCombinations = [
 
 simplify_LinearCombinations = [
     (
+        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination([], []),
+    ),
+    (
         qml.ops.LinearCombination([1, 1, 1], [X(0) @ qml.Identity(1), X(0), X(1)]),
         qml.ops.LinearCombination([2, 1], [X(0), X(1)]),
     ),
