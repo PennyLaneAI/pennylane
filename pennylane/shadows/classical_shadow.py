@@ -227,7 +227,7 @@ class ClassicalShadow:
             np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots),
             (T, 2**n, 2**n),
         )
-    
+
     @staticmethod
     def _convert_to_pauli_words_with_pauli_rep(pr, num_wires):
         """Convert to recipe using pauli representation"""
