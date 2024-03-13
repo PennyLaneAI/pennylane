@@ -291,6 +291,8 @@ class Sum(CompositeOp):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         if self.pauli_rep is not None:
             coeffs_list = list(self.pauli_rep.values())
+            if len(coeffs_list) == 0:
+                return True
             if not math.is_abstract(coeffs_list[0]):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
