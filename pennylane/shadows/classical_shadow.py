@@ -240,7 +240,7 @@ class ClassicalShadow:
                 word[i] = pr_to_recipe_map[s]
 
             coeffs_and_words.append((c, word))
-        
+
         return coeffs_and_words
 
     def _convert_to_pauli_words(self, observable):
@@ -277,7 +277,8 @@ class ClassicalShadow:
                     [(coeff * c, w) for c, w in self._convert_to_pauli_words(op)]
                 )
             return coeffs_and_words
-        
+
+        # Support for all operators with a valid pauli_rep
         if (pr := observable.pauli_rep) is not None:
             return self._convert_to_pauli_words_with_pauli_rep(pr, num_wires)
 
