@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:``_cache_transform()`` and :func:``_apply__cache_transform()`` functions.
+Unit tests for the :func:`_cache_transform` and :func:`_apply_cache_transform` functions.
 """
 # pylint: disable=protected-access,redefined-outer-name
 from typing import MutableMapping
