@@ -238,8 +238,7 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
         qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
     )
 
-    if active_new_opmath():
-        assert not isinstance(h, qml.Hamiltonian)
+    assert isinstance(h, qml.Hamiltonian)
 
     wire_order = h_ref.wires
     assert np.allclose(

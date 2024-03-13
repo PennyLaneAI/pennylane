@@ -60,9 +60,7 @@ def test_particle_number(orbitals, coeffs_ref, ops_ref):
     n = qchem.particle_number(orbitals)
     n_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
     assert n_ref.compare(n)
-
-    if active_new_opmath():
-        assert not isinstance(n, qml.Hamiltonian) and isinstance(n_ref, qml.ops.LinearCombination)
+    assert isinstance(n, qml.Hamiltonian)
 
     wire_order = n_ref.wires
     assert np.allclose(

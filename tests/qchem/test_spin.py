@@ -177,10 +177,7 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     s2 = qchem.spin.spin2(electrons, orbitals)
     s2_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
     assert s2_ref.compare(s2)
-
-    if active_new_opmath():
-        assert not isinstance(s2, qml.Hamiltonian)
-        assert isinstance(s2_ref, qml.ops.LinearCombination)
+    assert isinstance(s2, qml.Hamiltonian)
 
     wire_order = s2_ref.wires
     assert np.allclose(
@@ -236,10 +233,7 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     sz = qchem.spin.spinz(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
     assert sz_ref.compare(sz)
-
-    if active_new_opmath():
-        assert not isinstance(sz, qml.Hamiltonian)
-        assert isinstance(sz_ref, qml.ops.LinearCombination)
+    assert isinstance(sz, qml.Hamiltonian)
 
     wire_order = sz_ref.wires
     assert np.allclose(
