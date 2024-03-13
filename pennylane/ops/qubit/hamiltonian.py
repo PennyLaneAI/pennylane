@@ -777,4 +777,9 @@ class Hamiltonian(Observable):
             if attr not in {"data", "_wires", "_ops"}:
                 setattr(new_op, attr, value)
         new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
+        new_op._pauli_rep = None  # pylint: disable=protected-access
+        try:
+            new_op._pauli_rep = qml.pauli.pauli_sentence(new_op)  # pylint: disable=protected-access
+        except ValueError:
+            new_op._pauli_rep = None  # pylint: disable=protected-access
         return new_op
