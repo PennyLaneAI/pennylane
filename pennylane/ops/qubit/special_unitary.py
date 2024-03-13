@@ -279,6 +279,11 @@ class SpecialUnitary(Operation):
     differentiation techniques if the JAX, Torch or TensorFlow interface is used.
     See the theoretical background section below for details.
 
+    .. seealso:: 
+
+            For more details on using this operator in applications, see the 
+            :doc:`demo:tutorial_here_comes_the_sun` demonstration.
+
     .. details::
         :title: Theoretical background
         :href: theory
