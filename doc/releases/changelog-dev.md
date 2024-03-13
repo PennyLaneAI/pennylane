@@ -60,6 +60,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
+  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
+
+* Operators can now be left multiplied `x * op` by numpy arrays.
+  [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
+
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
   [(##5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
@@ -114,6 +120,9 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
+* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, and `CountsMP`.
+  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
+
 <h3>Breaking changes 💔</h3>
 
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the ``pauli`` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
@@ -122,9 +131,11 @@
 * `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
   * tapes with more than one wire.
   * quantum functions.
+  * Operator class where ``num_wires`` does not equal to 1
   * QNodes if the device does not have wires specified.
   * PauliWords and PauliSentences with more than one wire.
   [(#5328)](https://github.com/PennyLaneAI/pennylane/pull/5328)
+  [(#5359)](https://github.com/PennyLaneAI/pennylane/pull/5359)
 
 * ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
   [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
@@ -164,6 +175,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Removed some redundant documentation for the `evolve` function.
+  [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
+
 * Updated the final example in the `compile` docstring to use transforms correctly.
   [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
 
@@ -179,6 +193,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Mikhail Andrenkov,
 Utkarsh Azad,
