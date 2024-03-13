@@ -59,15 +59,15 @@ def lie_closure(
         if verbose > 0:
             print(f"epoch {epoch+1} of lie_closure")
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
-                com = ps1.commutator(ps2)
-                if len(com) == 0:  # skip because operators commute
-                    continue
+            com = ps1.commutator(ps2)
+            if len(com) == 0:  # skip because operators commute
+                continue
 
-                # result is always purely imaginary
-                # TODO potentially renormalize?
-                for pw, val in com.items():
-                    com[pw] = val.imag / 2
-                vspace.add(com)
+            # result is always purely imaginary
+            # TODO potentially renormalize?
+            for pw, val in com.items():
+                com[pw] = val.imag / 2
+            vspace.add(com)
 
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
