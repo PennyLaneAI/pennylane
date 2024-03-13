@@ -106,6 +106,7 @@
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
   
 * `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of paulis.
+  [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
 
 <h4>Community contributions 🥳</h4>
 
