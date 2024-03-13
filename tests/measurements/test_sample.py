@@ -324,11 +324,11 @@ class TestSample:
         [
             # Single observables
             (None, int),  # comp basis samples
-            (qml.PauliX(0), int),
-            (qml.PauliY(0), int),
-            (qml.PauliZ(0), int),
-            (qml.Hadamard(0), int),
-            (qml.Identity(0), int),
+            (qml.PauliX(0), float),
+            (qml.PauliY(0), float),
+            (qml.PauliZ(0), float),
+            (qml.Hadamard(0), float),
+            (qml.Identity(0), float),
             (qml.Hermitian(np.diag([1, 2]), 0), float),
             (qml.Hermitian(np.diag([1.0, 2.0]), 0), float),
             # Tensor product observables
@@ -338,7 +338,7 @@ class TestSample:
                 @ qml.PauliZ(1)
                 @ qml.Hadamard("wire1")
                 @ qml.Identity("b"),
-                int,
+                float,
             ),
             (qml.Projector([0, 1], wires=[0, 1]) @ qml.PauliZ(2), float),
             (qml.Hermitian(np.array(np.eye(2)), wires=[0]) @ qml.PauliZ(2), float),
