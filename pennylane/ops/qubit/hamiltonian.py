@@ -224,10 +224,23 @@ class Hamiltonian(Observable):
         # while H.coeffs is the original tensor
 
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
-        try:
-            self._pauli_rep = qml.pauli.pauli_sentence(self)
-        except ValueError:
+        self._pauli_rep = "unset"
+
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep != "unset":
+            return self._pauli_rep
+
+        if any(op.pauli_rep is None for op in self.ops):
             self._pauli_rep = None
+            return self._pauli_rep
+
+        ps = qml.pauli.PauliSentence()
+        for coeff, term in zip(*self.terms()):
+            ps += term.pauli_rep * coeff
+
+        self._pauli_rep = ps
+        return self._pauli_rep
 
     def _check_batching(self):
         """Override for Hamiltonian, batching is not yet supported."""
@@ -777,9 +790,5 @@ class Hamiltonian(Observable):
             if attr not in {"data", "_wires", "_ops"}:
                 setattr(new_op, attr, value)
         new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
-        new_op._pauli_rep = None  # pylint: disable=protected-access
-        try:
-            new_op._pauli_rep = qml.pauli.pauli_sentence(new_op)  # pylint: disable=protected-access
-        except ValueError:
-            new_op._pauli_rep = None  # pylint: disable=protected-access
+        new_op._pauli_rep = "unset"  # pylint: disable=protected-access
         return new_op
