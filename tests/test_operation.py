@@ -1197,6 +1197,24 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+        prod_op2 = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op2, SProd)
+        assert prod_op.scalar is scalar
+
+    def test_mul_array_numpy(self):
+        """Test that the __mul__ dunder works with a batched scalar."""
+
+        scalar = np.array([0.5, 0.6, 0.7])
+        prod_op = scalar * qml.S(0)
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+        assert prod_op.batch_size == 3
+
+        prod_op = qml.S(0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+        assert prod_op.batch_size == 3
+
     def test_divide_with_scalar(self):
         """Test the __truediv__ dunder method with a scalar value."""
         sprod_op = qml.RX(1, 0) / 4
@@ -1255,6 +1273,10 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+        prod_op = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
     @pytest.mark.tf
     def test_mul_scalar_tf_tensor(self):
         """Test the __mul__ dunder method with a scalar tf tensor."""
@@ -1265,6 +1287,10 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+        prod_op = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
     @pytest.mark.jax
     def test_mul_scalar_jax_tensor(self):
         """Test the __mul__ dunder method with a scalar jax tensor."""
@@ -1272,6 +1298,10 @@ class TestOperatorIntegration:
 
         scalar = jnp.array(5)
         prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+        prod_op = scalar * qml.RX(1.23, 0)
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
