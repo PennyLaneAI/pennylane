@@ -429,7 +429,7 @@ class LinearCombination(Sum):
                 context.remove(o)
             context.append(self)
         return self
-    
+
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
@@ -452,10 +452,12 @@ class LinearCombination(Sum):
             if len(ops) == 1:
                 diag_gates.extend(ops[0].diagonalizing_gates())
             else:
-                tmp_sum = Sum(*ops) # only change compared to CompositeOp.diagonalizing_gates()
+                tmp_sum = Sum(*ops)  # only change compared to CompositeOp.diagonalizing_gates()
                 eigvecs = tmp_sum.eigendecomposition["eigvec"]
                 diag_gates.append(
-                    qml.QubitUnitary(qml.math.transpose(qml.math.conj(eigvecs)), wires=tmp_sum.wires)
+                    qml.QubitUnitary(
+                        qml.math.transpose(qml.math.conj(eigvecs)), wires=tmp_sum.wires
+                    )
                 )
         return diag_gates
 

@@ -913,7 +913,7 @@ class TestLinearCombination:
             [1.0], [herm]
         )
         assert isinstance(ham, qml.ops.LinearCombination)
-    
+
     def test_diagonalizing_gates(self):
         """Test that LinearCombination has valid diagonalizing gates"""
         LC = qml.ops.LinearCombination([1.1, 2.2], [qml.X(0), qml.Z(0)])
