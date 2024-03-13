@@ -13,6 +13,7 @@
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
 # pylint: disable=too-many-arguments
+import itertools
 from functools import reduce
 
 from typing import Union, Iterable
