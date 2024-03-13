@@ -99,6 +99,11 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
   
+* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` are changed from `int` to `float`, making them 
+  consistent with the other observables. The `dtype` of the returned values when sampling these observables 
+  (e.g. `qml.sample(X(0))`) is also changed to `float`. 
+  [(#5370)](https://github.com/PennyLaneAI/pennylane/pull/5370)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
@@ -151,6 +156,9 @@
 
 * Attempting to multiply ``PauliWord`` and ``PauliSentence`` with ``*`` will raise an error. Instead, use ``@`` to conform with the PennyLane convention.
 
+* Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
+  [(#5370)](https://github.com/PennyLaneAI/pennylane/pull/5370)
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.load`` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as ``qml.from_qiskit``.
@@ -179,6 +187,10 @@
 
 * Fixed `TestQubitIntegration.test_counts` in `tests/interfaces/test_jax_qnode.py` to always produce counts for all outcomes.
   [(#5336)](https://github.com/PennyLaneAI/pennylane/pull/5336)
+
+* Fixed a bug that raised an error regarding expected vs acutal `dtype` when using `JAX-JIT` on a circuit that 
+  returned samples of observables containing the `qml.Identity` operator.
+  [(#5370)](https://github.com/PennyLaneAI/pennylane/pull/5370)
 
 <h3>Contributors ✍️</h3>
 
