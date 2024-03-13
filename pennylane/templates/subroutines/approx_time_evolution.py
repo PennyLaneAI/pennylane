@@ -126,7 +126,9 @@ class ApproxTimeEvolution(Operation):
         return cls(data[0], data[1], n=metadata[0])
 
     def __init__(self, hamiltonian, time, n, id=None):
-        if getattr(hamiltonian, "pauli_rep", None) is None:
+        if getattr(hamiltonian, "pauli_rep", None) is None and not isinstance(
+            hamiltonian, qml.Hamiltonian
+        ):
             raise ValueError(
                 f"hamiltonian must be a linear combination of pauli words, got {type(hamiltonian).__name__}"
             )
@@ -190,7 +192,13 @@ class ApproxTimeEvolution(Operation):
 
         single_round = []
         with qml.QueuingManager.stop_recording():
-            for pw, coeff in hamiltonian.pauli_rep.items():
+            try:
+                pauli_rep = qml.pauli.pauli_sentence(hamiltonian)
+            except ValueError as e:
+                raise ValueError(
+                    f"hamiltonian must be a linear combination of pauli words, got {type(hamiltonian).__name__}"
+                ) from e
+            for pw, coeff in pauli_rep.items():
                 if len(pw) == 0:
                     continue
                 theta = 2 * time * coeff / n
