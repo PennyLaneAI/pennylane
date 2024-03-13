@@ -351,7 +351,7 @@ class TestExpvalEstimation:
         msg = "Observable must be a linear combination of Pauli observables"
         with pytest.raises(ValueError, match=msg):
             shadow.expval(H, k=10)
-    
+
     def test_non_pauli_error_no_pauli_rep(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)
@@ -363,6 +363,7 @@ class TestExpvalEstimation:
         msg = "Observable must have a valid pauli representation."
         with pytest.raises(ValueError, match=msg):
             shadow.expval(H, k=10)
+
 
 @pytest.mark.all_interfaces
 class TestExpvalEstimationInterfaces:
