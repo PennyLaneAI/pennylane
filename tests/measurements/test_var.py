@@ -215,3 +215,20 @@ class TestVar:
             return qml.var(obs_2)
 
         assert circuit() == circuit2()
+
+    @pytest.mark.parametrize(
+        "wire, expected",
+        [
+            (0, 1.0),
+            (1, 0.0),
+        ],
+    )
+    def test_estimate_variance_with_counts(self, wire, expected):
+        """Test that the variance of an observable is estimated correctly using counts."""
+        counts = {"000": 100, "100": 100}
+
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        res = qml.var(qml.Z(wire)).process_counts(counts=counts, wire_order=wire_order)
+
+        assert np.allclose(res, expected)
