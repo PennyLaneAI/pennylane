@@ -183,6 +183,7 @@ def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
         ),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     r"""Test that dipole_moment returns the correct result."""
     mol = qchem.Molecule(symbols, geometry, charge=charge)
@@ -197,15 +198,9 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     assert qml.Hamiltonian(np.ones(len(d_coeff)), d_ops).compare(
         qml.Hamiltonian(np.ones(len(dref_coeff)), dref_ops)
     )
-
-    with enable_new_opmath_cm():
-        d_op_math = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-
-    d_ref_op_math = qml.dot(coeffs, ops)
-
     assert np.allclose(
-        qml.matrix(d_op_math, wire_order=[0, 1, 2, 3]),
-        qml.matrix(d_ref_op_math, wire_order=[0, 1, 2, 3]),
+        qml.matrix(d, wire_order=[0, 1, 2, 3]),
+        qml.matrix(d_ref, wire_order=[0, 1, 2, 3]),
     )
 
 

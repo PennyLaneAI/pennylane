@@ -19,8 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.pauli import pauli_sentence
-from pennylane.operation import enable_new_opmath, disable_new_opmath
 from pennylane.fermi import from_string
 
 
