@@ -319,3 +319,20 @@ class TestExpval:
         energy_batched = cost_circuit(params)
 
         assert qml.math.allequal(energy_batched, energy)
+
+    @pytest.mark.parametrize(
+        "wire, expected",
+        [
+            (0, 0.0),
+            (1, 1.0),
+        ],
+    )
+    def test_estimate_expectation_with_counts(self, wire, expected):
+        """Test that the expectation value of an observable is estimated correctly using counts"""
+        counts = {"000": 100, "100": 100}
+
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        res = qml.expval(qml.Z(wire)).process_counts(counts=counts, wire_order=wire_order)
+
+        assert np.allclose(res, expected)
