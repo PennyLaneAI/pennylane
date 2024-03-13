@@ -58,10 +58,7 @@ def lie_closure(
     while new_length > old_length or epoch > max_iterations:
         if verbose > 0:
             print(f"epoch {epoch+1} of lie_closure")
-        for idx1 in range(new_length - 1):
-            ps1 = vspace.basis[idx1]
-            for idx2 in range(max([idx1 + 1, old_length]), new_length):
-                ps2 = vspace.basis[idx2]
+        for ps1, ps2 in itertools.combinations(vspace.basis, 2):
                 com = ps1.commutator(ps2)
                 if len(com) == 0:  # skip because operators commute
                     continue
