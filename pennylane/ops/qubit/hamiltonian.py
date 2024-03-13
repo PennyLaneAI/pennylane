@@ -222,7 +222,12 @@ class Hamiltonian(Observable):
         # create the operator using each coefficient as a separate parameter;
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
+
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
+        try:
+            self._pauli_rep = qml.pauli.pauli_sentence(self)
+        except ValueError:
+            self._pauli_rep = None
 
     def _check_batching(self):
         """Override for Hamiltonian, batching is not yet supported."""
