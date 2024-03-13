@@ -1061,10 +1061,6 @@ class QNode:
             else:
                 res = type(self._qfunc_output)(res)
 
-        if not has_mcm_support and override_shots is not False:
-            # restore the initialization gradient function
-            self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
-
         if old_interface == "auto":
             self._interface = "auto"
 
