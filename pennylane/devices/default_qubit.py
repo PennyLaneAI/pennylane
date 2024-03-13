@@ -181,6 +181,20 @@ def adjoint_observables(obs: qml.operation.Operator) -> bool:
     return obs.has_matrix
 
 
+def _supports_adjoint(circuit):
+    if circuit is None:
+        return True
+
+    prog = TransformProgram()
+    _add_adjoint_transforms(prog)
+
+    try:
+        prog((circuit,))
+    except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
+        return False
+    return True
+
+
 def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
@@ -372,6 +386,11 @@ class DefaultQubit(Device):
     subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
     """
 
+    _device_options = ("max_workers", "rng", "prng_key")
+    """
+    tuple of string names for all the device options.
+    """
+
     # pylint:disable = too-many-arguments
     def __init__(
         self,
@@ -411,32 +430,20 @@ class DefaultQubit(Device):
         """
         if execution_config is None:
             return True
-        # backpropagation currently supported for all supported circuits
-        # will later need to add logic if backprop requested with finite shots
-        # do once device accepts finite shots
-        if (
-            execution_config.gradient_method == "backprop"
-            and execution_config.device_options.get("max_workers", self._max_workers) is None
-            and execution_config.interface is not None
-        ):
-            return True
 
-        if (
-            execution_config.gradient_method == "adjoint"
-            and execution_config.use_device_gradient is not False
-        ):
+        no_max_workers = (
+            execution_config.device_options.get("max_workers", self._max_workers) is None
+        )
+
+        if execution_config.gradient_method in {"backprop", "best"} and no_max_workers:
             if circuit is None:
                 return True
+            return not circuit.shots and not any(
+                isinstance(m.obs, qml.SparseHamiltonian) for m in circuit.measurements
+            )
 
-            prog = TransformProgram()
-            _add_adjoint_transforms(prog)
-
-            try:
-                prog((circuit,))
-            except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
-                return False
-            return True
-
+        if execution_config.gradient_method in {"adjoint", "best"}:
+            return _supports_adjoint(circuit=circuit)
         return False
 
     def preprocess(
@@ -505,27 +512,33 @@ class DefaultQubit(Device):
 
         """
         updated_values = {}
+
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
+
+        gradient_method = execution_config.gradient_method
         if execution_config.gradient_method == "best":
-            updated_values["gradient_method"] = "backprop"
+            no_max_workers = (
+                execution_config.device_options.get("max_workers", self._max_workers) is None
+            )
+            gradient_method = "backprop" if no_max_workers else "adjoint"
+            updated_values["gradient_method"] = gradient_method
+
         if execution_config.use_device_gradient is None:
-            updated_values["use_device_gradient"] = execution_config.gradient_method in {
-                "best",
+            updated_values["use_device_gradient"] = gradient_method in {
                 "adjoint",
                 "backprop",
             }
         if execution_config.use_device_jacobian_product is None:
-            updated_values["use_device_jacobian_product"] = (
-                execution_config.gradient_method == "adjoint"
-            )
+            updated_values["use_device_jacobian_product"] = gradient_method == "adjoint"
         if execution_config.grad_on_execution is None:
-            updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+            updated_values["grad_on_execution"] = gradient_method == "adjoint"
+
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
-        if "max_workers" not in updated_values["device_options"]:
-            updated_values["device_options"]["max_workers"] = self._max_workers
-        if "rng" not in updated_values["device_options"]:
-            updated_values["device_options"]["rng"] = self._rng
-        if "prng_key" not in updated_values["device_options"]:
-            updated_values["device_options"]["prng_key"] = self._prng_key
+        for option in self._device_options:
+            if option not in updated_values["device_options"]:
+                updated_values["device_options"][option] = getattr(self, f"_{option}")
         return replace(execution_config, **updated_values)
 
     def execute(
