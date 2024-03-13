@@ -208,7 +208,7 @@ class LinearCombination(Sum):
             coeffs, ops, pauli_rep"""
 
         if len(self.ops) == 0:
-            return self
+            return self.coeffs, self.ops, None
 
         # try using pauli_rep:
         if pr := self.pauli_rep:

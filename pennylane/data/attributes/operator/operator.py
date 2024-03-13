@@ -212,14 +212,13 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         op_class_names = []
         for i, op in enumerate(value):
             op_key = f"op_{i}"
+            if isinstance(op, (qml.ops.Prod, qml.ops.SProd, qml.ops.Sum)):
+                print(op, type(op))
+                op = op.simplify()
             if type(op) not in self.consumes_types():
                 raise TypeError(
                     f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
-
-            # if isinstance(op, (qml.ops.Prod)):
-            #     with qml.operation.disable_new_opmath_cm():
-            #         op = qml.operation.convert_to_legacy_H(op)
 
             if isinstance(op, Tensor):
                 self._ops_to_hdf5(bind, op_key, op.obs)
@@ -229,8 +228,13 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
                 op_wire_labels.append("null")
-            elif isinstance(op, qml.ops.Prod):
-                self._ops_to_hdf5(bind, op_key, op.simplify().operands)
+            elif isinstance(op, (qml.ops.Prod, qml.ops.Sum)):
+                self._ops_to_hdf5(bind, op_key, op.operands)
+                op_wire_labels.append("null")
+            elif isinstance(op, qml.ops.SProd):
+                coeffs, ops = op.terms()
+                sprod_grp = self._ops_to_hdf5(bind, op_key, ops)
+                sprod_grp["sprod_scalar"] = coeffs
                 op_wire_labels.append("null")
             else:
                 bind[op_key] = op.data if len(op.data) else h5py.Empty("f")
@@ -266,8 +270,15 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                             observables=self._hdf5_to_ops(bind[op_key]),
                         )
                     )
-                elif op_cls is qml.ops.Prod:
-                    ops.append(qml.ops.Prod(*self._hdf5_to_ops(bind[op_key])))
+                elif op_cls in (qml.ops.Prod, qml.ops.Sum):
+                    ops.append(op_cls(*self._hdf5_to_ops(bind[op_key])))
+                elif op_cls is qml.ops.SProd:
+                    ops.append(
+                        qml.ops.s_prod(
+                            scalar=bind[op_key]["sprod_scalar"][0],
+                            operator=self._hdf5_to_ops(bind[op_key])[0],
+                        )
+                    )
                 else:
                     wire_labels = json.loads(op_wire_labels[i])
                     op_data = bind[op_key]
