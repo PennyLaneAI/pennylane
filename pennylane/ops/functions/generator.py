@@ -43,7 +43,7 @@ def _generator_hamiltonian(gen, op):
         H = qml.pauli_decompose(mat, wire_order=wires, hide_identity=True)
 
     elif isinstance(gen, qml.operation.Observable):
-        H = 1.0 * gen
+        H = qml.Hamiltonian([1.0], [gen])
 
     elif isinstance(gen, (SProd, Prod, Sum)):
         H = convert_to_legacy_H(gen)
