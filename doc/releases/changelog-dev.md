@@ -60,6 +60,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
+  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
+
+* Operators can now be left multiplied `x * op` by numpy arrays.
+  [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
+
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
   [(##5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
@@ -116,6 +122,9 @@
 
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
+
+* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, and `CountsMP`.
+  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
 
 <h3>Breaking changes 💔</h3>
 
@@ -187,6 +196,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Mikhail Andrenkov,
 Utkarsh Azad,
