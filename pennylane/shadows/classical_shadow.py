@@ -228,8 +228,7 @@ class ClassicalShadow:
             (T, 2**n, 2**n),
         )
 
-    @staticmethod
-    def _convert_to_pauli_words_with_pauli_rep(pr, num_wires):
+    def _convert_to_pauli_words_with_pauli_rep(self, pr, num_wires):
         """Convert to recipe using pauli representation"""
         pr_to_recipe_map = {"X": 0, "Y": 1, "Z": 2, "I": -1}
 
@@ -237,7 +236,7 @@ class ClassicalShadow:
         for pw, c in pr.items():
             word = [-1] * num_wires
             for i, s in pw.items():
-                word[i] = pr_to_recipe_map[s]
+                word[self.wire_map.index(i)] = pr_to_recipe_map[s]
 
             coeffs_and_words.append((c, word))
 
