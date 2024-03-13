@@ -282,7 +282,7 @@ class ClassicalShadow:
         if (pr := observable.pauli_rep) is not None:
             return self._convert_to_pauli_words_with_pauli_rep(pr, num_wires)
 
-        raise ValueError("Observable must be a linear combination of Pauli observables")
+        raise ValueError("Observable must have a valid pauli representation. Recevied {observable} with observable.pauli_rep = {pr}")
 
     def expval(self, H, k=1):
         r"""Compute expectation value of an observable :math:`H`.
