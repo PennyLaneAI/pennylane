@@ -125,6 +125,10 @@ invalid_LinearCombinations = [
 
 simplify_LinearCombinations = [
     (
+        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination([], []),
+    ),
+    (
         qml.ops.LinearCombination([1, 1, 1], [X(0) @ qml.Identity(1), X(0), X(1)]),
         qml.ops.LinearCombination([2, 1], [X(0), X(1)]),
     ),
@@ -559,6 +563,21 @@ class TestLinearCombination:
         assert pr is not None
         assert pr == true_pauli
 
+    def test_is_hermitian_trivial(self):
+        """Test that an empty LinearCombination is trivially hermitian"""
+        op = qml.ops.LinearCombination([], [])
+        assert op.is_hermitian
+
+    IS_HERMITIAN_TEST = (
+        (qml.ops.LinearCombination([0.5, 0.5], [X(0), X(1) @ X(2)]), True),
+        (qml.ops.LinearCombination([0.5, 0.5j], [X(0), X(1) @ X(2)]), False),
+        (qml.ops.LinearCombination([0.5, 0.5], [X(0), qml.Hadamard(0)]), True),
+    )
+
+    @pytest.mark.parametrize("op, res", IS_HERMITIAN_TEST)
+    def test_is_hermitian(self, op, res):
+        assert op.is_hermitian is res
+
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     def test_LinearCombination_valid_init(self, coeffs, ops):
         """Tests that the LinearCombination object is created with
@@ -937,6 +956,13 @@ class TestLinearCombination:
             [1.0], [herm]
         )
         assert isinstance(ham, qml.ops.LinearCombination)
+
+    def test_diagonalizing_gates(self):
+        """Test that LinearCombination has valid diagonalizing gates"""
+        LC = qml.ops.LinearCombination([1.1, 2.2], [qml.X(0), qml.Z(0)])
+        SUM = qml.sum(qml.s_prod(1.1, qml.X(0)), qml.s_prod(2.2, qml.Z(0)))
+
+        assert LC.diagonalizing_gates() == SUM.diagonalizing_gates()
 
 
 class TestLinearCombinationCoefficients:

@@ -208,7 +208,7 @@ class LinearCombination(Sum):
             coeffs, ops, pauli_rep"""
 
         if len(self.ops) == 0:
-            return self.coeffs, self.ops, None
+            return [], [], self.pauli_rep
 
         # try using pauli_rep:
         if pr := self.pauli_rep:
@@ -431,6 +431,37 @@ class LinearCombination(Sum):
                 context.remove(o)
             context.append(self)
         return self
+
+    def diagonalizing_gates(self):
+        r"""Sequence of gates that diagonalize the operator in the computational basis.
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
+
+        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+
+        Returns:
+            list[.Operator] or None: a list of operators
+        """
+        diag_gates = []
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                diag_gates.extend(ops[0].diagonalizing_gates())
+            else:
+                tmp_sum = Sum(*ops)  # only change compared to CompositeOp.diagonalizing_gates()
+                eigvecs = tmp_sum.eigendecomposition["eigvec"]
+                diag_gates.append(
+                    qml.QubitUnitary(
+                        qml.math.transpose(qml.math.conj(eigvecs)), wires=tmp_sum.wires
+                    )
+                )
+        return diag_gates
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current LinearCombination with its wires changed according to the given
