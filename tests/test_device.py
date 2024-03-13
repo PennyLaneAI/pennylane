@@ -495,7 +495,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             node_gauss(0.015, 0.02, 0.005)
         assert dev_gauss.num_executions == num_evals_gauss
 
-    @pytest.mark.xfail(reason="behaviour seems different with new op_math")
     @pytest.mark.parametrize(
         "depth, expanded_ops",
         [
