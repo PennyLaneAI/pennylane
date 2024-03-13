@@ -913,6 +913,13 @@ class TestLinearCombination:
             [1.0], [herm]
         )
         assert isinstance(ham, qml.ops.LinearCombination)
+    
+    def test_diagonalizing_gates(self):
+        """Test that LinearCombination has valid diagonalizing gates"""
+        LC = qml.ops.LinearCombination([1.1, 2.2], [qml.X(0), qml.Z(0)])
+        SUM = qml.sum(qml.s_prod(1.1, qml.X(0)), qml.s_prod(2.2, qml.Z(0)))
+
+        assert LC.diagonalizing_gates() == SUM.diagonalizing_gates()
 
 
 class TestLinearCombinationCoefficients:
