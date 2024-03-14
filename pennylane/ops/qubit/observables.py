@@ -538,7 +538,7 @@ class BasisStateProjector(Projector, Operation):
         if qml.math.get_interface(w) == "jax":
             w = qml.math.put(w, idx, 1, inplace=False)
         else:
-            qml.math.put(w, idx, qml.math.convert_like(1, w))  # Default behavior for non-JAX interfaces
+            qml.math.put(w, idx, qml.math.convert_like(float(1), w))  # Default behavior for non-JAX interfaces
 
         return w
 
