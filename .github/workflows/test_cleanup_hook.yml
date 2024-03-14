@@ -6,7 +6,7 @@ on:
 
 defaults:
   run:
-    shell: bash -leo pipefail {0}
+    shell: bash -ileo pipefail {0}
 
 jobs:
   my_job:
