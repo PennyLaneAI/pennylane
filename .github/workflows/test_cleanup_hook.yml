@@ -1,0 +1,23 @@
+name: Test Benchmark Runner Cleanup Hook
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  my_job:
+    steps:
+      - run: ls -ltrh
+      - uses: actions/checkout@v4
+      - name: Create a file
+        env:
+          SOME_VAR: foooobarrrrrr
+        run: |
+          ls -ltrh
+          
+          echo ''
+          
+          echo 'Now creating a file'
+          echo "$SOME_VAR" >> file.txt
+          
+          cat file.txt
