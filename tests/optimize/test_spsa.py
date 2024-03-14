@@ -478,8 +478,8 @@ class TestSPSAOptimizer:
 
         assert np.all(params != init_params)
         assert energy < init_energy
-    
-    @pytest.mark.xfail # TODO: lightning supports LinearCombination
+
+    @pytest.mark.xfail  # TODO: lightning supports LinearCombination
     @pytest.mark.slow
     def test_lighting_device(self):
         """Test SPSAOptimizer implementation with lightning.qubit device."""
