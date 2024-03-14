@@ -317,7 +317,6 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
-
         gen = (
             (
                 (
