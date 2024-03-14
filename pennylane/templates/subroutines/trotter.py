@@ -14,10 +14,79 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
+from functools import lru_cache
+
 import pennylane as qml
+from pennylane import numpy as qnp
+
 from pennylane.operation import Operation
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
+from pennylane.pauli import PauliSentence
+
+
+@lru_cache
+def generate_combinations(num_variables, required_sum):
+    if num_variables == 0:
+        return ()
+    
+    if required_sum == 0:
+        return ((0,) * num_variables,)
+    
+    if num_variables == 1: 
+        return ((required_sum,),)
+    
+    if num_variables == 2:
+        return tuple([(i, required_sum - i) for i in range(required_sum + 1)])
+    
+    master_lst = []
+    for i in range(required_sum + 1):
+        for sub_perms in generate_combinations(num_variables - 1, required_sum - i):
+            master_lst.append((i,) + sub_perms)
+    
+    return tuple(master_lst)
+
+
+@lru_cache
+def Ad(A, B, alpha):
+    """Recursive commutator"""
+    if alpha == 0:
+        return B
+    
+    if alpha == 1: 
+        return PauliSentence.commutator(A, B)
+        
+    return PauliSentence.commutator(A, Ad(A, B, alpha-1))
+
+
+def f_coeffs(alphas_lst, a_lst):
+    a_nu = a_lst[0]
+    product = a_nu
+    for a_j, alpha_j in zip(a_lst[1:], alphas_lst):        
+        product *= ((a_j)**alpha_j) / math.factorial(alpha_j)
+    
+    return product
+
+
+def nested_commutator_operator(a_lst, H_lst, p):
+    q = len(a_lst)
+    final_operator = PauliSentence()
+    
+    for nu in range(1, q):  # nu = [1, 2, ..., q-1]
+        nu_index = nu - 1
+        combinations_alpha_bar_equals_p = generate_combinations(q - nu, p)
+        
+        for alphas_lst in combinations_alpha_bar_equals_p:
+            H_nu = H_lst[nu_index]
+            f_nu = f_coeffs(alphas_lst, a_lst[nu_index:])
+            
+            nested_commutator = H_nu
+            for H, alpha in zip(H_lst[nu_index + 1:], alphas_lst):
+                nested_commutator = Ad(H, nested_commutator, alpha)
+            final_operator += f_nu * nested_commutator 
+        
+    return final_operator
+
 
 
 def _scalar(order):
