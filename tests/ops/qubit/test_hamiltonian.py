@@ -1026,6 +1026,20 @@ class TestHamiltonian:
         ham = qml.Hamiltonian([1.0, 1.0], [tensor, qml.PauliX(2)]) @ qml.Hamiltonian([1.0], [herm])
         assert isinstance(ham, qml.Hamiltonian)
 
+    def test_hamiltonian_pauli_rep(self):
+        """Test that the pauli rep is set for a hamiltonain that is a linear combination of paulis."""
+        h = qml.Hamiltonian([1.0, 2.0], [qml.X(0) @ qml.Y(1), qml.Z(0) @ qml.Z(2)])
+
+        pw1 = qml.pauli.PauliWord({0: "X", 1: "Y"})
+        pw2 = qml.pauli.PauliWord({0: "Z", 2: "Z"})
+        ps = 1.0 * pw1 + 2.0 * pw2
+        assert h.pauli_rep == ps
+
+    def test_hamiltonian_no_pauli_rep(self):
+        """Test that the pauli_rep for a hamiltonian is None if it is not a linear combination of paulis."""
+        h = qml.Hamiltonian([1.0, 2.0], [qml.X(0), qml.Hermitian(np.eye(2), 2)])
+        assert h.pauli_rep is None
+
 
 class TestHamiltonianCoefficients:
     """Test the creation of a Hamiltonian"""

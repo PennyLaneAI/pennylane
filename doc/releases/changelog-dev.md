@@ -60,6 +60,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
+  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
+
+* Operators can now be left multiplied `x * op` by numpy arrays.
+  [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
+
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
   [(##5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
@@ -99,6 +105,9 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
   
+* `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of paulis.
+  [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
@@ -113,6 +122,9 @@
 
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
+
+* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, and `CountsMP`.
+  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
 
 <h3>Breaking changes 💔</h3>
 
@@ -149,7 +161,14 @@
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``. The old import path no longer exists.
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``, `` gradient_transform``
+  and ``hessian_transform`` are removed. Instead, switch to using the new ``qml.transform`` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+  [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
+
 * Attempting to multiply ``PauliWord`` and ``PauliSentence`` with ``*`` will raise an error. Instead, use ``@`` to conform with the PennyLane convention.
+  [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
 
 <h3>Deprecations 👋</h3>
 
@@ -184,6 +203,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Mikhail Andrenkov,
 Utkarsh Azad,
