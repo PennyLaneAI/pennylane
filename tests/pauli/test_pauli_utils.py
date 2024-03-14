@@ -793,7 +793,6 @@ class TestPartitionPauliGroup:
                     w2 = string_to_pauli_word(s2)
                     assert is_commuting(w1, w2)
 
-    @pytest.mark.xfail  # TODO update qml.is_commuting to handle Prods
     @pytest.mark.parametrize("n", range(2, 6))
     def test_is_qwc(self, n):
         """Test if each group contains only qubit-wise commuting terms"""
