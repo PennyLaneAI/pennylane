@@ -10,8 +10,7 @@ Pending deprecations
 --------------------
 
 * ``MultiControlledX`` is the only controlled operation that still supports specifying control
-  values with a bit string, it is also the only controlled operation that still takes a
-  ``control_wires`` argument to its constructor. Both behaviours will be deprecated.
+  values with a bit string. In the future, it will no longer accepts strings as control values.
 
   - Deprecated in v0.36
   - Will be removed in v0.37

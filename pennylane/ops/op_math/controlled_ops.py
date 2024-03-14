@@ -1051,7 +1051,7 @@ class MultiControlledX(ControlledOp):
             warnings.warn(
                 "The control_wires keyword for MultiControlledX is deprecated, and will "
                 "be removed soon. Use wires = (*control_wires, target_wire) instead.",
-                qml.PennyLaneDeprecationWarning,
+                UserWarning,
             )
 
         if wires is None:

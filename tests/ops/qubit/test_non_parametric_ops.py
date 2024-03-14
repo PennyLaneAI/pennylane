@@ -590,14 +590,6 @@ class TestMultiControlledX:
         ):
             _ = qml.MultiControlledX(wires=[0, 1, 2], control_values="01")
 
-    def test_control_wires_deprecation(self):
-        """Tests that the control_wires argument is deprecated."""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The control_wires keyword for MultiControlledX is deprecated",
-        ):
-            _ = qml.MultiControlledX(control_wires=0, wires=1, control_values=[0])
-
     @pytest.mark.parametrize(
         "wires, control_values, error_message",
         [
@@ -634,7 +626,7 @@ class TestMultiControlledX:
     ):
         """Tests initializing a MultiControlledX with invalid arguments with the old interface"""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            UserWarning,
             match="The control_wires keyword for MultiControlledX is deprecated",
         ):
             with pytest.raises(ValueError, match=error_message):
@@ -718,7 +710,7 @@ class TestMultiControlledX:
 
             return qml.state()
 
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="deprecated"):
+        with pytest.warns(UserWarning, match="deprecated"):
             mpmct_state = circuit_mpmct()
 
         pauli_x_state = circuit_pauli_x()
