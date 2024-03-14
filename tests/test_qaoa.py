@@ -74,11 +74,20 @@ b_rx.add_nodes_from(["b", 1, 0.3])
 b_rx.add_edges_from([(0, 1, ""), (1, 2, ""), (0, 2, "")])
 
 
+def _get_ops(op):
+    if isinstance(op, qml.operation.Tensor):
+        return op.name
+    elif isinstance(op, qml.ops.Prod):
+        _, ops = op.terms()
+        return ops
+    return [op.name]
+
+
 def decompose_hamiltonian(hamiltonian):
     coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     # Terms in the Hamiltonian are ops acting on different wires, so the order shouldn't
     # matter as long as the correct ops are on the correct wires.
-    wire_ops = [dict((w, c) for w, c in zip(op.wires, op.name)) for op in hamiltonian.ops]
+    wire_ops = [dict((w, c) for w, c in zip(op.wires, _get_ops(op))) for op in hamiltonian.ops]
     return coeffs, wire_ops
 
 
@@ -927,6 +936,15 @@ class TestCostHamiltonians:
 
         assert decompose_hamiltonian(H) == decompose_hamiltonian(hamiltonian)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_bit_driver_output_legacy(self):
+        """Tests that the bit driver Hamiltonian has the correct output"""
+
+        H = qaoa.bit_driver(range(3), 1)
+        hamiltonian = qml.Hamiltonian([1, 1, 1], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)])
+
+        assert decompose_hamiltonian(H) == decompose_hamiltonian(hamiltonian)
+
     def test_edge_driver_errors(self):
         """Tests that the edge driver Hamiltonian throws the correct errors"""
 
@@ -949,6 +967,15 @@ class TestCostHamiltonians:
         """Tests that the edge driver Hamiltonian throws the correct errors"""
 
         H = qaoa.edge_driver(graph, reward)
+        assert decompose_hamiltonian(H) == decompose_hamiltonian(hamiltonian)
+
+    @pytest.mark.parametrize(("graph", "reward", "hamiltonian"), EDGE_DRIVER)
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_edge_driver_output_legacy(self, graph, reward, hamiltonian):
+        """Tests that the edge driver Hamiltonian throws the correct errors"""
+
+        H = qaoa.edge_driver(graph, reward)
+        hamiltonian = qml.operation.convert_to_legacy_H(hamiltonian)
         assert decompose_hamiltonian(H) == decompose_hamiltonian(hamiltonian)
 
     def test_max_weight_cycle_errors(self):
@@ -978,11 +1005,39 @@ class TestCostHamiltonians:
         """Tests that the output of the MaxCut method is correct"""
 
         cost_h, mixer_h = qaoa.maxcut(graph)
+        cost_hamiltonian = cost_hamiltonian.simplify()
+        cost_h = cost_h.simplify()
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        mixer_hamiltonian = mixer_hamiltonian.simplify()
+        mixer_h = mixer_h.simplify()
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
+    @pytest.mark.parametrize(("graph", "cost_hamiltonian", "mixer_hamiltonian"), MAXCUT)
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_maxcut_output_legacy(self, graph, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the MaxCut method is correct"""
+
+        cost_h, mixer_h = qaoa.maxcut(graph)
+
+        cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
+        mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
     def test_maxcut_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MAXCUT[0][0]
+        cost_h, _ = qaoa.maxcut(graph)
+
+        # check that all observables commute
+        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_maxcut_grouping_legacy(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MAXCUT[0][0]
@@ -999,11 +1054,39 @@ class TestCostHamiltonians:
         """Tests that the output of the Max Indepenent Set method is correct"""
 
         cost_h, mixer_h = qaoa.max_independent_set(graph, constrained=constrained)
+        cost_h = cost_h.simplify()
+        mixer_h = mixer_h.simplify()
+        cost_hamiltonian = cost_hamiltonian.simplify()
+        mixer_hamiltonian = mixer_hamiltonian.simplify()
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MIS)
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_mis_output_legacy(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the Max Indepenent Set method is correct"""
+
+        cost_h, mixer_h = qaoa.max_independent_set(graph, constrained=constrained)
+
+        cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
+        mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
     def test_mis_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MIS[0][0]
+        cost_h, _ = qaoa.max_independent_set(graph)
+
+        # check that all observables commute
+        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_mis_grouping_legacy(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MIS[0][0]
@@ -1020,11 +1103,38 @@ class TestCostHamiltonians:
         """Tests that the output of the Min Vertex Cover method is correct"""
 
         cost_h, mixer_h = qaoa.min_vertex_cover(graph, constrained=constrained)
+        cost_h = cost_h.simplify()
+        mixer_h = mixer_h.simplify()
+        cost_hamiltonian = cost_hamiltonian.simplify()
+        mixer_hamiltonian = mixer_hamiltonian.simplify()
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MVC)
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_mvc_output_legacy(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the Min Vertex Cover method is correct"""
+
+        cost_h, mixer_h = qaoa.min_vertex_cover(graph, constrained=constrained)
+        cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
+        mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
     def test_mvc_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MVC[0][0]
+        cost_h, _ = qaoa.min_vertex_cover(graph)
+
+        # check that all observables commute
+        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_mvc_grouping_legacy(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MVC[0][0]
@@ -1043,11 +1153,42 @@ class TestCostHamiltonians:
         """Tests that the output of the Maximum Clique method is correct"""
 
         cost_h, mixer_h = qaoa.max_clique(graph, constrained=constrained)
+        cost_h = cost_h.simplify()
+        mixer_h = mixer_h.simplify()
+        cost_hamiltonian = cost_hamiltonian.simplify()
+        mixer_hamiltonian = mixer_hamiltonian.simplify()
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
+    @pytest.mark.parametrize(
+        ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MAXCLIQUE
+    )
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_max_clique_output_legacy(
+        self, graph, constrained, cost_hamiltonian, mixer_hamiltonian
+    ):
+        """Tests that the output of the Maximum Clique method is correct"""
+
+        cost_h, mixer_h = qaoa.max_clique(graph, constrained=constrained)
+        cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
+        mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
     def test_max_clique_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MAXCLIQUE[0][0]
+        cost_h, _ = qaoa.max_clique(graph)
+
+        # check that all observables commute
+        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_max_clique_grouping_legacy(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MAXCLIQUE[0][0]
@@ -1069,20 +1210,51 @@ class TestCostHamiltonians:
         """Tests that the output of the maximum weighted cycle method is correct"""
 
         cost_h, mixer_h, m = qaoa.max_weight_cycle(graph, constrained=constrained)
+        cost_h = cost_h.simplify()
+        mixer_h = mixer_h.simplify()
+        cost_hamiltonian = cost_hamiltonian.simplify()
+        mixer_hamiltonian = mixer_hamiltonian.simplify()
+        assert mapping == m
+        assert cost_h.pauli_rep == cost_hamiltonian.pauli_rep
+        assert mixer_h.pauli_rep == mixer_hamiltonian.pauli_rep
 
+    @pytest.mark.parametrize(
+        ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"), MWC
+    )
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_max_weight_cycle_output_legacy(
+        self, graph, constrained, cost_hamiltonian, mixer_hamiltonian, mapping
+    ):
+        """Tests that the output of the maximum weighted cycle method is correct"""
+
+        cost_h, mixer_h, m = qaoa.max_weight_cycle(graph, constrained=constrained)
+        cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
+        mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         assert mapping == m
 
-        c1, t1, w1 = decompose_hamiltonian(cost_hamiltonian)
-        c2, t2, w2 = decompose_hamiltonian(cost_h)
+        c1, tw1 = decompose_hamiltonian(cost_hamiltonian)
+        c2, tw2 = decompose_hamiltonian(cost_h)
 
         # There may be a very small numeric difference in the coeffs
         assert np.allclose(c1, c2)
-        assert t1 == t2
-        assert w1 == w2
+        assert tw1 == tw2
 
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
     def test_max_weight_cycle_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MWC[0][0]
+        cost_h, _, _ = qaoa.max_weight_cycle(graph)
+
+        # check that all observables commute
+        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_max_weight_cycle_grouping_legacy(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MWC[0][0]
