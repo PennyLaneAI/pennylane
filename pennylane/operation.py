@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
+# pylint: disable=protected-access, no-member
 r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
@@ -3152,7 +3152,10 @@ def convert_to_legacy_H(op):
     else:
         raise ValueError("Could not convert to Hamiltonian. Some or all observables are not valid.")
 
-    return qml.Hamiltonian(coeffs, ops)
+    with disable_new_opmath_cm():
+        hamiltonian = qml.Hamiltonian(coeffs, ops)
+
+    return hamiltonian
 
 
 def __getattr__(name):
