@@ -31,7 +31,7 @@
     qc.rx(0.785, 0)
     qc.ry(1.57, 1)
     ```
-    
+
     We can convert it into a PennyLane QNode in just a few lines, with PennyLane
     `measurements` easily included:
 
@@ -211,7 +211,7 @@
     >>> X(0)
     X(0)
     ```
-    
+
     The original long-form names `Identity`, `PauliX`, `PauliY`, and `PauliZ` remain available, but
     use of the short-form names is now recommended.
 
