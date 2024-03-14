@@ -194,6 +194,8 @@ class TestReconstructEqu:
         functions are differentiable for JAX input variables."""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         # Convert fun to have integer frequencies
         _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency, interface="jax")
@@ -421,6 +423,8 @@ class TestReconstructGen:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="jax")
@@ -915,6 +919,8 @@ class TestReconstruct:
     ):
         """Tests the reconstruction and differentiability with JAX."""
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         params = tuple(jax.numpy.array(par) for par in params)
         qnode = qml.QNode(qnode, dev_1, interface="jax")

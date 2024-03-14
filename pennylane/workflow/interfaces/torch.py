@@ -212,9 +212,11 @@ def execute(tapes, execute_fn, jpc, device=None):
         logger.debug(
             "Entry with args=(tapes=%s, execute_fn=%s, jpc=%s",
             tapes,
-            f"\n{inspect.getsource(execute_fn)}\n"
-            if logger.isEnabledFor(qml.logging.TRACE)
-            else execute_fn,
+            (
+                f"\n{inspect.getsource(execute_fn)}\n"
+                if logger.isEnabledFor(qml.logging.TRACE)
+                else execute_fn
+            ),
             jpc,
         )
 

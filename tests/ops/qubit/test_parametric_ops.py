@@ -29,6 +29,9 @@ from pennylane.ops.qubit import (
     RX as old_loc_RX,
     MultiRZ as old_loc_MultiRZ,
 )
+
+from pennylane.ops.op_math.sprod import SProd
+
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -725,6 +728,20 @@ class TestMatrix:
         expected = np.array([[qml.math.exp(-1j * phi), 0], [0, qml.math.exp(-1j * phi)]])
         assert np.allclose(qml.GlobalPhase.compute_matrix(phi), expected, atol=tol, rtol=0)
         assert np.allclose(qml.GlobalPhase(phi).matrix(wire_order=[0]), expected, atol=tol, rtol=0)
+
+    def test_identity(self, tol):
+        """Test Identity matrix is correct with no wires"""
+
+        # test Identity().compute_matrix()
+        assert np.allclose(qml.Identity().compute_matrix(1), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(qml.Identity().compute_matrix(2), np.identity(4), atol=tol, rtol=0)
+
+        # test Identity().matrix()
+        assert np.allclose(qml.Identity().matrix(), np.identity(1), atol=tol, rtol=0)
+        assert np.allclose(qml.Identity().matrix(wire_order=[0]), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.Identity().matrix(wire_order=[0, "a"]), np.identity(4), atol=tol, rtol=0
+        )
 
     def test_rx(self, tol):
         """Test x rotation is correct"""
@@ -1993,18 +2010,19 @@ class TestGrad:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method", device_methods)
-    def test_globalphase_autograd_grad(self, tol, dev_name, diff_method):
+    @pytest.mark.parametrize("wires", [(0, 1), (1, 0)])
+    def test_globalphase_autograd_grad(self, tol, dev_name, diff_method, wires):
         """Test the gradient with Autograd for a controlled GlobalPhase."""
 
         dev = qml.device(dev_name, wires=2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
-            qml.Identity(0)
-            qml.Hadamard(1)
-            qml.ctrl(qml.GlobalPhase(x), 1)
-            qml.Hadamard(1)
-            return qml.expval(qml.PauliZ(1))
+            qml.Identity(wires[0])
+            qml.Hadamard(wires[1])
+            qml.ctrl(qml.GlobalPhase(x), control=wires[1])
+            qml.Hadamard(wires[1])
+            return qml.expval(qml.PauliZ(wires[1]))
 
         phi = npp.array(2.1, requires_grad=True)
 
@@ -2337,7 +2355,8 @@ class TestGrad:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("dev_name,diff_method", device_methods)
-    def test_globalphase_tf_grad(self, tol, dev_name, diff_method):
+    @pytest.mark.parametrize("wires", [(0, 1), (1, 0)])
+    def test_globalphase_tf_grad(self, tol, dev_name, diff_method, wires):
         """Test the gradient with Tensorflow for a controlled GlobalPhase."""
 
         import tensorflow as tf
@@ -2346,11 +2365,11 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
-            qml.Identity(0)
-            qml.Hadamard(1)
-            qml.ctrl(qml.GlobalPhase(x), 1)
-            qml.Hadamard(1)
-            return qml.expval(qml.PauliZ(1))
+            qml.Identity(wires[0])
+            qml.Hadamard(wires[1])
+            qml.ctrl(qml.GlobalPhase(x), control=wires[1])
+            qml.Hadamard(wires[1])
+            return qml.expval(qml.PauliZ(wires[1]))
 
         phi = tf.Variable(2.1, dtype=tf.complex128)
 
@@ -2491,7 +2510,8 @@ class TestGrad:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method", device_methods)
-    def test_globalphase_jax_grad(self, tol, dev_name, diff_method):
+    @pytest.mark.parametrize("wires", [(1, 0), (0, 1)])
+    def test_globalphase_jax_grad(self, tol, dev_name, diff_method, wires):
         """Test the gradient with JAX for a controlled GlobalPhase."""
 
         import jax
@@ -2503,11 +2523,11 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
-            qml.Identity(0)
-            qml.Hadamard(1)
-            qml.ctrl(qml.GlobalPhase(x), 1)
-            qml.Hadamard(1)
-            return qml.expval(qml.PauliZ(1))
+            qml.Identity(wires[0])
+            qml.Hadamard(wires[1])
+            qml.ctrl(qml.GlobalPhase(x), control=wires[1])
+            qml.Hadamard(wires[1])
+            return qml.expval(qml.PauliZ(wires[1]))
 
         phi = jnp.array(2.1)
 
@@ -2518,7 +2538,8 @@ class TestGrad:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dev_name,diff_method", device_methods)
-    def test_globalphase_torch_grad(self, tol, dev_name, diff_method):
+    @pytest.mark.parametrize("wires", [(1, 0), (0, 1)])
+    def test_globalphase_torch_grad(self, tol, dev_name, diff_method, wires):
         """Test the gradient with Torch for a controlled GlobalPhase."""
 
         import torch
@@ -2527,11 +2548,11 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
-            qml.Identity(0)
-            qml.Hadamard(1)
-            qml.ctrl(qml.GlobalPhase(x), 1)
-            qml.Hadamard(1)
-            return qml.expval(qml.PauliZ(1))
+            qml.Identity(wires[0])
+            qml.Hadamard(wires[1])
+            qml.ctrl(qml.GlobalPhase(x), control=wires[1])
+            qml.Hadamard(wires[1])
+            return qml.expval(qml.PauliZ(wires[1]))
 
         phi = torch.tensor(2.1, requires_grad=True, dtype=torch.float64)
 
@@ -2958,6 +2979,8 @@ class TestPauliRot:
         op = qml.PauliRot(0.3, pauli_word, wires=range(len(pauli_word)))
         gen = op.generator()
 
+        assert isinstance(gen, SProd)
+
         if pauli_word[0] == "I":
             # this is the identity
             expected_gen = qml.Identity(wires=0)
@@ -2971,7 +2994,7 @@ class TestPauliRot:
             else:
                 expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
 
-        assert gen.compare(-0.5 * expected_gen)
+        assert qml.equal(gen, qml.s_prod(-0.5, expected_gen))
 
     @pytest.mark.torch
     @pytest.mark.gpu
@@ -3160,11 +3183,13 @@ class TestMultiRZ:
         op = qml.MultiRZ(0.3, wires=range(qubits))
         gen = op.generator()
 
+        assert isinstance(gen, SProd)
+
         expected_gen = qml.PauliZ(wires=0)
         for i in range(1, qubits):
             expected_gen = expected_gen @ qml.PauliZ(wires=i)
 
-        assert gen.compare(-0.5 * expected_gen)
+        assert qml.equal(gen, qml.s_prod(-0.5, expected_gen))
 
         spy = mocker.spy(qml.utils, "pauli_eigs")
 

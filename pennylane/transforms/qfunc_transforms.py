@@ -256,7 +256,7 @@ def qfunc_transform(tape_transform):
         def qfunc(x):
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(1))
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> qnode = qml.QNode(qfunc, dev)
@@ -331,7 +331,7 @@ def qfunc_transform(tape_transform):
                 # apply the transform to the ansatz
                 my_transform(*transform_weights)(ansatz)(param)
 
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         We can print this QNode to show that the qfunc transform is taking place:
 

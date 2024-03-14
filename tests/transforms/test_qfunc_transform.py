@@ -21,6 +21,11 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:.*qfunc_transform.*:pennylane.PennyLaneDeprecationWarning"
+)
+
+
 class TestSingleTapeTransform:
     """Tests for the single_tape_transform decorator"""
 
@@ -48,7 +53,6 @@ class TestSingleTapeTransform:
         """Test that a parametrized transform can be applied
         to a tape"""
 
-        @qml.single_tape_transform
         def my_transform(tape, a, b):
             for op in tape:
                 if op.name == "CRX":
@@ -59,6 +63,9 @@ class TestSingleTapeTransform:
                     qml.CZ(wires=[wires[1], wires[0]])
                 else:
                     op.queue()
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of `single_tape_transform`"):
+            my_transform = qml.single_tape_transform(my_transform)
 
         a = 0.1
         b = np.array([0.2, 0.3])
@@ -307,12 +314,14 @@ class TestQFuncTransforms:
 
         @qml.qfunc_transform
         def expand_hadamards(tape):
-            for op in tape:
+            for op in tape.operations:
                 if op.name == "Hadamard":
                     qml.RZ(np.pi, wires=op.wires)
                     qml.RY(np.pi / 2, wires=op.wires)
                 else:
                     op.queue()
+            for mp in tape.measurements:
+                qml.apply(mp)
 
         def ansatz():
             qml.Hadamard(wires=0)
@@ -385,8 +394,6 @@ class TestQFuncTransforms:
 class TestQFuncTransformGradients:
     """Tests for the qfunc_transform decorator differentiability"""
 
-    @staticmethod
-    @qml.qfunc_transform
     def my_transform(tape, a, b):
         """Test transform"""
         for op in tape:
@@ -398,6 +405,9 @@ class TestQFuncTransformGradients:
                 qml.CZ(wires=[wires[1], wires[0]])
             else:
                 op.queue()
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of `qfunc_transform`"):
+        my_transform = staticmethod(qml.qfunc_transform(my_transform))
 
     @staticmethod
     def ansatz(x):

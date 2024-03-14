@@ -57,6 +57,7 @@ class MultiRZ(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -114,7 +115,7 @@ class MultiRZ(Operation):
         )
 
     def generator(self):
-        return -0.5 * functools.reduce(matmul, [PauliZ(w) for w in self.wires])
+        return qml.s_prod(-0.5, functools.reduce(matmul, [PauliZ(w) for w in self.wires]))
 
     @staticmethod
     def compute_eigvals(theta, num_wires):  # pylint: disable=arguments-differ
@@ -235,10 +236,11 @@ class PauliRot(Operation):
     >>> @qml.qnode(dev)
     ... def example_circuit():
     ...     qml.PauliRot(0.5, 'X',  wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(example_circuit())
     0.8775825618903724
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -404,7 +406,7 @@ class PauliRot(Operation):
     def generator(self):
         pauli_word = self.hyperparameters["pauli_word"]
         wire_map = {w: i for i, w in enumerate(self.wires)}
-        return -0.5 * qml.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)
+        return qml.s_prod(-0.5, qml.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map))
 
     @staticmethod
     def compute_eigvals(theta, pauli_word):  # pylint: disable=arguments-differ
@@ -564,6 +566,7 @@ class PCPhase(Operation):
      [0.  +0.j   0.  +0.j   0.33+0.94j 0.  +0.j  ]
      [0.  +0.j   0.  +0.j   0.  +0.j   0.33-0.94j]]
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -759,6 +762,7 @@ class IsingXX(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -770,7 +774,7 @@ class IsingXX(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
+        return qml.s_prod(-0.5, qml.prod(PauliX(wires=self.wires[0]), PauliX(wires=self.wires[1])))
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -894,6 +898,7 @@ class IsingYY(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -905,7 +910,7 @@ class IsingYY(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
+        return qml.s_prod(-0.5, qml.prod(PauliY(wires=self.wires[0]), PauliY(wires=self.wires[1])))
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -1036,6 +1041,7 @@ class IsingZZ(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1047,7 +1053,7 @@ class IsingZZ(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
+        return qml.s_prod(-0.5, qml.prod(PauliZ(wires=self.wires[0]), PauliZ(wires=self.wires[1])))
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -1218,6 +1224,7 @@ class IsingXY(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1229,9 +1236,12 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return 0.25 * (
-            PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
-            + PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
+        return qml.s_prod(
+            0.25,
+            qml.sum(
+                qml.prod(PauliX(wires=self.wires[0]), PauliX(wires=self.wires[1])),
+                qml.prod(PauliY(wires=self.wires[0]), PauliY(wires=self.wires[1])),
+            ),
         )
 
     def __init__(self, phi, wires, id=None):
@@ -1396,6 +1406,7 @@ class PSWAP(Operation):
         wires (int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1549,6 +1560,7 @@ class CPhaseShift00(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1664,15 +1676,15 @@ class CPhaseShift00(Operation):
         **Example:**
 
         >>> qml.CPhaseShift00.compute_decomposition(1.234, wires=(0,1))
-        [PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        [X(0),
+        X(1),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PauliX(wires=[1]),
-        PauliX(wires=[0])]
+        X(1),
+        X(0)]
 
         """
         decomp_ops = [
@@ -1735,6 +1747,7 @@ class CPhaseShift01(Operation):
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1847,13 +1860,13 @@ class CPhaseShift01(Operation):
         **Example:**
 
         >>> qml.CPhaseShift01.compute_decomposition(1.234, wires=(0,1))
-        [PauliX(wires=[0]),
+        [X(0),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PauliX(wires=[0])]
+        X(0)]
 
         """
         decomp_ops = [
@@ -1913,6 +1926,7 @@ class CPhaseShift10(Operation):
         wires (Any, Wires): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -2025,13 +2039,13 @@ class CPhaseShift10(Operation):
         **Example:**
 
         >>> qml.CPhaseShift10.compute_decomposition(1.234, wires=(0,1))
-        [PauliX(wires=[1]),
+        [X(1),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PauliX(wires=[1])]
+        X(1)]
 
         """
         decomp_ops = [

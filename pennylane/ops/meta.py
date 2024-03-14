@@ -36,6 +36,7 @@ class Barrier(Operation):
         only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
         wires (Sequence[int] or int): the wires the operation acts on
     """
+
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -110,6 +111,7 @@ class WireCut(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
+
     num_params = 0
     num_wires = AnyWires
     grad_method = None
@@ -179,12 +181,12 @@ class Snapshot(Operation):
 
         @qml.qnode(dev, interface=None)
         def circuit():
-            qml.Snapshot(measurement=qml.expval(qml.PauliZ(0))
+            qml.Snapshot(measurement=qml.expval(qml.Z(0))
             qml.Hadamard(wires=0)
             qml.Snapshot("very_important_state")
             qml.CNOT(wires=[0, 1])
             qml.Snapshot()
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.X(0))
 
     >>> qml.snapshots(circuit)()
     {0: 1.0,
@@ -194,6 +196,7 @@ class Snapshot(Operation):
 
     .. seealso:: :func:`~.snapshots`
     """
+
     num_wires = AnyWires
     num_params = 0
     grad_method = None

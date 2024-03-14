@@ -1147,6 +1147,9 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_correct_output_jax(self, ansatz, params, interface):
         from jax import numpy as jnp
+        from jax import config
+
+        config.update("jax_enable_x64", True)
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.jax", wires=self.num_wires + 1)

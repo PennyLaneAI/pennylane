@@ -54,6 +54,7 @@ class Hermitian(Observable):
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -232,11 +233,12 @@ class SparseHamiltonian(Observable):
 
     >>> wires = range(20)
     >>> coeffs = [1 for _ in wires]
-    >>> observables = [qml.PauliZ(i) for i in wires]
+    >>> observables = [qml.Z(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = H.sparse_matrix()
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -378,6 +380,7 @@ class Projector(Observable):
         0.25
 
     """
+
     name = "Projector"
     num_wires = AnyWires
     num_params = 1

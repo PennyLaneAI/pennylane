@@ -136,6 +136,7 @@ class QuantumPhaseEstimation(Operation):
             phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
 
     """
+
     num_wires = AnyWires
     grad_method = None
 

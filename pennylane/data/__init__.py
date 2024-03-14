@@ -82,7 +82,7 @@ Creating a Dataset
 
 To create a new dataset in-memory, initialize a new :class:`~.Dataset` with the desired attributes:
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+>>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
 >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
 >>> dataset = qml.data.Dataset(
 ...   hamiltonian = hamiltonian,
@@ -133,6 +133,12 @@ it from the file:
 >>> my_dataset = Dataset.open("~/dataset/my_dataset/h5", mode="copy")
 >>> my_dataset.new_attribute = "abc"
 
+.. important::
+
+    Since opened datasets stream data from the disk, it is not possible to simultaneously access the same
+    dataset from separately running scripts or multiple Jupyter notebooks. To get around
+    this, either make a copy of the dataset in the disk or access the dataset using :meth:`Dataset.open()`
+    with ``mode="copy"``.
 
 Attribute Metadata
 ------------------
@@ -140,7 +146,7 @@ Attribute Metadata
 Dataset attributes can also contain additional metadata, such as docstrings. The :func:`~.data.attribute`
 function can be used to attach metadata on assignment or initialization.
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+>>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
 >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
 >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
 ...     hamiltonian,
@@ -186,7 +192,7 @@ definition:
 >>> dataset = QuantumOscillator(
 ...     mass=1,
 ...     force_constant=0.5,
-...     hamiltonian=qml.PauliX(0),
+...     hamiltonian=qml.X(0),
 ...     energy_levels=np.array([0.1, 0.2])
 ... )
 >>> dataset.attr_info["mass"]["doc"]

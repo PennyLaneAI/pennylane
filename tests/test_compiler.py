@@ -41,15 +41,6 @@ def catalyst_incompatible_version():
         yield
 
 
-# TODO: Remove this fixture after the Catalyst v0.4.0 release
-@pytest.fixture
-def catalyst_compatible_version():
-    """A compatible (high) version for Catalyst"""
-    with patch("importlib.metadata.version") as mock_version:
-        mock_version.return_value = "0.4.0"
-        yield
-
-
 @pytest.mark.usefixtures("catalyst_incompatible_version")
 def test_catalyst_incompatible():
     """Test qjit with an incompatible Catalyst version < 0.4.0"""
@@ -62,12 +53,11 @@ def test_catalyst_incompatible():
         return qml.state()
 
     with pytest.raises(
-        CompileError, match="PennyLane-Catalyst 0.4.0 or greater is required, but installed 0.0.1"
+        CompileError, match="PennyLane-Catalyst 0.5.0 or greater is required, but installed 0.0.1"
     ):
         qml.qjit(circuit)()
 
 
-@pytest.mark.usefixtures("catalyst_compatible_version")
 class TestCatalyst:
     """Test ``qml.qjit`` with Catalyst"""
 
@@ -78,7 +68,7 @@ class TestCatalyst:
         assert not qml.compiler.available("SomeRandomCompiler")
 
         assert qml.compiler.available("catalyst")
-        assert qml.compiler.available_compilers() == ["catalyst"]
+        assert qml.compiler.available_compilers() == ["catalyst", "cuda_quantum"]
 
     def test_active_compiler(self):
         """Test `qml.compiler.active_compiler` inside a simple circuit"""
@@ -312,7 +302,6 @@ class TestCatalyst:
         )
 
 
-@pytest.mark.usefixtures("catalyst_compatible_version")
 class TestCatalystControlFlow:
     """Test ``qml.qjit`` with Catalyst's control-flow operations"""
 
@@ -516,7 +505,6 @@ class TestCatalystControlFlow:
             circuit(1.5)
 
 
-@pytest.mark.usefixtures("catalyst_compatible_version")
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 
@@ -707,7 +695,7 @@ class TestCatalystGrad:
         res = vjp(x, dy)
         assert len(res) == 2
         assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
+        assert jnp.allclose(res[1][0], jnp.array([-0.43750208, 0.07000001]))
 
     def test_vjp_without_qjit(self):
         """Test that an error is raised when using VJP without QJIT."""

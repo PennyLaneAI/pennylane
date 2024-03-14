@@ -18,7 +18,7 @@ quantum channels supported by PennyLane, as well as their conventions.
 """
 import warnings
 
-import pennylane.math as np
+from pennylane import math as np
 from pennylane.operation import AnyWires, Channel
 
 
@@ -53,6 +53,7 @@ class AmplitudeDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -131,6 +132,7 @@ class GeneralizedAmplitudeDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
@@ -209,6 +211,7 @@ class PhaseDamping(Channel):
         gamma (float): phase damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -294,6 +297,7 @@ class DepolarizingChannel(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -367,6 +371,7 @@ class BitFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -449,6 +454,7 @@ class ResetError(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
@@ -550,6 +556,7 @@ class PauliError(Channel):
         array([[0.        , 0.70710678],
                [0.70710678, 0.        ]])
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -651,6 +658,7 @@ class PhaseFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -701,6 +709,7 @@ class QubitChannel(Channel):
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = AnyWires
     grad_method = None
 
@@ -708,26 +717,27 @@ class QubitChannel(Channel):
         super().__init__(*K_list, wires=wires, id=id)
 
         # check all Kraus matrices are square matrices
-        if not all(K.shape[0] == K.shape[1] for K in K_list):
+        if any(K.shape[0] != K.shape[1] for K in K_list):
             raise ValueError(
                 "Only channels with the same input and output Hilbert space dimensions can be applied."
             )
 
         # check all Kraus matrices have the same shape
-        if not all(K.shape == K_list[0].shape for K in K_list):
+        if any(K.shape != K_list[0].shape for K in K_list):
             raise ValueError("All Kraus matrices must have the same shape.")
 
         # check the dimension of all Kraus matrices are valid
-        if not all(K.ndim == 2 for K in K_list):
+        if any(K.ndim != 2 for K in K_list):
             raise ValueError(
                 "Dimension of all Kraus matrices must be (2**num_wires, 2**num_wires)."
             )
 
         # check that the channel represents a trace-preserving map
-        K_arr = np.array(K_list)
-        Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
-        if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
-            raise ValueError("Only trace preserving channels can be applied.")
+        if not any(np.is_abstract(K) for K in K_list):
+            K_arr = np.array(K_list)
+            Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
+            if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
+                raise ValueError("Only trace preserving channels can be applied.")
 
     def _flatten(self):
         return (self.data,), (self.wires, ())
@@ -830,6 +840,7 @@ class ThermalRelaxationError(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 4
     num_wires = 1
     grad_method = "F"
@@ -896,13 +907,16 @@ class ThermalRelaxationError(Channel):
             e1 = -p_reset * pe + p_reset
             v1 = np.array([[0, 1], [0, 0]])
             K1 = np.sqrt(e1 + np.eps) * v1
-            common_term = np.sqrt(
-                4 * eT2**2
-                + 4 * p_reset**2 * pe**2
-                - 4 * p_reset**2 * pe
-                + p_reset**2
-                + np.eps
+            base = sum(
+                (
+                    4 * eT2**2,
+                    4 * p_reset**2 * pe**2,
+                    -4 * p_reset**2 * pe,
+                    p_reset**2,
+                    np.eps,
+                )
             )
+            common_term = np.sqrt(base)
             e2 = 1 - p_reset / 2 - common_term / 2
             term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
             v2 = (term2 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(

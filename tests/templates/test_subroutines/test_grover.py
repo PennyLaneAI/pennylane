@@ -260,5 +260,5 @@ def test_decomposition_matrix(n_wires):
     wires = list(range(n_wires))
     op = qml.GroverOperator(wires)
     mat1 = op.matrix()
-    mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()))
+    mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wires)
     assert np.allclose(mat1, mat2)

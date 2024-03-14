@@ -2420,7 +2420,9 @@ class TestSumSupport:
     def test_trainable_autograd(self, is_state_batched):
         """Tests that coeffs passed to a sum are trainable with autograd."""
         if is_state_batched:
-            pytest.skip(msg="Broadcasting, qml.jacobian and new return types do not work together")
+            pytest.skip(
+                reason="Broadcasting, qml.jacobian and new return types do not work together"
+            )
         dev = qml.device("default.qubit.legacy", wires=1)
         qnode = qml.QNode(self.circuit, dev, interface="autograd")
         y, z = np.array([1.1, 2.2])

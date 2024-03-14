@@ -32,7 +32,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.workflow import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -280,7 +279,20 @@ class QubitDevice(Device):
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
+            # Lightning does not support apply(rotations) anymore, so we need to rotate here
+            # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
+            is_lightning = (
+                hasattr(self, "name")
+                and isinstance(self.name, str)
+                and "Lightning" in self.name
+                and getattr(self, "_CPP_BINARY_AVAILABLE", False)
+            )
+            diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
+            if is_lightning and diagonalizing_gates:
+                self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
+            if is_lightning and diagonalizing_gates:
+                self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
         if self._shot_vector is not None:
@@ -329,7 +341,7 @@ class QubitDevice(Device):
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
         Returns:
-            tuple: stastics for each shot item from the shot vector
+            tuple: statistics for each shot item from the shot vector
         """
         results = []
         s1 = 0
@@ -727,8 +739,9 @@ class QubitDevice(Device):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
             elif m.return_type is not None:
+                name = obs.name if isinstance(obs, qml.operation.Operator) else type(obs).__name__
                 raise qml.QuantumFunctionError(
-                    f"Unsupported return type specified for observable {obs.name}"
+                    f"Unsupported return type specified for observable {name}"
                 )
             else:
                 result = None
@@ -1036,7 +1049,7 @@ class QubitDevice(Device):
         n_snapshots = self.shots
         seed = obs.seed
 
-        with set_shots(self, shots=1):
+        with qml.workflow.set_shots(self, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
@@ -1045,7 +1058,7 @@ class QubitDevice(Device):
             # are the same for different executions with the same seed
             rng = np.random.RandomState(seed)
             recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+            obs_list = [qml.X, qml.Y, qml.Z]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
 
@@ -1311,10 +1324,13 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals() if not isinstance(observable, MeasurementValue)
-                    # Indexing a MeasurementValue gives the output of the processing function
-                    # for that index as a binary number.
-                    else [observable[i] for i in range(2 ** len(observable.measurements))],
+                    (
+                        observable.eigvals()
+                        if not isinstance(observable, MeasurementValue)
+                        # Indexing a MeasurementValue gives the output of the processing function
+                        # for that index as a binary number.
+                        else [observable[i] for i in range(2 ** len(observable.measurements))]
+                    ),
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1339,10 +1355,13 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals() if not isinstance(observable, MeasurementValue)
-                    # Indexing a MeasurementValue gives the output of the processing function
-                    # for that index as a binary number.
-                    else [observable[i] for i in range(2 ** len(observable.measurements))],
+                    (
+                        observable.eigvals()
+                        if not isinstance(observable, MeasurementValue)
+                        # Indexing a MeasurementValue gives the output of the processing function
+                        # for that index as a binary number.
+                        else [observable[i] for i in range(2 ** len(observable.measurements))]
+                    ),
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1476,7 +1495,7 @@ class QubitDevice(Device):
         # translate to wire labels used by device. observable is list when measuring sequence
         # of multiple MeasurementValues
         device_wires = self.map_wires(observable.wires)
-        name = observable.name
+        name = None if no_observable_provided else observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples

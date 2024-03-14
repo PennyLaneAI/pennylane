@@ -137,28 +137,6 @@ def gaussian_device_4modes():
     return DummyDevice(wires=4)
 
 
-############### Package Support ##########################
-
-
-@pytest.fixture(scope="session", name="dask_support")
-def dask_support_fixture():
-    """Boolean fixture for dask support"""
-    try:
-        import dask
-
-        dask_support = True
-    except ImportError:
-        dask_support = False
-
-    return dask_support
-
-
-@pytest.fixture()
-def skip_if_no_dask_support(dask_support):
-    if not dask_support:
-        pytest.skip("Skipped, no dask support")
-
-
 #######################################################################
 
 
@@ -261,6 +239,7 @@ def pytest_collection_modifyitems(items, config):
                     "all_interfaces",
                     "finite-diff",
                     "param-shift",
+                    "external",
                 ]
                 for elem in markers
             )

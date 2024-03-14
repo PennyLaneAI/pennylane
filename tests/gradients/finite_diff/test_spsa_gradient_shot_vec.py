@@ -25,6 +25,8 @@ from pennylane.devices import DefaultQubitLegacy
 from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
+np.random.seed(0)
+
 h_val = 0.1
 spsa_shot_vec_tol = 0.31
 

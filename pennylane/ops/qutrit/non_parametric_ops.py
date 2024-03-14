@@ -47,6 +47,7 @@ class TShift(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -128,6 +129,7 @@ class TClock(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -217,6 +219,7 @@ class TAdd(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -323,6 +326,7 @@ class TSWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -459,6 +463,7 @@ class THadamard(Operation):
            [ 0. -0.57735027j,  0.5+0.28867513j, -0.5+0.28867513j],
            [ 0. -0.57735027j, -0.5+0.28867513j,  0.5+0.28867513j]])
     """
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""

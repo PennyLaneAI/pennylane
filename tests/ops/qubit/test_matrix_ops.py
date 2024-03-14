@@ -581,7 +581,7 @@ class TestDiagonalQubitUnitary:
         with qml.queuing.AnnotatedQueue() as q:
             op._controlled(control=0)
         tape = qml.tape.QuantumScript.from_queue(q)
-        mat = qml.matrix(tape)
+        mat = qml.matrix(tape, wire_order=[0, 1, 2, 3])
         assert qml.math.allclose(
             mat, qml.math.diag(qml.math.append(qml.math.ones(8, dtype=complex), D))
         )
@@ -595,7 +595,7 @@ class TestDiagonalQubitUnitary:
         with qml.queuing.AnnotatedQueue() as q:
             op._controlled(control=0)
         tape = qml.tape.QuantumScript.from_queue(q)
-        mat = qml.matrix(tape)
+        mat = qml.matrix(tape, wire_order=[0, 1, 2])
         expected = np.array(
             [np.diag([1, 1, 1, 1, 1j, 1, -1j, 1]), np.diag([1, 1, 1, 1, 1, -1, 1j, -1])]
         )
@@ -795,6 +795,7 @@ class TestBlockEncode:
             (1, 1, {"norm": 1, "subspace": (1, 1, 2)}),
             ([1], 1, {"norm": 1, "subspace": (1, 1, 2)}),
             ([[1]], 1, {"norm": 1, "subspace": (1, 1, 2)}),
+            ([1, 0], [0, 1], {"norm": 1, "subspace": (1, 2, 4)}),
             (pnp.array(1), [1], {"norm": 1, "subspace": (1, 1, 2)}),
             (pnp.array([1]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
             (pnp.array([[1]]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
@@ -874,7 +875,7 @@ class TestBlockEncode:
     )
     def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
         """Test that BlockEncode outputs the correct matrix."""
-        assert np.allclose(qml.matrix(qml.BlockEncode)(input_matrix, wires), output_matrix)
+        assert np.allclose(qml.matrix(qml.BlockEncode(input_matrix, wires)), output_matrix)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
@@ -963,7 +964,7 @@ class TestBlockEncode:
         ("input_matrix", "wires", "output_matrix"),
         [
             (1, 0, [[1, 0], [0, -1]]),
-            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
+            ([0.3], 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
             (
                 [[0.1, 0.2], [0.3, 0.4]],
                 range(2),
@@ -983,12 +984,21 @@ class TestBlockEncode:
     )
     def test_blockencode_jax(self, input_matrix, wires, output_matrix):
         """Test that the BlockEncode operator matrix is correct for jax."""
+        import jax
         import jax.numpy as jnp
 
         input_matrix = jnp.array(input_matrix)
         op = qml.BlockEncode(input_matrix, wires)
         assert np.allclose(qml.matrix(op), output_matrix)
         assert qml.math.get_interface(qml.matrix(op)) == "jax"
+
+        # Test jitting behaviour as well.
+        @jax.jit
+        def f(A):
+            op = qml.BlockEncode(A, wires)
+            return qml.matrix(op)
+
+        assert np.allclose(f(input_matrix), output_matrix)
 
     @pytest.mark.parametrize("method", ["backprop"])
     @pytest.mark.parametrize(

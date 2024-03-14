@@ -465,7 +465,7 @@ class TestSimplify:
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
         pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
-        final_op = ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3)
+        final_op = qml.CH([1, 0], id=3)
         simplified_op = pow_op.simplify()
 
         assert isinstance(simplified_op, ControlledOp)
@@ -488,7 +488,7 @@ class TestMiscMethods:
 
     def test_repr(self):
         op = Pow(qml.PauliX(0), 2.5)
-        assert repr(op) == "PauliX(wires=[0])**2.5"
+        assert repr(op) == "X(0)**2.5"
 
         base = qml.RX(1, 0) + qml.S(1)
         op = Pow(base, 2.5)
@@ -757,13 +757,14 @@ class TestMatrix:
         assert self.check_matrix(param, z)
 
     @pytest.mark.tf
-    def test_matrix_tf_int_z(self):
+    @pytest.mark.parametrize("z", [-3, -1, 0, 1, 3])
+    def test_matrix_tf_int_z(self, z):
         """Test that matrix works with integer power."""
         import tensorflow as tf
 
         theta = tf.Variable(1.0)
-        mat = qml.pow(qml.RX(theta, wires=0), z=3).matrix()
-        assert qml.math.allclose(mat, qml.RX.compute_matrix(3))
+        mat = qml.pow(qml.RX(theta, wires=0), z=z).matrix()
+        assert qml.math.allclose(mat, qml.RX.compute_matrix(1.0 * z))
 
     def test_matrix_wire_order(self):
         """Test that the wire_order keyword rearranges ording."""
@@ -977,3 +978,37 @@ class TestIntegration:
             return qml.state()
 
         circ()
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("z", [-3, -1, 0, 1, -3])
+    @pytest.mark.parametrize("diff_method", ["adjoint", "backprop", "best"])
+    def test_ctrl_grad_int_z_tf(self, z, diff_method):
+        """Test that controlling a Pow op is differentiable with integer exponents."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qml.Hadamard(0)
+            qml.ctrl(Pow(qml.RX(x, wires=1), z=z), control=0)
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(dev)
+        def expected_circuit(x):
+            qml.Hadamard(0)
+            qml.CRX(x * z, wires=[0, 1])
+            return qml.expval(qml.PauliZ(1))
+
+        x = tf.Variable(1.23)
+
+        with tf.GradientTape() as res_tape:
+            res = circuit(x)
+        res_grad = res_tape.gradient(res, x)
+
+        with tf.GradientTape() as expected_tape:
+            expected = expected_circuit(x)
+        expected_grad = expected_tape.gradient(expected, x)
+
+        assert np.allclose(res, expected)
+        assert np.allclose(res_grad, expected_grad)

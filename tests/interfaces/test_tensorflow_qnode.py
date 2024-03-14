@@ -610,14 +610,15 @@ class TestShotsIntegration:
 
         circuit(weights)
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert circuit.gradient_fn is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
         circuit(weights, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert circuit.gradient_fn == "backprop"
 
-        # original QNode settings are unaffected
-        assert circuit.gradient_fn is qml.gradients.param_shift
         circuit(weights)
+        assert circuit.gradient_fn is qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
 

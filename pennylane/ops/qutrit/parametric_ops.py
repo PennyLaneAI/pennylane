@@ -97,6 +97,7 @@ class TRX(Operation):
            [0.        +0.j        , 0.96891242+0.j        , 0.        -0.24740396j],
            [0.        +0.j        , 0.        -0.24740396j, 0.96891242+0.j        ]])
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -241,6 +242,7 @@ class TRY(Operation):
            [ 0.        +0.j,  0.96891242+0.j, -0.24740396-0.j],
            [ 0.        +0.j,  0.24740396+0.j,  0.96891242+0.j]])
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -381,6 +383,7 @@ class TRZ(Operation):
            [0.        +0.j        , 0.96891242-0.24740396j, 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 0.96891242+0.24740396j]])
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
