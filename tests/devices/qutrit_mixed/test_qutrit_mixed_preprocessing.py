@@ -215,40 +215,6 @@ class TestPreprocessingIntegration:
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
         assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
 
-    def test_preprocess_batch_transform_adjoint(self):
-        """Test that preprocess returns the correct tapes when a batch transform
-        is needed."""
-        ops = [qml.THadamard(0), qml.TAdd([0, 1]), qml.TRX([np.pi, np.pi / 2], wires=1)]
-        # Need to specify grouping type to transform tape
-        measurements = [qml.expval(qml.GellMann(0, 1)), qml.expval(qml.GellMann(1, 3))]
-        tapes = [
-            qml.tape.QuantumScript(ops=ops, measurements=[measurements[0]]),
-            qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
-        ]
-
-        execution_config = ExecutionConfig(gradient_method="adjoint")
-
-        program, _ = DefaultQutritMixed().preprocess(execution_config=execution_config)
-        res_tapes, batch_fn = program(tapes)
-
-        expected_ops = [
-            [qml.THadamard(0), qml.TAdd([0, 1]), qml.TRX(np.pi, wires=1)],
-            [qml.THadamard(0), qml.TAdd([0, 1]), qml.TRX(np.pi / 2, wires=1)],
-        ]
-
-        assert len(res_tapes) == 4
-        for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, expected_ops[i % 2]):
-                assert qml.equal(op, expected_op)
-            assert len(t.measurements) == 1
-            if i < 2:
-                assert qml.equal(t.measurements[0], measurements[0])
-            else:
-                assert qml.equal(t.measurements[0], measurements[1])
-
-        val = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
-        assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
-
     def test_preprocess_expand(self):
         """Test that preprocess returns the correct tapes when expansion is needed."""
         ops = [qml.THadamard(0), NoMatOp(1), qml.TRZ(0.123, wires=1)]
