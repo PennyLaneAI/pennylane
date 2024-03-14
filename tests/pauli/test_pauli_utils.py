@@ -966,6 +966,7 @@ class TestMeasurementTransformations:
 
 
 class TestObservableHF:
+
     @pytest.mark.parametrize(
         ("hamiltonian", "result"),
         [
