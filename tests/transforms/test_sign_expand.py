@@ -123,7 +123,6 @@ class TestSignExpand:
         """Tests that the sign_expand transform returns the correct value
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations
         """
-
         tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
         results = dev.execute(tapes)
         expval = fn(results)
