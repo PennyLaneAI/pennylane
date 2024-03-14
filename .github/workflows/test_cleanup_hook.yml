@@ -4,6 +4,10 @@ on:
     branches:
       - master
 
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
 jobs:
   my_job:
     runs-on:
