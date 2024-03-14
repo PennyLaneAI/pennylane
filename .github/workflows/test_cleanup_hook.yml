@@ -25,3 +25,5 @@ jobs:
           echo "$SOME_VAR" >> file.txt
           
           cat file.txt
+
+      - run: pyenv versions
