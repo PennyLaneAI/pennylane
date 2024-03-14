@@ -123,7 +123,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. seealso::
 
-        See the :ref:`quantum natural gradient example <quantum_natural_gradient>`
+        See the :ref:`quantum natural gradient example <quantum_natural_gradient_optimization>`
         for more details on Fubini-Study metric tensor and this optimization class.
 
     Keyword Args:
