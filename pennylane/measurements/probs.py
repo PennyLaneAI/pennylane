@@ -111,7 +111,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
         return ProbabilityMP(obs=op)
 
-    if isinstance(op, (qml.Hamiltonian, qml.ops.LinearCombination)):
+    if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
     if op is not None and not op.has_diagonalizing_gates:
