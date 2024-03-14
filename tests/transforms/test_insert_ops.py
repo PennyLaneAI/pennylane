@@ -194,7 +194,7 @@ class TestInsert:
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
-    
+
     def test_operation_list_as_position(self):
         """Test if expected tape is returned when an operation list is passed in position"""
         tapes, _ = insert(self.tape, qml.PhaseDamping, 0.4, position=[qml.RX, qml.RY])
@@ -409,7 +409,6 @@ def test_insert_qnode():
     assert not np.isclose(f_noisy(*args), f(*args))
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
 def test_insert_dev():
     """Test if an device transformed by the insert function does successfully add noise to
     subsequent circuit executions"""
@@ -458,7 +457,7 @@ def test_insert_dev():
         for o1, o2 in zip(tape.operations, tape_exp.operations)
     )
     assert len(tape.measurements) == 2
-    assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+    assert tape.observables[0].name == "Prod"
     assert tape.observables[0].wires.tolist() == [0, 1]
     assert tape.measurements[0].return_type is Expectation
     assert tape.observables[1].name == "PauliZ"
@@ -468,7 +467,6 @@ def test_insert_dev():
     assert not np.allclose(res_without_noise, res_with_noise)
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
 def test_insert_old_dev(mocker):
     """Test if a old device transformed by the insert function does successfully add noise to
     subsequent circuit executions"""
@@ -514,7 +512,7 @@ def test_insert_old_dev(mocker):
         for o1, o2 in zip(tape.operations, tape_exp.operations)
     )
     assert len(tape.measurements) == 2
-    assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+    assert tape.observables[0].name == "Prod"
     assert tape.observables[0].wires.tolist() == [0, 1]
     assert tape.measurements[0].return_type is Expectation
     assert tape.observables[1].name == "PauliZ"
