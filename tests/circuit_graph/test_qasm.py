@@ -125,7 +125,6 @@ class TestToQasmUnitTests:
             """
         )
 
-        print(res)
         assert res == expected
 
     def test_rotation_gate_decomposition(self):
