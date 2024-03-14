@@ -125,7 +125,7 @@ class TestPreprocessing:
         """Test that preprocessing swaps out any MP with no wires or obs"""
         dev = DefaultQutritMixed(wires=3)
         original_mp = mp_fn()
-        exp_z = qml.expval(qml.PauliZ(0))
+        exp_z = qml.expval(qml.GellMann(0, 3))
         qs = qml.tape.QuantumScript([qml.THadamard(0)], [original_mp, exp_z], shots=shots)
         program, _ = dev.preprocess()
         tapes, _ = program([qs])
@@ -193,7 +193,7 @@ class TestPreprocessingIntegration:
         is needed."""
         ops = [qml.THadamard(0), qml.TAdd([0, 1]), qml.TRX([np.pi, np.pi / 2], wires=1)]
         # Need to specify grouping type to transform tape
-        measurements = [qml.expval(qml.TShift(0)), qml.expval(qml.GellMann(1, 3))]
+        measurements = [qml.expval(qml.GellMann(0, 4)), qml.expval(qml.GellMann(1, 3))]
         tapes = [
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[0]]),
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
@@ -240,7 +240,7 @@ class TestPreprocessingIntegration:
     def test_preprocess_split_and_expand_not_adjoint(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
         is needed."""
-        ops = [qml.Hadamard(0), NoMatOp(1), qml.RX([np.pi, np.pi / 2], wires=1)]
+        ops = [qml.THadamard(0), NoMatOp(1), qml.TRX([np.pi, np.pi / 2], wires=1)]
         # Need to specify grouping type to transform tape
         measurements = [qml.expval(qml.GellMann(0, 1)), qml.expval(qml.GellMann(1, 3))]
         tapes = [
