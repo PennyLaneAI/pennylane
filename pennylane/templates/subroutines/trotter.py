@@ -25,23 +25,23 @@ from pennylane.ops.op_math import SProd
 from pennylane.pauli import PauliSentence
 
 
-# General Helper functions 
+# General Helper functions
 def _compute_repetitions(order, n):
     """Compute Upsilon"""
     if order == 1:
         return n
-    
-    k = order // 2 
-    return n * (5**(k-1)) * 2
+
+    k = order // 2
+    return n * (5 ** (k - 1)) * 2
 
 
 # Compute one-norm error:
 def _one_norm_error(h_ops, t, p, n, fast):
     upsilon = _compute_repetitions(p, n)
     h_one_norm = 0
-    
+
     for op in h_ops:
-        if pr := op.pauli_rep:  # Pauli rep is not none 
+        if pr := op.pauli_rep:  # Pauli rep is not none
             if fast or len(pr) <= 1:
                 h_one_norm += sum(map(lambda x: abs(x), pr.values()))
             else:
@@ -49,14 +49,14 @@ def _one_norm_error(h_ops, t, p, n, fast):
         else:
             if fast:
                 h_one_norm += qml.math.norm(qml.matrix(op), ord="fro")
-        
+
             h_one_norm += qml.math.max(qml.math.svd(qml.matrix(op), compute_uv=False))
 
-    c = (h_one_norm * t)**(p + 1) / (qml.math.factorial(p + 1) * n**p)
-    return c * (upsilon**(p+1) + 1)
+    c = (h_one_norm * t) ** (p + 1) / (qml.math.factorial(p + 1) * n**p)
+    return c * (upsilon ** (p + 1) + 1)
 
 
-# Decomposition Functions: 
+# Decomposition Functions:
 def _scalar(order):
     """Compute the scalar used in the recursive expression.
 
@@ -247,7 +247,7 @@ class TrotterProduct(ErrorOperation):
     def error(self, method="one-norm", fast=True):
         """Compute an upper bound on the error for the Suzuki-Trotter product formula.
 
-        Add Description! 
+        Add Description!
 
         Args:
             method (str, optional): Options include "one-norm". Defaults to "one-norm".
@@ -259,10 +259,9 @@ class TrotterProduct(ErrorOperation):
             return SpectralNormError(_one_norm_error(terms, t, p, n, fast=fast))
 
         raise ValueError(
-            f"The '{method}' method is not supported for computing the error. 
-            Please select a valid method for computing the error."
-            )
-    
+            f"The '{method}' method is not supported for computing the error. Please select a valid method for computing the error."
+        )
+
     def _flatten(self):
         """Serialize the operation into trainable and non-trainable components.
 
