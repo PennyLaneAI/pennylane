@@ -6,6 +6,10 @@ on:
 
 jobs:
   my_job:
+    runs-on:
+      - self-hosted
+      - benchmark
+
     steps:
       - run: ls -ltrh
       - uses: actions/checkout@v4
