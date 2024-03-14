@@ -33,8 +33,6 @@ from pennylane.qchem.tapering import (
     _split_pauli_sentence,
     _taper_pauli_sentence,
 )
-from pennylane.operation import active_new_opmath
-
 
 @pytest.mark.parametrize(
     ("binary_matrix", "result"),
