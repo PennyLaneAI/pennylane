@@ -59,7 +59,7 @@
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
-  [(##5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
   ```python
   @qml.prod
@@ -96,23 +96,23 @@
       for wire in wires:
           qml.Hadamard(wires = wire)
 
-  U = generator(wires = range(3))
-  O = qml.FlipSign(2, wires = range(3))
+  U = generator(wires=range(3))
+  O = qml.FlipSign(2, wires=range(3))
 
   dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
   def circuit():
 
-      generator(wires = range(3))
-      qml.AmplitudeAmplification(U, O, iters = 5, fixed_point=True, work_wire=3)
+      generator(wires=range(3))
+      qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
 
-      return qml.probs(wires = range(3))
+      return qml.probs(wires=range(3))
 
   ```
   
   ```pycon
-  >>> print(np.round(circuit(),3))
+  >>> print(np.round(circuit(), 3))
   [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
 
   ```
