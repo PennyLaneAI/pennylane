@@ -196,7 +196,6 @@ class DefaultQubitLegacy(QubitDevice):
         "Projector",
         "SparseHamiltonian",
         "Hamiltonian",
-        "LinearCombination",
         "Sum",
         "SProd",
         "Prod",
@@ -598,7 +597,7 @@ class DefaultQubitLegacy(QubitDevice):
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
-        if observable.name not in ("Hamiltonian", "SparseHamiltonian", "LinearCombination"):
+        if observable.name not in ("Hamiltonian", "SparseHamiltonian"):
             return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
         assert self.shots is None, f"{observable.name} must be used with shots=None"
@@ -607,7 +606,7 @@ class DefaultQubitLegacy(QubitDevice):
         backprop_mode = (
             not isinstance(self.state, np.ndarray)
             or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
-        ) and observable.name in ["Hamiltonian", "LinearCombination"]
+        ) and observable.name == "Hamiltonian"
 
         if backprop_mode:
             # TODO[dwierichs]: This branch is not adapted to broadcasting yet
@@ -667,7 +666,7 @@ class DefaultQubitLegacy(QubitDevice):
                     csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
                 ).toarray()[0]
 
-        if observable.name in ["Hamiltonian", "LinearCombination"]:
+        if observable.name == "Hamiltonian":
             res = qml.math.squeeze(res)
 
         return self._real(res)
@@ -1087,6 +1086,6 @@ class DefaultQubitLegacy(QubitDevice):
         meas_filtered = [
             m
             for m in circuit.measurements
-            if m.obs is None or not isinstance(m.obs, (qml.Hamiltonian, qml.ops.LinearCombination))
+            if m.obs is None or not isinstance(m.obs, qml.Hamiltonian)
         ]
         return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))

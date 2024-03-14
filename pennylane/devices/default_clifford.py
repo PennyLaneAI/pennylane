@@ -75,7 +75,6 @@ _OBSERVABLES_MAP = {
     "Identity",
     "Projector",
     "Hamiltonian",
-    "LinearCombination",
     "Sum",
     "SProd",
     "Prod",

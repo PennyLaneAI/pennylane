@@ -44,7 +44,6 @@ _INSTANCES_TO_TEST = [
     qml.adjoint(qml.RX(1.1, 0)),
     Tensor(qml.PauliX(0), qml.PauliX(1)),
     qml.Hamiltonian([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]),
-    qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]),
     qml.s_prod(1.1, qml.RX(1.1, 0)),
     qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)),
     qml.ctrl(qml.RX(1.1, 0), 1),

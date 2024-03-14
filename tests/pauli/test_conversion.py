@@ -86,21 +86,11 @@ class TestDecomposition:
         for tensor in tensors:
             assert all(isinstance(o, Identity) for o in tensor.obs)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    @pytest.mark.parametrize("hide_identity", [True, False])
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types_legacy_opmath(self, hamiltonian, hide_identity):
-        """Tests that the Hamiltonian decomposes into a linear combination of Pauli words."""
-        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
-
-        _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
-        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
-
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
         """Tests that the Hamiltonian decomposes into a linear combination of Pauli words."""
-        allowed_obs = (qml.ops.Prod, Identity, PauliX, PauliY, PauliZ)
+        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
@@ -206,25 +196,12 @@ class TestPhasedDecomposition:
         for tensor in tensors:
             assert all(isinstance(o, Identity) for o in tensor.obs)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    @pytest.mark.parametrize("hide_identity", [True, False])
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types_legacy_opmath(self, hamiltonian, hide_identity):
-        """Tests that the Hamiltonian decomposes into a linear combination of tensors,
-        the identity matrix, and Pauli matrices."""
-        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
-
-        _, decomposed_obs = qml.pauli_decompose(
-            hamiltonian, hide_identity, check_hermitian=False
-        ).terms()
-        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
-
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
         """Tests that the Hamiltonian decomposes into a linear combination of tensors,
         the identity matrix, and Pauli matrices."""
-        allowed_obs = (qml.ops.Prod, Identity, PauliX, PauliY, PauliZ)
+        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
         _, decomposed_obs = qml.pauli_decompose(
             hamiltonian, hide_identity, check_hermitian=False
@@ -267,10 +244,9 @@ class TestPhasedDecomposition:
         assert isinstance(ps, qml.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
-    def test_observable_types_general_legacy_opmath(self, matrix, hide_identity):
+    def test_observable_types_general(self, matrix, hide_identity):
         """Tests that the matrix decomposes into a linear combination of tensors,
         the identity matrix, and Pauli matrices."""
         shape = matrix.shape
@@ -294,33 +270,6 @@ class TestPhasedDecomposition:
         if not hide_identity:
             tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
             assert all(len(tensor.obs) == num_qubits for tensor in tensors)
-
-    @pytest.mark.parametrize("hide_identity", [True, False])
-    @pytest.mark.parametrize("matrix", test_general_matrix)
-    def test_observable_types_general(self, matrix, hide_identity):
-        """Tests that the matrix decomposes into a linear combination of tensors,
-        the identity matrix, and Pauli matrices."""
-        shape = matrix.shape
-        num_qubits = int(np.ceil(np.log2(max(shape))))
-        allowed_obs = (qml.ops.Prod, Identity, PauliX, PauliY, PauliZ)
-
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose(
-            matrix, hide_identity, check_hermitian=False
-        ).terms()
-
-        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
-
-        linear_comb = sum(
-            [
-                decomposed_coeff[i] * qml.matrix(o, wire_order=range(num_qubits))
-                for i, o in enumerate(decomposed_obs)
-            ]
-        )
-        assert np.allclose(matrix, linear_comb[: shape[0], : shape[1]])
-
-        if not hide_identity:
-            tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), decomposed_obs)
-            assert all(len(tensor.wires) == num_qubits for tensor in tensors)
 
     @pytest.mark.parametrize("matrix", test_general_matrix)
     def test_to_paulisentence_general(self, matrix):

@@ -18,7 +18,7 @@ Code relevant for performing measurements on a qutrit mixed state.
 from typing import Callable
 from string import ascii_letters as alphabet
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian, LinearCombination
+from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
     StateMeasurement,
     MeasurementProcess,
@@ -262,7 +262,7 @@ def get_measurement_function(
         if isinstance(measurementprocess, ExpectationMP):
             # TODO add faster methods
             # TODO add support for sparce Hamiltonians
-            if isinstance(measurementprocess.obs, (Hamiltonian, Sum, LinearCombination)):
+            if isinstance(measurementprocess.obs, (Hamiltonian, Sum)):
                 return calculate_expval_sum_of_terms
             if measurementprocess.obs.has_matrix:
                 return calculate_expval

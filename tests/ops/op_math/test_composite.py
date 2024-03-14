@@ -75,7 +75,6 @@ class TestConstruction:
         with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
             _ = CompositeOp(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
 
-    @pytest.mark.xfail
     def test_raise_error_fewer_than_2_operands(self):
         """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
         with pytest.raises(ValueError, match="Require at least two operators to combine;"):

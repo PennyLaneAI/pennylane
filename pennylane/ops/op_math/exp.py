@@ -32,13 +32,12 @@ from pennylane.operation import (
     OperatorPropertyUndefined,
     Tensor,
 )
+from pennylane.ops.qubit import Hamiltonian
 from pennylane.wires import Wires
 
 from .sprod import SProd
 from .sum import Sum
-from .linear_combination import LinearCombination
 from .symbolicop import ScalarSymbolicOp
-from ..qubit.hamiltonian import Hamiltonian
 
 
 def exp(op, coeff=1, num_steps=None, id=None):
@@ -225,7 +224,7 @@ class Exp(ScalarSymbolicOp, Operation):
             coeff *= base.scalar
             base = base.base
         is_pauli_rot = qml.pauli.is_pauli_word(self.base) and math.real(self.coeff) == 0
-        is_hamiltonian = isinstance(base, (Hamiltonian, LinearCombination))
+        is_hamiltonian = isinstance(base, Hamiltonian)
         is_sum_of_pauli_words = isinstance(base, Sum) and all(
             qml.pauli.is_pauli_word(o) for o in base
         )
@@ -271,7 +270,7 @@ class Exp(ScalarSymbolicOp, Operation):
             )
 
         # Change base to `Sum`/`Prod`
-        if isinstance(base, (Hamiltonian, LinearCombination)):
+        if isinstance(base, Hamiltonian):
             base = qml.dot(base.coeffs, base.ops)
         elif isinstance(base, Tensor):
             base = qml.prod(*base.obs)
@@ -279,15 +278,11 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        if self.num_steps is not None and isinstance(base, (Hamiltonian, LinearCombination, Sum)):
+        if self.num_steps is not None and isinstance(base, (Hamiltonian, Sum)):
             # Apply trotter decomposition
-            coeffs = (
-                base.coeffs
-                if isinstance(base, (Hamiltonian, LinearCombination))
-                else [1] * len(base)
-            )
+            coeffs = base.coeffs if isinstance(base, Hamiltonian) else [1] * len(base)
             coeffs = [c * coeff for c in coeffs]
-            ops = base.ops if isinstance(base, (Hamiltonian, LinearCombination)) else base.operands
+            ops = base.ops if isinstance(base, Hamiltonian) else base.operands
             return self._trotter_decomposition(ops, coeffs)
 
         # Store operator classes with generators

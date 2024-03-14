@@ -68,7 +68,6 @@ observables = {
     "Projector",
     "SparseHamiltonian",
     "Hamiltonian",
-    "LinearCombination",
     "Sum",
     "SProd",
     "Prod",

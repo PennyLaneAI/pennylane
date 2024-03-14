@@ -46,7 +46,6 @@ Symbolic Classes
     ~ControlledOp
     ~Evolution
     ~Exp
-    ~LinearCombination
     ~Pow
     ~Prod
     ~Sum
@@ -130,7 +129,6 @@ from .pow import Pow, pow
 from .prod import Prod, prod
 from .sprod import SProd, s_prod
 from .sum import Sum, sum
-from .linear_combination import LinearCombination
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
 from .controlled_decompositions import ctrl_decomp_zyz, ctrl_decomp_bisect
 

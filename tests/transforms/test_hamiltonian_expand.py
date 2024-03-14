@@ -434,7 +434,7 @@ class TestSumExpand:
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
-    def test_sums_legacy_opmath(self, qscript, output):
+    def test_sums_legacy(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
         dev_old = qml.device("default.qubit.legacy", wires=4)
         tapes, fn = sum_expand(qscript)

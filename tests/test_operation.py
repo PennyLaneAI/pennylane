@@ -1336,7 +1336,6 @@ class TestOperatorIntegration:
         assert '"test_with_id"' not in op.label(decimals=2)
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
 class TestTensor:
     """Unit tests for the Tensor class"""
 
@@ -1834,27 +1833,26 @@ class TestTensor:
 
     herm_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 
-    with qml.operation.disable_new_opmath_cm():
-        tensor_obs = [
-            (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), [qml.PauliZ(0), qml.PauliZ(2)]),
-            (
-                qml.Identity(0)
-                @ qml.PauliX(1)
-                @ qml.Identity(2)
-                @ qml.PauliZ(3)
-                @ qml.PauliZ(4)
-                @ qml.Identity(5),
-                [qml.PauliX(1), qml.PauliZ(3), qml.PauliZ(4)],
-            ),
-            # List containing single observable is returned
-            (qml.PauliZ(0) @ qml.Identity(1), [qml.PauliZ(0)]),
-            (qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2), [qml.PauliX(1)]),
-            (qml.Identity(0) @ qml.Identity(1), [qml.Identity(0)]),
-            (
-                qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
-                [qml.Hermitian(herm_matrix, wires=[2, 3])],
-            ),
-        ]
+    tensor_obs = [
+        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), [qml.PauliZ(0), qml.PauliZ(2)]),
+        (
+            qml.Identity(0)
+            @ qml.PauliX(1)
+            @ qml.Identity(2)
+            @ qml.PauliZ(3)
+            @ qml.PauliZ(4)
+            @ qml.Identity(5),
+            [qml.PauliX(1), qml.PauliZ(3), qml.PauliZ(4)],
+        ),
+        # List containing single observable is returned
+        (qml.PauliZ(0) @ qml.Identity(1), [qml.PauliZ(0)]),
+        (qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2), [qml.PauliX(1)]),
+        (qml.Identity(0) @ qml.Identity(1), [qml.Identity(0)]),
+        (
+            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
+            [qml.Hermitian(herm_matrix, wires=[2, 3])],
+        ),
+    ]
 
     @pytest.mark.parametrize("tensor_observable, expected", tensor_obs)
     def test_non_identity_obs(self, tensor_observable, expected):
@@ -1865,28 +1863,27 @@ class TestTensor:
             assert isinstance(obs, type(expected[idx]))
             assert obs.wires == expected[idx].wires
 
-    with qml.operation.disable_new_opmath_cm():
-        tensor_obs_pruning = [
-            (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliZ(0) @ qml.PauliZ(2)),
-            (
-                qml.Identity(0)
-                @ qml.PauliX(1)
-                @ qml.Identity(2)
-                @ qml.PauliZ(3)
-                @ qml.PauliZ(4)
-                @ qml.Identity(5),
-                qml.PauliX(1) @ qml.PauliZ(3) @ qml.PauliZ(4),
-            ),
-            # Single observable is returned
-            (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0)),
-            (qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2), qml.PauliX(1)),
-            (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
-            (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
-            (
-                qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
-                qml.Hermitian(herm_matrix, wires=[2, 3]),
-            ),
-        ]
+    tensor_obs_pruning = [
+        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliZ(0) @ qml.PauliZ(2)),
+        (
+            qml.Identity(0)
+            @ qml.PauliX(1)
+            @ qml.Identity(2)
+            @ qml.PauliZ(3)
+            @ qml.PauliZ(4)
+            @ qml.Identity(5),
+            qml.PauliX(1) @ qml.PauliZ(3) @ qml.PauliZ(4),
+        ),
+        # Single observable is returned
+        (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0)),
+        (qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2), qml.PauliX(1)),
+        (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
+        (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
+        (
+            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
+            qml.Hermitian(herm_matrix, wires=[2, 3]),
+        ),
+    ]
 
     @pytest.mark.parametrize("tensor_observable, expected", tensor_obs_pruning)
     def test_prune(self, tensor_observable, expected):
@@ -2042,120 +2039,112 @@ class TestTensor:
             _ = op @ 1.0
 
 
-with qml.operation.disable_new_opmath_cm():
-    equal_obs = [
-        (qml.PauliZ(0), qml.PauliZ(0), True),
-        (qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliX(1) @ qml.Identity(2), True),
-        (qml.PauliZ("b"), qml.PauliZ("b") @ qml.Identity(1.3), True),
-        (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), True),
-        (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
-        (
-            qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
-            qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
-            True,
-        ),
-        (qml.PauliZ("a") @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ("a"), True),
-        (qml.PauliZ("a"), qml.Hamiltonian([1], [qml.PauliZ("a")]), True),
-    ]
+equal_obs = [
+    (qml.PauliZ(0), qml.PauliZ(0), True),
+    (qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliX(1) @ qml.Identity(2), True),
+    (qml.PauliZ("b"), qml.PauliZ("b") @ qml.Identity(1.3), True),
+    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), True),
+    (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
+    (
+        qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
+        qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
+        True,
+    ),
+    (qml.PauliZ("a") @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ("a"), True),
+    (qml.PauliZ("a"), qml.Hamiltonian([1], [qml.PauliZ("a")]), True),
+]
 
-    add_obs = [
-        (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([2], [qml.PauliZ(0)])),
-        (
-            qml.PauliZ(0),
-            qml.PauliZ(0) @ qml.PauliX(1),
-            qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
-        ),
-        (
-            qml.PauliZ("b") @ qml.Identity(1),
-            qml.Hamiltonian([3], [qml.PauliZ("b")]),
-            qml.Hamiltonian([4], [qml.PauliZ("b")]),
-        ),
-        (
-            qml.PauliX(0) @ qml.PauliZ(1),
-            qml.PauliZ(1) @ qml.Identity(2) @ qml.PauliX(0),
-            qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)]),
-        ),
-        (
-            qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-            qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-            qml.Hamiltonian([4], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-        ),
-    ]
-
-    add_zero_obs = [
-        qml.PauliX(0),
+add_obs = [
+    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([2], [qml.PauliZ(0)])),
+    (
+        qml.PauliZ(0),
+        qml.PauliZ(0) @ qml.PauliX(1),
+        qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
+    ),
+    (
+        qml.PauliZ("b") @ qml.Identity(1),
+        qml.Hamiltonian([3], [qml.PauliZ("b")]),
+        qml.Hamiltonian([4], [qml.PauliZ("b")]),
+    ),
+    (
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliZ(1) @ qml.Identity(2) @ qml.PauliX(0),
+        qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)]),
+    ),
+    (
         qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-        qml.PauliX(0) @ qml.Hadamard(2),
-        # qml.Projector(np.array([1, 1]), wires=[0, 1]),
-        # qml.SparseHamiltonian(csr_matrix(np.array([[1, 0], [-1.5, 0]])), 1),
-        # CVObservables
-        qml.Identity(1),
-        cv.NumberOperator(wires=[1]),
-        cv.TensorN(wires=[1]),
-        cv.QuadX(wires=[1]),
-        cv.QuadP(wires=[1]),
-        # cv.QuadOperator(1.234, wires=0),
-        # cv.FockStateProjector([1,2,3], wires=[0, 1, 2]),
-        cv.PolyXP(np.array([1.0, 2.0, 3.0]), wires=[0]),
-    ]
+        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+        qml.Hamiltonian([4], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+    ),
+]
 
-    mul_obs = [
-        (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
-        (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
-        (
-            qml.PauliZ(0) @ qml.PauliX(1),
-            4.5,
-            qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)]),
-        ),
-        (
-            qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"),
-            3,
-            qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]),
-        ),
-    ]
+add_zero_obs = [
+    qml.PauliX(0),
+    qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+    qml.PauliX(0) @ qml.Hadamard(2),
+    # qml.Projector(np.array([1, 1]), wires=[0, 1]),
+    # qml.SparseHamiltonian(csr_matrix(np.array([[1, 0], [-1.5, 0]])), 1),
+    # CVObservables
+    qml.Identity(1),
+    cv.NumberOperator(wires=[1]),
+    cv.TensorN(wires=[1]),
+    cv.QuadX(wires=[1]),
+    cv.QuadP(wires=[1]),
+    # cv.QuadOperator(1.234, wires=0),
+    # cv.FockStateProjector([1,2,3], wires=[0, 1, 2]),
+    cv.PolyXP(np.array([1.0, 2.0, 3.0]), wires=[0]),
+]
 
-    matmul_obs = [
-        (qml.PauliX(0), qml.PauliZ(1), Tensor(qml.PauliX(0), qml.PauliZ(1))),  # obs @ obs
-        (
-            qml.PauliX(0),
-            qml.PauliZ(1) @ qml.PauliY(2),
-            Tensor(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)),
-        ),  # obs @ tensor
-        (
-            qml.PauliX(0),
-            qml.Hamiltonian([1.0], [qml.PauliY(1)]),
-            qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliY(1)]),
-        ),  # obs @ hamiltonian
-    ]
+mul_obs = [
+    (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
+    (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
+    (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)])),
+    (
+        qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"),
+        3,
+        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]),
+    ),
+]
 
-    sub_obs = [
-        (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([], [])),
-        (
-            qml.PauliZ(0),
-            qml.PauliZ(0) @ qml.PauliX(1),
-            qml.Hamiltonian([1, -1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
-        ),
-        (
-            qml.PauliZ(0) @ qml.Identity(1),
-            qml.Hamiltonian([3], [qml.PauliZ(0)]),
-            qml.Hamiltonian([-2], [qml.PauliZ(0)]),
-        ),
-        (
-            qml.PauliX(0) @ qml.PauliZ(1),
-            qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
-            qml.Hamiltonian(
-                [1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]
-            ),
-        ),
-        (
-            qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-            qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-            qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-        ),
-    ]
+matmul_obs = [
+    (qml.PauliX(0), qml.PauliZ(1), Tensor(qml.PauliX(0), qml.PauliZ(1))),  # obs @ obs
+    (
+        qml.PauliX(0),
+        qml.PauliZ(1) @ qml.PauliY(2),
+        Tensor(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)),
+    ),  # obs @ tensor
+    (
+        qml.PauliX(0),
+        qml.Hamiltonian([1.0], [qml.PauliY(1)]),
+        qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliY(1)]),
+    ),  # obs @ hamiltonian
+]
+
+sub_obs = [
+    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([], [])),
+    (
+        qml.PauliZ(0),
+        qml.PauliZ(0) @ qml.PauliX(1),
+        qml.Hamiltonian([1, -1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
+    ),
+    (
+        qml.PauliZ(0) @ qml.Identity(1),
+        qml.Hamiltonian([3], [qml.PauliZ(0)]),
+        qml.Hamiltonian([-2], [qml.PauliZ(0)]),
+    ),
+    (
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
+        qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]),
+    ),
+    (
+        qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+        qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+    ),
+]
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
 class TestTensorObservableOperations:
     """Tests arithmetic operations between observables/tensors"""
 
@@ -2615,6 +2604,12 @@ pairs_of_ops = [
 class TestNewOpMath:
     """Tests dunder operations with new operator arithmetic enabled."""
 
+    @pytest.fixture(autouse=True, scope="class")
+    def run_before_and_after_tests(self):
+        qml.operation.enable_new_opmath()
+        yield
+        qml.operation.disable_new_opmath()
+
     class TestAdd:
         """Test the __add__/__radd__/__sub__ dunders."""
 
@@ -2729,18 +2724,6 @@ class TestNewOpMath:
             assert qml.equal(op[0], op0 @ op1)
             assert qml.equal(op[1], op2)
 
-        def test_hamiltonian_alias_linear_combination_with_enabled_opmath(self):
-            """Test that qml.Hamiltonian is an alias for qml.ops.LinearCombination when new operator
-            arithmetic is enabled"""
-            op = qml.Hamiltonian([1.0], [qml.X(0)])
-
-            assert isinstance(op, qml.Hamiltonian)
-            assert isinstance(op, qml.ops.Hamiltonian)
-            assert isinstance(op, qml.ops.qubit.Hamiltonian)
-            assert isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
-            assert isinstance(op, qml.ops.LinearCombination)
-            assert op.__class__.__name__ == "LinearCombination"
-
 
 @pytest.mark.parametrize(
     "op",
@@ -2779,16 +2762,16 @@ def test_symmetric_matrix_early_return(op, mocker):
 
 
 def test_op_arithmetic_toggle():
-    """Tests toggling op arithmetic on and off, and that it is on by default."""
+    """Tests toggling op arithmetic on and off, and that it is off by default."""
+    assert not qml.operation.active_new_opmath()
+
+    qml.operation.enable_new_opmath()
     assert qml.operation.active_new_opmath()
+    assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Prod)
 
-    with qml.operation.enable_new_opmath_cm():
-        assert qml.operation.active_new_opmath()
-        assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Prod)
-
-    with qml.operation.disable_new_opmath_cm():
-        assert not qml.operation.active_new_opmath()
-        assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
+    qml.operation.disable_new_opmath()
+    assert not qml.operation.active_new_opmath()
+    assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
 
 
 def test_docstring_example_of_operator_class(tol):
@@ -2864,43 +2847,44 @@ def test_custom_operator_is_jax_pytree():
     assert qml.equal(new_op, CustomOperator(2.3, wires=0))
 
 
-@pytest.mark.usefixtures("use_new_opmath")
-def test_use_new_opmath_fixture():
-    """Test that the fixture for using new opmath in a context works as expected"""
-    assert qml.operation.active_new_opmath()
-
-
-@pytest.mark.usefixtures("use_legacy_opmath")
-def test_use_legacy_opmath_fixture():
-    """Test that the fixture for using new opmath in a context works as expected"""
-    assert not qml.operation.active_new_opmath()
-
-
-CONVERT_HAMILTONAIN = [
-    (
-        [1.5, 0.5, 1, 1],
-        [
-            qml.Identity(1),
-            Tensor(qml.Z(1), qml.Z(2)),
-            Tensor(qml.X(1), qml.Y(2)),
-            qml.Hadamard(1),
-        ],
-    ),
-    ([0.5], [qml.X(1)]),
-    ([1], [Tensor(qml.X(0), qml.Y(1))]),
-    (
-        [-0.5, 0.4, -0.3, 0.2],
-        [
-            qml.Identity(0, 1),
-            Tensor(qml.X(1), qml.Y(2)),
-            qml.Identity(1),
-            Tensor(qml.Z(1), qml.Z(2)),
-        ],
-    ),
-]
-
-
-@pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONAIN)
+@pytest.mark.parametrize(
+    "coeffs, obs",
+    [
+        (
+            [1.5, 0.5, 1, 1],
+            [
+                qml.Identity(1),
+                Tensor(qml.Z(1), qml.Z(2)),
+                Tensor(qml.X(1), qml.Y(2)),
+                qml.Hadamard(1),
+            ],
+        ),
+        ([0.5], [qml.X(1)]),
+        ([1], [Tensor(qml.X(0), qml.Y(1))]),
+        (
+            [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
+            [
+                Tensor(qml.Hadamard(0), qml.X(1), qml.X(2), qml.Y(3)),
+                Tensor(qml.X(0), qml.X(1), qml.Y(2), qml.X(3)),
+                Tensor(qml.X(0), qml.Y(1), qml.X(2), qml.X(3)),
+                Tensor(qml.X(0), qml.Y(1), qml.Y(2), qml.Y(3)),
+                Tensor(qml.Y(0), qml.X(1), qml.X(2), qml.X(3)),
+                Tensor(qml.Y(0), qml.X(1), qml.Hadamard(2), qml.Y(3)),
+                Tensor(qml.Y(0), qml.Y(1), qml.X(2), qml.Y(3)),
+                Tensor(qml.Y(0), qml.Y(1), qml.Y(2), qml.Hadamard(3)),
+            ],
+        ),
+        (
+            [-0.5, 0.4, -0.3, 0.2],
+            [
+                qml.Identity(0, 1),
+                Tensor(qml.X(1), qml.Y(2)),
+                qml.Identity(1),
+                Tensor(qml.Z(1), qml.Z(2)),
+            ],
+        ),
+    ],
+)
 def test_convert_to_hamiltonian(coeffs, obs):
     """Test that arithmetic operators can be converted to Hamiltonian instances"""
 
@@ -2908,35 +2892,13 @@ def test_convert_to_hamiltonian(coeffs, obs):
     converted_opmath = convert_to_legacy_H(opmath_instance)
     assert isinstance(converted_opmath, qml.Hamiltonian)
 
+    opmath_was_active = qml.operation.active_new_opmath()
+    qml.operation.disable_new_opmath()
     hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
-
-    assert qml.equal(hamiltonian_instance, converted_opmath)
-
-
-@pytest.mark.xfail  # TODO fails because some orders are changed
-def test_convert_to_hamiltonian_xfail(coeffs, obs):
-    """Test that arithmetic operators can be converted to Hamiltonian instances"""
-
-    coeffs, obs = (
-        [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
-        [
-            Tensor(qml.Hadamard(0), qml.X(1), qml.X(2), qml.Y(3)),
-            Tensor(qml.X(0), qml.X(1), qml.Y(2), qml.X(3)),
-            Tensor(qml.X(0), qml.Y(1), qml.X(2), qml.X(3)),
-            Tensor(qml.X(0), qml.Y(1), qml.Y(2), qml.Y(3)),
-            Tensor(qml.Y(0), qml.X(1), qml.X(2), qml.X(3)),
-            Tensor(qml.Y(0), qml.X(1), qml.Hadamard(2), qml.Y(3)),
-            Tensor(qml.Y(0), qml.Y(1), qml.X(2), qml.Y(3)),
-            Tensor(qml.Y(0), qml.Y(1), qml.Y(2), qml.Hadamard(3)),
-        ],
-    )
-
-    opmath_instance = qml.dot(coeffs, obs)
-    converted_opmath = convert_to_legacy_H(opmath_instance)
-    assert isinstance(converted_opmath, qml.Hamiltonian)
-
-    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
-
+    if opmath_was_active:
+        qml.operation.enable_new_opmath()
+    else:
+        qml.operation.disable_new_opmath()
     assert qml.equal(hamiltonian_instance, converted_opmath)
 
 
@@ -2946,10 +2908,9 @@ def test_convert_to_hamiltonian_xfail(coeffs, obs):
 def test_convert_to_hamiltonian_trivial(coeffs, obs):
     """Test that non-arithmetic operator after simplification is returned as an Observable"""
 
-    with qml.operation.disable_new_opmath_cm():
-        opmath_instance = qml.dot(coeffs, obs)
-        converted_opmath = convert_to_legacy_H(opmath_instance)
-        assert isinstance(converted_opmath, qml.operation.Observable)
+    opmath_instance = qml.dot(coeffs, obs)
+    converted_opmath = convert_to_legacy_H(opmath_instance)
+    assert isinstance(converted_opmath, qml.operation.Observable)
 
 
 @pytest.mark.parametrize(

@@ -379,7 +379,7 @@ def expval_param_shift(
 
         op, op_idx, _ = tape.get_operation(idx)
 
-        if op.name in ["Hamiltonian", "LinearCombination"]:
+        if op.name == "Hamiltonian":
             # operation is a Hamiltonian
             if tape[op_idx].return_type is not qml.measurements.Expectation:
                 raise ValueError(
@@ -672,7 +672,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     for i in var_indices:
         obs = expval_tape.measurements[i].obs
         expval_tape._measurements[i] = qml.expval(op=obs)
-        if obs.name in ["Hamiltonian", "LinearCombination"]:
+        if obs.name == "Hamiltonian":
             first_obs_idx = len(expval_tape.operations)
             for t_idx in reversed(range(len(expval_tape.trainable_params))):
                 op, op_idx, _ = expval_tape.get_operation(t_idx)
