@@ -964,6 +964,19 @@ class TestLinearCombination:
 
         assert LC.diagonalizing_gates() == SUM.diagonalizing_gates()
 
+    def test_eigvals(self):
+        """Test that LinearCombination has valid eigvals"""
+        LC = qml.ops.LinearCombination([1.1, 2.2, 3.3], [qml.X(0), qml.Z(0), qml.Y(1)])
+
+        assert len(LC.overlapping_ops[0]) > 1  # will use one branch
+        assert len(LC.overlapping_ops[1]) == 1  # will use the other branch
+
+        SUM = qml.sum(
+            qml.s_prod(1.1, qml.X(0)), qml.s_prod(2.2, qml.Z(0)), qml.s_prod(3.3, qml.Y(1))
+        )
+
+        assert np.all(LC.eigvals() == SUM.eigvals())
+
 
 class TestLinearCombinationCoefficients:
     """Test the creation of a LinearCombination"""
@@ -1762,6 +1775,7 @@ class TestLinearCombinationDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
+    # pylint: disable=superfluous-parens
     @pytest.mark.jax
     def test_nontrainable_coeffs_jax(self):
         """Test the jax interface if the coefficients are explicitly set non-trainable"""
