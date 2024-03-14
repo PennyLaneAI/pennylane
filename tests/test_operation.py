@@ -2604,7 +2604,7 @@ pairs_of_ops = [
 class TestNewOpMath:
     """Tests dunder operations with new operator arithmetic enabled."""
 
-    @pytest.fixture(autouse=True, scope="class")
+    @pytest.fixture(autouse=True, scope="function")
     def run_before_and_after_tests(self):
         qml.operation.enable_new_opmath()
         yield
@@ -2724,6 +2724,9 @@ class TestNewOpMath:
             assert qml.equal(op[0], op0 @ op1)
             assert qml.equal(op[1], op2)
 
+    class TestHamiltonianLinearCombinationAlias:
+        """Tests to validate that aliasing Hamiltonian as LinearCombination with new op math."""
+
         def test_hamiltonian_alias_linear_combination_with_enabled_opmath(self):
             """Test that qml.Hamiltonian is an alias for qml.ops.LinearCombination when new operator
             arithmetic is enabled"""
@@ -2735,6 +2738,36 @@ class TestNewOpMath:
             assert isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
             assert isinstance(op, qml.ops.LinearCombination)
             assert op.__class__.__name__ == "LinearCombination"
+
+            qml.operation.disable_new_opmath()
+            op = qml.Hamiltonian([1.0], [qml.X(0)])
+            assert isinstance(op, qml.Hamiltonian)
+            assert not isinstance(op, qml.ops.LinearCombination)
+
+        def test_enable_opmath_multiple_times(self):
+            """Test that enabling new op math multiple times does not impact
+            Hamiltonian-LinearCombination aliasing"""
+            op = qml.Hamiltonian([1.0, 2.0], [qml.X(0), qml.Z(0)])
+            assert isinstance(op, qml.ops.LinearCombination)
+
+            qml.operation.enable_new_opmath()
+            qml.operation.enable_new_opmath()
+
+            op = qml.Hamiltonian([1.0, 2.0], [qml.X(0), qml.Z(0)])
+            assert isinstance(op, qml.ops.LinearCombination)
+
+        def test_disable_opmath_multiple_times(self):
+            """Test that disabling new op math multiple times does not impact
+            Hamiltonian-LinearCombination aliasing"""
+            op = qml.Hamiltonian([1.0, 2.0], [qml.X(0), qml.Z(0)])
+            assert isinstance(op, qml.ops.LinearCombination)
+
+            qml.operation.disable_new_opmath()
+            qml.operation.disable_new_opmath()
+
+            op = qml.Hamiltonian([1.0, 2.0], [qml.X(0), qml.Z(0)])
+            assert isinstance(op, qml.Hamiltonian)
+            assert not isinstance(op, qml.ops.LinearCombination)
 
 
 @pytest.mark.parametrize(
