@@ -509,7 +509,10 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         without expanding measurements."""
 
         ops = [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]
-        measurements = [qml.expval(qml.PauliZ(0)), qml.expval(2 * qml.PauliX(0) @ qml.PauliY(1))]
+        measurements = [
+            qml.expval(qml.PauliZ(0)),
+            qml.expval(qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliY(1)])),
+        ]
         circuit = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
         dev = mock_device_with_paulis_hamiltonian_and_methods(wires=3)
