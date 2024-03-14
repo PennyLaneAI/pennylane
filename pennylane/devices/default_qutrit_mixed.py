@@ -232,3 +232,10 @@ class DefaultQutritMixed(Device):  # TODO
             )
 
         return transform_program, config
+
+    def execute(
+            self,
+            circuits: QuantumTape_or_Batch,
+            execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> Result_or_ResultBatch:
+        return None
