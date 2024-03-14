@@ -725,8 +725,6 @@ class TestMapBatchTransform:
         x = 0.6
         y = 0.7
 
-        print(type(H))
-
         with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -738,7 +736,7 @@ class TestMapBatchTransform:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
             qml.CNOT(wires=[0, 1])
-            qml.expval(H + 0.5 * qml.PauliY(0))
+            qml.expval(H + qml.Hamiltonian([0.5], [qml.PauliY(0)]))
 
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
@@ -773,7 +771,7 @@ class TestMapBatchTransform:
                 qml.Hadamard(wires=0)
                 qml.CRX(weights[0], wires=[0, 1])
                 qml.CNOT(wires=[0, 1])
-                qml.expval(H + 0.5 * qml.PauliY(0))
+                qml.expval(H + qml.Hamiltonian([0.5], [qml.PauliY(0)]))
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
             tapes, fn = qml.transforms.map_batch_transform(

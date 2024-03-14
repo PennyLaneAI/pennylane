@@ -51,7 +51,7 @@ with AnnotatedQueue() as q_tape2:
     qml.expval(H2)
 tape2 = QuantumScript.from_queue(q_tape2)
 
-H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
+H3 = qml.Hamiltonian([1.5, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(1)])
 
 with AnnotatedQueue() as q3:
     qml.PauliX(0)
@@ -59,14 +59,17 @@ with AnnotatedQueue() as q3:
 
 
 tape3 = QuantumScript.from_queue(q3)
-H4 = (
-    qml.PauliX(0) @ qml.PauliZ(2)
-    + 3 * qml.PauliZ(2)
-    - 2 * qml.PauliX(0)
-    + qml.PauliZ(2)
-    + qml.PauliZ(2)
-)
-H4 += qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
+H4 = qml.Hamiltonian(
+    [1, 3, -2, 1, 1, 1],
+    [
+        qml.PauliX(0) @ qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliX(0),
+        qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2),
+    ],
+).simplify()
 
 with AnnotatedQueue() as q4:
     qml.Hadamard(0)
@@ -84,7 +87,6 @@ OUTPUTS = [-1.5, -6, -1.5, -8]
 class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_ham_with_no_terms_raises(self):
         """Tests that the hamiltonian_expand transform raises an error for a Hamiltonian with no terms."""
         mps = [qml.expval(qml.Hamiltonian([], []))]
@@ -96,6 +98,7 @@ class TestHamiltonianExpand:
         ):
             qml.transforms.hamiltonian_expand(qscript)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians(self, tape, output):
         """Tests that the hamiltonian_expand transform returns the correct value"""
