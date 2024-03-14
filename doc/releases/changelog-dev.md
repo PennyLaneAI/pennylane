@@ -135,6 +135,9 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
   
+* `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of paulis.
+  [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
@@ -188,7 +191,14 @@
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``. The old import path no longer exists.
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``, `` gradient_transform``
+  and ``hessian_transform`` are removed. Instead, switch to using the new ``qml.transform`` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+  [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
+
 * Attempting to multiply ``PauliWord`` and ``PauliSentence`` with ``*`` will raise an error. Instead, use ``@`` to conform with the PennyLane convention.
+  [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
 
 <h3>Deprecations 👋</h3>
 
