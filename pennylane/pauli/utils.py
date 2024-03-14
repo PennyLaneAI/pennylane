@@ -1126,7 +1126,7 @@ def diagonalize_qwc_pauli_words(
     new_ops = []
     for term in qwc_grouping:
         pauli_rep = term.pauli_rep
-        if pauli_rep is None or len(pauli_rep) > 1 or isinstance(term, qml.Hamiltonian):
+        if pauli_rep is None or len(pauli_rep) > 1 or term.name == "Hamiltonian":
             raise ValueError("This function only supports pauli words.")
         pw = next(iter(pauli_rep))
         for wire, pauli_type in pw.items():
