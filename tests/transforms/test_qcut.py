@@ -548,7 +548,6 @@ class TestTapeToGraph:
                 assert node.obj.return_type is qml.measurements.Sample
                 assert get_name(node.obj.obs) == get_name(expected_node.obs)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_sample_tensor_obs(self):
         """
         Test that a circuit with a sample measurement of a tensor product of
@@ -561,7 +560,7 @@ class TestTapeToGraph:
             qml.PauliX(wires=1)
             qml.WireCut(wires=1)
             qml.CNOT(wires=[1, 2])
-            qml.sample(qml.PauliX(0) @ qml.PauliY(1))
+            qml.sample(qml.operation.Tensor(qml.PauliX(0), qml.PauliY(1)))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="Sampling from tensor products of observables "):
@@ -1537,7 +1536,6 @@ class TestGetMeasurements:
         assert get_name(out[0].obs) == "Identity"
         assert out[0].obs.wires[0] == 0
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_single_measurement(self):
         """Tests if the function behaves as expected for a typical example"""
         group = [qml.PauliX(0) @ qml.PauliZ(2), qml.PauliX(0)]
@@ -1556,8 +1554,15 @@ class TestGetMeasurements:
         assert obs[0].wires.tolist() == [1, 0, 2]
         assert obs[1].wires.tolist() == [1, 0]
 
-        assert [get_name(o) for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
-        assert [get_name(o) for o in obs[1].obs] == ["PauliZ", "PauliX"]
+        if qml.operation.active_new_opmath():
+
+            assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
+            assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
+
+        else:
+
+            assert [get_name(o) for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
+            assert [get_name(o) for o in obs[1].obs] == ["PauliZ", "PauliX"]
 
 
 class TestExpandFragmentTapes:
@@ -1565,12 +1570,11 @@ class TestExpandFragmentTapes:
     Tests that fragment tapes are correctly expanded to all configurations
     """
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_expand_fragment_tape(self):
         """
         Tests that a fragment tape expands correctly
         """
-        m = qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=2))
+        m = qml.expval(qml.operation.Tensor(qml.PauliZ(wires=[0]), qml.PauliZ(wires=2)))
         tape = qml.tape.QuantumScript(single_cut_tape.operations, [m])
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
@@ -4390,7 +4394,6 @@ class TestCutCircuitTransform:
         assert np.allclose(grad, grad_expected)
 
     @flaky(max_runs=3)
-    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("shots", [None, int(1e7)])
     def test_standard_circuit(self, mocker, use_opt_einsum, shots):
         """
@@ -4423,7 +4426,7 @@ class TestCutCircuitTransform:
 
             qml.QubitUnitary(us[3], wires=[0, 1])
             qml.QubitUnitary(us[4], wires=[2, 3])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(3))
+            return qml.expval(qml.operation.Tensor(qml.PauliZ(0), qml.PauliX(3)))
 
         circuit = qml.QNode(f, dev_original)
         cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut), use_opt_einsum=use_opt_einsum)
