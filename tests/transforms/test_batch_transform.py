@@ -718,11 +718,14 @@ class TestMapBatchTransform:
     """Tests for the map_batch_transform function"""
 
     def test_result(self, mocker):
+        # qml.operation.disable_new_opmath()
         """Test that it correctly applies the transform to be mapped"""
         dev = qml.device("default.qubit.legacy", wires=2)
-        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        H = qml.Hamiltonian([1, -1], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0)])
         x = 0.6
         y = 0.7
+
+        print(type(H))
 
         with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(x, wires=0)
@@ -754,7 +757,7 @@ class TestMapBatchTransform:
     def test_differentiation(self):
         """Test that an execution using map_batch_transform can be differentiated"""
         dev = qml.device("default.qubit.legacy", wires=2)
-        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        H = qml.Hamiltonian([1, -1], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0)])
 
         weights = np.array([0.6, 0.8], requires_grad=True)
 
