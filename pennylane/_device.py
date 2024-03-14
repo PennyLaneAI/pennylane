@@ -42,7 +42,6 @@ from pennylane.measurements import (
 )
 
 from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
-from pennylane.ops.op_math.prod import Prod
 from pennylane.ops import Hamiltonian, Sum, LinearCombination
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
