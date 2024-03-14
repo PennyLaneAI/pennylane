@@ -19,76 +19,44 @@ from functools import lru_cache
 import pennylane as qml
 from pennylane import numpy as qnp
 
-from pennylane.operation import Operation
+from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
 from pennylane.pauli import PauliSentence
 
 
-@lru_cache
-def generate_combinations(num_variables, required_sum):
-    if num_variables == 0:
-        return ()
+# General Helper functions 
+def _compute_repetitions(order, n):
+    """Compute Upsilon"""
+    if order == 1:
+        return n
     
-    if required_sum == 0:
-        return ((0,) * num_variables,)
-    
-    if num_variables == 1: 
-        return ((required_sum,),)
-    
-    if num_variables == 2:
-        return tuple([(i, required_sum - i) for i in range(required_sum + 1)])
-    
-    master_lst = []
-    for i in range(required_sum + 1):
-        for sub_perms in generate_combinations(num_variables - 1, required_sum - i):
-            master_lst.append((i,) + sub_perms)
-    
-    return tuple(master_lst)
+    k = order // 2 
+    return n * (5**(k-1)) * 2
 
 
-@lru_cache
-def Ad(A, B, alpha):
-    """Recursive commutator"""
-    if alpha == 0:
-        return B
+# Compute one-norm error:
+def _one_norm_error(h_ops, t, p, n, fast):
+    upsilon = _compute_repetitions(p, n)
+    h_one_norm = 0
     
-    if alpha == 1: 
-        return PauliSentence.commutator(A, B)
+    for op in h_ops:
+        if pr := op.pauli_rep:  # Pauli rep is not none 
+            if fast or len(pr) <= 1:
+                h_one_norm += sum(map(lambda x: abs(x), pr.values()))
+            else:
+                h_one_norm += qml.math.max(qml.math.svd(qml.matrix(op), compute_uv=False))
+        else:
+            if fast:
+                h_one_norm += qml.math.norm(qml.matrix(op), ord="fro")
         
-    return PauliSentence.commutator(A, Ad(A, B, alpha-1))
+            h_one_norm += qml.math.max(qml.math.svd(qml.matrix(op), compute_uv=False))
+
+    c = (h_one_norm * t)**(p + 1) / (qml.math.factorial(p + 1) * n**p)
+    return c * (upsilon**(p+1) + 1)
 
 
-def f_coeffs(alphas_lst, a_lst):
-    a_nu = a_lst[0]
-    product = a_nu
-    for a_j, alpha_j in zip(a_lst[1:], alphas_lst):        
-        product *= ((a_j)**alpha_j) / math.factorial(alpha_j)
-    
-    return product
-
-
-def nested_commutator_operator(a_lst, H_lst, p):
-    q = len(a_lst)
-    final_operator = PauliSentence()
-    
-    for nu in range(1, q):  # nu = [1, 2, ..., q-1]
-        nu_index = nu - 1
-        combinations_alpha_bar_equals_p = generate_combinations(q - nu, p)
-        
-        for alphas_lst in combinations_alpha_bar_equals_p:
-            H_nu = H_lst[nu_index]
-            f_nu = f_coeffs(alphas_lst, a_lst[nu_index:])
-            
-            nested_commutator = H_nu
-            for H, alpha in zip(H_lst[nu_index + 1:], alphas_lst):
-                nested_commutator = Ad(H, nested_commutator, alpha)
-            final_operator += f_nu * nested_commutator 
-        
-    return final_operator
-
-
-
+# Decomposition Functions: 
 def _scalar(order):
     """Compute the scalar used in the recursive expression.
 
@@ -103,7 +71,7 @@ def _scalar(order):
 
 
 @qml.QueuingManager.stop_recording()
-def _recursive_expression(x, order, ops):
+def _recursive_decomposition(x, order, ops):
     """Generate a list of operations using the
     recursive expression which defines the Trotter product.
 
@@ -124,13 +92,13 @@ def _recursive_expression(x, order, ops):
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
 
-    ops_lst_1 = _recursive_expression(scalar_1 * x, order - 2, ops)
-    ops_lst_2 = _recursive_expression(scalar_2 * x, order - 2, ops)
+    ops_lst_1 = _recursive_decomposition(scalar_1 * x, order - 2, ops)
+    ops_lst_2 = _recursive_decomposition(scalar_2 * x, order - 2, ops)
 
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
 
-class TrotterProduct(Operation):
+class TrotterProduct(ErrorOperation):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
 
@@ -157,7 +125,7 @@ class TrotterProduct(Operation):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a linear combination
+        hamiltonian (Union[.Hamiltonian, .Sum, .SProd]): The Hamiltonian written as a linear combination
             of operators with known matrix exponentials.
         time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of Trotter steps to perform
@@ -178,7 +146,6 @@ class TrotterProduct(Operation):
         ops = [qml.X(0), qml.Z(0)]
         H = qml.dot(coeffs, ops)
 
-        dev = qml.device("default.qubit", wires=2)
         @qml.qnode(dev)
         def my_circ():
             # Prepare some state
@@ -276,6 +243,26 @@ class TrotterProduct(Operation):
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
 
+    @property
+    def error(self, method="one-norm", fast=True):
+        """Compute an upper bound on the error for the Suzuki-Trotter product formula.
+
+        Add Description! 
+
+        Args:
+            method (str, optional): Options include "one-norm". Defaults to "one-norm".
+            fast (bool, optional): Uses more approximations to speed up computation. Defaults to True.
+        """
+        terms = self.hyperparameters["base"].operands
+        t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
+        if method == "one-norm":
+            return SpectralNormError(_one_norm_error(terms, t, p, n, fast=fast))
+
+        raise ValueError(
+            f"The '{method}' method is not supported for computing the error. 
+            Please select a valid method for computing the error."
+            )
+    
     def _flatten(self):
         """Serialize the operation into trainable and non-trainable components.
 
@@ -369,7 +356,7 @@ class TrotterProduct(Operation):
         order = kwargs["order"]
         ops = kwargs["base"].operands
 
-        decomp = _recursive_expression(time / n, order, ops)[::-1] * n
+        decomp = _recursive_decomposition(time / n, order, ops)[::-1] * n
 
         if qml.QueuingManager.recording():
             for op in decomp:  # apply operators in reverse order of expression
