@@ -476,7 +476,6 @@ class LinearCombination(Sum):
         Returns:
             list[.Operator] or None: a list of operators
         """
-        # raise RuntimeError
         diag_gates = []
         for ops in self.overlapping_ops:
             if len(ops) == 1:
