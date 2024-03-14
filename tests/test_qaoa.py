@@ -77,9 +77,6 @@ b_rx.add_edges_from([(0, 1, ""), (1, 2, ""), (0, 2, "")])
 def _get_ops(op):
     if isinstance(op, qml.operation.Tensor):
         return op.name
-    elif isinstance(op, qml.ops.Prod):
-        _, ops = op.terms()
-        return ops
     return [op.name]
 
 
@@ -2393,14 +2390,10 @@ class TestCycles:
         ]
         expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
 
-        coeffs, wire_op_map = decompose_hamiltonian(h)
-
-        assert qml.math.allclose(expected_coeffs, coeffs)
-
-        expected_maps = [
-            dict((wire, op) for wire, op in zip(op.wires, _get_ops(op))) for op in expected_ops
-        ]
-        assert wire_op_map == expected_maps
+        assert qml.math.allclose(h.coeffs, expected_coeffs)
+        _, ops = h.terms()
+        for op, expected_op in zip(ops, expected_ops):
+            assert op.pauli_rep == expected_op.pauli_rep
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
