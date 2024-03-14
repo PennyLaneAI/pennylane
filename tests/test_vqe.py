@@ -890,6 +890,9 @@ class TestNewVQE:
         assert res[0] == circuit1()
         assert res[1] == circuit1()
 
+    # the LinearCombination implementation does have diagonalizing gates,
+    # but legacy Hamiltonian does not and fails
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -904,6 +907,9 @@ class TestNewVQE:
         with pytest.raises(NotImplementedError):
             circuit()
 
+    # the LinearCombination implementation does have diagonalizing gates,
+    # but legacy Hamiltonian does not and fails
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_error_sample_measurement(self):
         """Tests that error is thrown if sample(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -1027,7 +1033,11 @@ class TestNewVQE:
         res = qml.specs(circuit)()
 
         assert res["num_observables"] == 1
-        assert res["num_diagonalizing_gates"] == 0
+        assert (
+            res["num_diagonalizing_gates"] == 0
+            if not H.has_diagonalizing_gates
+            else len(H.diagonalizing_gates())
+        )
 
 
 class TestInterfaces:
