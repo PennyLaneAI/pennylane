@@ -78,7 +78,7 @@ def append_time_evolution(
     else:
         with QueuingManager.stop_recording():
             new_operations.append(qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n))
-    print(new_operations)
+
     new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):
@@ -321,7 +321,6 @@ class RiemannianGradientOptimizer:
             non_zero_omegas,
             [qml.pauli.string_to_pauli_word(ps) for ps in non_zero_lie_algebra_elements],
         )
-        print(lie_gradient, grad_mat := lie_gradient.sparse_matrix().toarray(), grad_mat.dtype)
         new_circuit = append_time_evolution(
             self.circuit.func, lie_gradient, self.stepsize, self.trottersteps, self.exact
         )
