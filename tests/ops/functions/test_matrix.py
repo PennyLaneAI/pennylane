@@ -836,6 +836,16 @@ class TestWireOrderErrors:
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(circuit)
 
+    def test_op_class(self):
+        """Tests that an error is raised when calling qml.matrix without wire_order
+        on an operator class with multiple wires."""
+
+        with pytest.raises(ValueError, match=r"wire_order is required"):
+            _ = qml.matrix(qml.CNOT)(wires=[0, 1])
+
+        # No error should be raised if the operator class has only one wire.
+        _ = qml.matrix(qml.Hadamard)(wires=0)
+
     def test_no_error_cases(self):
         """Test that an error is not raised when calling qml.matrix on an operator, a
         single-wire tape, or a QNode with a device that provides wires."""

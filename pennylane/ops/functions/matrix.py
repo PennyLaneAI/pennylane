@@ -200,7 +200,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
                 )
 
         elif callable(op):
-            if wire_order is None:
+            if getattr(op, "num_wires", 0) != 1 and wire_order is None:
                 raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
 
         else:
