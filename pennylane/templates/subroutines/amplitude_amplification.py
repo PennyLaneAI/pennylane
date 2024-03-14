@@ -25,7 +25,7 @@ import pennylane as qml
 def _get_fixed_point_angles(iters, p_min):
     """
     Returns the angles needed for the fixed-point amplitude amplification algorithm.
-    The angles are computed using equation (11) of  `arXiv:1409.3305v2 <https://arxiv.org/abs/1409.3305>`__.
+    The angles are computed using equation (11) of `arXiv:1409.3305v2 <https://arxiv.org/abs/1409.3305>`__.
     """
 
     delta = np.sqrt(1 - p_min)
@@ -42,14 +42,17 @@ def _get_fixed_point_angles(iters, p_min):
 class AmplitudeAmplification(Operation):
     r"""Applies amplitude amplification.
 
-    Given a state :math:`|\Psi\rangle = \alpha |\phi\rangle + \beta|\phi^{\perp}\rangle`, this subroutine amplifies the amplitude of the state :math:`|\phi\rangle` such that
+    Given a state :math:`|\Psi\rangle = \alpha |\phi\rangle + \beta|\phi^{\perp}\rangle`, this
+    subroutine amplifies the amplitude of the state :math:`|\phi\rangle` such that
 
     .. math::
 
             \text{A}(U, O)|\Psi\rangle \sim |\phi\rangle.
 
     The implementation of the algorithm is based on [`arXiv:quant-ph/0005055 <https://arxiv.org/abs/quant-ph/0005055>`__].
-    The template also unlocks advanced techniques such as fixed-point quantum search [`arXiv:1409.3305 <https://arxiv.org/abs/1409.3305>`__] and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__] by reflecting on a subset of the wires.
+    The template also unlocks advanced techniques such as fixed-point quantum search
+    [`arXiv:1409.3305 <https://arxiv.org/abs/1409.3305>`__] and oblivious amplitude amplification
+    [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__] by reflecting on a subset of the wires.
 
     Args:
         U (Operator): operator that prepares the state :math:`|\Psi\rangle`
@@ -74,20 +77,20 @@ class AmplitudeAmplification(Operation):
         @qml.prod
         def generator(wires):
             for wire in wires:
-                qml.Hadamard(wires = wire)
+                qml.Hadamard(wires=wire)
 
-        U = generator(wires = range(3))
-        O = qml.FlipSign(2, wires = range(3))
+        U = generator(wires=range(3))
+        O = qml.FlipSign(2, wires=range(3))
 
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circuit():
 
-            generator(wires = range(3))
-            qml.AmplitudeAmplification(U, O, iters = 5, fixed_point=True, work_wire=3)
+            generator(wires=range(3))
+            qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
 
-            return qml.probs(wires = range(3))
+            return qml.probs(wires=range(3))
 
     .. code-block:: pycon
 
