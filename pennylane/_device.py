@@ -680,6 +680,7 @@ class Device(abc.ABC):
         obs_on_same_wire &= not any(
             isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit._obs_sharing_wires
         )
+
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
         if obs_on_same_wire:
