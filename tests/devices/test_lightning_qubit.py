@@ -15,6 +15,8 @@
 Tests for the accessibility of the Lightning-Qubit device
 """
 import pytest
+from flaky import flaky
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -75,6 +77,24 @@ def test_finite_shots_adjoint():
         "calculated exactly.",
     ):
         qml.QNode(circuit, dev, diff_method="adjoint")
+
+
+@flaky(max_runs=5)
+def test_finite_shots():
+    """Test that shots in LQ and DQ give the same results."""
+
+    dev = qml.device("lightning.qubit", wires=2, shots=10000)
+    dq = qml.device("default.qubit", shots=10000)
+
+    def circuit():
+        qml.RX(np.pi / 4, 0)
+        qml.RY(-np.pi / 4, 1)
+        return qml.expval(qml.PauliY(0))
+
+    circ0 = qml.QNode(circuit, dev, diff_method=None)
+    circ1 = qml.QNode(circuit, dq, diff_method=None)
+
+    assert np.allclose(circ0(), circ1(), rtol=0.01)
 
 
 class TestDtypePreserved:
