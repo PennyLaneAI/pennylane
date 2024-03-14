@@ -576,12 +576,15 @@ single_op_tests_data = [
     (qml.probs(op=qml.PauliZ(0)), "0: ───┤  Probs[Z]"),
     (qml.sample(wires=0), "0: ───┤  Sample"),
     (qml.sample(op=qml.PauliX(0)), "0: ───┤  Sample[X]"),
-    (qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)), "0: ───┤ ╭<𝓗(0.10)>\n1: ───┤ ╰<𝓗(0.10)>"),
+    (
+        qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)),
+        "0: ───┤ ╭<(0.10*X)@Y>\n1: ───┤ ╰<(0.10*X)@Y>",
+    ),
     (
         qml.expval(
             0.1 * qml.PauliX(0) + 0.2 * qml.PauliY(1) + 0.3 * qml.PauliZ(0) + 0.4 * qml.PauliZ(1)
         ),
-        "0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>",
+        "0: ───┤ ╭<(((0.10*X)+(0.20*Y))+(0.30*Z))+(0.40*Z)>\n1: ───┤ ╰<(((0.10*X)+(0.20*Y))+(0.30*Z))+(0.40*Z)>",
     ),
     # Operations (both regular and controlled) and nested multi-valued controls
     (qml.ctrl(qml.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),

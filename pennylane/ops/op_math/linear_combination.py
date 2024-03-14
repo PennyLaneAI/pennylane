@@ -432,6 +432,35 @@ class LinearCombination(Sum):
             context.append(self)
         return self
 
+    def eigvals(self):
+        """Return the eigenvalues of the specified operator.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the operator
+        """
+        eigvals = []
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                eigvals.append(
+                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                )
+            else:
+                tmp_composite = Sum(*ops)  # only change compared to CompositeOp.eigvals()
+                eigvals.append(
+                    qml.utils.expand_vector(
+                        tmp_composite.eigendecomposition["eigval"],
+                        list(tmp_composite.wires),
+                        list(self.wires),
+                    )
+                )
+
+        return self._math_op(
+            qml.math.asarray(eigvals, like=qml.math.get_deep_interface(eigvals)), axis=0
+        )
+
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
