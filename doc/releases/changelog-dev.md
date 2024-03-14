@@ -94,7 +94,7 @@
   @qml.prod
   def generator(wires):
       for wire in wires:
-          qml.Hadamard(wires = wire)
+          qml.Hadamard(wires=wire)
 
   U = generator(wires=range(3))
   O = qml.FlipSign(2, wires=range(3))
