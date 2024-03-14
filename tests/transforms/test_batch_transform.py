@@ -718,7 +718,6 @@ class TestMapBatchTransform:
     """Tests for the map_batch_transform function"""
 
     def test_result(self, mocker):
-        # qml.operation.disable_new_opmath()
         """Test that it correctly applies the transform to be mapped"""
         dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.Hamiltonian([1, -1], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0)])

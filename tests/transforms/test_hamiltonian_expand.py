@@ -98,7 +98,6 @@ class TestHamiltonianExpand:
         ):
             qml.transforms.hamiltonian_expand(qscript)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians(self, tape, output):
         """Tests that the hamiltonian_expand transform returns the correct value"""
