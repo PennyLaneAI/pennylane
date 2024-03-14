@@ -17,11 +17,13 @@ The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mix
 
 from dataclasses import replace
 from typing import Union, Tuple, Sequence
+import logging
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import Conditional
 from pennylane.transforms.core import TransformProgram
+from pennylane.tape import QuantumTape
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .preprocess import (
@@ -34,6 +36,12 @@ from .preprocess import (
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .default_qutrit import DefaultQutrit
 
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+Result_or_ResultBatch = Union[Result, ResultBatch]
+QuantumTapeBatch = Sequence[QuantumTape]
+QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 channels = {}
 
@@ -234,8 +242,8 @@ class DefaultQutritMixed(Device):  # TODO
         return transform_program, config
 
     def execute(
-            self,
-            circuits: QuantumTape_or_Batch,
-            execution_config: ExecutionConfig = DefaultExecutionConfig,
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
         return None
