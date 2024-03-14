@@ -316,7 +316,7 @@ class Sum(CompositeOp):
             tensor_like: matrix representation
         """
         if len(self) == 0:
-            return qml.matrix(0+0j * qml.I(wire_order))
+            return qml.matrix(0 + 0j * qml.I(wire_order))
 
         gen = (
             (
@@ -341,7 +341,7 @@ class Sum(CompositeOp):
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
 
         if len(self) == 0:
-            return (0+0j * qml.I(wire_order)).sparse_matrix()
+            return (0 + 0j * qml.I(wire_order)).sparse_matrix()
 
         gen = ((op.sparse_matrix(), op.wires) for op in self)
 

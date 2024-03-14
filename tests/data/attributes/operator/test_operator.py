@@ -106,12 +106,16 @@ class TestDatasetOperatorObservable:
         assert qml.equal(obs_out, obs_in)
         assert obs_in.compare(obs_out)
 
-@pytest.mark.parametrize("obs_in",         [
-            qml.ops.LinearCombination([1.0, 2.0], [qml.X(0)@qml.Z(1), qml.Y(1)@qml.Z(2)]),
-            qml.ops.sum(qml.X(0), qml.Y(0)),
-            qml.ops.prod(qml.X(0), qml.Y(1)),
-            qml.ops.s_prod(1.2j, qml.X(1)@qml.Y(2))
-        ],)
+
+@pytest.mark.parametrize(
+    "obs_in",
+    [
+        qml.ops.LinearCombination([1.0, 2.0], [qml.X(0) @ qml.Z(1), qml.Y(1) @ qml.Z(2)]),
+        qml.ops.sum(qml.X(0), qml.Y(0)),
+        qml.ops.prod(qml.X(0), qml.Y(1)),
+        qml.ops.s_prod(1.2j, qml.X(1) @ qml.Y(2)),
+    ],
+)
 class TestDatasetArithmeticOperators:
     """Tests serializing Observable operators using the ``compare()`` method."""
 
@@ -139,6 +143,7 @@ class TestDatasetArithmeticOperators:
 
         obs_out = dset_op.get_value()
         assert qml.equal(obs_out, obs_in)
+
 
 class TestDatasetOperator:
     @pytest.mark.parametrize(
