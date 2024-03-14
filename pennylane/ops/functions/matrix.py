@@ -19,7 +19,7 @@ from typing import Sequence, Callable, Union
 from functools import partial
 
 import pennylane as qml
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import TransformError
 from pennylane import transform
 from pennylane.typing import TensorLike
 from pennylane.operation import Operator
@@ -200,13 +200,11 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
                 )
 
         elif callable(op):
-            if wire_order is None:
+            if getattr(op, "num_wires", 0) != 1 and wire_order is None:
                 raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
 
         else:
-            raise OperationTransformError(
-                "Input is not an Operator, tape, QNode, or quantum function"
-            )
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
 
         return _matrix_transform(op, wire_order=wire_order)
 
@@ -230,7 +228,7 @@ def _matrix_transform(
         raise qml.operation.MatrixUndefinedError
 
     if wire_order and not set(tape.wires).issubset(wire_order):
-        raise OperationTransformError(
+        raise TransformError(
             f"Wires in circuit {list(tape.wires)} are inconsistent with "
             f"those in wire_order {list(wire_order)}"
         )

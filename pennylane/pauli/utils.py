@@ -23,7 +23,6 @@ representation of Pauli words and applications, see:
 from functools import lru_cache, reduce, singledispatch
 from itertools import product
 from typing import List, Union
-from warnings import warn
 
 import numpy as np
 
@@ -161,6 +160,8 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     >>> are_identical_pauli_words(qml.Z(0) @ qml.Z(1), qml.Z(0) @ qml.X(3))
     False
     """
+    if pauli_1.name == "Hamiltonian" or pauli_2.name == "Hamiltonian":
+        return False
     if not (is_pauli_word(pauli_1) and is_pauli_word(pauli_2)):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_1} and {pauli_2}.")
 
@@ -1125,7 +1126,7 @@ def diagonalize_qwc_pauli_words(
     new_ops = []
     for term in qwc_grouping:
         pauli_rep = term.pauli_rep
-        if pauli_rep is None or len(pauli_rep) > 1:
+        if pauli_rep is None or len(pauli_rep) > 1 or term.name == "Hamiltonian":
             raise ValueError("This function only supports pauli words.")
         pw = next(iter(pauli_rep))
         for wire, pauli_type in pw.items():
@@ -1245,60 +1246,6 @@ def simplify(h, cutoff=1.0e-12):
     return qml.Hamiltonian(qml.math.array(coeffs), ops)
 
 
-def _pauli_mult(p1, p2):
-    r"""Return the result of multiplication between two tensor products of Pauli operators.
-
-    The Pauli operator :math:`(P_0)` is denoted by [(0, 'P')], where :math:`P` represents
-    :math:`X`, :math:`Y` or :math:`Z`.
-
-    Args:
-        p1 (list[tuple[int, str]]): the first tensor product of Pauli operators
-        p2 (list[tuple[int, str]]): the second tensor product of Pauli operators
-
-    Returns
-        tuple(list[tuple[int, str]], complex): list of the Pauli operators and the coefficient
-
-    **Example**
-
-    >>> p1 = [(0, "X"), (1, "Y")]  # X_0 @ Y_1
-    >>> p2 = [(0, "X"), (2, "Y")]  # X_0 @ Y_2
-    >>> _pauli_mult(p1, p2)
-    ([(2, "Y"), (1, "Y")], 1.0) # p1 @ p2 = X_0 @ Y_1 @ X_0 @ Y_2
-    """
-
-    warn(
-        "_pauli_mult is deprecated. Instead, please use the "
-        "PauliWord class, or regular PennyLane operators.",
-        qml.PennyLaneDeprecationWarning,
-    )
-    c = 1.0
-
-    t1 = [t[0] for t in p1]
-    t2 = [t[0] for t in p2]
-
-    k = []
-
-    for i in p1:
-        if i[0] in t1 and i[0] not in t2:
-            k.append((i[0], pauli_mult_dict[i[1]]))
-        for j in p2:
-            if j[0] in t2 and j[0] not in t1:
-                k.append((j[0], pauli_mult_dict[j[1]]))
-
-            if i[0] == j[0]:
-                k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
-                if i[1] + j[1] in pauli_coeff:
-                    c = c * pauli_coeff[i[1] + j[1]]
-
-    for item in k:
-        k_ = [i for i, x in enumerate(k) if x == item]
-        if len(k_) >= 2:
-            for j in k_[::-1][:-1]:
-                del k[j]
-
-    return k, c
-
-
 pauli_mult_dict = {
     "XX": "I",
     "YY": "I",
@@ -1330,55 +1277,6 @@ pauli_coeff = {
     "XY": 1.0j,
     "YX": -1.0j,
 }
-
-
-# from tapering.py ------------------------------
-def _binary_matrix(terms, num_qubits, wire_map=None):
-    r"""Get a binary matrix representation of the Hamiltonian where each row corresponds to a
-    Pauli term, which is represented by a concatenation of Z and X vectors.
-
-    Args:
-        terms (Iterable[Observable]): operators defining the Hamiltonian
-        num_qubits (int): number of wires required to define the Hamiltonian
-        wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
-            unique integer labels as their values
-
-    Returns:
-        array[int]: binary matrix representation of the Hamiltonian of shape
-        :math:`len(terms) \times 2*num_qubits`
-
-    **Example**
-
-    >>> wire_map = {'a':0, 'b':1, 'c':2, 'd':3}
-    >>> terms = [qml.Z('a') @ qml.X('b'),
-    ...          qml.Z('a') @ qml.Y('c'),
-    ...          qml.X('a') @ qml.Y('d')]
-    >>> _binary_matrix(terms, 4, wire_map=wire_map)
-    array([[1, 0, 0, 0, 0, 1, 0, 0],
-           [1, 0, 1, 0, 0, 0, 1, 0],
-           [0, 0, 0, 1, 1, 0, 0, 1]])
-    """
-    warn(
-        "_binary_matrix is deprecated. Instead, please use PauliWords and _binary_matrix_from_pws",
-        qml.PennyLaneDeprecationWarning,
-    )
-
-    if wire_map is None:
-        all_wires = qml.wires.Wires.all_wires([term.wires for term in terms], sort=True)
-        wire_map = {i: c for c, i in enumerate(all_wires)}
-
-    binary_matrix = np.zeros((len(terms), 2 * num_qubits), dtype=int)
-    for idx, term in enumerate(terms):
-        ops, wires = term.name, term.wires
-        if len(wires) == 1:
-            ops = [ops]
-        for op, wire in zip(ops, wires):
-            if op in ["PauliX", "PauliY"]:
-                binary_matrix[idx][wire_map[wire] + num_qubits] = 1
-            if op in ["PauliZ", "PauliY"]:
-                binary_matrix[idx][wire_map[wire]] = 1
-
-    return binary_matrix
 
 
 def _binary_matrix_from_pws(terms, num_qubits, wire_map=None):
@@ -1420,15 +1318,3 @@ def _binary_matrix_from_pws(terms, num_qubits, wire_map=None):
                 binary_matrix[idx][wire_map[wire]] = 1
 
     return binary_matrix
-
-
-@lru_cache
-def _get_pauli_map(n):
-    r"""Return a list of Pauli operator objects acting on wires `0` up to `n`.
-
-    This function is used to accelerate ``qchem.observable_hf.jordan_wigner``.
-    """
-    warn("_get_pauli_map is deprecated, as it is no longer used.", qml.PennyLaneDeprecationWarning)
-    return [
-        {"I": qml.Identity(i), "X": qml.X(i), "Y": qml.Y(i), "Z": qml.Z(i)} for i in range(n + 1)
-    ]
