@@ -120,20 +120,24 @@ def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
     ops_matrices = []
 
     for op in hamiltonian.ops:
-        op_wires = np.array(op.wires.tolist())
-        op_list = op.non_identity_obs if isinstance(op, qml.operation.Tensor) else [op]
-        op_matrices = []
 
-        for wire in range(n_wires):
-            loc = np.argwhere(op_wires == wire).flatten()
-            mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].matrix()
-            mat = csc_matrix(mat)
-            op_matrices.append(mat)
+        if isinstance(op, qml.ops.Prod):
+            op_matrix = op.sparse_matrix(wire_order=list(range(n_wires)))
+        else:
+            op_wires = np.array(op.wires.tolist())
+            op_list = op.non_identity_obs if isinstance(op, qml.operation.Tensor) else [op]
+            op_matrices = []
 
-        op_matrix = op_matrices.pop(0)
+            for wire in range(n_wires):
+                loc = np.argwhere(op_wires == wire).flatten()
+                mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].matrix()
+                mat = csc_matrix(mat)
+                op_matrices.append(mat)
 
-        for mat in op_matrices:
-            op_matrix = kron(op_matrix, mat)
+            op_matrix = op_matrices.pop(0)
+
+            for mat in op_matrices:
+                op_matrix = kron(op_matrix, mat)
 
         ops_matrices.append(op_matrix)
 
@@ -1314,27 +1318,26 @@ class TestLayers:
         ):
             qaoa.cost_layer(0.1, hamiltonian)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    @pytest.mark.parametrize(
-        ("mixer", "gates"),
+    mixer_layer_test_cases = [
         [
+            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
+            [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
+        ],
+        [
+            qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
             [
-                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
-                [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
-            ],
-            [
-                qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
-                [
-                    qml.PauliRot(1.0, "XX", wires=[1, 0]),
-                    qml.PauliRot(1.0, "YY", wires=[1, 0]),
-                    qml.PauliRot(1.0, "XX", wires=[2, 0]),
-                    qml.PauliRot(1.0, "YY", wires=[2, 0]),
-                    qml.PauliRot(1.0, "XX", wires=[2, 1]),
-                    qml.PauliRot(1.0, "YY", wires=[2, 1]),
-                ],
+                qml.PauliRot(1.0, "XX", wires=[1, 0]),
+                qml.PauliRot(1.0, "YY", wires=[1, 0]),
+                qml.PauliRot(1.0, "XX", wires=[2, 0]),
+                qml.PauliRot(1.0, "YY", wires=[2, 0]),
+                qml.PauliRot(1.0, "XX", wires=[2, 1]),
+                qml.PauliRot(1.0, "YY", wires=[2, 1]),
             ],
         ],
-    )
+    ]
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.parametrize(("mixer", "gates"), mixer_layer_test_cases)
     def test_mixer_layer_output_legacy(self, mixer, gates):
         """Tests that the gates of the mixer layer are correct"""
 
@@ -1351,26 +1354,7 @@ class TestLayers:
             target = [j.name, j.parameters, j.wires]
             assert prep == target
 
-    @pytest.mark.parametrize(
-        ("mixer", "gates"),
-        [
-            [
-                qml.PauliX(0) + qml.PauliX(1),
-                [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
-            ],
-            [
-                qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
-                [
-                    qml.PauliRot(1.0, "XX", wires=[1, 0]),
-                    qml.PauliRot(1.0, "YY", wires=[1, 0]),
-                    qml.PauliRot(1.0, "XX", wires=[2, 0]),
-                    qml.PauliRot(1.0, "YY", wires=[2, 0]),
-                    qml.PauliRot(1.0, "XX", wires=[2, 1]),
-                    qml.PauliRot(1.0, "YY", wires=[2, 1]),
-                ],
-            ],
-        ],
-    )
+    @pytest.mark.parametrize(("mixer", "gates"), mixer_layer_test_cases)
     @pytest.mark.xfail()
     def test_mixer_layer_output(self, mixer, gates):
         """Tests that the gates of the mixer layer are correct"""
@@ -1388,22 +1372,24 @@ class TestLayers:
 
             assert prep == target
 
-    @pytest.mark.parametrize(
-        ("cost", "gates"),
+    cost_layer_test_cases = [
         [
+            qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]),
+            [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
+        ],
+        [
+            qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
             [
-                qml.PauliZ(0) + qml.PauliZ(1),
-                [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
-            ],
-            [
-                qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
-                [
-                    qml.PauliRot(1, "ZZ", wires=[0, 1]),
-                    qml.PauliRot(1, "ZZ", wires=[0, 2]),
-                    qml.PauliRot(1, "ZZ", wires=[1, 2]),
-                ],
+                qml.PauliRot(1.0, "ZZ", wires=[1, 0]),
+                qml.PauliRot(1.0, "ZZ", wires=[2, 0]),
+                qml.PauliRot(1.0, "ZZ", wires=[2, 1]),
             ],
         ],
+    ]
+
+    @pytest.mark.parametrize(
+        ("cost", "gates"),
+        cost_layer_test_cases,
     )
     @pytest.mark.xfail()
     def test_cost_layer_output(self, cost, gates):
@@ -1423,23 +1409,7 @@ class TestLayers:
         assert prep == target
 
     @pytest.mark.usefixtures("use_legacy_opmath")
-    @pytest.mark.parametrize(
-        ("cost", "gates"),
-        [
-            [
-                qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]),
-                [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
-            ],
-            [
-                qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
-                [
-                    qml.PauliRot(1.0, "ZZ", wires=[1, 0]),
-                    qml.PauliRot(1.0, "ZZ", wires=[2, 0]),
-                    qml.PauliRot(1.0, "ZZ", wires=[2, 1]),
-                ],
-            ],
-        ],
-    )
+    @pytest.mark.parametrize(("cost", "gates"), cost_layer_test_cases)
     def test_cost_layer_output_legacy(self, cost, gates):
         """Tests that the gates of the cost layer is correct"""
 
@@ -1615,7 +1585,6 @@ class TestCycles:
         "g",
         [nx.complete_graph(4).to_directed(), rx.generators.directed_mesh_graph(4, [0, 1, 2, 3])],
     )
-    @pytest.mark.xfail()
     def test_partial_cycle_mixer_complete(self, g):
         """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
         example"""
@@ -1671,7 +1640,6 @@ class TestCycles:
         "g",
         [nx.complete_graph(4).to_directed(), rx.generators.directed_mesh_graph(4, [0, 1, 2, 3])],
     )
-    @pytest.mark.xfail()
     def test_partial_cycle_mixer_incomplete(self, g):
         """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
         example"""
@@ -1731,7 +1699,6 @@ class TestCycles:
         "g",
         [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])],
     )
-    @pytest.mark.xfail()
     def test_cycle_mixer(self, g):
         """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
 
@@ -1874,7 +1841,6 @@ class TestCycles:
             cycle_mixer(g)
 
     @pytest.mark.parametrize("g", [nx.lollipop_graph(3, 1), lollipop_graph_rx(3, 1)])
-    @pytest.mark.xfail()
     def test_matrix(self, g):
         """Test that the matrix function works as expected on a fixed example"""
         h = qml.qaoa.bit_flip_mixer(g, 0)
@@ -1933,7 +1899,6 @@ class TestCycles:
 
         assert np.allclose(mat.toarray(), mat_expected)
 
-    @pytest.mark.xfail()
     def test_matrix_rx(self):
         """Test that the matrix function works as expected on a fixed example"""
         g = rx.generators.star_graph(4, [0, 1, 2, 3])
@@ -2072,6 +2037,38 @@ class TestCycles:
         assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
         assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops))
 
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_loss_hamiltonian_complete_legacy(self, g):
+        """Test if the loss_hamiltonian function returns the expected result on a
+        manually-calculated example of a 3-node complete digraph"""
+        if isinstance(g, rx.PyDiGraph):
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(g.edge_list()))}
+            for k, v in edge_weight_data.items():
+                g.update_edge(k[0], k[1], {"weight": v})
+        else:
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+            for k, v in edge_weight_data.items():
+                g[k[0]][k[1]]["weight"] = v
+
+        h = loss_hamiltonian(g)
+
+        expected_ops = [
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(2),
+            qml.PauliZ(3),
+            qml.PauliZ(4),
+            qml.PauliZ(5),
+        ]
+        expected_coeffs = [np.log(0.5), np.log(1), np.log(1.5), np.log(2), np.log(2.5), np.log(3)]
+
+        assert np.allclose(expected_coeffs, h.coeffs)
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
+        assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops))
+
     def test_loss_hamiltonian_error(self):
         """Test if the loss_hamiltonian function raises ValueError"""
         with pytest.raises(
@@ -2083,6 +2080,60 @@ class TestCycles:
         "g", [nx.lollipop_graph(4, 1).to_directed(), lollipop_graph_rx(4, 1, to_directed=True)]
     )
     def test_loss_hamiltonian_incomplete(self, g):
+        """Test if the loss_hamiltonian function returns the expected result on a
+        manually-calculated example of a 4-node incomplete digraph"""
+        if isinstance(g, rx.PyDiGraph):
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(g.edge_list()))}
+            for k, v in edge_weight_data.items():
+                g.update_edge(k[0], k[1], {"weight": v})
+        else:
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+            for k, v in edge_weight_data.items():
+                g[k[0]][k[1]]["weight"] = v
+        h = loss_hamiltonian(g)
+
+        expected_ops = [
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(2),
+            qml.PauliZ(3),
+            qml.PauliZ(4),
+            qml.PauliZ(5),
+            qml.PauliZ(6),
+            qml.PauliZ(7),
+            qml.PauliZ(8),
+            qml.PauliZ(9),
+            qml.PauliZ(10),
+            qml.PauliZ(11),
+            qml.PauliZ(12),
+            qml.PauliZ(13),
+        ]
+        expected_coeffs = [
+            np.log(0.5),
+            np.log(1),
+            np.log(1.5),
+            np.log(2),
+            np.log(2.5),
+            np.log(3),
+            np.log(3.5),
+            np.log(4),
+            np.log(4.5),
+            np.log(5),
+            np.log(5.5),
+            np.log(6),
+            np.log(6.5),
+            np.log(7),
+        ]
+
+        assert np.allclose(expected_coeffs, h.coeffs)
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
+        assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops))
+
+    @pytest.mark.parametrize(
+        "g", [nx.lollipop_graph(4, 1).to_directed(), lollipop_graph_rx(4, 1, to_directed=True)]
+    )
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_loss_hamiltonian_incomplete_legacy(self, g):
         """Test if the loss_hamiltonian function returns the expected result on a
         manually-calculated example of a 4-node incomplete digraph"""
         if isinstance(g, rx.PyDiGraph):
@@ -2216,28 +2267,83 @@ class TestCycles:
             for op1, op2 in zip(expected_ops, squared_ops)
         )
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_square_hamiltonian_terms_legacy(self):
+        """Test if the _square_hamiltonian_terms function returns the expected result on a fixed
+        example"""
+        coeffs = [1, -1, -1, 1]
+        ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3)]
+
+        expected_coeffs = [
+            1,
+            -1,
+            -1,
+            1,
+            -1,
+            1,
+            1,
+            -1,
+            -1,
+            1,
+            1,
+            -1,
+            1,
+            -1,
+            -1,
+            1,
+        ]
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0),
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.Identity(0),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.Identity(0),
+        ]
+
+        squared_coeffs, squared_ops = _square_hamiltonian_terms(coeffs, ops)
+
+        assert squared_coeffs == expected_coeffs
+        assert all(
+            op1.name == op2.name and op1.wires == op2.wires
+            for op1, op2 in zip(expected_ops, squared_ops)
+        )
+
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.xfail()
     def test_inner_out_flow_constraint_hamiltonian(self, g):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node"""
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
-
+        h = h.simplify()
         expected_ops = [
             qml.Identity(0),
-            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(1) @ qml.PauliZ(0),
             qml.PauliZ(0),
             qml.PauliZ(1),
         ]
 
         expected_coeffs = [2, 2, -2, -2]
 
-        assert np.allclose(expected_coeffs, h.coeffs)
-        for i, expected_op in enumerate(expected_ops):
-            assert str(h.ops[i]) == str(expected_op)
-        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
+        coeffs, wire_op_map = decompose_hamiltonian(h)
+
+        assert qml.math.allclose(expected_coeffs, coeffs)
+
+        expected_maps = [
+            dict((wire, op) for wire, op in zip(op.wires, _get_ops(op))) for op in expected_ops
+        ]
+        assert wire_op_map == expected_maps
 
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize(
@@ -2271,12 +2377,11 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.xfail()
     def test_inner_net_flow_constraint_hamiltonian(self, g):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node"""
         h = _inner_net_flow_constraint_hamiltonian(g, 0)
-
+        h = h.simplify()
         expected_ops = [
             qml.Identity(0),
             qml.PauliZ(0) @ qml.PauliZ(1),
@@ -2288,10 +2393,14 @@ class TestCycles:
         ]
         expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
 
-        assert np.allclose(expected_coeffs, h.coeffs)
-        for i, expected_op in enumerate(expected_ops):
-            assert str(h.ops[i]) == str(expected_op)
-        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
+        coeffs, wire_op_map = decompose_hamiltonian(h)
+
+        assert qml.math.allclose(expected_coeffs, coeffs)
+
+        expected_maps = [
+            dict((wire, op) for wire, op in zip(op.wires, _get_ops(op))) for op in expected_ops
+        ]
+        assert wire_op_map == expected_maps
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
@@ -2333,6 +2442,30 @@ class TestCycles:
         the (0, 1) edge removed"""
         g.remove_edge(0, 1)
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
+        h = h.simplify()
+
+        expected_ops = [qml.PauliZ(wires=[0])]
+        expected_coeffs = [0]
+
+        coeffs, wire_op_map = decompose_hamiltonian(h)
+
+        assert qml.math.allclose(expected_coeffs, coeffs)
+
+        expected_maps = [
+            dict((wire, op) for wire, op in zip(op.wires, _get_ops(op))) for op in expected_ops
+        ]
+        assert wire_op_map == expected_maps
+
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_inner_out_flow_constraint_hamiltonian_non_complete_legacy(self, g):
+        """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
+        on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with
+        the (0, 1) edge removed"""
+        g.remove_edge(0, 1)
+        h = _inner_out_flow_constraint_hamiltonian(g, 0)
 
         expected_ops = [qml.PauliZ(wires=[0])]
         expected_coeffs = [0]
@@ -2345,13 +2478,12 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.xfail()
     def test_inner_net_flow_constraint_hamiltonian_non_complete(self, g):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node, with the (1, 0) edge removed"""
         g.remove_edge(1, 0)
         h = _inner_net_flow_constraint_hamiltonian(g, 0)
-
+        h = h.simplify()
         expected_ops = [
             qml.Identity(0),
             qml.PauliZ(0),
@@ -2363,10 +2495,14 @@ class TestCycles:
         ]
         expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
 
-        assert np.allclose(expected_coeffs, h.coeffs)
-        for i, expected_op in enumerate(expected_ops):
-            assert str(h.ops[i]) == str(expected_op)
-        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
+        coeffs, wire_op_map = decompose_hamiltonian(h)
+
+        assert qml.math.allclose(expected_coeffs, coeffs)
+
+        expected_maps = [
+            dict((wire, op) for wire, op in zip(op.wires, _get_ops(op))) for op in expected_ops
+        ]
+        assert wire_op_map == expected_maps
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
@@ -2409,7 +2545,6 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.xfail()
     def test_out_flow_constraint(self, g):
         """Test the out-flow constraint Hamiltonian is minimised by states that correspond to
         subgraphs that only ever have 0 or 1 edge leaving each node
@@ -2515,7 +2650,6 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.xfail()
     def test_net_flow_constraint(self, g):
         """Test if the net_flow_constraint Hamiltonian is minimized by states that correspond to a
         collection of edges with zero flow"""
@@ -2641,7 +2775,6 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.xfail()
     def test_net_flow_and_out_flow_constraint(self, g):
         """Test the combined net-flow and out-flow constraint Hamiltonian is minimised by states that correspond to subgraphs
         that qualify as simple_cycles
