@@ -3004,7 +3004,8 @@ def disable_new_opmath():
     global __use_new_opmath
     __use_new_opmath = False
 
-    _mock_opmath_stack.pop().close()
+    if _mock_opmath_stack:
+        _mock_opmath_stack.pop().close()
 
 
 def active_new_opmath():
