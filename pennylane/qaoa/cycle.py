@@ -139,7 +139,7 @@ def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Dict[int
     )
 
 
-def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.Hamiltonian:
+def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.operation.Operator:
     r"""Calculates the cycle-mixer Hamiltonian.
 
     Following methods outlined `here <https://arxiv.org/abs/1709.03489>`__, the
@@ -235,7 +235,9 @@ def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.Hamiltonian:
     return hamiltonian
 
 
-def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: Tuple) -> qml.Hamiltonian:
+def _partial_cycle_mixer(
+    graph: Union[nx.DiGraph, rx.PyDiGraph], edge: Tuple
+) -> qml.operation.Operator:
     r"""Calculates the partial cycle-mixer Hamiltonian for a specific edge.
 
     For an edge :math:`(i, j)`, this function returns:
@@ -294,7 +296,7 @@ def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: Tuple) ->
     return qml.Hamiltonian(coeffs, ops)
 
 
-def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.Hamiltonian:
+def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.operation.Operator:
     r"""Calculates the loss Hamiltonian for the maximum-weighted cycle problem.
 
     We consider the problem of selecting a cycle from a graph that has the greatest product of edge
@@ -447,7 +449,7 @@ def _square_hamiltonian_terms(
     return squared_coeffs, squared_ops
 
 
-def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.Hamiltonian:
+def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.operation.Operator:
     r"""Calculates the `out flow constraint <https://1qbit.com/whitepaper/arbitrage/>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -499,7 +501,7 @@ def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.Hamiltoni
     return hamiltonian
 
 
-def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.Hamiltonian:
+def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.operation.Operator:
     r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -554,7 +556,7 @@ def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.Hamiltoni
 
 def _inner_out_flow_constraint_hamiltonian(
     graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
-) -> qml.Hamiltonian:
+) -> qml.operation.Operator:
     r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
     For a given :math:`i`, this function returns:
 
@@ -623,7 +625,7 @@ def _inner_out_flow_constraint_hamiltonian(
 
 def _inner_net_flow_constraint_hamiltonian(
     graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
-) -> qml.Hamiltonian:
+) -> qml.operation.Operator:
     r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
 
 
