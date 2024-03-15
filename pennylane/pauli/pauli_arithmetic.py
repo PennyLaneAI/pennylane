@@ -832,6 +832,9 @@ class PauliSentence(dict):
             the PauliWord is empty ({}), choose any arbitrary wire from the
             PauliSentence it is composed in.
             """
+            if self.wires == qml.wires.Wires([]):
+                print(w)
+                return w
             return w or Wires(self.wires[0]) if self.wires else self.wires
 
         if len(self) == 0:
