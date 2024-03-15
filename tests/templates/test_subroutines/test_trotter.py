@@ -25,11 +25,16 @@ from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.templates.subroutines.trotter import (
     _scalar,
+    _simplify,
+    _comm_error,
     _spectral_norm,
     _one_norm_error,
+    _flatten_trotter,
+    _recursive_flatten,
     _compute_repetitions,
     _generate_combinations,
     _recursive_decomposition,
+    _recursive_nested_commutator,
 )
 
 test_hamiltonians = (
@@ -547,17 +552,148 @@ class TestPrivateFunctions:
     def test_generate_combinations(self, num_var, req_sum, expected_tup):
         assert _generate_combinations(num_var, req_sum) == expected_tup
 
-    def test_recursive_nested_commutator(self):
-        assert True
+    @pytest.mark.parametrize(
+        "A, B, alpha, final_op",  # computed by hand
+        (
+            (qml.X(0), qml.Y(0), 0, qml.Y(0)),
+            (qml.X(0), qml.Y(0), 1, qml.s_prod(2j, qml.Z(0))),
+            (qml.X(0), qml.Y(0), 2, qml.s_prod(4, qml.Y(0))),
+            (qml.X(0), qml.Y(0), 3, qml.s_prod(8j, qml.Z(0))),
+            (qml.X(0), qml.Y(1), 3, qml.s_prod(0, qml.I(wires=(0, 1)))),
+            (
+                qml.RX(1.23, 0),
+                qml.RZ(-0.5, 0),
+                1,
+                qml.sum(
+                    qml.prod(qml.RX(1.23, 0), qml.RZ(-0.5, 0)),
+                    qml.s_prod(-1, qml.prod(qml.RZ(-0.5, 0), qml.RX(1.23, 0))),
+                ),
+            ),
+            (
+                qml.s_prod(-0.5, qml.prod(qml.X(0), qml.RX(123, 1))),
+                qml.RZ(-0.5, 2),
+                4,
+                qml.s_prod(0, qml.I(wires=(0, 1, 2))),
+            ),
+        ),
+    )
+    def test_recursive_nested_commutator(self, A, B, alpha, final_op):
+        m_expected = qml.matrix(final_op)
+        computed_op = _recursive_nested_commutator(A, B, alpha)
 
-    def test_recursive_flatten(self):
-        assert True
+        try:
+            m_computed = qml.matrix(computed_op, wire_order=final_op.wires)
+        except qml.operation.DecompositionUndefinedError:
+            pr = computed_op.pauli_rep
+            pr.simplify()
+            m_computed = pr.to_mat(wire_order=final_op.wires.tolist())
 
-    def test_simplify_flatten(self):
-        assert True
+        assert qnp.allclose(m_computed, m_expected)
 
-    def test_flatten_trotter(self):
-        assert True
+    @pytest.mark.parametrize(
+        "order, num_ops, t, expected_indicies_and_coeffs",
+        (
+            (1, 2, 1, ([0, 1], [1, 1])),
+            (1, 3, 0.25, ([0, 1, 2], [0.25, 0.25, 0.25])),
+            (2, 3, 1, ([0, 1, 2, 2, 1, 0], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5])),
+            (2, 2, 8, ([0, 1, 1, 0], [4, 4, 4, 4])),
+            (
+                4,
+                2,
+                1,
+                (
+                    [0, 1, 1, 0] * 5,
+                    [0.5 * p_4] * 8 + [0.5 * (1 - 4 * p_4)] * 4 + [0.5 * p_4] * 8,
+                ),
+            ),
+        ),
+    )
+    def test_recursive_flatten(self, order, num_ops, t, expected_indicies_and_coeffs):
+        computed_indicies, computed_coeffs = _recursive_flatten(order, num_ops, t)
+        expected_indicies, expected_coeffs = expected_indicies_and_coeffs
+
+        assert computed_coeffs == expected_coeffs
+        assert computed_indicies == expected_indicies
+
+    @pytest.mark.parametrize(
+        "index_lst, coeffs_lst, simplified_index_lst, simplified_coeffs_lst",
+        (  # computed by hand
+            (
+                [0, 1, 2, 3],
+                [123, -0.45, -6.7, 89],
+                [0, 1, 2, 3],
+                [123, -0.45, -6.7, 89],
+            ),  # no simplification
+            ([0, 1, 1, 0], [1.23, -4, 5, 6.7], [0, 1, 0], [1.23, 1, 6.7]),
+            (
+                [0, 1, 1, 0, 0, 1, 1, 0],
+                [1, 2, 3, 4, -5, -6, -7, -8],
+                [0, 1, 0, 1, 0],
+                [1, 5, -1, -13, -8],
+            ),
+        ),
+    )
+    def test_simplify_flatten(
+        self, index_lst, coeffs_lst, simplified_index_lst, simplified_coeffs_lst
+    ):
+        computed_index_lst, computed_coeffs_lst = _simplify(index_lst, coeffs_lst)
+        assert computed_index_lst == simplified_index_lst
+        assert computed_coeffs_lst == simplified_coeffs_lst
+
+    @pytest.mark.parametrize(
+        "order, num_ops, n, expected_indicies_and_coeffs",
+        (
+            (1, 3, 1, ([0, 1, 2], [1] * 3)),
+            (1, 3, 3, ([0, 1, 2, 0, 1, 2, 0, 1, 2], [1 / 3] * 9)),
+            (2, 3, 1, ([0, 1, 2, 1, 0], [0.5, 0.5, 1, 0.5, 0.5])),
+            (
+                2,
+                2,
+                3,
+                (
+                    [0, 1, 0, 1, 0, 1, 0],
+                    [1 / 6, 2 / 6, 2 / 6, 2 / 6, 2 / 6, 2 / 6, 1 / 6],
+                ),
+            ),
+            (
+                4,
+                2,
+                2,
+                (
+                    [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+                    [
+                        0.25 * p_4,
+                        p_4 / 2,
+                        p_4 / 2,
+                        p_4 / 2,
+                        0.25 * (1 - 3 * p_4),
+                        (1 - 4 * p_4) / 2,
+                        0.25 * (1 - 3 * p_4),
+                        p_4 / 2,
+                        p_4 / 2,
+                        p_4 / 2,
+                        p_4 / 2,
+                        p_4 / 2,
+                        p_4 / 2,
+                        p_4 / 2,
+                        0.25 * (1 - 3 * p_4),
+                        (1 - 4 * p_4) / 2,
+                        0.25 * (1 - 3 * p_4),
+                        p_4 / 2,
+                        p_4 / 2,
+                        p_4 / 2,
+                        0.25 * p_4,
+                    ],
+                ),
+            ),
+        ),
+    )
+    def test_flatten_trotter(self, order, num_ops, n, expected_indicies_and_coeffs):
+        computed_indicies, computed_coeffs = _flatten_trotter(num_ops, order, n)
+        expected_indicies, expected_coeffs = expected_indicies_and_coeffs
+
+        assert qnp.allclose(computed_coeffs, expected_coeffs)
+        assert computed_indicies == expected_indicies
 
 
 class TestError:

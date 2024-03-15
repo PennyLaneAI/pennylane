@@ -124,22 +124,22 @@ def _comm_error(h_ops, t, p, n, fast):
 
 # Flatten the product formula
 def _recursive_flatten(order, num_ops, scalar_t):
-    ops = list(range(num_ops))
+    ops_index_lst = list(range(num_ops))
 
     if order == 1:
-        return ops, [1 * scalar_t] * num_ops
+        return ops_index_lst, [1 * scalar_t] * num_ops
 
     if order == 2:
-        return ops + ops[::-1], [0.5 * scalar_t] * (2 * num_ops)
+        return ops_index_lst + ops_index_lst[::-1], [0.5 * scalar_t] * (2 * num_ops)
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
 
-    ops_lst_1, coeff_lst_1 = _recursive_flatten(order - 2, num_ops, scalar_1 * scalar_t)
-    ops_lst_2, coeff_lst_2 = _recursive_flatten(order - 2, num_ops, scalar_2 * scalar_t)
+    ops_index_lst_1, coeff_lst_1 = _recursive_flatten(order - 2, num_ops, scalar_1 * scalar_t)
+    ops_index_lst_2, coeff_lst_2 = _recursive_flatten(order - 2, num_ops, scalar_2 * scalar_t)
 
     return (
-        (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1),
+        (2 * ops_index_lst_1) + ops_index_lst_2 + (2 * ops_index_lst_1),
         (2 * coeff_lst_1) + coeff_lst_2 + (2 * coeff_lst_1),
     )
 
