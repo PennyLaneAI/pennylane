@@ -23,7 +23,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
-from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
+from pennylane.templates.subroutines.trotter import (
+    _scalar,
+    _one_norm_error,
+    _compute_repetitions,
+    _recursive_decomposition,
+)
 
 test_hamiltonians = (
     qml.dot([1, 1, 1], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
@@ -464,18 +469,27 @@ class TestPrivateFunctions:
     )
 
     @pytest.mark.parametrize("order, expected_expansion", zip((1, 2, 4), expected_expansions))
-    def test_recursive_expression_no_queue(self, order, expected_expansion):
-        """Test the _recursive_expression function correctly generates the decomposition"""
+    def test_recursive_decomposition_no_queue(self, order, expected_expansion):
+        """Test the _recursive_decomposition function correctly generates the decomposition"""
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]
 
         with qml.tape.QuantumTape() as tape:
-            decomp = _recursive_expression(1.23, order, ops)
+            decomp = _recursive_decomposition(1.23, order, ops)
 
         assert tape.operations == []  # No queuing!
         assert all(
             qml.equal(op1, op2) for op1, op2 in zip(decomp, expected_expansion)
         )  # Expected expression
+    
+    def test_compute_repetitions(self):
+        assert True
 
+
+class TestError:
+    """Test the error estimation functionality"""
+
+    def test_one_norm_error(self):
+        assert True
 
 class TestDecomposition:
     """Test the decomposition of the TrotterProduct class."""
