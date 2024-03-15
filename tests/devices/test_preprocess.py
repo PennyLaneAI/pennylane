@@ -230,7 +230,7 @@ class TestValidateObservables:
         with pytest.raises(DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
 
-    @pytest.mark.usefixtures("use_legacy_opmath") # only required for legacy observables
+    @pytest.mark.usefixtures("use_legacy_opmath")  # only required for legacy observables
     def test_valid_tensor_observable_legacy_opmath(self):
         """Test that a valid tensor ovservable passes without error."""
         tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])

@@ -2349,7 +2349,7 @@ class TestHamiltonianSupport:
         # evaluated one expval per Pauli observable
         assert spy.call_count == 2
 
-    @pytest.mark.usefixtures("use_legacy_opmath") # only a problem for legacy opmath
+    @pytest.mark.usefixtures("use_legacy_opmath")  # only a problem for legacy opmath
     def test_error_hamiltonian_expval_finite_shots_legacy_opmath(self):
         """Tests that the Hamiltonian is split for finite shots."""
         dev = qml.device("default.qubit.legacy", wires=2, shots=10)

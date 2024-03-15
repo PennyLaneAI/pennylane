@@ -536,7 +536,7 @@ class TestPreprocessingIntegration:
         program, _ = qml.device("default.qubit").preprocess(execution_config)
         with pytest.raises(qml.DeviceError, match=message):
             program([qs])
-    
+
     @pytest.mark.parametrize(
         "ops, measurement, message",
         [
@@ -812,7 +812,9 @@ class TestAdjointDiffTapeValidation:
         assert len(res.operations) == 5
         assert res.trainable_params == [0, 1, 2, 3, 4]
 
-    @pytest.mark.usefixtures("use_legacy_opmath") # this is only an issue for legacy Hamiltonian that does not define a matrix method
+    @pytest.mark.usefixtures(
+        "use_legacy_opmath"
+    )  # this is only an issue for legacy Hamiltonian that does not define a matrix method
     def test_unsupported_obs(self):
         """Test that the correct error is raised if a Hamiltonian measurement is differentiated"""
         obs = qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)])

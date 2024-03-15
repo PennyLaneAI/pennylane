@@ -1072,7 +1072,7 @@ class TestHighLevelIntegration:
 
         res = circuit()
         assert qml.math.allclose(res, 0.2)
-    
+
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_direct_eval_hamiltonian_broadcasted_error_jax_legacy_opmath(self):
         """Tests that an error is raised when attempting to evaluate a Hamiltonian with
