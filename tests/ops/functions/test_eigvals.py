@@ -22,7 +22,7 @@ import scipy
 from gate_data import CNOT, H, I, S, X, Y, Z
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import TransformError
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -40,7 +40,7 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 def test_invalid_argument():
     """Assert error raised when input is neither a tape, QNode, nor quantum function"""
     with pytest.raises(
-        OperationTransformError,
+        TransformError,
         match="Input is not an Operator, tape, QNode, or quantum function",
     ):
         _ = qml.eigvals(None)

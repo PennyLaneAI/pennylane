@@ -3004,7 +3004,8 @@ def disable_new_opmath():
     global __use_new_opmath
     __use_new_opmath = False
 
-    _mock_opmath_stack.pop().close()
+    if _mock_opmath_stack:
+        _mock_opmath_stack.pop().close()
 
 
 def active_new_opmath():
@@ -3153,9 +3154,8 @@ def convert_to_legacy_H(op):
         raise ValueError("Could not convert to Hamiltonian. Some or all observables are not valid.")
 
     with disable_new_opmath_cm():
-        hamiltonian = qml.Hamiltonian(coeffs, ops)
-
-    return hamiltonian
+        res = qml.Hamiltonian(coeffs, ops)
+    return res
 
 
 def __getattr__(name):
