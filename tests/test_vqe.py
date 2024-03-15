@@ -1035,7 +1035,7 @@ class TestNewVQE:
         assert res["num_observables"] == 1
         assert res["num_diagonalizing_gates"] == 1
     
-    @pytest.mark.parametrize("use_legacy_opmath")
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_specs_legacy_opmath(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
