@@ -685,7 +685,7 @@ def _inner_net_flow_constraint_hamiltonian(
 
     coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
     H = qml.Hamiltonian(coeffs, ops)
-    H.simplify()
+    H = H.simplify()
     # store the valuable information that all observables are in one commuting group
     H.grouping_indices = [list(range(len(H.ops)))]
     return H

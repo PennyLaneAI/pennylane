@@ -142,74 +142,8 @@ def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
     return csc_matrix(mat)
 
 
-class TestMixerHamiltonians:
-    """Tests that the mixer Hamiltonians are being generated correctly"""
-
-    def test_x_mixer_output(self):
-        """Tests that the output of the Pauli-X mixer is correct"""
-
-        wires = range(4)
-        mixer_hamiltonian = qaoa.x_mixer(wires)
-
-        mixer_coeffs = mixer_hamiltonian.coeffs
-        mixer_ops = [i.name for i in mixer_hamiltonian.ops]
-        mixer_wires = [i.wires[0] for i in mixer_hamiltonian.ops]
-
-        assert mixer_coeffs == [1, 1, 1, 1]
-        assert mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
-        assert mixer_wires == [0, 1, 2, 3]
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_x_mixer_output_legacy(self):
-        """Tests that the output of the Pauli-X mixer is correct"""
-
-        wires = range(4)
-        mixer_hamiltonian = qaoa.x_mixer(wires)
-
-        mixer_coeffs = mixer_hamiltonian.coeffs
-        mixer_ops = [i.name for i in mixer_hamiltonian.ops]
-        mixer_wires = [i.wires[0] for i in mixer_hamiltonian.ops]
-
-        assert mixer_coeffs == [1, 1, 1, 1]
-        assert mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
-        assert mixer_wires == [0, 1, 2, 3]
-
-    def test_x_mixer_grouping(self):
-        """Tests that the grouping information is set and correct"""
-
-        wires = range(4)
-        mixer_hamiltonian = qaoa.x_mixer(wires)
-
-        # check that all observables commute
-        assert all(qml.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
-        # check that the 1-group grouping information was set
-        assert mixer_hamiltonian.grouping_indices is not None
-        assert mixer_hamiltonian.grouping_indices == ((0, 1, 2, 3),)
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_x_mixer_grouping_legacy(self):
-        """Tests that the grouping information is set and correct"""
-
-        wires = range(4)
-        mixer_hamiltonian = qaoa.x_mixer(wires)
-
-        # check that all observables commute
-        assert all(qml.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
-        # check that the 1-group grouping information was set
-        assert mixer_hamiltonian.grouping_indices is not None
-        assert mixer_hamiltonian.grouping_indices == ((0, 1, 2, 3),)
-
-    def test_xy_mixer_type_error(self):
-        """Tests that the XY mixer throws the correct error"""
-
-        graph = [(0, 1), (1, 2)]
-
-        with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object, got list"
-        ):
-            qaoa.xy_mixer(graph)
-
-    xy_mixer_test_cases = [
+def make_xy_mixer_test_cases():
+    return [
         (
             g2,
             qml.Hamiltonian(
@@ -310,36 +244,9 @@ class TestMixerHamiltonians:
         ),
     ]
 
-    @pytest.mark.parametrize(("graph", "target_hamiltonian"), xy_mixer_test_cases)
-    def test_xy_mixer_output(self, graph, target_hamiltonian):
-        """Tests that the output of the XY mixer is correct"""
 
-        hamiltonian = qaoa.xy_mixer(graph)
-        assert decompose_hamiltonian(hamiltonian) == decompose_hamiltonian(target_hamiltonian)
-
-    @pytest.mark.parametrize(("graph", "target_hamiltonian"), xy_mixer_test_cases)
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_xy_mixer_output_legacy(self, graph, target_hamiltonian):
-        """Tests that the output of the XY mixer is correct"""
-
-        hamiltonian = qaoa.xy_mixer(graph)
-        target_hamiltonian = qml.operation.convert_to_legacy_H(target_hamiltonian)
-        assert decompose_hamiltonian(hamiltonian) == decompose_hamiltonian(target_hamiltonian)
-
-    def test_bit_flip_mixer_errors(self):
-        """Tests that the bit-flip mixer throws the correct errors"""
-
-        graph = [(0, 1), (1, 2)]
-        with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object"
-        ):
-            qaoa.bit_flip_mixer(graph, 0)
-
-        n = 2
-        with pytest.raises(ValueError, match=r"'b' must be either 0 or 1"):
-            qaoa.bit_flip_mixer(Graph(graph), n)
-
-    bit_flip_mixer_test_cases = [
+def make_bit_flip_mixer_test_cases():
+    return [
         (
             Graph([(0, 1)]),
             1,
@@ -431,6 +338,103 @@ class TestMixerHamiltonians:
         ),
     ]
 
+
+class TestMixerHamiltonians:
+    """Tests that the mixer Hamiltonians are being generated correctly"""
+
+    def test_x_mixer_output(self):
+        """Tests that the output of the Pauli-X mixer is correct"""
+
+        wires = range(4)
+        mixer_hamiltonian = qaoa.x_mixer(wires)
+        expected_hamiltonian = qml.Hamiltonian(
+            [1, 1, 1, 1],
+            [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
+        )
+        assert mixer_hamiltonian.compare(expected_hamiltonian)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_x_mixer_output_legacy(self):
+        """Tests that the output of the Pauli-X mixer is correct"""
+
+        wires = range(4)
+        mixer_hamiltonian = qaoa.x_mixer(wires)
+        expected_hamiltonian = qml.Hamiltonian(
+            [1, 1, 1, 1],
+            [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
+        )
+        assert mixer_hamiltonian.compare(expected_hamiltonian)
+
+    def test_x_mixer_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        wires = range(4)
+        mixer_hamiltonian = qaoa.x_mixer(wires)
+
+        # check that all observables commute
+        assert all(qml.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
+        # check that the 1-group grouping information was set
+        assert mixer_hamiltonian.grouping_indices is not None
+        assert mixer_hamiltonian.grouping_indices == ((0, 1, 2, 3),)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_x_mixer_grouping_legacy(self):
+        """Tests that the grouping information is set and correct"""
+
+        wires = range(4)
+        mixer_hamiltonian = qaoa.x_mixer(wires)
+
+        # check that all observables commute
+        assert all(qml.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
+        # check that the 1-group grouping information was set
+        assert mixer_hamiltonian.grouping_indices is not None
+        assert mixer_hamiltonian.grouping_indices == ((0, 1, 2, 3),)
+
+    def test_xy_mixer_type_error(self):
+        """Tests that the XY mixer throws the correct error"""
+
+        graph = [(0, 1), (1, 2)]
+
+        with pytest.raises(
+            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object, got list"
+        ):
+            qaoa.xy_mixer(graph)
+
+    xy_mixer_test_cases = make_xy_mixer_test_cases()
+
+    @pytest.mark.parametrize(("graph", "target_hamiltonian"), xy_mixer_test_cases)
+    def test_xy_mixer_output(self, graph, target_hamiltonian):
+        """Tests that the output of the XY mixer is correct"""
+
+        hamiltonian = qaoa.xy_mixer(graph)
+        assert hamiltonian.compare(target_hamiltonian)
+
+    with qml.operation.disable_new_opmath_cm():
+        xy_mixer_test_cases_legacy = make_xy_mixer_test_cases()
+
+    @pytest.mark.parametrize(("graph", "target_hamiltonian"), xy_mixer_test_cases_legacy)
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_xy_mixer_output_legacy(self, graph, target_hamiltonian):
+        """Tests that the output of the XY mixer is correct"""
+
+        hamiltonian = qaoa.xy_mixer(graph)
+        assert hamiltonian.compare(target_hamiltonian)
+
+    def test_bit_flip_mixer_errors(self):
+        """Tests that the bit-flip mixer throws the correct errors"""
+
+        graph = [(0, 1), (1, 2)]
+        with pytest.raises(
+            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object"
+        ):
+            qaoa.bit_flip_mixer(graph, 0)
+
+        n = 2
+        with pytest.raises(ValueError, match=r"'b' must be either 0 or 1"):
+            qaoa.bit_flip_mixer(Graph(graph), n)
+
+    bit_flip_mixer_test_cases = make_bit_flip_mixer_test_cases()
+
     @pytest.mark.parametrize(
         ("graph", "n", "target_hamiltonian"),
         bit_flip_mixer_test_cases,
@@ -439,19 +443,21 @@ class TestMixerHamiltonians:
         """Tests that the output of the bit-flip mixer is correct"""
 
         hamiltonian = qaoa.bit_flip_mixer(graph, n)
-        assert decompose_hamiltonian(hamiltonian) == decompose_hamiltonian(target_hamiltonian)
+        assert hamiltonian.compare(target_hamiltonian)
+
+    with qml.operation.disable_new_opmath_cm():
+        bit_flip_mixer_test_cases_legacy = make_bit_flip_mixer_test_cases()
 
     @pytest.mark.parametrize(
         ("graph", "n", "target_hamiltonian"),
-        bit_flip_mixer_test_cases,
+        bit_flip_mixer_test_cases_legacy,
     )
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_bit_flip_mixer_output_legacy(self, graph, n, target_hamiltonian):
         """Tests that the output of the bit-flip mixer is correct"""
 
         hamiltonian = qaoa.bit_flip_mixer(graph, n)
-        target_hamiltonian = qml.operation.convert_to_legacy_H(target_hamiltonian)
-        assert decompose_hamiltonian(hamiltonian) == decompose_hamiltonian(target_hamiltonian)
+        assert hamiltonian.compare(target_hamiltonian)
 
 
 # GENERATES CASES TO TEST THE MAXCUT PROBLEM
@@ -1232,7 +1238,8 @@ class TestCostHamiltonians:
         cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
         mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         assert mapping == m
-
+        cost_h = cost_h.simplify()
+        mixer_h = mixer_h.simplify()
         c1, tw1 = decompose_hamiltonian(cost_hamiltonian)
         c2, tw2 = decompose_hamiltonian(cost_h)
 
