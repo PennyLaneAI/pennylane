@@ -149,6 +149,18 @@ class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
 
 
+del globals()["Hamiltonian"]
+
+
+def __getattr__(name):
+    if name == "Hamiltonian":
+        if pennylane.operation.active_new_opmath():
+            return pennylane.ops.op_math.LinearCombination
+        return pennylane.ops.qubit.Hamiltonian
+
+    return getattr(pennylane, name)
+
+
 def _get_device_entrypoints():
     """Returns a dictionary mapping the device short name to the
     loadable entrypoint"""
