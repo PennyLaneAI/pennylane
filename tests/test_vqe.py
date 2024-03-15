@@ -1033,11 +1033,24 @@ class TestNewVQE:
         res = qml.specs(circuit)()
 
         assert res["num_observables"] == 1
-        assert (
-            res["num_diagonalizing_gates"] == 0
-            if not H.has_diagonalizing_gates
-            else len(H.diagonalizing_gates())
-        )
+        assert res["num_diagonalizing_gates"] == 1
+    
+    @pytest.mark.parametrize("use_legacy_opmath")
+    def test_specs_legacy_opmath(self):
+        """Test that the specs of a VQE circuit can be computed"""
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(H)
+
+        res = qml.specs(circuit)()
+
+        assert res["num_observables"] == 1
+        assert res["num_diagonalizing_gates"] == 0 # legacy Hamiltonian does not have diagonalizing gates
 
 
 class TestInterfaces:
