@@ -409,6 +409,7 @@ class TestHamiltonianReturn:
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_observable_legacy_opmath(self):
         """Test a generator that returns a single observable is correct"""
+
         class ObservableOp_legacy(CustomOp):
             """Returns the generator as a single observable"""
 
@@ -425,6 +426,7 @@ class TestHamiltonianReturn:
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
+
         class TensorOp_legacy(CustomOp):
             """Returns the generator as a tensor observable"""
 
@@ -434,6 +436,7 @@ class TestHamiltonianReturn:
 
             def generator(self):
                 return self.coeff * self.obs[0](self.wires[0]) @ self.obs[1](self.wires[1])
+
         gen = qml.generator(TensorOp_legacy, format="hamiltonian")(0.5, wires=[0, 1])
         assert isinstance(gen, type(qml.Hamiltonian([], [])))
         assert gen.compare(TensorOp_legacy(0.5, wires=[0, 1]).generator())
