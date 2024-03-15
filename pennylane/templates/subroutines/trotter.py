@@ -19,12 +19,10 @@ from functools import lru_cache, reduce
 import math
 
 import pennylane as qml
-from pennylane import numpy as qnp
 
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
-from pennylane.pauli import PauliSentence
 
 
 # General Helper functions
