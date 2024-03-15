@@ -1534,7 +1534,84 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_module_example_legacy(self, tol):
+        """Test the example in the QAOA module docstring"""
+
+        # Defines the wires and the graph on which MaxCut is being performed
+        wires = range(3)
+        graph = Graph([(0, 1), (1, 2), (2, 0)])
+
+        # Defines the QAOA cost and mixer Hamiltonians
+        cost_h, mixer_h = qaoa.maxcut(graph)
+
+        # Defines a layer of the QAOA ansatz from the cost and mixer Hamiltonians
+        def qaoa_layer(gamma, alpha):
+            qaoa.cost_layer(gamma, cost_h)
+            qaoa.mixer_layer(alpha, mixer_h)
+
+        # Repeatedly applies layers of the QAOA ansatz
+        # pylint: disable=unused-argument
+        def circuit(params, **kwargs):
+            for w in wires:
+                qml.Hadamard(wires=w)
+
+            qml.layer(qaoa_layer, 2, params[0], params[1])
+
+        # Defines the device and the QAOA cost function
+        dev = qml.device("default.qubit", wires=len(wires))
+
+        @qml.qnode(dev)
+        def cost_function(params):
+            circuit(params)
+            return qml.expval(cost_h)
+
+        res = cost_function([[1, 1], [1, 1]])
+        expected = -1.8260274380964299
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_module_example_rx(self, tol):
+        """Test the example in the QAOA module docstring"""
+
+        # Defines the wires and the graph on which MaxCut is being performed
+        wires = range(3)
+
+        graph = rx.PyGraph()
+        graph.add_nodes_from([0, 1, 2])
+        graph.add_edges_from([(0, 1, ""), (1, 2, ""), (2, 0, "")])
+
+        # Defines the QAOA cost and mixer Hamiltonians
+        cost_h, mixer_h = qaoa.maxcut(graph)
+
+        # Defines a layer of the QAOA ansatz from the cost and mixer Hamiltonians
+        def qaoa_layer(gamma, alpha):
+            qaoa.cost_layer(gamma, cost_h)
+            qaoa.mixer_layer(alpha, mixer_h)
+
+        # Repeatedly applies layers of the QAOA ansatz
+        # pylint: disable=unused-argument
+        def circuit(params, **kwargs):
+            for w in wires:
+                qml.Hadamard(wires=w)
+
+            qml.layer(qaoa_layer, 2, params[0], params[1])
+
+        # Defines the device and the QAOA cost function
+        dev = qml.device("default.qubit", wires=len(wires))
+
+        @qml.qnode(dev)
+        def cost_function(params):
+            circuit(params)
+            return qml.expval(cost_h)
+
+        res = cost_function([[1, 1], [1, 1]])
+        expected = -1.8260274380964299
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_module_example_rx_legacy(self, tol):
         """Test the example in the QAOA module docstring"""
 
         # Defines the wires and the graph on which MaxCut is being performed
@@ -1582,7 +1659,6 @@ class TestCycles:
     def test_edges_to_wires(self, g):
         """Test that edges_to_wires returns the correct mapping"""
         r = edges_to_wires(g)
-
         assert r == {(0, 1): 0, (0, 2): 1, (0, 3): 2, (1, 2): 3, (1, 3): 4, (2, 3): 5, (3, 4): 6}
 
     def test_edges_to_wires_error(self):
@@ -2459,7 +2535,6 @@ class TestCycles:
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node"""
         h = _inner_net_flow_constraint_hamiltonian(g, 0)
-        h = h.simplify()
         expected_ops = [
             qml.Identity(0),
             qml.PauliZ(0) @ qml.PauliZ(1),
@@ -2470,10 +2545,12 @@ class TestCycles:
             qml.PauliZ(2) @ qml.PauliZ(4),
         ]
         expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
-
-        assert qml.math.allclose(h.coeffs, expected_coeffs)
         _, ops = h.terms()
-        for op, expected_op in zip(ops, expected_ops):
+        non_zero_terms = [(coeff, op) for coeff, op in zip(h.coeffs, ops) if coeff != 0]
+        coeffs = [term[0] for term in non_zero_terms]
+        assert qml.math.allclose(coeffs, expected_coeffs)
+        non_zero_ops = [term[1] for term in non_zero_terms]
+        for op, expected_op in zip(non_zero_ops, expected_ops):
             assert op.pauli_rep == expected_op.pauli_rep
 
     @pytest.mark.parametrize(
@@ -2517,18 +2594,13 @@ class TestCycles:
         g.remove_edge(0, 1)
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
         h = h.simplify()
+        expected_ops = [qml.Identity(0), qml.PauliZ(wires=[0])]
+        expected_coeffs = [0, 0]
 
-        expected_ops = [qml.PauliZ(wires=[0])]
-        expected_coeffs = [0]
-
-        coeffs, wire_op_map = decompose_hamiltonian(h)
-
+        coeffs, ops = h.terms()
         assert qml.math.allclose(expected_coeffs, coeffs)
-
-        expected_maps = [
-            dict((wire, op) for wire, op in zip(op.wires, _get_ops(op))) for op in expected_ops
-        ]
-        assert wire_op_map == expected_maps
+        for op, expected_op in zip(ops, expected_ops):
+            assert op.pauli_rep == expected_op.pauli_rep
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
@@ -2568,15 +2640,10 @@ class TestCycles:
             qml.PauliZ(1) @ qml.PauliZ(3),
         ]
         expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
-
-        coeffs, wire_op_map = decompose_hamiltonian(h)
-
-        assert qml.math.allclose(expected_coeffs, coeffs)
-
-        expected_maps = [
-            dict((wire, op) for wire, op in zip(op.wires, _get_ops(op))) for op in expected_ops
-        ]
-        assert wire_op_map == expected_maps
+        coeffs, ops = h.terms()
+        assert qml.math.allclose(coeffs, expected_coeffs)
+        for op, expected_op in zip(ops, expected_ops):
+            assert op.pauli_rep == expected_op.pauli_rep
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
