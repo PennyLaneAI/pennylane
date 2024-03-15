@@ -3153,7 +3153,9 @@ def convert_to_legacy_H(op):
     else:
         raise ValueError("Could not convert to Hamiltonian. Some or all observables are not valid.")
 
-    return qml.Hamiltonian(coeffs, ops)
+    with disable_new_opmath_cm():
+        res = qml.Hamiltonian(coeffs, ops)
+    return res
 
 
 def __getattr__(name):
