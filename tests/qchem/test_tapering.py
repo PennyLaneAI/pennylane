@@ -34,6 +34,7 @@ from pennylane.qchem.tapering import (
     _taper_pauli_sentence,
 )
 
+
 @pytest.mark.parametrize(
     ("binary_matrix", "result"),
     [
