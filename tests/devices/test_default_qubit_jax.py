@@ -1059,7 +1059,7 @@ class TestHighLevelIntegration:
         # evaluated one expval altogether
         assert spy.call_count == 1
 
-    def test_direct_eval_linear_combination_broadcasted(self):
+    def test_direct_eval_linear_combination_broadcasted_jax(self):
         """Tests that the correct result is returned when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with Jax."""
         dev = qml.device("default.qubit.jax", wires=2)
