@@ -406,17 +406,37 @@ class TestHamiltonianReturn:
         gen_compare = qml.PhaseShift(0.5, wires=0).generator()
         assert gen.ops[0] == gen_compare
 
-    def test_observable(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_observable_legacy_opmath(self):
         """Test a generator that returns a single observable is correct"""
-        gen = qml.generator(ObservableOp, format="hamiltonian")(0.5, wires=0)
-        assert isinstance(gen, type(qml.Hamiltonian([], [])))
-        assert gen.compare(ObservableOp(0.5, wires=0).generator())
+        class ObservableOp_legacy(CustomOp):
+            """Returns the generator as a single observable"""
 
+            coeff = -0.6
+            obs = qml.PauliX
+
+            def generator(self):
+                return self.coeff * self.obs(self.wires)
+
+        gen = qml.generator(ObservableOp_legacy, format="hamiltonian")(0.5, wires=0)
+        assert isinstance(gen, type(qml.Hamiltonian([], [])))
+        assert gen.compare(ObservableOp_legacy(0.5, wires=0).generator())
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
-        gen = qml.generator(TensorOp, format="hamiltonian")(0.5, wires=[0, 1])
+        class TensorOp_legacy(CustomOp):
+            """Returns the generator as a tensor observable"""
+
+            num_wires = 2
+            coeff = 0.5
+            obs = [qml.PauliX, qml.PauliY]
+
+            def generator(self):
+                return self.coeff * self.obs[0](self.wires[0]) @ self.obs[1](self.wires[1])
+        gen = qml.generator(TensorOp_legacy, format="hamiltonian")(0.5, wires=[0, 1])
         assert isinstance(gen, type(qml.Hamiltonian([], [])))
-        assert gen.compare(TensorOp(0.5, wires=[0, 1]).generator())
+        assert gen.compare(TensorOp_legacy(0.5, wires=[0, 1]).generator())
 
     def test_hamiltonian(self):
         """Test a generator that returns a Hamiltonian"""
