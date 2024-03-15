@@ -179,11 +179,13 @@ def expand_qutrit_vector(vector, original_wires, expanded_wires):
 
 @functools.singledispatch
 def get_eigvals(obs: qml.operation.Observable):
+    """TODO"""
     return obs.eigvals()
 
 
 @get_eigvals.register
 def get_prod_eigvals(obs: Prod):
+    """TODO"""
     eigvals = []
     for ops in obs.overlapping_ops:
         if len(ops) == 1:
@@ -203,7 +205,8 @@ def get_prod_eigvals(obs: Prod):
 
 
 @get_eigvals.register
-def get_prod_eigvals(obs: SProd):
+def get_s_prod_eigvals(obs: SProd):
+    """TODO"""
     base_eigs = get_eigvals(obs.base)
     if qml.math.get_interface(obs.scalar) == "torch" and obs.scalar.requires_grad:
         base_eigs = qml.math.convert_like(base_eigs, obs.scalar)
