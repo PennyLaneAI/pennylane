@@ -19,8 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.pauli import pauli_sentence
-from pennylane.operation import enable_new_opmath, disable_new_opmath
 from pennylane.fermi import from_string
 
 
@@ -168,23 +166,19 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
         (1.23 * from_string(""), [[1.23], [qml.Identity(0)]]),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
-    h_as_hamiltonian = qchem.qubit_observable(f_observable)
-    h_ref = qml.Hamiltonian(q_observable[0], q_observable[1])
-
-    enable_new_opmath()
-
     h_as_op = qchem.qubit_observable(f_observable)
-    h_ref_as_op = pauli_sentence(h_ref).operation(
-        h_ref.wires
-    )  # easy conversion from ham to operation
+    ops = [
+        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
+        for op in map(qml.simplify, q_observable[1])
+    ]
+    h_ref = qml.Hamiltonian(q_observable[0], ops)
 
-    disable_new_opmath()
-
-    assert h_as_hamiltonian.compare(h_ref)
+    assert h_ref.compare(h_as_op)
     assert np.allclose(
-        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_as_op, wire_order=[0, 1, 2])
+        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref, wire_order=[0, 1, 2])
     )
 
 
@@ -201,17 +195,13 @@ def test_qubit_observable(f_observable, q_observable):
         ),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_qubit_observable_cutoff(f_observable, cut_off):
     """Test that qubit_observable returns the correct operator when a cutoff is provided."""
     h_ref, h_ref_op = (qml.Hamiltonian([], []), qml.s_prod(0, qml.Identity(0)))
-    h_as_hamiltonian = qchem.qubit_observable(f_observable, cutoff=cut_off)
-
-    enable_new_opmath()
     h_as_op = qchem.qubit_observable(f_observable, cutoff=cut_off)
-    disable_new_opmath()
 
-    assert h_as_hamiltonian.compare(h_ref)
-    assert qml.equal(h_as_op, h_ref_op)
+    assert h_ref.compare(h_as_op)
     assert np.allclose(
-        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_op, wire_order=[0, 1, 2])
+        qml.matrix(h_ref_op, wire_order=[0, 1, 2]), qml.matrix(h_as_op, wire_order=[0, 1, 2])
     )

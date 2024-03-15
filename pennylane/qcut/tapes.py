@@ -202,7 +202,8 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
         if measurement_type is ExpectationMP:
             if len(observables) > 1:
-                measurements_from_graph.append(qml.expval(Tensor(*observables)))
+                prod_type = qml.prod if qml.operation.active_new_opmath() else Tensor
+                measurements_from_graph.append(qml.expval(prod_type(*observables)))
             else:
                 measurements_from_graph.append(qml.expval(obs))
 

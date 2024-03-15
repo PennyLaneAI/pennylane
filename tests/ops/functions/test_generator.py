@@ -406,12 +406,14 @@ class TestHamiltonianReturn:
         gen_compare = qml.PhaseShift(0.5, wires=0).generator()
         assert gen.ops[0] == gen_compare
 
-    def test_observable(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_observable_legacy_opmath(self):
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="hamiltonian")(0.5, wires=0)
         assert isinstance(gen, type(qml.Hamiltonian([], [])))
         assert gen.compare(ObservableOp(0.5, wires=0).generator())
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
         gen = qml.generator(TensorOp, format="hamiltonian")(0.5, wires=[0, 1])
