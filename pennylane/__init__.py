@@ -155,10 +155,10 @@ del globals()["Hamiltonian"]
 def __getattr__(name):
     if name == "Hamiltonian":
         if pennylane.operation.active_new_opmath():
-            return pennylane.ops.op_math.LinearCombination
-        return pennylane.ops.qubit.Hamiltonian
+            return pennylane.ops.LinearCombination
+        return pennylane.ops.Hamiltonian
 
-    return getattr(pennylane, name)
+    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 
 
 def _get_device_entrypoints():

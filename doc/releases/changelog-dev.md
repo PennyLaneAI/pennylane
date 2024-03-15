@@ -128,6 +128,10 @@
 
   ```
 
+* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
+  `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
+  [(#5322)](https://github.com/PennyLaneAI/pennylane/pull/5322)
+
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
