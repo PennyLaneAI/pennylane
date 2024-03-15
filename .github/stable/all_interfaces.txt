@@ -3,7 +3,7 @@ appdirs==1.4.4
 astunparse==1.6.3
 autograd==1.6.2
 autoray==0.6.9
-black==24.2.0
+black==24.3.0
 cachetools==5.3.3
 certifi==2024.2.2
 cfgv==3.4.0
@@ -22,7 +22,7 @@ execnet==2.0.2
 filelock==3.13.1
 flaky==3.8.1
 flatbuffers==24.3.7
-fonttools==4.49.0
+fonttools==4.50.0
 fsspec==2024.2.0
 future==1.0.0
 gast==0.5.4

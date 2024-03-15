@@ -12,7 +12,7 @@ autograd==1.6.2
 autoray==0.6.9
 Babel==2.14.0
 beautifulsoup4==4.12.3
-black==24.2.0
+black==24.3.0
 bleach==6.1.0
 cachetools==5.3.3
 certifi==2024.2.2
@@ -40,7 +40,7 @@ fastjsonschema==2.19.1
 filelock==3.13.1
 flaky==3.8.1
 flatbuffers==24.3.7
-fonttools==4.49.0
+fonttools==4.50.0
 fqdn==1.5.1
 future==1.0.0
 gast==0.5.4
