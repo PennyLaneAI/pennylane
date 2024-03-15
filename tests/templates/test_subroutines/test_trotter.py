@@ -480,7 +480,7 @@ class TestPrivateFunctions:
         assert all(
             qml.equal(op1, op2) for op1, op2 in zip(decomp, expected_expansion)
         )  # Expected expression
-    
+
     def test_compute_repetitions(self):
         assert True
 
@@ -490,6 +490,7 @@ class TestError:
 
     def test_one_norm_error(self):
         assert True
+
 
 class TestDecomposition:
     """Test the decomposition of the TrotterProduct class."""

@@ -58,26 +58,26 @@ def _one_norm_error(h_ops, t, p, n, fast):
     return c * (upsilon ** (p + 1) + 1)
 
 
-# Compute alpha_comm 
+# Compute alpha_comm
 @lru_cache
 def _generate_combinations(num_variables, required_sum):
     if num_variables == 0:
         return ()
-    
+
     if required_sum == 0:
         return ((0,) * num_variables,)
-    
-    if num_variables == 1: 
+
+    if num_variables == 1:
         return ((required_sum,),)
-    
+
     if num_variables == 2:
         return tuple([(i, required_sum - i) for i in range(required_sum + 1)])
-    
+
     master_lst = []
     for i in range(required_sum + 1):
         for sub_perms in _generate_combinations(num_variables - 1, required_sum - i):
             master_lst.append((i,) + sub_perms)
-    
+
     return tuple(master_lst)
 
 
@@ -86,18 +86,18 @@ def recursive_nested_commutator(A, B, alpha):
     """Recursive commutator"""
     if alpha == 0:
         return B
-    
-    if alpha == 1: 
+
+    if alpha == 1:
         return qml.comm(A, B)
-        
-    return qml.comm(A, recursive_nested_commutator(A, B, alpha-1))
+
+    return qml.comm(A, recursive_nested_commutator(A, B, alpha - 1))
 
 
 # Compute commutator error:
 def _comm_error(h_ops, t, p, n, fast):
     num_factors = len(coeffs_lst)
     upsilon = _compute_repetitions(p, n)
-    pre_factor = 2* upsilon * t**(p+1) / (qml.math.factorial(p+1))
+    pre_factor = 2 * upsilon * t ** (p + 1) / (qml.math.factorial(p + 1))
 
     ops_index_lst, coeffs_lst = _flatten_trotter(len(h_ops), p, n)
     alpha_combinations = _generate_combinations(num_factors, p)
@@ -105,61 +105,63 @@ def _comm_error(h_ops, t, p, n, fast):
     h_comm_norm = 0
     for h_gamma in h_ops:
         for alpha_lst in alpha_combinations:
-            c = reduce(lambda x,y: x*y, map(qml.math.factorial, alpha_lst))
-            
+            c = reduce(lambda x, y: x * y, map(qml.math.factorial, alpha_lst))
+
             nested_comm = h_gamma
             for index in range(num_factors - 1, -1, -1):  # iterate in reverse order
                 alpha_i = alpha_lst[index]
                 H_i = qml.s_prod(coeffs_lst[index], h_ops[ops_index_lst[index]])
-                
+
                 nested_comm = recursive_nested_commutator(H_i, nested_comm, alpha_i)
 
             h_comm_norm += c * _spectral_norm(nested_comm, fast=fast)
-    
+
     return pre_factor * h_comm_norm
 
 
 # Flatten the product formula
 def _recursive_flatten(order, num_ops, scalar_t):
     ops = list(range(num_ops))
-    
+
     if order == 1:
         return ops, [1 * scalar_t] * num_ops
 
     if order == 2:
-        return ops + ops[::-1],[0.5 * scalar_t] * (2*num_ops)
+        return ops + ops[::-1], [0.5 * scalar_t] * (2 * num_ops)
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
 
-    ops_lst_1, coeff_lst_1 = _recursive_flatten(order - 2, ops, scalar_1*scalar_t)
-    ops_lst_2, coeff_lst_2 = _recursive_flatten(order - 2, ops, scalar_2*scalar_t)
+    ops_lst_1, coeff_lst_1 = _recursive_flatten(order - 2, ops, scalar_1 * scalar_t)
+    ops_lst_2, coeff_lst_2 = _recursive_flatten(order - 2, ops, scalar_2 * scalar_t)
 
-    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1), (2 * coeff_lst_1) + coeff_lst_2 + (2 * coeff_lst_1)
+    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1), (2 * coeff_lst_1) + coeff_lst_2 + (
+        2 * coeff_lst_1
+    )
 
 
 def _simplify(ops_index, coeffs):
     final_ops = []
     final_coeffs = []
-    
+
     iter_limit = len(coeffs)
     i = 0
     while i < iter_limit:
         final_ops.append(ops_index[i])
         final_coeffs.append(coeffs[i])
-        shift = 1 
+        shift = 1
 
-        if (i+1 < iter_limit) and (ops_index[i] == ops_index[i+1]):
-            final_coeffs[-1] += coeffs[i+1]
+        if (i + 1 < iter_limit) and (ops_index[i] == ops_index[i + 1]):
+            final_coeffs[-1] += coeffs[i + 1]
             shift = 2
-        
+
         i += shift
     return (final_ops, final_coeffs)
 
 
 def _flatten_trotter(num_ops, order, n):
-    ops_index_lst, coeffs_lst = _recursive_flatten(order, num_ops, 1/n)
-    ops_index_lst, coeffs_lst = _simplify(ops_index_lst*n, coeffs_lst*n)
+    ops_index_lst, coeffs_lst = _recursive_flatten(order, num_ops, 1 / n)
+    ops_index_lst, coeffs_lst = _simplify(ops_index_lst * n, coeffs_lst * n)
     return ops_index_lst, coeffs_lst
 
 
@@ -362,10 +364,10 @@ class TrotterProduct(ErrorOperation):
         """
         terms = self.hyperparameters["base"].operands
         t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
-        
+
         if method == "one-norm":
             return SpectralNormError(_one_norm_error(terms, t, p, n, fast=fast))
-        
+
         if method == "commutator":
             return SpectralNormError(_comm_error(terms, t, p, n, fast=fast))
 
