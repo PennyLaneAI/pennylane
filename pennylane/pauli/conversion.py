@@ -442,6 +442,7 @@ def _(op: Hamiltonian):
 
     return ps
 
+
 @_pauli_sentence.register(LinearCombination)
 def _(op: LinearCombination):
     if not all(is_pauli_word(o) for o in op.ops):
