@@ -14,9 +14,12 @@
 """Functions and variables to be utilized by qutrit mixed state simulator."""
 import functools
 from string import ascii_letters as alphabet
+import numbers
+
 import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
+from pennylane.ops.op_math import Prod, SProd
 
 alphabet_array = np.array(list(alphabet))
 QUDIT_DIM = 3  # specifies qudit dimension
@@ -123,14 +126,12 @@ def get_diagonalizing_gates(obs):
     return obs.diagonalizing_gates()
 
 
-import numbers
-
-
-def _expand_vector(vector, original_wires, expanded_wires):
+def expand_qutrit_vector(vector, original_wires, expanded_wires):
     r"""Expand a vector to more wires.
 
     Args:
-        vector (array): :math:`QUDIT_DIM^n` vector where n = len(original_wires).
+        vector (array): :math:`QUDIT_DIM^n` vector where n = len(original_wires). (Where QUDIT_DIM=3, is dimension of
+            qudit being uses)
         original_wires (Sequence[int]): original wires of vector
         expanded_wires (Union[Sequence[int], int]): expanded wires of vector, can be shuffled
             If a single int m is given, corresponds to list(range(m))
@@ -176,29 +177,34 @@ def _expand_vector(vector, original_wires, expanded_wires):
     return qml.math.reshape(expanded_tensor, QUDIT_DIM**M)
 
 
-def get_eigvals(obs):
-    if isinstance(obs, qml.ops.op_math.Prod):
-        eigvals = []
-        for ops in obs.overlapping_ops:
-            if len(ops) == 1:
-                eigvals.append(
-                    _expand_vector(ops[0].eigvals(), list(ops[0].wires), list(obs.wires))
-                )
-            else:
-                tmp_composite = obs.__class__(*ops)
-                eigvals.append(
-                    _expand_vector(
-                        tmp_composite.eigendecomposition["eigval"],
-                        list(tmp_composite.wires),
-                        list(obs.wires),
-                    )
-                )
-
-        return obs._math_op(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
-    if isinstance(obs, qml.ops.op_math.SProd):
-        base_eigs = get_eigvals(obs.base)
-        if qml.math.get_interface(obs.scalar) == "torch" and obs.scalar.requires_grad:
-            base_eigs = qml.math.convert_like(base_eigs, obs.scalar)
-        return obs.scalar * base_eigs
-
+@functools.singledispatch
+def get_eigvals(obs: qml.operation.Observable):
     return obs.eigvals()
+
+
+@get_eigvals.register
+def get_prod_eigvals(obs: Prod):
+    eigvals = []
+    for ops in obs.overlapping_ops:
+        if len(ops) == 1:
+            eigvals.append(
+                expand_qutrit_vector(ops[0].eigvals(), list(ops[0].wires), list(obs.wires))
+            )
+        else:
+            tmp_composite = obs.__class__(*ops)
+            eigvals.append(
+                expand_qutrit_vector(
+                    tmp_composite.eigendecomposition["eigval"],
+                    list(tmp_composite.wires),
+                    list(obs.wires),
+                )
+            )
+    return math.prod(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
+
+
+@get_eigvals.register
+def get_prod_eigvals(obs: SProd):
+    base_eigs = get_eigvals(obs.base)
+    if qml.math.get_interface(obs.scalar) == "torch" and obs.scalar.requires_grad:
+        base_eigs = qml.math.convert_like(base_eigs, obs.scalar)
+    return obs.scalar * base_eigs
