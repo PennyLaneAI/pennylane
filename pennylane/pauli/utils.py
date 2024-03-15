@@ -20,7 +20,7 @@ representation of Pauli words and applications, see:
 * `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
-from functools import lru_cache, reduce, singledispatch
+from functools import lru_cache, singledispatch
 from itertools import product
 from typing import List, Union
 
