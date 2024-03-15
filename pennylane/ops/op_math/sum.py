@@ -209,6 +209,7 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
+    grad_method = "A"
 
     def _flatten(self):
         return tuple(self.operands), (self.grouping_indices,)
