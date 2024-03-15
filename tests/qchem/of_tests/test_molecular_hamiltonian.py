@@ -216,7 +216,11 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     geometry.requires_grad = False
     h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf")[0]
 
-    h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
+    ops = [
+        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
+        for op in map(qml.simplify, h_ref_data[1])
+    ]
+    h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
     h_ref_coeffs, h_ref_ops = h_ref.terms()
     h_args_coeffs, h_args_ops = h_args.terms()

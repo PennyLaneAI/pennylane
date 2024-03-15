@@ -213,7 +213,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         for i, op in enumerate(value):
             op_key = f"op_{i}"
             if isinstance(op, (qml.ops.Prod, qml.ops.SProd, qml.ops.Sum)):
-                print(op, type(op))
                 op = op.simplify()
             if type(op) not in self.consumes_types():
                 raise TypeError(

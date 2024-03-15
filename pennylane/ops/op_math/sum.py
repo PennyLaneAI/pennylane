@@ -288,7 +288,9 @@ class Sum(CompositeOp):
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         if self.pauli_rep is not None:
-            coeffs_list = list(self.pauli_rep.values()) or [0.0]
+            coeffs_list = list(self.pauli_rep.values())
+            if len(coeffs_list) == 0:
+                return True
             if not math.is_abstract(coeffs_list[0]):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
@@ -315,9 +317,6 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
-        if len(self) == 0:
-            return qml.matrix(0+0j * qml.I(wire_order))
-
         gen = (
             (
                 (
@@ -339,9 +338,6 @@ class Sum(CompositeOp):
     def sparse_matrix(self, wire_order=None):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
-
-        if len(self) == 0:
-            return (0+0j * qml.I(wire_order)).sparse_matrix()
 
         gen = ((op.sparse_matrix(), op.wires) for op in self)
 

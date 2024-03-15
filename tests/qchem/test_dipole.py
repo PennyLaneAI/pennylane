@@ -22,7 +22,7 @@ from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
-from pennylane.operation import enable_new_opmath_cm
+from pennylane.operation import Tensor
 
 
 @pytest.mark.parametrize(
@@ -189,7 +189,8 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-    d_ref = qml.Hamiltonian(coeffs, ops)
+    dops = [Tensor(*op) if isinstance(op, qml.ops.Prod) else op for op in map(qml.simplify, ops)]
+    d_ref = qml.Hamiltonian(coeffs, dops)
 
     d_coeff, d_ops = d.terms()
     dref_coeff, dref_ops = d_ref.terms()

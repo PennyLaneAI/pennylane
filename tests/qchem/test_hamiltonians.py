@@ -231,20 +231,26 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     mol = qchem.Molecule(symbols, geometry)
     args = []
     h = qchem.diff_hamiltonian(mol)(*args)
-    h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
+
+    ops = [
+        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
+        for op in map(qml.simplify, h_ref_data[1])
+    ]
+    h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
     assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
     assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
         qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
     )
 
-    assert isinstance(h, qml.Hamiltonian)
+    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
 
     wire_order = h_ref.wires
     assert np.allclose(
         qml.matrix(h, wire_order=wire_order),
         qml.matrix(h_ref, wire_order=wire_order),
     )
+
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_diff_hamiltonian_active_space():
@@ -307,6 +313,7 @@ def test_gradient_expvalH():
     grad_finitediff = (e_2 - e_1) / 0.0002
 
     assert np.allclose(grad_qml[0][0], grad_finitediff)
+
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestJax:

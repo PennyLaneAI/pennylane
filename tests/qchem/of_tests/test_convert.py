@@ -534,7 +534,7 @@ of_pl_ops = (
 def test_import_operator(of_op, pl_h, pl_op, wires):
     """Test the import_operator function correctly imports an OpenFermion operator into a PL one."""
     of_h = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
-    assert pl_h.compare(of_h)
+    assert qml.pauli.pauli_sentence(pl_h) == qml.pauli.pauli_sentence(of_h)
 
     assert isinstance(of_h, type(pl_op) if active_new_opmath() else qml.Hamiltonian)
 
@@ -1955,7 +1955,8 @@ def test_rcisd_state_energy(molecule, basis, symm, charge, spin, tol):
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
-    energy_pl = np.conj(wf_cisd.T).dot(qml.matrix(H).dot(wf_cisd))
+    H_mat = H.sparse_matrix().toarray()
+    energy_pl = np.conj(wf_cisd.T).dot(H_mat.dot(wf_cisd))
 
     assert np.allclose(energy_pl, myci.e_tot, atol=1e-6)
 
@@ -1991,7 +1992,8 @@ def test_ucisd_state_energy(molecule, basis, symm, charge, spin, tol):
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
-    energy_pl = np.conj(wf_cisd.T).dot(qml.matrix(H).dot(wf_cisd))
+    H_mat = H.sparse_matrix().toarray()
+    energy_pl = np.conj(wf_cisd.T).dot(H_mat.dot(wf_cisd))
 
     assert np.allclose(energy_pl, myci.e_tot, atol=1e-6)
 
@@ -2028,7 +2030,8 @@ def test_rccsd_state_energy(molecule, basis, symm, charge, spin, tol):
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
-    energy_pl = np.conj(wf_ccsd.T).dot(qml.matrix(H).dot(wf_ccsd))
+    H_mat = H.sparse_matrix().toarray()
+    energy_pl = np.conj(wf_ccsd.T).dot(H_mat.dot(wf_ccsd))
 
     assert np.allclose(energy_pl, mycc.e_tot, atol=1e-4)
 
@@ -2064,7 +2067,8 @@ def test_uccsd_state_energy(molecule, basis, symm, charge, spin, tol):
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
-    energy_pl = np.conj(wf_ccsd.T).dot(qml.matrix(H).dot(wf_ccsd))
+    H_mat = H.sparse_matrix().toarray()
+    energy_pl = np.conj(wf_ccsd.T).dot(H_mat.dot(wf_ccsd))
 
     assert np.allclose(energy_pl, mycc.e_tot, atol=1e-2)
 
@@ -2101,8 +2105,8 @@ def test_dmrg_state_energy(molecule, basis, charge, spin, dmrg_dets_coeffs, dmrg
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
-
-    energy_pl = np.conj(wf_dmrg.T).dot(qml.matrix(H).dot(wf_dmrg))
+    H_mat = H.sparse_matrix().toarray()
+    energy_pl = np.conj(wf_dmrg.T).dot(H_mat.dot(wf_dmrg))
 
     assert np.allclose(energy_pl, dmrg_e, atol=1e-6)
 
@@ -2140,8 +2144,8 @@ def test_shci_state_energy(molecule, basis, charge, spin, shci_dets_coeffs, shci
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
-
-    energy_pl = np.conj(wf_shci.T).dot(qml.matrix(H).dot(wf_shci))
+    H_mat = H.sparse_matrix().toarray()
+    energy_pl = np.conj(wf_shci.T).dot(H_mat.dot(wf_shci))
 
     assert np.allclose(energy_pl, shci_e, atol=1e-6)
 

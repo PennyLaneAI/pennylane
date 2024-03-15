@@ -19,8 +19,8 @@ import pytest
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
-from pennylane import qchem
-from pennylane.operation import active_new_opmath
+from pennylane import qchem, simplify
+from pennylane.operation import Tensor, active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -175,9 +175,10 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     built by the function `'spin2'`.
     """
     s2 = qchem.spin.spin2(electrons, orbitals)
-    s2_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
+    sops = [Tensor(*op) if isinstance(op, qml.ops.Prod) else op for op in map(simplify, ops_ref)]
+    s2_ref = qml.Hamiltonian(coeffs_ref, sops)
     assert s2_ref.compare(s2)
-    assert isinstance(s2, qml.Hamiltonian)
+    assert isinstance(s2, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
 
     wire_order = s2_ref.wires
     assert np.allclose(
@@ -233,7 +234,7 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     sz = qchem.spin.spinz(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
     assert sz_ref.compare(sz)
-    assert isinstance(sz, qml.Hamiltonian)
+    assert isinstance(sz, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
 
     wire_order = sz_ref.wires
     assert np.allclose(

@@ -33,8 +33,6 @@ from pennylane.qchem.tapering import (
     _split_pauli_sentence,
     _taper_pauli_sentence,
 )
-from pennylane.operation import active_new_opmath
-
 
 @pytest.mark.parametrize(
     ("binary_matrix", "result"),
@@ -234,7 +232,7 @@ def test_symmetry_generators(symbols, geometry, res_generators):
     hamiltonian = qml.qchem.diff_hamiltonian(mol)()
     generators = qml.symmetry_generators(hamiltonian)
     for g1, g2 in zip(generators, res_generators):
-        assert g1.compare(g2) if not active_new_opmath() else g1.pauli_rep == g2.pauli_rep
+        assert pauli_sentence(g1) == pauli_sentence(g2)
 
 
 @pytest.mark.parametrize(
@@ -269,7 +267,7 @@ def test_symmetry_generators(symbols, geometry, res_generators):
 def test_clifford(generator, paulixops, result):
     r"""Test that clifford returns the correct operator."""
     u = clifford(generator, paulixops)
-    assert u.compare(result) if not active_new_opmath() else qml.equal(u, result)
+    assert pauli_sentence(u) == pauli_sentence(result)
 
     # test arithmetic op compatibility:
     result_as_op = pauli_sentence(result).operation()
@@ -309,7 +307,7 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
 
     for term, ref_term in zip(sorted_terms, hamref_terms):
         assert np.allclose(term[0], ref_term[0])
-        assert qml.equal(term[1], ref_term[1]) if active_new_opmath() else term[1].compare(ref_term[1])
+        assert pauli_sentence(term[1]) == pauli_sentence(ref_term[1])
 
 
 @pytest.mark.parametrize(

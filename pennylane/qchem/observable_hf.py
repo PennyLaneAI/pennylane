@@ -134,6 +134,11 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
     h.simplify(tol=cutoff)
 
+    if active_new_opmath():
+        if not h.wires:
+            return h.operation(wire_order=[0])
+        return h.operation()
+
     if not h.wires:
         h = h.hamiltonian(wire_order=[0])
         return qml.Hamiltonian(
@@ -141,6 +146,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         )
 
     h = h.hamiltonian()
-    ham = qml.Hamiltonian(h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops])
 
-    return ham.simplify() if active_new_opmath() else simplify(ham)
+    return simplify(
+        qml.Hamiltonian(h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops])
+    )
