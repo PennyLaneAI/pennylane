@@ -2561,7 +2561,7 @@ class TestCriteria:
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.cnot)
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.rot)
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.exp)
-    
+
     def test_gen_is_multi_term_hamiltonian(self):
         """Assert that DoubleExcitation generator is now a SProd"""
         assert qml.operation.active_new_opmath(), "opmath not active, we have a leak"
@@ -2761,7 +2761,7 @@ class TestNewOpMath:
                 assert isinstance(op, qml.Hamiltonian)
                 assert not isinstance(op, qml.ops.LinearCombination)
 
-        @pytest.mark.usefixtures("use_legacy_opmath") # to ensure the original state is restored
+        @pytest.mark.usefixtures("use_legacy_opmath")  # to ensure the original state is restored
         def test_enable_opmath_multiple_times(self):
             """Test that enabling new op math multiple times does not impact
             Hamiltonian-LinearCombination aliasing"""
@@ -2775,7 +2775,7 @@ class TestNewOpMath:
             assert isinstance(op, qml.ops.LinearCombination)
             assert isinstance(op, qml.Hamiltonian)
 
-        @pytest.mark.usefixtures("use_new_opmath") # to ensure the original state is restored
+        @pytest.mark.usefixtures("use_new_opmath")  # to ensure the original state is restored
         def test_disable_opmath_multiple_times(self):
             """Test that disabling new op math multiple times does not impact
             Hamiltonian-LinearCombination aliasing"""
@@ -2946,6 +2946,7 @@ CONVERT_HAMILTONAIN = [
         ],
     ),
 ]
+
 
 @pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONAIN)
 def test_convert_to_hamiltonian(coeffs, obs):
