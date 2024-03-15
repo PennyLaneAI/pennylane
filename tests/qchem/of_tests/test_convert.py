@@ -404,10 +404,10 @@ def test_operation_conversion(pl_op, of_op, wire_order):
     converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
     _, converted_of_op_terms = converted_of_op
 
-    if not active_new_opmath():
-        assert all(isinstance(term, pauli_ops_and_tensor) for term in converted_of_op_terms)
-    else:
-        assert all(isinstance(term, pauli_ops_and_prod) for term in converted_of_op_terms)
+    assert all(
+        isinstance(term, pauli_ops_and_prod if active_new_opmath() else pauli_ops_and_tensor)
+        for term in converted_of_op_terms
+    )
 
     assert np.allclose(
         qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
