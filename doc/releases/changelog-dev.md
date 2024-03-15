@@ -108,6 +108,9 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
   
+* `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
+  [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
+
 * `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of paulis.
   [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
 
