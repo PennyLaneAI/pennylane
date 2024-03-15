@@ -1,0 +1,33 @@
+name: Test Benchmark Runner Cleanup Hook
+on:
+  pull_request:
+    branches:
+      - master
+
+defaults:
+  run:
+    shell: bash -ileo pipefail {0}
+
+jobs:
+  my_job:
+    runs-on:
+      - self-hosted
+      - benchmark
+
+    steps:
+      - run: ls -ltrh
+      - uses: actions/checkout@v4
+      - name: Create a file
+        env:
+          SOME_VAR: foooobarrrrrr
+        run: |
+          ls -ltrh
+          
+          echo ''
+          
+          echo 'Now creating a file'
+          echo "$SOME_VAR" >> file.txt
+          
+          cat file.txt
+
+      - run: pyenv versions
