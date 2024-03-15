@@ -25,8 +25,10 @@ from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.templates.subroutines.trotter import (
     _scalar,
+    _spectral_norm,
     _one_norm_error,
     _compute_repetitions,
+    _generate_combinations,
     _recursive_decomposition,
 )
 
@@ -481,7 +483,80 @@ class TestPrivateFunctions:
             qml.equal(op1, op2) for op1, op2 in zip(decomp, expected_expansion)
         )  # Expected expression
 
-    def test_compute_repetitions(self):
+    @pytest.mark.parametrize(
+        "order, n, expected_val",
+        (
+            (1, 1, 1),
+            (1, 3, 3),
+            (2, 3, 6),
+            (4, 1, 10),
+            (4, 10, 100),  # Computed by hand
+        ),
+    )
+    def test_compute_repetitions(self, order, n, expected_val):
+        assert _compute_repetitions(order, n) == expected_val
+
+    @pytest.mark.parametrize(
+        "op, fast, expected_norm",
+        (
+            (qml.s_prod(0, qml.I(0)), False, 0),
+            (qml.s_prod(1.23, qml.X(0)), False, 1.23),
+            (
+                qml.sum(qml.Z(1), qml.s_prod(-1.23, qml.X(0))),
+                True,
+                2.23,
+            ),
+            (
+                qml.sum(qml.Z(1), qml.s_prod(-1.23, qml.I(0))),
+                False,
+                2.23,
+            ),
+        ),
+    )
+    def test_spectral_norm_pauli(self, op, fast, expected_norm):
+        assert _spectral_norm(op, fast=fast) == expected_norm
+
+    @pytest.mark.parametrize(
+        "op, fast, expected_norm",  # computed by hand
+        (
+            (qml.Hadamard(0), False, 1),
+            (qml.Hadamard(0), True, 1),
+            (qml.RX(1.23, 0), True, 1),
+            (qml.s_prod(-0.5, qml.Hadamard(0)), False, 0.5),
+        ),
+    )
+    def test_spectral_norm_non_pauli(self, op, fast, expected_norm):
+        if not fast:
+            assert _spectral_norm(op, False) == expected_norm
+        else:
+            assert _spectral_norm(op, True) >= expected_norm
+
+    combination_data = (
+        (0, 0, ()),
+        (0, 123, ()),
+        (1, 0, ((0,),)),
+        (5, 0, ((0, 0, 0, 0, 0),)),
+        (1, 123, ((123,),)),
+        (2, 1, ((0, 1), (1, 0))),
+        (2, 2, ((0, 2), (1, 1), (2, 0))),
+        (2, 3, ((0, 3), (1, 2), (2, 1), (3, 0))),
+        (3, 1, ((0, 0, 1), (0, 1, 0), (1, 0, 0))),
+    )
+
+    @pytest.mark.parametrize("num_var, req_sum, expected_tup", combination_data)
+    def test_generate_combinations(self, num_var, req_sum, expected_tup):
+        assert _generate_combinations(num_var, req_sum) == expected_tup
+
+    def test_recursive_nested_commutator(self):
+        assert True
+
+    def test_recursive_flatten(self):
+        assert True
+
+    def test_simplify_flatten(self):
+        assert True
+
+    def test_flatten_trotter(self):
         assert True
 
 
@@ -489,6 +564,9 @@ class TestError:
     """Test the error estimation functionality"""
 
     def test_one_norm_error(self):
+        assert True
+
+    def test_comm_error(self):
         assert True
 
 

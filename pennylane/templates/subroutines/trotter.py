@@ -84,7 +84,7 @@ def _generate_combinations(num_variables, required_sum):
 
 
 @lru_cache
-def recursive_nested_commutator(A, B, alpha):
+def _recursive_nested_commutator(A, B, alpha):
     """Recursive commutator"""
     if alpha == 0:
         return B
@@ -92,7 +92,7 @@ def recursive_nested_commutator(A, B, alpha):
     if alpha == 1:
         return qml.comm(A, B)
 
-    return qml.comm(A, recursive_nested_commutator(A, B, alpha - 1))
+    return qml.comm(A, _recursive_nested_commutator(A, B, alpha - 1))
 
 
 # Compute commutator error:
@@ -115,7 +115,7 @@ def _comm_error(h_ops, t, p, n, fast):
                 alpha_i = alpha_lst[index]
                 H_i = qml.s_prod(coeffs_lst[index], h_ops[ops_index_lst[index]])
 
-                nested_comm = recursive_nested_commutator(H_i, nested_comm, alpha_i)
+                nested_comm = _recursive_nested_commutator(H_i, nested_comm, alpha_i)
 
             h_comm_norm += c * _spectral_norm(nested_comm, fast=fast)
 
@@ -356,8 +356,11 @@ class TrotterProduct(ErrorOperation):
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
 
-    # @property
-    def error(self, method="one-norm", fast=True):
+    @property
+    def error(self):
+        return self._error(method="commutator", fast=True)
+
+    def _error(self, method="one-norm", fast=True):
         """Compute an upper bound on the error for the Suzuki-Trotter product formula.
 
         Add Description!
