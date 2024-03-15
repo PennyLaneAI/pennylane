@@ -299,3 +299,49 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
         return qubit_operator.map_wires(wire_map)
 
     return qubit_operator
+
+
+def update_set(j, n):
+    indices = np.array([])
+
+    if n % 2 == 0:
+        if j < n / 2:
+            indices = np.append(indices, np.append(n - 1, update_set(j, n / 2)))
+        else:
+            indices = np.append(indices, update_set(j - n / 2, n / 2) + n / 2)
+
+    return indices
+
+
+def parity_set(j, n):
+    indices = np.array([])
+    if n % 2 == 0:
+        if j < n / 2:
+            indices = np.append(indices, parity_set(j, n / 2))
+
+        else:
+            indices = np.append(indices, np.append(parity_set(j - n / 2, n / 2) + n / 2, n / 2 - 1))
+
+    return indices
+
+
+def flip_set(j, n):
+    """
+    Computes the flip set of the j-th orbital in n modes.
+
+    Args:
+        j (int) : the orbital index
+        n (int) : the total number of qubits
+
+    Returns:
+        numpy.ndarray: Array of indices
+    """
+    indices = np.array([])
+    if n % 2 == 0:
+        if j < n / 2:
+            indices = np.append(indices, flip_set(j, n / 2))
+        elif n / 2 <= j < n - 1:
+            indices = np.append(indices, flip_set(j - n / 2, n / 2) + n / 2)
+        else:
+            indices = np.append(np.append(indices, flip_set(j - n / 2, n / 2) + n / 2), n / 2 - 1)
+    return indices
