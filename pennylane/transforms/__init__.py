@@ -163,21 +163,6 @@ instead to the documentation of :func:`qml.transform <pennylane.transform>`.
     ~transforms.core.transform_dispatcher
     ~transforms.core.transform_program
 
-Old transforms framework
-------------------------
-
-These utility functions were previously used to create transforms in PennyLane and are now
-deprecated. It is now recommended to use :class:`qml.transform <pennylane.transform>`
-for the creation of custom transforms.
-
-.. autosummary::
-    :toctree: api
-
-    ~single_tape_transform
-    ~batch_transform
-    ~qfunc_transform
-    ~op_transform
-
 Transforming circuits
 ---------------------
 
@@ -284,11 +269,13 @@ For gradient transforms, refer to the examples in :doc:`gradients documentation 
 Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
 for a comprehensive overview of transforms and core functionalities, consult the :doc:`transforms documentation <../code/qml_transforms>`.
 """
+
+# Leave as alias for backwards-compatibility
+from pennylane.tape import make_qscript as make_tape
+
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, TransformError
-from .batch_transform import batch_transform, map_batch_transform
-from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
-from .op_transforms import op_transform
+from .batch_transform import map_batch_transform
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
