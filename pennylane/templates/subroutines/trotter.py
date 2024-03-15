@@ -16,6 +16,8 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 from functools import lru_cache, reduce
 
+import math
+
 import pennylane as qml
 from pennylane import numpy as qnp
 
@@ -54,7 +56,7 @@ def _one_norm_error(h_ops, t, p, n, fast):
     for op in h_ops:
         h_one_norm += _spectral_norm(op, fast=fast)
 
-    c = (h_one_norm * t) ** (p + 1) / (qml.math.factorial(p + 1) * n**p)
+    c = (h_one_norm * t) ** (p + 1) / (math.factorial(p + 1) * n**p)
     return c * (upsilon ** (p + 1) + 1)
 
 
@@ -95,17 +97,18 @@ def recursive_nested_commutator(A, B, alpha):
 
 # Compute commutator error:
 def _comm_error(h_ops, t, p, n, fast):
-    num_factors = len(coeffs_lst)
     upsilon = _compute_repetitions(p, n)
-    pre_factor = 2 * upsilon * t ** (p + 1) / (qml.math.factorial(p + 1))
+    pre_factor = 2 * upsilon * t ** (p + 1) / (math.factorial(p + 1))
 
     ops_index_lst, coeffs_lst = _flatten_trotter(len(h_ops), p, n)
+
+    num_factors = len(coeffs_lst)
     alpha_combinations = _generate_combinations(num_factors, p)
 
     h_comm_norm = 0
     for h_gamma in h_ops:
         for alpha_lst in alpha_combinations:
-            c = reduce(lambda x, y: x * y, map(qml.math.factorial, alpha_lst))
+            c = reduce(lambda x, y: x * y, map(math.factorial, alpha_lst))
 
             nested_comm = h_gamma
             for index in range(num_factors - 1, -1, -1):  # iterate in reverse order
@@ -132,11 +135,12 @@ def _recursive_flatten(order, num_ops, scalar_t):
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
 
-    ops_lst_1, coeff_lst_1 = _recursive_flatten(order - 2, ops, scalar_1 * scalar_t)
-    ops_lst_2, coeff_lst_2 = _recursive_flatten(order - 2, ops, scalar_2 * scalar_t)
+    ops_lst_1, coeff_lst_1 = _recursive_flatten(order - 2, num_ops, scalar_1 * scalar_t)
+    ops_lst_2, coeff_lst_2 = _recursive_flatten(order - 2, num_ops, scalar_2 * scalar_t)
 
-    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1), (2 * coeff_lst_1) + coeff_lst_2 + (
-        2 * coeff_lst_1
+    return (
+        (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1),
+        (2 * coeff_lst_1) + coeff_lst_2 + (2 * coeff_lst_1),
     )
 
 
@@ -352,7 +356,7 @@ class TrotterProduct(ErrorOperation):
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
 
-    @property
+    # @property
     def error(self, method="one-norm", fast=True):
         """Compute an upper bound on the error for the Suzuki-Trotter product formula.
 
