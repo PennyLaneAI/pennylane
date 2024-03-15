@@ -781,7 +781,7 @@ class TestPartitionPauliGroup:
 
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("n", range(1, 6))
-    def test_is_qwc(self, n):
+    def test_is_qwc_legacy_opmath(self, n):
         """Test if each group contains only qubit-wise commuting terms"""
         for group in partition_pauli_group(n):
             size = len(group)

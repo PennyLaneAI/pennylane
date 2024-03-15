@@ -21,7 +21,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import Operator
-from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
