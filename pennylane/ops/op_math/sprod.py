@@ -145,7 +145,7 @@ class SProd(ScalarSymbolicOp):
 
         if _pauli_rep:
             self._pauli_rep = _pauli_rep
-        elif (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+        elif (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
             self.batch_size is None
         ):
             scalar = copy(self.scalar)

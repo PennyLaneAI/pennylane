@@ -71,7 +71,7 @@ def append_time_evolution(
         with QueuingManager.stop_recording():
             new_operations.append(
                 qml.QubitUnitary(
-                    expm(-1j * t * riemannian_gradient.sparse_matrix().toarray()),
+                    expm(-1j * t * riemannian_gradient.sparse_matrix(tape.wires).toarray()),
                     wires=range(len(riemannian_gradient.wires)),
                 )
             )
