@@ -219,7 +219,7 @@ def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_lates
     """
     Helper function to add operators as nodes during tape to graph conversion.
     """
-    print(f"Adding operator {op}")
+
     node = WrappedObj(op)
     graph.add_node(node, order=order)
     for wire in op.wires:
