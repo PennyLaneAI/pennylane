@@ -196,7 +196,10 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # count the basis state occurrences, and construct the probability vector
         new_bin_size = bin_size or samples.shape[-2]
         new_shape = (-1, new_bin_size) if batch_size is None else (batch_size, -1, new_bin_size)
-        indices = indices.reshape(new_shape)
+        if indices.size:
+            indices = indices.reshape(new_shape)
+        else:
+            indices = indices.reshape(0)
         prob = self._count_samples(indices, batch_size, dim)
         return qml.math.squeeze(prob) if bin_size is None else prob
 
