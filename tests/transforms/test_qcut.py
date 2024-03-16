@@ -92,7 +92,7 @@ with qml.queuing.AnnotatedQueue() as q_multi_cut_tape:
     qml.CNOT(wires=[2, 3])
     qml.RY(0.543, wires=2)
     qml.RZ(0.876, wires=3)
-    qml.expval(qml.operation.Tensor(qml.PauliZ(wires=[0]), qml.PauliZ(wires=[3])))
+    qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]))
 
 multi_cut_tape = qml.tape.QuantumScript.from_queue(q_multi_cut_tape)
 
@@ -560,7 +560,7 @@ class TestTapeToGraph:
             qml.PauliX(wires=1)
             qml.WireCut(wires=1)
             qml.CNOT(wires=[1, 2])
-            qml.sample(qml.operation.Tensor(qml.PauliX(0), qml.PauliY(1)))
+            qml.sample(qml.PauliX(0) @ qml.PauliY(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="Sampling from tensor products of observables "):
@@ -1574,7 +1574,7 @@ class TestExpandFragmentTapes:
         """
         Tests that a fragment tape expands correctly
         """
-        m = qml.expval(qml.operation.Tensor(qml.PauliZ(wires=[0]), qml.PauliZ(wires=2)))
+        m = qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=2))
         tape = qml.tape.QuantumScript(single_cut_tape.operations, [m])
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
@@ -4426,7 +4426,7 @@ class TestCutCircuitTransform:
 
             qml.QubitUnitary(us[3], wires=[0, 1])
             qml.QubitUnitary(us[4], wires=[2, 3])
-            return qml.expval(qml.operation.Tensor(qml.PauliZ(0), qml.PauliX(3)))
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(3))
 
         circuit = qml.QNode(f, dev_original)
         cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut), use_opt_einsum=use_opt_einsum)

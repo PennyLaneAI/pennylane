@@ -80,16 +80,21 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
-        if obs is not None and isinstance(obs, Tensor):
+        if obs is not None and isinstance(obs, (Tensor, qml.ops.op_math.Prod)):
             if isinstance(m, SampleMP):
                 raise ValueError(
                     "Sampling from tensor products of observables "
                     "is not supported in circuit cutting"
                 )
-            for o in obs.obs:
-                m_ = m.__class__(obs=o)
+            if isinstance(obs, qml.ops.op_math.Prod):
+                for o in obs.operands:
+                    m_ = m.__class__(obs=o)
+                    _add_operator_node(graph, m_, order, wire_latest_node)
+            else:
+                for o in obs.obs:
+                    m_ = m.__class__(obs=o)
+                    _add_operator_node(graph, m_, order, wire_latest_node)
 
-                _add_operator_node(graph, m_, order, wire_latest_node)
         elif isinstance(m, SampleMP) and obs is None:
             for w in m.wires:
                 s_ = qml.sample(qml.Projector([1], wires=w))
@@ -214,6 +219,7 @@ def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_lates
     """
     Helper function to add operators as nodes during tape to graph conversion.
     """
+    print(f"Adding operator {op}")
     node = WrappedObj(op)
     graph.add_node(node, order=order)
     for wire in op.wires:
