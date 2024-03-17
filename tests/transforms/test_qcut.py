@@ -5493,9 +5493,7 @@ class TestCutCircuitWithHamiltonians:
         grad_expected = qml.grad(circuit)(params)
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-        #print(params)
         res = cut_circuit(params)
-        #assert 1==2
         assert spy.call_count == len(hamiltonian.ops)
 
         grad = qml.grad(cut_circuit)(params)
