@@ -86,14 +86,10 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
                     "Sampling from tensor products of observables "
                     "is not supported in circuit cutting"
                 )
-            if isinstance(obs, qml.ops.op_math.Prod):
-                for o in obs.operands:
-                    m_ = m.__class__(obs=o)
-                    _add_operator_node(graph, m_, order, wire_latest_node)
-            else:
-                for o in obs.obs:
-                    m_ = m.__class__(obs=o)
-                    _add_operator_node(graph, m_, order, wire_latest_node)
+
+            for o in obs.operands if isinstance(obs, qml.ops.op_math.Prod) else obs.obs:
+                m_ = m.__class__(obs=o)
+                _add_operator_node(graph, m_, order, wire_latest_node)
 
         elif isinstance(m, SampleMP) and obs is None:
             for w in m.wires:
