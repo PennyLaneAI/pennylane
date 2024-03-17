@@ -5431,7 +5431,6 @@ class TestAutoCutCircuit:
 class TestCutCircuitWithHamiltonians:
     """Integration tests for `cut_circuit` transform with Hamiltonians."""
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_circuit_with_hamiltonian(self, mocker):
         """
         Tests that the full automatic circuit cutting pipeline returns the correct value and
@@ -5494,7 +5493,9 @@ class TestCutCircuitWithHamiltonians:
         grad_expected = qml.grad(circuit)(params)
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
+        #print(params)
         res = cut_circuit(params)
+        #assert 1==2
         assert spy.call_count == len(hamiltonian.ops)
 
         grad = qml.grad(cut_circuit)(params)
