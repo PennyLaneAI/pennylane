@@ -18,7 +18,7 @@ import functools
 import numpy as np
 import pennylane as qml
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian
+from pennylane.ops import Sum
 from pennylane.measurements import (
     Shots,
     SampleMeasurement,
@@ -184,9 +184,9 @@ def _measure_sum_with_samples(
     rng=None,
     prng_key=None,
 ):
-    """Compute expectation values of Sum or Hamiltonian Observables"""
+    """Compute expectation values of Sum or  Observables"""
     # mp.obs returns is the list of observables for Sum,
-    # mp.obs.terms()[1] returns is the list of observables for Hamiltonian
+    # mp.obs.terms()[1] returns is the list of observables for 
     obs_terms = mp.obs if isinstance(mp.obs, Sum) else mp.obs.terms()[1]
 
     def _sum_for_single_shot(s):
@@ -203,8 +203,8 @@ def _measure_sum_with_samples(
                 )
             )
 
-        if isinstance(mp.obs, qml.Hamiltonian):
-            # If Hamiltonian apply coefficients
+        if isinstance(mp.obs, qml.):
+            # If  apply coefficients
             return sum((c * res for c, res in zip(mp.obs.terms()[0], results)))
         return sum(results)
 
@@ -350,7 +350,7 @@ def measure_with_samples(
         TensorLike[Any]: Sample measurement results
     """
 
-    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, (qml.Hamiltonian, Sum)):
+    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, (qml., Sum)):
         measure_fn = _measure_sum_with_samples
     else:
         # measure with the usual method (rotate into the measurement basis)
