@@ -121,6 +121,7 @@ def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
 
 
 def get_diagonalizing_gates(obs):
+    """Returns diagonalizing gates of observable or an empty list"""
     if obs is None:
         return []
     return obs.diagonalizing_gates()
@@ -179,13 +180,13 @@ def expand_qutrit_vector(vector, original_wires, expanded_wires):
 
 @functools.singledispatch
 def get_eigvals(obs: qml.operation.Observable):
-    """TODO"""
+    """Gets the eigenvalues of an observable"""
     return obs.eigvals()
 
 
 @get_eigvals.register
 def get_prod_eigvals(obs: Prod):
-    """TODO"""
+    """Gets the eigenvalues of an observable if type Prod, implements get_eigvals"""
     eigvals = []
     for ops in obs.overlapping_ops:
         if len(ops) == 1:
@@ -206,7 +207,7 @@ def get_prod_eigvals(obs: Prod):
 
 @get_eigvals.register
 def get_s_prod_eigvals(obs: SProd):
-    """TODO"""
+    """Gets the eigenvalues of an observable if type Prod, implements get_eigvals"""
     base_eigs = get_eigvals(obs.base)
     if qml.math.get_interface(obs.scalar) == "torch" and obs.scalar.requires_grad:
         base_eigs = qml.math.convert_like(base_eigs, obs.scalar)

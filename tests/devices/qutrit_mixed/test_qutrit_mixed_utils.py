@@ -33,7 +33,7 @@ from pennylane.devices.qutrit_mixed.utils import get_eigvals, expand_qutrit_vect
             (0, 1 / 3, -np.sqrt(2) / 3, np.sqrt(2) / 3, 2 / 9),
         ),
         (
-            qml.sprod(3, qml.prod(qml.GellMann(0, 8), qml.GellMann(1, 1))),
+            qml.s_prod(3, qml.prod(qml.GellMann(0, 8), qml.GellMann(1, 1))),
             (0, 1, -np.sqrt(2), np.sqrt(2), 2 / 3),
         ),
     ],
@@ -46,8 +46,9 @@ def get_obs_eigvals(observable, expected_eigvals):
 class TestExpandQutritVector:
     """Tests vector expansion to more wires, for qutrit case"""
 
-    VECTOR1 = np.array([1, -1])
-    ONES = np.array([1, 1])
+    w = np.exp(2j * np.pi / 3)
+    VECTOR1 = np.array([1, w, w**2])
+    ONES = np.array([1, 1, 1])
 
     @pytest.mark.parametrize(
         "original_wires,expanded_wires,expected",
@@ -71,18 +72,17 @@ class TestExpandQutritVector:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     VECTOR2 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
-    ONES = np.array([1, 1, 1])
 
     @pytest.mark.parametrize(
         "original_wires,expanded_wires,expected",
         [
             ([0, 1], 3, np.kron(VECTOR2, ONES)),
             ([1, 2], 3, np.kron(ONES, VECTOR2)),
-            ([0, 2], 3, np.array([1, 2, 1, 2, 3, 4, 3, 4])),
+            ([0, 2], 3, np.array(([1, 2, 3] * 3) + ([4, 5, 6] * 3) + ([7, 8, 9] * 3))),
             ([0, 5], [0, 5, 9], np.kron(VECTOR2, ONES)),
             ([5, 9], [0, 5, 9], np.kron(ONES, VECTOR2)),
-            ([0, 9], [0, 5, 9], np.array([1, 2, 1, 2, 3, 4, 3, 4])),
-            ([9, 0], [0, 5, 9], np.array([1, 3, 1, 3, 2, 4, 2, 4])),
+            ([0, 9], [0, 5, 9], np.array(([1, 2, 3] * 3) + ([4, 5, 6] * 3) + ([7, 8, 9] * 3))),
+            ([9, 0], [0, 5, 9], np.array(([1, 4, 7] * 3) + ([2, 5, 8] * 3) + ([3, 6, 9] * 3))),
             ([0, 1], [0, 1], VECTOR2),
         ],
     )

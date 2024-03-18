@@ -33,17 +33,6 @@ from .measure import measure
 from .apply_operation import apply_operation
 
 
-def _apply_diagonalizing_gates(
-    mp: SampleMeasurement, state: np.ndarray, is_state_batched: bool = False
-):
-    """Applies diagonalizing gates when necessary"""
-    if mp.obs:
-        for op in get_diagonalizing_gates(mp.obs):
-            state = apply_operation(op, state, is_state_batched=is_state_batched)
-
-    return state
-
-
 def _process_samples(
     mp,
     samples,
@@ -120,7 +109,8 @@ def _measure_with_samples_diagonalizing_gates(
         TensorLike[Any]: Sample measurement results
     """
     # apply diagonalizing gates
-    state = _apply_diagonalizing_gates(mp, state, is_state_batched)
+    for op in get_diagonalizing_gates(mp.obs):
+        state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     total_indices = get_num_wires(state, is_state_batched)
     wires = qml.wires.Wires(range(total_indices))
