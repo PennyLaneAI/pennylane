@@ -161,9 +161,7 @@ class LinearCombination(Sum):
 
     def label(self, decimals=None, base_label=None, cache=None):
         decimals = None if (len(self.parameters) > 3) else decimals
-        return Operator.label(
-            self, decimals=decimals, base_label=base_label or "𝓗", cache=cache
-        )
+        return Operator.label(self, decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
     @property
     def coeffs(self):
