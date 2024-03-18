@@ -320,7 +320,8 @@ class TestConstructBatch:
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
-    def test_device_transforms_legacy_interface(self):
+    @pytest.mark.parametrize("level", ("device", None))
+    def test_device_transforms_legacy_interface(self, level):
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
@@ -331,7 +332,7 @@ class TestConstructBatch:
             qml.X(0)
             return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
 
-        batch, fn = qml.workflow.construct_batch(circuit, level=None)((2, 1, 0))
+        batch, fn = qml.workflow.construct_batch(circuit, level=level)((2, 1, 0))
 
         expected0 = qml.tape.QuantumScript(
             [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
