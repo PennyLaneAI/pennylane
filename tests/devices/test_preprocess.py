@@ -138,7 +138,7 @@ def test_no_sampling():
 
 def test_validate_adjoint_trainable_params_obs_warning():
     """Tests warning raised for validate_adjoint_trainable_params with trainable observables."""
-    tape = qml.tape.QuantumScript([], [qml.expval(2 * qml.PauliX(0))])
+    tape = qml.tape.QuantumScript([], [qml.expval(qml.numpy.array(2) * qml.PauliX(0))])
     with pytest.warns(UserWarning, match="Differentiating with respect to the input "):
         validate_adjoint_trainable_params(tape)
 

@@ -923,7 +923,9 @@ class TestAdjointDifferentiation:
         """Tests derivatives with a single circuit."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
-        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
 
         config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess(config)[0]((qs,))
@@ -943,7 +945,9 @@ class TestAdjointDifferentiation:
         """Tests a basic example with a batch containing a single circuit."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
-        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess(config)[0]((qs,))
         qs = batch[0]
@@ -962,9 +966,13 @@ class TestAdjointDifferentiation:
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
-        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        single_meas = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         multi_meas = qml.tape.QuantumScript(
-            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+            [qml.RY(x, 0)],
+            [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))],
+            trainable_params=[0],
         )
         expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
         actual_grad = dev.compute_derivatives([single_meas, multi_meas], self.ec)
@@ -977,9 +985,13 @@ class TestAdjointDifferentiation:
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
-        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        single_meas = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         multi_meas = qml.tape.QuantumScript(
-            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+            [qml.RY(x, 0)],
+            [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))],
+            trainable_params=[0],
         )
 
         program, new_ec = dev.preprocess(self.ec)
@@ -999,7 +1011,9 @@ class TestAdjointDifferentiation:
         x = np.array(np.pi / 7)
         tangent = (0.456,)
 
-        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
 
         config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess(config)[0]((qs,))
@@ -1022,7 +1036,9 @@ class TestAdjointDifferentiation:
         x = np.array(np.pi / 7)
         tangent = (0.456,)
 
-        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
 
         config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess(config)[0]((qs,))
@@ -1043,9 +1059,13 @@ class TestAdjointDifferentiation:
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
-        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        single_meas = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         multi_meas = qml.tape.QuantumScript(
-            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+            [qml.RY(x, 0)],
+            [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))],
+            trainable_params=[0],
         )
         tangents = [(0.456,), (0.789,)]
 
@@ -1072,9 +1092,13 @@ class TestAdjointDifferentiation:
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
 
-        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        single_meas = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         multi_meas = qml.tape.QuantumScript(
-            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+            [qml.RY(x, 0)],
+            [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))],
+            trainable_params=[0],
         )
         tangents = [(0.456,), (0.789,)]
         circuits = [single_meas, multi_meas]
@@ -1099,7 +1123,9 @@ class TestAdjointDifferentiation:
         x = np.array(np.pi / 7)
         cotangent = (0.456,)
 
-        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess(config)[0]((qs,))
         qs = batch[0]
@@ -1119,7 +1145,9 @@ class TestAdjointDifferentiation:
         x = np.array(np.pi / 7)
         cotangent = (0.456,)
 
-        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess(config)[0]((qs,))
         qs = batch[0]
@@ -1138,9 +1166,13 @@ class TestAdjointDifferentiation:
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
-        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        single_meas = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         multi_meas = qml.tape.QuantumScript(
-            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+            [qml.RY(x, 0)],
+            [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))],
+            trainable_params=[0],
         )
         cotangents = [(0.456,), (0.789, 0.123)]
 
@@ -1166,9 +1198,13 @@ class TestAdjointDifferentiation:
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
 
-        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        single_meas = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         multi_meas = qml.tape.QuantumScript(
-            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+            [qml.RY(x, 0)],
+            [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))],
+            trainable_params=[0],
         )
         cotangents = [(0.456,), (0.789, 0.123)]
         circuits = [single_meas, multi_meas]

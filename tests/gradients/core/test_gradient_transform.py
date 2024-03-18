@@ -42,8 +42,8 @@ class TestGradAnalysis:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(psi, wires=[0, 1])
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
+            qml.RX(qml.numpy.array(0.543), wires=[0])
+            qml.RY(qml.numpy.array(-0.654), wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
@@ -60,8 +60,8 @@ class TestGradAnalysis:
         as having a zero gradient"""
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
+            qml.RX(qml.numpy.array(0.543), wires=[0])
+            qml.RY(qml.numpy.array(-0.654), wires=[1])
             qml.expval(qml.PauliY(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -76,8 +76,8 @@ class TestGradAnalysis:
         if a parameter is independent or not"""
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
+            qml.RX(qml.numpy.array(0.543), wires=[0])
+            qml.RY(qml.numpy.array(-0.654), wires=[1])
             qml.expval(qml.PauliY(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -96,8 +96,8 @@ class TestGradAnalysis:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(psi, wires=[0, 1])
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
+            qml.RX(qml.numpy.array(0.543), wires=[0])
+            qml.RY(qml.numpy.array(-0.654), wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
