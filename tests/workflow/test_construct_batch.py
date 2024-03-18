@@ -348,7 +348,7 @@ class TestConstructBatch:
         assert fn((1.0, 2.0)) == (3.0,)
 
     def test_device_transforms_legacy_interface(self):
-        """Test that the device transforms can be selected with level=device or None."""
+        """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("default.qubit.legacy", wires=2, shots=50))
@@ -375,7 +375,7 @@ class TestConstructBatch:
     @pytest.mark.xfail  # TODO construct_batch handles new opmath non-commuting ops with shots and parameter shift
     @pytest.mark.parametrize("level", ("device", None))
     def test_device_transforms_legacy_interface_trainable_params(self, level):
-        """Test that the device transforms can be selected with level=device or None."""
+        """Test that the device transforms can be selected with level=device or None with trainable parameters"""
 
         @qml.transforms.merge_rotations
         @qml.qnode(qml.device("default.qubit.legacy", wires=2, shots=50))
