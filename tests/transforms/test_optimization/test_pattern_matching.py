@@ -610,6 +610,7 @@ class TestPatternMatchingOptimization:
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
+    @pytest.mark.slow
     def test_vbe_adder_3_pattern_matching(self):
         """Test pattern matching algorithm for vbe_adder_3 with a CNOTs template."""
 
