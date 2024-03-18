@@ -63,14 +63,14 @@ tape3 = QuantumScript.from_queue(q3)
 H4 = qml.Hamiltonian(
     [1, 3, -2, 1, 1, 1],
     [
-        qml.operation.Tensor(qml.X(0), qml.Z(2)),
-        qml.Z(2),
-        qml.X(0),
-        qml.Z(2),
-        qml.Z(2),
-        qml.operation.Tensor(qml.Z(0), qml.X(1), qml.Y(2)),
+        qml.PauliX(0) @ qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliX(0),
+        qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2),
     ],
-)
+).simplify()
 
 with AnnotatedQueue() as q4:
     qml.Hadamard(0)

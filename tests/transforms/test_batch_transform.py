@@ -26,7 +26,7 @@ class TestMapBatchTransform:
     def test_result(self, mocker):
         """Test that it correctly applies the transform to be mapped"""
         dev = qml.device("default.qubit.legacy", wires=2)
-        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        H = qml.Hamiltonian([1, -1], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0)])
         x = 0.6
         y = 0.7
 
@@ -41,7 +41,7 @@ class TestMapBatchTransform:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
             qml.CNOT(wires=[0, 1])
-            qml.expval(H + 0.5 * qml.PauliY(0))
+            qml.expval(H + qml.Hamiltonian([0.5], [qml.PauliY(0)]))
 
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
@@ -60,7 +60,7 @@ class TestMapBatchTransform:
     def test_differentiation(self):
         """Test that an execution using map_batch_transform can be differentiated"""
         dev = qml.device("default.qubit.legacy", wires=2)
-        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        H = qml.Hamiltonian([1, -1], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0)])
 
         weights = np.array([0.6, 0.8], requires_grad=True)
 
@@ -76,7 +76,7 @@ class TestMapBatchTransform:
                 qml.Hadamard(wires=0)
                 qml.CRX(weights[0], wires=[0, 1])
                 qml.CNOT(wires=[0, 1])
-                qml.expval(H + 0.5 * qml.PauliY(0))
+                qml.expval(H + qml.Hamiltonian([0.5], [qml.PauliY(0)]))
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
             tapes, fn = qml.transforms.map_batch_transform(

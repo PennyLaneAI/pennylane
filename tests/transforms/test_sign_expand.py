@@ -41,19 +41,16 @@ with pennylane.tape.QuantumTape() as tape2:
     )
     qml.expval(H2)
 
-H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(2)
+H3 = qml.Hamiltonian([1.5, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(2)])
 
 with qml.tape.QuantumTape() as tape3:
     qml.PauliX(0)
     qml.expval(H3)
 
 
-H4 = (
-    qml.PauliX(0) @ qml.PauliZ(2)
-    + 3 * qml.PauliZ(2)
-    - 2 * qml.PauliX(0)
-    + qml.PauliZ(2)
-    + qml.PauliZ(2)
+H4 = qml.Hamiltonian(
+    [1, 3, -2, 1, 1],
+    [qml.PauliX(0) @ qml.PauliZ(2), qml.PauliZ(2), qml.PauliX(0), qml.PauliZ(2), qml.PauliZ(2)],
 )
 
 with qml.tape.QuantumTape() as tape4:
@@ -174,7 +171,7 @@ class TestSignExpand:
         """Test if hamiltonians that are not jointly measurable throw an error"""
 
         with pennylane.tape.QuantumTape() as tape:
-            H_mult = 1.5 * qml.PauliZ(0) + 2 * qml.PauliZ(1) + 0.3 * qml.PauliX(0)
+            H_mult = qml.Hamiltonian([1.5, 2, 0.3], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliX(0)])
             qml.expval(H_mult)
 
         with pytest.raises(ValueError, match=r"Passed hamiltonian"):
