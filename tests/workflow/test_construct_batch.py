@@ -372,7 +372,7 @@ class TestConstructBatch:
         assert qml.equal(expected1, batch[1])
         assert len(batch) == 2
 
-        assert fn((1.0, 2.0)) == (3.0,)
+        assert fn((1.0, 2.0)) == (1.0, 2.0)
 
     def test_final_transform(self):
         """Test that the final transform is included when level=None."""
