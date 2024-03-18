@@ -285,7 +285,7 @@ def test_meas_probs(tableau, shots, ops):
 
     gotten_probs, target_probs = qnode_clfrd(), qnode_qubit()
 
-    assert qml.math.allclose(gotten_probs, target_probs, atol=5e-1 if shots else 1e-8)
+    assert qml.math.allclose(gotten_probs, target_probs, atol=5e-2 if shots else 1e-8)
 
 
 def test_meas_probs_large():
