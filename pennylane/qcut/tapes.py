@@ -80,7 +80,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
-        if obs is not None and isinstance(obs, (Tensor, qml.ops.op_math.Prod)):
+        if obs is not None and isinstance(obs, (Tensor, qml.ops.Prod)):
             if isinstance(m, SampleMP):
                 raise ValueError(
                     "Sampling from tensor products of observables "
