@@ -418,7 +418,7 @@ def _(op: Hamiltonian):
 
     def term_2_pauli_word(term):
         if isinstance(term, Tensor):
-            pw = dict((obs.wires[0], obs.name[-1]) for obs in term.non_identity_obs)
+            pw = {obs.wires[0]: obs.name[-1] for obs in term.non_identity_obs}
         elif isinstance(term, Identity):
             pw = {}
         else:
