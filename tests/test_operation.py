@@ -2744,7 +2744,7 @@ class TestNewOpMath:
     class TestHamiltonianLinearCombinationAlias:
         """Unit tests for using qml.Hamiltonian as an alias for LinearCombination"""
 
-        def test_hamiltonian_linear_combination_alias(self):
+        def test_hamiltonian_linear_combination_alias_new(self):
             """Test that qml.Hamiltonian is as alias for LinearCombination with new operator
             arithmetic"""
             assert qml.operation.active_new_opmath()
