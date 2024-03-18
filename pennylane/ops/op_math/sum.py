@@ -509,25 +509,7 @@ class Sum(CompositeOp):
 
         with qml.QueuingManager.stop_recording():
             op_groups = qml.pauli.group_observables(ops, grouping_type=grouping_type, method=method)
-
-        ops = copy(ops)
-
-        indices = []
-        available_indices = list(range(len(ops)))
-        for partition in op_groups:  # pylint:disable=too-many-nested-blocks
-            indices_this_group = []
-            for pauli_word in partition:
-                # find index of this pauli word in remaining original observables,
-                for ind, observable in enumerate(ops):
-                    if qml.pauli.are_identical_pauli_words(pauli_word, observable):
-                        indices_this_group.append(available_indices[ind])
-                        # delete this observable and its index, so it cannot be found again
-                        ops.pop(ind)
-                        available_indices.pop(ind)
-                        break
-            indices.append(tuple(indices_this_group))
-
-        self._grouping_indices = tuple(indices)
+        self._grouping_indices = tuple(tuple(ops.index(o) for o in group) for group in op_groups)
 
     @property
     def coeffs(self):
