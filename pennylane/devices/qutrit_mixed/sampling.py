@@ -203,7 +203,7 @@ def _measure_sum_with_samples(
                 )
             )
 
-        if isinstance(mp.obs, Hamiltonian):
+        if isinstance(mp.obs, qml.Hamiltonian):
             # If Hamiltonian apply coefficients
             return sum((c * res for c, res in zip(mp.obs.terms()[0], results)))
         return sum(results)
@@ -350,7 +350,7 @@ def measure_with_samples(
         TensorLike[Any]: Sample measurement results
     """
 
-    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, (Hamiltonian, Sum)):
+    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, (qml.Hamiltonian, Sum)):
         measure_fn = _measure_sum_with_samples
     else:
         # measure with the usual method (rotate into the measurement basis)
