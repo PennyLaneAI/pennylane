@@ -152,6 +152,8 @@
 * `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of paulis.
   [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
 
+* `Prod.eigvals()` is now compatible with Qudit operators.
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
