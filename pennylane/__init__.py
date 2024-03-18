@@ -138,7 +138,7 @@ default_config = Configuration("config.toml")
 
 
 # Enable using qml.Hamiltonian as an alias for qml.ops.LinearCombination
-pennylane.operation.enable_new_opmath()
+# pennylane.operation.enable_new_opmath()
 
 
 class QuantumFunctionError(Exception):

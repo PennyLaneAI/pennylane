@@ -223,8 +223,7 @@ PennyLane contains a mechanism for storing lists of operations with similar
 attributes and behaviour (for example, those that are their own inverses).
 The attributes below are already included, and are used primarily for the
 purpose of compilation transforms. New attributes can be added by instantiating
-new :class:`~pennylane.ops.qubit.attributes.Attribute` objects. Please note that
-these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane.operation``.
+new :class:`~pennylane.ops.qubit.attributes.Attribute` objects. Please note thatthese objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane.operation``.
 
 .. currentmodule:: pennylane
 
@@ -2970,21 +2969,21 @@ def enable_new_opmath():
     global __use_new_opmath
     __use_new_opmath = True
 
-    if _mock_opmath_stack:
-        return
+    # if _mock_opmath_stack:
+    #     return
 
-    mocks = [
-        mock.patch("pennylane.Hamiltonian", qml.ops.LinearCombination),
-        mock.patch("pennylane.ops.Hamiltonian", qml.ops.LinearCombination),
-        mock.patch("pennylane.ops.qubit.Hamiltonian", qml.ops.LinearCombination),
-        mock.patch("pennylane.ops.qubit.hamiltonian.Hamiltonian", qml.ops.LinearCombination),
-    ]
+    # mocks = [
+    #     mock.patch("pennylane.Hamiltonian", qml.ops.LinearCombination),
+    #     mock.patch("pennylane.ops.Hamiltonian", qml.ops.LinearCombination),
+    #     mock.patch("pennylane.ops.qubit.Hamiltonian", qml.ops.LinearCombination),
+    #     mock.patch("pennylane.ops.qubit.hamiltonian.Hamiltonian", qml.ops.LinearCombination),
+    # ]
 
-    with contextlib.ExitStack() as stack:
-        for m in mocks:
-            stack.enter_context(m)
+    # with contextlib.ExitStack() as stack:
+    #     for m in mocks:
+    #         stack.enter_context(m)
 
-        _mock_opmath_stack.append(stack.pop_all())
+    #     _mock_opmath_stack.append(stack.pop_all())
 
 
 def disable_new_opmath():
@@ -3004,8 +3003,8 @@ def disable_new_opmath():
     global __use_new_opmath
     __use_new_opmath = False
 
-    if _mock_opmath_stack:
-        _mock_opmath_stack.pop().close()
+    # if _mock_opmath_stack:
+    #     _mock_opmath_stack.pop().close()
 
 
 def active_new_opmath():
