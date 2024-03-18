@@ -349,7 +349,7 @@ class TestConstructBatch:
 
     @pytest.mark.xfail
     @pytest.mark.parametrize("level", ("device", None))
-    def test_device_transforms_legacy_interface_legacy_opmath(self, level):
+    def test_device_transforms_legacy_interface(self, level):
         """Test that the device transforms can be selected with level=device or None."""
 
         @qml.transforms.merge_rotations
