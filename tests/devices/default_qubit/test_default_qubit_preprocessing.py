@@ -527,7 +527,7 @@ class TestPreprocessingIntegration:
         ],
     )
     @pytest.mark.filterwarnings("ignore:Differentiating with respect to")
-    def test_preprocess_invalid_tape_adjoint(self, ops, measurement, message):
+    def test_preprocess_invalid_tape_adjoint_legacy_opmath(self, ops, measurement, message):
         """Test that preprocessing fails if adjoint differentiation is requested and an
         invalid tape is used"""
         qs = qml.tape.QuantumScript(ops, measurement)
