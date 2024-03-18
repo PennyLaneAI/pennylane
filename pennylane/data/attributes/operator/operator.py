@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
 from pennylane.operation import Operator, Tensor
+from pennylane.ops.qubit.hamiltonian import Hamiltonian as LegacyHamiltonian
 
 from ._wires import wires_to_json
 
@@ -61,7 +62,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.QubitCarry,
                 qml.QubitSum,
                 # pennylane/ops/qubit/hamiltonian.py
-                qml.Hamiltonian,
+                LegacyHamiltonian,
                 # pennylane/ops/op_math/linear_combination.py
                 qml.ops.LinearCombination,
                 # pennylane/ops/op_math - prod.py, s_prod.py, sum.py
@@ -222,7 +223,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
             if isinstance(op, Tensor):
                 self._ops_to_hdf5(bind, op_key, op.obs)
                 op_wire_labels.append("null")
-            elif isinstance(op, (qml.Hamiltonian, qml.ops.LinearCombination)):
+            elif isinstance(op, (LegacyHamiltonian, qml.ops.LinearCombination)):
                 coeffs, ops = op.terms()
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
@@ -254,7 +255,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         wires_bind = bind["op_wire_labels"]
         op_class_names = [] if names_bind.shape == (0,) else names_bind.asstr()
         op_wire_labels = [] if wires_bind.shape == (0,) else wires_bind.asstr()
-
         with qml.QueuingManager.stop_recording():
             for i, op_class_name in enumerate(op_class_names):
                 op_key = f"op_{i}"
@@ -262,7 +262,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 op_cls = self._supported_ops_dict()[op_class_name]
                 if op_cls is Tensor:
                     ops.append(Tensor(*self._hdf5_to_ops(bind[op_key])))
-                elif op_cls in (qml.Hamiltonian, qml.ops.LinearCombination):
+                elif op_cls in (LegacyHamiltonian, qml.ops.LinearCombination):
                     ops.append(
                         qml.Hamiltonian(
                             coeffs=list(bind[op_key]["hamiltonian_coeffs"]),
