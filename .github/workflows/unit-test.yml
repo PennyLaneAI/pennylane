@@ -133,6 +133,11 @@ jobs:
             || (inputs.pipeline_mode == 'reference-benchmarks'
             && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '${{ inputs.python_version }}'
+
       - name: Setup Python Venv
         if: steps.continue.outputs.confirm == 'true'
         env:
@@ -153,7 +158,6 @@ jobs:
         if: steps.continue.outputs.confirm == 'true'
         uses: ./.github/workflows/install_deps
         with:
-          python_version: ${{ inputs.python_version }}
           install_pytorch: ${{ inputs.install_pytorch }}
           install_tensorflow: ${{ inputs.install_tensorflow }}
           install_jax: ${{ inputs.install_jax }}
