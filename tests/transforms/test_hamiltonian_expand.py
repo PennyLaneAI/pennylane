@@ -51,7 +51,7 @@ with AnnotatedQueue() as q_tape2:
     qml.expval(H2)
 tape2 = QuantumScript.from_queue(q_tape2)
 
-H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
+H3 = qml.Hamiltonian([1.5, 0.3], [qml.Z(0) @ qml.Z(1), qml.X(1)])
 
 with AnnotatedQueue() as q3:
     qml.PauliX(0)
@@ -59,14 +59,18 @@ with AnnotatedQueue() as q3:
 
 
 tape3 = QuantumScript.from_queue(q3)
-H4 = (
-    qml.PauliX(0) @ qml.PauliZ(2)
-    + 3 * qml.PauliZ(2)
-    - 2 * qml.PauliX(0)
-    + qml.PauliZ(2)
-    + qml.PauliZ(2)
-)
-H4 += qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
+
+H4 = qml.Hamiltonian(
+    [1, 3, -2, 1, 1, 1],
+    [
+        qml.PauliX(0) @ qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliX(0),
+        qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2),
+    ],
+).simplify()
 
 with AnnotatedQueue() as q4:
     qml.Hadamard(0)
