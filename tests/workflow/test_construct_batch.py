@@ -372,7 +372,7 @@ class TestConstructBatch:
 
         assert fn((1.0, 2.0)) == ((1.0, 2.0),)
 
-    @pytest.mark.xfail # TODO construct_batch handles new opmath non-commuting ops with shots and parameter shift
+    @pytest.mark.xfail  # TODO construct_batch handles new opmath non-commuting ops with shots and parameter shift
     @pytest.mark.parametrize("level", ("device", None))
     def test_device_transforms_legacy_interface_trainable_params(self, level):
         """Test that the device transforms can be selected with level=device or None."""
