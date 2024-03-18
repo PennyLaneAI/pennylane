@@ -5037,7 +5037,6 @@ class TestKaHyPar:
             == dangling_measure
         )
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_place_wire_cuts(self):
         """Test if ``WireCut`` are correctly placed with the correct order."""
 
@@ -5080,6 +5079,7 @@ class TestKaHyPar:
             qcut.CutStrategy(max_free_wires=2, num_fragments_probed=5),  # impossible to cut
         ],
     )
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_find_and_place_cuts(self, local_measurement, with_manual_cut, cut_strategy):
         """Integration tests for auto cutting pipeline."""
         pytest.importorskip("kahypar")
