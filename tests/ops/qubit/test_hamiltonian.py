@@ -642,6 +642,19 @@ def circuit2(param):
 dev = qml.device("default.qubit", wires=2)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_deprecation_with_new_opmath(recwarn):
+    """Test that a warning is raised if attempting to create a Hamiltonian with new operator
+    arithmetic enabled."""
+    if qml.operation.active_new_opmath():
+        with pytest.warns(UserWarning, match="Using qml.Hamiltonian with new operator arithmetic"):
+            _ = qml.ops.Hamiltonian([1.0], [qml.X(0)])
+
+    else:
+        _ = qml.Hamiltonian([1.0], [qml.X(0)])
+        assert len(recwarn) == 0
+
+
 @pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonian:
     """Test the Hamiltonian class"""

@@ -137,10 +137,6 @@ import pennylane.data
 default_config = Configuration("config.toml")
 
 
-# Enable using qml.Hamiltonian as an alias for qml.ops.LinearCombination
-# pennylane.operation.enable_new_opmath()
-
-
 class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
 
