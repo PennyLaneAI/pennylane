@@ -76,7 +76,7 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = "Measuring expectation values of tensor products, Prod, or Hamiltonians is not yet supported"
+        err_msg = "Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
@@ -93,7 +93,7 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = r"Measuring expectation values of tensor products, Prod, or Hamiltonians is not yet supported"
+        err_msg = r"Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
@@ -109,7 +109,7 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = r"Measuring expectation values of tensor products, Prod, or Hamiltonians is not yet supported"
+        err_msg = r"Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
