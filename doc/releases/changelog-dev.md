@@ -8,6 +8,7 @@
   specified during construction using the `grouping_type` and `method` keyword arguments of
   `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
   [(#5179)](https://github.com/PennyLaneAI/pennylane/pull/5179)
+  [(#5399)](https://github.com/PennyLaneAI/pennylane/pull/5399)
 
   ```python
   import pennylane as qml
