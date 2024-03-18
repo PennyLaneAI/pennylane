@@ -74,20 +74,6 @@ b_rx.add_nodes_from(["b", 1, 0.3])
 b_rx.add_edges_from([(0, 1, ""), (1, 2, ""), (0, 2, "")])
 
 
-def _get_ops(op):
-    if isinstance(op, qml.operation.Tensor):
-        return op.name
-    return [op.name]
-
-
-def decompose_hamiltonian(hamiltonian):
-    coeffs = list(qml.math.toarray(hamiltonian.coeffs))
-    # Terms in the Hamiltonian are ops acting on different wires, so the order shouldn't
-    # matter as long as the correct ops are on the correct wires.
-    wire_ops = [dict((w, c) for w, c in zip(op.wires, _get_ops(op))) for op in hamiltonian.ops]
-    return coeffs, wire_ops
-
-
 def lollipop_graph_rx(mesh_nodes: int, path_nodes: int, to_directed: bool = False):
     if to_directed:
         g = rx.generators.directed_mesh_graph(weights=[*range(mesh_nodes)])
@@ -1937,24 +1923,16 @@ class TestCycles:
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node"""
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
-        h = h.simplify()
         expected_ops = [
             qml.Identity(0),
             qml.PauliZ(1) @ qml.PauliZ(0),
             qml.PauliZ(0),
             qml.PauliZ(1),
         ]
-
         expected_coeffs = [2, 2, -2, -2]
 
-        coeffs, wire_op_map = decompose_hamiltonian(h)
-
-        assert qml.math.allclose(expected_coeffs, coeffs)
-
-        expected_maps = [
-            dict((wire, op) for wire, op in zip(op.wires, _get_ops(op))) for op in expected_ops
-        ]
-        assert wire_op_map == expected_maps
+        expected_hamiltonian = qml.Hamiltonian(expected_coeffs, expected_ops)
+        assert h.compare(expected_hamiltonian)
 
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize(
@@ -1964,20 +1942,16 @@ class TestCycles:
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node"""
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
-
         expected_ops = [
             qml.Identity(0),
-            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(1) @ qml.PauliZ(0),
             qml.PauliZ(0),
             qml.PauliZ(1),
         ]
-
         expected_coeffs = [2, 2, -2, -2]
 
-        assert np.allclose(expected_coeffs, h.coeffs)
-        for i, expected_op in enumerate(expected_ops):
-            assert str(h.ops[i]) == str(expected_op)
-        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
+        expected_hamiltonian = qml.Hamiltonian(expected_coeffs, expected_ops)
+        assert h.compare(expected_hamiltonian)
 
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
     def test_inner_out_flow_constraint_hamiltonian_error(self, g):
