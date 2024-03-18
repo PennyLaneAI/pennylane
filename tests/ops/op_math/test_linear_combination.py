@@ -1528,6 +1528,25 @@ class TestGrouping:
         H3.compute_grouping(method="lf")
         assert H3.grouping_indices == ((2, 1), (0,))
 
+    def test_grouping_with_duplicate_terms(self):
+        """Test that the grouping indices are correct when the LinearCombination has duplicate
+        operators."""
+        a = X(0)
+        b = X(1)
+        c = Z(0)
+        d = X(0)
+        e = Z(0)
+        obs = [a, b, c, d, e]
+        coeffs = [1.0, 2.0, 3.0, 4.0, 5.0]
+
+        # compute grouping during construction
+        H2 = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc")
+
+        assert H2.grouping_indices == ((0, 1, 3), (2, 4))
+        # Following assertions are to check that grouping does not mutate the list of ops/coeffs
+        assert H2.coeffs == coeffs
+        assert H2.ops == obs
+
 
 class TestLinearCombinationEvaluation:
     """Test the usage of a LinearCombination as an observable"""
@@ -1775,7 +1794,7 @@ class TestLinearCombinationDifferentiation:
             qml.RY(param, wires=0)
             return qml.expval(qml.ops.LinearCombination(coeffs, [X(0), Z(0)]))
 
-        grad_fn = jax.grad(circuit, argnums=(1))
+        grad_fn = jax.grad(circuit, argnums=1)
         grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
@@ -1786,7 +1805,7 @@ class TestLinearCombinationDifferentiation:
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
-        grad_fn_expected = jax.grad(combine, argnums=(1))
+        grad_fn_expected = jax.grad(combine, argnums=1)
         grad_expected = grad_fn_expected(coeffs, param)
 
         assert np.allclose(grad, grad_expected)
