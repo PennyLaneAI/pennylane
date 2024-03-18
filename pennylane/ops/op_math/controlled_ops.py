@@ -1039,21 +1039,35 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=too-many-arguments
     def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
-        if wires is None:
-            raise ValueError("Must specify the wires where the operation acts on")
-        wires = wires if isinstance(wires, Wires) else Wires(wires)
+
+        # First raise deprecation warnings regardless of the validity of other arguments
+        if isinstance(control_values, str):
+            warnings.warn(
+                "Specifying control values using a bitstring is deprecated, and will not be "
+                "supported in future releases, Use a list of booleans or integers instead.",
+                qml.PennyLaneDeprecationWarning,
+            )
         if control_wires is not None:
             warnings.warn(
-                "The control_wires keyword will be removed soon. Use wires = (control_wires, "
-                "target_wire) instead. See the documentation for more information.",
+                "The control_wires keyword for MultiControlledX is deprecated, and will "
+                "be removed soon. Use wires = (*control_wires, target_wire) instead.",
                 UserWarning,
             )
+
+        if wires is None:
+            raise ValueError("Must specify the wires where the operation acts on")
+
+        wires = wires if isinstance(wires, Wires) else Wires(wires)
+
+        if control_wires is not None:
             if len(wires) != 1:
                 raise ValueError("MultiControlledX accepts a single target wire.")
+            control_wires = Wires(control_wires)
         else:
             if len(wires) < 2:
                 raise ValueError(
-                    f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. Need at least 2."
+                    f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. "
+                    f"Need at least 2."
                 )
             control_wires = wires[:-1]
             wires = wires[-1:]
