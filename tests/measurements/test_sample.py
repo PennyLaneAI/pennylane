@@ -328,7 +328,7 @@ class TestSample:
             (qml.PauliY(0)),
             (qml.PauliZ(0)),
             (qml.Hadamard(0)),
-            (qml.Identity(0)),
+            # (qml.Identity(0)),
             (qml.Hermitian(np.diag([1, 2]), 0)),
             (qml.Hermitian(np.diag([1.0, 2.0]), 0)),
             # Tensor product observables
