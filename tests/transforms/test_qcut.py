@@ -5362,9 +5362,77 @@ class TestAutoCutCircuit:
         assert cut_res_bs.shape == target.shape
         assert isinstance(cut_res_bs, type(target))
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("measure_all_wires", [False, True])
     def test_cut_mps(self, measure_all_wires):
         """Test auto cut this circuit:
+        0: ─╭C──RY───────────────────────────────────────────┤ ╭<Z@Z@Z@Z@Z@Z@Z@Z>
+        1: ─╰X──RY─╭C──RY────────────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        2: ────────╰X──RY─╭C──RY─────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        3: ───────────────╰X──RY─╭C──RY──────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        4: ──────────────────────╰X──RY─╭C──RY───────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        5: ─────────────────────────────╰X──RY─╭C──RY────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        6: ────────────────────────────────────╰X──RY─╭C──RY─┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        7: ───────────────────────────────────────────╰X──RY─┤ ╰<Z@Z@Z@Z@Z@Z@Z@Z>
+
+        into this:
+
+        0: ─╭C──RY───────────────────────────────────────────────────────────────────┤ ╭<Z@Z@Z@Z@Z@Z@Z@Z>
+        1: ─╰X──RY──//─╭C──RY────────────────────────────────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        2: ────────────╰X──RY──//─╭C──RY─────────────────────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        3: ───────────────────────╰X──RY──//─╭C──RY──────────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        4: ──────────────────────────────────╰X──RY──//─╭C──RY───────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        5: ─────────────────────────────────────────────╰X──RY──//─╭C──RY────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        6: ────────────────────────────────────────────────────────╰X──RY──//─╭C──RY─┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        7: ───────────────────────────────────────────────────────────────────╰X──RY─┤ ╰<Z@Z@Z@Z@Z@Z@Z@Z>
+        """
+
+        pytest.importorskip("kahypar")
+
+        def block(weights, wires):
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RY(weights[0], wires=wires[0])
+            qml.RY(weights[1], wires=wires[1])
+
+        n_wires = 8
+        n_block_wires = 2
+        n_params_block = 2
+        n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
+        template_weights = [[0.1, -0.3]] * n_blocks
+
+        device_size = 2
+        cut_strategy = qml.qcut.CutStrategy(max_free_wires=device_size)
+
+        with qml.queuing.AnnotatedQueue() as q0:
+            qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+            if measure_all_wires:
+                qml.expval(qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires)))
+            else:
+                qml.expval(qml.PauliZ(wires=n_wires - 1))
+
+        tape0 = qml.tape.QuantumScript.from_queue(q0)
+        tape = tape0.expand()
+        graph = qcut.tape_to_graph(tape)
+        cut_graph = qcut.find_and_place_cuts(
+            graph=graph,
+            cut_strategy=cut_strategy,
+            replace_wire_cuts=True,
+        )
+        frags, _ = qcut.fragment_graph(cut_graph)
+        assert len(frags) == 7
+
+        if measure_all_wires:
+            lower, upper = 5, 6
+        else:
+            lower, upper = 4, 5
+        assert all(lower <= f.order() <= upper for f in frags)
+
+        # each frag should have the device size constraint satisfied.
+        assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+
+    @pytest.mark.parametrize("measure_all_wires", [False, True])
+    def test_cut_mps_opmath(self, measure_all_wires):
+        """Test auto cut this circuit with opmath enabled:
         0: ─╭C──RY───────────────────────────────────────────┤ ╭<Z@Z@Z@Z@Z@Z@Z@Z>
         1: ─╰X──RY─╭C──RY────────────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
         2: ────────╰X──RY─╭C──RY─────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
