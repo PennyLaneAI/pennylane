@@ -18,29 +18,96 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.qutrit_mixed.utils import get_eigvals, expand_qutrit_vector
 
+w = np.exp(2j * np.pi / 3)
 
-@pytest.mark.parametrize(
-    "observable, expected_eigvals",
-    [
-        (qml.GellMann(0, 8), (1 / 3, -np.sqrt(2) / 3)),
-        (qml.s_prod(3, qml.GellMann(0, 8)), (1, -np.sqrt(2))),
-        (
-            qml.prod(qml.GellMann(0, 8), qml.GellMann(1, 1)),
-            (0, 1 / 3, -np.sqrt(2) / 3, np.sqrt(2) / 3, 2 / 9),
-        ),
-        (
-            qml.prod(qml.GellMann(0, 8), qml.GellMann(0, 1), qml.THadamard(1), qml.GellMann(0, 3)),
-            (0, 1 / 3, -np.sqrt(2) / 3, np.sqrt(2) / 3, 2 / 9),
-        ),
-        (
-            qml.s_prod(3, qml.prod(qml.GellMann(0, 8), qml.GellMann(1, 1))),
-            (0, 1, -np.sqrt(2), np.sqrt(2), 2 / 3),
-        ),
-    ],
-)
-def get_obs_eigvals(observable, expected_eigvals):
-    get_eigvals(observable)
-    assert np.allclose(observable, expected_eigvals)
+
+class TestGetEigvals:
+    @pytest.mark.parametrize(
+        "observable, expected_eigvals",
+        [
+            (qml.GellMann(0, 8), np.array((1, 1, -2)) / np.sqrt(3)),
+            (qml.s_prod(np.sqrt(3), qml.GellMann(0, 8)), np.array((1, 1, -2))),
+            (
+                qml.prod(qml.GellMann(0, 8), qml.GellMann(1, 1)),
+                np.array((1, -1, 0, 1, -1, 0, -2, 2, 0)) / np.sqrt(3),
+            ),
+            (
+                qml.prod(
+                    qml.GellMann(0, 8), qml.GellMann(0, 1), qml.THadamard(1), qml.GellMann(1, 3)
+                ),
+                np.kron(
+                    np.array([1, -1, 0]),
+                    np.array(
+                        [
+                            0,
+                            1 - w - np.sqrt(w**2 + 2 * w - 3),
+                            1 - w + np.sqrt(w**2 + 2 * w - 3),
+                        ]
+                    ),
+                )
+                * -1j
+                / 6,
+            ),
+            (
+                qml.s_prod(np.sqrt(3), qml.prod(qml.GellMann(0, 1), qml.GellMann(1, 8))),
+                np.array((1, 1, -2, -1, -1, 2, 0, 0, 0)),
+            ),
+        ],
+    )
+    def test_get_obs_eigvals(self, observable, expected_eigvals):
+        """Tests get_eigvals gets correct eigenvalues for observables, especially prod and s_prod"""
+        eigvals = get_eigvals(observable)
+        assert np.allclose(eigvals, expected_eigvals)
+
+    s = 2.34
+    expected_g = np.array((1, -1, 0, 1, -1, 0, -2, 2, 0)) / np.sqrt(3)
+
+    @staticmethod
+    def f(s):
+        obs = qml.s_prod(s, qml.prod(qml.GellMann(0, 8), qml.GellMann(1, 1)))
+        return get_eigvals(obs)
+
+    def test_s_prod_eigval_dif_autograd(self):
+        """Test that s_prod scalar gradients work in autograd"""
+        s = qml.numpy.array(self.s)
+
+        g = qml.jacobian(self.f)(s)
+        assert qml.math.allclose(g, self.expected_g)
+
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_s_prod_eigval_dif_jax(self, use_jit):
+        """Test that s_prod scalar gradients work in jax"""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        s = jax.numpy.array(self.s, dtype=jax.numpy.float64)
+        f = jax.jit(self.f) if use_jit else self.f
+
+        g = jax.jacobian(f)(s)
+        assert qml.math.allclose(g, self.expected_g)
+
+    def test_s_prod_eigval_dif_torch(self):
+        """Test that s_prod scalar gradients work in torch"""
+        import torch
+
+        s = torch.tensor(self.s, requires_grad=True, dtype=torch.float64)
+        g = torch.autograd.functional.jacobian(self.f, s)
+
+        assert qml.math.allclose(g.detach().numpy(), self.expected_g)
+
+    @pytest.mark.tf
+    def test_s_prod_eigval_dif_tf(self):
+        """Test that s_prod scalar gradients work in tensorflow"""
+        import tensorflow as tf
+
+        s = tf.Variable(self.s)
+
+        with tf.GradientTape() as tape:
+            out = self.f(s)
+        g = tape.jacobian(out, s)
+
+        assert qml.math.allclose(g, self.expected_g)
 
 
 class TestExpandQutritVector:
