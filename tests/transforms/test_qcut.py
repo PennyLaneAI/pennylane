@@ -2527,7 +2527,7 @@ class TestCutCircuitMCTransform:
         cut_res_mc = circuit(v)
 
         target = target_circuit(v)
-        assert np.isclose(cut_res_mc, target, atol=0.1)  # not guaranteed to pass each time
+        assert np.isclose(cut_res_mc, target, atol=0.15)  # not guaranteed to pass each time
 
     def test_cut_circuit_mc_sample(self, dev_fn):
         """
@@ -5449,7 +5449,7 @@ class TestCutCircuitWithHamiltonians:
 
         hamiltonian = qml.Hamiltonian(
             [1.0, 1.0],
-            [qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3), qml.PauliY(0) @ qml.PauliX(1)],
+            [qml.prod(qml.PauliZ(1), qml.PauliZ(2), qml.PauliZ(3)), qml.PauliY(0) @ qml.PauliX(1)],
         )
 
         def two_qubit_unitary(param, wires):

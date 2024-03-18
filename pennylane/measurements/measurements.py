@@ -419,9 +419,6 @@ class MeasurementProcess(ABC):
         if self.obs is None:
             raise qml.operation.DecompositionUndefinedError
 
-        if isinstance(self.obs, qml.ops.op_math.Prod):
-            self.obs = self.obs.terms()[1][0]
-
         with qml.queuing.AnnotatedQueue() as q:
             self.obs.diagonalizing_gates()
             self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
