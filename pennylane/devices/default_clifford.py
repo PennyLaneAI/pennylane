@@ -1018,8 +1018,10 @@ class DefaultClifford(Device):
         """Sample a single qubit Pauli measurement from a stim circuit"""
         stim_sm = stim.TableauSimulator()
         stim_sm.do_circuit(stim_ct)
+        res = [0] * meas_idx + meas_ops + [0] * (meas_wire - meas_idx - 1)
+        res = [int(r) for r in res]
         return stim_sm.measure_observable(
-            stim.PauliString([0] * meas_idx + meas_ops + [0] * (meas_wire - meas_idx - 1))
+            stim.PauliString(res)
         )
 
     def _sample_classical_shadow(self, meas, stim_circuit, shots, seed):
