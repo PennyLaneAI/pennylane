@@ -134,7 +134,9 @@ with qml.operation.disable_new_opmath_cm():
 
     simplify_hamiltonians = [
         (
-            qml.Hamiltonian([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
+            qml.Hamiltonian(
+                [1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]
+            ),
             qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliX(1)]),
         ),
         (
@@ -161,7 +163,10 @@ with qml.operation.disable_new_opmath_cm():
             ),
             qml.Hamiltonian(
                 [1, 1.5],
-                [qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"), qml.PauliX("b") @ qml.PauliY(1.3)],
+                [
+                    qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"),
+                    qml.PauliX("b") @ qml.PauliY(1.3),
+                ],
             ),
         ),
         # Simplifies to zero Hamiltonian
@@ -191,8 +196,12 @@ with qml.operation.disable_new_opmath_cm():
             True,
         ),
         (
-            qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]),
-            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]),
+            qml.Hamiltonian(
+                [1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]
+            ),
+            qml.Hamiltonian(
+                [1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]
+            ),
             True,
         ),
         (
@@ -202,7 +211,11 @@ with qml.operation.disable_new_opmath_cm():
             qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
             False,
         ),
-        (qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]), qml.PauliZ(0) @ qml.PauliX(1), True),
+        (
+            qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]),
+            qml.PauliZ(0) @ qml.PauliX(1),
+            True,
+        ),
         (qml.Hamiltonian([1], [qml.PauliZ(0)]), qml.PauliZ(0), True),
         (
             qml.Hamiltonian(
@@ -248,8 +261,12 @@ with qml.operation.disable_new_opmath_cm():
         ),
         (
             qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-            qml.Hamiltonian([1.5, 1.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+            qml.Hamiltonian(
+                [0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+            ),
+            qml.Hamiltonian(
+                [1.5, 1.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+            ),
         ),
         (
             qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -338,8 +355,12 @@ with qml.operation.disable_new_opmath_cm():
         ),
         (
             qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+            qml.Hamiltonian(
+                [0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+            ),
+            qml.Hamiltonian(
+                [0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+            ),
         ),
         (
             qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -466,7 +487,9 @@ with qml.operation.disable_new_opmath_cm():
             ),
         ),
         (
-            qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+            qml.Hamiltonian(
+                [1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+            ),
             qml.Hamiltonian([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
             qml.Hamiltonian(
                 [2, 2, 2, 2],
@@ -530,7 +553,9 @@ with qml.operation.disable_new_opmath_cm():
         ),
         (
             qml.Hamiltonian([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
-            qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+            qml.Hamiltonian(
+                [1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]
+            ),
             qml.Hamiltonian(
                 [2, 2, 2, 2],
                 [
@@ -591,10 +616,22 @@ with qml.operation.disable_new_opmath_cm():
         qml.PauliZ(wires=[2]),
         qml.PauliZ(wires=[3]),
         qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-        qml.PauliY(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliY(wires=[3]),
-        qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliX(wires=[3]),
-        qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliY(wires=[3]),
-        qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliX(wires=[3]),
+        qml.PauliY(wires=[0])
+        @ qml.PauliX(wires=[1])
+        @ qml.PauliX(wires=[2])
+        @ qml.PauliY(wires=[3]),
+        qml.PauliY(wires=[0])
+        @ qml.PauliY(wires=[1])
+        @ qml.PauliX(wires=[2])
+        @ qml.PauliX(wires=[3]),
+        qml.PauliX(wires=[0])
+        @ qml.PauliX(wires=[1])
+        @ qml.PauliY(wires=[2])
+        @ qml.PauliY(wires=[3]),
+        qml.PauliX(wires=[0])
+        @ qml.PauliY(wires=[1])
+        @ qml.PauliY(wires=[2])
+        @ qml.PauliX(wires=[3]),
         qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
         qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
         qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
@@ -1297,126 +1334,127 @@ class TestHamiltonianArithmeticAutograd:
 
 with qml.operation.disable_new_opmath_cm():
     TEST_SPARSE_MATRIX = [
-            (
-                [1, -0.45],
-                [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)],
-                None,
-                np.array(
-                    [
-                        [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j],
-                        [0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.45j],
-                        [0.0 - 0.45j, 0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j],
-                        [0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j, 1.0 + 0.0j],
-                    ]
-                ),
-            ),
-            (
-                [0.1],
-                [qml.PauliZ("b") @ qml.PauliX("a")],
-                ["a", "c", "b"],
-                np.array(
-                    [
-                        [
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.1 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                        ],
-                        [
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            -0.1 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                        ],
-                        [
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.1 + 0.0j,
-                            0.0 + 0.0j,
-                        ],
-                        [
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            -0.1 + 0.0j,
-                        ],
-                        [
-                            0.1 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                        ],
-                        [
-                            0.0 + 0.0j,
-                            -0.1 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                        ],
-                        [
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.1 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                        ],
-                        [
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            -0.1 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                            0.0 + 0.0j,
-                        ],
-                    ]
-                ),
-            ),
-            (
-                [0.21, -0.78, 0.52],
+        (
+            [1, -0.45],
+            [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)],
+            None,
+            np.array(
                 [
-                    qml.PauliZ(0) @ qml.PauliZ(1),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliY(0) @ qml.PauliZ(1),
-                ],
-                None,
-                np.array(
-                    [
-                        [0.21 + 0.0j, 0.0 + 0.0j, -0.78 - 0.52j, 0.0 + 0.0j],
-                        [0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j, 0.78 + 0.52j],
-                        [-0.78 + 0.52j, 0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j],
-                        [0.0 + 0.0j, 0.78 - 0.52j, 0.0 + 0.0j, 0.21 + 0.0j],
-                    ]
-                ),
+                    [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.45j],
+                    [0.0 - 0.45j, 0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j, 1.0 + 0.0j],
+                ]
             ),
-        ]
+        ),
+        (
+            [0.1],
+            [qml.PauliZ("b") @ qml.PauliX("a")],
+            ["a", "c", "b"],
+            np.array(
+                [
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.1 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ],
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.1 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ],
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.1 + 0.0j,
+                        0.0 + 0.0j,
+                    ],
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.1 + 0.0j,
+                    ],
+                    [
+                        0.1 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ],
+                    [
+                        0.0 + 0.0j,
+                        -0.1 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ],
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.1 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ],
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.1 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ],
+                ]
+            ),
+        ),
+        (
+            [0.21, -0.78, 0.52],
+            [
+                qml.PauliZ(0) @ qml.PauliZ(1),
+                qml.PauliX(0) @ qml.PauliZ(1),
+                qml.PauliY(0) @ qml.PauliZ(1),
+            ],
+            None,
+            np.array(
+                [
+                    [0.21 + 0.0j, 0.0 + 0.0j, -0.78 - 0.52j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j, 0.78 + 0.52j],
+                    [-0.78 + 0.52j, 0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.78 - 0.52j, 0.0 + 0.0j, 0.21 + 0.0j],
+                ]
+            ),
+        ),
+    ]
+
 
 @pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianSparseMatrix:
@@ -2101,4 +2139,3 @@ class TestHamiltonianDifferentiation:
             match="does not support adjoint with requested circuit.",
         ):
             grad_fn(coeffs, param)
-
