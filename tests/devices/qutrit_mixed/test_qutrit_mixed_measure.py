@@ -511,9 +511,7 @@ class TestSumOfTermsDifferentiability:
             torch.tensor(6.2, requires_grad=False, dtype=torch.float64),
         ]
 
-        x = torch.tensor(
-            -0.289, requires_grad=True, dtype=torch.float64
-        )  # TODO what should I make these values
+        x = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
         x2 = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
         out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x2, coeffs, like="torch")
