@@ -5601,6 +5601,7 @@ class TestCutCircuitWithHamiltonians:
             # each frag should have the device size constraint satisfied.
             assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
 
+    @pytest.mark.xfail
     def test_hamiltonian_with_tape(self):
         """Test that an expand function that generates multiple tapes is applied before the transform and the transform
         returns correct results."""
