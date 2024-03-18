@@ -34,7 +34,7 @@ def _diagonal_terms(hamiltonian):
         if isinstance(i, Tensor):
             obs = i.obs
         elif isinstance(i, qml.ops.Prod):
-            obs = list(i)
+            obs = i.operands
         else:
             obs = [i]
         for j in obs:

@@ -630,11 +630,6 @@ class Hamiltonian(Observable):
             other.simplify()
             return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
 
-        if isinstance(other, qml.ops.LinearCombination):
-            self.simplify()
-            other = other.simplify()
-            return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
-
         if isinstance(other, (Tensor, Observable)):
             self.simplify()
             return self._obs_data() == {
