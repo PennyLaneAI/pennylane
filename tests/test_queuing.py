@@ -26,6 +26,7 @@ from pennylane.queuing import (
     WrappedObj,
 )
 
+
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
 class TestStopRecording:
     """Test the stop_recording method of QueuingManager."""
