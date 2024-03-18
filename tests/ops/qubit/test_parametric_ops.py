@@ -129,7 +129,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     qml.PauliX(wires=0),
     qml.PauliZ(wires=0),
     qml.PauliY(wires=0),
-    qml.MultiControlledX(wires=[0, 1, 2], control_values="01"),
+    qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1]),
     qml.QubitSum(wires=[0, 1, 2]),
 ]
 
