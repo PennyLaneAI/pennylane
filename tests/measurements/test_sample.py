@@ -506,3 +506,37 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
     assert (
         circuit._qfunc_output.shape(dev, Shots(samples)) == (samples, 2) if samples != 1 else (2,)
     )
+
+
+class TestSampleProcessCounts:
+    """Tests for the process_counts method in the SampleMP class."""
+
+    def test_process_counts_multiple_wires(self):
+        """Test process_counts method with multiple wires."""
+        sample_mp = qml.sample(wires=[0, 1])
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([[0, 0], [0, 0], [1, 0], [1, 0], [1, 0]]))
+
+    def test_process_counts_single_wire(self):
+        """Test process_counts method with a single wire."""
+        sample_mp = qml.sample(wires=[0])
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([0, 0, 1, 1, 1]))
+
+    def test_process_counts_with_eigen_values(self):
+        """Test process_counts method with eigen values."""
+        sample_mp = qml.sample(qml.Z(0))
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([1, 1, -1, -1, -1]))
