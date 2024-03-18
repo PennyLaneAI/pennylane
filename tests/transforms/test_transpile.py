@@ -99,7 +99,7 @@ class TestTranspile:
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
-    def test_transpile_raise_not_implemented_tensorproduct_mmt_opmath(self):
+    def test_transpile_raise_not_implemented_prod_mmt(self):
         """test that error is raised when measurement is expectation of a Prod"""
         dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
 
