@@ -5079,7 +5079,6 @@ class TestKaHyPar:
             qcut.CutStrategy(max_free_wires=2, num_fragments_probed=5),  # impossible to cut
         ],
     )
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_find_and_place_cuts(self, local_measurement, with_manual_cut, cut_strategy):
         """Integration tests for auto cutting pipeline."""
         pytest.importorskip("kahypar")
@@ -5098,7 +5097,9 @@ class TestKaHyPar:
             qml.CNOT(wires=["a", "b"])
             qml.RX(0.5, wires="a")
             qml.RY(0.6, wires="b")
-            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+            qml.expval(
+                qml.prod(qml.PauliX(wires=[0]), qml.PauliY(wires=["a"]), qml.PauliZ(wires=["b"]))
+            )
 
         tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
@@ -5573,7 +5574,10 @@ class TestCutCircuitWithHamiltonians:
 
         hamiltonian = qml.Hamiltonian(
             [1.0, 1.0],
-            [qml.PauliZ(1) @ qml.PauliZ(8) @ qml.PauliZ(3), qml.PauliY(5) @ qml.PauliX(4)],
+            [
+                qml.prod(qml.PauliZ(1), qml.PauliZ(8), qml.PauliZ(3)),
+                qml.prod(qml.PauliY(5), qml.PauliX(4)),
+            ],
         )
 
         with qml.queuing.AnnotatedQueue() as q0:
