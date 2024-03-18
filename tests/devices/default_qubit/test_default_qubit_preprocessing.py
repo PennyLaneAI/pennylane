@@ -815,7 +815,7 @@ class TestAdjointDiffTapeValidation:
     @pytest.mark.usefixtures(
         "use_legacy_opmath"
     )  # this is only an issue for legacy Hamiltonian that does not define a matrix method
-    def test_unsupported_obs(self):
+    def test_unsupported_obs_legacy_opmath(self):
         """Test that the correct error is raised if a Hamiltonian measurement is differentiated"""
         obs = qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)])
         qs = qml.tape.QuantumScript([qml.RX(0.5, wires=1)], [qml.expval(obs)])
