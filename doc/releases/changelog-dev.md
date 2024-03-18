@@ -153,6 +153,7 @@
   [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
 
 * `Prod.eigvals()` is now compatible with Qudit operators.
+  [(#5400)](https://github.com/PennyLaneAI/pennylane/pull/5400)
 
 <h4>Community contributions 🥳</h4>
 
