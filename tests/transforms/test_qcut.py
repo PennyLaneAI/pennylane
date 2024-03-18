@@ -5037,6 +5037,7 @@ class TestKaHyPar:
             == dangling_measure
         )
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_place_wire_cuts(self):
         """Test if ``WireCut`` are correctly placed with the correct order."""
 
