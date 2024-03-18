@@ -5405,7 +5405,18 @@ class TestAutoCutCircuit:
         with qml.queuing.AnnotatedQueue() as q0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             if measure_all_wires:
-                qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires).terms()[1][0])
+                qml.expval(
+                    qml.prod(
+                        qml.Z(0),
+                        qml.Z(1),
+                        qml.Z(2),
+                        qml.Z(3),
+                        qml.Z(4),
+                        qml.Z(5),
+                        qml.Z(6),
+                        qml.Z(7),
+                    )
+                )
             else:
                 qml.expval(qml.PauliZ(wires=n_wires - 1))
 
