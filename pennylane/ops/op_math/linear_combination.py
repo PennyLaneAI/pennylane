@@ -24,7 +24,6 @@ from typing import List
 import pennylane as qml
 from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
 
-from .composite import CompositeOp
 from .sum import Sum
 
 
