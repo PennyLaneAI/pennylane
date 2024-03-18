@@ -347,9 +347,34 @@ class TestConstructBatch:
 
         assert fn((1.0, 2.0)) == (3.0,)
 
-    @pytest.mark.xfail
+    def test_device_transforms_legacy_interface(self):
+        """Test that the device transforms can be selected with level=device or None."""
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("default.qubit.legacy", wires=2, shots=50))
+        def circuit(order):
+            qml.Permute(order, wires=(0, 1, 2))
+            qml.X(0)
+            qml.X(0)
+            return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
+
+        batch, fn = qml.workflow.construct_batch(circuit, level=None)((2, 1, 0))
+
+        expected0 = qml.tape.QuantumScript(
+            [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
+        )
+        assert qml.equal(expected0, batch[0])
+        expected1 = qml.tape.QuantumScript(
+            [qml.SWAP((0, 2))], [qml.expval(qml.PauliY(0))], shots=50
+        )
+        assert qml.equal(expected1, batch[1])
+        assert len(batch) == 2
+
+        assert fn((1.0, 2.0)) == ((1.0, 2.0),)
+
+    @pytest.mark.xfail # TODO construct_batch handles new opmath non-commuting ops with shots and parameter shift
     @pytest.mark.parametrize("level", ("device", None))
-    def test_device_transforms_legacy_interface(self, level):
+    def test_device_transforms_legacy_interface_trainable_params(self, level):
         """Test that the device transforms can be selected with level=device or None."""
 
         @qml.transforms.merge_rotations
