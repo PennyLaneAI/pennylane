@@ -5627,10 +5627,81 @@ class TestAutoCutCircuit:
 class TestCutCircuitWithHamiltonians:
     """Integration tests for `cut_circuit` transform with Hamiltonians."""
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_circuit_with_hamiltonian(self, mocker):
         """
         Tests that the full automatic circuit cutting pipeline returns the correct value and
         gradient for a complex circuit with multiple wire cut scenarios. The circuit is the
+        uncut version of the circuit in ``TestCutCircuitTransform.test_complicated_circuit``.
+
+        0: ──BasisState(M0)─╭C───RX─╭C──╭C────────────────────┤
+        1: ─────────────────╰X──────╰X──╰Z────────────────╭RX─┤ ╭<H>
+        2: ──H──────────────╭C─────────────╭RY────────╭RY─│───┤ ├<H>
+        3: ─────────────────╰RY──H──╭C───H─╰C──╭RY──H─╰C──│───┤ ╰<H>
+        4: ─────────────────────────╰RY──H─────╰C─────────╰C──┤
+        """
+
+        dev_original = qml.device("default.qubit", wires=5)
+        dev_cut = qml.device("default.qubit", wires=4)
+
+        hamiltonian = qml.Hamiltonian(
+            [1.0, 1.0],
+            [qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3), qml.PauliY(0) @ qml.PauliX(1)],
+        )
+
+        def two_qubit_unitary(param, wires):
+            qml.Hadamard(wires=[wires[0]])
+            qml.CRY(param, wires=[wires[0], wires[1]])
+
+        def f(params):
+            qml.BasisState(np.array([1]), wires=[0])
+            qml.WireCut(wires=0)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=0)
+            qml.RX(params[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+
+            qml.WireCut(wires=0)
+            qml.WireCut(wires=1)
+
+            qml.CZ(wires=[0, 1])
+            qml.WireCut(wires=[0, 1])
+
+            two_qubit_unitary(params[1], wires=[2, 3])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(params[2] ** 2, wires=[3, 4])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(np.sin(params[3]), wires=[3, 2])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(np.sqrt(params[4]), wires=[4, 3])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(np.cos(params[1]), wires=[3, 2])
+            qml.CRX(params[2], wires=[4, 1])
+
+            return qml.expval(hamiltonian)
+
+        params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
+
+        circuit = qml.QNode(f, dev_original)
+        cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut))
+
+        res_expected = circuit(params)
+        grad_expected = qml.grad(circuit)(params)
+
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
+        res = cut_circuit(params)
+        assert spy.call_count == len(hamiltonian.ops)
+
+        grad = qml.grad(cut_circuit)(params)
+
+        assert np.isclose(res, res_expected)
+        assert np.allclose(grad, grad_expected)
+
+    def test_circuit_with_hamiltonian_opmath(self, mocker):
+        """
+        Tests that the full automatic circuit cutting pipeline returns the correct value and
+        gradient for a complex circuit with multiple wire cut scenarios with opmath enabled. The circuit is the
         uncut version of the circuit in ``TestCutCircuitTransform.test_complicated_circuit``.
 
         0: ──BasisState(M0)─╭C───RX─╭C──╭C────────────────────┤
