@@ -534,7 +534,7 @@ class TestMaxLength:
 
 single_op_tests_data = [
     (
-        qml.MultiControlledX(wires=[0, 1, 2, 3], control_values="010"),
+        qml.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0]),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  ",
     ),
     (
