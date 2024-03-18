@@ -5067,6 +5067,7 @@ class TestKaHyPar:
             range(len(graph.nodes) + len(cut_edges))
         )
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("local_measurement", [False, True])
     @pytest.mark.parametrize("with_manual_cut", [False, True])
     @pytest.mark.parametrize(
@@ -5081,6 +5082,120 @@ class TestKaHyPar:
     )
     def test_find_and_place_cuts(self, local_measurement, with_manual_cut, cut_strategy):
         """Integration tests for auto cutting pipeline."""
+        pytest.importorskip("kahypar")
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(0.1, wires=0)
+            qml.RY(0.2, wires=1)
+            qml.RX(0.3, wires="a")
+            qml.RY(0.4, wires="b")
+            qml.CNOT(wires=[0, 1])
+            if with_manual_cut:
+                qml.WireCut(wires=1)
+            qml.CNOT(wires=["a", "b"])
+            qml.CNOT(wires=[1, "a"])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=["a", "b"])
+            qml.RX(0.5, wires="a")
+            qml.RY(0.6, wires="b")
+            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        graph = qcut.tape_to_graph(tape)
+
+        if cut_strategy is None:
+            expected_num_cut_edges = 2
+            num_frags = 2
+            cut_graph = qcut.find_and_place_cuts(
+                graph=graph,
+                num_fragments=num_frags,
+                imbalance=0.5,
+                replace_wire_cuts=True,
+                seed=self.seed,
+                local_measurement=local_measurement,
+            )
+
+        elif cut_strategy.num_fragments_probed:
+            with pytest.raises(ValueError):
+                cut_graph = qcut.find_and_place_cuts(
+                    graph=graph,
+                    cut_strategy=cut_strategy,
+                    local_measurement=local_measurement,
+                )
+            return
+
+        else:
+            cut_graph = qcut.find_and_place_cuts(
+                graph=graph,
+                cut_strategy=cut_strategy,
+                replace_wire_cuts=True,
+                seed=self.seed,
+                local_measurement=local_measurement,
+            )
+
+            if cut_strategy.max_free_wires > 2:
+                expected_num_cut_edges = 2
+                num_frags = 2
+            else:
+                # There's some inherent randomness in Kahypar that's not fixable by seed.
+                # Need to make this condition a bit relaxed for the extreme case.
+                expected_num_cut_edges = [10, 11, 14, 15]
+                num_frags = [9, 10, 13, 14]
+
+        frags, comm_graph = qcut.fragment_graph(cut_graph)
+
+        if num_frags == 2:
+            assert len(frags) == num_frags
+            assert len(comm_graph.edges) == expected_num_cut_edges
+
+            assert (
+                len([n for n in cut_graph.nodes if isinstance(n.obj, qcut.MeasureNode)])
+                == expected_num_cut_edges
+            )
+            assert (
+                len([n for n in cut_graph.nodes if isinstance(n.obj, qcut.PrepareNode)])
+                == expected_num_cut_edges
+            )
+
+            # Cutting wire "a" is more balanced, thus will be cut if there's no manually placed cut on
+            # wire 1:
+            expected_cut_wire = 1 if with_manual_cut else "a"
+            assert all(
+                list(n.obj.wires) == [expected_cut_wire]
+                for n in cut_graph.nodes
+                if isinstance(n.obj, (qcut.MeasureNode, qcut.PrepareNode))
+            )
+
+            expected_fragment_sizes = [7, 11] if with_manual_cut else [8, 10]
+            assert expected_fragment_sizes == [f.number_of_nodes() for f in frags]
+
+        else:
+            assert len(frags) in num_frags
+            assert len(comm_graph.edges) in expected_num_cut_edges
+
+            assert (
+                len([n for n in cut_graph.nodes if isinstance(n.obj, qcut.MeasureNode)])
+                in expected_num_cut_edges
+            )
+            assert (
+                len([n for n in cut_graph.nodes if isinstance(n.obj, qcut.PrepareNode)])
+                in expected_num_cut_edges
+            )
+
+    @pytest.mark.parametrize("local_measurement", [False, True])
+    @pytest.mark.parametrize("with_manual_cut", [False, True])
+    @pytest.mark.parametrize(
+        "cut_strategy",
+        [
+            None,
+            qcut.CutStrategy(qml.device("default.qubit", wires=3)),
+            qcut.CutStrategy(max_free_wires=4),
+            qcut.CutStrategy(max_free_wires=2),  # extreme constraint forcing exhaustive probing.
+            qcut.CutStrategy(max_free_wires=2, num_fragments_probed=5),  # impossible to cut
+        ],
+    )
+    def test_find_and_place_cuts_opmath(self, local_measurement, with_manual_cut, cut_strategy):
+        """Integration tests for auto cutting pipeline with opmath enabled."""
         pytest.importorskip("kahypar")
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -5406,7 +5521,7 @@ class TestAutoCutCircuit:
         with qml.queuing.AnnotatedQueue() as q0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             if measure_all_wires:
-                qml.expval(qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires)))
+                qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires))
             else:
                 qml.expval(qml.PauliZ(wires=n_wires - 1))
 
