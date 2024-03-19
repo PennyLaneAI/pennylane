@@ -255,7 +255,7 @@ def test_meas_samples(circuit, shots):
 
 
 @pytest.mark.parametrize("tableau", [True, False])
-@pytest.mark.parametrize("shots", [None, 8192])
+@pytest.mark.parametrize("shots", [None, 50000])
 @pytest.mark.parametrize(
     "ops",
     [
