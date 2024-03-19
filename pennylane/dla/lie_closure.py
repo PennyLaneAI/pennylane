@@ -48,7 +48,7 @@ def lie_closure(
     Returns:
         list[`~.PauliSentence`]: a basis of ``PauliSentence`` instances that is closed under
         commutators (Lie closure).
-    
+
     **Example**
 
     Let us walk through a simple example of computing the Lie closure of the generators of the transverse field Ising model on two qubits.
