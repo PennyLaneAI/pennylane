@@ -21,7 +21,7 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 from .fermionic import FermiSentence, FermiWord
-
+import numpy as np
 
 # pylint: disable=unexpected-keyword-arg
 def jordan_wigner(
@@ -301,47 +301,255 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
     return qubit_operator
 
 
-def update_set(j, n):
-    indices = np.array([])
 
-    if n % 2 == 0:
-        if j < n / 2:
-            indices = np.append(indices, np.append(n - 1, update_set(j, n / 2)))
-        else:
-            indices = np.append(indices, update_set(j - n / 2, n / 2) + n / 2)
+def bravyi_kitaev(
+    fermi_operator: Union[FermiWord, FermiSentence],
+    n: int,
+    ps: bool = False,
+    wire_map: dict = None,
+    tol: float = None,
+) -> Union[Operator, PauliSentence]:
+    r"""Convert a fermionic operator to a qubit operator using the Bravyi-Kitaev mapping.
+    
+    .. note::
 
-    return indices
+        Hamiltonians created with this mapping should be used with operators and states that are
+        compatible with the Bravyi-Kitaev basis.
+
+    In Bravyi-Kitaev mapping, both occupation number and parity of the orbitals is stored non-locally.
+    In comparison, :func:`~.jordan_wigner` stores the occupation number locally while saving the parity non-locally and vice-versa for :func:`~.parity_transform`.
+
+    In Bravyi-Kitaev mapping, the fermionic creation and annihilation operators for even labelled orbitals are mapped to the Pauli operators as
+
+    .. math::
+
+        \begin{align*}
+           a^{\dagger}_0 &= \frac{1}{2} \left ( X_0  -iY_{0} \right ), \\\\
+           a^{\dagger}_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} -iX_{U(n)} \otimes Y_{n} \otimes Z_{P(n)}\right ), \\\\
+        \end{align*}
+
+    and
+
+    .. math::
+        \begin{align*}
+           a_0 &= \frac{1}{2} \left ( X_0  + iY_{0} \right ), \\\\
+           a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{P(n)}\right ), \\\\
+        \end{align*}
 
 
-def parity_set(j, n):
-    indices = np.array([])
-    if n % 2 == 0:
-        if j < n / 2:
-            indices = np.append(indices, parity_set(j, n / 2))
+    and the fermionic creation and annihilation operators for odd labelled orbitals are mapped to the Pauli operators as
 
-        else:
-            indices = np.append(indices, np.append(parity_set(j - n / 2, n / 2) + n / 2, n / 2 - 1))
+    .. math::
 
-    return indices
+        \begin{align*}
+           a^{\dagger}_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} -iX_{U(n)} \otimes Y_{n} \otimes Z_{R(n)}\right ), \\\\
+        \end{align*}
 
+    and
 
-def flip_set(j, n):
+    .. math::
+        \begin{align*}
+           a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{R(n)}\right ), \\\\
+        \end{align*}
+    
+    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators, and :math:`U(n)`, :math:`P(n)` and :math:`R(n)` represent update, parity and remainder sets respectively. For more information on sets, check reference: arXiv:1812.02233
+
+    Args:
+        fermi_operator(FermiWord, FermiSentence): the fermionic operator
+        n (int): number of qubits, i.e., spin orbitals in the system
+        ps (bool): whether to return the result as a PauliSentence instead of an
+            Operator. Defaults to False.
+        wire_map (dict): a dictionary defining how to map the orbitals of
+            the Fermi operator to qubit wires. If None, the integers used to
+            order the orbitals will be used as wire labels. Defaults to None.
+        tol (float): tolerance for discarding the imaginary part of the coefficients
+
+    Returns:
+        Union[PauliSentence, Operator]: a linear combination of qubit operators
+
+    **Example**
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> bravyi_kitaev(w, n=6)
+    -0.25j * Y(0)
+    + (-0.25+0j) * (X(0) @ Z(1))
+    + (0.25+0j) * X(0)
+    + 0.25j * (Y(0) @ Z(1))
+
+    >>> bravyi_kitaev(w, n=6, ps=True)
+    -0.25j * Y(0)
+    + (-0.25+0j) * X(0) @ Z(1)
+    + (0.25+0j) * X(0)
+    + 0.25j * Y(0) @ Z(1)
+
+    >>> bravyi_kitaev(w, n=6, ps=True, wire_map={0: 2, 1: 3})
+    -0.25j * Y(2)
+    + (-0.25+0j) * X(2) @ Z(3)
+    + (0.25+0j) * X(2)
+    + 0.25j * Y(2) @ Z(3)
+
     """
-    Computes the flip set of the j-th orbital in n modes.
+    return _bravyi_kitaev_dispatch(fermi_operator, n, ps, wire_map, tol)
+
+def _update_set(j, n):
+    """
+    Computes the update set of the j-th orbital in n qubits.
 
     Args:
         j (int) : the orbital index
         n (int) : the total number of qubits
 
     Returns:
-        numpy.ndarray: Array of indices
+        numpy.ndarray: Array containing the update set
+    """
+    indices = np.array([], dtype=int)
+
+    if n % 2 == 0:
+        if j < n / 2:
+            indices = np.append(indices, np.append(n - 1, update_set(j, int(n / 2))))
+        else:
+            indices = np.append(indices, update_set(j - int(n / 2), int(n / 2)) + int(n / 2))
+    return indices
+
+
+def _parity_set(j, n):
+    """
+    Computes the parity set of the j-th orbital in n qubits.
+
+    Args:
+        j (int) : the orbital index
+        n (int) : the total number of qubits
+
+    Returns:
+        numpy.ndarray: Array of qubits which determine the parity of qubit j
+    """
+
+    indices = np.array([], dtype=int)
+    if n % 2 == 0:
+        if j < n / 2:
+            indices = np.append(indices, parity_set(j, int(n / 2)))
+        else:
+            indices = np.append(
+                indices, np.append(parity_set(j - int(n / 2), int(n / 2)) + int(n / 2), int(n / 2 - 1))
+        )
+
+    return indices
+        
+
+def _flip_set(j,n):
+
+    """
+        Computes the flip set of the j-th orbital in n qubits.
+
+        Args:
+            j (int) : the orbital index
+            n (int) : the total number of qubits
+        Returns:
+            numpy.ndarray: Array containing information if the phase of orbital j is same as qubit j.
     """
     indices = np.array([])
     if n % 2 == 0:
         if j < n / 2:
-            indices = np.append(indices, flip_set(j, n / 2))
+            indices = np.append(indices, flip_set(j, int(n / 2)))
         elif n / 2 <= j < n - 1:
-            indices = np.append(indices, flip_set(j - n / 2, n / 2) + n / 2)
+            indices = np.append(indices, flip_set(j - int(n / 2), int(n / 2)) + int(n / 2))
         else:
-            indices = np.append(np.append(indices, flip_set(j - n / 2, n / 2) + n / 2), n / 2 - 1)
+            indices = np.append(
+                np.append(indices, flip_set(j - n / 2, n / 2) + n / 2), n / 2 - 1
+        )
     return indices
+
+
+
+@singledispatch
+def _bravyi_kitaev_dispatch(fermi_operator, n, ps, wire_map, tol):
+    """Dispatches to appropriate function if fermi_operator is a FermiWord or FermiSentence."""
+    raise ValueError(f"fermi_operator must be a FermiWord or FermiSentence, got: {fermi_operator}")
+
+
+@_bravyi_kitaev_dispatch.register
+def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
+    wires = list(fermi_operator.wires) or [0]
+    identity_wire = wires[0]
+
+    coeffs = {"+": -0.5j, "-": 0.5j}
+    qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
+        
+    rng = 1
+    while np.power(2, rng) < n:
+        rng += 1
+    bin_rng = np.power(2, rng)
+
+    for item in fermi_operator.items():
+        (_, wire), sign = item
+        if wire >= n:
+            raise ValueError(
+                f"Can't create or annihilate a particle on qubit number {wire} for a system with only {n} qubits"
+            )
+
+        U_set = list(filter(lambda x: x < n, update_set(wire, bin_rng)))
+        update_string = dict(zip(U_set, ["X"] * len(U_set)))
+
+        P_set = parity_set(wire, bin_rng)
+        parity_string = dict(zip(P_set, ["Z"] * len(P_set)))
+
+        if wire % 2 == 0:
+            qubit_operator @= PauliSentence(
+                {
+                    PauliWord({**parity_string, **{wire: "X"}, **update_string}): 0.5,
+                    PauliWord({**parity_string, **{wire: "Y"}, **update_string}): coeffs[sign],
+                }
+            )
+        else:
+            F_set = flip_set(wire, bin_rng)
+            
+            R_set = np.setdiff1d(P_set, F_set)
+            remainder_string = dict(zip(R_set, ["Z"] * len(R_set)))
+
+            qubit_operator @= PauliSentence(
+                {
+                    PauliWord({**parity_string, **{wire: "X"}, **update_string}): 0.5,
+                    PauliWord({**remainder_string, **{wire: "Y"}, **update_string}): coeffs[sign],
+                }
+            )
+            
+
+    for pw in qubit_operator:
+        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    if not ps:
+        # wire_order specifies wires to use for Identity (PauliWord({}))
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
+
+@_bravyi_kitaev_dispatch.register
+def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
+    wires = list(fermi_operator.wires) or [0]
+    identity_wire = wires[0]
+
+    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
+
+    for fw, coeff in fermi_operator.items():
+        fermi_word_as_ps = parity_transform(fw, n, ps=True)
+
+        for pw in fermi_word_as_ps:
+            qubit_operator[pw] += fermi_word_as_ps[pw] * coeff
+
+            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    qubit_operator.simplify(tol=1e-16)
+
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
+
