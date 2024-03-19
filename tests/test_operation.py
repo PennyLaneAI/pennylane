@@ -2744,26 +2744,29 @@ class TestNewOpMath:
     class TestHamiltonianLinearCombinationAlias:
         """Unit tests for using qml.Hamiltonian as an alias for LinearCombination"""
 
-        def test_hamiltonian_linear_combination_alias_new(self):
-            """Test that qml.Hamiltonian is as alias for LinearCombination with new operator
-            arithmetic"""
-            assert qml.operation.active_new_opmath()
-            op1 = qml.Hamiltonian([1.0], [qml.X(0)])
+        @pytest.mark.usefixtures("use_new_opmath")
+        def test_hamiltonian_linear_combination_alias_enabled(self):
+            """Test that qml.Hamiltonian is an alias for LinearCombination with new operator
+            arithmetic enabled"""
+            op = qml.Hamiltonian([1.0], [qml.X(0)])
 
-            assert isinstance(op1, qml.ops.LinearCombination)
-            assert isinstance(op1, qml.Hamiltonian)
-            assert not isinstance(op1, qml.ops.Hamiltonian)
-            assert not isinstance(op1, qml.ops.qubit.Hamiltonian)
-            assert not isinstance(op1, qml.ops.qubit.hamiltonian.Hamiltonian)
+            assert isinstance(op, qml.ops.LinearCombination)
+            assert isinstance(op, qml.Hamiltonian)
+            assert not isinstance(op, qml.ops.Hamiltonian)
+            assert not isinstance(op, qml.ops.qubit.Hamiltonian)
+            assert not isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
 
-            qml.operation.disable_new_opmath()
-            op2 = qml.Hamiltonian([1.0], [qml.X(0)])
+        @pytest.mark.usefixtures("use_legacy_opmath")
+        def test_hamiltonian_linear_combination_alias_disabled(self):
+            """Test that qml.Hamiltonian is not an alias for LinearCombination with new operator
+            arithmetic disabled"""
+            op = qml.Hamiltonian([1.0], [qml.X(0)])
 
-            assert not isinstance(op2, qml.ops.LinearCombination)
-            assert isinstance(op2, qml.Hamiltonian)
-            assert isinstance(op2, qml.ops.Hamiltonian)
-            assert isinstance(op2, qml.ops.qubit.Hamiltonian)
-            assert isinstance(op2, qml.ops.qubit.hamiltonian.Hamiltonian)
+            assert not isinstance(op, qml.ops.LinearCombination)
+            assert isinstance(op, qml.Hamiltonian)
+            assert isinstance(op, qml.ops.Hamiltonian)
+            assert isinstance(op, qml.ops.qubit.Hamiltonian)
+            assert isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
 
 
 @pytest.mark.parametrize(
