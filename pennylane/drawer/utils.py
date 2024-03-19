@@ -121,15 +121,17 @@ def unwrap_controls(op):
         next_ctrl = op
 
         while hasattr(next_ctrl, "base"):
-            base_control_wires = getattr(next_ctrl.base, "control_wires", [])
-            control_wires += base_control_wires
 
-            base_control_values = next_ctrl.base.hyperparameters.get(
-                "control_values", [True] * len(base_control_wires)
-            )
+            if isinstance(next_ctrl.base, Controlled):
+                base_control_wires = getattr(next_ctrl.base, "control_wires", [])
+                control_wires += base_control_wires
 
-            if control_values is not None:
-                control_values.extend(base_control_values)
+                base_control_values = next_ctrl.base.hyperparameters.get(
+                    "control_values", [True] * len(base_control_wires)
+                )
+
+                if control_values is not None:
+                    control_values.extend(base_control_values)
 
             next_ctrl = next_ctrl.base
 
@@ -153,7 +155,7 @@ def cwire_connections(layers, bit_map):
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
     ...     m1 = qml.measure(1)
-    ...     qml.cond(m0 & m1, qml.PauliY)(0)
+    ...     qml.cond(m0 & m1, qml.Y)(0)
     ...     qml.cond(m0, qml.S)(3)
     >>> tape = qml.tape.QuantumScript.from_queue(q)
     >>> layers = drawable_layers(tape)

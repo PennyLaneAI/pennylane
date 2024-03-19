@@ -22,7 +22,7 @@ from functools import reduce, partial
 import scipy
 
 import pennylane as qml
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import TransformError
 from pennylane import transform
 from pennylane.typing import TensorLike
 
@@ -63,7 +63,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
     Given an operation, ``qml.eigvals`` returns the eigenvalues:
 
-    >>> op = qml.PauliZ(0) @ qml.PauliX(1) - 0.5 * qml.PauliY(1)
+    >>> op = qml.Z(0) @ qml.X(1) - 0.5 * qml.Y(1)
     >>> qml.eigvals(op)
     array([-1.11803399, -1.11803399,  1.11803399,  1.11803399])
 
@@ -98,7 +98,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
             def circuit(theta):
                 qml.RX(theta, wires=1)
-                qml.PauliZ(wires=0)
+                qml.Z(0)
 
         We can use ``qml.eigvals`` to generate a new function that returns the eigenvalues
         corresponding to the function ``circuit``:
@@ -111,9 +111,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
-            raise OperationTransformError(
-                "Input is not an Operator, tape, QNode, or quantum function"
-            )
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
         return _eigvals_tranform(op, k=k, which=which)
 
     if isinstance(op, qml.Hamiltonian):
@@ -143,7 +141,8 @@ def _eigvals_tranform(
     tape: qml.tape.QuantumTape, k=1, which="SA"
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     def processing_fn(res):
-        op_wires = [op.wires for op in res[0].operations]
+        [qs] = res
+        op_wires = [op.wires for op in qs.operations]
         all_wires = qml.wires.Wires.all_wires(op_wires).tolist()
         unique_wires = qml.wires.Wires.unique_wires(op_wires).tolist()
 
@@ -153,14 +152,14 @@ def _eigvals_tranform(
                 "This may be computationally intensive for a large number of wires.",
                 UserWarning,
             )
-            matrix = qml.matrix(res[0])
+            matrix = qml.matrix(qs, wire_order=qs.wires)
             return qml.math.linalg.eigvals(matrix)
 
         # TODO: take into account wire ordering, by reordering eigenvalues
         # as per operator wires/wire ordering, and by inserting implicit identity
         # matrices (eigenvalues [1, 1]) at missing locations.
 
-        ev = [eigvals(op, k=k, which=which) for op in res[0].operations]
+        ev = [eigvals(op, k=k, which=which) for op in qs.operations]
 
         if len(ev) == 1:
             return ev[0]

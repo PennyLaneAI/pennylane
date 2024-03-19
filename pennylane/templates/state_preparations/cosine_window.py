@@ -99,10 +99,10 @@ class CosineWindow(StatePrepBase):
 
         num_op_wires = len(self.wires)
         op_vector_shape = (2,) * num_op_wires
+        coeff = np.sqrt(2 ** (1 - num_op_wires))
         vector = np.array(
             [
-                np.sqrt(2 ** (1 - num_op_wires))
-                * np.cos(-np.pi / 2 + np.pi * x / 2**num_op_wires)
+                coeff * np.cos(-np.pi / 2 + np.pi * x / 2**num_op_wires)
                 for x in range(2**num_op_wires)
             ]
         )

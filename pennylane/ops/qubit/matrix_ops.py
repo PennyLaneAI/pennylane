@@ -101,10 +101,11 @@ class QubitUnitary(Operation):
     >>> @qml.qnode(dev)
     ... def example_circuit():
     ...     qml.QubitUnitary(U, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(example_circuit())
     0.0
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -264,6 +265,7 @@ class DiagonalQubitUnitary(Operation):
         D (array[complex]): diagonal of unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -513,22 +515,26 @@ class BlockEncode(Operation):
     """Gradient computation method."""
 
     def __init__(self, A, wires, id=None):
+        wires = Wires(wires)
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
             A = qml.math.reshape(A, [1, 1])
-
-        wires = Wires(wires)
-        if pnp.sum(shape_a) <= 2:
-            normalization = A if A > 1 else 1
+            normalization = qml.math.abs(A)
             subspace = (1, 1, 2 ** len(wires))
+
         else:
-            normalization = max(
+            if len(shape_a) == 1:
+                A = qml.math.reshape(A, [1, len(A)])
+                shape_a = qml.math.shape(A)
+
+            normalization = qml.math.maximum(
                 norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
                 norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
             )
             subspace = (*shape_a, 2 ** len(wires))
 
-        A = qml.math.array(A) / normalization if normalization > 1 else A
+        # Clip the normalization to at least 1 (= normalize(A) if norm > 1 else A).
+        A = qml.math.array(A) / qml.math.maximum(normalization, qml.math.ones_like(normalization))
 
         if subspace[2] < (subspace[0] + subspace[1]):
             raise ValueError(

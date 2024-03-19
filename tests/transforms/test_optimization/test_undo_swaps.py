@@ -32,7 +32,7 @@ class TestUndoSwaps:
         ops = [
             qml.adjoint(qml.S(0)),
             qml.PauliRot(1.2, "XY", wires=(0, 2)),
-            qml.ctrl(qml.PauliX(0), 2, control_values=[0, 0]),
+            qml.ctrl(qml.PauliX(0), [2, 3], control_values=[0, 0]),
             qml.SWAP((0, 1)),
         ]
 
@@ -42,7 +42,7 @@ class TestUndoSwaps:
         expected_ops = [
             qml.adjoint(qml.S(1)),
             qml.PauliRot(1.2, "XY", wires=(1, 2)),
-            qml.ctrl(qml.PauliX(1), 2, control_values=[0, 0]),
+            qml.ctrl(qml.PauliX(1), [2, 3], control_values=[0, 0]),
         ]
         assert len(batch) == 1
         assert batch[0].shots == tape.shots

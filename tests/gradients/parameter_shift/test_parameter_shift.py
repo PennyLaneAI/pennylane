@@ -645,9 +645,11 @@ class TestParamShift:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         gradient_recipes = tuple(
-            [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
-            if i in ops_with_custom_recipe
-            else None
+            (
+                [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
+                if i in ops_with_custom_recipe
+                else None
+            )
             for i in range(2)
         )
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)

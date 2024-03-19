@@ -66,11 +66,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     >>> from pennylane import numpy as np
     >>> coeffs = [2, 4, -1, 5, 2]
     >>> obs = [
-    ...   qml.PauliX(1),
-    ...   qml.PauliZ(1),
-    ...   qml.PauliX(0) @ qml.PauliX(1),
-    ...   qml.PauliY(0) @ qml.PauliY(1),
-    ...   qml.PauliZ(0) @ qml.PauliZ(1)
+    ...   qml.X(1),
+    ...   qml.Z(1),
+    ...   qml.X(0) @ qml.X(1),
+    ...   qml.Y(0) @ qml.Y(1),
+    ...   qml.Z(0) @ qml.Z(1)
     ... ]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> dev = qml.device("default.qubit", wires=2, shots=100)

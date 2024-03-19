@@ -45,15 +45,11 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     Returns:
         .Evolution: evolution operator
 
-    .. seealso::
-
-        :class:`~.Evolution`
-
     **Examples**
 
     We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
 
-    >>> op = qml.evolve(qml.PauliX(0), coeff=2)
+    >>> op = qml.evolve(qml.X(0), coeff=2)
     >>> op
     Exp(-2j PauliX)
 
@@ -83,10 +79,6 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
     solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_).
 
-    .. seealso::
-
-        :class:`~.ParametrizedEvolution`
-
     **Examples**
 
     When evolving a :class:`.ParametrizedHamiltonian`, a :class:`.ParametrizedEvolution`
@@ -95,7 +87,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     .. code-block:: python3
 
         coeffs = [lambda p, t: p * t for _ in range(4)]
-        ops = [qml.PauliX(i) for i in range(4)]
+        ops = [qml.X(i) for i in range(4)]
 
         # ParametrizedHamiltonian
         H = qml.dot(coeffs, ops)
@@ -142,7 +134,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> params = [1., 2., 3., 4.]
     >>> circuit(params)
@@ -159,8 +151,6 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         the first execution will typically take a little longer with the benefit that all following executions
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.
-
-    Please check the :class:`.ParametrizedEvolution` class for more usage details.
     """
 
 

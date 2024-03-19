@@ -74,7 +74,7 @@ class TestLegacySupport:
 
 
 def test_alias():
-    """Test that the alias comm() works as expected"""
+    """Test that the alias qml.comm() works as expected"""
     res1 = qml.comm(X0, Y0)
     res1_true = qml.commutator(X0, Y0)
     assert res1 == res1_true
@@ -131,9 +131,9 @@ class TestcommPauli:
 
     data_pauli_relations = (
         # word and word
-        (X0, X0, PauliSentence({pw_id: 0})),
-        (Y0, Y0, PauliSentence({pw_id: 0})),
-        (Z0, Z0, PauliSentence({pw_id: 0})),
+        (X0, X0, PauliSentence({})),
+        (Y0, Y0, PauliSentence({})),
+        (Z0, Z0, PauliSentence({})),
         (X0, Y0, PauliSentence({Z0: 2j})),
         (Y0, Z0, PauliSentence({X0: 2j})),
         (Z0, X0, PauliSentence({Y0: 2j})),
@@ -151,30 +151,42 @@ class TestcommPauli:
         assert res == true_res
         assert isinstance(res, PauliSentence)
 
-    data_more_comm_relations = (
+    data_more_comm_relations_commutes = (
         (
             PauliWord({0: "X", 1: "X"}),
             PauliWord({0: "Y", 1: "Y"}),
-            PauliSentence({PauliWord({0: "Z", 1: "Z"}): 0.0}),
+            PauliSentence({}),
         ),
         (
             PauliWord({0: "X", 1: "X"}),
             PauliWord({"a": "X", "b": "Y"}),
-            PauliSentence({PauliWord({0: "X", 1: "X", "a": "X", "b": "Y"}): 0.0}),
+            PauliSentence({}),
         ),
     )
 
     @pytest.mark.parametrize("transform_type1", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("transform_type2", [_id, _pauli_to_op, _pw_to_ps])
-    @pytest.mark.parametrize("op1, op2, true_res", data_more_comm_relations)
-    def test_comm_relations_pauli_words(self, op1, op2, true_res, transform_type1, transform_type2):
+    @pytest.mark.parametrize("op1, op2, true_res", data_more_comm_relations_commutes)
+    def test_comm_relations_pauli_words_that_commute(
+        self, op1, op2, true_res, transform_type1, transform_type2
+    ):
         """Test more comm relations between Paulis"""
         res = qml.commutator(transform_type1(op1), transform_type2(op2), pauli=True)
         assert res == true_res
         assert isinstance(res, PauliSentence)
 
+    def test_consistency_with_native_pauli_comms(self):
+        """Test consistent behavior between native comms in PauliWord and PauliSentence and qml.commutor"""
+        op1 = qml.PauliX(0) @ qml.PauliX(1)
+        op2 = qml.PauliY(0) + qml.PauliY(1)
+        res1 = qml.commutator(op1, op2, pauli=True)
+        res2 = PauliWord({0: "X", 1: "X"}).commutator(PauliWord({0: "Y"}) + PauliWord({1: "Y"}))
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert res1 == res2
 
-class TestcommPauliFalseSimplify:
+
+class TestcommPauliFalse:
     """Test qml.comm for pauli=False (default behavior)"""
 
     data_pauli_relations_ops = (
@@ -222,3 +234,13 @@ class TestcommPauliFalseSimplify:
         assert res == true_res
         assert isinstance(res, Operator)
         assert isinstance(res, SProd)
+
+    def test_paulis_used_when_ever_possible(self, mocker):
+        """Test that pauli_rep is used whenever possible even when ``pauli=False``"""
+        spy = mocker.spy(PauliSentence, "operation")
+        op1 = qml.PauliX(0) @ qml.PauliX(1)
+        op2 = qml.PauliY(0) + qml.PauliY(1)
+        res = qml.commutator(op1, op2, pauli=False)
+        spy.assert_called()
+
+        assert isinstance(res, Operator)

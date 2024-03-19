@@ -1221,6 +1221,16 @@ class TestExpand:
         assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
         assert expanded.shots is tape.shots
 
+    def test_expand_tape_does_not_check_mp_name_by_default(self, recwarn):
+        """Test that calling expand_tape does not refer to MP.name"""
+
+        def stop_at(obj):
+            return obj.name in ["PauliX"]
+
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
+        qs.expand(stop_at=stop_at)
+        assert len(recwarn) == 0
+
 
 class TestExecution:
     """Tests for tape execution"""

@@ -75,14 +75,14 @@ def pow(base, z=1, lazy=True, id=None):
 
     **Example**
 
-    >>> qml.pow(qml.PauliX(0), 0.5)
-    PauliX(wires=[0])**0.5
-    >>> qml.pow(qml.PauliX(0), 0.5, lazy=False)
+    >>> qml.pow(qml.X(0), 0.5)
+    X(0)**0.5
+    >>> qml.pow(qml.X(0), 0.5, lazy=False)
     SX(wires=[0])
-    >>> qml.pow(qml.PauliX(0), 0.1, lazy=False)
-    PauliX(wires=[0])**0.1
-    >>> qml.pow(qml.PauliX(0), 2, lazy=False)
-    Identity(wires=[0])
+    >>> qml.pow(qml.X(0), 0.1, lazy=False)
+    X(0)**0.1
+    >>> qml.pow(qml.X(0), 2, lazy=False)
+    I(0)
 
     Lazy behavior can also be accessed via ``op ** z``.
 
@@ -115,7 +115,7 @@ class Pow(ScalarSymbolicOp):
 
     **Example**
 
-    >>> sqrt_x = Pow(qml.PauliX(0), 0.5)
+    >>> sqrt_x = Pow(qml.X(0), 0.5)
     >>> sqrt_x.decomposition()
     [SX(wires=[0])]
     >>> qml.matrix(sqrt_x)
@@ -153,7 +153,7 @@ class Pow(ScalarSymbolicOp):
         True
         >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is Pow._operation_type
         True
-        >>> Pow(qml.PauliX(0), 1.2).__class__ is Pow._operation_observable_type
+        >>> Pow(qml.X(0), 1.2).__class__ is Pow._operation_observable_type
         True
 
         """
@@ -177,7 +177,7 @@ class Pow(ScalarSymbolicOp):
         super().__init__(base, scalar=z, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+            if (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
                 self.batch_size is None
             ):
                 pr = base_pauli_rep
@@ -223,8 +223,26 @@ class Pow(ScalarSymbolicOp):
 
     @staticmethod
     def _matrix(scalar, mat):
-        if isinstance(scalar, int) and qml.math.get_deep_interface(mat) != "tensorflow":
-            return qmlmath.linalg.matrix_power(mat, scalar)
+        if isinstance(scalar, int):
+            if qml.math.get_deep_interface(mat) != "tensorflow":
+                return qmlmath.linalg.matrix_power(mat, scalar)
+
+            # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
+            # is not differentiable. So we use a custom implementation of matrix power for integer
+            # exponents below.
+            if scalar == 0:
+                # Used instead of qml.math.eye for tracing derivatives
+                return mat @ qmlmath.linalg.inv(mat)
+            if scalar > 0:
+                out = mat
+            else:
+                out = mat = qmlmath.linalg.inv(mat)
+                scalar *= -1
+
+            for _ in range(scalar - 1):
+                out @= mat
+            return out
+
         return fractional_matrix_power(mat, scalar)
 
     # pylint: disable=arguments-differ
@@ -311,7 +329,7 @@ class Pow(ScalarSymbolicOp):
 
         See also :func:`~.generator`
         """
-        return self.z * self.base.generator()
+        return qml.s_prod(self.z, self.base.generator(), lazy=False)
 
     def pow(self, z):
         return [Pow(base=self.base, z=self.z * z)]

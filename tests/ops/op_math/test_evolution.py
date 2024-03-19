@@ -107,14 +107,14 @@ class TestEvolution:
         t = qml.PauliX(0) @ qml.PauliX(1)
         isingxx = Evolution(t, 0.25)
 
-        assert repr(isingxx) == "Evolution(-0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
+        assert repr(isingxx) == "Evolution(-0.25j X(0) @ X(1))"
 
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
-        base = qml.S(0) @ qml.PauliX(0)
+        base = qml.S(0) @ qml.X(0)
         op = Evolution(base, 3)
 
-        assert repr(op) == "Evolution(-3j S(wires=[0]) @ PauliX(wires=[0]))"
+        assert repr(op) == "Evolution(-3j S(wires=[0]) @ X(0))"
 
     @pytest.mark.parametrize(
         "op,decimals,expected",

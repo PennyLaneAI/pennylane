@@ -48,16 +48,12 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
         indices_this_group = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
-            for observable in observables:
+            for ind, observable in enumerate(observables):
                 if qml.pauli.are_identical_pauli_words(pauli_word, observable):
-                    for ind, obs in enumerate(observables):
-                        if obs is not observable:
-                            continue
-                        indices_this_group.append(available_indices[ind])
-                        # delete this observable and its index, so it cannot be found again
-                        observables.pop(ind)
-                        available_indices.pop(ind)
-                        break
+                    indices_this_group.append(available_indices[ind])
+                    # delete this observable and its index, so it cannot be found again
+                    observables.pop(ind)
+                    available_indices.pop(ind)
                     break
         indices.append(tuple(indices_this_group))
 
@@ -89,7 +85,7 @@ class Hamiltonian(Observable):
     as well as the list of observables:
 
     >>> coeffs = [0.2, -0.543]
-    >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
       (-0.543) [Z0 H2]
@@ -98,7 +94,7 @@ class Hamiltonian(Observable):
     The coefficients can be a trainable tensor, for example:
 
     >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
-    >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
       (-0.543) [Z0 H2]
@@ -122,19 +118,19 @@ class Hamiltonian(Observable):
     In many cases, Hamiltonians can be constructed using Pythonic arithmetic operations.
     For example:
 
-    >>> qml.Hamiltonian([1.], [qml.PauliX(0)]) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
+    >>> qml.Hamiltonian([1.], [qml.X(0)]) + 2 * qml.Z(0) @ qml.Z(1)
 
     is equivalent to the following Hamiltonian:
 
-    >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+    >>> qml.Hamiltonian([1, 2], [qml.X(0), qml.Z(0) @ qml.Z(1)])
 
     While scalar multiplication requires native python floats or integer types,
     addition, subtraction, and tensor multiplication of Hamiltonians with Hamiltonians or
     other observables is possible with tensor-valued coefficients, i.e.,
 
-    >>> H1 = qml.Hamiltonian(torch.tensor([1.]), [qml.PauliX(0)])
-    >>> H2 = qml.Hamiltonian(torch.tensor([2., 3.]), [qml.PauliY(0), qml.PauliX(1)])
-    >>> obs3 = [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)]
+    >>> H1 = qml.Hamiltonian(torch.tensor([1.]), [qml.X(0)])
+    >>> H2 = qml.Hamiltonian(torch.tensor([2., 3.]), [qml.Y(0), qml.X(1)])
+    >>> obs3 = [qml.X(0), qml.Y(0), qml.X(1)]
     >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), obs3)
     >>> H3.compare(H1 + H2)
     True
@@ -142,7 +138,7 @@ class Hamiltonian(Observable):
     A Hamiltonian can store information on which commuting observables should be measured together in
     a circuit:
 
-    >>> obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+    >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
     >>> coeffs = np.array([1., 2., 3.])
     >>> H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
     >>> H.grouping_indices
@@ -155,7 +151,7 @@ class Hamiltonian(Observable):
     >>> grouped_coeffs
     [tensor([1., 2.], requires_grad=True), tensor([3.], requires_grad=True)]
     >>> grouped_obs
-    [[qml.PauliX(0), qml.PauliX(1)], [qml.PauliZ(0)]]
+    [[qml.X(0), qml.X(1)], [qml.Z(0)]]
 
     Devices that evaluate a Hamiltonian expectation by splitting it into its local observables can
     use this information to reduce the number of circuits evaluated.
@@ -226,7 +222,25 @@ class Hamiltonian(Observable):
         # create the operator using each coefficient as a separate parameter;
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
+
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
+        self._pauli_rep = "unset"
+
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep != "unset":
+            return self._pauli_rep
+
+        if any(op.pauli_rep is None for op in self.ops):
+            self._pauli_rep = None
+            return self._pauli_rep
+
+        ps = qml.pauli.PauliSentence()
+        for coeff, term in zip(*self.terms()):
+            ps += term.pauli_rep * coeff
+
+        self._pauli_rep = ps
+        return self._pauli_rep
 
     def _check_batching(self):
         """Override for Hamiltonian, batching is not yet supported."""
@@ -265,15 +279,15 @@ class Hamiltonian(Observable):
 
         **Example**
         >>> coeffs = [1., 2.]
-        >>> ops = [qml.PauliX(0), qml.PauliZ(0)]
+        >>> ops = [qml.X(0), qml.Z(0)]
         >>> H = qml.Hamiltonian(coeffs, ops)
 
         >>> H.terms()
-        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+        [1., 2.], [qml.X(0), qml.Z(0)]
 
         The coefficients are differentiable and can be stored as tensors:
         >>> import tensorflow as tf
-        >>> H = qml.Hamiltonian([tf.Variable(1.), tf.Variable(2.)], [qml.PauliX(0), qml.PauliZ(0)])
+        >>> H = qml.Hamiltonian([tf.Variable(1.), tf.Variable(2.)], [qml.X(0), qml.Z(0)])
         >>> t = H.terms()
 
         >>> t[0]
@@ -312,7 +326,7 @@ class Hamiltonian(Observable):
 
         Examples of valid groupings for the Hamiltonian
 
-        >>> H = qml.Hamiltonian([qml.PauliX('a'), qml.PauliX('b'), qml.PauliY('b')])
+        >>> H = qml.Hamiltonian([qml.X('a'), qml.X('b'), qml.Y('b')])
 
         are
 
@@ -322,7 +336,7 @@ class Hamiltonian(Observable):
 
         >>> H.grouping_indices = [[0, 2], [1]]
 
-        since both ``qml.PauliX('a'), qml.PauliX('b')`` and ``qml.PauliX('a'), qml.PauliY('b')`` commute.
+        since both ``qml.X('a'), qml.X('b')`` and ``qml.X('a'), qml.Y('b')`` commute.
 
 
         Args:
@@ -373,7 +387,7 @@ class Hamiltonian(Observable):
         **Example:**
 
         >>> coeffs = [1, -0.45]
-        >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
+        >>> obs = [qml.Z(0) @ qml.Z(1), qml.Y(0) @ qml.Z(1)]
         >>> H = qml.Hamiltonian(coeffs, obs)
         >>> H_sparse = H.sparse_matrix()
         >>> H_sparse
@@ -450,7 +464,7 @@ class Hamiltonian(Observable):
 
         **Example**
 
-        >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
+        >>> ops = [qml.Y(2), qml.X(0) @ qml.Identity(1), qml.X(0)]
         >>> H = qml.Hamiltonian([1, 1, -2], ops)
         >>> H.simplify()
         >>> print(H)
@@ -539,8 +553,8 @@ class Hamiltonian(Observable):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
 
         This allows for comparison between Hamiltonians that are equivalent, but are defined with terms and tensors
-        expressed in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
-        `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
+        expressed in different orders. For example, `qml.X(0) @ qml.Z(1)` and
+        `qml.Z(1) @ qml.X(0)` are equivalent observables with different orderings.
 
         .. Note::
 
@@ -550,7 +564,7 @@ class Hamiltonian(Observable):
 
         **Example**
 
-        >>> H = qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)])
+        >>> H = qml.Hamiltonian([1, 1], [qml.X(0) @ qml.X(1), qml.Z(0)])
         >>> print(H._obs_data())
         {(1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())})),
          (1, frozenset({('PauliZ', <Wires = [0]>, ())}))}
@@ -595,18 +609,18 @@ class Hamiltonian(Observable):
 
         >>> H = qml.Hamiltonian(
         ...     [0.5, 0.5],
-        ...     [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")]
+        ...     [qml.Z(0) @ qml.Y(1), qml.Y(1) @ qml.Z(0) @ qml.Identity("a")]
         ... )
-        >>> obs = qml.PauliZ(0) @ qml.PauliY(1)
+        >>> obs = qml.Z(0) @ qml.Y(1)
         >>> print(H.compare(obs))
         True
 
-        >>> H1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
-        >>> H2 = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
+        >>> H1 = qml.Hamiltonian([1, 1], [qml.X(0), qml.Z(1)])
+        >>> H2 = qml.Hamiltonian([1, 1], [qml.Z(0), qml.X(1)])
         >>> H1.compare(H2)
         False
 
-        >>> ob1 = qml.Hamiltonian([1], [qml.PauliX(0)])
+        >>> ob1 = qml.Hamiltonian([1], [qml.X(0)])
         >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
         >>> ob1.compare(ob2)
         False
@@ -776,4 +790,5 @@ class Hamiltonian(Observable):
             if attr not in {"data", "_wires", "_ops"}:
                 setattr(new_op, attr, value)
         new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
+        new_op._pauli_rep = "unset"  # pylint: disable=protected-access
         return new_op

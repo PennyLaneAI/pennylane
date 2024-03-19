@@ -23,13 +23,15 @@ from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
 
 
 class Identity(CVObservable, Operation):
-    r"""pennylane.Identity(wires)
-    The identity observable :math:`\I`.
+    r"""
+    The Identity operator
 
     The expectation of this observable
 
     .. math::
         E[\I] = \text{Tr}(\I \rho)
+
+    .. seealso:: The equivalent short-form alias :class:`~I`
 
     Args:
         wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
@@ -39,6 +41,7 @@ class Identity(CVObservable, Operation):
     Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
+
     num_params = 0
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
@@ -61,6 +64,19 @@ class Identity(CVObservable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
 
+    def __repr__(self):
+        """String representation."""
+        if len(self.wires) == 0:
+            return "I()"
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"I('{wire}')"
+        return f"I({wire})"
+
+    @property
+    def name(self):
+        return "Identity"
+
     @staticmethod
     def compute_eigvals(n_wires=1):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
@@ -74,14 +90,14 @@ class Identity(CVObservable, Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.Identity.eigvals`
+        .. seealso:: :meth:`~.I.eigvals`
 
         Returns:
             array: eigenvalues
 
         **Example**
 
-        >>> print(qml.Identity.compute_eigvals())
+        >>> print(qml.I.compute_eigvals())
         [ 1 1]
         """
         return qml.math.ones(2**n_wires)
@@ -173,13 +189,33 @@ class Identity(CVObservable, Operation):
     @staticmethod
     def identity_op(*params):
         """Alias for matrix representation of the identity operator."""
-        return Identity.compute_matrix(*params)
+        return I.compute_matrix(*params)
 
     def adjoint(self):
-        return Identity(wires=self.wires)
+        return I(wires=self.wires)
 
     def pow(self, _):
-        return [Identity(wires=self.wires)]
+        return [I(wires=self.wires)]
+
+
+I = Identity
+r"""The Identity operator
+
+The expectation of this observable
+
+.. math::
+    E[\I] = \text{Tr}(\I \rho)
+
+.. seealso:: The equivalent long-form alias :class:`~Identity`
+
+Args:
+    wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+    id (str): custom label given to an operator instance,
+        can be useful for some applications where the instance has to be identified.
+
+Corresponds to the trace of the quantum state, which in exact
+simulators should always be equal to 1.
+"""
 
 
 class GlobalPhase(Operation):
@@ -205,12 +241,12 @@ class GlobalPhase(Operation):
 
         @qml.qnode(dev)
         def circuit(phi=None, return_state=False):
-            qml.PauliX(0)
+            qml.X(0)
             if phi:
                 qml.GlobalPhase(phi)
             if return_state:
                 return qml.state()
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
     The circuit yields the same expectation values with and without the global phase:
 
@@ -243,6 +279,7 @@ class GlobalPhase(Operation):
 
 
     """
+
     grad_method = "A"
     num_params = 1
     num_wires = AllWires
@@ -375,5 +412,4 @@ class GlobalPhase(Operation):
         return [GlobalPhase(z * self.data[0], self.wires)]
 
     def generator(self):
-        wires = self.wires or [0]
-        return -1 * qml.Identity(wires)
+        return qml.s_prod(-1, qml.I(self.wires))

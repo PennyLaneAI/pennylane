@@ -22,12 +22,12 @@ from typing import Callable, List, Sequence, Tuple, Union
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane import apply, expval
+from pennylane import expval
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP
 from pennylane.operation import Operator, Tensor
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import string_to_pauli_word
-from pennylane.queuing import AnnotatedQueue, WrappedObj
+from pennylane.queuing import WrappedObj
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
@@ -62,7 +62,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
             qml.RY(0.9, wires=0),
             qml.CNOT(wires=[0, 1]),
         ]
-        measurements = [qml.expval(qml.PauliZ(1))]
+        measurements = [qml.expval(qml.Z(1))]
         tape = qml.tape.QuantumTape(ops,)
 
     Its corresponding circuit graph can be found using
@@ -135,7 +135,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
             qml.qcut.PrepareNode(wires=1),
             qml.CNOT(wires=[1, 0]),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
@@ -162,50 +162,51 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     copy_meas = [copy.copy(op) for _, op in ordered_ops if isinstance(op, MeasurementProcess)]
     observables = []
 
-    with AnnotatedQueue() as q:
-        for op in copy_ops:
-            op = qml.map_wires(op, wire_map=wire_map, queue=True)
-            if isinstance(op, MeasureNode):
-                assert len(op.wires) == 1
-                measured_wire = op.wires[0]
+    operations_from_graph = []
+    measurements_from_graph = []
+    for op in copy_ops:
+        op = qml.map_wires(op, wire_map=wire_map, queue=False)
+        operations_from_graph.append(op)
+        if isinstance(op, MeasureNode):
+            assert len(op.wires) == 1
+            measured_wire = op.wires[0]
 
-                new_wire = _find_new_wire(wires)
-                wires += new_wire
+            new_wire = _find_new_wire(wires)
+            wires += new_wire
 
-                original_wire = reverse_wire_map[measured_wire]
-                wire_map[original_wire] = new_wire
-                reverse_wire_map[new_wire] = original_wire
+            original_wire = reverse_wire_map[measured_wire]
+            wire_map[original_wire] = new_wire
+            reverse_wire_map[new_wire] = original_wire
 
-        if copy_meas:
-            measurement_types = {type(meas) for meas in copy_meas}
-            if len(measurement_types) > 1:
-                raise ValueError(
-                    "Only a single return type can be used for measurement "
-                    "nodes in graph_to_tape"
-                )
-            measurement_type = measurement_types.pop()
+    if copy_meas:
+        measurement_types = {type(meas) for meas in copy_meas}
+        if len(measurement_types) > 1:
+            raise ValueError(
+                "Only a single return type can be used for measurement nodes in graph_to_tape"
+            )
+        measurement_type = measurement_types.pop()
 
-            if measurement_type not in {SampleMP, ExpectationMP}:
-                raise ValueError(
-                    "Invalid return type. Only expectation value and sampling measurements "
-                    "are supported in graph_to_tape"
-                )
+        if measurement_type not in {SampleMP, ExpectationMP}:
+            raise ValueError(
+                "Invalid return type. Only expectation value and sampling measurements "
+                "are supported in graph_to_tape"
+            )
 
-            for meas in copy_meas:
-                meas = qml.map_wires(meas, wire_map=wire_map)
-                obs = meas.obs
-                observables.append(obs)
+        for meas in copy_meas:
+            meas = qml.map_wires(meas, wire_map=wire_map)
+            obs = meas.obs
+            observables.append(obs)
 
-                if measurement_type is SampleMP:
-                    apply(meas)
+            if measurement_type is SampleMP:
+                measurements_from_graph.append(meas)
 
-            if measurement_type is ExpectationMP:
-                if len(observables) > 1:
-                    qml.expval(Tensor(*observables))
-                else:
-                    qml.expval(obs)
+        if measurement_type is ExpectationMP:
+            if len(observables) > 1:
+                measurements_from_graph.append(qml.expval(Tensor(*observables)))
+            else:
+                measurements_from_graph.append(qml.expval(obs))
 
-    return QuantumScript.from_queue(q)
+    return QuantumScript(ops=operations_from_graph, measurements=measurements_from_graph)
 
 
 def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict):
@@ -239,7 +240,7 @@ def _create_prep_list():
         return [qml.Identity(wire)]
 
     def _prep_one(wire):
-        return [qml.PauliX(wire)]
+        return [qml.X(wire)]
 
     def _prep_plus(wire):
         return [qml.Hadamard(wire)]

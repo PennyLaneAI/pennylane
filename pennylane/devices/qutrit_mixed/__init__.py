@@ -17,11 +17,19 @@ Submodule for performing mixed state simulations of qutrit-based quantum circuit
 This submodule is internal and subject to change without a deprecation cycle. Use
 at your own discretion.
 
+
 .. currentmodule:: pennylane.devices.qutrit_mixed
 .. autosummary::
     :toctree: api
 
     create_initial_state
+    apply_operation
+    measure
+    measure_with_samples
+    sample_state
 """
 
+from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
+from .measure import measure
+from .sampling import sample_state, measure_with_samples

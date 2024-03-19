@@ -19,11 +19,9 @@ import abc
 from typing import Callable, List
 import copy
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath, _UNSET_BATCH_SIZE
+from pennylane.operation import Operator, _UNSET_BATCH_SIZE
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -52,7 +50,9 @@ class CompositeOp(Operator):
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *operands: Operator, id=None):  # pylint: disable=super-init-not-called
+    def __init__(
+        self, *operands: Operator, id=None, _pauli_rep=None
+    ):  # pylint: disable=super-init-not-called
         self._id = id
         self.queue_idx = None
         self._name = self.__class__.__name__
@@ -60,12 +60,12 @@ class CompositeOp(Operator):
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
 
-        self.operands = tuple(convert_to_opmath(op) for op in operands)
+        self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
-        self._pauli_rep = self._build_pauli_rep()
+        self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
 
@@ -179,7 +179,7 @@ class CompositeOp(Operator):
                     )
                 )
 
-        return self._math_op(eigvals, axis=0)
+        return self._math_op(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
 
     @abc.abstractmethod
     def matrix(self, wire_order=None):
@@ -224,11 +224,10 @@ class CompositeOp(Operator):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
-        eigen_func = np.linalg.eigh if self.is_hermitian else np.linalg.eig
+        eigen_func = math.linalg.eigh if self.is_hermitian else math.linalg.eig
 
         if self.hash not in self._eigs:
             mat = self.matrix()
-            mat = math.to_numpy(mat)
             w, U = eigen_func(mat)
             self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
@@ -265,7 +264,9 @@ class CompositeOp(Operator):
             else:
                 tmp_sum = self.__class__(*ops)
                 eigvecs = tmp_sum.eigendecomposition["eigvec"]
-                diag_gates.append(qml.QubitUnitary(eigvecs.conj().T, wires=tmp_sum.wires))
+                diag_gates.append(
+                    qml.QubitUnitary(math.transpose(math.conj(eigvecs)), wires=tmp_sum.wires)
+                )
         return diag_gates
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -284,7 +285,7 @@ class CompositeOp(Operator):
 
         **Example (using the Sum composite operator)**
 
-        >>> op = qml.S(0) + qml.PauliX(0) + qml.Rot(1,2,3, wires=[1])
+        >>> op = qml.S(0) + qml.X(0) + qml.Rot(1,2,3, wires=[1])
         >>> op.label()
         '(S+X)+Rot'
         >>> op.label(decimals=2, base_label=[["my_s", "my_x"], "inc_rot"])
@@ -310,9 +311,10 @@ class CompositeOp(Operator):
     def queue(self, context=qml.QueuingManager):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
-        for op in self:
-            context.remove(op)
-        context.append(self)
+        if qml.QueuingManager.recording():
+            for op in self:
+                context.remove(op)
+            context.append(self)
         return self
 
     @classmethod
