@@ -282,7 +282,7 @@ class SpecialUnitary(Operation):
     .. seealso:: 
 
             For more details on using this operator in applications, see the 
-            :doc:`demo:tutorial_here_comes_the_sun` demonstration.
+            :doc:`in-depth demonstration <demos/tutorial_here_comes_the_sun>`.
 
     .. details::
         :title: Theoretical background
