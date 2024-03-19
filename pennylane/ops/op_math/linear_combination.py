@@ -37,7 +37,7 @@ class LinearCombination(Sum):
         coeffs (tensor_like): coefficients of the LinearCombination expression
         observables (Iterable[Observable]): observables in the LinearCombination expression, of same length as coeffs
         simplify (bool): Specifies whether the LinearCombination is simplified upon initialization
-                         (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot 
+                         (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
                          be differentiated when using the ``torch`` interface and ``simplify=True``.
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
