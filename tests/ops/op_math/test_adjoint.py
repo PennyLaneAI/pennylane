@@ -494,9 +494,7 @@ class TestAdjointOperation:
         base = qml.RX(1.23, wires=0)
         op = Adjoint(base)
 
-        assert qml.equal(
-            base.generator(), qml.Hamiltonian([-1.0], [op.generator()]).simplify()
-        )  # TODO: ask about this
+        assert qml.equal(base.generator(), qml.Hamiltonian([-1.0], [op.generator()], simplify=True))
 
     def test_no_generator(self):
         """Test that an adjointed non-Operation raises a GeneratorUndefinedError."""
