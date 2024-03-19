@@ -141,6 +141,10 @@
 * `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of paulis.
   [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
 
+* Obtaining classical shadows using the `default.clifford` device is now compatible with
+  [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
+  [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
