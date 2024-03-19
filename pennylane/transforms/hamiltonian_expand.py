@@ -204,10 +204,6 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
             "The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion."
         )
 
-    # note: for backward passes of some frameworks
-    # it is crucial to use the hamiltonian.data attribute,
-    # and not hamiltonian.coeffs when recombining the results
-
     if group or hamiltonian.grouping_indices is not None:
         return _grouping_hamiltonian_expand(tape)
     return _naive_hamiltonian_expand(tape)
