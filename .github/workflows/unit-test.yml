@@ -102,7 +102,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
@@ -120,7 +120,7 @@ jobs:
       - name: Cache reference benchmarks
         if: ${{ inputs.pipeline_mode != 'unit-tests' }}
         id: benchmark-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: benchmark_reference
           key: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks_references
@@ -134,7 +134,7 @@ jobs:
             && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '${{ inputs.python_version }}'
 
