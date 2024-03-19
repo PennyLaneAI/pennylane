@@ -71,7 +71,7 @@ def _generate_combinations(num_variables, required_sum):
         return ((required_sum,),)
 
     if num_variables == 2:
-        return tuple([(i, required_sum - i) for i in range(required_sum + 1)])
+        return tuple((i, required_sum - i) for i in range(required_sum + 1))
 
     master_lst = []
     for i in range(required_sum + 1):
