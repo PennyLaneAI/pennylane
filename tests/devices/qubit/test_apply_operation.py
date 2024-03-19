@@ -872,7 +872,7 @@ class TestLargerOperations:
         ]
     )
 
-    @pytest.mark.parametrize("control_values", ["111", "010", None, "100"])
+    @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], None, [1, 0, 0]])
     def test_multicontrolledx(self, method, control_values):
         """Tests a four qubit multi-controlled x gate."""
 
