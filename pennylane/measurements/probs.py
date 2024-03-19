@@ -17,9 +17,9 @@ This module contains the qml.probs measurement.
 from typing import Sequence, Tuple
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.wires import Wires
-
 from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
@@ -237,26 +237,18 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return qml.math.reshape(prob, flat_shape)
 
     def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
+        with qml.QueuingManager.stop_recording():
+            helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
+        mapped_counts = helper_counts.process_counts(counts, wire_order)
 
-        # when reducing wires, two keys may become equal
-        # the following structure was chosen to maintain compatibility with 'process_samples'
-        if mapped_wires:
-            mapped_counts = {}
-            for outcome, occurrence in counts.items():
-                mapped_outcome = "".join(outcome[i] for i in mapped_wires)
-                mapped_counts[mapped_outcome] = mapped_counts.get(mapped_outcome, 0) + occurrence
-            counts = mapped_counts
-
-        num_shots = sum(counts.values())
-        num_wires = len(next(iter(counts)))
+        num_shots = sum(mapped_counts.values())
+        num_wires = len(next(iter(mapped_counts)))
         dim = 2**num_wires
 
         # constructs the probability vector
         # converts outcomes from binary strings to integers (base 10 representation)
         prob_vector = qml.math.zeros((dim), dtype="float64")
-        for outcome, occurrence in counts.items():
+        for outcome, occurrence in mapped_counts.items():
             prob_vector[int(outcome, base=2)] = occurrence / num_shots
 
         return prob_vector
