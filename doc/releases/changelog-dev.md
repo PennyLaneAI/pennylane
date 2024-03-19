@@ -117,45 +117,8 @@
 
   ```
 
-<h3>Improvements 🛠</h3>
-
-* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
-  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
-
-* Operators can now be left multiplied `x * op` by numpy arrays.
-  [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
-
-* The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
-  [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
-
-  ```python
-  @qml.prod
-  def generator(wires):
-      for wire in wires:
-          qml.Hadamard(wires=wire)
-
-  U = generator(wires=range(3))
-  O = qml.FlipSign(2, wires=range(3))
-
-  dev = qml.device("default.qubit")
-
-  @qml.qnode(dev)
-  def circuit():
-
-      generator(wires=range(3))
-      qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
-
-      return qml.probs(wires=range(3))
-
-  ```
-  
-  ```pycon
-  >>> print(np.round(circuit(), 3))
-  [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
-
-  ```
-
 * Added new function `qml.fermi.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
+  [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
 
 ```python
   import pennylane as qml
@@ -168,7 +131,6 @@
   >>> print(qubit_ham)
   -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
   ```
-  
 
 <h3>Improvements 🛠</h3>
 
@@ -298,6 +260,7 @@ Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
+Diksha Dhawan,
 Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,

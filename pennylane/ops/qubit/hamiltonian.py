@@ -185,8 +185,6 @@ class Hamiltonian(Observable):
         id=None,
     ):
         if qml.math.shape(coeffs)[0] != len(observables):
-            print(qml.math.shape(coeffs)[0])
-            print(len(observables))
             raise ValueError(
                 "Could not create valid Hamiltonian; "
                 "number of coefficients and operators does not match."
