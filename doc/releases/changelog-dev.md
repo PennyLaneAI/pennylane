@@ -125,10 +125,6 @@
 
   ```
 
-* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
-  `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
-  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
-
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
@@ -217,6 +213,10 @@
 
 * Attempting to multiply `PauliWord` and `PauliSentence` with `*` will raise an error. Instead, use `@` to conform with the PennyLane convention.
   [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
+
+* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
+  `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
+  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 <h3>Deprecations 👋</h3>
 
