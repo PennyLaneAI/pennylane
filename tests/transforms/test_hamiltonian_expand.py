@@ -258,6 +258,8 @@ class TestHamiltonianExpand:
 
         import tensorflow as tf
 
+        inner_dev = qml.device("default.qubit")
+
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
         )
@@ -285,7 +287,7 @@ class TestHamiltonianExpand:
 
             tape = QuantumScript.from_queue(q)
             tapes, fn = hamiltonian_expand(tape)
-            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            res = fn(qml.execute(tapes, inner_dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 

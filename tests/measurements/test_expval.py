@@ -21,15 +21,6 @@ from pennylane.measurements import Expectation, Shots
 from pennylane.measurements.expval import ExpectationMP
 
 
-@pytest.mark.parametrize("obs", (qml.I(), qml.s_prod(2, qml.I()), qml.I() + qml.I()))
-def test_error_on_observable_with_no_wires(obs):
-    """Test that ``expval`` raises an error on any observable with no wires."""
-    with pytest.raises(
-        NotImplementedError, match="Expectation values of observables without wires"
-    ):
-        qml.expval(obs)
-
-
 def test_expval_identity_nowires_DQ():
     """Test that attempting to measure qml.Identity() with no wires raises an explicit error in default.qubit"""
 
@@ -38,9 +29,7 @@ def test_expval_identity_nowires_DQ():
     def qnode():
         return qml.expval(qml.Identity())
 
-    with pytest.raises(
-        NotImplementedError, match="Expectation values of observables without wires"
-    ):
+    with pytest.raises(NotImplementedError, match="Expectation values of qml.Identity()"):
         _ = qnode()
 
 
@@ -52,9 +41,7 @@ def test_expval_identity_nowires_LQ():
     def qnode():
         return qml.expval(qml.Identity())
 
-    with pytest.raises(
-        NotImplementedError, match="Expectation values of observables without wires"
-    ):
+    with pytest.raises(NotImplementedError, match="Expectation values of qml.Identity()"):
         _ = qnode()
 
 

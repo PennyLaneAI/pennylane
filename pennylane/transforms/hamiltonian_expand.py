@@ -24,6 +24,85 @@ from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
 
 
+def _grouping_hamiltonian_expand(tape):
+    hamiltonian = tape.measurements[0].obs
+    if hamiltonian.grouping_indices is None:
+        # explicitly selected grouping, but indices not yet computed
+        hamiltonian.compute_grouping()
+
+    coeff_groupings = []
+    obs_groupings = []
+    offset = 0
+    coeffs, obs = hamiltonian.terms()
+    for indices in hamiltonian.grouping_indices:
+        group_coeffs = []
+        obs_groupings.append([])
+        for i in indices:
+            if isinstance(obs[i], qml.Identity):
+                offset += coeffs[i]
+            else:
+                group_coeffs.append(coeffs[i])
+                obs_groupings[-1].append(obs[i])
+        coeff_groupings.append(qml.math.stack(group_coeffs))
+    # make one tape per grouping, measuring the
+    # observables in that grouping
+    tapes = []
+    for obs in obs_groupings:
+        new_tape = tape.__class__(tape.operations, (qml.expval(o) for o in obs), shots=tape.shots)
+
+        new_tape = new_tape.expand(stop_at=lambda obj: True)
+        tapes.append(new_tape)
+
+    def processing_fn(res_groupings):
+        dot_products = []
+        for c_group, r_group in zip(coeff_groupings, res_groupings):
+            if isinstance(r_group, (tuple, list, qml.numpy.builtins.SequenceBox)):
+                r_group = qml.math.stack(r_group)
+            if getattr(r_group, "shape", tuple()) == ():
+                r_group = qml.math.reshape(r_group, (1,))
+            if tape.batch_size:
+                r_group = r_group.T
+
+            if len(c_group) == 1 and len(r_group) != 1:
+                dot_products.append(r_group * c_group)
+            else:
+                dot_products.append(qml.math.dot(r_group, c_group))
+        summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+        interface = qml.math.get_deep_interface(res_groupings)
+        return qml.math.asarray(summed_dot_products + offset, like=interface)
+
+    return tapes, processing_fn
+
+
+def _naive_hamiltonian_expand(tape):
+    # make one tape per observable
+    hamiltonian = tape.measurements[0].obs
+    tapes = []
+    offset = 0
+    coeffs = []
+    for c, o in zip(*hamiltonian.terms()):
+        # pylint: disable=protected-access
+        if isinstance(o, qml.Identity):
+            offset += c
+        else:
+            new_tape = tape.__class__(tape.operations, [qml.expval(o)], shots=tape.shots)
+            tapes.append(new_tape)
+            coeffs.append(c)
+
+    # pylint: disable=function-redefined
+    def processing_fn(res):
+        dot_products = []
+        for c, r in zip(coeffs, res):
+            if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
+                dot_products.append(qml.math.squeeze(r) * c)
+            else:
+                dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
+        summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+        return qml.math.convert_like(summed_dot_products + offset, res[0])
+
+    return tapes, processing_fn
+
+
 @transform
 def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape], Callable):
     r"""
@@ -120,7 +199,7 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
 
-    if qml.math.shape(hamiltonian.coeffs) == (0,) and qml.math.shape(hamiltonian.ops) == (0,):
+    if len(hamiltonian.terms()[1]) == 0:
         raise ValueError(
             "The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion."
         )
@@ -130,89 +209,8 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     # and not hamiltonian.coeffs when recombining the results
 
     if group or hamiltonian.grouping_indices is not None:
-        if hamiltonian.grouping_indices is None:
-            # explicitly selected grouping, but indices not yet computed
-            hamiltonian.compute_grouping()
-
-        coeff_groupings = []
-        obs_groupings = []
-        offset = 0
-        coeffs, obs = hamiltonian.terms()
-        for indices in hamiltonian.grouping_indices:
-            group_coeffs = []
-            obs_groupings.append([])
-            for i in indices:
-                if isinstance(obs[i], qml.Identity):
-                    offset += coeffs[i]
-                else:
-                    group_coeffs.append(coeffs[i])
-                    obs_groupings[-1].append(obs[i])
-            coeff_groupings.append(qml.math.stack(group_coeffs))
-        # make one tape per grouping, measuring the
-        # observables in that grouping
-        tapes = []
-        for obs in obs_groupings:
-            new_tape = tape.__class__(
-                tape.operations, (qml.expval(o) for o in obs), shots=tape.shots
-            )
-
-            new_tape = new_tape.expand(stop_at=lambda obj: True)
-            tapes.append(new_tape)
-
-        def processing_fn(res_groupings):
-            # pylint: disable=no-member
-            res_groupings = [
-                (
-                    qml.math.stack(r)
-                    if isinstance(r, (list, tuple, qml.numpy.builtins.SequenceBox))
-                    else r
-                )
-                for r in res_groupings
-            ]
-            res_groupings = [
-                r if getattr(r, "shape", tuple()) else qml.math.reshape(r, (1,))
-                for r in res_groupings
-            ]
-
-            dot_products = []
-            for c_group, r_group in zip(coeff_groupings, res_groupings):
-                if tape.batch_size:
-                    r_group = r_group.T
-                if len(c_group) == 1 and len(r_group) != 1:
-                    dot_products.append(r_group * c_group)
-                else:
-                    dot_products.append(qml.math.dot(r_group, c_group))
-            summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-
-            return qml.math.convert_like(summed_dot_products + offset, res_groupings[0])
-
-        return tapes, processing_fn
-
-    # make one tape per observable
-    tapes = []
-    offset = 0
-    coeffs = []
-    for c, o in zip(*hamiltonian.terms()):
-        # pylint: disable=protected-access
-        if isinstance(o, qml.Identity):
-            offset += c
-        else:
-            new_tape = tape.__class__(tape.operations, [qml.expval(o)], shots=tape.shots)
-            tapes.append(new_tape)
-            coeffs.append(c)
-
-    # pylint: disable=function-redefined
-    def processing_fn(res):
-        dot_products = []
-        for c, r in zip(coeffs, res):
-            if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
-                dot_products.append(qml.math.squeeze(r) * c)
-            else:
-                dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
-        summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-        return qml.math.convert_like(summed_dot_products + offset, res[0])
-
-    return tapes, processing_fn
+        return _grouping_hamiltonian_expand(tape)
+    return _naive_hamiltonian_expand(tape)
 
 
 # pylint: disable=too-many-branches, too-many-statements
