@@ -212,11 +212,6 @@ class PauliWord(dict):
         memo[id(self)] = res
         return res
 
-    # def trace(self):
-    #     if len(self)==0:
-    #         return 1.
-    #     return 0.
-
     def __setitem__(self, key, item):
         """Restrict setting items after instantiation."""
         raise TypeError("PauliWord object does not support assignment")
