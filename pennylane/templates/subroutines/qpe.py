@@ -18,9 +18,10 @@ Contains the QuantumPhaseEstimation template.
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.resource import ErrorOperation
 
 
-class QuantumPhaseEstimation(Operation):
+class QuantumPhaseEstimation(Operation, ErrorOperation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -222,7 +223,7 @@ class QuantumPhaseEstimation(Operation):
 
         additive_error = qml.math.sum(sequence_error)
 
-        return additive_error
+        return qml.resource.error.SpectralNormError(additive_error)
 
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):

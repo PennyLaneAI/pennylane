@@ -73,8 +73,6 @@ def test_error_value():
     Op = CustomOP(wires=[0])
     QPE = qml.QuantumPhaseEstimation(Op, estimation_wires=range(1, 5))
 
-    print(QPE.error, qpe_error_ref)
-
     assert np.allclose(QPE.error, qpe_error_ref, atol=1e-4)
 
 
