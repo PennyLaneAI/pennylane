@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane.devices.DefaultQubitLegacy` device.
 # pylint: disable=too-many-arguments,too-few-public-methods
 # pylint: disable=protected-access,cell-var-from-loop
 import cmath
+import copy
 
 import math
 
@@ -87,6 +88,33 @@ U_cswap = np.array(
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
+
+
+def test_qnode_native_mcm(mocker):
+    """Tests that the legacy devices may support native MCM execution via the dynamic_one_shot transform."""
+
+    class MCMDevice(DefaultQubitLegacy):
+        def apply(self, *args, **kwargs):
+            pass
+
+        @classmethod
+        def capabilities(cls):
+            default_capabilities = copy.copy(DefaultQubitLegacy.capabilities())
+            default_capabilities["supports_mid_measure"] = True
+            return default_capabilities
+
+    dev = MCMDevice(wires=1, shots=100)
+    dev.operations.add("MidMeasureMP")
+    spy = mocker.spy(qml.dynamic_one_shot, "_transform")
+
+    @qml.qnode(dev, interface=None, diff_method=None)
+    def func():
+        _ = qml.measure(0)
+        return qml.expval(op=qml.PauliZ(0))
+
+    res = func()
+    assert spy.call_count == 1
+    assert isinstance(res, float)
 
 
 def test_analytic_deprecation():
