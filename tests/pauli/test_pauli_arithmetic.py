@@ -57,6 +57,28 @@ Y0 = PauliWord({0: "Y"})
 Z0 = PauliWord({0: "Z"})
 
 
+def test_pw_pw_multiplication_non_commutativity():
+    """Test that pauli word matrix multiplication is non-commutative and returns correct result"""
+
+    res1 = X0 @ Y0
+    res2 = Y0 @ X0
+    assert res1 == 1j * Z0
+    assert res2 == -1j * Z0
+
+
+def test_ps_ps_multiplication_non_commutativity():
+    """Test that pauli sentence matrix multiplication is non-commutative and returns correct result"""
+
+    pauliX = PauliSentence({PauliWord({0: "X"}): 1.0})
+    pauliY = PauliSentence({PauliWord({0: "Y"}): 1.0})
+    pauliZ = PauliSentence({PauliWord({0: "Z"}): 1j})
+
+    res1 = pauliX @ pauliY
+    res2 = pauliY @ pauliX
+    assert res1 == pauliZ
+    assert res2 == -1 * pauliZ
+
+
 def _pauli_to_op(p):
     """convert PauliWord or PauliSentence to Operator"""
     return p.operation()
@@ -71,77 +93,6 @@ def _id(p):
     """Leave operator as is"""
     # this is used for parametrization of tests
     return p
-
-
-class TestDeprecations:
-    def test_deprecation_warning_PauliWord(
-        self,
-    ):
-        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliWords"""
-        pauli1 = PauliWord({0: "X"})
-        pauli2 = PauliWord({0: "Y"})
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
-        ):
-            _ = pauli1 * pauli2
-
-    def test_deprecation_warning_PauliSentence(
-        self,
-    ):
-        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliSentences"""
-        pauli1 = PauliSentence({PauliWord({0: "X"}): 1})
-        pauli2 = PauliSentence({PauliWord({0: "Y"}): 1})
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
-        ):
-            _ = pauli1 * pauli2
-
-
-@pytest.mark.parametrize("pauli1", words)
-@pytest.mark.parametrize("pauli2", words)
-def test_legacy_multiplication_pwords(pauli1, pauli2):
-    """Test the legacy behavior for using the star operator for matrix multiplication of pauli words"""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        res1, coeff1 = pauli1 * pauli2
-    res2, coeff2 = pauli1._matmul(pauli2)
-    assert res1 == res2
-    assert coeff1 == coeff2
-
-
-@pytest.mark.parametrize("pauli1", sentences)
-@pytest.mark.parametrize("pauli2", sentences)
-def test_legacy_multiplication_psentences(pauli1, pauli2):
-    """Test the legacy behavior for using the star operator for matrix multiplication of pauli sentences"""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        assert pauli1 * pauli2 == pauli1 @ pauli2
-
-
-def test_legacy_pw_pw_multiplication_non_commutativity():
-    """Test that legacy pauli word matrix multiplication is non-commutative and returns correct result"""
-    pauliX = PauliWord({0: "X"})
-    pauliY = PauliWord({0: "Y"})
-    pauliZ = PauliWord({0: "Z"})
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        res1 = pauliX * pauliY
-        res2 = pauliY * pauliX
-    assert res1 == (pauliZ, 1j)
-    assert res2 == (pauliZ, -1j)
-
-
-def test_legacy_ps_ps_multiplication_non_commutativity():
-    """Test that legacy pauli sentence matrix multiplication is non-commutative and returns correct result"""
-    pauliX = PauliSentence({PauliWord({0: "X"}): 1.0})
-    pauliY = PauliSentence({PauliWord({0: "Y"}): 1.0})
-    pauliZ = PauliSentence({PauliWord({0: "Z"}): 1j})
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"):
-        res1 = pauliX * pauliY
-        res2 = pauliY * pauliX
-    assert res1 == pauliZ
-    assert res2 == -1 * pauliZ
 
 
 class TestPauliWord:
@@ -350,7 +301,7 @@ class TestPauliWord:
         assert copy_pw2 == word2
 
     @pytest.mark.parametrize("pw", words)
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0, np.int64(1), np.float32(0.5)])
     def test_mul(self, pw, scalar):
         """Test scalar multiplication"""
         res1 = scalar * pw
@@ -689,7 +640,7 @@ class TestPauliSentence:
         assert pauli2 == copy_ps2
 
     @pytest.mark.parametrize("ps", sentences)
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0, np.int64(1), np.float64(1.0)])
     def test_mul(self, ps, scalar):
         """Test scalar multiplication"""
         res1 = scalar * ps

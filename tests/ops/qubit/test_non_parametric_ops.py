@@ -582,72 +582,92 @@ class TestMultiControlledX:
 
     X = np.array([[0, 1], [1, 0]])
 
-    @pytest.mark.parametrize(
-        "control_wires,wires,control_values,expected_warning_message",
-        [
-            ([0], 1, "0", "The control_wires keyword will be removed soon."),
-        ],
-    )
-    def test_warning_depractation_controlwires(
-        self, control_wires, wires, control_values, expected_warning_message
-    ):
-        target_wires = wires
-        with pytest.warns(UserWarning, match=expected_warning_message):
-            qml.MultiControlledX(
-                control_wires=control_wires, wires=target_wires, control_values=control_values
-            )
+    def test_str_control_values_deprecation(self):
+        """Tests that control_values specified with a bit string is deprecated."""
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="Specifying control values using a bitstring is deprecated",
+        ):
+            _ = qml.MultiControlledX(wires=[0, 1, 2], control_values="01")
 
     @pytest.mark.parametrize(
-        "control_wires,wires,control_values,expected_error_message",
+        "wires, control_values, error_message",
         [
-            (None, None, "10", "Must specify the wires where the operation acts on"),
-            (None, [0, 1, 2], "ab", "String of control values can contain only '0' or '1'."),
+            (None, [1, 0], "Must specify the wires where the operation acts on"),
+            ([0, 1, 2], [0, 1, 0], "Length of control values must equal number of control wires."),
             (
-                None,
+                [1],
+                [1],
+                r"MultiControlledX: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
+            ),
+        ],
+    )
+    def test_invalid_arguments_to_init(self, wires, control_values, error_message):
+        """Tests initializing a MultiControlledX with invalid arguments"""
+        with pytest.raises(ValueError, match=error_message):
+            _ = qml.MultiControlledX(wires=wires, control_values=control_values)
+
+    @pytest.mark.parametrize(
+        "control_wires, wires, control_values, error_message",
+        [
+            (
+                [0, 1],
+                [2],
+                [0, 1, 0],
+                "Length of control values must equal number of control wires.",
+            ),
+            ([0], None, [1], "Must specify the wires where the operation acts on"),
+            ([0, 1], 2, [0, 1, 1], "Length of control values must equal number of control wires."),
+            ([0, 1], [2, 3], [1, 0], "MultiControlledX accepts a single target wire."),
+        ],
+    )
+    def test_invalid_arguments_to_init_old(
+        self, control_wires, wires, control_values, error_message
+    ):
+        """Tests initializing a MultiControlledX with invalid arguments with the old interface"""
+        with pytest.warns(
+            UserWarning,
+            match="The control_wires keyword for MultiControlledX is deprecated",
+        ):
+            with pytest.raises(ValueError, match=error_message):
+                _ = qml.MultiControlledX(
+                    control_wires=control_wires, wires=wires, control_values=control_values
+                )
+
+    @pytest.mark.parametrize(
+        "wires, control_values, error_message",
+        [
+            ([0, 1, 2], "ab", "String of control values can contain only '0' or '1'."),
+            (
                 [0, 1, 2],
                 "011",
                 "Length of control values must equal number of control wires.",
             ),
-            (
-                None,
-                [1],
-                "1",
-                r"MultiControlledX: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
-            ),
-            ([0], None, "", "Must specify the wires where the operation acts on"),
-            ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
-            ([0, 1], 2, "011", "Length of control values must equal number of control wires."),
-            ([0, 1], [2, 3], "10", "MultiControlledX accepts a single target wire."),
         ],
     )
-    @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon.")
-    def test_invalid_mixed_polarity_controls(
-        self, control_wires, wires, control_values, expected_error_message
-    ):
-        """Test if MultiControlledX properly handles invalid mixed-polarity
-        control values."""
-        target_wires = wires
-
-        with pytest.raises(ValueError, match=expected_error_message):
-            qml.MultiControlledX(
-                control_wires=control_wires, wires=target_wires, control_values=control_values
-            ).matrix()
+    def test_invalid_str_control_values(self, wires, control_values, error_message):
+        """Tests control_values specified with invalid strings"""
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="Specifying control values using a bitstring is deprecated",
+        ):
+            with pytest.raises(ValueError, match=error_message):
+                _ = qml.MultiControlledX(wires=wires, control_values=control_values)
 
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
         [
-            ([0], 1, "0"),
-            ([0, 1], 2, "00"),
-            ([0, 1], 2, "10"),
-            ([1, 0], 2, "10"),
-            ([0, 1], 2, "11"),
-            ([0, 2], 1, "10"),
-            ([1, 2, 0], 3, "100"),
-            ([1, 0, 2, 4], 3, "1001"),
-            ([0, 1, 2, 5, 3, 6], 4, "100001"),
+            ([0], 1, [0]),
+            ([0, 1], 2, [0, 0]),
+            ([0, 1], 2, [1, 0]),
+            ([1, 0], 2, [1, 0]),
+            ([0, 1], 2, [1, 1]),
+            ([0, 2], 1, [1, 0]),
+            ([1, 2, 0], 3, [1, 0, 0]),
+            ([1, 0, 2, 4], 3, [1, 0, 0, 1]),
+            ([0, 1, 2, 5, 3, 6], 4, [1, 0, 0, 0, 0, 1]),
         ],
     )
-    @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon.")
     def test_mixed_polarity_controls_old(self, control_wires, wires, control_values):
         """Test if MultiControlledX properly applies mixed-polarity
         control values with old version of the arguments."""
@@ -673,7 +693,7 @@ class TestMultiControlledX:
         # if we conjugated the specified control wires with Pauli X and applied the
         # "regular" ControlledQubitUnitary in between.
 
-        x_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
+        x_locations = [x for x in range(len(control_values)) if control_values[x] == 0]
 
         @qml.qnode(dev)
         def circuit_pauli_x():
@@ -690,10 +710,12 @@ class TestMultiControlledX:
 
             return qml.state()
 
-        mpmct_state = circuit_mpmct()
+        with pytest.warns(UserWarning, match="deprecated"):
+            mpmct_state = circuit_mpmct()
+
         pauli_x_state = circuit_pauli_x()
 
-        assert np.allclose(mpmct_state, pauli_x_state)
+        assert qml.math.allclose(mpmct_state, pauli_x_state)
 
     def test_decomposition_not_enough_wires(self):
         """Test that the decomposition raises an error if the number of wires"""
@@ -703,7 +725,7 @@ class TestMultiControlledX:
     def test_decomposition_no_control_values(self):
         """Test decomposition has default control values of all ones."""
         decomp1 = qml.MultiControlledX.compute_decomposition((0, 1, 2))
-        decomp2 = qml.MultiControlledX.compute_decomposition((0, 1, 2), control_values="111")
+        decomp2 = qml.MultiControlledX.compute_decomposition((0, 1, 2), control_values=[1, 1, 1])
 
         assert len(decomp1) == len(decomp2)
 
@@ -713,15 +735,15 @@ class TestMultiControlledX:
     @pytest.mark.parametrize(
         "wires,control_values",
         [
-            ([0, 1], "0"),
-            ([0, 1, 2], "00"),
-            ([0, 1, 2], "10"),
-            ([1, 0, 2], "10"),
-            ([0, 1, 2], "11"),
-            ([0, 2, 1], "10"),
-            ([1, 2, 0, 3], "100"),
-            ([1, 0, 2, 4, 3], "1001"),
-            ([0, 1, 2, 5, 3, 6, 4], "100001"),
+            ([0, 1], [0]),
+            ([0, 1, 2], [0, 0]),
+            ([0, 1, 2], [1, 0]),
+            ([1, 0, 2], [1, 0]),
+            ([0, 1, 2], [1, 1]),
+            ([0, 2, 1], [1, 0]),
+            ([1, 2, 0, 3], [1, 0, 0]),
+            ([1, 0, 2, 4, 3], [1, 0, 0, 1]),
+            ([0, 1, 2, 5, 3, 6, 4], [1, 0, 0, 0, 0, 1]),
         ],
     )
     def test_mixed_polarity_controls(self, wires, control_values):
@@ -749,7 +771,7 @@ class TestMultiControlledX:
         # if we conjugated the specified control wires with Pauli X and applied the
         # "regular" ControlledQubitUnitary in between.
 
-        x_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
+        x_locations = [x for x in range(len(control_values)) if control_values[x] == 0]
 
         @qml.qnode(dev)
         def circuit_pauli_x():
@@ -769,7 +791,7 @@ class TestMultiControlledX:
         mpmct_state = circuit_mpmct()
         pauli_x_state = circuit_pauli_x()
 
-        assert np.allclose(mpmct_state, pauli_x_state)
+        assert qml.math.allclose(mpmct_state, pauli_x_state)
 
     def test_not_enough_workers(self):
         """Test that a ValueError is raised when more than 2 control wires are to be decomposed with
@@ -791,13 +813,13 @@ class TestMultiControlledX:
         ):
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
 
-    @pytest.mark.parametrize("control_val", ["0", "1"])
+    @pytest.mark.parametrize("control_val", [0, 1])
     @pytest.mark.parametrize("n_ctrl_wires", range(1, 6))
     def test_decomposition_with_flips(self, n_ctrl_wires, control_val, mocker):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on varying the control values."""
-        control_values = control_val * n_ctrl_wires
+        control_values = [control_val] * n_ctrl_wires
         control_target_wires = list(range(n_ctrl_wires)) + [n_ctrl_wires]
         work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
 
@@ -894,7 +916,7 @@ class TestMultiControlledX:
         """Test compute_matrix assumes all control on "1" if no
         `control_values` provided"""
         mat1 = qml.MultiControlledX.compute_matrix([0, 1])
-        mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values="11")
+        mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values=[1, 1])
         assert np.allclose(mat1, mat2)
 
     def test_repr(self):

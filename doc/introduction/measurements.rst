@@ -300,6 +300,44 @@ The decorator syntax applies equally well:
     def qnode(x, y):
         (...)
 
+The one-shot transform
+**********************
+
+Devices supporting mid-circuit measurements (defined using
+:func:`~.pennylane.measure`) and conditional operations (defined using
+:func:`~.pennylane.cond`) natively can estimate dynamic circuits by executing
+them one shot at a time. This is the default behaviour of a `~.pennylane.QNode` that has a
+device supporting mid-circuit measurements, as well as any `~.pennylane.QNode` with the
+:func:`~.pennylane.dynamic_one_shot` quantum function transform.
+As the name suggests, this transform only works for a `~.pennylane.QNode` executing with finite shots
+and it will raise an error if the device does not support mid-circuit measurements
+natively.
+The :func:`~.pennylane.defer_measurements` transform therefore remains the default for
+analytic calculations.
+
+The :func:`~.pennylane.dynamic_one_shot` transform is usually advantageous compared
+with the :func:`~.pennylane.defer_measurements` transform in the
+large-number-of-mid-circuit-measurements and small-number-of-shots limit.  This is because, unlike the
+deferred measurement principle, the method does not need an additional wire for every
+mid-circuit measurement present in the circuit. Otherwise, one generally gets
+equivalent results, so you may try both in an attempt to improve performance without
+worrying further about accuracy.
+
+The transform can be applied to a QNode as follows:
+
+.. code-block:: python
+
+    @qml.dynamic_one_shot
+    @qml.qnode(dev)
+    def my_quantum_function(x, y):
+        (...)
+
+.. warning::
+
+    Dynamic circuits executed with shots should be differentiated with the finite-difference method.
+    If the ``defer_measurements`` transform is used in analytic mode, ``backprop`` is also a viable
+    option.
+
 Resetting wires
 ***************
 
