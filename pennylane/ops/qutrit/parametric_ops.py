@@ -112,7 +112,9 @@ class TRX(Operation):
     _index_dict = {(0, 1): 1, (0, 2): 4, (1, 2): 6}
 
     def generator(self):
-        return qml.Hamiltonian([-0.5], [qml.GellMann(self.wires, index=self._index_dict[self.subspace])])
+        return qml.Hamiltonian(
+            [-0.5], [qml.GellMann(self.wires, index=self._index_dict[self.subspace])]
+        )
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
         self._subspace = validate_subspace(subspace)
@@ -257,7 +259,9 @@ class TRY(Operation):
     _index_dict = {(0, 1): 2, (0, 2): 5, (1, 2): 7}
 
     def generator(self):
-        return qml.Hamiltonian([-0.5], [qml.GellMann(self.wires, index=self._index_dict[self.subspace])])
+        return qml.Hamiltonian(
+            [-0.5], [qml.GellMann(self.wires, index=self._index_dict[self.subspace])]
+        )
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
         self._subspace = validate_subspace(subspace)
