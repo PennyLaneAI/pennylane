@@ -307,7 +307,7 @@ class TestDotPauliSentence:
         to the simplified hamiltonian."""
         ps = qml.dot(coeffs0, ops0, pauli=True)
         h_ps = ps.hamiltonian()
-        h = Hamiltonian(coeffs0, ops0)
+        h = qml.Hamiltonian(coeffs0, ops0)
         h.simplify()
         assert qml.equal(h_ps, h)
 
