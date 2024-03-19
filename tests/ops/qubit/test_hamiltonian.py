@@ -683,7 +683,10 @@ def test_deprecation_with_new_opmath(recwarn):
     """Test that a warning is raised if attempting to create a Hamiltonian with new operator
     arithmetic enabled."""
     if qml.operation.active_new_opmath():
-        with pytest.warns(UserWarning, match="Using qml.Hamiltonian with new operator arithmetic"):
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated",
+        ):
             _ = qml.ops.Hamiltonian([1.0], [qml.X(0)])
 
     else:
