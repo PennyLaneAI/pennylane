@@ -23,7 +23,7 @@ fonttools==4.50.0
 future==1.0.0
 identify==2.5.35
 idna==3.6
-importlib_resources==6.3.0
+importlib_resources==6.3.2
 iniconfig==2.0.0
 kiwisolver==1.4.5
 matplotlib==3.8.3
