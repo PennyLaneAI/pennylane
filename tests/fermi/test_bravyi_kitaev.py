@@ -42,7 +42,7 @@ FERMI_WORDS_AND_OPS = [
     (
         FermiWord({(0, 0): "+"}),
         2,
-        # trivial case of a creation operator with two qubits, 0^ -> (X_0 @ X_1 - iY_0 @ X_1) / 2 
+        # trivial case of a creation operator with two qubits, 0^ -> (X_0 @ X_1 - iY_0 @ X_1) / 2
         ([0.5, -0.5j], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(0) @ qml.PauliX(1)]),
     ),
     (
@@ -133,7 +133,6 @@ FERMI_WORDS_AND_OPS = [
             ],
         ),
     ),
-
     (
         FermiWord({(0, 1): "+", (1, 0): "-", (2, 1): "+", (3, 1): "-"}),
         6,
@@ -157,7 +156,7 @@ FERMI_OPS_COMPLEX = [
         # -0.125j [Y0 Y1 X2 Y3] +
         # (0.125+0j) [Y0 Y1 Y2 Y3]
         (
-            [0.125, 0.125j, 0.125+0j, 0.125j, -0.125j, 0.125+0j, -0.125j, 0.125],
+            [0.125, 0.125j, 0.125 + 0j, 0.125j, -0.125j, 0.125 + 0j, -0.125j, 0.125],
             [
                 qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
                 qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),

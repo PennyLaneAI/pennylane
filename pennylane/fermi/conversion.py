@@ -13,6 +13,7 @@
 # limitations under the License.
 """Functions to convert a fermionic operator to the qubit basis."""
 
+import numpy as np
 from functools import singledispatch
 from typing import Union
 
@@ -21,7 +22,7 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 from .fermionic import FermiSentence, FermiWord
-import numpy as np
+
 
 # pylint: disable=unexpected-keyword-arg
 def jordan_wigner(
@@ -301,7 +302,6 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
     return qubit_operator
 
 
-
 def bravyi_kitaev(
     fermi_operator: Union[FermiWord, FermiSentence],
     n: int,
@@ -310,7 +310,7 @@ def bravyi_kitaev(
     tol: float = None,
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Bravyi-Kitaev mapping.
-    
+
     .. note::
 
         Hamiltonians created with this mapping should be used with operators and states that are
@@ -351,7 +351,7 @@ def bravyi_kitaev(
         \begin{align*}
            a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{R(n)}\right ), \\\\
         \end{align*}
-    
+
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators, and :math:`U(n)`, :math:`P(n)` and :math:`R(n)` represent update, parity and remainder sets respectively. For more information on sets, check reference: arXiv:1812.02233
 
     Args:
@@ -391,6 +391,7 @@ def bravyi_kitaev(
     """
     return _bravyi_kitaev_dispatch(fermi_operator, n, ps, wire_map, tol)
 
+
 def _update_set(j, n):
     """
     Computes the update set of the j-th orbital in n qubits.
@@ -406,9 +407,9 @@ def _update_set(j, n):
 
     if n % 2 == 0:
         if j < n / 2:
-            indices = np.append(indices, np.append(n - 1, update_set(j, int(n / 2))))
+            indices = np.append(indices, np.append(n - 1, _update_set(j, int(n / 2))))
         else:
-            indices = np.append(indices, update_set(j - int(n / 2), int(n / 2)) + int(n / 2))
+            indices = np.append(indices, _update_set(j - int(n / 2), int(n / 2)) + int(n / 2))
     return indices
 
 
@@ -427,38 +428,35 @@ def _parity_set(j, n):
     indices = np.array([], dtype=int)
     if n % 2 == 0:
         if j < n / 2:
-            indices = np.append(indices, parity_set(j, int(n / 2)))
+            indices = np.append(indices, _parity_set(j, int(n / 2)))
         else:
             indices = np.append(
-                indices, np.append(parity_set(j - int(n / 2), int(n / 2)) + int(n / 2), int(n / 2 - 1))
-        )
+                indices,
+                np.append(_parity_set(j - int(n / 2), int(n / 2)) + int(n / 2), int(n / 2 - 1)),
+            )
 
     return indices
-        
 
-def _flip_set(j,n):
 
+def _flip_set(j, n):
     """
-        Computes the flip set of the j-th orbital in n qubits.
+    Computes the flip set of the j-th orbital in n qubits.
 
-        Args:
-            j (int) : the orbital index
-            n (int) : the total number of qubits
-        Returns:
-            numpy.ndarray: Array containing information if the phase of orbital j is same as qubit j.
+    Args:
+        j (int) : the orbital index
+        n (int) : the total number of qubits
+    Returns:
+        numpy.ndarray: Array containing information if the phase of orbital j is same as qubit j.
     """
     indices = np.array([])
     if n % 2 == 0:
         if j < n / 2:
-            indices = np.append(indices, flip_set(j, int(n / 2)))
+            indices = np.append(indices, _flip_set(j, int(n / 2)))
         elif n / 2 <= j < n - 1:
-            indices = np.append(indices, flip_set(j - int(n / 2), int(n / 2)) + int(n / 2))
+            indices = np.append(indices, _flip_set(j - int(n / 2), int(n / 2)) + int(n / 2))
         else:
-            indices = np.append(
-                np.append(indices, flip_set(j - n / 2, n / 2) + n / 2), n / 2 - 1
-        )
+            indices = np.append(np.append(indices, _flip_set(j - n / 2, n / 2) + n / 2), n / 2 - 1)
     return indices
-
 
 
 @singledispatch
@@ -474,7 +472,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
 
     coeffs = {"+": -0.5j, "-": 0.5j}
     qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
-        
+
     rng = 1
     while np.power(2, rng) < n:
         rng += 1
@@ -487,10 +485,10 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
                 f"Can't create or annihilate a particle on qubit number {wire} for a system with only {n} qubits"
             )
 
-        U_set = list(filter(lambda x: x < n, update_set(wire, bin_rng)))
+        U_set = list(filter(lambda x: x < n, _update_set(wire, bin_rng)))
         update_string = dict(zip(U_set, ["X"] * len(U_set)))
 
-        P_set = parity_set(wire, bin_rng)
+        P_set = _parity_set(wire, bin_rng)
         parity_string = dict(zip(P_set, ["Z"] * len(P_set)))
 
         if wire % 2 == 0:
@@ -501,8 +499,8 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
                 }
             )
         else:
-            F_set = flip_set(wire, bin_rng)
-            
+            F_set = _flip_set(wire, bin_rng)
+
             R_set = np.setdiff1d(P_set, F_set)
             remainder_string = dict(zip(R_set, ["Z"] * len(R_set)))
 
@@ -512,7 +510,6 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
                     PauliWord({**remainder_string, **{wire: "Y"}, **update_string}): coeffs[sign],
                 }
             )
-            
 
     for pw in qubit_operator:
         if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
@@ -526,6 +523,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
         return qubit_operator.map_wires(wire_map)
 
     return qubit_operator
+
 
 @_bravyi_kitaev_dispatch.register
 def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
@@ -552,4 +550,3 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
         return qubit_operator.map_wires(wire_map)
 
     return qubit_operator
-

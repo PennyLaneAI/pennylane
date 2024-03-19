@@ -86,7 +86,7 @@
   >>> circuit()
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
   ```
-  
+
 * The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
 
@@ -116,6 +116,21 @@
   [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
 
   ```
+
+* Added new function `qml.fermi.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
+
+```python
+  import pennylane as qml
+  fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+
+  qubit_ham = qml.fermi.bravyi_kitaev(fermi_ham, n=6)
+  ```
+
+  ```pycon
+  >>> print(qubit_ham)
+  -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
+  ```
+  
 
 <h3>Improvements 🛠</h3>
 
