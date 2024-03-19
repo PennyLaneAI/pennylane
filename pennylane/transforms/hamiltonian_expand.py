@@ -15,6 +15,7 @@
 Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
+from functools import partial
 from typing import List, Sequence, Callable
 
 import pennylane as qml
@@ -22,6 +23,33 @@ from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
+
+
+def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
+    """Sums up results for the expectation value of a multi-term observable when grouping is involved.
+
+    Args:
+        res_groupings (ResultBatch): the results from executing the batch of tapes with grouped observables
+        coeff_groupings (List[TensorLike]): the coefficients in the same grouped structure as the results
+        batch_size (Optional[int]): the batch size of the tape and corresponding results
+        offset (TensorLike): any constant offset from the multi-term observable
+    """
+    dot_products = []
+    for c_group, r_group in zip(coeff_groupings, res_groupings):
+        if isinstance(r_group, (tuple, list, qml.numpy.builtins.SequenceBox)):
+            r_group = qml.math.stack(r_group)
+        if getattr(r_group, "shape", tuple()) == ():
+            r_group = qml.math.reshape(r_group, (1,))
+        if batch_size:
+            r_group = r_group.T
+
+        if len(c_group) == 1 and len(r_group) != 1:
+            dot_products.append(r_group * c_group)
+        else:
+            dot_products.append(qml.math.dot(r_group, c_group))
+    summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+    interface = qml.math.get_deep_interface(res_groupings)
+    return qml.math.asarray(summed_dot_products + offset, like=interface)
 
 
 def _grouping_hamiltonian_expand(tape):
@@ -53,25 +81,33 @@ def _grouping_hamiltonian_expand(tape):
         new_tape = new_tape.expand(stop_at=lambda obj: True)
         tapes.append(new_tape)
 
-    def processing_fn(res_groupings):
-        dot_products = []
-        for c_group, r_group in zip(coeff_groupings, res_groupings):
-            if isinstance(r_group, (tuple, list, qml.numpy.builtins.SequenceBox)):
-                r_group = qml.math.stack(r_group)
-            if getattr(r_group, "shape", tuple()) == ():
-                r_group = qml.math.reshape(r_group, (1,))
-            if tape.batch_size:
-                r_group = r_group.T
+    batch_size = tape.batch_size
 
-            if len(c_group) == 1 and len(r_group) != 1:
-                dot_products.append(r_group * c_group)
-            else:
-                dot_products.append(qml.math.dot(r_group, c_group))
-        summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-        interface = qml.math.get_deep_interface(res_groupings)
-        return qml.math.asarray(summed_dot_products + offset, like=interface)
+    return tapes, partial(
+        grouping_processing_fn,
+        coeff_groupings=coeff_groupings,
+        batch_size=batch_size,
+        offset=offset,
+    )
 
-    return tapes, processing_fn
+
+def naive_processing_fn(res, coeffs, offset):
+    """Sum up the results weighted by coefficients to get the expectation value of a multi-term observable.
+
+    Args:
+        res (ResultBatch): the result of executing a batch of tapes where each tape is a different term in the observable.
+        coeffs (List(TensorLike)): The weights for each result in ``res``
+        offset (TensorLike): any constant offset from the multi-term observable.
+
+    """
+    dot_products = []
+    for c, r in zip(coeffs, res):
+        if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
+            dot_products.append(qml.math.squeeze(r) * c)
+        else:
+            dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
+    summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+    return qml.math.convert_like(summed_dot_products + offset, res[0])
 
 
 def _naive_hamiltonian_expand(tape):
@@ -81,7 +117,6 @@ def _naive_hamiltonian_expand(tape):
     offset = 0
     coeffs = []
     for c, o in zip(*hamiltonian.terms()):
-        # pylint: disable=protected-access
         if isinstance(o, qml.Identity):
             offset += c
         else:
@@ -89,18 +124,7 @@ def _naive_hamiltonian_expand(tape):
             tapes.append(new_tape)
             coeffs.append(c)
 
-    # pylint: disable=function-redefined
-    def processing_fn(res):
-        dot_products = []
-        for c, r in zip(coeffs, res):
-            if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
-                dot_products.append(qml.math.squeeze(r) * c)
-            else:
-                dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
-        summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-        return qml.math.convert_like(summed_dot_products + offset, res[0])
-
-    return tapes, processing_fn
+    return tapes, partial(naive_processing_fn, coeffs=coeffs, offset=offset)
 
 
 @transform
