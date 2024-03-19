@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
+from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import (
     _scalar,
     _simplify,
@@ -699,11 +700,85 @@ class TestPrivateFunctions:
 class TestError:
     """Test the error estimation functionality"""
 
-    def test_one_norm_error(self):
-        assert True
+    one_norm_error_dict = {
+        (1, 1): lambda a1, a2, t: (t * (abs(a1) + abs(a2))) ** 2,
+        (2, 1): lambda a1, a2, t: (5 / 4) * (t * (abs(a1) + abs(a2))) ** 2,
+        (1, 2): lambda a1, a2, t: (3 / 2) * (t * (abs(a1) + abs(a2))) ** 3,
+        (2, 2): lambda a1, a2, t: (65 / 24) * (t * (abs(a1) + abs(a2))) ** 3,
+        (1, 4): lambda a1, a2, t: ((10**5 + 1) / 120) * (t * (abs(a1) + abs(a2))) ** 5,
+    }
 
-    def test_comm_error(self):
-        assert True
+    @pytest.mark.parametrize(
+        "steps, order",
+        (
+            (1, 1),
+            (2, 1),
+            (1, 2),
+            (2, 2),
+            (1, 4),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "h_coeffs",
+        (
+            (1, 1),
+            (0.5, 2),
+            (1.23, -0.45),
+            (1j, 3.14j),
+        ),
+    )
+    @pytest.mark.parametrize("time", (1, 0.5, 0.25, 0.01))
+    def test_one_norm_error(self, steps, order, time, h_coeffs):
+        h_ops = (qml.s_prod(h_coeffs[0], qml.X(0)), qml.s_prod(h_coeffs[1], qml.Z(0)))
+        expected_error = self.one_norm_error_dict[(steps, order)](h_coeffs[0], h_coeffs[1], time)
+
+        computed_error = _one_norm_error(h_ops, time, order, steps, fast=False)
+        assert qnp.isclose(computed_error, expected_error, atol=1e-12)
+
+        computed_error_fast = _one_norm_error(h_ops, time, order, steps, fast=True)
+        assert (
+            qnp.isclose(computed_error_fast, expected_error, atol=1e-12)
+            or computed_error_fast > expected_error
+        )
+
+    commutator_error_dict = {
+        (1, 1): lambda a1, a2, t: 4 * t**2 * abs(a1) * abs(a2),
+        (2, 1): lambda a1, a2, t: 8 * t**2 * abs(a1) * abs(a2),
+        (1, 2): lambda a1, a2, t: (16 / 3) * t**3 * abs(a1) * abs(a2) * (abs(a1) + abs(a2)),
+        (2, 2): lambda a1, a2, t: (32 / 3) * t**3 * abs(a1) * abs(a2) * (abs(a1) + abs(a2)),
+    }
+
+    @pytest.mark.parametrize(
+        "steps, order",
+        (
+            (1, 1),
+            (2, 1),
+            (1, 2),
+            (2, 2),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "h_coeffs",
+        (
+            (1, 1),
+            (0.5, 2),
+            (1.23, -0.45),
+            (1j, 3.14j),
+        ),
+    )
+    @pytest.mark.parametrize("time", (1, 0.5, 0.25, 0.01))
+    def test_comm_error(self, steps, order, time, h_coeffs):
+        h_ops = (qml.s_prod(h_coeffs[0], qml.X(0)), qml.s_prod(h_coeffs[1], qml.Z(0)))
+        expected_error = self.commutator_error_dict[(steps, order)](h_coeffs[0], h_coeffs[1], time)
+
+        computed_error = _comm_error(h_ops, time, order, steps, fast=False)
+        assert qnp.isclose(computed_error, expected_error, atol=1e-12)
+
+        computed_error_fast = _comm_error(h_ops, time, order, steps, fast=True)
+        assert (
+            qnp.isclose(computed_error_fast, expected_error, atol=1e-12)
+            or computed_error_fast > expected_error
+        )
 
 
 class TestDecomposition:

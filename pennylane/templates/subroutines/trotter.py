@@ -96,7 +96,7 @@ def _recursive_nested_commutator(A, B, alpha):
 # Compute commutator error:
 def _comm_error(h_ops, t, p, n, fast):
     upsilon = _compute_repetitions(p, n)
-    pre_factor = 2 * upsilon * t ** (p + 1) / (math.factorial(p + 1))
+    pre_factor = (2 * upsilon * t ** (p + 1)) / (p + 1)
 
     ops_index_lst, coeffs_lst = _flatten_trotter(len(h_ops), p, n)
 
@@ -115,7 +115,7 @@ def _comm_error(h_ops, t, p, n, fast):
 
                 nested_comm = _recursive_nested_commutator(H_i, nested_comm, alpha_i)
 
-            h_comm_norm += c * _spectral_norm(nested_comm, fast=fast)
+            h_comm_norm += _spectral_norm(nested_comm, fast=fast) / c
 
     return pre_factor * h_comm_norm
 
