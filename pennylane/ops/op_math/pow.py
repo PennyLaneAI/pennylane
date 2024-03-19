@@ -329,7 +329,7 @@ class Pow(ScalarSymbolicOp):
 
         See also :func:`~.generator`
         """
-        return qml.Hamiltonian([self.z], [self.base.generator()]).simplify() # TODO: ask about this
+        return qml.Hamiltonian([self.z], [self.base.generator()]).simplify()  # TODO: ask about this
 
     def pow(self, z):
         return [Pow(base=self.base, z=self.z * z)]
