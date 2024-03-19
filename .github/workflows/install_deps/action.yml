@@ -70,12 +70,12 @@ runs:
         TORCH_VERSION: ${{ inputs.pytorch_version != '' && format('=={0}', inputs.pytorch_version) || '' }}
       run: pip install "torch${{ env.TORCH_VERSION }}" -f https://download.pytorch.org/whl/torch_stable.html
 
-    - name: Install TensorFlow
+    - name: Install TensorFlow with Keras2
       shell: bash
       if: inputs.install_tensorflow == 'true'
       env:
         TF_VERSION: ${{ inputs.tensorflow_version != '' && format('~={0}', inputs.tensorflow_version) || '' }}
-      run: pip install "tensorflow${{ env.TF_VERSION }}" "keras${{ env.TF_VERSION }}"
+      run: pip install "tensorflow${{ env.TF_VERSION }}" "tf-keras${{ env.TF_VERSION }}"
 
     - name: Install JAX
       shell: bash
