@@ -84,6 +84,12 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
+    for m in tape.measurements:
+        if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
+            raise TypeError(
+                f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
+            )
+
     aux_tape = init_auxiliary_tape(tape)
     output_tapes = [aux_tape] * tape.shots.total_shots
 
@@ -111,6 +117,29 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
         return parse_native_mid_circuit_measurements(tape, all_shot_meas, list_mcm_values_dict)
 
     return output_tapes, processing_fn
+
+
+@dynamic_one_shot.custom_qnode_transform
+def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
+    """Custom qnode transform for ``dynamic_one_shot``."""
+    if tkwargs.get("device", None):
+        raise ValueError(
+            "Cannot provide a 'device' value directly to the dynamic_one_shot decorator "
+            "when transforming a QNode."
+        )
+    if qnode.device is not None:
+        support_mcms = hasattr(qnode.device, "capabilities") and qnode.device.capabilities().get(
+            "supports_mid_measure", False
+        )
+        support_mcms = support_mcms or isinstance(
+            qnode.device, qml.devices.default_qubit.DefaultQubit
+        )
+        if not support_mcms:
+            raise TypeError(
+                f"Device {qnode.device.name} does not support mid-circuit measurements natively, and hence it does not support the dynamic_one_shot transform. `default.qubit` and `lightning.qubit` currently support mid-circuit measurements and the dynamic_one_shot transform."
+            )
+    tkwargs.setdefault("device", qnode.device)
+    return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
 def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
