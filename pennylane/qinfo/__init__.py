@@ -23,4 +23,5 @@ from .transforms import (
     fidelity,
     relative_entropy,
     trace_distance,
+    vn_entanglement_entropy,
 )

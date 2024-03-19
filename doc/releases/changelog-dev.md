@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
+  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
+
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
   `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
