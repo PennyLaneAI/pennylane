@@ -43,10 +43,10 @@ class TestError:
 
     @pytest.mark.parametrize(
         # the reference error is computed manually for a QPE operation with 2 estimation wires
-        ("operator_error", "reference_error"),
+        ("operator_error", "expected_error"),
         [(0.01, 0.03), (0.02, 0.06), (0.03, 0.09)],
     )
-    def test_error_operator(self, operator_error, reference_error):
+    def test_error_operator(self, operator_error, expected_error):
         """Test that QPE error is correct for a given custom operator."""
 
         class CustomOP(qml.resource.ErrorOperation):
@@ -57,7 +57,7 @@ class TestError:
         operator = CustomOP(wires=[0])
         qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error.error
 
-        assert np.allclose(qpe_error, reference_error)
+        assert np.allclose(qpe_error, expected_error)
 
     def test_error_unitary(self):
         """Test that QPE error is correct for a given unitary error."""
@@ -80,6 +80,26 @@ class TestError:
         qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error.error
 
         assert np.allclose(qpe_error, matrix_error, atol=1e-4)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        # the reference error is computed manually for a QPE operation with 2 estimation wires
+        ("operator_error", "expected_error"),
+        [(0.01, 0.03)],
+    )
+    @pytest.mark.parametrize("interface", ("autograd", "jax", "torch", "tensorflow"))
+    def test_error_interfaces(self, operator_error, interface, expected_error):
+        """Test that the error method works with all interfaces"""
+
+        class CustomOP(qml.resource.ErrorOperation):
+            @property
+            def error(self):
+                return qml.resource.SpectralNormError(qml.math.array(operator_error))
+
+        operator = CustomOP(wires=[0])
+        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error.error
+
+        assert np.allclose(qpe_error, expected_error)
 
 
 class TestDecomposition:
