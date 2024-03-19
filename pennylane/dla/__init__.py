@@ -15,3 +15,4 @@
 
 
 from .lie_closure import lie_closure
+from .adjoint_repr import adjoint_repr
