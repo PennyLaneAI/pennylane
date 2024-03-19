@@ -70,9 +70,8 @@ class ErrorOperation(Operation):
         the error of the operation.
     """
 
-    @property
     @abstractmethod
-    def error(self) -> AlgorithmicError:
+    def error(self, *args, **kwargs) -> AlgorithmicError:
         """Computes the error of the operation.
 
         Returns:
