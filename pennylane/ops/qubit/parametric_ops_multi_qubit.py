@@ -1242,10 +1242,8 @@ class IsingXY(Operation):
         return qml.Hamiltonian(
             [0.25],
             [
-                qml.sum(
-                    qml.prod(PauliX(wires=self.wires[0]), PauliX(wires=self.wires[1])),
-                    qml.prod(PauliY(wires=self.wires[0]), PauliY(wires=self.wires[1])),
-                )
+                PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
+                + PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
             ],
         )
 

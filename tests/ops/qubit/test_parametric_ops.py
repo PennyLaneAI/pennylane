@@ -30,8 +30,6 @@ from pennylane.ops.qubit import (
     MultiRZ as old_loc_MultiRZ,
 )
 
-from pennylane.ops.op_math.sprod import SProd
-
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -2979,7 +2977,7 @@ class TestPauliRot:
         op = qml.PauliRot(0.3, pauli_word, wires=range(len(pauli_word)))
         gen = op.generator()
 
-        # assert isinstance(gen, SProd)
+        assert isinstance(gen, qml.Hamiltonian)
 
         if pauli_word[0] == "I":
             # this is the identity
@@ -3194,7 +3192,7 @@ class TestMultiRZ:
         op = qml.MultiRZ(0.3, wires=range(qubits))
         gen = op.generator()
 
-        # assert isinstance(gen, SProd)
+        assert isinstance(gen, qml.Hamiltonian)
 
         expected_gen = qml.PauliZ(wires=0)
         for i in range(1, qubits):
