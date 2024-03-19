@@ -61,7 +61,7 @@ class PauliVSpace:
 
     **Example**
 
-    Take the linearly dependent set of operators and span the PauliVSpace.
+    Take a linearly dependent set of operators and span the PauliVSpace.
 
     .. code-block::python3
         ops = [
@@ -150,7 +150,7 @@ class PauliVSpace:
         return self._basis
 
     def is_independent(self, pauli_sentence, tol=1e-15):
-        r"""Check if the :class:`~PauliSentence` ``pauli_sentence`` is linearly independent with all vectors in ``PauliVSpace``.
+        r"""Check if the :class:`~PauliSentence` ``pauli_sentence`` is linearly independent of the basis of ``PauliVSpace``.
 
         Args:
             pauli_sentence (`~.PauliSentence`): Pauli sentence for which to add a column if independent.
