@@ -281,9 +281,6 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     if len(op1.operands) != len(op2.operands):
         return False
 
-    if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
-        return True
-
     # organizes by wire indicies while respecting commutation relations
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
