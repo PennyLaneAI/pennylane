@@ -412,4 +412,4 @@ class GlobalPhase(Operation):
         return [GlobalPhase(z * self.data[0], self.wires)]
 
     def generator(self):
-        return qml.s_prod(-1, qml.I(self.wires))
+        return qml.Hamiltonian([-1], [qml.I(self.wires)])

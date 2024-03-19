@@ -667,7 +667,9 @@ class Controlled(SymbolicOp):
         projectors = (
             qml.Projector([val], wires=w) for val, w in zip(self.control_values, self.control_wires)
         )
-        return qml.prod(*projectors, sub_gen)
+        if qml.operation.active_new_opmath():
+            return qml.prod(*projectors, sub_gen)
+        return qml.operation.Tensor(*projectors, sub_gen)
 
     @property
     def has_adjoint(self):
