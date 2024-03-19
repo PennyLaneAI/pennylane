@@ -117,6 +117,10 @@
 
   ```
 
+* A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
+  but for usage with new operator arithmetic.
+  [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
+
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
