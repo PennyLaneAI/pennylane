@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
+  [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
+
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
   `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
@@ -267,6 +270,7 @@ Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Vincent Michaud-Rioux,
 Mudit Pandey,
 Jay Soni,
 Matthew Silverman.
