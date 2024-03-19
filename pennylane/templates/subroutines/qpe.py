@@ -216,7 +216,7 @@ class QuantumPhaseEstimation(ErrorOperation, Operation):
         >>> QPE.error
         0.075
         """
-        unitary_error = self._hyperparameters["unitary"].error
+        unitary_error = self._hyperparameters["unitary"].error.error
         sequence_error = [
             unitary_error * (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)
         ]

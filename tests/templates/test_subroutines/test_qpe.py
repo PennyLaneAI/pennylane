@@ -38,42 +38,48 @@ def test_flatten_unflatten():
     assert op is not new_op
 
 
-def test_error_value():
-    """Test that QPE error is correct for a given unitary error."""
+class TestError:
+    """Test that the QPE error is computed correctly."""
 
-    u_exact = qml.RY(0.50, wires=0)
-    u_apprx = qml.RY(0.51, wires=0)
+    @pytest.mark.parametrize(
+        # the reference error is computed manually for a QPE operation with 2 estimation wires
+        ("operator_error", "reference_error"),
+        [(0.01, 0.03), (0.02, 0.06), (0.03, 0.09)],
+    )
+    def test_error_operator(self, operator_error, reference_error):
+        """Test that QPE error is correct for a given custom operator."""
 
-    n_estimation_wires = 4
-    estimation_wires = range(1, n_estimation_wires + 1)
-    target_wires = [0]
+        class CustomOP(qml.resource.ErrorOperation):
+            @property
+            def error(self):
+                return qml.resource.SpectralNormError(operator_error)
 
-    dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+        operator = CustomOP(wires=[0])
+        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error.error
 
-    @qml.qnode(dev)
-    def circuit(unitary):
-        qml.QuantumPhaseEstimation(
-            unitary.matrix(),
-            target_wires=target_wires,
-            estimation_wires=estimation_wires,
-        )
+        assert np.allclose(qpe_error, reference_error)
 
-        return qml.state()
+    def test_error_unitary(self):
+        """Test that QPE error is correct for a given unitary error."""
 
-    m1 = qml.matrix(circuit)(u_exact)
-    m2 = qml.matrix(circuit)(u_apprx)
+        u_exact = qml.RY(0.50, wires=0)
+        u_apprx = qml.RY(0.51, wires=0)
 
-    qpe_error_ref = qml.math.max(qml.math.svd(m1 - m2, compute_uv=False))
+        class CustomOP(qml.resource.ErrorOperation):
+            @property
+            def error(self):
+                error_value = qml.resource.SpectralNormError.get_error(u_exact, u_apprx)
+                return qml.resource.SpectralNormError(error_value)
 
-    class CustomOP(qml.resource.ErrorOperation):
-        @property
-        def error(self):
-            return qml.resource.SpectralNormError.get_error(u_exact, u_apprx)
+        m_exact = qml.matrix(qml.QuantumPhaseEstimation(u_exact, estimation_wires=range(1, 3)))
+        m_apprx = qml.matrix(qml.QuantumPhaseEstimation(u_apprx, estimation_wires=range(1, 3)))
 
-    Op = CustomOP(wires=[0])
-    QPE = qml.QuantumPhaseEstimation(Op, estimation_wires=range(1, 5))
+        matrix_error = qml.math.max(qml.math.svd(m_exact - m_apprx, compute_uv=False))
 
-    assert np.allclose(QPE.error, qpe_error_ref, atol=1e-4)
+        operator = CustomOP(wires=[0])
+        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error.error
+
+        assert np.allclose(qpe_error, matrix_error, atol=1e-4)
 
 
 class TestDecomposition:
