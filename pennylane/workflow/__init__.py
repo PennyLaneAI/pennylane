@@ -53,6 +53,8 @@ Jacobian Product Calculation
     ~workflow.jacobian_products.DeviceJacobianProducts
     ~workflow.jacobian_products.LightningVJPs
 
+.. include: return_types_spec.rst
+
 """
 from .set_shots import set_shots
 from .execution import execute, cache_execute, SUPPORTED_INTERFACES, INTERFACE_MAP
