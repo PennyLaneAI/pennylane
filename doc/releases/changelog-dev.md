@@ -130,7 +130,6 @@
   SpectralNormError(6.166666666666668e-06)
   ```
 
-
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
