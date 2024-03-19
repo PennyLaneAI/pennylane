@@ -67,13 +67,14 @@ class TestGetEigvals:
         obs = qml.s_prod(s, qml.prod(qml.GellMann(0, 8), qml.GellMann(1, 1)))
         return get_eigvals(obs)
 
+    @pytest.mark.autograd
     def test_s_prod_eigval_dif_autograd(self):
         """Test that s_prod scalar gradients work in autograd"""
         s = qml.numpy.array(self.s)
-
         g = qml.jacobian(self.f)(s)
         assert qml.math.allclose(g, self.expected_g)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_s_prod_eigval_dif_jax(self, use_jit):
         """Test that s_prod scalar gradients work in jax"""
@@ -87,6 +88,7 @@ class TestGetEigvals:
         g = jax.jacobian(f)(s)
         assert qml.math.allclose(g, self.expected_g)
 
+    @pytest.mark.torch
     def test_s_prod_eigval_dif_torch(self):
         """Test that s_prod scalar gradients work in torch"""
         import torch
