@@ -1008,6 +1008,15 @@ class QNode:
         else:
             config = None
             full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        has_mcm_support = (
+            any(isinstance(op, MidMeasureMP) for op in self._tape)
+            and hasattr(self.device, "capabilities")
+            and self.device.capabilities().get("supports_mid_measure", False)
+        )
+        if has_mcm_support:
+            full_transform_program.add_transform(qml.dynamic_one_shot)
+            override_shots = 1
+
         # Add the gradient expand to the program if necessary
         if getattr(self.gradient_fn, "expand_transform", False):
             full_transform_program.insert_front_transform(
