@@ -36,6 +36,10 @@ def lie_closure(
     The Lie closure of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}` is computed by
     taking all possible nested commutators until no new (i.e. linearly independent) operator is produced.
 
+    The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
+    For such generators, one computes all nested commutators :math:`[G_i, [G_j, .., [G_k, G_\ell]]]` until no new operators are generated from commutation.
+    All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
+
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
             Lie closure.
@@ -44,6 +48,44 @@ def lie_closure(
     Returns:
         list[`~.PauliSentence`]: a basis of ``PauliSentence`` instances that is closed under
         commutators (Lie closure).
+    
+    **Example**
+
+    Let us walk through a simple example of computing the Lie closure of the generators of the transverse field Ising model on two qubits.
+
+    ```python
+    ops = [X(0) @ X(1), Z(0), Z(1)]
+    ```
+
+    A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)`.
+
+    ```python
+    >>> qml.commutator(X(0) @ X(1), Z(0))
+    2j * (Y(0) @ X(1))
+    >>> qml.commutator(X(0) @ X(1), Z(0))
+    2j * (X(0) @ Y(1))
+    ```
+
+    A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
+
+    ```python
+    >>> qml.commutator(X(0) @ Y(1), Z(0))
+    -2j * (Y(0) @ Y(1))
+    ```
+
+    After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
+    This can now be done in short via `qml.dla.lie_closure` as follows.
+
+    ```python
+    >>> ops = [X(0) @ X(1), Z(0), Z(1)]
+    >>> dla = qml.dla.lie_closure(ops)
+    >>> print(dla)
+    [1.0 * X(1) @ X(0),
+     1.0 * Z(0),
+     1.0 * Z(1),
+     -1.0 * X(1) @ Y(0),
+     -1.0 * Y(1) @ X(0),
+     -1.0 * Y(1) @ Y(0)]
     """
     if not all(isinstance(op, PauliSentence) for op in generators):
         generators = [
@@ -115,7 +157,7 @@ class PauliVSpace:
 
     **Example**
 
-    Take the linearly dependent set of operators and span the PauliVSpace.
+    Take a linearly dependent set of operators and span the PauliVSpace.
 
     .. code-block::python3
         ops = [
@@ -204,7 +246,7 @@ class PauliVSpace:
         return self._basis
 
     def is_independent(self, pauli_sentence, tol=1e-15):
-        r"""Check if the :class:`~PauliSentence` ``pauli_sentence`` is linearly independent with all vectors in ``PauliVSpace``.
+        r"""Check if the :class:`~PauliSentence` ``pauli_sentence`` is linearly independent of the basis of ``PauliVSpace``.
 
         Args:
             pauli_sentence (`~.PauliSentence`): Pauli sentence for which to add a column if independent.

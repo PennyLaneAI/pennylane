@@ -22,7 +22,7 @@ import re
 
 from semantic_version import Version
 
-PL_CATALYST_MIN_VERSION = Version("0.4.0")
+PL_CATALYST_MIN_VERSION = Version("0.5.0")
 
 
 class CompileError(Exception):
