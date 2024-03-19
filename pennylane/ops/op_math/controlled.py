@@ -667,9 +667,9 @@ class Controlled(SymbolicOp):
         projectors = (
             qml.Projector([val], wires=w) for val, w in zip(self.control_values, self.control_wires)
         )
-        if qml.operation.active_new_opmath():
-            return qml.prod(*projectors, sub_gen)
-        return qml.operation.Tensor(*projectors, sub_gen)
+        # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
+        # it otherwise can't handle ControlledGlobalPhase, see PR #5194
+        return qml.prod(*projectors, sub_gen)
 
     @property
     def has_adjoint(self):
