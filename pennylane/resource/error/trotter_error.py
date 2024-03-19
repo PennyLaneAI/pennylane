@@ -21,7 +21,19 @@ import pennylane as qml
 
 # General Helper functions
 def _compute_repetitions(order, n):
-    """Compute Upsilon"""
+    r"""Count the number of times the hamiltonian is repeated ("stages")
+    in the Suzuki-Trotter  product formula for a given order and number of trotter steps.
+
+    See the definition of upsilon from section 2.3 (equation 15) in
+    `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
+
+    Args:
+        order (int): The order of the product formula.
+        n (int): The number of trotter steps used in the product formula.
+
+    Returns:
+        int: Number of repetitions of the product formula.
+    """
     if order == 1:
         return n
 
@@ -30,6 +42,16 @@ def _compute_repetitions(order, n):
 
 
 def _spectral_norm(op, fast=True):
+    r"""Compute the spectral norm of the operator.
+
+    Args:
+        op (Operator): The operator we want to compute spectral norm of.
+        fast (bool, optional): If true, uses the frobenius norm as an upper-bound
+            to the spectral norm. Defaults to True.
+
+    Returns:
+        float: The spectral norm of the operator.
+    """
     if pr := op.pauli_rep:  # Pauli rep is not none
         if fast or len(pr) <= 1:
             return sum(map(abs, pr.values()))
@@ -42,6 +64,23 @@ def _spectral_norm(op, fast=True):
 
 # Compute one-norm error:
 def _one_norm_error(h_ops, t, p, n, fast):
+    r"""Compute an upper-bound on the spectral norm error for approximating
+    the time evolution of a hamiltonian using a Suzuki-Trotter product formula.
+
+    This function implements the Trotter error with 1-norm scaling following
+    (lemma 6, equation 22 and equation 24) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
+    (Assuming all hermitian terms).
+
+    Args:
+        h_ops (list[Operator]): The terms of the hamiltonian (specifying the product formula)
+        t (float): The time interval for evolution.
+        p (int): The order of the product formula.
+        n (int): The number of Trotter steps (repetitions).
+        fast (bool): If True, a Frobenius bound is used to approximate the spectral norms of each term.
+
+    Returns:
+        float: An upper-bound for the spectral norm error of the product formula.
+    """
     upsilon = _compute_repetitions(p, n)
     h_one_norm = 0
 
@@ -55,6 +94,26 @@ def _one_norm_error(h_ops, t, p, n, fast):
 # Compute alpha_comm
 @lru_cache
 def _generate_combinations(num_variables, required_sum):
+    r"""A helper function which generates a sequence of valid combinations which
+    satisfy the required sum constraint.
+
+    **Example:**
+
+        Suppose you have :math:`k` variables :math:`{a_1, a_2, ..., a_k}`. How many unique combinations
+        of positive integers are there that satisfy the constraint :math:`\Sum_{i=1}^{k}(a_i) = s`?
+
+        This function solves produces a list of all sequences which satisfy this constraint:
+
+        >>> _generate_combinations(num_variables=3, required_sum=2)
+        ((0, 0, 2), (0, 1, 1), (0, 2, 0), (1, 0, 1), (1, 1, 0), (2, 0, 0))
+
+    Args:
+        num_variables (int): The total number of variables in a valid combination.
+        required_sum (int): The sum of all variables in a valid combination.
+
+    Returns:
+        tuple(tuple(int)): The sequence of valid combinations.
+    """
     if num_variables == 0:
         return ()
 
@@ -77,7 +136,24 @@ def _generate_combinations(num_variables, required_sum):
 
 @lru_cache
 def _recursive_nested_commutator(A, B, alpha):
-    """Recursive commutator"""
+    r"""Compute the alpha-fold nested commutator of A and B.
+
+    This function is defined mathematically as:
+
+    .. math::
+
+        Ad^{alpha}_{A}(B) := [A, [A, ... [A, B]] ... ]
+
+    Where there are :math:`\alpha`-many nested commutators.
+
+    Args:
+        A (Operator): Nested operator in the nested commutator.
+        B (Operator): Base operator of the nested commutator.
+        alpha (int): Depth of the nested commutation.
+
+    Returns:
+        Operator: The resulting operator from evaluating the nested commutation.
+    """
     if alpha == 0:
         return B
 
@@ -89,6 +165,23 @@ def _recursive_nested_commutator(A, B, alpha):
 
 # Compute commutator error:
 def _commutator_error(h_ops, t, p, n, fast):
+    r"""Compute an upper-bound on the spectral norm error for approximating
+    the time evolution of a hamiltonian using a Suzuki-Trotter product formula.
+
+    This function implements the Trotter error with commutator scaling following
+    (appendix C, equation 189) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
+    (Assuming all hermitian terms).
+
+    Args:
+        h_ops (list[Operator]): The terms of the hamiltonian (specifying the product formula)
+        t (float): The time interval for evolution.
+        p (int): The order of the product formula.
+        n (int): The number of Trotter steps (repetitions).
+        fast (bool): If True, a Frobenius bound is used to approximate the spectral norms of each term.
+
+    Returns:
+        float: An upper-bound for the spectral norm error of the product formula.
+    """
     upsilon = _compute_repetitions(p, n)
     pre_factor = (2 * upsilon * t ** (p + 1)) / (p + 1)
 
@@ -116,6 +209,30 @@ def _commutator_error(h_ops, t, p, n, fast):
 
 # Flatten the product formula
 def _recursive_flatten(order, num_ops, scalar_t):
+    r"""Constructs a flattened list representation of the Suzuki-Trotter product formula.
+
+    Suppose we have a hamiltonian :math:`H = 1.2*X + 0.5*Y`, an associated 2nd order product formula is:
+
+    .. math::
+
+        W_2(t) = exp(-it*\frac{1.2*X}{2}) * exp(-it*\frac{0.5*Y}{2}) * exp(-it*\frac{0.5*Y}{2}) * exp(-it*\frac{1.2*X}{2})
+
+    We represent this product formula using two lists. The first which stores the operators and the second stores the
+    coefficients. :code:`ops = [X(0), Y(0), Y(0), X(0)], coeffs = [1.2/2, 0.5/2, 0.5/2, 1.2/2]`. We can
+    further compress the memory needed to store the product formula by simply storing the indicies of the operators as
+    they appear in the hamiltonian. Since :math:`H = 1.2*X + 0.5*Y`, we have :code:`ops_index = [0, 1, 1, 0]`.
+
+    The Suzuki-Trotter product formula is defined recursively (see :class:`~.TrotterProduct`). This function recursively
+    constructs the flattened list representation for the product formula.
+
+    Args:
+        order (int): The order of the product formula.
+        num_ops (int): The number of terms in the hamiltonian.
+        scalar_t (float): The time interval for evolution.
+
+    Returns:
+        ([int], [float]): The flattened product formula
+    """
     ops_index_lst = list(range(num_ops))
 
     if order == 1:
@@ -137,6 +254,38 @@ def _recursive_flatten(order, num_ops, scalar_t):
 
 
 def _simplify(ops_index, coeffs):
+    r"""A helper function which collects like terms and combines coefficients to return a simplified product.
+
+    **Example:**
+
+        Suppose we have a hamiltonian :math:`H = 1.2*X + 0.5*Y`, an associated 2nd order product formula is:
+
+        .. math::
+
+            W_2(t) = exp(-it*\frac{1.2*X}{2}) * exp(-it*\frac{0.5*Y}{2}) * exp(-it*\frac{0.5*Y}{2}) * exp(-it*\frac{1.2*X}{2})
+
+        We represent this product formula using two lists. The first which stores the operators and the second stores the
+        coefficients. :code:`ops = [X(0), Y(0), Y(0), X(0)], coeffs = [1.2/2, 0.5/2, 0.5/2, 1.2/2]`. We can
+        further compress the memory needed to store the product formula by simply storing the indicies of the operators as
+        they appear in the hamiltonian. Since :math:`H = 1.2*X + 0.5*Y`, we have :code:`ops_index = [0, 1, 1, 0]`.
+
+        Note, in the product formula above, the 2nd and 3rd terms in the product have the same base operator, they can
+        be combined together to simplify the product formula:
+
+        .. math::
+
+            W_2(t) = exp(-it*\frac{1.2*X}{2}) * exp(-it*0.5*Y) * exp(-it*\frac{1.2*X}{2})
+
+        This function acts on the list representation of a product formula to perform such simplifications and returns
+        (in list representation) the simplified product formula (returns :code:`[0, 1, 0], [1.2/2, 0.5, 1.2/2]`).
+
+    Args:
+        ops_index (tuple(int)): A tuple storing the indicies of operators to be exponentiated and multiplied.
+        coeffs (tuple(float)): A tuple storing the coefficients associated with the operators in the `ops_index`.
+
+    Returns:
+       final_ops, final_coeffs (tuple(ints), tuple(floats)): The simplified operator indicies and associated coefficients.
+    """
     final_ops = []
     final_coeffs = []
 
@@ -156,6 +305,19 @@ def _simplify(ops_index, coeffs):
 
 
 def _flatten_trotter(num_ops, order, n):
+    r"""Compute the simplified flattened list representation of the Suzuki-Trotter product formula.
+
+    This function computes the simplified Suzuki-Trotter product formula for a certain number of
+    Trotter steps, in the flattened list representation.
+
+    Args:
+        num_ops (int): The number of operators in the hamiltonian.
+        order (int): The order of the product formula.
+        n (int): The number of Trotter steps (stages) in the product formula.
+
+    Returns:
+        ([int], [float]): The flattened, simplified product formula.
+    """
     ops_index_lst, coeffs_lst = _recursive_flatten(order, num_ops, 1 / n)
     ops_index_lst, coeffs_lst = _simplify(ops_index_lst * n, coeffs_lst * n)
     return ops_index_lst, coeffs_lst

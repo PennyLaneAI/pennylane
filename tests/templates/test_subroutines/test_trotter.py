@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.resource.error import SpectralNormError
-from pennylane.templates.subroutines.trotter import _scalar, _recursive_decomposition
+from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
 
 
 test_hamiltonians = (
@@ -466,12 +466,12 @@ class TestPrivateFunctions:
     )
 
     @pytest.mark.parametrize("order, expected_expansion", zip((1, 2, 4), expected_expansions))
-    def test_recursive_decomposition_no_queue(self, order, expected_expansion):
-        """Test the _recursive_decomposition function correctly generates the decomposition"""
+    def test_recursive_expression_no_queue(self, order, expected_expansion):
+        """Test the _recursive_expression function correctly generates the decomposition"""
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]
 
         with qml.tape.QuantumTape() as tape:
-            decomp = _recursive_decomposition(1.23, order, ops)
+            decomp = _recursive_expression(1.23, order, ops)
 
         assert tape.operations == []  # No queuing!
         assert all(
