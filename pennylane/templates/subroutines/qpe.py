@@ -21,7 +21,7 @@ from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.resource import ErrorOperation
 
 
-class QuantumPhaseEstimation(Operation, ErrorOperation):
+class QuantumPhaseEstimation(ErrorOperation, Operation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
