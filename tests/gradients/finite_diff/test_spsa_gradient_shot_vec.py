@@ -843,8 +843,9 @@ class TestSpsaGradientIntegration:
     def test_var_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         rng = np.random.default_rng(52)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=rng)
+
         x = 0.543
         y = -0.654
 
