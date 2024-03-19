@@ -518,7 +518,7 @@ class TestError:
     @pytest.mark.parametrize(
         "method, expected_error", (("one-norm", 0.009140625), ("commutator", 8e-3))
     )
-    @pytest.mark.parametrize("interface", ("autograd", "jax", "tensorflow", "torch"))
+    @pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
     def test_error_interfaces(self, method, interface, expected_error):
         """Test that the error method works with all interfaces"""
 

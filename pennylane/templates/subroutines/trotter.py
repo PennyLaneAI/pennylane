@@ -209,7 +209,7 @@ class TrotterProduct(ErrorOperation):
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
 
-    def error(self, method="commutator", fast=True):
+    def error(self, method="commutator", fast=True):  # pylint: disable=arguments-differ
         """Compute an upper bound on the error for the Suzuki-Trotter product formula.
 
         Add Description!
@@ -218,16 +218,28 @@ class TrotterProduct(ErrorOperation):
             method (str, optional): Options include "one-norm" and "commutator" and specify the
                 method with which the error is computed. Defaults to "commutator".
             fast (bool, optional): Uses more approximations to speed up computation. Defaults to True.
+
+        Raises:
+            ValueError: The method is not supported.
+
+        Returns:
+            SpectralNormError: The spectral norm error.
         """
         terms = self.hyperparameters["base"].operands
         t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
 
         if method == "one-norm":
-            return SpectralNormError(qml.resource.error._one_norm_error(terms, t, p, n, fast=fast))
+            return SpectralNormError(
+                qml.resource.error._one_norm_error(
+                    terms, t, p, n, fast=fast
+                )  # pylint: disable=protected-access
+            )
 
         if method == "commutator":
             return SpectralNormError(
-                qml.resource.error._commutator_error(terms, t, p, n, fast=fast)
+                qml.resource.error._commutator_error(
+                    terms, t, p, n, fast=fast
+                )  # pylint: disable=protected-access
             )
 
         raise ValueError(
