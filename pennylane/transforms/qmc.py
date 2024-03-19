@@ -47,7 +47,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
     updated_operations.append(PauliX(target_wire))
     updated_operations.append(Hadamard(target_wire))
 
-    control_values = "0" * (len(wires) - 1) + "1"
+    control_values = [0] * (len(wires) - 1) + [1]
     control_wires = wires[1:] + control_wire
     updated_operations.append(
         MultiControlledX(

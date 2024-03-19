@@ -21,7 +21,6 @@ from typing import Sequence, Tuple, Union
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-
 from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
 
@@ -122,11 +121,24 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
-        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
-
         # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state
         with qml.queuing.QueuingManager.stop_recording():
             prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
-        return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2
+        return self._calculate_variance(prob)
+
+    def process_counts(self, counts: dict, wire_order: Wires):
+        with qml.QueuingManager.stop_recording():
+            probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
+        return self._calculate_variance(probs)
+
+    def _calculate_variance(self, probabilities):
+        """
+        Calculate the variance of a set of probabilities.
+
+        Args:
+            probabilities (array): the probabilities of collapsing to eigen states
+        """
+        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
+        return qml.math.dot(probabilities, (eigvals**2)) - qml.math.dot(probabilities, eigvals) ** 2
