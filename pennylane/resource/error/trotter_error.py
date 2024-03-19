@@ -68,7 +68,7 @@ def _one_norm_error(h_ops, t, p, n, fast):
     the time evolution of a hamiltonian using a Suzuki-Trotter product formula.
 
     This function implements the Trotter error with 1-norm scaling following
-    (lemma 6, equation 22 and equation 24) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
+    (lemma 6, equation 22 and equation 23) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
     (Assuming all hermitian terms).
 
     Args:

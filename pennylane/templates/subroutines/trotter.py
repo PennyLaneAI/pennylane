@@ -209,9 +209,35 @@ class TrotterProduct(ErrorOperation):
 
     def error(self, method="commutator", fast=True):  # pylint: disable=arguments-differ
         # pylint: disable=protected-access
-        """Compute an upper bound on the error for the Suzuki-Trotter product formula.
+        r"""Compute an upper-bound on the spectral norm error for approximating the
+        time-evolution of the base hamiltonian using the Suzuki-Trotter product formula.
 
-        Add Description!
+        The error in the Suzuki-Trotter product formula is defined as
+
+        .. math:: || \ e^{iHt} - \left [S_{m}(t / n)  \right ]^{n} \ ||,
+
+        Where the norm :math:`||\cdot||` is the spectral norm. This function supports two methods
+        from literature for upper-bounding the error, the "one-norm" error bound and the "commutator"
+        error bound.
+
+        ***Example:***
+
+        The "one-norm" error bound can be computed by passing the kwarg :code:`method="one-norm"`, and
+        is defined according to Section 2.3 (lemma 6, equation 22 and 23) of
+        `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
+
+        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+        >>> op.error(method="one-norm")
+        SpectralNormError(8.039062500000003e-06)
+
+        The "commutator" error bound can be computed by passing the kwarg :code:`method="commutator"`, and
+        is defined according to Appendix C (equation 189) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
+
+        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+        >>> op.error(method="commutator")
+        SpectralNormError(6.166666666666668e-06)
 
         Args:
             method (str, optional): Options include "one-norm" and "commutator" and specify the
