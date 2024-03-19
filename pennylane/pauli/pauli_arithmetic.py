@@ -604,7 +604,7 @@ class PauliSentence(dict):
 
     def trace(self):
         r"""Return the normalized trace of the PauliSentence instance
-        
+
         .. math:: \frac{1}{2^n} \text{tr}\left( P \right).
 
         In particular, the value is independent of the system size.

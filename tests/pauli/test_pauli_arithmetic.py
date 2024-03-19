@@ -463,22 +463,16 @@ class TestPauliWord:
     def test_map_wires(self, word, wire_map, expected):
         """Test the map_wires conversion method."""
         assert word.map_wires(wire_map) == expected
-    
+
     TEST_TRACE = (
-        (PauliSentence({
-            PauliWord({0:"X"}): 1.,
-            PauliWord({}): 3.
-        }), 3.),
-        (PauliSentence({
-            PauliWord({0:"Y"}): 1.,
-            PauliWord({1:"X"}): 3.
-        }), 0.),
+        (PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({}): 3.0}), 3.0),
+        (PauliSentence({PauliWord({0: "Y"}): 1.0, PauliWord({1: "X"}): 3.0}), 0.0),
     )
+
     @pytest.mark.parametrize("op, res", TEST_TRACE)
     def test_trace(self, op, res):
         """Test the trace method of PauliSentence"""
         assert op.trace() == res
-
 
 
 class TestPauliSentence:
