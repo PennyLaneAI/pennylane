@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
+  [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
+
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
   `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
@@ -58,16 +61,8 @@
 * Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
-<h3>Improvements 🛠</h3>
-
-* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
-  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
-
-* Operators can now be left multiplied `x * op` by numpy arrays.
-  [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
-
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
-  [(##5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
   ```python
   @qml.prod
@@ -94,6 +89,44 @@
   >>> circuit()
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
   ```
+  
+* The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
+  [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
+
+  ```python
+  @qml.prod
+  def generator(wires):
+      for wire in wires:
+          qml.Hadamard(wires=wire)
+
+  U = generator(wires=range(3))
+  O = qml.FlipSign(2, wires=range(3))
+
+  dev = qml.device("default.qubit")
+
+  @qml.qnode(dev)
+  def circuit():
+
+      generator(wires=range(3))
+      qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
+
+      return qml.probs(wires=range(3))
+
+  ```
+  
+  ```pycon
+  >>> print(np.round(circuit(), 3))
+  [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
+
+  ```
+
+<h3>Improvements 🛠</h3>
+
+* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
+  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
+
+* Operators can now be left multiplied `x * op` by numpy arrays.
+  [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
 
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
@@ -105,8 +138,15 @@
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
   
+* `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
+  [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
+
 * `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of paulis.
   [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
+
+* Obtaining classical shadows using the `default.clifford` device is now compatible with
+  [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
+  [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
 <h4>Community contributions 🥳</h4>
 
@@ -175,6 +215,9 @@
 * `qml.load` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as `qml.from_qiskit`.
   [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
 
+* Specifying `control_values` with a bit string to `qml.MultiControlledX` is deprecated. Instead, use a list of booleans or 1s and 0s.
+  [(#5352)](https://github.com/PennyLaneAI/pennylane/pull/5352)
+
 * `qml.from_qasm_file` is deprecated. Instead, please open the file and then load its content using `qml.from_qasm`.
   [(#5331)](https://github.com/PennyLaneAI/pennylane/pull/5331)
 
@@ -214,5 +257,6 @@ Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Vincent Michaud-Rioux,
 Mudit Pandey,
 Matthew Silverman.

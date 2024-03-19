@@ -35,7 +35,7 @@ hermitian_ops = (
     qml.SWAP([0, 1]),
     qml.CSWAP([0, 1, 2]),
     qml.Toffoli([0, 1, 2]),
-    qml.MultiControlledX(control_wires=[0, 1], wires=2),
+    qml.MultiControlledX(wires=[0, 1, 2]),
 )
 
 non_hermitian_ops = (
