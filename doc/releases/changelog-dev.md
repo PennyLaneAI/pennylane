@@ -159,6 +159,10 @@
 * Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, and `CountsMP`.
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
 
+* Fixed prod and s_prod type observable measurements in new `qutrit_mixed` module.
+  Differentiability tests and fixes added for state measurements.
+  [(#5350)](https://github.com/PennyLaneAI/pennylane/pull/5350)
+
 <h3>Breaking changes 💔</h3>
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
