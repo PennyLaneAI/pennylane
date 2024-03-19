@@ -605,6 +605,11 @@ class DefaultMixed(QubitDevice):
             return
 
         if isinstance(operation, Snapshot):
+            measurement = operation.hyperparameters["measurement"]
+            if measurement:
+                raise DeviceError(
+                    "Snapshots of measurements are not yet supported on default.mixed"
+                )
             if self._debugger and self._debugger.active:
                 dim = 2**self.num_wires
                 density_matrix = qnp.reshape(self._state, (dim, dim))
