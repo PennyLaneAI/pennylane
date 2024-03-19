@@ -596,7 +596,6 @@ class DoubleExcitation(Operation):
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
-        # coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
         return qml.Hamiltonian(
             [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
             [
