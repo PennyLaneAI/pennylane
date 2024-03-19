@@ -23,7 +23,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
-from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import (
     _scalar,
     _simplify,
