@@ -210,6 +210,7 @@ class TrotterProduct(ErrorOperation):
         super().__init__(time, wires=hamiltonian.wires, id=id)
 
     def error(self, method="commutator", fast=True):  # pylint: disable=arguments-differ
+        # pylint: disable=protected-access
         """Compute an upper bound on the error for the Suzuki-Trotter product formula.
 
         Add Description!
@@ -229,18 +230,10 @@ class TrotterProduct(ErrorOperation):
         t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
 
         if method == "one-norm":
-            return SpectralNormError(
-                qml.resource.error._one_norm_error(
-                    terms, t, p, n, fast=fast
-                )  # pylint: disable=protected-access
-            )
+            return SpectralNormError(qml.resource.error._one_norm_error(terms, t, p, n, fast=fast))
 
         if method == "commutator":
-            return SpectralNormError(
-                qml.resource.error._commutator_error(
-                    terms, t, p, n, fast=fast
-                )  # pylint: disable=protected-access
-            )
+            return SpectralNormError(qml.resource.error._commutator_error(terms, t, p, n, fast=fast))
 
         raise ValueError(
             f"The '{method}' method is not supported for computing the error. Please select a valid method for computing the error."
