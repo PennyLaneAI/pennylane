@@ -465,9 +465,7 @@ class TestControlledBisectOD:
 
         assert len(op_seq) == 8
 
-        mcx1 = qml.MultiControlledX(
-            control_wires=Wires([1, 2, 3]), wires=Wires(0), work_wires=Wires([4, 5])
-        )
+        mcx1 = qml.MultiControlledX(wires=Wires([1, 2, 3, 0]), work_wires=Wires([4, 5]))
         assert qml.equal(mcx1, op_seq[0])
         assert qml.equal(mcx1, op_seq[4])
 

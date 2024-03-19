@@ -400,7 +400,7 @@ class TestMidCircuitMeasurements:
             qml.RX(0.5, 0)
             qml.RX(0.5, 1)
             m0 = qml.measure(1, reset=True)
-            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
             qml.CNOT([3, 2])
             qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
                 0.5, wires=[0, 3]
@@ -427,7 +427,7 @@ class TestMidCircuitMeasurements:
             qml.RX(0.5, 0)
             qml.RX(0.5, 1)
             m0 = qml.measure(1, postselect=1)
-            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
             qml.CNOT([3, 2])
             qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
                 0.5, wires=[0, 3]
@@ -482,7 +482,7 @@ class TestMidCircuitMeasurements:
 
             m0 = qml.measure(0, reset=True, postselect=1)
             m1 = qml.measure(1)
-            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values="110")
+            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
             qml.cond(m1, qml.PauliZ)(2)
 
             m2 = qml.measure(1)
@@ -628,7 +628,7 @@ class TestMidCircuitMeasurements:
 
             m0 = qml.measure(0, reset=True, postselect=1)
             m1 = qml.measure(1)
-            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values="110")
+            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
             qml.cond(m1, qml.PauliZ)(2)
 
             m2 = qml.measure(1)
