@@ -597,6 +597,23 @@ class PauliSentence(dict):
         associated with it should be 0."""
         return 0.0
 
+    def trace(self):
+        r"""Return the normalized trace of the PauliSentence instance
+
+        .. math:: \frac{1}{2^n} \text{tr}\left( P \right).
+
+        In particular, the value is independent of the system size.
+
+        >>> PauliSentence({PauliWord({0:"I", 1:"I"}): 0.5}).trace()
+        0.5
+        >>> PauliSentence({PauliWord({}): 0.5}).trace()
+        0.5
+
+        """
+        if (id0 := PauliWord({})) in self:
+            return self[id0]
+        return 0.0
+
     def __add__(self, other):
         """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.
 
