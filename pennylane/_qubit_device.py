@@ -41,6 +41,7 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     MeasurementValue,
+    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     SampleMeasurement,
@@ -273,13 +274,41 @@ class QubitDevice(Device):
 
         self.check_validity(circuit.operations, circuit.observables)
 
+        has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
+        if has_mcm:
+            kwargs["mid_measurements"] = {}
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
+        self.apply(
+            circuit.operations,
+            rotations=self._get_diagonalizing_gates(circuit),
+            **kwargs,
+        )
+        if has_mcm:
+            mid_measurements = kwargs["mid_measurements"]
+            mid_values = np.array(tuple(mid_measurements.values()))
+            if np.any(mid_values == -1):
+                for k, v in tuple(mid_measurements.items()):
+                    if v == -1:
+                        mid_measurements.pop(k)
+                return None, mid_measurements
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
+            # Lightning does not support apply(rotations) anymore, so we need to rotate here
+            # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
+            is_lightning = (
+                hasattr(self, "name")
+                and isinstance(self.name, str)
+                and "Lightning" in self.name
+                and getattr(self, "_CPP_BINARY_AVAILABLE", False)
+            )
+            diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
+            if is_lightning and diagonalizing_gates:
+                self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
+            if is_lightning and diagonalizing_gates:
+                self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
         if self._shot_vector is not None:
@@ -310,7 +339,7 @@ class QubitDevice(Device):
             )
             self.tracker.record()
 
-        return results
+        return (results, mid_measurements) if has_mcm else results
 
     def shot_vec_statistics(self, circuit: QuantumTape):
         """Process measurement results from circuit execution using a device

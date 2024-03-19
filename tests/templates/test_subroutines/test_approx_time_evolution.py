@@ -70,9 +70,9 @@ class TestDecomposition:
                 2,
                 [
                     qml.PauliRot(4.0, "X", wires=["a"]),
-                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                    qml.PauliRot(1.0, "XZ", wires=["a", "b"]),
                     qml.PauliRot(4.0, "X", wires=["a"]),
-                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                    qml.PauliRot(1.0, "XZ", wires=["a", "b"]),
                 ],
             ),
             (
@@ -94,8 +94,8 @@ class TestDecomposition:
                 1,
                 [
                     qml.PauliRot(8.0, "X", wires=["a"]),
-                    qml.PauliRot(2.0, "ZX", wires=[-15, "a"]),
-                    qml.PauliRot(2.0, "IY", wires=[0, -15]),
+                    qml.PauliRot(2.0, "XZ", wires=["a", -15]),
+                    qml.PauliRot(2.0, "Y", wires=[-15]),
                 ],
             ),
         ],
@@ -107,10 +107,7 @@ class TestDecomposition:
         queue = op.expand().operations
 
         for expected_gate, gate in zip(expected_queue, queue):
-            prep = [gate.parameters, gate.wires]
-            target = [expected_gate.parameters, expected_gate.wires]
-
-            assert prep == target
+            assert qml.equal(expected_gate, gate)
 
     @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expectation"),
@@ -203,7 +200,9 @@ class TestInputs:
             qml.ApproxTimeEvolution(hamiltonian, 2, 3)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian"):
+        with pytest.raises(
+            ValueError, match="hamiltonian must be a linear combination of pauli words"
+        ):
             circuit()
 
     @pytest.mark.parametrize(
@@ -228,7 +227,7 @@ class TestInputs:
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         with pytest.raises(
-            ValueError, match="hamiltonian must be written in terms of Pauli matrices"
+            ValueError, match="hamiltonian must be a linear combination of pauli words"
         ):
             circuit()
 
