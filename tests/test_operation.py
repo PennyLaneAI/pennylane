@@ -39,6 +39,7 @@ from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
+# pylint: disable=use-implicit-booleaness-not-comparison
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -2554,18 +2555,12 @@ class TestCriteria:
         assert qml.operation.has_grad_method(self.rot)
         assert not qml.operation.has_grad_method(self.cnot)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_gen_is_multi_term_hamiltonian_legacy_opmath(self):
+    def test_gen_is_multi_term_hamiltonian(self):
         """Test gen_is_multi_term_hamiltonian criterion."""
         assert qml.operation.gen_is_multi_term_hamiltonian(self.doubleExcitation)
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.cnot)
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.rot)
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.exp)
-
-    def test_gen_is_multi_term_hamiltonian(self):
-        """Assert that DoubleExcitation generator is now a SProd"""
-        assert qml.operation.active_new_opmath(), "opmath not active, we have a leak"
-        assert isinstance(self.doubleExcitation.generator(), SProd)
 
     def test_has_multipar(self):
         """Test has_multipar criterion."""
@@ -2742,52 +2737,31 @@ class TestNewOpMath:
             assert qml.equal(op[1], op2)
 
     class TestHamiltonianLinearCombinationAlias:
-        """Tests to validate that aliasing Hamiltonian as LinearCombination with new op math."""
+        """Unit tests for using qml.Hamiltonian as an alias for LinearCombination"""
 
-        def test_hamiltonian_alias_linear_combination_with_enabled_opmath(self):
-            """Test that qml.Hamiltonian is an alias for qml.ops.LinearCombination when new operator
-            arithmetic is enabled"""
+        @pytest.mark.usefixtures("use_new_opmath")
+        def test_hamiltonian_linear_combination_alias_enabled(self):
+            """Test that qml.Hamiltonian is an alias for LinearCombination with new operator
+            arithmetic enabled"""
             op = qml.Hamiltonian([1.0], [qml.X(0)])
 
+            assert isinstance(op, qml.ops.LinearCombination)
+            assert isinstance(op, qml.Hamiltonian)
+            assert not isinstance(op, qml.ops.Hamiltonian)
+            assert not isinstance(op, qml.ops.qubit.Hamiltonian)
+            assert not isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
+
+        @pytest.mark.usefixtures("use_legacy_opmath")
+        def test_hamiltonian_linear_combination_alias_disabled(self):
+            """Test that qml.Hamiltonian is not an alias for LinearCombination with new operator
+            arithmetic disabled"""
+            op = qml.Hamiltonian([1.0], [qml.X(0)])
+
+            assert not isinstance(op, qml.ops.LinearCombination)
             assert isinstance(op, qml.Hamiltonian)
             assert isinstance(op, qml.ops.Hamiltonian)
             assert isinstance(op, qml.ops.qubit.Hamiltonian)
             assert isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
-            assert isinstance(op, qml.ops.LinearCombination)
-            assert op.__class__.__name__ == "LinearCombination"
-
-            with qml.operation.disable_new_opmath_cm():
-                op = qml.Hamiltonian([1.0], [qml.X(0)])
-                assert isinstance(op, qml.Hamiltonian)
-                assert not isinstance(op, qml.ops.LinearCombination)
-
-        @pytest.mark.usefixtures("use_legacy_opmath")  # to ensure the original state is restored
-        def test_enable_opmath_multiple_times(self):
-            """Test that enabling new op math multiple times does not impact
-            Hamiltonian-LinearCombination aliasing"""
-            op = qml.Hamiltonian([1.0, 2.0], [qml.X(0), qml.Z(0)])
-            assert isinstance(op, qml.Hamiltonian)
-
-            qml.operation.enable_new_opmath()
-            qml.operation.enable_new_opmath()
-
-            op = qml.Hamiltonian([1.0, 2.0], [qml.X(0), qml.Z(0)])
-            assert isinstance(op, qml.ops.LinearCombination)
-            assert isinstance(op, qml.Hamiltonian)
-
-        @pytest.mark.usefixtures("use_new_opmath")  # to ensure the original state is restored
-        def test_disable_opmath_multiple_times(self):
-            """Test that disabling new op math multiple times does not impact
-            Hamiltonian-LinearCombination aliasing"""
-            op = qml.Hamiltonian([1.0, 2.0], [qml.X(0), qml.Z(0)])
-            assert isinstance(op, qml.ops.LinearCombination)
-
-            qml.operation.disable_new_opmath()
-            qml.operation.disable_new_opmath()
-
-            op = qml.Hamiltonian([1.0, 2.0], [qml.X(0), qml.Z(0)])
-            assert isinstance(op, qml.Hamiltonian)
-            assert not isinstance(op, qml.ops.LinearCombination)
 
 
 @pytest.mark.parametrize(

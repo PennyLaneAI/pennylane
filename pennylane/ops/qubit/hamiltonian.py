@@ -22,6 +22,7 @@ from collections.abc import Iterable
 from copy import copy
 import functools
 from typing import List
+from warnings import warn
 import numpy as np
 import scipy
 
@@ -184,6 +185,16 @@ class Hamiltonian(Observable):
         method="rlf",
         id=None,
     ):
+        if qml.operation.active_new_opmath():
+            warn(
+                "Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. "
+                "Instead, use 'qml.Hamiltonian', or use 'qml.operation.disable_new_opmath()' "
+                "to continue to access the legacy functionality. See "
+                "https://docs.pennylane.ai/en/stable/development/deprecations.html for more "
+                "details.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "

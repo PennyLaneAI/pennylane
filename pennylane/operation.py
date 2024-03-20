@@ -243,14 +243,12 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 """
 # pylint:disable=access-member-before-definition,global-statement
 import abc
-import contextlib
 import copy
 import functools
 import itertools
 import warnings
 from enum import IntEnum
 from typing import List
-from unittest import mock
 from contextlib import contextmanager
 
 import numpy as np
@@ -2950,9 +2948,6 @@ def gen_is_multi_term_hamiltonian(obj):
     return isinstance(o, (qml.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
 
 
-_mock_opmath_stack = []
-
-
 def enable_new_opmath():
     """
     Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
@@ -2969,22 +2964,6 @@ def enable_new_opmath():
     """
     global __use_new_opmath
     __use_new_opmath = True
-
-    if _mock_opmath_stack:
-        return
-
-    mocks = [
-        mock.patch("pennylane.Hamiltonian", qml.ops.LinearCombination),
-        mock.patch("pennylane.ops.Hamiltonian", qml.ops.LinearCombination),
-        mock.patch("pennylane.ops.qubit.Hamiltonian", qml.ops.LinearCombination),
-        mock.patch("pennylane.ops.qubit.hamiltonian.Hamiltonian", qml.ops.LinearCombination),
-    ]
-
-    with contextlib.ExitStack() as stack:
-        for m in mocks:
-            stack.enter_context(m)
-
-        _mock_opmath_stack.append(stack.pop_all())
 
 
 def disable_new_opmath():
@@ -3003,9 +2982,6 @@ def disable_new_opmath():
     """
     global __use_new_opmath
     __use_new_opmath = False
-
-    if _mock_opmath_stack:
-        _mock_opmath_stack.pop().close()
 
 
 def active_new_opmath():
