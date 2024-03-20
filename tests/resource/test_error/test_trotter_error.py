@@ -35,17 +35,16 @@ p_4 = (4 - 4 ** (1 / 3)) ** -1
 
 
 @pytest.mark.parametrize(
-    "order, n, expected_val",
+    "order, expected_val",
     (
-        (1, 1, 1),
-        (1, 3, 3),
-        (2, 3, 6),
-        (4, 1, 10),
-        (4, 10, 100),  # Computed by hand
+        (1, 1),
+        (2, 2),
+        (4, 10),
+        (6, 50),  # Computed by hand
     ),
 )
-def test_compute_repetitions(order, n, expected_val):
-    assert _compute_repetitions(order, n) == expected_val
+def test_compute_repetitions(order, expected_val):
+    assert _compute_repetitions(order) == expected_val
 
 
 @pytest.mark.parametrize(
@@ -193,55 +192,35 @@ def test_simplify_flatten(index_lst, coeffs_lst, simplified_index_lst, simplifie
 
 
 @pytest.mark.parametrize(
-    "order, num_ops, n, expected_indicies_and_coeffs",
+    "order, num_ops, expected_indicies_and_coeffs",
     (
-        (1, 3, 1, ([0, 1, 2], [1] * 3)),
-        (1, 3, 3, ([0, 1, 2, 0, 1, 2, 0, 1, 2], [1 / 3] * 9)),
-        (2, 3, 1, ([0, 1, 2, 1, 0], [0.5, 0.5, 1, 0.5, 0.5])),
-        (
-            2,
-            2,
-            3,
-            (
-                [0, 1, 0, 1, 0, 1, 0],
-                [1 / 6, 2 / 6, 2 / 6, 2 / 6, 2 / 6, 2 / 6, 1 / 6],
-            ),
-        ),
+        (1, 3, ([0, 1, 2], [1] * 3)),
+        (2, 3, ([0, 1, 2, 1, 0], [0.5, 0.5, 1, 0.5, 0.5])),
+        (2, 2, ([0, 1, 0], [1 / 2, 1, 1 / 2])),
         (
             4,
             2,
-            2,
             (
-                [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+                [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
                 [
-                    0.25 * p_4,
                     p_4 / 2,
+                    p_4,
+                    p_4,
+                    p_4,
+                    (1 - 3 * p_4) / 2,
+                    1 - 4 * p_4,
+                    (1 - 3 * p_4) / 2,
+                    p_4,
+                    p_4,
+                    p_4,
                     p_4 / 2,
-                    p_4 / 2,
-                    0.25 * (1 - 3 * p_4),
-                    (1 - 4 * p_4) / 2,
-                    0.25 * (1 - 3 * p_4),
-                    p_4 / 2,
-                    p_4 / 2,
-                    p_4 / 2,
-                    p_4 / 2,
-                    p_4 / 2,
-                    p_4 / 2,
-                    p_4 / 2,
-                    0.25 * (1 - 3 * p_4),
-                    (1 - 4 * p_4) / 2,
-                    0.25 * (1 - 3 * p_4),
-                    p_4 / 2,
-                    p_4 / 2,
-                    p_4 / 2,
-                    0.25 * p_4,
                 ],
             ),
         ),
     ),
 )
-def test_flatten_trotter(order, num_ops, n, expected_indicies_and_coeffs):
-    computed_indicies, computed_coeffs = _flatten_trotter(num_ops, order, n)
+def test_flatten_trotter(order, num_ops, expected_indicies_and_coeffs):
+    computed_indicies, computed_coeffs = _flatten_trotter(num_ops, order)
     expected_indicies, expected_coeffs = expected_indicies_and_coeffs
 
     assert qnp.allclose(computed_coeffs, expected_coeffs)
@@ -252,21 +231,23 @@ class TestErrorFunctions:
     """Test the error estimation functionality"""
 
     one_norm_error_dict = {
-        (1, 1): lambda a1, a2, t: (t * (abs(a1) + abs(a2))) ** 2,
-        (2, 1): lambda a1, a2, t: (5 / 4) * (t * (abs(a1) + abs(a2))) ** 2,
-        (1, 2): lambda a1, a2, t: (3 / 2) * (t * (abs(a1) + abs(a2))) ** 3,
-        (2, 2): lambda a1, a2, t: (65 / 24) * (t * (abs(a1) + abs(a2))) ** 3,
-        (1, 4): lambda a1, a2, t: ((10**5 + 1) / 120) * (t * (abs(a1) + abs(a2))) ** 5,
+        1: lambda a1, a2, t, n: (1 / n) * (t * (abs(a1) + abs(a2))) ** 2,
+        2: lambda a1, a2, t, n: (1 / n**2) * (3 / 2) * (t * (abs(a1) + abs(a2))) ** 3,
+        4: lambda a1, a2, t, n: (1 / n**4) * ((10**5 + 1) / 120) * (t * (abs(a1) + abs(a2))) ** 5,
     }
 
     @pytest.mark.parametrize(
         "steps, order",
         (
             (1, 1),
-            (2, 1),
+            (10, 1),
+            (100, 1),
             (1, 2),
-            (2, 2),
+            (10, 2),
+            (100, 2),
             (1, 4),
+            (10, 4),
+            (100, 4),
         ),
     )
     @pytest.mark.parametrize(
@@ -281,7 +262,7 @@ class TestErrorFunctions:
     @pytest.mark.parametrize("time", (1, 0.5, 0.25, 0.01))
     def test_one_norm_error(self, steps, order, time, h_coeffs):
         h_ops = (qml.s_prod(h_coeffs[0], qml.X(0)), qml.s_prod(h_coeffs[1], qml.Z(0)))
-        expected_error = self.one_norm_error_dict[(steps, order)](h_coeffs[0], h_coeffs[1], time)
+        expected_error = self.one_norm_error_dict[order](h_coeffs[0], h_coeffs[1], time, steps)
 
         computed_error = _one_norm_error(h_ops, time, order, steps, fast=False)
         assert qnp.isclose(computed_error, expected_error, atol=1e-12)
@@ -293,19 +274,24 @@ class TestErrorFunctions:
         )
 
     commutator_error_dict = {
-        (1, 1): lambda a1, a2, t: 4 * t**2 * abs(a1) * abs(a2),
-        (2, 1): lambda a1, a2, t: 8 * t**2 * abs(a1) * abs(a2),
-        (1, 2): lambda a1, a2, t: (16 / 3) * t**3 * abs(a1) * abs(a2) * (abs(a1) + abs(a2)),
-        (2, 2): lambda a1, a2, t: (32 / 3) * t**3 * abs(a1) * abs(a2) * (abs(a1) + abs(a2)),
+        1: lambda a1, a2, t, n: (1 / n) * 4 * t**2 * abs(a1) * abs(a2),
+        2: lambda a1, a2, t, n: (1 / n**2)
+        * (16 / 3)
+        * t**3
+        * abs(a1)
+        * abs(a2)
+        * (abs(a1) + abs(a2)),
     }
 
     @pytest.mark.parametrize(
         "steps, order",
         (
             (1, 1),
-            (2, 1),
+            (10, 1),
+            (100, 1),
             (1, 2),
-            (2, 2),
+            (10, 2),
+            (100, 2),
         ),
     )
     @pytest.mark.parametrize(
@@ -320,7 +306,7 @@ class TestErrorFunctions:
     @pytest.mark.parametrize("time", (1, 0.5, 0.25, 0.01))
     def test_commutator_error(self, steps, order, time, h_coeffs):
         h_ops = (qml.s_prod(h_coeffs[0], qml.X(0)), qml.s_prod(h_coeffs[1], qml.Z(0)))
-        expected_error = self.commutator_error_dict[(steps, order)](h_coeffs[0], h_coeffs[1], time)
+        expected_error = self.commutator_error_dict[order](h_coeffs[0], h_coeffs[1], time, steps)
 
         computed_error = _commutator_error(h_ops, time, order, steps, fast=False)
         assert qnp.isclose(computed_error, expected_error, atol=1e-12)

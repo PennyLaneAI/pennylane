@@ -504,8 +504,8 @@ class TestError:
 
     def test_commutator_error_method(self):
         """Test that the commutator error method works as expected."""
-        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), time=0.05, order=2)
-        expected_error = (32 / 3) * (0.05**3)
+        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), time=0.05, order=2, n=10)
+        expected_error = (32 / 3) * (0.05**3) * (1 / 100)
 
         for computed_error in (
             op.error(method="commutator"),
@@ -516,7 +516,7 @@ class TestError:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
-        "method, expected_error", (("one-norm", 0.009140625), ("commutator", 8e-3))
+        "method, expected_error", (("one-norm", 0.001265625), ("commutator", 0.001))
     )
     @pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
     def test_error_interfaces(self, method, interface, expected_error):

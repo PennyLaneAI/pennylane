@@ -20,9 +20,9 @@ import pennylane as qml
 
 
 # General Helper functions
-def _compute_repetitions(order, n):
+def _compute_repetitions(order):
     r"""Count the number of times the hamiltonian is repeated ("stages")
-    in the Suzuki-Trotter  product formula for a given order and number of trotter steps.
+    in the Suzuki-Trotter  product formula for a given order.
 
     See the definition of upsilon from section 2.3 (equation 15) in
     `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
@@ -35,10 +35,10 @@ def _compute_repetitions(order, n):
         int: Number of repetitions of the product formula.
     """
     if order == 1:
-        return n
+        return 1
 
     k = order // 2
-    return n * (5 ** (k - 1)) * 2
+    return (5 ** (k - 1)) * 2
 
 
 def _spectral_norm(op, fast=True):
@@ -81,7 +81,7 @@ def _one_norm_error(h_ops, t, p, n, fast):
     Returns:
         float: An upper-bound for the spectral norm error of the product formula.
     """
-    upsilon = _compute_repetitions(p, n)
+    upsilon = _compute_repetitions(p)
     h_one_norm = 0
 
     for op in h_ops:
@@ -182,10 +182,10 @@ def _commutator_error(h_ops, t, p, n, fast):
     Returns:
         float: An upper-bound for the spectral norm error of the product formula.
     """
-    upsilon = _compute_repetitions(p, n)
-    pre_factor = (2 * upsilon * t ** (p + 1)) / (p + 1)
+    upsilon = _compute_repetitions(p)
+    pre_factor = (2 * upsilon * t ** (p + 1)) / ((p + 1) * n**p)
 
-    ops_index_lst, coeffs_lst = _flatten_trotter(len(h_ops), p, n)
+    ops_index_lst, coeffs_lst = _flatten_trotter(len(h_ops), p)
 
     num_factors = len(coeffs_lst)
     alpha_combinations = _generate_combinations(num_factors, p)
@@ -304,7 +304,7 @@ def _simplify(ops_index, coeffs):
     return (final_ops, final_coeffs)
 
 
-def _flatten_trotter(num_ops, order, n):
+def _flatten_trotter(num_ops, order):
     r"""Compute the simplified flattened list representation of the Suzuki-Trotter product formula.
 
     This function computes the simplified Suzuki-Trotter product formula for a certain number of
@@ -313,11 +313,10 @@ def _flatten_trotter(num_ops, order, n):
     Args:
         num_ops (int): The number of operators in the hamiltonian.
         order (int): The order of the product formula.
-        n (int): The number of Trotter steps (stages) in the product formula.
 
     Returns:
         ([int], [float]): The flattened, simplified product formula.
     """
-    ops_index_lst, coeffs_lst = _recursive_flatten(order, num_ops, 1 / n)
-    ops_index_lst, coeffs_lst = _simplify(ops_index_lst * n, coeffs_lst * n)
+    ops_index_lst, coeffs_lst = _recursive_flatten(order, num_ops, 1)
+    ops_index_lst, coeffs_lst = _simplify(ops_index_lst, coeffs_lst)
     return ops_index_lst, coeffs_lst
