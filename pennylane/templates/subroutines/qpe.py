@@ -217,9 +217,11 @@ class QuantumPhaseEstimation(ErrorOperation, Operation):
         0.075
         """
         unitary_error = self._hyperparameters["unitary"].error.error
-        sequence_error = [
-            unitary_error * (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)
-        ]
+
+        sequence_error = qml.math.array(
+            [unitary_error * (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)],
+            like=qml.math.get_interface(unitary_error),
+        )
 
         additive_error = qml.math.sum(sequence_error)
 

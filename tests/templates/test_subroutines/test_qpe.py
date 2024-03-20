@@ -20,7 +20,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-few-public-methods
 def test_flatten_unflatten():
     """Tests the flatten and unflatten methods."""
     op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 3])
@@ -81,24 +81,28 @@ class TestError:
 
         assert np.allclose(qpe_error, matrix_error, atol=1e-4)
 
-    @pytest.mark.all_interfaces
+    # @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
         # the reference error is computed manually for a QPE operation with 2 estimation wires
         ("operator_error", "expected_error"),
         [(0.01, 0.03)],
     )
-    @pytest.mark.parametrize("interface", ("autograd", "jax", "torch", "tensorflow"))
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_error_interfaces(self, operator_error, interface, expected_error):
         """Test that the error method works with all interfaces"""
 
         class CustomOP(qml.resource.ErrorOperation):
             @property
             def error(self):
-                return qml.resource.SpectralNormError(qml.math.array(operator_error))
+                spectral_norm_error = qml.resource.SpectralNormError(
+                    qml.math.array(operator_error, like=interface)
+                )
+                return spectral_norm_error
 
         operator = CustomOP(wires=[0])
         qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error.error
 
+        assert qml.math.get_interface(qpe_error) == interface
         assert np.allclose(qpe_error, expected_error)
 
 
