@@ -57,7 +57,6 @@ class CompositeOp(Operator):
         self.queue_idx = None
         self._name = self.__class__.__name__
 
-
         self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
