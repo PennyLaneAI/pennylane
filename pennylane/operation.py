@@ -1089,7 +1089,7 @@ class Operator(abc.ABC):
                     (
                         qml.Barrier,
                         qml.Snapshot,
-                        qml.Hamiltonian,
+                        qml.ops.Hamiltonian,
                         qml.ops.LinearCombination,
                         qml.GlobalPhase,
                         qml.Identity,
@@ -1906,7 +1906,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__matmul__(other=other)
 
-        if isinstance(other, (Tensor, qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (Tensor, qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.__rmatmul__(self)
 
         if isinstance(other, Observable):
@@ -1967,7 +1967,7 @@ class Observable(Operator):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, (qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.compare(self)
         if isinstance(other, (Tensor, Observable)):
             return other._obs_data() == self._obs_data()
@@ -1981,7 +1981,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__add__(other=other)
 
-        if isinstance(other, (qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)

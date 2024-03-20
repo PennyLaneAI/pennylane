@@ -1087,6 +1087,6 @@ class DefaultQubitLegacy(QubitDevice):
         meas_filtered = [
             m
             for m in circuit.measurements
-            if m.obs is None or not isinstance(m.obs, (qml.Hamiltonian, qml.ops.LinearCombination))
+            if m.obs is None or not isinstance(m.obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination))
         ]
         return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
