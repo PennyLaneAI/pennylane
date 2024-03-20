@@ -92,7 +92,7 @@ class TestError:
         ("operator_error", "expected_error"),
         [(0.01, 0.03), (0.02, 0.06)],
     )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
     def test_error_interfaces(self, operator_error, interface, expected_error):
         """Test that the error method works with all interfaces"""
 
