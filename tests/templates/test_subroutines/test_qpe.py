@@ -50,12 +50,21 @@ class TestError:
         """Test that QPE error is correct for a given custom operator."""
 
         class CustomOP(qml.resource.ErrorOperation):
-            @property
             def error(self):
                 return qml.resource.SpectralNormError(operator_error)
 
         operator = CustomOP(wires=[0])
         qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
+
+        assert np.allclose(qpe_error, expected_error)
+
+    @pytest.mark.parametrize(
+        ("unitary", "expected_error"),
+        [(qml.RX(0.1, wires=0), 0.0)],
+    )
+    def test_error_zero(self, unitary, expected_error):
+        """Test that QPE error is zero for an operator with no error method."""
+        qpe_error = qml.QuantumPhaseEstimation(unitary, estimation_wires=range(1, 3)).error().error
 
         assert np.allclose(qpe_error, expected_error)
 
@@ -66,7 +75,6 @@ class TestError:
         u_apprx = qml.RY(0.51, wires=0)
 
         class CustomOP(qml.resource.ErrorOperation):
-            @property
             def error(self):
                 error_value = qml.resource.SpectralNormError.get_error(u_exact, u_apprx)
                 return qml.resource.SpectralNormError(error_value)
@@ -92,7 +100,6 @@ class TestError:
         """Test that the error method works with all interfaces"""
 
         class CustomOP(qml.resource.ErrorOperation):
-            @property
             def error(self):
                 spectral_norm_error = qml.resource.SpectralNormError(
                     qml.math.array(operator_error, like=interface)
