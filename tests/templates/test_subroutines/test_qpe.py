@@ -20,7 +20,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 
-# pylint: disable=protected-access, too-few-public-methods
+# pylint: disable=protected-access,too-few-public-methods
 def test_flatten_unflatten():
     """Tests the flatten and unflatten methods."""
     op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 3])
