@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
+  [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
+
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
   `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
@@ -125,6 +128,10 @@
 
   ```
 
+* A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
+  but for usage with new operator arithmetic.
+  [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
+
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
@@ -154,6 +161,10 @@
 
 * `Prod.eigvals()` is now compatible with Qudit operators.
   [(#5400)](https://github.com/PennyLaneAI/pennylane/pull/5400)
+
+* Obtaining classical shadows using the `default.clifford` device is now compatible with
+  [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
+  [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
 <h4>Community contributions 🥳</h4>
 
@@ -273,5 +284,6 @@ Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Vincent Michaud-Rioux,
 Mudit Pandey,
 Matthew Silverman.

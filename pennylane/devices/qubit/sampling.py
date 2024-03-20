@@ -109,7 +109,7 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
     num_shots = 0
     for group in groups:
         if isinstance(group[0], ExpectationMP) and isinstance(
-            group[0].obs, (qml.Hamiltonian, qml.ops.LinearCombination)
+            group[0].obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
         ):
             indices = group[0].obs.grouping_indices
             H_executions = len(indices) if indices else len(group[0].obs.ops)
