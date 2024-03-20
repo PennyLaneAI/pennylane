@@ -196,9 +196,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     @property
     def has_matrix(self):
-        return self.base.has_matrix or isinstance(
-            self.base, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
-        )
+        return self.base.has_matrix or isinstance(self.base, qml.ops.Hamiltonian)
 
     @property
     def hash(self):
