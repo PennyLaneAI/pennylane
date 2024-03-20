@@ -150,7 +150,7 @@ class CompositeOp(Operator):
     @property
     def has_matrix(self):
         return all(
-            op.has_matrix or isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination))
+            op.has_matrix or isinstance(op, qml.ops.Hamiltonian)
             for op in self
         )
 

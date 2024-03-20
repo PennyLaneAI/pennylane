@@ -303,7 +303,7 @@ class Prod(CompositeOp):
                 (
                     (
                         qml.matrix(op)
-                        if isinstance(op, (qml.ops.Hamiltonian, LinearCombination))
+                        if isinstance(op, qml.ops.Hamiltonian))
                         else op.matrix()
                     ),
                     op.wires,

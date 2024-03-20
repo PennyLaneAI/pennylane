@@ -1631,7 +1631,7 @@ class QubitDevice(Device):
                     f" measurement {m.__class__.__name__}"
                 )
 
-            if m.obs.name in ["Hamiltonian", "LinearCombination"]:
+            if not m.obs.has_matrix
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support Hamiltonian observables."
                 )
