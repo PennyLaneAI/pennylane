@@ -73,8 +73,7 @@ class TestAdjointJacobian:
         ):
             dev.adjoint_jacobian(tape)
 
-    @pytest.mark.xfail  # need to update logic to raise same error
-    def test_linear_combination_adjoint_error(self, dev):
+    def test_linear_combination_adjoint_warning(self, dev):
         """Test that error is raised for qml.Hamiltonian"""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -86,9 +85,9 @@ class TestAdjointJacobian:
             )
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Adjoint differentiation method does not support LinearCombination observables",
+        with pytest.warns(
+            UserWarning,
+            match="Differentiating with respect to the input parameters of LinearCombination",
         ):
             dev.adjoint_jacobian(tape)
 
