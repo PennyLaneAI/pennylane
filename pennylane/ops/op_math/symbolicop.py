@@ -196,9 +196,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     @property
     def has_matrix(self):
-        return self.base.has_matrix or isinstance(
-            self.base, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
-        )
+        return self.base.has_matrix or isinstance(self.base, qml.ops.Hamiltonian)
 
     @property
     def hash(self):
@@ -245,7 +243,7 @@ class ScalarSymbolicOp(SymbolicOp):
             tensor_like: matrix representation
         """
         # compute base matrix
-        if isinstance(self.base, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(self.base, qml.ops.Hamiltonian):
             base_matrix = qml.matrix(self.base)
         else:
             base_matrix = self.base.matrix()
