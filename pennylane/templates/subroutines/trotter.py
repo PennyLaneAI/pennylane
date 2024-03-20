@@ -264,9 +264,18 @@ class TrotterProduct(ErrorOperation):
         Returns:
             SpectralNormError: The spectral norm error.
         """
-        terms = self.hyperparameters["base"].operands
+        base_unitary = self.hyperparameters["base"]
         t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
 
+        parameters = [t] + base_unitary.parameters
+        if any(
+            qml.math.get_interface(param) == "tensorflow" for param in parameters
+        ):  # TODO: Add TF support
+            raise TypeError(
+                "Calculating error bound for Tensorflow objects is currently not supported"
+            )
+
+        terms = base_unitary.operands
         if method == "one-norm":
             return SpectralNormError(qml.resource.error._one_norm_error(terms, t, p, n, fast=fast))
 
