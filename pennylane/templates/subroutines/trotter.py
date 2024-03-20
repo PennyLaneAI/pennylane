@@ -110,6 +110,7 @@ class TrotterProduct(ErrorOperation):
         ops = [qml.X(0), qml.Z(0)]
         H = qml.dot(coeffs, ops)
 
+        dev = qml.device("default.qubit", wires=2)
         @qml.qnode(dev)
         def my_circ():
             # Prepare some state
