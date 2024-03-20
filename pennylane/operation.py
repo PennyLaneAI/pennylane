@@ -3137,7 +3137,7 @@ def convert_to_H(op):
 
 def convert_to_legacy_H(op):
     """
-    Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
+    Converts arithmetic operators into a legacy :class:`~pennylane.Hamiltonian` instance.
     Objects of any other type are returned directly.
 
     Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
