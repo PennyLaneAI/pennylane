@@ -236,6 +236,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.qinfo.quantum_fisher` now works with non-`default.qubit` devices.
+
 * We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
   [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
 
