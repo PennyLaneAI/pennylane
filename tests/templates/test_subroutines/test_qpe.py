@@ -55,7 +55,7 @@ class TestError:
                 return qml.resource.SpectralNormError(operator_error)
 
         operator = CustomOP(wires=[0])
-        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error.error
+        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
 
         assert np.allclose(qpe_error, expected_error)
 
@@ -77,7 +77,7 @@ class TestError:
         matrix_error = qml.math.max(qml.math.svd(m_exact - m_apprx, compute_uv=False))
 
         operator = CustomOP(wires=[0])
-        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error.error
+        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
 
         assert np.allclose(qpe_error, matrix_error, atol=1e-4)
 
@@ -100,7 +100,7 @@ class TestError:
                 return spectral_norm_error
 
         operator = CustomOP(wires=[0])
-        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error.error
+        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
 
         assert qml.math.get_interface(qpe_error) == interface
         assert np.allclose(qpe_error, expected_error)

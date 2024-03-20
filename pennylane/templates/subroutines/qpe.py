@@ -201,7 +201,6 @@ class QuantumPhaseEstimation(ErrorOperation, Operation):
         """The estimation wires of the QPE"""
         return self._hyperparameters["estimation_wires"]
 
-    @property
     def error(self):
         """The QPE error computed from the spectral norm error of the input unitary operator.
 
@@ -213,7 +212,7 @@ class QuantumPhaseEstimation(ErrorOperation, Operation):
         ...       return 0.005
         >>> Op = CustomOP(wires=[0])
         >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
-        >>> QPE.error
+        >>> QPE.error()
         0.075
         """
         unitary_error = self._hyperparameters["unitary"].error.error
