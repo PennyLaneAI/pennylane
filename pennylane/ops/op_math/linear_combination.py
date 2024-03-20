@@ -575,7 +575,8 @@ class LinearCombination(Sum):
         Returns:
             .LinearCombination: new ``LinearCombination``
         """
-        new_ops = tuple(op.map_wires(wire_map) for op in self.ops)
-        new_op = LinearCombination(self.data, new_ops)
+        coeffs, ops = self.terms()
+        new_ops = tuple(op.map_wires(wire_map) for op in ops)
+        new_op = LinearCombination(coeffs, new_ops)
         new_op.grouping_indices = self._grouping_indices
         return new_op
