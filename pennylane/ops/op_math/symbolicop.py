@@ -245,7 +245,7 @@ class ScalarSymbolicOp(SymbolicOp):
             tensor_like: matrix representation
         """
         # compute base matrix
-        if isinstance(self.base, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(self.base, qml.ops.Hamiltonian):
             base_matrix = qml.matrix(self.base)
         else:
             base_matrix = self.base.matrix()
