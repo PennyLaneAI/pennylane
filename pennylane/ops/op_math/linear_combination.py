@@ -124,6 +124,11 @@ class LinearCombination(Sum):
                 "Could not create valid LinearCombination; "
                 "number of coefficients and operators does not match."
             )
+        if _pauli_rep is None:
+            _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
+
+        if simplify:
+            coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(coeffs, observables, _pauli_rep)
 
         self._coeffs = coeffs
 
@@ -139,21 +144,18 @@ class LinearCombination(Sum):
         super().__init__(
             *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
         )
+    
+    @staticmethod
+    def _build_pauli_rep_static(coeffs, observables):
+        """PauliSentence representation of the Sum of operations."""
 
-        if simplify:
-            # TODO clean up this logic, seems unnecesssarily complicated
-
-            simplified_coeffs, simplified_ops, pr = self._simplify_coeffs_ops()
-
-            self._coeffs = (
-                simplified_coeffs  # Losing gradient in case of torch interface at this point
-            )
-
-            self._ops = simplified_ops
-            with qml.QueuingManager().stop_recording():
-                operands = [qml.s_prod(c, op) for c, op in zip(self._coeffs, self._ops)]
-
-            super().__init__(*operands, id=id, _pauli_rep=pr)
+        if all(pauli_reps := [op.pauli_rep for op in observables]):
+            new_rep = qml.pauli.PauliSentence()
+            for c, ps in zip(coeffs, pauli_reps):
+                for pw, coeff in ps.items():
+                    new_rep[pw] += coeff * c
+            return new_rep
+        return None
 
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
@@ -212,43 +214,44 @@ class LinearCombination(Sum):
         return "LinearCombination"
 
     @qml.QueuingManager.stop_recording()
-    def _simplify_coeffs_ops(self, cutoff=1.0e-12):
+    @staticmethod
+    def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
         Returns:
             coeffs, ops, pauli_rep"""
 
-        if len(self.ops) == 0:
-            return [], [], self.pauli_rep
+        if len(ops) == 0:
+            return [], [], pr
 
         # try using pauli_rep:
-        if pr := self.pauli_rep:
+        if pr is not None:
 
-            wire_order = self.wires
+            wire_order = pr.wires
             if len(pr) == 0:
                 return [], [], pr
 
             # collect coefficients and ops
-            coeffs = []
-            ops = []
+            new_coeffs = []
+            new_ops = []
 
             for pw, coeff in pr.items():
                 pw_op = pw.operation(wire_order=wire_order)
-                ops.append(pw_op)
-                coeffs.append(coeff)
+                new_ops.append(pw_op)
+                new_coeffs.append(coeff)
 
-            return coeffs, ops, pr
+            return new_coeffs, new_ops, pr
 
-        if len(self.ops) == 1:
-            return self.coeffs, [self.ops[0].simplify()], pr
+        if len(ops) == 1:
+            return coeffs, [ops[0].simplify()], pr
 
-        op_as_sum = qml.sum(*self.operands)
+        op_as_sum = qml.dot(coeffs, ops)
         op_as_sum = op_as_sum.simplify(cutoff)
-        coeffs, ops = op_as_sum.terms()
-        return coeffs, ops, None
+        new_coeffs, new_ops = op_as_sum.terms()
+        return coeffs, ops, pr
 
     def simplify(self, cutoff=1.0e-12):
-        coeffs, ops, pr = self._simplify_coeffs_ops(cutoff)
+        coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def _obs_data(self):
