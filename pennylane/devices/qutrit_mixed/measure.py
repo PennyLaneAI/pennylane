@@ -27,66 +27,20 @@ from pennylane.measurements import (
     ProbabilityMP,
     VarianceMP,
 )
-from pennylane.operation import Observable
 from pennylane.typing import TensorLike
 
 from .utils import (
-    get_einsum_mapping,
     reshape_state_as_matrix,
     get_num_wires,
-    get_new_state_einsum_indices,
     QUDIT_DIM,
 )
 from .apply_operation import apply_operation
 
 
-def _map_indices_apply_operation(**kwargs):
-    """Map indices to wires.
-
-    Args:
-        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`:
-            state_indices (str): Indices that are summed.
-            row_indices (str): Indices that must be replaced with sums.
-            new_row_indices (str): Tensor indices of the state.
-
-    Returns:
-        String of einsum indices to complete einsum calculations.
-    """
-    op_1_indices = f"{kwargs['new_row_indices']}{kwargs['row_indices']}"
-
-    new_state_indices = get_new_state_einsum_indices(
-        old_indices=kwargs["row_indices"],
-        new_indices=kwargs["new_row_indices"],
-        state_indices=kwargs["state_indices"],
-    )
-
-    return f"{op_1_indices},...{kwargs['state_indices']}->...{new_state_indices}"
-
-
-def apply_observable_einsum(obs: Observable, state, is_state_batched: bool = False):
-    r"""Applies an observable to a density matrix rho, giving obs@state.
-
-    Args:
-        obs (Operator): Operator to apply to the quantum state.
-        state (array[complex]): Input quantum state.
-        is_state_batched (bool): Boolean representing whether the state is batched or not.
-
-    Returns:
-        TensorLike: the result of obs@state.
-    """
-
-    num_ch_wires = len(obs.wires)
-    einsum_indices = get_einsum_mapping(obs, state, _map_indices_apply_operation, is_state_batched)
-    obs_mat = obs.matrix()
-    obs_shape = [QUDIT_DIM] * num_ch_wires * 2
-    obs_mat = math.cast(math.reshape(obs_mat, obs_shape), complex)
-    return math.einsum(einsum_indices, obs_mat, state)
-
-
 def calculate_expval(
     measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
-    """Measure the expectation value of an observable by finding the trace of obs@rho.
+    """Measure the expectation value of an observable.
 
     Args:
         measurementprocess (ExpectationMP): measurement process to apply to the state.
@@ -96,21 +50,13 @@ def calculate_expval(
     Returns:
         TensorLike: expectation value of observable wrt the state.
     """
-    obs = measurementprocess.obs
-    rho_mult_obs = apply_observable_einsum(obs, state, is_state_batched)
-
-    # using einsum since trace function axis selection parameter names
-    # are not consistent across interfaces, they don't exist for torch
-
-    num_wires = get_num_wires(state, is_state_batched)
-    rho_mult_obs_reshaped = reshape_state_as_matrix(rho_mult_obs, num_wires)
-    if is_state_batched:
-        return math.real(math.stack([math.sum(math.diagonal(dm)) for dm in rho_mult_obs_reshaped]))
-
-    return math.asarray(math.real(math.sum(math.diagonal(rho_mult_obs_reshaped))))
+    probs = calculate_probability(measurementprocess, state, is_state_batched)
+    eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
+    # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
+    return math.dot(probs, eigvals)
 
 
-def calculate_reduced_density_matrix(  # TODO: ask if I should have state diagonalization gates?
+def calculate_reduced_density_matrix(
     measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
     """Get the state or reduced density matrix.
