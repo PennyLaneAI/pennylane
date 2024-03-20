@@ -367,7 +367,7 @@ def is_pauli_sentence(op):
     """Returns True of the operator is a PauliSentence and False otherwise."""
     if op.pauli_rep is not None:
         return True
-    if isinstance(op, (Hamiltonian, LinearCombination)):
+    if isinstance(op, Hamiltonian):
         return all(is_pauli_word(o) for o in op.ops)
     return False
 
