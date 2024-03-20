@@ -17,7 +17,7 @@ Contains the QuantumPhaseEstimation template.
 # pylint: disable=too-many-arguments,arguments-differ
 import pennylane as qml
 from pennylane.queuing import QueuingManager
-from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.operation import AnyWires, Operator
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 
 
