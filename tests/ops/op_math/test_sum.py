@@ -299,7 +299,6 @@ class TestInitialization:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
-    qml.operation.enable_new_opmath()
     SUM_REPR = (
         (qml.sum(X(0), Y(1), Z(2)), "X(0) + Y(1) + Z(2)"),
         (X(0) + X(1) + X(2), "X(0) + X(1) + X(2)"),
@@ -314,14 +313,12 @@ class TestInitialization:
             "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * ((X(0) @ Y(1)) @ Z(1))\n)",
         ),
     )
-    qml.operation.disable_new_opmath()
 
     @pytest.mark.parametrize("op, repr_true", SUM_REPR)
     def test_repr(self, op, repr_true):
         """Test the string representation of Sum instances"""
         assert repr(op) == repr_true
 
-    qml.operation.enable_new_opmath()
     SUM_REPR_EVAL = (
         X(0) + Y(1) + Z(2),  # single line output
         0.5 * X(0) + 3.5 * Y(1) + 10 * Z(2),  # single line output
@@ -331,14 +328,11 @@ class TestInitialization:
         + 1000000000 * Z(2),  # multiline output
         # qml.sum(*[0.5 * X(i) for i in range(10)]) # multiline output needs fixing of https://github.com/PennyLaneAI/pennylane/issues/5162 before working
     )
-    qml.operation.disable_new_opmath()
 
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
-        qml.operation.enable_new_opmath()
         assert qml.equal(eval(repr(op)), op)
-        qml.operation.disable_new_opmath()
 
 
 class TestMatrix:

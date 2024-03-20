@@ -340,7 +340,8 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
-    def test_check_validity_on_tensor_support(self, mock_device_supporting_paulis):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_check_validity_on_tensor_support_legacy_opmath(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with tensor support capability"""
         dev = mock_device_supporting_paulis()
 
@@ -356,6 +357,23 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(DeviceError, match="Tensor observables not supported"):
             dev.check_validity(queue, observables)
 
+    def test_check_validity_on_prod_support(self, mock_device_supporting_paulis):
+        """Tests the function Device.check_validity with prod support capability"""
+        dev = mock_device_supporting_paulis()
+
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
+
+        observables = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
+
+        # mock device does not support Tensor product
+        with pytest.raises(DeviceError, match="Observable Prod not supported"):
+            dev.check_validity(queue, observables)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_check_validity_on_invalid_observable_with_tensor_support(self, monkeypatch):
         """Tests the function Device.check_validity with tensor support capability
         but with an invalid observable"""
@@ -491,7 +509,10 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         without expanding measurements."""
 
         ops = [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]
-        measurements = [qml.expval(qml.PauliZ(0)), qml.expval(2 * qml.PauliX(0) @ qml.PauliY(1))]
+        measurements = [
+            qml.expval(qml.PauliZ(0)),
+            qml.expval(qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliY(1)])),
+        ]
         circuit = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
         dev = mock_device_with_paulis_hamiltonian_and_methods(wires=3)

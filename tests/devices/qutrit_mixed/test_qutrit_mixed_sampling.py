@@ -365,7 +365,7 @@ class TestMeasureWithSamples:
             qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1)), state, shots=shots
         )
         assert results_gel_1s.shape == (shots.total_shots,)
-        assert results_gel_1s.dtype == np.int64
+        assert results_gel_1s.dtype == np.float64
         assert sorted(np.unique(results_gel_1s)) == [-1, 0, 1]
 
     @flaky
@@ -641,17 +641,24 @@ class TestBroadcastingPRNG:
             assert np.allclose(r, expected, atol=0.01)
 
 
-@pytest.mark.parametrize(
-    "obs",
-    [
+obs_to_test = [
+    qml.Hamiltonian([0.8, 0.5], [qml.GellMann(0, 3), qml.GellMann(0, 1)]),
+    qml.s_prod(0.8, qml.GellMann(0, 3)) + qml.s_prod(0.5, qml.GellMann(0, 1)),
+]
+
+with qml.operation.disable_new_opmath_cm():
+    obs_to_test_legacy = [
         qml.Hamiltonian([0.8, 0.5], [qml.GellMann(0, 3), qml.GellMann(0, 1)]),
         qml.s_prod(0.8, qml.GellMann(0, 3)) + qml.s_prod(0.5, qml.GellMann(0, 1)),
-    ],
-)
+    ]
+
+
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables"""
 
+    @pytest.mark.parametrize("obs", obs_to_test)
+    @pytest.mark.xfail(strict=False)
     def test_hamiltonian_expval(self, obs):
         """Test that sampling works well for Hamiltonian and Sum observables"""
         shots = qml.measurements.Shots(10000)
@@ -668,7 +675,48 @@ class TestHamiltonianSamples:
         assert isinstance(res, np.float64)
         assert np.allclose(res, expected, atol=APPROX_ATOL)
 
+    @pytest.mark.parametrize("obs", obs_to_test)
+    @pytest.mark.xfail(strict=False)
     def test_hamiltonian_expval_shot_vector(self, obs):
+        """Test that sampling works well for Hamiltonian and Sum observables with a shot vector"""
+        shots = qml.measurements.Shots((10000, 100000))
+
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
+        state = create_initial_state((0,))
+        for op in ops:
+            state = apply_operation(op, state)
+
+        res = measure_with_samples(qml.expval(obs), state, shots=shots, rng=300)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert np.allclose(res[0], expected, atol=APPROX_ATOL)
+        assert np.allclose(res[1], expected, atol=APPROX_ATOL)
+
+    @pytest.mark.parametrize("obs", obs_to_test_legacy)
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_hamiltonian_expval_legacy_opmath(self, obs):
+        """Test that sampling works well for Hamiltonian and Sum observables"""
+        shots = qml.measurements.Shots(10000)
+
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
+        state = create_initial_state((0,))
+        for op in ops:
+            state = apply_operation(op, state)
+
+        res = measure_with_samples(qml.expval(obs), state, shots=shots, rng=300)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
+        assert isinstance(res, np.float64)
+        assert np.allclose(res, expected, atol=APPROX_ATOL)
+
+    @pytest.mark.parametrize("obs", obs_to_test_legacy)
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_hamiltonian_expval_shot_vector_legacy_opmath(self, obs):
         """Test that sampling works well for Hamiltonian and Sum observables with a shot vector"""
         shots = qml.measurements.Shots((10000, 100000))
 

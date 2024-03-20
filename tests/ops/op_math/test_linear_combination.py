@@ -14,7 +14,7 @@
 """
 Tests for the LinearCombination class.
 """
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, too-few-public-methods
 from collections.abc import Iterable
 from copy import copy
 
@@ -27,6 +27,30 @@ from pennylane import numpy as pnp, X, Y, Z
 from pennylane.wires import Wires
 from pennylane.pauli import PauliWord, PauliSentence
 from pennylane.ops import LinearCombination
+
+from pennylane.operation import enable_new_opmath_cm
+
+
+@pytest.mark.usefixtures("use_legacy_opmath")
+def test_switching():
+    """Test that switching to new from old opmath changes the dispatch of qml.Hamiltonian"""
+    Ham = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
+    assert isinstance(Ham, qml.Hamiltonian)
+    assert not isinstance(Ham, qml.ops.LinearCombination)
+
+    with enable_new_opmath_cm():
+        LC = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
+        assert isinstance(LC, qml.Hamiltonian)
+        assert isinstance(LC, qml.ops.LinearCombination)
+
+
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+class TestParityWithHamiltonian:
+    """Test that Hamiltonian and LinearCombination can be used interchangeably when new opmath is disabled or enabled"""
+
+    def test_isinstance_Hamiltonian(self):
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
+        assert isinstance(H, qml.Hamiltonian)
 
 
 # Make test data in different interfaces, if installed
@@ -865,6 +889,7 @@ class TestLinearCombination:
 
     def test_LinearCombination_queue_inside(self):
         """Tests that LinearCombination are queued correctly when components are instantiated inside the recording context."""
+        assert qml.operation.active_new_opmath()
         with qml.queuing.AnnotatedQueue() as q:
             m = qml.expval(qml.ops.LinearCombination([1, 3, 1], [X(1), Z(0) @ Z(2), Z(1)]))
 
@@ -1510,6 +1535,25 @@ class TestGrouping:
         H3.compute_grouping(method="lf")
         assert H3.grouping_indices == ((2, 1), (0,))
 
+    def test_grouping_with_duplicate_terms(self):
+        """Test that the grouping indices are correct when the LinearCombination has duplicate
+        operators."""
+        a = X(0)
+        b = X(1)
+        c = Z(0)
+        d = X(0)
+        e = Z(0)
+        obs = [a, b, c, d, e]
+        coeffs = [1.0, 2.0, 3.0, 4.0, 5.0]
+
+        # compute grouping during construction
+        H2 = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc")
+
+        assert H2.grouping_indices == ((0, 1, 3), (2, 4))
+        # Following assertions are to check that grouping does not mutate the list of ops/coeffs
+        assert H2.coeffs == coeffs
+        assert H2.ops == obs
+
 
 class TestLinearCombinationEvaluation:
     """Test the usage of a LinearCombination as an observable"""
@@ -1758,7 +1802,7 @@ class TestLinearCombinationDifferentiation:
             qml.RY(param, wires=0)
             return qml.expval(qml.ops.LinearCombination(coeffs, [X(0), Z(0)]))
 
-        grad_fn = jax.grad(circuit, argnums=(1))
+        grad_fn = jax.grad(circuit, argnums=1)
         grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
@@ -1769,7 +1813,7 @@ class TestLinearCombinationDifferentiation:
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
-        grad_fn_expected = jax.grad(combine, argnums=(1))
+        grad_fn_expected = jax.grad(combine, argnums=1)
         grad_expected = grad_fn_expected(coeffs, param)
 
         assert np.allclose(grad, grad_expected)

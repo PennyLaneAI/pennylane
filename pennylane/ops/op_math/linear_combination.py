@@ -203,6 +203,70 @@ class LinearCombination(Sum):
         """
         return self.coeffs, self.ops
 
+    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+        """
+        Compute groups of operators and coefficients corresponding to commuting
+        observables of this ``LinearCombination``.
+
+        .. note::
+
+            If grouping is requested, the computed groupings are stored as a list of list of indices
+            in ``LinearCombination.grouping_indices``.
+
+        Args:
+            grouping_type (str): The type of binary relation between Pauli words used to compute
+                the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+            method (str): The graph coloring heuristic to use in solving minimum clique cover for
+                grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
+                First).
+
+        **Example**
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            a = qml.X(0)
+            b = qml.prod(qml.X(0), qml.X(1))
+            c = qml.Z(0)
+            obs = [a, b, c]
+            coeffs = [1.0, 2.0, 3.0]
+
+            op = qml.ops.LinearCombination(coeffs, obs)
+
+        >>> op.grouping_indices is None
+        True
+        >>> op.compute_grouping(grouping_type="qwc")
+        >>> op.grouping_indices
+        ((2,), (0, 1))
+        """
+        if not self.pauli_rep:
+            raise ValueError("Cannot compute grouping for Sums containing non-Pauli operators.")
+
+        _, ops = self.terms()
+
+        with qml.QueuingManager.stop_recording():
+            op_groups = qml.pauli.group_observables(ops, grouping_type=grouping_type, method=method)
+
+        ops = copy(ops)
+
+        indices = []
+        available_indices = list(range(len(ops)))
+        for partition in op_groups:  # pylint:disable=too-many-nested-blocks
+            indices_this_group = []
+            for pauli_word in partition:
+                # find index of this pauli word in remaining original observables,
+                for ind, observable in enumerate(ops):
+                    if qml.pauli.are_identical_pauli_words(pauli_word, observable):
+                        indices_this_group.append(available_indices[ind])
+                        # delete this observable and its index, so it cannot be found again
+                        ops.pop(ind)
+                        available_indices.pop(ind)
+                        break
+            indices.append(tuple(indices_this_group))
+
+        self._grouping_indices = tuple(indices)
+
     @property
     def wires(self):
         r"""The sorted union of wires from all operators.

@@ -335,7 +335,7 @@ def pauli_decompose(
             }
         )
 
-    return Hamiltonian(coeffs, obs)
+    return qml.Hamiltonian(coeffs, obs)
 
 
 def pauli_sentence(op):
@@ -448,7 +448,7 @@ def _(op: LinearCombination):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
-    return op._build_pauli_rep()
+    return op._build_pauli_rep()  # pylint: disable=protected-access
 
 
 @_pauli_sentence.register

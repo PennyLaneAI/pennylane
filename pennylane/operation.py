@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
+# pylint: disable=protected-access, no-member
 r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
@@ -243,12 +243,15 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 """
 # pylint:disable=access-member-before-definition,global-statement
 import abc
+import contextlib
 import copy
 import functools
 import itertools
 import warnings
 from enum import IntEnum
 from typing import List
+from unittest import mock
+from contextlib import contextmanager
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -2947,6 +2950,9 @@ def gen_is_multi_term_hamiltonian(obj):
     return isinstance(o, (qml.ops.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
 
 
+_mock_opmath_stack = []
+
+
 def enable_new_opmath():
     """
     Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
@@ -2963,6 +2969,22 @@ def enable_new_opmath():
     """
     global __use_new_opmath
     __use_new_opmath = True
+
+    if _mock_opmath_stack:
+        return
+
+    mocks = [
+        mock.patch("pennylane.Hamiltonian", qml.ops.LinearCombination),
+        mock.patch("pennylane.ops.Hamiltonian", qml.ops.LinearCombination),
+        mock.patch("pennylane.ops.qubit.Hamiltonian", qml.ops.LinearCombination),
+        mock.patch("pennylane.ops.qubit.hamiltonian.Hamiltonian", qml.ops.LinearCombination),
+    ]
+
+    with contextlib.ExitStack() as stack:
+        for m in mocks:
+            stack.enter_context(m)
+
+        _mock_opmath_stack.append(stack.pop_all())
 
 
 def disable_new_opmath():
@@ -2981,6 +3003,9 @@ def disable_new_opmath():
     """
     global __use_new_opmath
     __use_new_opmath = False
+
+    if _mock_opmath_stack:
+        _mock_opmath_stack.pop().close()
 
 
 def active_new_opmath():
@@ -3022,6 +3047,44 @@ def convert_to_opmath(op):
     if isinstance(op, Tensor):
         return qml.prod(*op.obs)
     return op
+
+
+@contextmanager
+def disable_new_opmath_cm():
+    r"""Allows to use the old operator arithmetic within a
+    temporary context using the `with` statement."""
+
+    was_active = qml.operation.active_new_opmath()
+    try:
+        if was_active:
+            disable_new_opmath()
+        yield
+    except Exception as e:
+        raise e
+    finally:
+        if was_active:
+            enable_new_opmath()
+        else:
+            disable_new_opmath()
+
+
+@contextmanager
+def enable_new_opmath_cm():
+    r"""Allows to use the new operator arithmetic within a
+    temporary context using the `with` statement."""
+
+    was_active = qml.operation.active_new_opmath()
+    try:
+        if not was_active:
+            enable_new_opmath()
+        yield
+    except Exception as e:
+        raise e
+    finally:
+        if was_active:
+            enable_new_opmath()
+        else:
+            disable_new_opmath()
 
 
 # pylint: disable=too-many-branches
@@ -3090,7 +3153,9 @@ def convert_to_legacy_H(op):
     else:
         raise ValueError("Could not convert to Hamiltonian. Some or all observables are not valid.")
 
-    return qml.Hamiltonian(coeffs, ops)
+    with disable_new_opmath_cm():
+        res = qml.Hamiltonian(coeffs, ops)
+    return res
 
 
 def __getattr__(name):
