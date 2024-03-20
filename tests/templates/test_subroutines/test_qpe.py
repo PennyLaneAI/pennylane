@@ -58,15 +58,12 @@ class TestError:
 
         assert np.allclose(qpe_error, expected_error)
 
-    @pytest.mark.parametrize(
-        ("unitary", "expected_error"),
-        [(qml.RX(0.1, wires=0), 0.0)],
-    )
-    def test_error_zero(self, unitary, expected_error):
+    def test_error_zero(self):
         """Test that QPE error is zero for an operator with no error method."""
+        unitary = qml.RX(0.1, wires=0)
         qpe_error = qml.QuantumPhaseEstimation(unitary, estimation_wires=range(1, 3)).error().error
 
-        assert np.allclose(qpe_error, expected_error)
+        assert qpe_error == 0.0
 
     def test_error_unitary(self):
         """Test that QPE error is correct for a given unitary error."""
@@ -93,7 +90,7 @@ class TestError:
     @pytest.mark.parametrize(
         # the reference error is computed manually for a QPE operation with 2 estimation wires
         ("operator_error", "expected_error"),
-        [(0.01, 0.03)],
+        [(0.01, 0.03), (0.02, 0.06)],
     )
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_error_interfaces(self, operator_error, interface, expected_error):
