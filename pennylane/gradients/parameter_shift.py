@@ -734,9 +734,11 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
 
 
 def _param_shift_stopping_condition(op) -> bool:
+
     return (
         (op.grad_method is not None)
-        if any(qml.math.requires_grad(p) for p in op.parameters)
+        if isinstance(op, qml.operation.Operator)
+        and any(qml.math.requires_grad(p) for p in op.data)
         else True
     )
 

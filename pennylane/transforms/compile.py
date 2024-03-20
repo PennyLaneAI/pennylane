@@ -184,6 +184,8 @@ def compile(
         basis_set = basis_set or all_ops
 
         def stop_at(obj):
+            if not isinstance(obj, qml.operation.Operator):
+                return True
             return obj.name in basis_set and (not getattr(obj, "only_visual", False))
 
         [expanded_tape], _ = qml.devices.preprocess.decompose(
