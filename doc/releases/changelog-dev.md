@@ -140,7 +140,7 @@
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
 * The generators in the source code return operators consistent with the global setting for 
-  `qml.operator.active_new_opmath()` whereever possible.
+  `qml.operator.active_new_opmath()` whereever possible. `Sum`, `SProd` and `Prod` instances will be returned even after disabling the new operator arithmetic in cases where they offer additional functionality not available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
   [(#5412)](https://github.com/PennyLaneAI/pennylane/pull/5412)
 
