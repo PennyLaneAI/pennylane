@@ -489,6 +489,17 @@ class TestAdjointOperation:
 
         assert op.has_generator is False
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_generator_legacy(self):
+        """Assert that the generator of an Adjoint is -1.0 times the base generator with opmath disabled."""
+        base = qml.RX(1.23, wires=0)
+        op = Adjoint(base)
+
+        base_gen = base.generator()
+        op_gen = op.generator()
+
+        assert qml.equal(base_gen, qml.Hamiltonian([-1.0 * op_gen.coeffs[0]], op_gen.ops))
+
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""
         base = qml.RX(1.23, wires=0)
