@@ -39,6 +39,7 @@ from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
+# pylint: disable=use-implicit-booleaness-not-comparison
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -2924,6 +2925,19 @@ CONVERT_HAMILTONAIN = [
             Tensor(qml.Z(1), qml.Z(2)),
         ],
     ),
+    (
+        [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
+        [
+            Tensor(qml.Hadamard(0), qml.X(1), qml.X(2), qml.Y(3)),
+            Tensor(qml.X(0), qml.X(1), qml.Y(2), qml.X(3)),
+            Tensor(qml.X(0), qml.Y(1), qml.X(2), qml.X(3)),
+            Tensor(qml.X(0), qml.Y(1), qml.Y(2), qml.Y(3)),
+            Tensor(qml.Y(0), qml.X(1), qml.X(2), qml.X(3)),
+            Tensor(qml.Y(0), qml.X(1), qml.Hadamard(2), qml.Y(3)),
+            Tensor(qml.Y(0), qml.Y(1), qml.X(2), qml.Y(3)),
+            Tensor(qml.Y(0), qml.Y(1), qml.Y(2), qml.Hadamard(3)),
+        ],
+    ),
 ]
 
 
@@ -2939,33 +2953,6 @@ def test_convert_to_hamiltonian(coeffs, obs):
     hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
 
     assert hamiltonian_instance.pauli_rep == converted_opmath.pauli_rep
-
-
-@pytest.mark.xfail  # TODO fails because some orders are changed
-def test_convert_to_hamiltonian_xfail(coeffs, obs):
-    """Test that arithmetic operators can be converted to Hamiltonian instances"""
-
-    coeffs, obs = (
-        [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
-        [
-            Tensor(qml.Hadamard(0), qml.X(1), qml.X(2), qml.Y(3)),
-            Tensor(qml.X(0), qml.X(1), qml.Y(2), qml.X(3)),
-            Tensor(qml.X(0), qml.Y(1), qml.X(2), qml.X(3)),
-            Tensor(qml.X(0), qml.Y(1), qml.Y(2), qml.Y(3)),
-            Tensor(qml.Y(0), qml.X(1), qml.X(2), qml.X(3)),
-            Tensor(qml.Y(0), qml.X(1), qml.Hadamard(2), qml.Y(3)),
-            Tensor(qml.Y(0), qml.Y(1), qml.X(2), qml.Y(3)),
-            Tensor(qml.Y(0), qml.Y(1), qml.Y(2), qml.Hadamard(3)),
-        ],
-    )
-
-    opmath_instance = qml.dot(coeffs, obs)
-    converted_opmath = convert_to_legacy_H(opmath_instance)
-    assert isinstance(converted_opmath, qml.Hamiltonian)
-
-    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
-
-    assert qml.equal(hamiltonian_instance, converted_opmath)
 
 
 @pytest.mark.parametrize(
