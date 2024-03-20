@@ -208,7 +208,7 @@ class QuantumPhaseEstimation(ErrorOperation):
 
         >>> class CustomOP(qml.resource.ErrorOperation):
         ...    def error(self):
-        ...       return 0.005
+        ...       return qml.resource.SpectralNormError(0.005)
         >>> Op = CustomOP(wires=[0])
         >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
         >>> QPE.error()
