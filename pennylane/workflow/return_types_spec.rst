@@ -1,3 +1,5 @@
+.. _return_type_spec_doc
+
 Return Type Specification
 =========================
 
@@ -13,6 +15,14 @@ When examining and postprocessing
 results, you should always allow for a ``list`` to be substituted for a ``tuple``. Given their
 improved performance and protection against unintended side-effects, ``tuple``'s are recommended
 over ``list`` where feasible.
+
+The level of priority for dimensions from outer dimension to inner dimension is:
+
+1. Quantum Script in batch. No squeezing
+2. Shot choice in a shot vector Squeezed out if no shot vector
+3. Measurement in the quantum script. Squeezed out if only one measurement
+4. Parameter broadcasting. Squeezed out if no parameter-broadcasting.  Adds to array shape instead of adding tuple nesting.
+5. Fundamental measurement shape.
 
 Individual measurements
 -----------------------
@@ -139,7 +149,7 @@ float
 (WIP) Mid-circuit measurements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Note that this specification is currently under refinement!**
+**Note that this specification is currently under development!**
 
 If the tape has mid circuit measurements and one single shot, then the result object
 should instead be a tuple of the above specification followed by a dictionary mapping the
