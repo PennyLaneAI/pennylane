@@ -41,7 +41,7 @@ def _compute_repetitions(order):
     return (5 ** (k - 1)) * 2
 
 
-def _spectral_norm(op, fast=True):
+def _spectral_norm(op, fast: bool =True):
     r"""Compute the spectral norm of the operator.
 
     Args:
@@ -63,16 +63,16 @@ def _spectral_norm(op, fast=True):
 
 
 # Compute one-norm error:
-def _one_norm_error(h_ops, t, p, n, fast):
+def _one_norm_error(h_ops, t: float, p: int, n: int, fast: bool):
     r"""Compute an upper-bound on the spectral norm error for approximating
-    the time evolution of a hamiltonian using a Suzuki-Trotter product formula.
+    the time evolution of a Hamiltonian using a Suzuki-Trotter product formula.
 
     This function implements the Trotter error with 1-norm scaling following
     (lemma 6, equation 22 and equation 23) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
     (Assuming all hermitian terms).
 
     Args:
-        h_ops (list[Operator]): The terms of the hamiltonian (specifying the product formula)
+        h_ops (list[Operator]): The terms of the Hamiltonian (specifying the product formula)
         t (float): The time interval for evolution.
         p (int): The order of the product formula.
         n (int): The number of Trotter steps (repetitions).
@@ -93,7 +93,7 @@ def _one_norm_error(h_ops, t, p, n, fast):
 
 # Compute alpha_comm
 @lru_cache
-def _generate_combinations(num_variables, required_sum):
+def _generate_combinations(num_variables: int, required_sum: int):
     r"""A helper function which generates a sequence of valid combinations which
     satisfy the required sum constraint.
 
@@ -102,7 +102,7 @@ def _generate_combinations(num_variables, required_sum):
         Suppose you have :math:`k` variables :math:`{a_1, a_2, ..., a_k}`. How many unique combinations
         of positive integers are there that satisfy the constraint :math:`\Sum_{i=1}^{k}(a_i) = s`?
 
-        This function solves produces a list of all sequences which satisfy this constraint:
+        This function produces a list of all sequences which satisfy this constraint:
 
         >>> _generate_combinations(num_variables=3, required_sum=2)
         ((0, 0, 2), (0, 1, 1), (0, 2, 0), (1, 0, 1), (1, 1, 0), (2, 0, 0))
@@ -135,7 +135,7 @@ def _generate_combinations(num_variables, required_sum):
 
 
 @lru_cache
-def _recursive_nested_commutator(A, B, alpha):
+def _recursive_nested_commutator(A, B, alpha: int):
     r"""Compute the alpha-fold nested commutator of A and B.
 
     This function is defined mathematically as:
@@ -164,9 +164,9 @@ def _recursive_nested_commutator(A, B, alpha):
 
 
 # Compute commutator error:
-def _commutator_error(h_ops, t, p, n, fast):
+def _commutator_error(h_ops, t: float, p: int, n: int, fast: bool) -> float:
     r"""Compute an upper-bound on the spectral norm error for approximating
-    the time evolution of a hamiltonian using a Suzuki-Trotter product formula.
+    the time evolution of a Hamiltonian using a Suzuki-Trotter product formula.
 
     This function implements the Trotter error with commutator scaling following
     (appendix C, equation 189) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
@@ -208,10 +208,10 @@ def _commutator_error(h_ops, t, p, n, fast):
 
 
 # Flatten the product formula
-def _recursive_flatten(order, num_ops, scalar_t):
+def _recursive_flatten(order: int, num_ops: int, scalar_t: float):
     r"""Constructs a flattened list representation of the Suzuki-Trotter product formula.
 
-    Suppose we have a hamiltonian :math:`H = 1.2*X + 0.5*Y`, an associated 2nd order product formula is:
+    Suppose we have a Hamiltonian :math:`H = 1.2*X + 0.5*Y`, an associated 2nd order product formula is:
 
     .. math::
 
@@ -227,7 +227,7 @@ def _recursive_flatten(order, num_ops, scalar_t):
 
     Args:
         order (int): The order of the product formula.
-        num_ops (int): The number of terms in the hamiltonian.
+        num_ops (int): The number of terms in the Hamiltonian.
         scalar_t (float): The time interval for evolution.
 
     Returns:
@@ -258,7 +258,7 @@ def _simplify(ops_index, coeffs):
 
     **Example:**
 
-        Suppose we have a hamiltonian :math:`H = 1.2*X + 0.5*Y`, an associated 2nd order product formula is:
+        Suppose we have a Hamiltonian :math:`H = 1.2*X + 0.5*Y`, an associated 2nd order product formula is:
 
         .. math::
 
@@ -304,7 +304,7 @@ def _simplify(ops_index, coeffs):
     return (final_ops, final_coeffs)
 
 
-def _flatten_trotter(num_ops, order):
+def _flatten_trotter(num_ops: int, order: int):
     r"""Compute the simplified flattened list representation of the Suzuki-Trotter product formula.
 
     This function computes the simplified Suzuki-Trotter product formula for a certain number of
