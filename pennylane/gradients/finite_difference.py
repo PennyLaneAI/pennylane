@@ -26,7 +26,6 @@ from scipy.special import factorial
 from scipy.linalg import solve as linalg_solve
 
 import pennylane as qml
-from pennylane.operation import is_trainable, has_grad_method
 from pennylane.measurements import ProbabilityMP
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
@@ -176,6 +175,14 @@ def _processing_fn(results, shots, single_shot_batch_fn):
     return tuple(grads_tuple)
 
 
+def _finite_diff_stopping_condition(op) -> bool:
+    return (
+        (op.grad_method is not None)
+        if any(qml.math.requires_grad(p) for p in op.parameters)
+        else True
+    )
+
+
 # pylint: disable=invalid-unary-operand-type
 def _expand_transform_finite_diff(
     tape: qml.tape.QuantumTape,
@@ -188,9 +195,8 @@ def _expand_transform_finite_diff(
     validate_params=True,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before finite difference."""
-    param_shift_stopping_condition = ~is_trainable | has_grad_method
     return qml.devices.preprocess.decompose(
-        tape, stopping_condition=param_shift_stopping_condition, name="param_shift"
+        tape, stopping_condition=_finite_diff_stopping_condition, name="param_shift"
     )
 
 

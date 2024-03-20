@@ -99,6 +99,17 @@ class TestCompile:
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
+    def test_compile_non_commuting_observables(self):
+        """Test that compile works with non-commuting observables."""
+
+        ops = (qml.RX(0.1, 0), qml.RX(0.2, 0), qml.Barrier(only_visual=True), qml.X(0), qml.X(0))
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
+        tape = qml.tape.QuantumScript(ops, ms, shots=50)
+
+        [out], _ = qml.compile(tape)
+        expected = qml.tape.QuantumScript((qml.RX(0.3, 0),), ms, shots=50)
+        assert qml.equal(out, expected)
+
 
 class TestCompileIntegration:
     """Integration tests to verify outputs of compilation pipelines."""
@@ -479,8 +490,8 @@ class TestCompileInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode, argnums=(1))(x, params),
-            jax.grad(transformed_qnode, argnums=(1))(x, params),
+            jax.grad(original_qnode, argnums=1)(x, params),
+            jax.grad(transformed_qnode, argnums=1)(x, params),
             atol=1e-7,
         )
 

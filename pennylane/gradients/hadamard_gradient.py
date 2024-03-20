@@ -20,10 +20,10 @@ from typing import Sequence, Callable
 from functools import partial
 import numpy as np
 import pennylane as qml
-from pennylane.operation import is_trainable, has_grad_method
 from pennylane.gradients.metric_tensor import _get_aux_wire
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
 
 from .gradient_transform import (
     _all_zero_grad,
@@ -36,29 +36,6 @@ from .gradient_transform import (
 )
 
 
-hadamard_comp_list = [
-    "RX",
-    "RY",
-    "RZ",
-    "Rot",
-    "PhaseShift",
-    "U1",
-    "CRX",
-    "CRY",
-    "CRZ",
-    "IsingXX",
-    "IsingYY",
-    "IsingZZ",
-]
-
-
-@qml.BooleanFn
-def _is_hadamard_grad_compatible(obj):
-    """Check if the operation is compatible with Hadamard gradient transform."""
-    return obj.name in hadamard_comp_list
-
-
-# pylint: disable=invalid-unary-operand-type
 def _expand_transform_hadamard(
     tape: qml.tape.QuantumTape,
     argnum=None,
@@ -66,10 +43,15 @@ def _expand_transform_hadamard(
     device_wires=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before hadamard gradient."""
-    hadamard_stopping_condition = ~is_trainable | (_is_hadamard_grad_compatible & has_grad_method)
-    return qml.devices.preprocess.decompose(
-        tape, stopping_condition=hadamard_stopping_condition, name="hadamard"
-    )
+    expanded_tape = expand_invalid_trainable_hadamard_gradient(tape)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [expanded_tape], null_postprocessing
 
 
 @partial(
