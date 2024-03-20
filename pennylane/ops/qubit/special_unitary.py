@@ -224,6 +224,11 @@ class SpecialUnitary(Operation):
     >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
     ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
 
+    .. seealso::
+
+            For more details on using this operator in applications, see the
+            :doc:`in-depth demonstration <demos/tutorial_here_comes_the_sun>`.
+
     .. warning::
 
         This operation only is differentiable when using the JAX, Torch or TensorFlow
@@ -278,11 +283,6 @@ class SpecialUnitary(Operation):
     The ``SpecialUnitary`` operation also can be differentiated with hardware-compatible
     differentiation techniques if the JAX, Torch or TensorFlow interface is used.
     See the theoretical background section below for details.
-
-    .. seealso::
-
-            For more details on using this operator in applications, see the
-            :doc:`in-depth demonstration <demos/tutorial_here_comes_the_sun>`.
 
     .. details::
         :title: Theoretical background
