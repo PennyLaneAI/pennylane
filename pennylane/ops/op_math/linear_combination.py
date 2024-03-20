@@ -128,7 +128,9 @@ class LinearCombination(Sum):
             _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
 
         if simplify:
-            coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(coeffs, observables, _pauli_rep)
+            coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(
+                coeffs, observables, _pauli_rep
+            )
 
         self._coeffs = coeffs
 
@@ -144,7 +146,7 @@ class LinearCombination(Sum):
         super().__init__(
             *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
         )
-    
+
     @staticmethod
     def _build_pauli_rep_static(coeffs, observables):
         """PauliSentence representation of the Sum of operations."""
