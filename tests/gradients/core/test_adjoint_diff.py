@@ -74,7 +74,7 @@ class TestAdjointJacobian:
             dev.adjoint_jacobian(tape)
 
     @pytest.mark.xfail  # need to update logic to raise same error
-    def test_hamiltonian_error_legacy_opmath(self, dev):
+    def test_linear_combination_adjoint_error(self, dev):
         """Test that error is raised for qml.Hamiltonian"""
 
         with qml.queuing.AnnotatedQueue() as q:
