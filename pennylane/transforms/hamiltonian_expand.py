@@ -36,6 +36,7 @@ def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
     """
     dot_products = []
     for c_group, r_group in zip(coeff_groupings, res_groupings):
+        # pylint: disable=no-member
         if isinstance(r_group, (tuple, list, qml.numpy.builtins.SequenceBox)):
             r_group = qml.math.stack(r_group)
         if getattr(r_group, "shape", tuple()) == ():
