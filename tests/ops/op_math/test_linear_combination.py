@@ -1070,6 +1070,7 @@ class TestLinearCombinationArithmeticTF:
 
         assert H.compare(H1 @ H2)
 
+
 @pytest.mark.torch
 class TestLinearCombinationArithmeticTorch:
     """Tests creation of LinearCombinations using arithmetic
@@ -1139,6 +1140,7 @@ class TestLinearCombinationArithmeticTorch:
         H = qml.ops.LinearCombination(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
+
 
 @pytest.mark.autograd
 class TestLinearCombinationArithmeticAutograd:
