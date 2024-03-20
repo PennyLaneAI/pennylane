@@ -14,7 +14,7 @@
 """
 LinearCombination class
 """
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments, protected-access, super-init-not-called, too-many-instance-attributes
 
 import itertools
 import numbers
@@ -22,7 +22,7 @@ from copy import copy
 from typing import List
 
 import pennylane as qml
-from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
+from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath, _UNSET_BATCH_SIZE
 
 from .sum import Sum
 
@@ -129,9 +129,12 @@ class LinearCombination(Sum):
 
         if simplify:
             _wires = qml.wires.Wires.all_wires([op.wires for op in observables])
-            coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(
-                coeffs, observables, _pauli_rep, _wires
-            )
+            with qml.QueuingManager().stop_recording():
+                coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(
+                    coeffs, observables, _pauli_rep, _wires
+                )
+
+        self._pauli_rep = _pauli_rep
 
         self._coeffs = coeffs
 
@@ -142,11 +145,25 @@ class LinearCombination(Sum):
         self._grouping_indices = None
 
         with qml.QueuingManager().stop_recording():
-            operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
+            operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
 
-        super().__init__(
-            *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
-        )
+        # CompositeOp init
+        self._id = id
+        self.queue_idx = None
+        self._name = "LinearCombination"
+
+        self.operands = operands
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
+        self._hash = None
+        self._has_overlapping_wires = None
+        self._overlapping_ops = None
+        # self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
+        self.queue()
+        self._batch_size = _UNSET_BATCH_SIZE
+
+        self._grouping_indices = None
+        if grouping_type is not None:
+            self.compute_grouping(grouping_type=grouping_type, method=method)
 
     @staticmethod
     def _build_pauli_rep_static(coeffs, observables):
@@ -313,7 +330,7 @@ class LinearCombination(Sum):
         op_as_sum = qml.dot(coeffs, ops)
         op_as_sum = op_as_sum.simplify(cutoff)
         new_coeffs, new_ops = op_as_sum.terms()
-        return coeffs, ops, pr
+        return new_coeffs, new_ops, pr
 
     def simplify(self, cutoff=1.0e-12):
         coeffs, ops, pr = self._simplify_coeffs_ops(
