@@ -2006,7 +2006,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__sub__(other=other)
 
-        if isinstance(other, (Observable, Tensor, qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (Observable, Tensor, qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return self + (-1 * other)
         return super().__sub__(other=other)
 
@@ -2224,7 +2224,7 @@ class Tensor(Observable):
         return 1 + max(o.arithmetic_depth for o in self.obs)
 
     def __matmul__(self, other):
-        if isinstance(other, (qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.__rmatmul__(self)
 
         if isinstance(other, Observable):
@@ -2944,7 +2944,7 @@ def gen_is_multi_term_hamiltonian(obj):
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
-    return isinstance(o, (qml.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
+    return isinstance(o, (qml.ops.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
 
 
 def enable_new_opmath():
@@ -3015,7 +3015,7 @@ def convert_to_opmath(op):
     Returns:
         Operator: An operator using the new arithmetic operations, if relevant
     """
-    if isinstance(op, (qml.Hamiltonian, qml.ops.LinearCombination)):
+    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         c, ops = op.terms()
         ops = tuple(convert_to_opmath(o) for o in ops)
         return qml.dot(c, ops)
