@@ -1046,11 +1046,11 @@ class TestLinearCombinationArithmeticTF:
         assert H.compare(H1 @ H2)
 
 
+@pytest.mark.torch
 class TestLinearCombinationArithmeticTorch:
     """Tests creation of LinearCombinations using arithmetic
     operations with torch tensor coefficients."""
 
-    @pytest.mark.torch
     def test_LinearCombination_equal(self):
         """Tests equality"""
         coeffs = torch.tensor([0.5, -1.6])
@@ -1063,7 +1063,6 @@ class TestLinearCombinationArithmeticTorch:
 
         assert H1.compare(H2)
 
-    @pytest.mark.torch
     def test_LinearCombination_add(self):
         """Tests that LinearCombinations are added correctly"""
         coeffs = torch.tensor([0.5, -1.6])
@@ -1078,7 +1077,6 @@ class TestLinearCombinationArithmeticTorch:
 
         assert H.compare(H1 + H2)
 
-    @pytest.mark.torch
     def test_LinearCombination_sub(self):
         """Tests that LinearCombinations are subtracted correctly"""
         coeffs = torch.tensor([1.0, -2.0])
@@ -1096,7 +1094,6 @@ class TestLinearCombinationArithmeticTorch:
         H1 -= H2
         assert H.compare(H1)
 
-    @pytest.mark.torch
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
 
@@ -1120,11 +1117,11 @@ class TestLinearCombinationArithmeticTorch:
         assert H.compare(H1 @ H2)
 
 
+@pytest.mark.autograd
 class TestLinearCombinationArithmeticAutograd:
     """Tests creation of LinearCombinations using arithmetic
     operations with autograd tensor coefficients."""
 
-    @pytest.mark.autograd
     def test_LinearCombination_equal(self):
         """Tests equality"""
         coeffs = pnp.array([0.5, -1.6])
@@ -1137,7 +1134,6 @@ class TestLinearCombinationArithmeticAutograd:
 
         assert H1.compare(H2)
 
-    @pytest.mark.autograd
     def test_LinearCombination_add(self):
         """Tests that LinearCombinations are added correctly"""
         coeffs = pnp.array([0.5, -1.5])
@@ -1152,7 +1148,6 @@ class TestLinearCombinationArithmeticAutograd:
 
         assert H.compare(H1 + H2)
 
-    @pytest.mark.autograd
     def test_LinearCombination_sub(self):
         """Tests that LinearCombinations are subtracted correctly"""
         coeffs = pnp.array([1.0, -2.0])
@@ -1167,7 +1162,6 @@ class TestLinearCombinationArithmeticAutograd:
 
         assert H.compare(H1 - H2)
 
-    @pytest.mark.autograd
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
         coeffs = pnp.array([1.0, 2.0])
