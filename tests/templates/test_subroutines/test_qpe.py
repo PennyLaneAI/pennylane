@@ -94,7 +94,7 @@ class TestError:
     )
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
     def test_error_interfaces(self, operator_error, interface, expected_error):
-        """Test that the error method works with all interfaces"""
+        """Test that the error method works with all interfaces."""
 
         class CustomOP(qml.resource.ErrorOperation):
             def error(self):
