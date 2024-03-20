@@ -337,7 +337,6 @@ def decompose(
     prep_op = [tape[0]] if isinstance(tape[0], StatePrepBase) and skip_initial_state_prep else []
 
     if all(stopping_condition(op) for op in tape.operations[bool(prep_op) :]):
-        print("not doing any decomposition")
         return (tape,), null_postprocessing
     try:
 
