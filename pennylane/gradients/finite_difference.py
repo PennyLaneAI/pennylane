@@ -183,7 +183,6 @@ def _finite_diff_stopping_condition(op) -> bool:
     )
 
 
-# pylint: disable=invalid-unary-operand-type
 def _expand_transform_finite_diff(
     tape: qml.tape.QuantumTape,
     argnum=None,

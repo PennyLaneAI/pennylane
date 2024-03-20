@@ -741,7 +741,6 @@ def _param_shift_stopping_condition(op) -> bool:
     )
 
 
-# pylint: disable=invalid-unary-operand-type
 def _expand_transform_param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,
