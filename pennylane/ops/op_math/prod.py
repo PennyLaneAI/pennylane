@@ -301,11 +301,7 @@ class Prod(CompositeOp):
         for ops in self.overlapping_ops:
             gen = (
                 (
-                    (
-                        qml.matrix(op)
-                        if isinstance(op, qml.ops.Hamiltonian))
-                        else op.matrix()
-                    ),
+                    (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix()),
                     op.wires,
                 )
                 for op in ops
