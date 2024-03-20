@@ -20,8 +20,8 @@ import pennylane as qml
 
 
 # General Helper functions
-def _compute_repetitions(order):
-    r"""Count the number of times the hamiltonian is repeated ("stages")
+def _compute_repetitions(order: int):
+    r"""Count the number of times the Hamiltonian is repeated ("stages")
     in the Suzuki-Trotter  product formula for a given order.
 
     See the definition of upsilon from section 2.3 (equation 15) in
