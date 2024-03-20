@@ -41,7 +41,7 @@ def _compute_repetitions(order: int):
     return (5 ** (k - 1)) * 2
 
 
-def _spectral_norm(op, fast: bool =True):
+def _spectral_norm(op, fast: bool = True):
     r"""Compute the spectral norm of the operator.
 
     Args:
