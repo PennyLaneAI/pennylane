@@ -261,7 +261,7 @@ class Sum(CompositeOp):
         if (
             not isinstance(value, Iterable)
             or any(not isinstance(sublist, Iterable) for sublist in value)
-            or any(i not in range(len(ops)) for i in [i for sl in value for i in sl])
+            or any(i not in range(len(ops)) for sl in value for i in sl)
         ):
             raise ValueError(
                 f"The grouped index value needs to be a tuple of tuples of integers between 0 and the "
@@ -322,7 +322,7 @@ class Sum(CompositeOp):
             (
                 (
                     qml.matrix(op)
-                    if isinstance(op, (qml.Hamiltonian, qml.ops.LinearCombination))
+                    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination))
                     else op.matrix()
                 ),
                 op.wires,
