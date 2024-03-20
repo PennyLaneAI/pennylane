@@ -140,7 +140,7 @@
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
 * The generators in the source code return operators consistent with the global setting for 
-  `qml.operator.active_new_opmath()` whereever possible.
+  `qml.operator.active_new_opmath()` wherever possible.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
   [(#5410)](https://github.com/PennyLaneAI/pennylane/pull/5410)
 
