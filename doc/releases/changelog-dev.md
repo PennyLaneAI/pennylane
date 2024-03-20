@@ -55,6 +55,9 @@
 * Added new `SpectralNormError` class to the new error tracking functionality.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
 
+* Added `error` method to `QuantumPhaseEstimation` template.
+  [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
+
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
