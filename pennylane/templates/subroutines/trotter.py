@@ -134,7 +134,7 @@ class TrotterProduct(ErrorOperation):
         :title: Usage Details
 
         An *upper-bound* for the error in approximating time-evolution using this operator can be
-        computed by calling the error function. It is computed using two different methods; the 
+        computed by calling the error function. It is computed using two different methods; the
         "one-norm" scaling method and the "commutator" scaling method. (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.)
 
         >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
