@@ -142,7 +142,7 @@
 * The generators in the source code return operators consistent with the global setting for 
   `qml.operator.active_new_opmath()` whereever possible. `Sum`, `SProd` and `Prod` instances will be returned even after disabling the new operator arithmetic in cases where they offer additional functionality not available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
-  [(#5412)](https://github.com/PennyLaneAI/pennylane/pull/5412)
+  [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411)  
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
