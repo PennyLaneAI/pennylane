@@ -243,14 +243,12 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 """
 # pylint:disable=access-member-before-definition,global-statement
 import abc
-import contextlib
 import copy
 import functools
 import itertools
 import warnings
 from enum import IntEnum
 from typing import List
-from unittest import mock
 from contextlib import contextmanager
 
 import numpy as np
@@ -1091,7 +1089,7 @@ class Operator(abc.ABC):
                     (
                         qml.Barrier,
                         qml.Snapshot,
-                        qml.Hamiltonian,
+                        qml.ops.Hamiltonian,
                         qml.ops.LinearCombination,
                         qml.GlobalPhase,
                         qml.Identity,
@@ -1908,7 +1906,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__matmul__(other=other)
 
-        if isinstance(other, (Tensor, qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (Tensor, qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.__rmatmul__(self)
 
         if isinstance(other, Observable):
@@ -1969,7 +1967,7 @@ class Observable(Operator):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, (qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.compare(self)
         if isinstance(other, (Tensor, Observable)):
             return other._obs_data() == self._obs_data()
@@ -1983,7 +1981,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__add__(other=other)
 
-        if isinstance(other, (qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
@@ -2009,7 +2007,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__sub__(other=other)
 
-        if isinstance(other, (Observable, Tensor, qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (Observable, Tensor, qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return self + (-1 * other)
         return super().__sub__(other=other)
 
@@ -2227,7 +2225,7 @@ class Tensor(Observable):
         return 1 + max(o.arithmetic_depth for o in self.obs)
 
     def __matmul__(self, other):
-        if isinstance(other, (qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.__rmatmul__(self)
 
         if isinstance(other, Observable):
@@ -2947,10 +2945,7 @@ def gen_is_multi_term_hamiltonian(obj):
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
-    return isinstance(o, (qml.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
-
-
-_mock_opmath_stack = []
+    return isinstance(o, (qml.ops.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
 
 
 def enable_new_opmath():
@@ -2970,22 +2965,6 @@ def enable_new_opmath():
     global __use_new_opmath
     __use_new_opmath = True
 
-    if _mock_opmath_stack:
-        return
-
-    mocks = [
-        mock.patch("pennylane.Hamiltonian", qml.ops.LinearCombination),
-        mock.patch("pennylane.ops.Hamiltonian", qml.ops.LinearCombination),
-        mock.patch("pennylane.ops.qubit.Hamiltonian", qml.ops.LinearCombination),
-        mock.patch("pennylane.ops.qubit.hamiltonian.Hamiltonian", qml.ops.LinearCombination),
-    ]
-
-    with contextlib.ExitStack() as stack:
-        for m in mocks:
-            stack.enter_context(m)
-
-        _mock_opmath_stack.append(stack.pop_all())
-
 
 def disable_new_opmath():
     """
@@ -3003,9 +2982,6 @@ def disable_new_opmath():
     """
     global __use_new_opmath
     __use_new_opmath = False
-
-    if _mock_opmath_stack:
-        _mock_opmath_stack.pop().close()
 
 
 def active_new_opmath():
@@ -3040,7 +3016,7 @@ def convert_to_opmath(op):
     Returns:
         Operator: An operator using the new arithmetic operations, if relevant
     """
-    if isinstance(op, (qml.Hamiltonian, qml.ops.LinearCombination)):
+    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         c, ops = op.terms()
         ops = tuple(convert_to_opmath(o) for o in ops)
         return qml.dot(c, ops)

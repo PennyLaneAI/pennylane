@@ -57,9 +57,6 @@ class CompositeOp(Operator):
         self.queue_idx = None
         self._name = self.__class__.__name__
 
-        # if len(operands) < 2:
-        #     raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
-
         self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
@@ -152,10 +149,7 @@ class CompositeOp(Operator):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return all(
-            op.has_matrix or isinstance(op, (qml.Hamiltonian, qml.ops.LinearCombination))
-            for op in self
-        )
+        return all(op.has_matrix or isinstance(op, qml.ops.Hamiltonian) for op in self)
 
     def eigvals(self):
         """Return the eigenvalues of the specified operator.

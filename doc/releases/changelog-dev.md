@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
+  [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
+
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
   `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
@@ -57,9 +60,6 @@
 
 * Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
-
-* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
-  [(#5322)](https://github.com/PennyLaneAI/pennylane/pull/5322)
 
 <h3>Improvements 🛠</h3>
 
@@ -128,6 +128,10 @@
 
   ```
 
+* A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
+  but for usage with new operator arithmetic.
+  [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
+
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
@@ -154,6 +158,10 @@
 
 * `Prod.eigvals()` is now compatible with Qudit operators.
   [(#5400)](https://github.com/PennyLaneAI/pennylane/pull/5400)
+
+* Obtaining classical shadows using the `default.clifford` device is now compatible with
+  [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
+  [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
 <h4>Community contributions 🥳</h4>
 
@@ -217,6 +225,10 @@
 * Attempting to multiply `PauliWord` and `PauliSentence` with `*` will raise an error. Instead, use `@` to conform with the PennyLane convention.
   [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
 
+* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
+  `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
+  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
+
 <h3>Deprecations 👋</h3>
 
 * `qml.load` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as `qml.from_qiskit`.
@@ -232,6 +244,11 @@
   >>> with open("test.qasm", "r") as f:
   ...     circuit = qml.from_qasm(f.read())
   ```
+
+* Accessing `qml.ops.Hamiltonian` with new operator arithmetic is deprecated. Using `qml.Hamiltonian` with new operator arithmetic enabled now
+  returns a `LinearCombination` instance. Some functionality may not work as expected. To continue using the `Hamiltonian` class, you can use
+  `qml.operation.disable_new_opmath()` to disable the new operator arithmetic.
+  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 <h3>Documentation 📝</h3>
 
@@ -264,5 +281,6 @@ Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Vincent Michaud-Rioux,
 Mudit Pandey,
 Matthew Silverman.
