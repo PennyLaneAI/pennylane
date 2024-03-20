@@ -54,7 +54,8 @@ class TestAdjointJacobian:
         ):
             dev.adjoint_jacobian(tape)
 
-    def test_hamiltonian_error(self, dev):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_hamiltonian_error_legacy_opmath(self, dev):
         """Test that error is raised for qml.Hamiltonian"""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -69,6 +70,25 @@ class TestAdjointJacobian:
         with pytest.raises(
             qml.QuantumFunctionError,
             match="Adjoint differentiation method does not support Hamiltonian observables",
+        ):
+            dev.adjoint_jacobian(tape)
+    
+    @pytest.mark.xfail # need to update logic to raise same error
+    def test_hamiltonian_error_legacy_opmath(self, dev):
+        """Test that error is raised for qml.Hamiltonian"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.expval(
+                qml.ops.LinearCombination(
+                    [np.array(-0.05), np.array(0.17)],
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                )
+            )
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Adjoint differentiation method does not support LinearCombination observables",
         ):
             dev.adjoint_jacobian(tape)
 
