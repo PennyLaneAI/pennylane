@@ -199,26 +199,27 @@ class SampleMP(SampleMeasurement):
                 f"{self.__class__.__name__}."
             )
         if self.obs:
-            len_wires = 1
+            num_values_per_shot = 1  # one single eigenvalue
         else:
-            len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
+            # one value per wire
+            num_values_per_shot = len(self.wires) if len(self.wires) > 0 else len(device.wires)
 
-        def _single_int_shape(shot_val, num_wires):
+        def _single_int_shape(shot_val, num_values):
             # singleton dimensions, whether in shot val or num_wires are squeezed away
             inner_shape = []
             if shot_val != 1:
                 inner_shape.append(shot_val)
-            if num_wires != 1:
-                inner_shape.append(num_wires)
+            if num_values != 1:
+                inner_shape.append(num_values)
             return tuple(inner_shape)
 
         if not shots.has_partitioned_shots:
-            return _single_int_shape(shots.total_shots, len_wires)
+            return _single_int_shape(shots.total_shots, num_values_per_shot)
 
         shape = []
         for s in shots.shot_vector:
             for _ in range(s.copies):
-                shape.append(_single_int_shape(s.shots, len_wires))
+                shape.append(_single_int_shape(s.shots, num_values_per_shot))
 
         return tuple(shape)
 
