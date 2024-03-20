@@ -160,8 +160,9 @@ def transpile(
         def stop_at(obj):
             return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
 
-        expanded_tape = tape.expand(stop_at=stop_at)
-
+        [expanded_tape], _ = qml.devices.preprocess.decompose(
+            tape, stopping_condition=stop_at, name="transpile"
+        )
         # make copy of ops
         list_op_copy = expanded_tape.operations.copy()
         wire_order = device_wires or tape.wires

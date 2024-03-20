@@ -235,55 +235,6 @@ expand_invalid_trainable = create_expand_fn(
     docstring=_expand_invalid_trainable_doc,
 )
 
-_expand_invalid_trainable_doc_hadamard = """Expand out a tape so that it supports differentiation
-of requested operations with the Hadamard test gradient.
-
-This is achieved by decomposing all trainable operations that
-are not in the Hadamard compatible list until all resulting operations
-are in the list up to maximum depth ``depth``. Note that this
-might not be possible, in which case the gradient rule will fail to apply.
-
-Args:
-    tape (.QuantumTape): the input tape to expand
-    depth (int) : the maximum expansion depth
-    **kwargs: additional keyword arguments are ignored
-
-Returns:
-    .QuantumTape: the expanded tape
-"""
-
-
-@qml.BooleanFn
-def _is_hadamard_grad_compatible(obj):
-    """Check if the operation is compatible with Hadamard gradient transform."""
-    return obj.name in hadamard_comp_list
-
-
-hadamard_comp_list = [
-    "RX",
-    "RY",
-    "RZ",
-    "Rot",
-    "PhaseShift",
-    "U1",
-    "CRX",
-    "CRY",
-    "CRZ",
-    "IsingXX",
-    "IsingYY",
-    "IsingZZ",
-]
-
-
-expand_invalid_trainable_hadamard_gradient = create_expand_fn(
-    depth=10,
-    stop_at=not_tape
-    | is_measurement
-    | (~is_trainable)
-    | (_is_hadamard_grad_compatible & has_grad_method),
-    docstring=_expand_invalid_trainable_doc_hadamard,
-)
-
 
 @contextlib.contextmanager
 def _custom_decomp_context(custom_decomps):

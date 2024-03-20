@@ -16,6 +16,7 @@
 from functools import partial
 from typing import Sequence, Callable
 
+import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.ops import __all__ as all_ops
 from pennylane.tape import QuantumTape
@@ -185,7 +186,9 @@ def compile(
         def stop_at(obj):
             return obj.name in basis_set and (not getattr(obj, "only_visual", False))
 
-        expanded_tape = tape.expand(depth=expand_depth, stop_at=stop_at)
+        [expanded_tape], _ = qml.devices.preprocess.decompose(
+            tape, stopping_condition=stop_at, max_expansion=expand_depth, name="compile"
+        )
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):

@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import VarianceMP
 from pennylane import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.operation import is_trainable, has_grad_method
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
 from .finite_difference import finite_diff
@@ -734,6 +734,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     return gradient_tapes, processing_fn
 
 
+# pylint: disable=invalid-unary-operand-type
 def _expand_transform_param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,
@@ -744,15 +745,10 @@ def _expand_transform_param_shift(
     broadcast=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before parameter shift."""
-    expanded_tape = expand_invalid_trainable(tape)
-
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
-
-    return [expanded_tape], null_postprocessing
+    param_shift_stopping_condition = ~is_trainable | has_grad_method
+    return qml.devices.preprocess.decompose(
+        tape, stopping_condition=param_shift_stopping_condition, name="param_shift"
+    )
 
 
 @partial(
