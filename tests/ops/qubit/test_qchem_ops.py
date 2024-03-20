@@ -46,6 +46,7 @@ PARAMETRIZED_QCHEM_OPERATIONS = [
 
 
 class TestParameterFrequencies:
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if not qml.operation.has_gen(op):
