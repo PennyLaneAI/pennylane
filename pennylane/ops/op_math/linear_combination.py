@@ -30,26 +30,26 @@ from .sum import Sum
 class LinearCombination(Sum):
     r"""Operator representing a linear combination of operators.
 
-    The LinearCombination is represented as a linear combination of other operators, e.g.,
+    The ``LinearCombination`` is represented as a linear combination of other operators, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
 
     Args:
-        coeffs (tensor_like): coefficients of the LinearCombination expression
-        observables (Iterable[Observable]): observables in the LinearCombination expression, of same length as coeffs
-        simplify (bool): Specifies whether the LinearCombination is simplified upon initialization
+        coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
+        observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
+        simplify (bool): Specifies whether the ``LinearCombination`` is simplified upon initialization
                          (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
-                         be differentiated when using the ``torch`` interface and ``simplify=True``.
-        grouping_type (str): If not None, compute and store information on how to group commuting
-            observables upon initialization. This information may be accessed when QNodes containing this
-            LinearCombination are executed on devices. The string refers to the type of binary relation between Pauli words.
+                         be differentiated when using the ``'torch'`` interface and ``simplify=True``.
+        grouping_type (str): If not ``None``, compute and store information on how to group commuting
+            observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
+            ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
             Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
-        id (str): name to be assigned to this LinearCombination instance
+        id (str): name to be assigned to this ``LinearCombination`` instance
 
     **Example:**
 
-    A LinearCombination can be created by simply passing the list of coefficients
+    A ``LinearCombination`` can be created by simply passing the list of coefficients
     as well as the list of observables:
 
     >>> coeffs = [0.2, -0.543]
@@ -68,7 +68,7 @@ class LinearCombination(Sum):
     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
 
 
-    A LinearCombination can store information on which commuting observables should be measured together in
+    A ``LinearCombination`` can store information on which commuting observables should be measured together in
     a circuit:
 
     >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
@@ -86,11 +86,11 @@ class LinearCombination(Sum):
     >>> grouped_obs
     [[X(0), X(1)], [Z(0)]]
 
-    Devices that evaluate a LinearCombination expectation by splitting it into its local observables can
+    Devices that evaluate a ``LinearCombination`` expectation by splitting it into its local observables can
     use this information to reduce the number of circuits evaluated.
 
-    Note that one can compute the ``grouping_indices`` for an already initialized LinearCombination by
-    using the :func:`compute_grouping <pennylane.LinearCombination.compute_grouping>` method.
+    Note that one can compute the ``grouping_indices`` for an already initialized ``LinearCombination`` by
+    using the :func:`compute_grouping <pennylane.ops.LinearCombination.compute_grouping>` method.
     """
 
     num_wires = qml.operation.AnyWires
@@ -302,15 +302,15 @@ class LinearCombination(Sum):
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def _obs_data(self):
-        r"""Extracts the data from a LinearCombination and serializes it in an order-independent fashion.
+        r"""Extracts the data from a ``LinearCombination`` and serializes it in an order-independent fashion.
 
-        This allows for comparison between LinearCombinations that are equivalent, but are defined with terms and tensors
+        This allows for comparison between ``LinearCombination``s that are equivalent, but are defined with terms and tensors
         expressed in different orders. For example, `qml.X(0) @ qml.Z(1)` and
         `qml.Z(1) @ qml.X(0)` are equivalent observables with different orderings.
 
         .. Note::
 
-            In order to store the data from each term of the LinearCombination in an order-independent serialization,
+            In order to store the data from each term of the ``LinearCombination`` in an order-independent serialization,
             we make use of sets. Note that all data contained within each term must be immutable, hence the use of
             strings and frozensets.
 
@@ -383,7 +383,7 @@ class LinearCombination(Sum):
             pr2.simplify()
             return pr1 == pr2
 
-        if isinstance(other, (LinearCombination, qml.Hamiltonian)):
+        if isinstance(other, (LinearCombination, qml.ops.Hamiltonian)):
             op1 = self.simplify()
             op2 = other.simplify()
             return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
@@ -411,7 +411,7 @@ class LinearCombination(Sum):
             shared_wires = qml.wires.Wires.shared_wires([self.wires, other.wires])
             if len(shared_wires) > 0:
                 raise ValueError(
-                    "Hamiltonians can only be multiplied together if they act on "
+                    "LinearCombinations can only be multiplied together if they act on "
                     "different sets of wires"
                 )
 
@@ -445,7 +445,7 @@ class LinearCombination(Sum):
         if isinstance(H, numbers.Number) and H == 0:
             return self
 
-        if isinstance(H, (LinearCombination, qml.Hamiltonian)):
+        if isinstance(H, (LinearCombination, qml.ops.Hamiltonian)):
             coeffs = qml.math.concatenate([self_coeffs, H.coeffs], axis=0)
             ops.extend(H.ops)
             if (pr1 := self.pauli_rep) is not None and (pr2 := H.pauli_rep) is not None:
@@ -479,12 +479,12 @@ class LinearCombination(Sum):
 
     def __sub__(self, H):
         r"""The subtraction operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
-        if isinstance(H, (LinearCombination, qml.Hamiltonian, Tensor, Observable)):
+        if isinstance(H, (LinearCombination, qml.ops.Hamiltonian, Tensor, Observable)):
             return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented
 
     def queue(self, context=qml.QueuingManager):
-        """Queues a qml.ops.LinearCombination instance"""
+        """Queues a ``qml.ops.LinearCombination`` instance"""
         if qml.QueuingManager.recording():
             for o in self.ops:
                 context.remove(o)
@@ -552,14 +552,14 @@ class LinearCombination(Sum):
         return diag_gates
 
     def map_wires(self, wire_map: dict):
-        """Returns a copy of the current LinearCombination with its wires changed according to the given
+        """Returns a copy of the current ``LinearCombination`` with its wires changed according to the given
         wire map.
 
         Args:
             wire_map (dict): dictionary containing the old wires as keys and the new wires as values
 
         Returns:
-            .LinearCombination: new LinearCombination
+            .LinearCombination: new ``LinearCombination``
         """
         new_ops = tuple(op.map_wires(wire_map) for op in self.ops)
         new_op = LinearCombination(self.data, new_ops)
