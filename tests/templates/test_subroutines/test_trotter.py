@@ -26,7 +26,6 @@ from pennylane.math import allclose, get_interface
 from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
 
-
 test_hamiltonians = (
     qml.dot([1, 1, 1], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
     qml.dot(
