@@ -81,7 +81,7 @@ class TestError:
 
         assert np.allclose(qpe_error, matrix_error, atol=1e-4)
 
-    # @pytest.mark.all_interfaces
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
         # the reference error is computed manually for a QPE operation with 2 estimation wires
         ("operator_error", "expected_error"),

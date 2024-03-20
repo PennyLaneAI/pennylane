@@ -18,10 +18,9 @@ Contains the QuantumPhaseEstimation template.
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.operation import AnyWires, Operation, Operator
-from pennylane.resource import ErrorOperation
 
 
-class QuantumPhaseEstimation(ErrorOperation, Operation):
+class QuantumPhaseEstimation(Operation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
