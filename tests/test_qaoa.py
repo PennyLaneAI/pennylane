@@ -1110,12 +1110,12 @@ class TestLayers:
             [
                 qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
                 [
-                    qml.PauliRot(1, "XX", wires=[0, 1]),
-                    qml.PauliRot(1, "YY", wires=[0, 1]),
-                    qml.PauliRot(1, "XX", wires=[0, 2]),
-                    qml.PauliRot(1, "YY", wires=[0, 2]),
-                    qml.PauliRot(1, "XX", wires=[1, 2]),
-                    qml.PauliRot(1, "YY", wires=[1, 2]),
+                    qml.PauliRot(1, "XX", wires=[1, 0]),
+                    qml.PauliRot(1, "YY", wires=[1, 0]),
+                    qml.PauliRot(1, "XX", wires=[2, 0]),
+                    qml.PauliRot(1, "YY", wires=[2, 0]),
+                    qml.PauliRot(1, "XX", wires=[2, 1]),
+                    qml.PauliRot(1, "YY", wires=[2, 1]),
                 ],
             ],
         ],
@@ -1146,9 +1146,9 @@ class TestLayers:
             [
                 qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
                 [
-                    qml.PauliRot(1, "ZZ", wires=[0, 1]),
-                    qml.PauliRot(1, "ZZ", wires=[0, 2]),
-                    qml.PauliRot(1, "ZZ", wires=[1, 2]),
+                    qml.PauliRot(1, "ZZ", wires=[1, 0]),
+                    qml.PauliRot(1, "ZZ", wires=[2, 0]),
+                    qml.PauliRot(1, "ZZ", wires=[2, 1]),
                 ],
             ],
         ],

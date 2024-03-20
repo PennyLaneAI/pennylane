@@ -90,9 +90,6 @@ from pennylane.transforms import (
     compile,
     defer_measurements,
     dynamic_one_shot,
-    qfunc_transform,
-    op_transform,
-    single_tape_transform,
     quantum_monte_carlo,
     apply_controlled_Q,
     commutation_dag,
@@ -135,8 +132,6 @@ from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
-
-import pennylane.interfaces
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

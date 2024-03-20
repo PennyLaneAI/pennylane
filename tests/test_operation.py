@@ -30,6 +30,7 @@ from pennylane.operation import (
     Operator,
     StatePrepBase,
     Tensor,
+    convert_to_legacy_H,
     operation_derivative,
     _UNSET_BATCH_SIZE,
 )
@@ -44,18 +45,8 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-def test_validate_subspace_is_deprecated():
-    """Test that Operator.validate_subspace() is deprecated"""
-
-    with pytest.warns(
-        expected_warning=qml.PennyLaneDeprecationWarning,
-        match=r"Operator\.validate_subspace\(subspace\)",
-    ):
-        _ = Operator.validate_subspace([0, 1])
-
-
 class TestOperatorConstruction:
-    """Test custom operators construction."""
+    """Test custom operators' construction."""
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context"""
@@ -1206,6 +1197,24 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+        prod_op2 = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op2, SProd)
+        assert prod_op.scalar is scalar
+
+    def test_mul_array_numpy(self):
+        """Test that the __mul__ dunder works with a batched scalar."""
+
+        scalar = np.array([0.5, 0.6, 0.7])
+        prod_op = scalar * qml.S(0)
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+        assert prod_op.batch_size == 3
+
+        prod_op = qml.S(0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+        assert prod_op.batch_size == 3
+
     def test_divide_with_scalar(self):
         """Test the __truediv__ dunder method with a scalar value."""
         sprod_op = qml.RX(1, 0) / 4
@@ -1264,6 +1273,10 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+        prod_op = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
     @pytest.mark.tf
     def test_mul_scalar_tf_tensor(self):
         """Test the __mul__ dunder method with a scalar tf tensor."""
@@ -1274,6 +1287,10 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+        prod_op = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
     @pytest.mark.jax
     def test_mul_scalar_jax_tensor(self):
         """Test the __mul__ dunder method with a scalar jax tensor."""
@@ -1281,6 +1298,10 @@ class TestOperatorIntegration:
 
         scalar = jnp.array(5)
         prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+        prod_op = scalar * qml.RX(1.23, 0)
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
@@ -2824,6 +2845,88 @@ def test_custom_operator_is_jax_pytree():
 
     new_op = jax.tree_util.tree_unflatten(structure, [2.3])
     assert qml.equal(new_op, CustomOperator(2.3, wires=0))
+
+
+@pytest.mark.parametrize(
+    "coeffs, obs",
+    [
+        (
+            [1.5, 0.5, 1, 1],
+            [
+                qml.Identity(1),
+                Tensor(qml.Z(1), qml.Z(2)),
+                Tensor(qml.X(1), qml.Y(2)),
+                qml.Hadamard(1),
+            ],
+        ),
+        ([0.5], [qml.X(1)]),
+        ([1], [Tensor(qml.X(0), qml.Y(1))]),
+        (
+            [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
+            [
+                Tensor(qml.Hadamard(0), qml.X(1), qml.X(2), qml.Y(3)),
+                Tensor(qml.X(0), qml.X(1), qml.Y(2), qml.X(3)),
+                Tensor(qml.X(0), qml.Y(1), qml.X(2), qml.X(3)),
+                Tensor(qml.X(0), qml.Y(1), qml.Y(2), qml.Y(3)),
+                Tensor(qml.Y(0), qml.X(1), qml.X(2), qml.X(3)),
+                Tensor(qml.Y(0), qml.X(1), qml.Hadamard(2), qml.Y(3)),
+                Tensor(qml.Y(0), qml.Y(1), qml.X(2), qml.Y(3)),
+                Tensor(qml.Y(0), qml.Y(1), qml.Y(2), qml.Hadamard(3)),
+            ],
+        ),
+        (
+            [-0.5, 0.4, -0.3, 0.2],
+            [
+                qml.Identity(0, 1),
+                Tensor(qml.X(1), qml.Y(2)),
+                qml.Identity(1),
+                Tensor(qml.Z(1), qml.Z(2)),
+            ],
+        ),
+    ],
+)
+def test_convert_to_hamiltonian(coeffs, obs):
+    """Test that arithmetic operators can be converted to Hamiltonian instances"""
+
+    opmath_instance = qml.dot(coeffs, obs)
+    converted_opmath = convert_to_legacy_H(opmath_instance)
+    assert isinstance(converted_opmath, qml.Hamiltonian)
+
+    opmath_was_active = qml.operation.active_new_opmath()
+    qml.operation.disable_new_opmath()
+    hamiltonian_instance = qml.Hamiltonian(coeffs, obs)
+    if opmath_was_active:
+        qml.operation.enable_new_opmath()
+    else:
+        qml.operation.disable_new_opmath()
+    assert qml.equal(hamiltonian_instance, converted_opmath)
+
+
+@pytest.mark.parametrize(
+    "coeffs, obs", [([1], [qml.Hadamard(1)]), ([0.5, 0.5], [qml.Identity(1), qml.Identity(1)])]
+)
+def test_convert_to_hamiltonian_trivial(coeffs, obs):
+    """Test that non-arithmetic operator after simplification is returned as an Observable"""
+
+    opmath_instance = qml.dot(coeffs, obs)
+    converted_opmath = convert_to_legacy_H(opmath_instance)
+    assert isinstance(converted_opmath, qml.operation.Observable)
+
+
+@pytest.mark.parametrize(
+    "coeffs, obs",
+    [
+        ([2], [qml.T(1)]),
+        ([0.5, 2], [qml.T(0), qml.Identity(1)]),
+        ([1, 2], [qml.T(0), qml.Identity(1)]),
+        ([0.5, 0.5], [qml.T(0), qml.T(0)]),
+    ],
+)
+def test_convert_to_hamiltonian_error(coeffs, obs):
+    """Test that arithmetic operator raise an error if there is a non-Observable"""
+
+    with pytest.raises(ValueError):
+        convert_to_legacy_H(qml.dot(coeffs, obs))
 
 
 # pylint: disable=unused-import,no-name-in-module
