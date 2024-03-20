@@ -37,7 +37,6 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .composite import CompositeOp
-from ..qubit.hamiltonian import Hamiltonian
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
