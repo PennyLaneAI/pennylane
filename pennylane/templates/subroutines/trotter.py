@@ -220,7 +220,7 @@ class TrotterProduct(ErrorOperation):
         from literature for upper-bounding the error, the "one-norm" error bound and the "commutator"
         error bound.
 
-        ***Example:***
+        **Example:**
 
         The "one-norm" error bound can be computed by passing the kwarg :code:`method="one-norm"`, and
         is defined according to Section 2.3 (lemma 6, equation 22 and 23) of
