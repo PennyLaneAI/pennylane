@@ -495,14 +495,7 @@ class TestAdjointOperation:
         base = qml.RX(1.23, wires=0)
         op = Adjoint(base)
 
-        base_gen = base.generator()
-        op_gen = op.generator()
-
-        op_gen_coeff = op_gen.ops[0].coeffs[0] * op_gen.coeffs[0]
-        op_gen_ops = op_gen.ops[0].ops[0]
-
-        assert base_gen.coeffs[0] == -1 * op_gen_coeff
-        assert base_gen.ops[0] == op_gen_ops
+        assert qml.equal(base.generator(), -1.0 * op.generator())
 
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""

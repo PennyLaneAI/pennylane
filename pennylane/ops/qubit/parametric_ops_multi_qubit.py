@@ -1239,7 +1239,14 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return qml.Hamiltonian([0.25, 0.25], [qml.X(0) @ qml.X(1), qml.Y(0) @ qml.Y(1)])
+
+        return qml.Hamiltonian(
+            [0.25, 0.25],
+            [
+                qml.X(wires=self.wires[0]) @ qml.X(wires=self.wires[1]),
+                qml.Y(wires=self.wires[0]) @ qml.Y(wires=self.wires[1]),
+            ],
+        )
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
