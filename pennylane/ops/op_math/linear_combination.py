@@ -181,7 +181,21 @@ class LinearCombination(Sum):
         return self._ops
 
     def terms(self):
-        r"""TODO"""
+        r"""Retrieve the coefficients and operators of the ``LinearCombination``.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
+
+        **Example**
+
+        >>> coeffs = [1., 2., 3.]
+        >>> ops = [X(0), X(0) @ X(1), X(1) @ X(2)]
+        >>> op = qml.ops.LinearCombination(coeffs, ops)
+        >>> op.terms()
+        ([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(1) @ X(2)])
+
+        """
         return self.coeffs, self.ops
 
     @property
