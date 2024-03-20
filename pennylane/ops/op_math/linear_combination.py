@@ -252,7 +252,9 @@ class LinearCombination(Sum):
         return coeffs, ops, pr
 
     def simplify(self, cutoff=1.0e-12):
-        coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, self.wires, cutoff)
+        coeffs, ops, pr = self._simplify_coeffs_ops(
+            self.coeffs, self.ops, self.pauli_rep, self.wires, cutoff
+        )
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def _obs_data(self):
