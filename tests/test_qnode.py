@@ -927,6 +927,22 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == call_count  # once for each preprocessing
 
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
+    def test_dynamic_one_shot_if_mcm_unsupported(self, dev_name):
+        dev = qml.device(dev_name, wires=2, shots=100)
+
+        with pytest.raises(
+            TypeError,
+            match="does not support mid-circuit measurements natively, and hence it does not support the dynamic_one_shot transform.",
+        ):
+
+            @qml.transforms.dynamic_one_shot
+            @qml.qnode(dev)
+            def _():
+                qml.RX(1.23, 0)
+                ms = [qml.measure(0) for _ in range(10)]
+                return qml.probs(op=ms)
+
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
