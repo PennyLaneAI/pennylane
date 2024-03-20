@@ -128,8 +128,9 @@ class LinearCombination(Sum):
             _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
 
         if simplify:
+            _wires = qml.wires.Wires.all_wires([op.wires for op in observables])
             coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(
-                coeffs, observables, _pauli_rep
+                coeffs, observables, _pauli_rep, _wires
             )
 
         self._coeffs = coeffs
@@ -215,9 +216,9 @@ class LinearCombination(Sum):
     def name(self):
         return "LinearCombination"
 
-    @qml.QueuingManager.stop_recording()
     @staticmethod
-    def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
+    @qml.QueuingManager.stop_recording()
+    def _simplify_coeffs_ops(coeffs, ops, pr, wires, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
         Returns:
@@ -228,8 +229,6 @@ class LinearCombination(Sum):
 
         # try using pauli_rep:
         if pr is not None:
-
-            wire_order = pr.wires
             if len(pr) == 0:
                 return [], [], pr
 
@@ -238,7 +237,7 @@ class LinearCombination(Sum):
             new_ops = []
 
             for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=wire_order)
+                pw_op = pw.operation(wire_order=wires)
                 new_ops.append(pw_op)
                 new_coeffs.append(coeff)
 
@@ -253,7 +252,7 @@ class LinearCombination(Sum):
         return coeffs, ops, pr
 
     def simplify(self, cutoff=1.0e-12):
-        coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
+        coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, self.wires, cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def _obs_data(self):
