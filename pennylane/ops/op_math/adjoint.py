@@ -297,7 +297,7 @@ class Adjoint(SymbolicOp):
         return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
 
     def matrix(self, wire_order=None):
-        if isinstance(self.base, (qml.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(self.base, qml.ops.Hamiltonian):
             base_matrix = qml.matrix(self.base, wire_order=wire_order)
         else:
             base_matrix = self.base.matrix(wire_order=wire_order)

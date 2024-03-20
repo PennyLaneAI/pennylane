@@ -30,14 +30,12 @@ from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
-from pennylane.ops.op_math.linear_combination import LinearCombination
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .composite import CompositeOp
-from ..qubit.hamiltonian import Hamiltonian
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
@@ -302,11 +300,7 @@ class Prod(CompositeOp):
         for ops in self.overlapping_ops:
             gen = (
                 (
-                    (
-                        qml.matrix(op)
-                        if isinstance(op, (Hamiltonian, LinearCombination))
-                        else op.matrix()
-                    ),
+                    (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix()),
                     op.wires,
                 )
                 for op in ops

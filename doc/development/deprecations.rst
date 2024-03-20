@@ -34,7 +34,8 @@ Pending deprecations
 
   - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
 
-* Accessing ``qml.ops.Hamiltonian`` with new operator arithmetic is deprecated. Using ``qml.Hamiltonian``
+
+* Accessing ``qml.ops.Hamiltonian`` with new operator arithmetic enabled is deprecated. Using ``qml.Hamiltonian``
   with new operator arithmetic enabled now returns a ``LinearCombination`` instance. Some functionality
   may not work as expected, and use of the Hamiltonian class with the new operator arithmetic will not
   be supported in future releases of PennyLane.
