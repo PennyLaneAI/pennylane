@@ -198,7 +198,10 @@ class SampleMP(SampleMeasurement):
                 "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
+        if self.obs:
+            len_wires = 1
+        else:
+            len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
 
         def _single_int_shape(shot_val, num_wires):
             # singleton dimensions, whether in shot val or num_wires are squeezed away

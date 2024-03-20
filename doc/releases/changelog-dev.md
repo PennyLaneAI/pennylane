@@ -236,6 +236,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `jax.jit` now works with `qml.sample` with a multi-wire observable.
+
 * We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
   [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
 
