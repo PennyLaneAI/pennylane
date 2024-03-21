@@ -55,6 +55,9 @@
 * Added new `SpectralNormError` class to the new error tracking functionality.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
 
+* Added `error` method to `QuantumPhaseEstimation` template.
+  [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
+
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
@@ -149,6 +152,7 @@
   additional functionality not available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
   [(#5410)](https://github.com/PennyLaneAI/pennylane/pull/5410)
+  [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411) 
   [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
@@ -233,6 +237,9 @@
   `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
   [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
+* Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
+  [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
+
 <h3>Deprecations 👋</h3>
 
 * `qml.load` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as `qml.from_qiskit`.
@@ -263,6 +270,9 @@
   [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.qinfo.quantum_fisher` now works with non-`default.qubit` devices.
+  [(#5423)](https://github.com/PennyLaneAI/pennylane/pull/5423)
 
 * We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
   [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)

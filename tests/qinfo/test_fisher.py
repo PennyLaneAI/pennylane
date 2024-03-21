@@ -145,12 +145,19 @@ class TestIntegration:
         res = qml.qinfo.classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
 
-    def test_quantum_fisher_info(self):
+    @pytest.mark.parametrize(
+        "dev",
+        (
+            qml.device("default.qubit"),
+            qml.device("default.mixed", wires=3),
+            qml.device("lightning.qubit", wires=3),
+        ),
+    )
+    def test_quantum_fisher_info(self, dev):
         """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` or ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""
 
         n_wires = 2
 
-        dev = qml.device("default.qubit", wires=n_wires)
         dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000)
 
         def qfunc(params):
