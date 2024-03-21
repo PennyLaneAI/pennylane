@@ -14,7 +14,7 @@
 """
 LinearCombination class
 """
-# pylint: disable=too-many-arguments, protected-access, super-init-not-called, too-many-instance-attributes
+# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
 
 import itertools
 import numbers
