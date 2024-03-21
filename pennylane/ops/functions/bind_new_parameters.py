@@ -110,8 +110,11 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 
     return op.__class__(*new_operands)
 
+
 @bind_new_parameters.register
-def bind_new_parameters_linear_combination(op: qml.ops.LinearCombination, params: Sequence[TensorLike]):
+def bind_new_parameters_linear_combination(
+    op: qml.ops.LinearCombination, params: Sequence[TensorLike]
+):
     new_operands = []
 
     for operand in op.operands:
@@ -119,7 +122,7 @@ def bind_new_parameters_linear_combination(op: qml.ops.LinearCombination, params
         sub_params = params[:op_num_params]
         params = params[op_num_params:]
         new_operands.append(bind_new_parameters(operand, sub_params))
-    
+
     coeffs, ops = qml.sum(*new_operands).terms()
 
     return qml.ops.LinearCombination(coeffs, ops)
@@ -211,11 +214,10 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
     # error but does return an unusable object.
     return Pow(bind_new_parameters(op.base, params), op.scalar)
 
+
 @bind_new_parameters.register
-def bind_new_parameters_hamiltonian(
-    op: qml.ops.Hamiltonian, params: Sequence[TensorLike]
-):
-    new_H = qml.Hamiltonian(params, op.ops)
+def bind_new_parameters_hamiltonian(op: qml.ops.Hamiltonian, params: Sequence[TensorLike]):
+    new_H = qml.ops.Hamiltonian(params, op.ops)
     if op.grouping_indices is not None:
         new_H.grouping_indices = op.grouping_indices
     return new_H
