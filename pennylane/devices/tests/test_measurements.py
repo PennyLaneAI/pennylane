@@ -1632,7 +1632,7 @@ class TestSampleMeasurement:
                 return 1
 
             def process_counts(self, counts: dict, wire_order: Wires):
-                return counts
+                return 1
 
         @qml.qnode(dev)
         def circuit():
