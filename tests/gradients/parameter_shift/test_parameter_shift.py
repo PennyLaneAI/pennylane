@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types."""
+# pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
 
 import pennylane as qml
@@ -340,6 +341,20 @@ class TestParamShift:
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.gradients.param_shift(tape)
         assert not tapes
+
+    def test_parameter_shift_non_commuting_observables(self):
+        """Test that parameter shift works even if the measurements do not commute with each other."""
+
+        ops = (qml.RX(0.5, wires=0),)
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Z(0)))
+        tape = qml.tape.QuantumScript(ops, ms, trainable_params=[0])
+
+        batch, _ = qml.gradients.param_shift(tape)
+        assert len(batch) == 2
+        tape0 = qml.tape.QuantumScript((qml.RX(0.5 + np.pi / 2, 0),), ms, trainable_params=[0])
+        tape1 = qml.tape.QuantumScript((qml.RX(0.5 - np.pi / 2, 0),), ms, trainable_params=[0])
+        assert qml.equal(batch[0], tape0)
+        assert qml.equal(batch[1], tape1)
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with

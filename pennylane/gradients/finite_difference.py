@@ -28,7 +28,6 @@ from scipy.linalg import solve as linalg_solve
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP
 from pennylane import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
 from .general_shift_rules import generate_shifted_tapes
@@ -176,6 +175,15 @@ def _processing_fn(results, shots, single_shot_batch_fn):
     return tuple(grads_tuple)
 
 
+def _finite_diff_stopping_condition(op) -> bool:
+    return (
+        (op.grad_method is not None)
+        if isinstance(op, qml.operation.Operator)
+        and any(qml.math.requires_grad(p) for p in op.data)
+        else True
+    )
+
+
 def _expand_transform_finite_diff(
     tape: qml.tape.QuantumTape,
     argnum=None,
@@ -187,15 +195,9 @@ def _expand_transform_finite_diff(
     validate_params=True,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before finite difference."""
-    expanded_tape = expand_invalid_trainable(tape)
-
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
-
-    return [expanded_tape], null_postprocessing
+    return qml.devices.preprocess.decompose(
+        tape, stopping_condition=_finite_diff_stopping_condition, name="param_shift"
+    )
 
 
 @partial(

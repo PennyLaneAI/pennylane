@@ -100,6 +100,17 @@ class TestTranspile:
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
+    def test_transpile_non_commuting_observables(self):
+        """Test that transpile will work with non-commuting observables."""
+
+        ops = (qml.CRX(0.1, wires=(0, 2)),)
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
+        tape = qml.tape.QuantumScript(ops, ms, shots=50)
+        [out], _ = qml.transforms.transpile(tape, coupling_map=((0, 1), (1, 2)))
+
+        expected = qml.tape.QuantumScript((qml.SWAP((1, 2)), qml.CRX(0.1, (0, 1))), ms, shots=50)
+        assert qml.equal(out, expected)
+
     def test_transpile_qfunc_transpiled_mmt_obs(self):
         """test that transpile does not alter output for expectation value of an observable"""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
