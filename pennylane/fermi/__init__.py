@@ -15,5 +15,5 @@
 fermionic operators. """
 
 
-from .conversion import jordan_wigner, parity_transform
+from .conversion import jordan_wigner, parity_transform, bravyi_kitaev
 from .fermionic import FermiWord, FermiC, FermiA, FermiSentence, from_string
