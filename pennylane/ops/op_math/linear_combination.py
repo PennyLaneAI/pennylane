@@ -128,11 +128,14 @@ class LinearCombination(Sum):
             _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
 
         if simplify:
-            _wires = qml.wires.Wires.all_wires([op.wires for op in observables])
-            with qml.QueuingManager().stop_recording():
-                coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(
-                    coeffs, observables, _pauli_rep, _wires
-                )
+            # simplify upon initialization changes ops such that they wouldnt be removed in self.queue() anymore
+            if qml.QueuingManager.recording():
+                for o in observables:
+                    qml.QueuingManager.remove(o)
+
+            coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(
+                coeffs, observables, _pauli_rep
+            )
 
         self._pauli_rep = _pauli_rep
 
@@ -142,12 +145,10 @@ class LinearCombination(Sum):
 
         self._hyperparameters = {"ops": self._ops}
 
-        self._grouping_indices = None
-
-        with qml.QueuingManager().stop_recording():
+        with qml.QueuingManager.stop_recording():
             operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
 
-        # CompositeOp init
+        # Sum and CompositeOp init without grouping and building pauli_rep
         self._id = id
         self.queue_idx = None
         self._name = "LinearCombination"
@@ -157,10 +158,11 @@ class LinearCombination(Sum):
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
-        # self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
+
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
 
+        # Grouping
         self._grouping_indices = None
         if grouping_type is not None:
             self.compute_grouping(grouping_type=grouping_type, method=method)
@@ -183,6 +185,14 @@ class LinearCombination(Sum):
     def label(self, decimals=None, base_label=None, cache=None):
         decimals = None if (len(self.parameters) > 3) else decimals
         return Operator.label(self, decimals=decimals, base_label=base_label or "𝓗", cache=cache)
+
+    def queue(self, context=qml.QueuingManager):
+        """Queues a ``qml.ops.LinearCombination`` instance"""
+        if qml.QueuingManager.recording():
+            for o in self.ops:
+                context.remove(o)
+            context.append(self)
+        return self
 
     @property
     def coeffs(self):
@@ -299,7 +309,7 @@ class LinearCombination(Sum):
 
     @staticmethod
     @qml.QueuingManager.stop_recording()
-    def _simplify_coeffs_ops(coeffs, ops, pr, wires, cutoff=1.0e-12):
+    def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
         Returns:
@@ -318,7 +328,7 @@ class LinearCombination(Sum):
             new_ops = []
 
             for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=wires)
+                pw_op = pw.operation(wire_order=pr.wires)
                 new_ops.append(pw_op)
                 new_coeffs.append(coeff)
 
@@ -334,7 +344,7 @@ class LinearCombination(Sum):
 
     def simplify(self, cutoff=1.0e-12):
         coeffs, ops, pr = self._simplify_coeffs_ops(
-            self.coeffs, self.ops, self.pauli_rep, self.wires, cutoff
+            self.coeffs, self.ops, self.pauli_rep, cutoff
         )
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
@@ -519,14 +529,6 @@ class LinearCombination(Sum):
         if isinstance(H, (LinearCombination, qml.ops.Hamiltonian, Tensor, Observable)):
             return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented
-
-    def queue(self, context=qml.QueuingManager):
-        """Queues a ``qml.ops.LinearCombination`` instance"""
-        if qml.QueuingManager.recording():
-            for o in self.ops:
-                context.remove(o)
-            context.append(self)
-        return self
 
     def eigvals(self):
         """Return the eigenvalues of the specified operator.
