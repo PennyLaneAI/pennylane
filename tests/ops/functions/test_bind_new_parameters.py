@@ -18,6 +18,7 @@ This module contains unit tests for ``qml.bind_parameters``.
 import pytest
 from gate_data import X, Y, Z, I, GELL_MANN
 
+import numpy as np
 import pennylane as qml
 
 from pennylane.ops.functions import bind_new_parameters
@@ -78,6 +79,11 @@ from pennylane.operation import Tensor
                 qml.s_prod(-0.5, qml.sum(qml.THermitian(GELL_MANN[1], 0), qml.GellMann(0, 2))),
                 qml.sum(qml.GellMann(1, 3), qml.THermitian(GELL_MANN[6], 1)),
             ),
+        ),
+        (
+            qml.ops.LinearCombination([2.0, 3.0], [qml.Hermitian(np.eye(2), 0), qml.X(0)]),
+            (1.0, -np.eye(2), -1.0),
+            qml.ops.LinearCombination([1.0, -1.0], [qml.Hermitian(-np.eye(2), 0), qml.X(0)]),
         ),
     ],
 )
