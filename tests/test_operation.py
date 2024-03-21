@@ -39,6 +39,7 @@ from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
+# pylint: disable=use-implicit-booleaness-not-comparison
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -2554,18 +2555,12 @@ class TestCriteria:
         assert qml.operation.has_grad_method(self.rot)
         assert not qml.operation.has_grad_method(self.cnot)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_gen_is_multi_term_hamiltonian_legacy_opmath(self):
+    def test_gen_is_multi_term_hamiltonian(self):
         """Test gen_is_multi_term_hamiltonian criterion."""
         assert qml.operation.gen_is_multi_term_hamiltonian(self.doubleExcitation)
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.cnot)
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.rot)
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.exp)
-
-    def test_gen_is_multi_term_hamiltonian(self):
-        """Assert that DoubleExcitation generator is now a SProd"""
-        assert qml.operation.active_new_opmath(), "opmath not active, we have a leak"
-        assert isinstance(self.doubleExcitation.generator(), SProd)
 
     def test_has_multipar(self):
         """Test has_multipar criterion."""

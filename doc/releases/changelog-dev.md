@@ -55,6 +55,9 @@
 * Added new `SpectralNormError` class to the new error tracking functionality.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
 
+* Added `error` method to `QuantumPhaseEstimation` template.
+  [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
+
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
@@ -143,9 +146,13 @@
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
-* All generators in the source code (except those in the `qchem` module) no longer return
-  `Hamiltonian` or `Tensor` instances. Wherever possible, these return `Sum`, `SProd`, and `Prod` instances.
+* The generators in the source code return operators consistent with the global setting for 
+  `qml.operator.active_new_opmath()` wherever possible. `Sum`, `SProd` and `Prod` instances 
+  will be returned even after disabling the new operator arithmetic in cases where they offer 
+  additional functionality not available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
+  [(#5410)](https://github.com/PennyLaneAI/pennylane/pull/5410)
+  [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411) 
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
@@ -229,6 +236,9 @@
   `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
   [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
+* Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
+  [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
+
 <h3>Deprecations 👋</h3>
 
 * `qml.load` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as `qml.from_qiskit`.
@@ -259,6 +269,9 @@
   [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.qinfo.quantum_fisher` now works with non-`default.qubit` devices.
+  [(#5423)](https://github.com/PennyLaneAI/pennylane/pull/5423)
 
 * We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
   [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
