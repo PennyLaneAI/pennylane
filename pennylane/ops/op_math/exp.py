@@ -279,6 +279,9 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
+        if isinstance(base, LinearCombination) and len(base.coeffs) == 1:
+            return self._recursive_decomposition(base.ops[0], coeff * base.coeffs[0])
+
         if self.num_steps is not None and isinstance(base, Sum):
 
             coeffs, ops = (
