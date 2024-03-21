@@ -19,7 +19,7 @@ from typing import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian, LinearCombination
+from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
     StateMeasurement,
     MeasurementProcess,

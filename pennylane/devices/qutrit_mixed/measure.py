@@ -18,7 +18,7 @@ Code relevant for performing measurements on a qutrit mixed state.
 from typing import Callable
 from string import ascii_letters as alphabet
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian, LinearCombination
+from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
     StateMeasurement,
     MeasurementProcess,
