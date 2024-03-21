@@ -98,11 +98,11 @@ on:
 jobs:
   test:
     name: ${{ inputs.job_name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.pipeline_mode == 'unit-tests' && 'ubuntu-latest' || 'benchmark' }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
@@ -120,7 +120,7 @@ jobs:
       - name: Cache reference benchmarks
         if: ${{ inputs.pipeline_mode != 'unit-tests' }}
         id: benchmark-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: benchmark_reference
           key: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks_references
@@ -133,17 +133,37 @@ jobs:
             || (inputs.pipeline_mode == 'reference-benchmarks'
             && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '${{ inputs.python_version }}'
+
+      - name: Setup Python Venv
+        if: steps.continue.outputs.confirm == 'true'
+        env:
+          VENV_NAME: venv_${{ inputs.python_version }}_${{ github.sha }}
+        run: |
+          rm -rf venv_*
+          python -m venv "$VENV_NAME"
+          echo "${{ github.workspace }}/$VENV_NAME/bin" >> $GITHUB_PATH
+
+      - name: Validate Python
+        if: steps.continue.outputs.confirm == 'true'
+        run: |
+          which python
+          which pip
+          python --version
+
       - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
         uses: ./.github/workflows/install_deps
         with:
-          python_version: ${{ inputs.python_version }}
           install_pytorch: ${{ inputs.install_pytorch }}
           install_tensorflow: ${{ inputs.install_tensorflow }}
           install_jax: ${{ inputs.install_jax }}
           additional_pip_packages: ${{ inputs.additional_pip_packages }}
           install_pennylane_lightning_master: ${{ inputs.install_pennylane_lightning_master }}
-          requirements_file: ${{ inputs.requirements_file }}
+          requirements_file: ${{ inputs.pipeline_mode != 'reference-benchmarks' && inputs.requirements_file || '' }}
 
       - name: Set PyTest Args
         if: steps.continue.outputs.confirm == 'true'

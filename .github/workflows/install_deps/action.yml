@@ -4,10 +4,6 @@ description: |
   requirements file is provided, it will upload the results of pip freeze
   as well.
 inputs:
-  python_version:
-    description: The version of Python to use in order to run unit tests
-    required: false
-    default: '3.9'
   install_jax:
     description: Indicate if JAX should be installed or not
     required: false
@@ -48,11 +44,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '${{ inputs.python_version }}'
-
     - name: Upgrade PIP
       shell: bash
       run: pip install --upgrade pip && pip install wheel --upgrade
