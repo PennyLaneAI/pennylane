@@ -145,7 +145,7 @@ class LinearCombination(Sum):
 
         with qml.QueuingManager.stop_recording():
             operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
-        
+
         super().__init__(
             *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
         )
