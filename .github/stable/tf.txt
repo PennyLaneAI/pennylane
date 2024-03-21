@@ -25,14 +25,14 @@ flatbuffers==24.3.7
 fonttools==4.50.0
 future==1.0.0
 gast==0.5.4
-google-auth==2.28.2
+google-auth==2.29.0
 google-auth-oauthlib==1.2.0
 google-pasta==0.2.0
 grpcio==1.62.1
 h5py==3.10.0
 identify==2.5.35
 idna==3.6
-importlib_metadata==7.0.2
+importlib_metadata==7.1.0
 importlib_resources==6.3.2
 iniconfig==2.0.0
 keras==2.15.0
