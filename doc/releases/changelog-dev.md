@@ -272,6 +272,7 @@
   [(#5407)](https://github.com/PennyLaneAI/pennylane/pull/5407)
 
 * `CompositeOp.map_wires` now correctly maps the `overlapping_ops` property.
+  [(#5430)](https://github.com/PennyLaneAI/pennylane/pull/5430)
 
 <h3>Contributors ✍️</h3>
 
