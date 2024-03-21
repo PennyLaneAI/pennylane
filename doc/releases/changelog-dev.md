@@ -271,6 +271,8 @@
 * Fixed `PauliSentence.to_mat(wire_order)` to support identities with wires.
   [(#5407)](https://github.com/PennyLaneAI/pennylane/pull/5407)
 
+* `CompositeOp.map_wires` now correctly maps the `overlapping_ops` property.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
