@@ -401,8 +401,7 @@ class AdjointOperation(Adjoint, Operation):
         return self.base.has_generator
 
     def generator(self):
-        gen = -1 * self.base.generator()
-        return qml.Hamiltonian(gen.coeffs, gen.ops)
+        return -1 * self.base.generator()
 
 
 class AdjointObs(Adjoint, Observable):
