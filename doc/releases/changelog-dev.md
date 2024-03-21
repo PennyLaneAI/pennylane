@@ -123,6 +123,19 @@
 
   ```
 
+* The `qml.TrotterProduct` operator now supports error estimation functionality. 
+  [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
+
+  ```pycon
+  >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+  >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+  >>> op.error(method="one-norm")
+  SpectralNormError(8.039062500000003e-06)
+  >>>
+  >>> op.error(method="commutator")
+  SpectralNormError(6.166666666666668e-06)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
@@ -268,4 +281,5 @@ Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
+Jay Soni,
 Matthew Silverman.
