@@ -489,12 +489,13 @@ class TestAdjointOperation:
 
         assert op.has_generator is False
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""
         base = qml.RX(1.23, wires=0)
         op = Adjoint(base)
 
-        assert qml.equal(base.generator(), qml.s_prod(-1.0, op.generator()))
+        assert qml.equal(base.generator(), -1.0 * op.generator())
 
     def test_no_generator(self):
         """Test that an adjointed non-Operation raises a GeneratorUndefinedError."""
