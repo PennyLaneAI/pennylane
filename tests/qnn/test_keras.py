@@ -18,8 +18,10 @@ from collections import defaultdict
 
 import numpy as np
 import pytest
+import keras
 
 import pennylane as qml
+
 
 KerasLayer = qml.qnn.keras.KerasLayer
 
@@ -626,9 +628,9 @@ class TestKerasLayerIntegration:
         weights = model.get_weights()
 
         file = str(tmpdir) + "/model"
-        model.save(file)
+        tf.saved_model.save(model, file)
 
-        new_model = tf.keras.models.load_model(file)
+        new_model = keras.layers.TFSMLayer(file, call_endpoint="serving_default")
         new_weights = new_model.get_weights()
 
         assert len(weights) == len(new_weights)
@@ -733,9 +735,9 @@ class TestKerasLayerIntegrationDM:
         weights = model_dm.get_weights()
 
         file = str(tmpdir) + "/model"
-        model_dm.save(file)
+        tf.saved_model.save(model_dm, file)
 
-        new_model_dm = tf.keras.models.load_model(file)
+        new_model_dm = keras.layers.TFSMLayer(file, call_endpoint="serving_default")
         new_weights = new_model_dm.get_weights()
 
         for w, nw in zip(weights, new_weights):
@@ -956,6 +958,6 @@ def test_save_and_load_preserves_weights(tmpdir):
 
     model0.fit(dummy_input_data, dummy_output_data, epochs=1, batch_size=0)
     file = str(tmpdir) + "/model"
-    model0.save(file)
-    loaded_model = tf.keras.models.load_model(file)
+    tf.saved_model.save(model0, file)
+    loaded_model = keras.layers.TFSMLayer(file, call_endpoint="serving_default")
     assert np.array_equal(model0.layers[0].weights, loaded_model.layers[0].weights)
