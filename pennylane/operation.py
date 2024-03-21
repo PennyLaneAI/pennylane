@@ -908,6 +908,11 @@ class Operator(abc.ABC):
                 return qml.math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
+    @property
+    def num_terms(self):
+        """The number of terms present in a linear combination form of the operator."""
+        return 1
+
     def terms(self):  # pylint: disable=no-self-use
         r"""Representation of the operator as a linear combination of other operators.
 
@@ -2939,13 +2944,12 @@ def defines_diagonalizing_gates(obj):
 def gen_is_multi_term_hamiltonian(obj):
     """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
     with more than one term."""
-
     try:
         o = obj.generator()
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
-    return isinstance(o, (qml.ops.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
+    return o.num_terms > 1
 
 
 def enable_new_opmath():

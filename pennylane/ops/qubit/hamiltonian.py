@@ -176,6 +176,10 @@ class Hamiltonian(Observable):
         new_op._grouping_indices = metadata[0]  # pylint: disable=protected-access
         return new_op
 
+    @property
+    def num_terms(self):
+        return len(self._ops)
+
     def __init__(
         self,
         coeffs,

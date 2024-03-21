@@ -17,6 +17,7 @@ computing the sum of operations.
 """
 # pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
 
+import builtins
 import warnings
 import itertools
 from collections.abc import Iterable
@@ -409,6 +410,10 @@ class Sum(CompositeOp):
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
         return qml.s_prod(0, qml.Identity(self.wires))
+
+    @property
+    def num_terms(self):
+        return builtins.sum(o.num_terms for o in self)
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
