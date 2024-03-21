@@ -149,7 +149,7 @@
   additional functionality not available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
   [(#5410)](https://github.com/PennyLaneAI/pennylane/pull/5410)
-  [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5410)
+  [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
