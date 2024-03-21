@@ -324,7 +324,7 @@ class Device(abc.ABC):
         .. details::
             :title: Return Shape
 
-            See :ref:`Return Type Specification Doc <return_type_spec_doc>` for more detailed information.
+            See :ref:`Return Type Specification <ReturnTypeSpec>` for more detailed information.
 
             The result for each :class:`~.QuantumTape` must match the shape specified by :class:`~.QuantumTape.shape`.
 

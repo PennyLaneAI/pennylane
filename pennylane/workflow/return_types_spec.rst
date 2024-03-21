@@ -1,4 +1,5 @@
-.. _return_type_spec_doc
+
+.. _ReturnTypeSpec
 
 Return Type Specification
 =========================
@@ -19,7 +20,7 @@ over ``list`` where feasible.
 The level of priority for dimensions from outer dimension to inner dimension is:
 
 1. Quantum Script in batch. No squeezing
-2. Shot choice in a shot vector Squeezed out if no shot vector
+2. Shot choice in a shot vector. Squeezed if no shot vector
 3. Measurement in the quantum script. Squeezed out if only one measurement
 4. Parameter broadcasting. Squeezed out if no parameter-broadcasting.  Adds to array shape instead of adding tuple nesting.
 5. Fundamental measurement shape.
@@ -104,7 +105,7 @@ Single Tape
 -----------
 
 If the tape has a single measurement, then the result corresponding to that tape simply obeys the specification
-above.  Otherwise, the result for a single tape is either a tuple or list where each entry corresponds to each
+above.  Otherwise, the result for a single tape is a tuple where each entry corresponds to each
 of the corresponding measurements. In the below example, the first entry corresponds to the first
 measurement process ``qml.expval(qml.Z(0))``, the second entry corresponds to the second measurement process
 ``qml.probs(wires=0)``, and the third result corresponds to the third measurement process ``qml.state()``.
@@ -115,8 +116,8 @@ measurement process ``qml.expval(qml.Z(0))``, the second entry corresponds to th
 
 **Shot vectors:**
 
-When a shot vector is present, the measurement instead becomes a tuple where each entry corresponds to a
-different shot value.
+When a shot vector is present ``shots.has_partitioned_shot``, the measurement instead becomes a
+tuple where each entry corresponds to a different shot value.
 
 >>> tape = qml.tape.QuantumScript((), (qml.expval(qml.Z(0)), qml.probs(wires=0),), shots=(50,50,50))
 >>> result = qml.device('default.qubit').execute(tape)
@@ -128,26 +129,39 @@ different shot value.
 >>> qml.device('default.qubit').execute(tape)
 ({'0': 1}, {'0': 10}, {'0': 100})
 
+Let's look at an example with all forms of nesting.  Here, we have a tape with a batch size of `3`, three
+diferent measurements with different fundamental shapes, and a shot vector with three different values.
 
-**Integration with Jax-jit:**
+>>> op = qml.RX((1.2, 2.3, 3.4), 0)
+>>> ms = (qml.expval(qml.Z(0)), qml.probs(wires=0), qml.counts())
+>>> tape = qml.tape.QuantumScript((op,), ms, shots=(1, 100, 1000))
+>>> result = qml.device('default.qubit').execute(tape)
+>>> result
+((array([ 1., -1., -1.]),
+array([[1., 0.],
+       [0., 1.],
+       [0., 1.]]),
+[{'0': 1}, {'1': 1}, {'1': 1}]),
+(array([ 0.3 , -0.66, -0.98]),
+array([[0.61, 0.39],
+       [0.13, 0.87],
+       [0.03, 0.97]]),
+[{'0': 61, '1': 39}, {'0': 13, '1': 87}, {'0': 3, '1': 97}]),
+(array([ 0.364, -0.648, -0.962]),
+array([[0.669, 0.331],
+       [0.165, 0.835],
+       [0.012, 0.988]]),
+[{'0': 669, '1': 331}, {'0': 165, '1': 835}, {'0': 12, '1': 988}]))
+>>> result[0][0] # first shot value, first measurement
+array([ 1., -1., -1.])
+>>> result[0][0][0] # first shot value, first measurement, and parameter of 1.2
+1.0
+>>> result[1][2] # second shot value, third measurement, all three parameter values
+[{'0': 74, '1': 26}, {'0': 23, '1': 77}, {'1': 100}]
 
-To integrate with ``jax.pure_callback``, we need to know the exact pytree structure of that will be
-returned after executing a given tape.  This is the reason we currently do not support returning
-:class:`~.CountsMP` with use of ``jax-jit``.  Currently the measurements processes must specify The
-shape and dtype of their corresponding numeric array via the :meth:`.MeasurementProcess.shape` method
-and :attr:`.MeasurementProcess.dtype` attribute. Batch dimensions from parameter-broadcasting are then
-added in :meth:`.QuantumScript.shape`.
 
->>> from pennylane.measurements import Shots
->>> qml.probs(wires=(0,1)).shape(qml.device('default.qubit'), Shots(50))
-(4,)
->>> qml.probs(wires=(0,1)).numeric_type
-float
->>> qml.sample(obs=qml.X(0)).shape(qml.device('default.qubit'), Shots(100))
-(100,)
-
-(WIP) Mid-circuit measurements
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mid-circuit measurements
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Note that this specification is currently under development!**
 
@@ -168,10 +182,12 @@ of determining where in this stage we are without looking at the global workflow
 Batches
 -------
 
-TODO
+A batch is a tuple or list of multiple tapes.  In this case, the result should always be a tuple
+where each entry corresponds to the result for the corresponding tape.
 
-Jacobians
----------
-
-TODO
-
+>>> tape1 = qml.tape.QuantumScript([qml.X(0)], [qml.state()])
+>>> tape2 = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.counts()], shots=100)
+>>> tape3 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
+>>> batch = (tape1, tape2, tape3)
+>>> qml.device('default.qubit').execute(batch)
+(array([0.+0.j, 1.+0.j]), {'0': 50, '1': 50}, (1.0, 0.0))
