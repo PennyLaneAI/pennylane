@@ -898,6 +898,16 @@ class TestApplyOperation:
         spy_diagonal_unitary.assert_not_called()
         spy_apply_channel.assert_not_called()
 
+    def test_snapshot_not_supported(self):
+        """Tests that an error is raised when applying snapshot of measurements"""
+
+        dev = qml.device("default.mixed", wires=1)
+        with pytest.raises(DeviceError, match="Snapshots of measurements are not yet supported"):
+            dev._apply_operation(qml.Snapshot(measurement=qml.expval(qml.PauliZ(0))))
+
+        # assert that a snapshot still works without a measurement
+        _ = dev._apply_operation(qml.Snapshot())
+
 
 class TestApply:
     """Unit tests for the main method `apply()`. We check that lists of operations are applied

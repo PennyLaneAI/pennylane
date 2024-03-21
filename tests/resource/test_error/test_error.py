@@ -167,12 +167,11 @@ class TestErrorOperation:
         """Test that error method works as expected"""
 
         class SimpleErrorOperation(ErrorOperation):
-            @property
             def error(self):
                 return len(self.wires)
 
         no_error_op = SimpleErrorOperation(wires=[1, 2, 3])
-        assert no_error_op.error == 3
+        assert no_error_op.error() == 3
 
     def test_no_error_method(self):
         """Test error is raised if the error method is not defined."""
