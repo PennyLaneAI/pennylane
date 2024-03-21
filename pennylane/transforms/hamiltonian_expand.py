@@ -29,10 +29,13 @@ def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
     """Sums up results for the expectation value of a multi-term observable when grouping is involved.
 
     Args:
-        res_groupings (ResultBatch): the results from executing the batch of tapes with grouped observables
-        coeff_groupings (List[TensorLike]): the coefficients in the same grouped structure as the results
-        batch_size (Optional[int]): the batch size of the tape and corresponding results
-        offset (TensorLike): any constant offset from the multi-term observable
+        res_groupings (ResultBatch): The results from executing the batch of tapes with grouped observables
+        coeff_groupings (List[TensorLike]): The coefficients in the same grouped structure as the results
+        batch_size (Optional[int]): The batch size of the tape and corresponding results
+        offset (TensorLike): A constant offset from the multi-term observable
+
+    Returns:
+        Result: The result of the expectation value for a multi-term observable
     """
     dot_products = []
     for c_group, r_group in zip(coeff_groupings, res_groupings):
@@ -54,6 +57,9 @@ def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
 
 
 def _grouping_hamiltonian_expand(tape):
+    """Calculate the expectation value of a tape with a multi-term observable using the grouping
+    present on the observable.
+    """
     hamiltonian = tape.measurements[0].obs
     if hamiltonian.grouping_indices is None:
         # explicitly selected grouping, but indices not yet computed
@@ -96,10 +102,12 @@ def naive_processing_fn(res, coeffs, offset):
     """Sum up the results weighted by coefficients to get the expectation value of a multi-term observable.
 
     Args:
-        res (ResultBatch): the result of executing a batch of tapes where each tape is a different term in the observable.
+        res (ResultBatch): The result of executing a batch of tapes where each tape is a different term in the observable
         coeffs (List(TensorLike)): The weights for each result in ``res``
-        offset (TensorLike): any constant offset from the multi-term observable.
+        offset (TensorLike): Any constant offset from the multi-term observable
 
+    Returns:
+        Result: the expectation value of the multi-term observable
     """
     dot_products = []
     for c, r in zip(coeffs, res):
@@ -112,6 +120,7 @@ def naive_processing_fn(res, coeffs, offset):
 
 
 def _naive_hamiltonian_expand(tape):
+    """Calculate the expectation value of a multi-term observable using one tape per term."""
     # make one tape per observable
     hamiltonian = tape.measurements[0].obs
     tapes = []
