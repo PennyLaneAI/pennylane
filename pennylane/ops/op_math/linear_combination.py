@@ -169,14 +169,6 @@ class LinearCombination(Sum):
         decimals = None if (len(self.parameters) > 3) else decimals
         return Operator.label(self, decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
-    def queue(self, context=qml.QueuingManager):
-        """Queues a ``qml.ops.LinearCombination`` instance"""
-        if qml.QueuingManager.recording():
-            for o in self.ops:
-                context.remove(o)
-            context.append(self)
-        return self
-
     @property
     def coeffs(self):
         """Return the coefficients defining the LinearCombination.
@@ -510,6 +502,14 @@ class LinearCombination(Sum):
         if isinstance(H, (LinearCombination, qml.ops.Hamiltonian, Tensor, Observable)):
             return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented
+
+    def queue(self, context=qml.QueuingManager):
+        """Queues a ``qml.ops.LinearCombination`` instance"""
+        if qml.QueuingManager.recording():
+            for o in self.ops:
+                context.remove(o)
+            context.append(self)
+        return self
 
     def eigvals(self):
         """Return the eigenvalues of the specified operator.
