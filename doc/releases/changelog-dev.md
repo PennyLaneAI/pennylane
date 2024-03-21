@@ -61,9 +61,6 @@
 * Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
-* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
-  [(#5322)](https://github.com/PennyLaneAI/pennylane/pull/5322)
-
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
@@ -146,9 +143,13 @@
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
-* All generators in the source code (except those in the `qchem` module) no longer return
-  `Hamiltonian` or `Tensor` instances. Wherever possible, these return `Sum`, `SProd`, and `Prod` instances.
+* The generators in the source code return operators consistent with the global setting for 
+  `qml.operator.active_new_opmath()` wherever possible. `Sum`, `SProd` and `Prod` instances 
+  will be returned even after disabling the new operator arithmetic in cases where they offer 
+  additional functionality not available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
+  [(#5410)](https://github.com/PennyLaneAI/pennylane/pull/5410)
+  [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411) 
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
@@ -228,6 +229,10 @@
 * Attempting to multiply `PauliWord` and `PauliSentence` with `*` will raise an error. Instead, use `@` to conform with the PennyLane convention.
   [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
 
+* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
+  `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
+  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
+
 <h3>Deprecations 👋</h3>
 
 * `qml.load` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as `qml.from_qiskit`.
@@ -243,6 +248,11 @@
   >>> with open("test.qasm", "r") as f:
   ...     circuit = qml.from_qasm(f.read())
   ```
+
+* Accessing `qml.ops.Hamiltonian` with new operator arithmetic is deprecated. Using `qml.Hamiltonian` with new operator arithmetic enabled now
+  returns a `LinearCombination` instance. Some functionality may not work as expected. To continue using the `Hamiltonian` class, you can use
+  `qml.operation.disable_new_opmath()` to disable the new operator arithmetic.
+  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 <h3>Documentation 📝</h3>
 
