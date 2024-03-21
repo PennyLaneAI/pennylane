@@ -677,7 +677,9 @@ class Device(abc.ABC):
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
         )
         obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
-        obs_on_same_wire &= not any(isinstance(o, Hamiltonian) for o in circuit._obs_sharing_wires)
+        obs_on_same_wire &= not any(
+            isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit._obs_sharing_wires
+        )
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
         if obs_on_same_wire:
