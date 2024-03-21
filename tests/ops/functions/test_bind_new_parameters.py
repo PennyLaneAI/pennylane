@@ -189,27 +189,29 @@ def test_controlled_sequence():
     assert qml.math.allclose(new_op.data[0], 0.5)
     assert qml.equal(new_op.base, qml.RX(0.5, wires=3))
 
-
+with qml.operation.disable_new_opmath_cm():
+    TEST_BIND_LEGACY_HAMILTONIAN = [
+            (
+                qml.ops.Hamiltonian(
+                    [1.1, 2.1, 3.1],
+                    [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+                ),
+                [1.2, 2.2, 3.2],
+                qml.ops.Hamiltonian(
+                    [1.2, 2.2, 3.2],
+                    [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+                ),
+            ),
+            (
+                qml.ops.Hamiltonian([1.6, -1], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
+                [-1, 1.6],
+                qml.ops.Hamiltonian([-1, 1.6], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
+            ),
+        ]
+@pytest.mark.usefixtures("use_legacy_opmath")
 @pytest.mark.parametrize(
     "H, new_coeffs, expected_H",
-    [
-        (
-            qml.Hamiltonian(
-                [1.1, 2.1, 3.1],
-                [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
-            ),
-            [1.2, 2.2, 3.2],
-            qml.Hamiltonian(
-                [1.2, 2.2, 3.2],
-                [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
-            ),
-        ),
-        (
-            qml.Hamiltonian([1.6, -1], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
-            [-1, 1.6],
-            qml.Hamiltonian([-1, 1.6], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
-        ),
-    ],
+    TEST_BIND_LEGACY_HAMILTONIAN,
 )
 def test_hamiltonian(H, new_coeffs, expected_H):
     """Test that `bind_new_parameters` with `Hamiltonian` returns a new
@@ -221,6 +223,7 @@ def test_hamiltonian(H, new_coeffs, expected_H):
     assert new_H is not H
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_hamiltonian_grouping_indices():
     """Test that bind_new_parameters with a Hamiltonian preserves the grouping indices."""
     H = qml.Hamiltonian([1.0, 2.0], [qml.PauliX(0), qml.PauliX(1)])

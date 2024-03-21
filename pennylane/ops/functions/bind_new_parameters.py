@@ -125,7 +125,12 @@ def bind_new_parameters_linear_combination(
 
     coeffs, ops = qml.sum(*new_operands).terms()
 
-    return qml.ops.LinearCombination(coeffs, ops)
+    new_H = qml.ops.LinearCombination(coeffs, ops)
+
+    if op.grouping_indices is not None:
+        new_H.grouping_indices = op.grouping_indices
+
+    return new_H
 
 
 @bind_new_parameters.register(qml.CY)
