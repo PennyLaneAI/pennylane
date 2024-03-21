@@ -264,8 +264,12 @@
 * We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
   [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
 
-* Fixed `TestQubitIntegration.test_counts` in `tests/interfaces/test_jax_qnode.py` to always produce counts for all outcomes.
+* Fixed `TestQubitIntegration.test_counts` in `tests/interfaces/test_jax_qnode.py` to always produce counts for all
+  outcomes.
   [(#5336)](https://github.com/PennyLaneAI/pennylane/pull/5336)
+
+* Fixed `PauliSentence.to_mat(wire_order)` to support identities with wires.
+  [(#5407)](https://github.com/PennyLaneAI/pennylane/pull/5407)
 
 <h3>Contributors ✍️</h3>
 
