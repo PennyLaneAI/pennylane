@@ -46,7 +46,7 @@ def _spectral_norm(op, fast: bool = True):
 
     Args:
         op (Operator): The operator we want to compute spectral norm of.
-        fast (bool, optional): If true, uses the frobenius norm as an upper-bound
+        fast (bool, optional): If true, uses the Frobenius norm as an upper-bound
             to the spectral norm. Defaults to True.
 
     Returns:
