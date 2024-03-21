@@ -255,6 +255,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `jax.jit` now works with `qml.sample` with a multi-wire observable.
+  [(#5422)](https://github.com/PennyLaneAI/pennylane/pull/5422)
+
 * `qml.qinfo.quantum_fisher` now works with non-`default.qubit` devices.
   [(#5423)](https://github.com/PennyLaneAI/pennylane/pull/5423)
 
