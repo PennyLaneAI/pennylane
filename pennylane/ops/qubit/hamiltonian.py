@@ -637,13 +637,11 @@ class Hamiltonian(Observable):
         False
         """
 
-        if not isinstance(other, qml.operation.Operator):
-            raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
-
-        if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
-            pr1.simplify()
-            pr2.simplify()
-            return pr1 == pr2
+        if isinstance(other, qml.operation.Operator):
+            if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
+                pr1.simplify()
+                pr2.simplify()
+                return pr1 == pr2
 
         if isinstance(other, Hamiltonian):
             self.simplify()
@@ -655,6 +653,8 @@ class Hamiltonian(Observable):
             return self._obs_data() == {
                 (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
             }
+
+        raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
     def __matmul__(self, H):
         r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
