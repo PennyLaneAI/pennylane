@@ -276,7 +276,7 @@
 
 * Update `DefaultQubit.supports_derivatives` to correctly handle circuits containing `MidMeasureMP` with adjoint
   differentiation.
-  [(#)]()
+  [(#5434)](https://github.com/PennyLaneAI/pennylane/pull/5434)
 
 <h3>Contributors ✍️</h3>
 
