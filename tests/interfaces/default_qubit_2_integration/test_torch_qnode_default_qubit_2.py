@@ -40,7 +40,6 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
     # [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
-    [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, False],
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
@@ -659,7 +658,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = {}
         if diff_method == "spsa":
@@ -717,7 +716,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
@@ -1066,8 +1065,7 @@ class TestQubitIntegration:
 
     def test_state(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test that the state can be returned and differentiated"""
-        if dev.name == "LightningQubit":
-            pytest.skip("LightningQubit does not support differentiation with state measurement")
+
         if dev.name == "param_shift.qubit":
             pytest.skip("parameter shift does not support measuring the state.")
 

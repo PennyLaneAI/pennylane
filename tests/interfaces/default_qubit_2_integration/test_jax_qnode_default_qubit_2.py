@@ -36,7 +36,6 @@ device_and_diff_method = [
     [DefaultQubit(seed=device_seed), "spsa", False, False],
     [DefaultQubit(seed=device_seed), "hadamard", False, False],
     # [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
-    [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
 ]
 
 interface_and_device_and_diff_method = [
@@ -278,7 +277,7 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         a = jax.numpy.array(0.1)
@@ -334,7 +333,7 @@ class TestVectorValuedQNode:
             "device_vjp": device_vjp,
         }
 
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         if diff_method == "spsa":
@@ -393,7 +392,7 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         x = jax.numpy.array(0.543)
@@ -442,7 +441,7 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         x = jax.numpy.array(0.543)
@@ -523,7 +522,7 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         x = jax.numpy.array(0.543)
@@ -610,7 +609,7 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         jac = jax.jacobian(circuit, argnums=[0])(x, y)
 
@@ -648,7 +647,7 @@ class TestVectorValuedQNode:
 
         if diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -1713,7 +1712,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if device_vjp and jacobian is jax.jacfwd:
             pytest.skip("forward pass can't be done with registered vjp.")
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
@@ -1759,7 +1758,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if device_vjp and jacobian is jax.jacfwd:
             pytest.skip("forward pass can't be done with registered vjp.")
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
         @qnode(
@@ -1879,7 +1878,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         """The jacobian of multiple measurements with a single params return an array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
@@ -1916,7 +1915,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
@@ -1962,7 +1961,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")

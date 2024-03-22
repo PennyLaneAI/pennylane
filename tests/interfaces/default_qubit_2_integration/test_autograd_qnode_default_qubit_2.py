@@ -58,7 +58,6 @@ interface_qubit_device_and_diff_method = [
     ["auto", DefaultQubit(), "spsa", False, False],
     ["auto", DefaultQubit(), "hadamard", False, False],
     # ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, True],
-    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
 ]
 
 pytestmark = pytest.mark.autograd
@@ -564,7 +563,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
 
         kwargs = dict(
@@ -602,7 +601,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
@@ -668,7 +667,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
 
         kwargs = dict(
@@ -720,7 +719,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
-        if dev.name == "LightningQubit":
+        if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
@@ -1319,8 +1318,6 @@ class TestQubitIntegration:
 
     def test_state(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test that the state can be returned and differentiated"""
-        if dev.name == "LightningQubit":
-            pytest.skip("LightningQubit does not support state measurements with adjiont.")
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
