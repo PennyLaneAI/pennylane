@@ -198,6 +198,10 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
+        if tape.trainable_params:
+            param0_dtype = (params[tape.trainable_params[0]]).dtype
+        else:
+            param0_dtype = tf.float64  # assume float64 mode
 
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
@@ -212,7 +216,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
 
     # need to use same tapes for forward pass execution that we will use for the vjp
     # if we are using device derivatives (`not differentiable`) so we can find them in the cache
-    res = _to_tensors(execute_fn(numpy_tapes))
+    res = _to_tensors(execute_fn(numpy_tapes), dtype=param0_dtype)
 
     @tf.custom_gradient
     def custom_gradient_execute(*parameters):  # pylint:disable=unused-argument
