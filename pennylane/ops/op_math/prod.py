@@ -296,6 +296,9 @@ class Prod(CompositeOp):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
+        if self.pauli_rep:  # Get the matrix from the PauliSentence representation
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
+
         mats: List[TensorLike] = []
         batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
