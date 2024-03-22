@@ -115,7 +115,7 @@ class MultiRZ(Operation):
         )
 
     def generator(self):
-        return qml.s_prod(-0.5, functools.reduce(matmul, [PauliZ(w) for w in self.wires]))
+        return qml.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
     @staticmethod
     def compute_eigvals(theta, num_wires):  # pylint: disable=arguments-differ
@@ -406,7 +406,10 @@ class PauliRot(Operation):
     def generator(self):
         pauli_word = self.hyperparameters["pauli_word"]
         wire_map = {w: i for i, w in enumerate(self.wires)}
-        return qml.s_prod(-0.5, qml.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map))
+
+        return qml.Hamiltonian(
+            [-0.5], [qml.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)]
+        )
 
     @staticmethod
     def compute_eigvals(theta, pauli_word):  # pylint: disable=arguments-differ
@@ -774,7 +777,7 @@ class IsingXX(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return qml.s_prod(-0.5, qml.prod(PauliX(wires=self.wires[0]), PauliX(wires=self.wires[1])))
+        return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -910,7 +913,7 @@ class IsingYY(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return qml.s_prod(-0.5, qml.prod(PauliY(wires=self.wires[0]), PauliY(wires=self.wires[1])))
+        return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -1053,7 +1056,7 @@ class IsingZZ(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return qml.s_prod(-0.5, qml.prod(PauliZ(wires=self.wires[0]), PauliZ(wires=self.wires[1])))
+        return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -1236,12 +1239,13 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return qml.s_prod(
-            0.25,
-            qml.sum(
-                qml.prod(PauliX(wires=self.wires[0]), PauliX(wires=self.wires[1])),
-                qml.prod(PauliY(wires=self.wires[0]), PauliY(wires=self.wires[1])),
-            ),
+
+        return qml.Hamiltonian(
+            [0.25, 0.25],
+            [
+                qml.X(wires=self.wires[0]) @ qml.X(wires=self.wires[1]),
+                qml.Y(wires=self.wires[0]) @ qml.Y(wires=self.wires[1]),
+            ],
         )
 
     def __init__(self, phi, wires, id=None):
