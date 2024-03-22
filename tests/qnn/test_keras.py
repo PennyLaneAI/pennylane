@@ -18,7 +18,6 @@ from collections import defaultdict
 
 import numpy as np
 import pytest
-import keras
 
 import pennylane as qml
 
@@ -26,6 +25,7 @@ import pennylane as qml
 KerasLayer = qml.qnn.keras.KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
+keras = pytest.importorskip("keras", minversion="3")
 
 # pylint: disable=unnecessary-dunder-call
 
