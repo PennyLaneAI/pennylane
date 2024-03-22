@@ -115,7 +115,7 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 def bind_new_parameters_linear_combination(
     op: qml.ops.LinearCombination, params: Sequence[TensorLike]
 ):
-    
+
     new_coeffs, new_ops = [], []
     i = 0
     for o in op.ops:
