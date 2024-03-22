@@ -1,5 +1,5 @@
 
-.. _ReturnTypeSpec
+.. _ReturnTypeSpec:
 
 Return Type Specification
 =========================
