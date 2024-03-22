@@ -1,0 +1,14 @@
+name: Legacy opmath tests
+
+on:
+  schedule:
+    - cron: "0 0 2 * *"
+  workflow_dispatch:
+
+jobs:
+  tests:
+    uses: ./.github/workflows/interface-unit-tests.yml
+    with:
+      branch: 'master'
+      run_lightened_ci: false
+      use_new_opmath: false
