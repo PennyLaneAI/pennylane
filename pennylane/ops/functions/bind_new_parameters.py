@@ -115,17 +115,19 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 def bind_new_parameters_linear_combination(
     op: qml.ops.LinearCombination, params: Sequence[TensorLike]
 ):
-    new_operands = []
+    
+    new_coeffs, new_ops = [], []
+    i = 0
+    for o in op.ops:
+        new_coeffs.append(params[i])
+        i += 1
+        if isinstance(o, qml.Hermitian):
+            new_ops.append(qml.Hermitian(params[i], wires=o.wires))
+            i += 1
+        else:
+            new_ops.append(o)
 
-    for operand in op.operands:
-        op_num_params = operand.num_params
-        sub_params = params[:op_num_params]
-        params = params[op_num_params:]
-        new_operands.append(bind_new_parameters(operand, sub_params))
-
-    coeffs, ops = qml.sum(*new_operands).terms()
-
-    new_H = qml.ops.LinearCombination(coeffs, ops)
+    new_H = qml.ops.LinearCombination(new_coeffs, new_ops)
 
     if op.grouping_indices is not None:
         new_H.grouping_indices = op.grouping_indices
