@@ -210,9 +210,7 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
     program.add_transform(
-        decompose,
-        stopping_condition=adjoint_ops,
-        name=name,
+        decompose, stopping_condition=adjoint_ops, name=name, skip_initial_state_prep=False
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
