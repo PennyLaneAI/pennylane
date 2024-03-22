@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
 
-
 matI = np.eye(2)
 matX = np.array([[0, 1], [1, 0]])
 matY = np.array([[0, -1j], [1j, 0]])
@@ -876,6 +875,11 @@ class TestPauliSentence:
         res_sparse = ps.to_mat(format="csr")
         assert sparse.issparse(res_sparse)
         assert qml.math.allclose(res_sparse.todense(), true_res)
+
+    def test_empty_pauli_to_mat_with_wire_order(self):
+        """Test the to_mat method with an empty PauliSentence and PauliWord and an external wire order."""
+        actual = PauliSentence({PauliWord({}): 1.5}).to_mat([0, 1])
+        assert np.allclose(actual, 1.5 * np.eye(4))
 
     ps_wire_order = ((ps1, []), (ps1, [0, 1, 2, "a", "b"]), (ps3, [0, 1, "c"]))
 

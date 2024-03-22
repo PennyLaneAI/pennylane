@@ -17,10 +17,11 @@ Contains the QuantumPhaseEstimation template.
 # pylint: disable=too-many-arguments,arguments-differ
 import pennylane as qml
 from pennylane.queuing import QueuingManager
-from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.operation import AnyWires, Operator
+from pennylane.resource.error import ErrorOperation, SpectralNormError
 
 
-class QuantumPhaseEstimation(Operation):
+class QuantumPhaseEstimation(ErrorOperation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -199,6 +200,34 @@ class QuantumPhaseEstimation(Operation):
     def estimation_wires(self):
         """The estimation wires of the QPE"""
         return self._hyperparameters["estimation_wires"]
+
+    def error(self):
+        """The QPE error computed from the spectral norm error of the input unitary operator.
+
+        **Example**
+
+        >>> class CustomOP(qml.resource.ErrorOperation):
+        ...    def error(self):
+        ...       return qml.resource.SpectralNormError(0.005)
+        >>> Op = CustomOP(wires=[0])
+        >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
+        >>> QPE.error()
+        0.075
+        """
+        base_unitary = self._hyperparameters["unitary"]
+        if not isinstance(base_unitary, ErrorOperation):
+            return SpectralNormError(0.0)
+
+        unitary_error = base_unitary.error().error
+
+        sequence_error = qml.math.array(
+            [unitary_error * (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)],
+            like=qml.math.get_interface(unitary_error),
+        )
+
+        additive_error = qml.math.sum(sequence_error)
+
+        return SpectralNormError(additive_error)
 
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):

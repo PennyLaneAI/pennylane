@@ -1034,7 +1034,7 @@ class DefaultClifford(Device):
         for recipe in recipes:
             bits.append(
                 [
-                    self._measure_single_sample(stim_circuit, [rec + 1], idx, meas_wire)
+                    self._measure_single_sample(stim_circuit, [int(rec) + 1], idx, meas_wire)
                     for idx, rec in enumerate(recipe)
                 ]
             )
