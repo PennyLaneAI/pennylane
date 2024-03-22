@@ -832,7 +832,16 @@ class PauliSentence(dict):
             the PauliWord is empty ({}), choose any arbitrary wire from the
             PauliSentence it is composed in.
             """
-            return w or Wires(self.wires[0]) if self.wires else self.wires
+            if w:
+                # PauliWord is not empty, so we can use its wires
+                return Wires(w)
+
+            if wire_order:
+                # PauliWord is empty, treat it as Identity operator on any wire
+                # Pick any arbitrary wire from wire_order
+                return Wires(wire_order[0])
+
+            return wire_order
 
         if len(self) == 0:
             n = len(wire_order) if wire_order is not None else 0
