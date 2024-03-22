@@ -2,7 +2,7 @@
 .. _ReturnTypeSpec:
 
 Return Type Specification
-=========================
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 With the exception of the specialized mid-circuit measurement return specification,
 the below description applies for the entire workflow, from the device instance all the
@@ -73,7 +73,8 @@ Parameter broadcasting adds a leading dimension to the numeric array itself.
 If the corresponding tape has a ``batch_size`` and the result object is numeric, then the numeric object should
 gain a leading dimension.
 
->>> tape = qml.tape.QuantumScript((qml.RX((0, np.pi/4, np.pi/2), wires=0),), (qml.probs(wires=0),))
+>>> op = qml.RX((0, np.pi/4, np.pi/2), wires=0))
+>>> tape = qml.tape.QuantumScript((op,), [qml.probs(wires=0)])
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result
 array([[1.        , 0.        ],
@@ -81,7 +82,7 @@ array([[1.        , 0.        ],
        [0.5       , 0.5       ]])
 >>> result.shape
 (3, 2)
->>> tape = qml.tape.QuantumScript((qml.RX((0, np.pi/4, np.pi/2), wires=0),), (qml.expval(qml.Z(0)),))
+>>> tape = qml.tape.QuantumScript((op,), [qml.expval(qml.Z(0))])
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result
 array([1.00000000e+00, 7.07106781e-01, 2.22044605e-16])
@@ -92,7 +93,7 @@ Non-tensorlike arrays may handle broadcasting in different ways. The ``'default.
 for :class:`~.CountsMP` is a list of dictionaries, but when used in conjunction with
 :func:`~.transforms.broadcast_expand`, the result object becomes a ``numpy.ndarray`` of dtype ``object``.
 
->>> tape = qml.tape.QuantumScript((qml.RX((0, np.pi/4, np.pi/2), wires=0),), (qml.counts(),), shots=50)
+>>> tape = qml.tape.QuantumScript((op,), (qml.counts(),), shots=50)
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result
 [{'0': 50}, {'0': 46, '1': 4}, {'0': 32, '1': 18}]
@@ -119,13 +120,14 @@ measurement process ``qml.expval(qml.Z(0))``, the second entry corresponds to th
 When a shot vector is present ``shots.has_partitioned_shot``, the measurement instead becomes a
 tuple where each entry corresponds to a different shot value.
 
->>> tape = qml.tape.QuantumScript((), (qml.expval(qml.Z(0)), qml.probs(wires=0),), shots=(50,50,50))
+>>> measurements = (qml.expval(qml.Z(0)), qml.probs(wires=0))
+>>> tape = qml.tape.QuantumScript((), measurements, shots=(50,50,50))
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result
 ((1.0, array([1., 0.])), (1.0, array([1., 0.])), (1.0, array([1., 0.])))
 >>> result[0]
 (1.0, array([1., 0.]))
->>> tape = qml.tape.QuantumScript([], [qml.counts(wires=0)], shots=(1, 10, 100))
+>>> tape = qml.tape.QuantumScript((), [qml.counts(wires=0)], shots=(1, 10, 100))
 >>> qml.device('default.qubit').execute(tape)
 ({'0': 1}, {'0': 10}, {'0': 100})
 
@@ -152,6 +154,8 @@ array([[0.669, 0.331],
        [0.165, 0.835],
        [0.012, 0.988]]),
 [{'0': 669, '1': 331}, {'0': 165, '1': 835}, {'0': 12, '1': 988}]))
+
+
 >>> result[0][0] # first shot value, first measurement
 array([ 1., -1., -1.])
 >>> result[0][0][0] # first shot value, first measurement, and parameter of 1.2
@@ -175,9 +179,8 @@ circuits mid-circuit measurements to their measured values.
 >>> qml.device('default.qubit').execute(tape)
 ((1.0, array([1., 0., 0., 0.])), {measure(wires=[0]): 0})
 
-This specification is also only valid after the :func:`~.dynamic_one_shot` preprocessing has been applied
-and before the corresponding ``dynamic_one_shot`` postprocessing has been applied. We do not yet have a way
-of determining where in this stage we are without looking at the global workflow.
+Note that while this specification applies to the device and several internal boundaries,
+the ``QNode`` should never return this specification.
 
 Batches
 -------
