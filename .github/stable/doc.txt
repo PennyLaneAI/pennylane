@@ -78,7 +78,7 @@ python-dateutil==2.9.0.post0
 pytz==2024.1
 PyYAML==6.0.1
 requests==2.28.2
-requests-oauthlib==1.4.0
+requests-oauthlib==2.0.0
 rsa==4.9
 rustworkx==0.12.1
 scipy==1.12.0
