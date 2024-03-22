@@ -20,7 +20,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-few-public-methods
 def test_flatten_unflatten():
     """Tests the flatten and unflatten methods."""
     op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 3])
@@ -36,6 +36,78 @@ def test_flatten_unflatten():
     new_op = type(op)._unflatten(*op._flatten())
     assert qml.equal(op, new_op)
     assert op is not new_op
+
+
+class TestError:
+    """Test that the QPE error is computed correctly."""
+
+    @pytest.mark.parametrize(
+        # the reference error is computed manually for a QPE operation with 2 estimation wires
+        ("operator_error", "expected_error"),
+        [(0.01, 0.03), (0.02, 0.06), (0.03, 0.09)],
+    )
+    def test_error_operator(self, operator_error, expected_error):
+        """Test that QPE error is correct for a given custom operator."""
+
+        class CustomOP(qml.resource.ErrorOperation):
+            def error(self):
+                return qml.resource.SpectralNormError(operator_error)
+
+        operator = CustomOP(wires=[0])
+        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
+
+        assert np.allclose(qpe_error, expected_error)
+
+    def test_error_zero(self):
+        """Test that QPE error is zero for an operator with no error method."""
+        unitary = qml.RX(0.1, wires=0)
+        qpe_error = qml.QuantumPhaseEstimation(unitary, estimation_wires=range(1, 3)).error().error
+
+        assert qpe_error == 0.0
+
+    def test_error_unitary(self):
+        """Test that QPE error is correct for a given unitary error."""
+
+        u_exact = qml.RY(0.50, wires=0)
+        u_apprx = qml.RY(0.51, wires=0)
+
+        class CustomOP(qml.resource.ErrorOperation):
+            def error(self):
+                error_value = qml.resource.SpectralNormError.get_error(u_exact, u_apprx)
+                return qml.resource.SpectralNormError(error_value)
+
+        m_exact = qml.matrix(qml.QuantumPhaseEstimation(u_exact, estimation_wires=range(1, 3)))
+        m_apprx = qml.matrix(qml.QuantumPhaseEstimation(u_apprx, estimation_wires=range(1, 3)))
+
+        matrix_error = qml.math.max(qml.math.svd(m_exact - m_apprx, compute_uv=False))
+
+        operator = CustomOP(wires=[0])
+        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
+
+        assert np.allclose(qpe_error, matrix_error, atol=1e-4)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        # the reference error is computed manually for a QPE operation with 2 estimation wires
+        ("operator_error", "expected_error"),
+        [(0.01, 0.03), (0.02, 0.06)],
+    )
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    def test_error_interfaces(self, operator_error, interface, expected_error):
+        """Test that the error method works with all interfaces."""
+
+        class CustomOP(qml.resource.ErrorOperation):
+            def error(self):
+                spectral_norm_error = qml.resource.SpectralNormError(
+                    qml.math.array(operator_error, like=interface)
+                )
+                return spectral_norm_error
+
+        operator = CustomOP(wires=[0])
+        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
+
+        assert qml.math.get_interface(qpe_error) == interface
+        assert np.allclose(qpe_error, expected_error)
 
 
 class TestDecomposition:
