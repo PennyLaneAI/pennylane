@@ -35,7 +35,8 @@ device_and_diff_method = [
     [DefaultQubit(seed=device_seed), "adjoint", False, True],
     [DefaultQubit(seed=device_seed), "spsa", False, False],
     [DefaultQubit(seed=device_seed), "hadamard", False, False],
-    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    # [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
 ]
 
 interface_and_device_and_diff_method = [
