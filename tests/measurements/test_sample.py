@@ -540,3 +540,23 @@ class TestSampleProcessCounts:
         result = sample_mp.process_counts(counts, wire_order)
 
         assert np.array_equal(result, np.array([1, 1, -1, -1, -1]))
+
+    def test_process_counts_with_inverted_wire_order(self):
+        """Test process_counts method with inverted wire order."""
+        sample_mp = qml.sample(wires=[0, 1])
+        counts = {"00": 2, "01": 3}
+        wire_order = qml.wires.Wires((1, 0))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([[0, 0], [0, 0], [1, 0], [1, 0], [1, 0]]))
+
+    def test_process_counts_with_second_single_wire(self):
+        """Test process_counts method with the second single wire."""
+        sample_mp = qml.sample(wires=[1])
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([0, 0, 0, 0, 0]))
