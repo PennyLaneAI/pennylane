@@ -271,7 +271,7 @@ class Exp(ScalarSymbolicOp, Operation):
             )
 
         # Change base to `Sum`/`Prod`
-        if isinstance(base, Hamiltonian):
+        if isinstance(base, (Hamiltonian, LinearCombination)):
             base = qml.dot(base.coeffs, base.ops)
         elif isinstance(base, Tensor):
             base = qml.prod(*base.obs)
@@ -279,16 +279,9 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        if isinstance(base, LinearCombination) and len(base.coeffs) == 1:
-            return self._recursive_decomposition(base.ops[0], coeff * base.coeffs[0])
-
         if self.num_steps is not None and isinstance(base, Sum):
-
-            coeffs, ops = (
-                base.terms()
-                if isinstance(base, LinearCombination)
-                else ([1] * len(base), base.operands)
-            )
+            # Apply trotter decomposition
+            coeffs, ops = [1] * len(base), base.operands
             coeffs = [c * coeff for c in coeffs]
             return self._trotter_decomposition(ops, coeffs)
 
