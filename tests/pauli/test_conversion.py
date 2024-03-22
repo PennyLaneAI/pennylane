@@ -507,7 +507,7 @@ class TestPauliSentence:
         """Test that PL arithmetic op is properly cast to a PauliSentence."""
         assert pauli_sentence(op) == ps
 
-    @pytest.mark.parametrize("op, ps", operator_ps)
+    @pytest.mark.parametrize("op, ps", operator_ps + hamiltonian_ps)
     def test_operator_private_ps(self, op, ps):
         """Test that a correct pauli sentence is computed when passing an arithmetic operator and not
         relying on the saved op.pauli_rep attribute."""

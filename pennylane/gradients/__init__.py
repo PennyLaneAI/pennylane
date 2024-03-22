@@ -338,8 +338,7 @@ from . import hadamard_gradient
 from . import pulse_gradient
 from . import pulse_gradient_odegen
 
-from .gradient_transform import gradient_transform, SUPPORTED_GRADIENT_KWARGS
-from .hessian_transform import hessian_transform
+from .gradient_transform import SUPPORTED_GRADIENT_KWARGS
 from .finite_difference import finite_diff, finite_diff_coeffs
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
