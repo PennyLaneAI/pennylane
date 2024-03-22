@@ -19,7 +19,9 @@ from typing import Optional, Text
 
 try:
     import tensorflow as tf
-    from tensorflow.keras.layers import Layer
+
+    # from tensorflow.keras.layers import Layer
+    from keras.layers import Layer
 
     CORRECT_TF_VERSION = int(tf.__version__.split(".", maxsplit=1)[0]) > 1
 except ImportError:
@@ -321,7 +323,7 @@ class KerasLayer(Layer):
 
         self.qnode_weights = {}
 
-        super().__init__(dynamic=True, **kwargs)
+        super().__init__(**kwargs)
 
         # no point in delaying the initialization of weights, since we already know their shapes
         self.build(None)
@@ -363,6 +365,8 @@ class KerasLayer(Layer):
 
         super().build(input_shape)
 
+    # ToDo: preferably fix whatever pylint is upset about
+    # pylint: disable=arguments-differ
     def call(self, inputs):
         """Evaluates the QNode on input data using the initialized weights.
 
