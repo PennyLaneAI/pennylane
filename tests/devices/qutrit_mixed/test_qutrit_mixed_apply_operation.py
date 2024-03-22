@@ -407,8 +407,8 @@ class TestTRXCalcGrad:
             f = jax.jit(f)
 
         probs = f(self.phi)
-        jacobian = jax.jacobian(f)(phi)
-        self.compare_expected_result(phi, state, probs, subspace, jacobian)
+        jacobian = jax.jacobian(f)(self.phi)
+        self.compare_expected_result(self.phi, state, probs, subspace, jacobian)
 
     @pytest.mark.torch
     def test_trx_grad_torch(self, two_qutrit_state, subspace):
@@ -512,8 +512,8 @@ class TestChannelCalcGrad:
             f = jax.jit(f)
 
         probs = f(self.p)
-        jacobian = jax.jacobian(f)(p)
-        self.compare_expected_result(p, state, probs, jacobian)
+        jacobian = jax.jacobian(f)(self.p)
+        self.compare_expected_result(self.p, state, probs, jacobian)
 
     @pytest.mark.torch
     def test_channel_grad_torch(self, two_qutrit_state):
