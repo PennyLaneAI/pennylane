@@ -442,6 +442,7 @@ class TestSPSAOptimizer:
         ):
             opt.step(cost, params)
 
+    @pytest.mark.xfail(reason="Lightning cannot use adjoint withs state prep ops yet")
     @pytest.mark.slow
     def test_lighting_device(self):
         """Test SPSAOptimizer implementation with lightning.qubit device."""
