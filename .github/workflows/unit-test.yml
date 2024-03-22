@@ -94,6 +94,11 @@ on:
         required: false
         type: string
         default: ''
+      use_new_opmath:
+        description: Whether to use the new op_math or not when running the tests
+        required: false
+        type: bool
+        default: true
 
 jobs:
   test:
@@ -169,6 +174,7 @@ jobs:
           COV_CORE_CONFIG: .coveragerc
           COV_CORE_DATAFILE: .coverage.eager
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
+        run: python -m import pennylane as qml && qml.operation.__use_new_opmath = ${{ inputs.use_new_opmath }}
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
       - name: Adjust coverage file for Codecov
