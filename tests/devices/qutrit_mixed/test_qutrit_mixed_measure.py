@@ -471,11 +471,13 @@ class TestBroadcasting:
         assert np.allclose(res, expected)
 
 
+@pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
 class TestSumOfTermsDifferentiability:
     x = 0.52
 
     @staticmethod
     def f(scale, coeffs, n_wires=5, offset=0.1, convert_to_hamiltonian=False):
+        """Function to differentiate that implements a circuit with a SumOfTerms operator"""
         ops = [qml.TRX(offset + scale * i, wires=i, subspace=(0, 2)) for i in range(n_wires)]
 
         if convert_to_hamiltonian:
@@ -504,7 +506,6 @@ class TestSumOfTermsDifferentiability:
         return coeffs[0] * qml.math.prod(cosines) + coeffs[1] * qml.math.prod(sines)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
     @pytest.mark.parametrize(
         "coeffs",
         [
@@ -519,13 +520,23 @@ class TestSumOfTermsDifferentiability:
         expected_out = self.expected(x, coeffs)
         assert qml.math.allclose(out, expected_out)
 
-        g = qml.grad(self.f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_g = qml.grad(self.expected)(x, coeffs)
-        assert qml.math.allclose(g, expected_g)
+        gradient = qml.grad(self.f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_gradient = qml.grad(self.expected)(x, coeffs)
+        assert qml.math.allclose(expected_gradient, gradient)
+
+    @pytest.mark.autograd
+    def test_autograd_backprop_coeffs(self, convert_to_hamiltonian):
+        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
+        coeffs = qml.numpy.array((2.5, 6.2), requires_grad=True)
+        gradient = qml.grad(self.f, argnum=1)(
+            self.x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian
+        )
+        expected_gradient = qml.grad(self.expected)(self.x, coeffs)
+        assert len(gradient) == 2
+        assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
@@ -540,12 +551,31 @@ class TestSumOfTermsDifferentiability:
         expected_out = self.expected(x, coeffs)
         assert qml.math.allclose(out, expected_out)
 
-        g = jax.grad(f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_g = jax.grad(self.expected)(x, coeffs)
-        assert qml.math.allclose(g, expected_g)
+        gradient = jax.grad(f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_gradient = jax.grad(self.expected)(x, coeffs)
+        assert qml.math.allclose(expected_gradient, gradient)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_jax_backprop_coeffs(self, convert_to_hamiltonian, use_jit):
+        """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
+        if use_jit and not convert_to_hamiltonian:
+            pytest.skip("Jit will fail in making sum due to checking if Hermitian")
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        coeffs = jax.numpy.array((5.2, 6.7), dtype=jax.numpy.float64)
+
+        f = jax.jit(self.f, static_argnums=(0, 2, 3, 4)) if use_jit else self.f
+
+        gradient = jax.grad(f, argnums=1)(
+            self.x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian
+        )
+        expected_gradient = jax.grad(self.expected, argnums=1)(self.x, coeffs)
+        assert len(gradient) == 2
+        assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
     def test_torch_backprop(self, convert_to_hamiltonian):
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
@@ -555,9 +585,7 @@ class TestSumOfTermsDifferentiability:
             torch.tensor(6.2, requires_grad=False, dtype=torch.float64),
         ]
 
-        x = torch.tensor(
-            -0.289, requires_grad=True, dtype=torch.float64
-        )  # TODO what should I make these values
+        x = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
         x2 = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
         out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x2, coeffs, like="torch")
@@ -567,8 +595,25 @@ class TestSumOfTermsDifferentiability:
         expected_out.backward()
         assert qml.math.allclose(x.grad, x2.grad)
 
+    @pytest.mark.torch
+    def test_torch_backprop_coeffs(self, convert_to_hamiltonian):
+        """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
+        import torch
+
+        coeffs = torch.tensor((9.2, 6.2), requires_grad=True, dtype=torch.float64)
+        coeffs_expected = torch.tensor((9.2, 6.2), requires_grad=True, dtype=torch.float64)
+
+        x = torch.tensor(-0.289, requires_grad=False, dtype=torch.float64)
+        out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x, coeffs_expected, like="torch")
+        assert qml.math.allclose(out, expected_out)
+
+        out.backward()
+        expected_out.backward()
+        assert len(coeffs.grad) == 2
+        assert qml.math.allclose(coeffs.grad, coeffs_expected.grad)
+
     @pytest.mark.tf
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
     def test_tf_backprop(self, convert_to_hamiltonian):
         """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
         import tensorflow as tf
@@ -583,6 +628,24 @@ class TestSumOfTermsDifferentiability:
             expected_out = self.expected(x, coeffs)
 
         assert qml.math.allclose(out, expected_out)
-        g1 = tape1.gradient(out, x)
-        g2 = tape2.gradient(expected_out, x)
-        assert qml.math.allclose(g1, g2)
+        gradient = tape1.gradient(out, x)
+        expected_gradient = tape2.gradient(expected_out, x)
+        assert qml.math.allclose(expected_gradient, gradient)
+
+    @pytest.mark.tf
+    def test_tf_backprop_coeffs(self, convert_to_hamiltonian):
+        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
+        import tensorflow as tf
+
+        coeffs = tf.Variable([8.3, 5.7])
+
+        with tf.GradientTape() as tape1:
+            out = self.f(self.x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+
+        with tf.GradientTape() as tape2:
+            expected_out = self.expected(self.x, coeffs)
+
+        gradient = tape1.gradient(out, coeffs)
+        expected_gradient = tape2.gradient(expected_out, coeffs)
+        assert len(gradient) == 2
+        assert qml.math.allclose(expected_gradient, gradient)

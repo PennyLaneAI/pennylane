@@ -31,7 +31,7 @@ ml_frameworks_list = [
 ]
 
 subspaces = [(0, 1), (0, 2), (1, 2)]
-krause_matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=complex)
+kraus_matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=complex)
 
 
 class CustomChannel(Channel):  # pylint: disable=too-few-public-methods
@@ -47,7 +47,7 @@ class CustomChannel(Channel):  # pylint: disable=too-few-public-methods
             p = math.cast_like(p, 1j)
 
         K0 = math.sqrt(1 - p + math.eps) * math.convert_like(math.eye(3, dtype=complex), p)
-        K1 = math.sqrt(p + math.eps) * math.convert_like(krause_matrix, p)
+        K1 = math.sqrt(p + math.eps) * math.convert_like(kraus_matrix, p)
         return [K0, K1]
 
 
@@ -347,7 +347,8 @@ class TestTRXCalcGrad:
     phi = 0.325
 
     @staticmethod
-    def compare_expected_result(phi, state, probs, subspace, g):
+    def compare_expected_result(phi, state, probs, subspace, jacobian):
+        """Compare the expected result for this circuit and gradient with observed values"""
         trx = qml.TRX.compute_matrix(phi, subspace)
         trx_adj = qml.TRX.compute_matrix(-phi, subspace)
         state = math.reshape(state, (9, 9))
@@ -369,9 +370,7 @@ class TestTRXCalcGrad:
             np.kron(trx_derivative, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3))
         ) + (np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj_derivative, np.eye(3)))
         expected_derivative = np.diagonal(expected_derivative_state)
-        print(g, "\n")
-        print(expected_derivative)
-        assert qml.math.allclose(g, expected_derivative)
+        assert qml.math.allclose(jacobian, expected_derivative)
 
     @pytest.mark.autograd
     def test_trx_grad_autograd(self, two_qutrit_state, subspace):
@@ -387,8 +386,8 @@ class TestTRXCalcGrad:
         phi = qml.numpy.array(self.phi, requires_grad=True)
 
         probs = f(phi)
-        g = qml.jacobian(lambda x: qml.math.real(f(x)))(phi)
-        self.compare_expected_result(phi, state, probs, subspace, g)
+        jacobian = qml.jacobian(lambda x: qml.math.real(f(x)))(phi)
+        self.compare_expected_result(phi, state, probs, subspace, jacobian)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
@@ -407,11 +406,9 @@ class TestTRXCalcGrad:
         if use_jit:
             f = jax.jit(f)
 
-        phi = self.phi
-
-        probs = f(phi)
-        g = jax.jacobian(f)(phi)
-        self.compare_expected_result(phi, state, probs, subspace, g)
+        probs = f(self.phi)
+        jacobian = jax.jacobian(f)(phi)
+        self.compare_expected_result(phi, state, probs, subspace, jacobian)
 
     @pytest.mark.torch
     def test_trx_grad_torch(self, two_qutrit_state, subspace):
@@ -429,14 +426,14 @@ class TestTRXCalcGrad:
         phi = torch.tensor(self.phi, requires_grad=True)
 
         probs = f(phi)
-        g = torch.autograd.functional.jacobian(f, phi)
+        jacobian = torch.autograd.functional.jacobian(f, phi)
 
         self.compare_expected_result(
             phi.detach().numpy(),
             state.detach().numpy(),
             probs.detach().numpy(),
             subspace,
-            g.detach().numpy(),
+            jacobian.detach().numpy(),
         )
 
     @pytest.mark.tf
@@ -452,11 +449,10 @@ class TestTRXCalcGrad:
             new_state = apply_operation(op, state)
             probs = measure(qml.probs(), new_state)
 
-        grads = grad_tape.jacobian(probs, [phi])
-        # tf takes gradient with respect to conj(z), so we need to conj the gradient
-        phi_grad = grads[0]  # tf.math.conj(grads[0])
+        jacobians = grad_tape.jacobian(probs, [phi])
+        phi_jacobian = jacobians[0]
 
-        self.compare_expected_result(phi, state, probs, subspace, phi_grad)
+        self.compare_expected_result(phi, state, probs, subspace, phi_jacobian)
 
 
 class TestChannelCalcGrad:
@@ -465,24 +461,25 @@ class TestChannelCalcGrad:
     p = 0.325
 
     @staticmethod
-    def compare_expected_result(p, state, new_state, g):
-        krause_matrix_two_qutrits = np.kron(np.eye(3), krause_matrix)
-        krause_matrix_two_qutrits_adj = krause_matrix_two_qutrits.transpose()
+    def compare_expected_result(p, state, new_state, jacobian):
+        """Compare the expected result for this channel and gradient with observed values"""
+        kraus_matrix_two_qutrits = np.kron(np.eye(3), kraus_matrix)
+        kraus_matrix_two_qutrits_adj = kraus_matrix_two_qutrits.transpose()
         state = math.reshape(state, (9, 9))
 
-        state_krause_applied = krause_matrix_two_qutrits @ state @ krause_matrix_two_qutrits_adj
+        state_kraus_applied = kraus_matrix_two_qutrits @ state @ kraus_matrix_two_qutrits_adj
 
-        expected_state = (1 - p) * state + (p * state_krause_applied)
+        expected_state = (1 - p) * state + (p * state_kraus_applied)
         expected_probs = np.diagonal(expected_state)
         assert qml.math.allclose(new_state, expected_probs)
 
-        expected_derivative_state = state_krause_applied - state
+        expected_derivative_state = state_kraus_applied - state
         expected_derivative = np.diagonal(expected_derivative_state)
-        assert qml.math.allclose(g, expected_derivative)
+        assert qml.math.allclose(jacobian, expected_derivative)
 
     @pytest.mark.autograd
     def test_channel_grad_autograd(self, two_qutrit_state):
-        """Test that the application of a trx gate is differentiable with autograd."""
+        """Test that the application of a channel is differentiable with autograd."""
 
         state = qml.numpy.array(two_qutrit_state)
 
@@ -494,13 +491,13 @@ class TestChannelCalcGrad:
         p = qml.numpy.array(self.p, requires_grad=True)
 
         probs = f(p)
-        g = qml.jacobian(lambda x: qml.math.real(f(x)))(p)
-        self.compare_expected_result(p, state, probs, g)
+        jacobian = qml.jacobian(lambda x: qml.math.real(f(x)))(p)
+        self.compare_expected_result(p, state, probs, jacobian)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_channel_grad_jax(self, use_jit, two_qutrit_state):
-        """Test that the application of a trx gate is differentiable with jax."""
+        """Test that the application of a channel is differentiable with jax."""
 
         import jax
 
@@ -514,15 +511,13 @@ class TestChannelCalcGrad:
         if use_jit:
             f = jax.jit(f)
 
-        p = self.p
-
-        probs = f(p)
-        g = jax.jacobian(f)(p)
-        self.compare_expected_result(p, state, probs, g)
+        probs = f(self.p)
+        jacobian = jax.jacobian(f)(p)
+        self.compare_expected_result(p, state, probs, jacobian)
 
     @pytest.mark.torch
     def test_channel_grad_torch(self, two_qutrit_state):
-        """Tests the application and differentiation of a trx gate with torch."""
+        """Tests the application and differentiation of a channel with torch."""
 
         import torch
 
@@ -536,18 +531,18 @@ class TestChannelCalcGrad:
         p = torch.tensor(self.p, requires_grad=True)
 
         probs = f(p)
-        g = torch.autograd.functional.jacobian(f, p)
+        jacobian = torch.autograd.functional.jacobian(f, p)
 
         self.compare_expected_result(
             p.detach().numpy(),
             state.detach().numpy(),
             probs.detach().numpy(),
-            g.detach().numpy(),
+            jacobian.detach().numpy(),
         )
 
     @pytest.mark.tf
     def test_channel_grad_tf(self, two_qutrit_state):
-        """Tests the application and differentiation of a trx gate with tensorflow"""
+        """Tests the application and differentiation of a channel with tensorflow"""
         import tensorflow as tf
 
         state = tf.Variable(two_qutrit_state)
@@ -558,8 +553,8 @@ class TestChannelCalcGrad:
             new_state = apply_operation(op, state)
             probs = measure(qml.probs(), new_state)
 
-        grads = grad_tape.jacobian(probs, [p])
+        jacobians = grad_tape.jacobian(probs, [p])
         # tf takes gradient with respect to conj(z), so we need to conj the gradient
-        phi_grad = tf.math.conj(grads[0])
+        phi_jacobian = tf.math.conj(jacobians[0])
 
-        self.compare_expected_result(p, state, probs, phi_grad)
+        self.compare_expected_result(p, state, probs, phi_jacobian)
