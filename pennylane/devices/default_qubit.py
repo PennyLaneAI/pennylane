@@ -169,7 +169,7 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return (
+    return not isinstance(op, MidMeasureMP) and (
         op.num_params == 0
         or not qml.operation.is_trainable(op)
         or (op.num_params == 1 and op.has_generator)
@@ -190,7 +190,7 @@ def _supports_adjoint(circuit):
 
     try:
         prog((circuit,))
-    except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
+    except (qml.operation.DecompositionUndefinedError, qml.DeviceError, AttributeError):
         return False
     return True
 
