@@ -150,6 +150,13 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config, circuit=circuit) is False
         assert dev.supports_vjp(config, circuit=circuit) is False
 
+        circuit = qml.tape.QuantumScript(
+            [qml.measurements.MidMeasureMP(0)], [qml.expval(qml.PauliZ(0))]
+        )
+        assert dev.supports_derivatives(config, circuit=circuit) is False
+        assert dev.supports_jvp(config, circuit=circuit) is False
+        assert dev.supports_vjp(config, circuit=circuit) is False
+
     @pytest.mark.parametrize("gradient_method", ["parameter-shift", "finite-diff", "device"])
     def test_doesnt_support_other_gradient_methods(self, gradient_method):
         """Test that DefaultQubit currently does not support other gradient methods natively."""
