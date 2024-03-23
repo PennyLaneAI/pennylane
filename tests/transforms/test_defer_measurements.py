@@ -743,7 +743,19 @@ class TestConditionalOperations:
         assert qml.equal(tape.measurements[0], terminal_measurement)
 
     @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize(
+        "device",
+        [
+            "default.qubit",
+            "default.mixed",
+            pytest.param(
+                "lightning.qubit",
+                marks=pytest.mark.xfail(
+                    reason="Lightning adjoint decomposition needs to be updated"
+                ),
+            ),
+        ],
+    )
     @pytest.mark.parametrize("ops", [(qml.RX, qml.CRX), (qml.RY, qml.CRY), (qml.RZ, qml.CRZ)])
     def test_conditional_rotations(self, device, r, ops):
         """Test that the quantum conditional operations match the output of
@@ -840,7 +852,19 @@ class TestConditionalOperations:
         assert isinstance(tape.measurements[0], qml.measurements.MeasurementProcess)
         assert qml.equal(tape.measurements[0].obs, H)
 
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize(
+        "device",
+        [
+            "default.qubit",
+            "default.mixed",
+            pytest.param(
+                "lightning.qubit",
+                marks=pytest.mark.xfail(
+                    reason="Lightning adjoint decomposition needs to be updated"
+                ),
+            ),
+        ],
+    )
     @pytest.mark.parametrize("ops", [(qml.RX, qml.CRX), (qml.RY, qml.CRY), (qml.RZ, qml.CRZ)])
     def test_conditional_rotations_assert_zero_state(self, device, ops):
         """Test that the quantum conditional operations applied by controlling
@@ -870,7 +894,19 @@ class TestConditionalOperations:
 
         assert np.allclose(normal_probs, cond_probs)
 
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize(
+        "device",
+        [
+            "default.qubit",
+            "default.mixed",
+            pytest.param(
+                "lightning.qubit",
+                marks=pytest.mark.xfail(
+                    reason="Lightning adjoint decomposition needs to be updated"
+                ),
+            ),
+        ],
+    )
     def test_conditional_rotations_with_else(self, device):
         """Test that an else operation can also defined using qml.cond."""
         dev = qml.device(device, wires=3)
@@ -942,7 +978,19 @@ class TestConditionalOperations:
 
         assert qnode() == expected
 
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize(
+        "device",
+        [
+            "default.qubit",
+            "default.mixed",
+            pytest.param(
+                "lightning.qubit",
+                marks=pytest.mark.xfail(
+                    reason="Lightning adjoint decomposition needs to be updated"
+                ),
+            ),
+        ],
+    )
     def test_cond_qfunc(self, device):
         """Test that a qfunc can also used with qml.cond."""
         dev = qml.device(device, wires=3)
@@ -976,7 +1024,19 @@ class TestConditionalOperations:
 
         assert np.allclose(exp, cond_probs)
 
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize(
+        "device",
+        [
+            "default.qubit",
+            "default.mixed",
+            pytest.param(
+                "lightning.qubit",
+                marks=pytest.mark.xfail(
+                    reason="Lightning adjoint decomposition needs to be updated"
+                ),
+            ),
+        ],
+    )
     def test_cond_qfunc_with_else(self, device):
         """Test that a qfunc can also used with qml.cond even when an else
         qfunc is provided."""
