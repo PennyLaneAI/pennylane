@@ -693,7 +693,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
         return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
 
 
-class LightningVJPs(DeviceDerivatives):
+class LightningVJPs(DeviceDerivatives):  # pragma: no cover
     """Calculates VJPs natively using lightning.qubit.
 
     Args:
@@ -713,7 +713,12 @@ class LightningVJPs(DeviceDerivatives):
     """
 
     def __repr__(self):
-        return f"<LightningVJPs: {self._device.short_name}, {self._gradient_kwargs}>"
+        long_to_short_name = {
+            "LightningQubit": "lightning.qubit",
+            "LightningKokkos": "lightning.kokkos",
+            "LightningGPU": "lightning.gpu",
+        }
+        return f"<LightningVJPs: {long_to_short_name[type(self._device).__name__]}, {self._gradient_kwargs}>"
 
     def __init__(self, device, gradient_kwargs=None):
         super().__init__(device, gradient_kwargs=gradient_kwargs)
