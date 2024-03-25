@@ -304,10 +304,10 @@ class QubitDevice(Device):
                 and getattr(self, "_CPP_BINARY_AVAILABLE", False)
             )
             diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
-            if is_lightning and diagonalizing_gates:
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
-            if is_lightning and diagonalizing_gates:
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
