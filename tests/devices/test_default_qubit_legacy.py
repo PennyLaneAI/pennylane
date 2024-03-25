@@ -2398,6 +2398,7 @@ class TestHamiltonianSupport:
         ):
             dev.expval(H)
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_Hamiltonian_filtered_from_rotations(self, mocker):
         """Tests that the device does not attempt to get rotations for Hamiltonians."""
         dev = qml.device("default.qubit.legacy", wires=2, shots=10)
