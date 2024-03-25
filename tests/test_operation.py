@@ -928,19 +928,21 @@ class TestOperationConstruction:
         op = DummyOp(wires=0)
         assert op.is_hermitian is False
 
+
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestObservableTensorLegacySupport:
     """Test legacy support of observables with new opmath types"""
+
     def test_Observable_matmul_with_new_opmath(self):
         """Test matmul of an Observable with a new opmath instance"""
         res = qml.Hadamard(0) @ qml.s_prod(0.5, qml.PauliX(0))
         assert isinstance(res, qml.ops.Prod)
-    
+
     def test_Observable_matmul_with_new_opmath(self):
         """Test sub of an Observable with a new opmath instance"""
         res = qml.Hadamard(0) - qml.s_prod(0.5, qml.PauliX(0))
         assert isinstance(res, qml.ops.Sum)
-    
+
     def test_Tensor_arithmetic_depth(self):
         op = qml.operation.Tensor(qml.Hadamard(0), qml.Hadamard(1), qml.Hadamard(2))
         assert op.arithmetic_depth == 1
