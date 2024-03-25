@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.ops import Hamiltonian, LinearCombination, SProd, Prod, Sum
-from pennylane.operation import convert_to_legacy_H
+from pennylane.operation import convert_to_H
 
 
 # pylint: disable=too-many-branches
@@ -43,10 +43,10 @@ def _generator_hamiltonian(gen, op):
         H = qml.pauli_decompose(mat, wire_order=wires, hide_identity=True)
 
     elif isinstance(gen, qml.operation.Observable):
-        H = 1.0 * gen
+        H = qml.Hamiltonian([1.0], [gen])
 
     elif isinstance(gen, (SProd, Prod, Sum)):
-        H = convert_to_legacy_H(gen)
+        H = convert_to_H(gen)
 
     return H
 

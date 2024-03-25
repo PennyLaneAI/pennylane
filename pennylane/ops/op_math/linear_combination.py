@@ -14,7 +14,7 @@
 """
 LinearCombination class
 """
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
 
 import itertools
 import numbers
@@ -124,6 +124,18 @@ class LinearCombination(Sum):
                 "Could not create valid LinearCombination; "
                 "number of coefficients and operators does not match."
             )
+        if _pauli_rep is None:
+            _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
+
+        if simplify:
+            # simplify upon initialization changes ops such that they wouldnt be removed in self.queue() anymore
+            if qml.QueuingManager.recording():
+                for o in observables:
+                    qml.QueuingManager.remove(o)
+
+            coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(
+                coeffs, observables, _pauli_rep
+            )
 
         self._coeffs = coeffs
 
@@ -131,29 +143,24 @@ class LinearCombination(Sum):
 
         self._hyperparameters = {"ops": self._ops}
 
-        self._grouping_indices = None
-
-        with qml.QueuingManager().stop_recording():
-            operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
+        with qml.QueuingManager.stop_recording():
+            operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
 
         super().__init__(
             *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
         )
 
-        if simplify:
-            # TODO clean up this logic, seems unnecesssarily complicated
+    @staticmethod
+    def _build_pauli_rep_static(coeffs, observables):
+        """PauliSentence representation of the Sum of operations."""
 
-            simplified_coeffs, simplified_ops, pr = self._simplify_coeffs_ops()
-
-            self._coeffs = (
-                simplified_coeffs  # Losing gradient in case of torch interface at this point
-            )
-
-            self._ops = simplified_ops
-            with qml.QueuingManager().stop_recording():
-                operands = [qml.s_prod(c, op) for c, op in zip(self._coeffs, self._ops)]
-
-            super().__init__(*operands, id=id, _pauli_rep=pr)
+        if all(pauli_reps := [op.pauli_rep for op in observables]):
+            new_rep = qml.pauli.PauliSentence()
+            for c, ps in zip(coeffs, pauli_reps):
+                for pw, coeff in ps.items():
+                    new_rep[pw] += coeff * c
+            return new_rep
+        return None
 
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
@@ -198,6 +205,70 @@ class LinearCombination(Sum):
         """
         return self.coeffs, self.ops
 
+    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+        """
+        Compute groups of operators and coefficients corresponding to commuting
+        observables of this ``LinearCombination``.
+
+        .. note::
+
+            If grouping is requested, the computed groupings are stored as a list of list of indices
+            in ``LinearCombination.grouping_indices``.
+
+        Args:
+            grouping_type (str): The type of binary relation between Pauli words used to compute
+                the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+            method (str): The graph coloring heuristic to use in solving minimum clique cover for
+                grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
+                First).
+
+        **Example**
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            a = qml.X(0)
+            b = qml.prod(qml.X(0), qml.X(1))
+            c = qml.Z(0)
+            obs = [a, b, c]
+            coeffs = [1.0, 2.0, 3.0]
+
+            op = qml.ops.LinearCombination(coeffs, obs)
+
+        >>> op.grouping_indices is None
+        True
+        >>> op.compute_grouping(grouping_type="qwc")
+        >>> op.grouping_indices
+        ((2,), (0, 1))
+        """
+        if not self.pauli_rep:
+            raise ValueError("Cannot compute grouping for Sums containing non-Pauli operators.")
+
+        _, ops = self.terms()
+
+        with qml.QueuingManager.stop_recording():
+            op_groups = qml.pauli.group_observables(ops, grouping_type=grouping_type, method=method)
+
+        ops = copy(ops)
+
+        indices = []
+        available_indices = list(range(len(ops)))
+        for partition in op_groups:  # pylint:disable=too-many-nested-blocks
+            indices_this_group = []
+            for pauli_word in partition:
+                # find index of this pauli word in remaining original observables,
+                for ind, observable in enumerate(ops):
+                    if qml.pauli.are_identical_pauli_words(pauli_word, observable):
+                        indices_this_group.append(available_indices[ind])
+                        # delete this observable and its index, so it cannot be found again
+                        ops.pop(ind)
+                        available_indices.pop(ind)
+                        break
+            indices.append(tuple(indices_this_group))
+
+        self._grouping_indices = tuple(indices)
+
     @property
     def wires(self):
         r"""The sorted union of wires from all operators.
@@ -211,44 +282,43 @@ class LinearCombination(Sum):
     def name(self):
         return "LinearCombination"
 
+    @staticmethod
     @qml.QueuingManager.stop_recording()
-    def _simplify_coeffs_ops(self, cutoff=1.0e-12):
+    def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
         Returns:
             coeffs, ops, pauli_rep"""
 
-        if len(self.ops) == 0:
-            return [], [], self.pauli_rep
+        if len(ops) == 0:
+            return [], [], pr
 
         # try using pauli_rep:
-        if pr := self.pauli_rep:
-
-            wire_order = self.wires
+        if pr is not None:
             if len(pr) == 0:
                 return [], [], pr
 
             # collect coefficients and ops
-            coeffs = []
-            ops = []
+            new_coeffs = []
+            new_ops = []
 
             for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=wire_order)
-                ops.append(pw_op)
-                coeffs.append(coeff)
+                pw_op = pw.operation(wire_order=pr.wires)
+                new_ops.append(pw_op)
+                new_coeffs.append(coeff)
 
-            return coeffs, ops, pr
+            return new_coeffs, new_ops, pr
 
-        if len(self.ops) == 1:
-            return self.coeffs, [self.ops[0].simplify()], pr
+        if len(ops) == 1:
+            return coeffs, [ops[0].simplify()], pr
 
-        op_as_sum = qml.sum(*self.operands)
+        op_as_sum = qml.dot(coeffs, ops)
         op_as_sum = op_as_sum.simplify(cutoff)
-        coeffs, ops = op_as_sum.terms()
-        return coeffs, ops, None
+        new_coeffs, new_ops = op_as_sum.terms()
+        return new_coeffs, new_ops, pr
 
     def simplify(self, cutoff=1.0e-12):
-        coeffs, ops, pr = self._simplify_coeffs_ops(cutoff)
+        coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def _obs_data(self):

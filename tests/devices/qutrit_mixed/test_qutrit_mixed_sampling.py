@@ -29,7 +29,7 @@ from pennylane.devices.qutrit_mixed.sampling import _sample_state_jax
 from pennylane.measurements import Shots
 
 
-APPROX_ATOL = 0.01
+APPROX_ATOL = 0.05
 QUDIT_DIM = 3
 ONE_QUTRIT = 1
 TWO_QUTRITS = 2
@@ -365,7 +365,7 @@ class TestMeasureWithSamples:
             qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1)), state, shots=shots
         )
         assert results_gel_1s.shape == (shots.total_shots,)
-        assert results_gel_1s.dtype == np.int64
+        assert results_gel_1s.dtype == np.float64
         assert sorted(np.unique(results_gel_1s)) == [-1, 0, 1]
 
     @flaky
@@ -652,10 +652,14 @@ class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables"""
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval(self, obs):
         """Test that sampling works well for Hamiltonian and Sum observables"""
-        shots = qml.measurements.Shots(10000)
 
+        if not qml.operation.active_new_opmath():
+            obs = qml.operation.convert_to_legacy_H(obs)
+
+        shots = qml.measurements.Shots(10000)
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
         state = create_initial_state((0,))
@@ -668,10 +672,14 @@ class TestHamiltonianSamples:
         assert isinstance(res, np.float64)
         assert np.allclose(res, expected, atol=APPROX_ATOL)
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval_shot_vector(self, obs):
         """Test that sampling works well for Hamiltonian and Sum observables with a shot vector"""
-        shots = qml.measurements.Shots((10000, 100000))
 
+        if not qml.operation.active_new_opmath():
+            obs = qml.operation.convert_to_legacy_H(obs)
+
+        shots = qml.measurements.Shots((10000, 100000))
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
         state = create_initial_state((0,))

@@ -19,15 +19,13 @@ computing the sum of operations.
 
 import warnings
 import itertools
-import numbers
 from collections.abc import Iterable
 from copy import copy
 from typing import List
 
-import numpy as np
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
@@ -211,6 +209,7 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
+    grad_method = "A"
 
     def _flatten(self):
         return tuple(self.operands), (self.grouping_indices,)

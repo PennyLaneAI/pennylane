@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
+from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
 
 # defaults
 TOL = 1e-3
@@ -171,6 +172,34 @@ def tear_down_hermitian():
 def tear_down_thermitian():
     yield None
     qml.THermitian._eigs = {}
+
+
+#######################################################################
+# Fixtures for testing under new and old opmath
+
+
+@pytest.fixture(scope="function")
+def use_legacy_opmath():
+    with disable_new_opmath_cm() as cm:
+        yield cm
+
+
+# @pytest.fixture(scope="function")
+# def use_legacy_opmath():
+#     with disable_new_opmath_cm():
+#         yield
+
+
+@pytest.fixture(scope="function")
+def use_new_opmath():
+    with enable_new_opmath_cm() as cm:
+        yield cm
+
+
+@pytest.fixture(params=[disable_new_opmath_cm, enable_new_opmath_cm], scope="function")
+def use_legacy_and_new_opmath(request):
+    with request.param() as cm:
+        yield cm
 
 
 #######################################################################

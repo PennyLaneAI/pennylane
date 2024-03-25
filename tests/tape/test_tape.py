@@ -146,6 +146,7 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_tensor_observables_tensor_init(self):
         """Test that tensor observables are correctly processed from the annotated
         queue. Here, we test multiple tensor observables constructed via explicit

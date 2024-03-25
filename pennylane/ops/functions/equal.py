@@ -160,7 +160,7 @@ def equal(
     if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
         return False
 
-    if isinstance(op2, (Hamiltonian, LinearCombination, Tensor)):
+    if isinstance(op2, (Hamiltonian, Tensor)):
         return _equal(op2, op1)
 
     return _equal(
