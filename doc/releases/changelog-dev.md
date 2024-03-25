@@ -277,6 +277,10 @@
 * `CompositeOp.map_wires` now correctly maps the `overlapping_ops` property.
   [(#5430)](https://github.com/PennyLaneAI/pennylane/pull/5430)
 
+* Update `DefaultQubit.supports_derivatives` to correctly handle circuits containing `MidMeasureMP` with adjoint
+  differentiation.
+  [(#5434)](https://github.com/PennyLaneAI/pennylane/pull/5434)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
