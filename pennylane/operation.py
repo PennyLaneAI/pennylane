@@ -3050,17 +3050,13 @@ def enable_new_opmath_cm():
     temporary context using the `with` statement."""
 
     was_active = qml.operation.active_new_opmath()
-    try:
-        if not was_active:
-            enable_new_opmath()
-        yield
-    except Exception as e:
-        raise e
-    finally:
-        if was_active:
-            enable_new_opmath()
-        else:
-            disable_new_opmath()
+    if not was_active:
+        enable_new_opmath()
+    yield
+    if was_active:
+        enable_new_opmath()
+    else:
+        disable_new_opmath()
 
 
 # pylint: disable=too-many-branches
