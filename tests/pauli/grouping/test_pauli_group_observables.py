@@ -427,6 +427,20 @@ class TestGroupObservables:
 
         assert all(isinstance(o, Tensor) for g in old_groups for o in g)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_return_deactive_opmath_prod(self):
+        """Test that using new opmath causes grouped observables to have Prods instead of
+        Tensors"""
+        observables = [
+            qml.prod(PauliX(0), PauliZ(1)),
+            qml.prod(PauliY(2), PauliZ(1)),
+            qml.prod(PauliZ(1), PauliZ(2)),
+        ]
+
+        old_groups = group_observables(observables)
+
+        assert all(isinstance(o, qml.ops.Prod) for g in old_groups for o in g)
+
 
 class TestDifferentiable:
     """Tests that grouping observables is differentiable with respect to the coefficients."""

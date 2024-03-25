@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for utility functions of Pauli arithmetic."""
-
+import warnings
 import pytest
+
 
 import numpy as np
 import pennylane as qml
@@ -44,6 +45,48 @@ test_general_matrix = [
 
 test_diff_matrix1 = [[[-2, -2 + 1j]], [[-2, -2 + 1j], [-1, -1j]]]
 test_diff_matrix2 = [[[-2, -2 + 1j], [-2 - 1j, 0]], [[2.5, -0.5], [-0.5, 2.5]]]
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    hamiltonian_ps = (
+        (
+            qml.ops.Hamiltonian([], []),
+            PauliSentence(),
+        ),
+        (
+            qml.ops.Hamiltonian([2], [qml.PauliZ(wires=0)]),
+            PauliSentence({PauliWord({0: "Z"}): 2}),
+        ),
+        (
+            qml.ops.Hamiltonian(
+                [2, -0.5],
+                [qml.PauliZ(wires=0), qml.operation.Tensor(qml.X(wires=0), qml.Z(wires=1))],
+            ),
+            PauliSentence(
+                {
+                    PauliWord({0: "Z"}): 2,
+                    PauliWord({0: "X", 1: "Z"}): -0.5,
+                }
+            ),
+        ),
+        (
+            qml.ops.Hamiltonian(
+                [2, -0.5, 3.14],
+                [
+                    qml.PauliZ(wires=0),
+                    qml.operation.Tensor(qml.X(wires=0), qml.Z(wires="a")),
+                    qml.Identity(wires="b"),
+                ],
+            ),
+            PauliSentence(
+                {
+                    PauliWord({0: "Z"}): 2,
+                    PauliWord({0: "X", "a": "Z"}): -0.5,
+                    PauliWord({}): 3.14,
+                }
+            ),
+        ),
+    )
 
 
 class TestDecomposition:
@@ -477,45 +520,6 @@ class TestPauliSentence:
 
         with pytest.raises(ValueError, match="Op must be a linear combination of"):
             pauli_sentence(op)
-
-    hamiltonian_ps = (
-        (
-            qml.Hamiltonian([], []),
-            PauliSentence(),
-        ),
-        (
-            qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
-            PauliSentence({PauliWord({0: "Z"}): 2}),
-        ),
-        (
-            qml.Hamiltonian(
-                [2, -0.5], [qml.PauliZ(wires=0), qml.PauliX(wires=0) @ qml.PauliZ(wires=1)]
-            ),
-            PauliSentence(
-                {
-                    PauliWord({0: "Z"}): 2,
-                    PauliWord({0: "X", 1: "Z"}): -0.5,
-                }
-            ),
-        ),
-        (
-            qml.Hamiltonian(
-                [2, -0.5, 3.14],
-                [
-                    qml.PauliZ(wires=0),
-                    qml.PauliX(wires=0) @ qml.PauliZ(wires="a"),
-                    qml.Identity(wires="b"),
-                ],
-            ),
-            PauliSentence(
-                {
-                    PauliWord({0: "Z"}): 2,
-                    PauliWord({0: "X", "a": "Z"}): -0.5,
-                    PauliWord({}): 3.14,
-                }
-            ),
-        ),
-    )
 
     @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op, ps", hamiltonian_ps)

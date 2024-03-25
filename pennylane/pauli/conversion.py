@@ -367,8 +367,6 @@ def is_pauli_sentence(op):
     """Returns True of the operator is a PauliSentence and False otherwise."""
     if op.pauli_rep is not None:
         return True
-    if isinstance(op, Hamiltonian):
-        return all(is_pauli_word(o) for o in op.ops)
     return False
 
 
@@ -421,8 +419,8 @@ def _(op: SProd):
     return ps
 
 
-@_pauli_sentence.register(Hamiltonian)
-def _(op: Hamiltonian):
+@_pauli_sentence.register(qml.ops.Hamiltonian)
+def _(op: qml.ops.Hamiltonian):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 

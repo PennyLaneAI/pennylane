@@ -27,6 +27,8 @@ ops_factors = (
     (qml.Identity(0), 1),
     (qml.PauliX(0) @ qml.PauliY(1), 1),
     (qml.PauliX(0) @ qml.PauliY(0), 1j),
+    (qml.operation.Tensor(qml.X(0), qml.Y(1)), 1),
+    (qml.operation.Tensor(qml.X(0), qml.Y(0)), 1j),
     (qml.Hamiltonian([-1.23], [qml.PauliZ(0)]), -1.23),
     (qml.prod(qml.PauliX(0), qml.PauliY(1)), 1),
     (qml.s_prod(1.23, qml.s_prod(-1j, qml.PauliZ(0))), -1.23j),

@@ -446,6 +446,14 @@ class TestGroupingUtils:
         obtained_string = pauli_word_to_string(pauli_word, wire_map)
         assert obtained_string == expected_string
 
+    def test_pauli_word_to_string_tensor(self):
+        """Test pauli_word_to_string with tensor instances."""
+        op = qml.operation.Tensor(qml.X(0), qml.Y(1))
+        assert pauli_word_to_string(op) == "XY"
+
+        op = qml.operation.Tensor(qml.Z(0), qml.Y(1), qml.X(2))
+        assert pauli_word_to_string(op) == "ZYX"
+
     with qml.operation.disable_new_opmath_cm():
         PAULI_WORD_STRINGS_LEGACY = _make_pauli_word_strings()
 
