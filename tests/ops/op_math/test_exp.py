@@ -33,6 +33,7 @@ from pennylane.ops.op_math import Evolution, Exp
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pauli_base(self, constructor):
         """Test initialization with no coeff and a simple base."""
         base = qml.PauliX("a")
