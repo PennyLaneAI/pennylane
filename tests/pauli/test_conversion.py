@@ -58,6 +58,10 @@ with warnings.catch_warnings():
             PauliSentence({PauliWord({0: "Z"}): 2}),
         ),
         (
+            qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
+            PauliSentence({PauliWord({0: "Z"}): 2}),
+        ),
+        (
             qml.ops.Hamiltonian(
                 [2, -0.5],
                 [qml.PauliZ(wires=0), qml.operation.Tensor(qml.X(wires=0), qml.Z(wires=1))],
@@ -533,6 +537,14 @@ class TestPauliSentence:
         (
             qml.sum(qml.s_prod(2, qml.PauliZ(wires=0)), qml.PauliX(wires=1)),
             PauliSentence({PauliWord({0: "Z"}): 2, PauliWord({1: "X"}): 1}),
+        ),
+        (
+            qml.sum(qml.s_prod(2, qml.PauliZ(wires=0)), qml.PauliY(wires=1)),
+            PauliSentence({PauliWord({0: "Z"}): 2, PauliWord({1: "Y"}): 1}),
+        ),
+        (
+            qml.operation.Tensor(qml.PauliZ(wires=0), qml.PauliY(wires=1)),
+            PauliSentence({PauliWord({0: "Z"}): 1, PauliWord({1: "Y"}): 1}),
         ),
         (
             qml.sum(
