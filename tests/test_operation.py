@@ -938,7 +938,7 @@ class TestObservableTensorLegacySupport:
         res = qml.Hadamard(0) @ qml.s_prod(0.5, qml.PauliX(0))
         assert isinstance(res, qml.ops.Prod)
 
-    def test_Observable_matmul_with_new_opmath(self):
+    def test_Observable_sub_with_new_opmath(self):
         """Test sub of an Observable with a new opmath instance"""
         res = qml.Hadamard(0) - qml.s_prod(0.5, qml.PauliX(0))
         assert isinstance(res, qml.ops.Sum)
