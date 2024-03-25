@@ -414,7 +414,7 @@ class LinearCombination(Sum):
                 return op1._obs_data() == {
                     (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
                 }
-        
+
             op1 = self.simplify()
             op2 = other.simplify()
             return qml.equal(op1, op2)

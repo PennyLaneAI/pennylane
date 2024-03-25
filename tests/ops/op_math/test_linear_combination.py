@@ -539,11 +539,7 @@ class TestLinearCombination:
     """Test the LinearCombination class"""
 
     PAULI_REPS = (
-        (
-            [],
-            [],
-            PauliSentence({})
-        ),
+        ([], [], PauliSentence({})),
         (
             list(range(3)),
             [X(i) for i in range(3)],
@@ -758,7 +754,7 @@ class TestLinearCombination:
     @pytest.mark.parametrize("H, op", COMPARE_WITH_OPS)
     def test_compare_to_simple_ops(self, H, op):
         assert H.compare(op)
-    
+
     def test_compare_raises_error(self):
         op = qml.ops.LinearCombination([], [])
         with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
@@ -847,21 +843,21 @@ class TestLinearCombination:
             ],
         )
         assert expected.compare(out)
-    
+
     def test_LinearCombination_matmul_overlapping_wires_raises_error(self):
         """Test that an error is raised when attempting to multiply two
         LinearCombination operators with overlapping wires"""
-        op1 = qml.ops.LinearCombination([1.], [X(0)])
-        op2 = qml.ops.LinearCombination([1.], [Y(0)])
+        op1 = qml.ops.LinearCombination([1.0], [X(0)])
+        op2 = qml.ops.LinearCombination([1.0], [Y(0)])
         with pytest.raises(ValueError, match="LinearCombinations can only be multiplied together"):
             _ = op1 @ op2
-    
+
     def test_matmul_with_non_pauli_op(self):
         """Test multiplication with another operator that does not have a pauli rep"""
         H = qml.ops.LinearCombination([0.5], [X(0)])
-        assert H.pauli_rep == PauliSentence({PauliWord({0:"X"}): 0.5})
+        assert H.pauli_rep == PauliSentence({PauliWord({0: "X"}): 0.5})
         op = qml.Hadamard(0)
-        
+
         res = H @ op
         assert res.pauli_rep is None
         assert res.compare(qml.ops.LinearCombination([0.5], [X(0) @ qml.Hadamard(0)]))
@@ -1491,9 +1487,9 @@ class TestGrouping:
         H = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc")
         H.compute_grouping()
         assert H.grouping_indices == ((0, 1), (2,))
-    
+
     def test_grouping_raises_error(self):
-        """Check that compute_grouping raises an error when 
+        """Check that compute_grouping raises an error when
         attempting to compute groups for non-Pauli operators"""
         a = qml.Hadamard(0)
         b = X(1)
