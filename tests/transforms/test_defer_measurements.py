@@ -315,6 +315,8 @@ class TestQNode:
         is transformed correctly by defer_measurements"""
         dev = DefaultQubit()
 
+        np.random.seed(None)
+
         # Initializing mid circuit measurements here so that id can be controlled (affects
         # wire ordering for qml.cond)
         mp0 = MidMeasureMP(wires=0, postselect=0, id=0)

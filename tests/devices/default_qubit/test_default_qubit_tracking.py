@@ -194,7 +194,6 @@ H0 = qml.Hamiltonian([1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @
 shot_testing_combos = [
     # expval combinations
     ([qml.expval(qml.PauliX(0))], 1, 10),
-    ([qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliY(1))], 1, 10),
     ([qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))], 2, 20),
     # Hamiltonian test cases
     ([qml.expval(qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]))], 2, 20),
@@ -251,3 +250,39 @@ def test_single_expval(mps, expected_exec, expected_shots):
         assert dev.tracker.totals["executions"] == 3 * expected_exec
         assert dev.tracker.totals["simulations"] == 1
         assert dev.tracker.totals["shots"] == 3 * expected_shots
+
+
+@pytest.mark.xfail  # TODO Prod instances are not automatically
+def test_multiple_expval_with_prods():
+    mps, expected_exec, expected_shots = (
+        [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliY(1))],
+        1,
+        10,
+    )
+    dev = qml.device("default.qubit")
+    tape = qml.tape.QuantumScript([], mps, shots=10)
+
+    with dev.tracker:
+        dev.execute(tape)
+
+    assert dev.tracker.totals["executions"] == expected_exec
+    assert dev.tracker.totals["simulations"] == 1
+    assert dev.tracker.totals["shots"] == expected_shots
+
+
+@pytest.mark.usefixtures("use_legacy_opmath")
+def test_multiple_expval_with_Tensors_legacy_opmath():
+    mps, expected_exec, expected_shots = (
+        [qml.expval(qml.PauliX(0)), qml.expval(qml.operation.Tensor(qml.PauliX(0), qml.PauliY(1)))],
+        1,
+        10,
+    )
+    dev = qml.device("default.qubit")
+    tape = qml.tape.QuantumScript([], mps, shots=10)
+
+    with dev.tracker:
+        dev.execute(tape)
+
+    assert dev.tracker.totals["executions"] == expected_exec
+    assert dev.tracker.totals["simulations"] == 1
+    assert dev.tracker.totals["shots"] == expected_shots

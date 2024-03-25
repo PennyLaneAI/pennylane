@@ -914,7 +914,27 @@ class TestApplyBroadcasted:
         expected = qml.math.einsum("ij,lj->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_direct_eval_hamiltonian_broadcasted_error_torch(self, device, torch_device, mocker):
+    def test_direct_eval_hamiltonian_broadcasted_torch(self, device, torch_device, mocker):
+        """Tests that the correct result is returned when attempting to evaluate a Hamiltonian with
+        broadcasting and shots=None directly via its sparse representation with torch."""
+
+        dev = device(wires=2, torch_device=torch_device)
+        ham = qml.Hamiltonian(
+            torch.tensor([0.1, 0.2], requires_grad=True), [qml.PauliX(0), qml.PauliZ(1)]
+        )
+
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        def circuit():
+            qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
+            return qml.expval(ham)
+
+        res = circuit()
+        assert qml.math.allclose(res, 0.2)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_direct_eval_hamiltonian_broadcasted_error_torch_legacy_opmath(
+        self, device, torch_device, mocker
+    ):
         """Tests that an error is raised when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with torch."""
 

@@ -510,3 +510,18 @@ class TestTransformDispatch:
         res = transformed_qnode([0.1, 0.2, 0.3, 0.4])
         exp_res = qnode_circuit([0.1, 0.2, 0.3, 0.4])
         assert np.allclose(res, exp_res)
+
+
+@pytest.mark.xfail
+def test_merge_rotations_non_commuting_observables():
+    """Test that merge_roatations works with non-commuting observables."""
+
+    @qml.transforms.merge_rotations
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.RX(-x, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
+
+    res = circuit(0.5)
+    assert qml.math.allclose(res[0], 1.0)
+    assert qml.math.allclose(res[1], 0.0)

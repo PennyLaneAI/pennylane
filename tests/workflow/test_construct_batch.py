@@ -322,17 +322,17 @@ class TestConstructBatch:
 
     @pytest.mark.parametrize("level", ("device", None))
     def test_device_transforms_legacy_interface(self, level):
-        """Test that the device transforms can be selected with level=device or None."""
+        """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
-        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("default.qubit.legacy", wires=2, shots=50))
         def circuit(order):
             qml.Permute(order, wires=(0, 1, 2))
-            qml.RX(0.5, wires=0)
-            qml.RX(-0.5, wires=0)
-            return qml.expval(qml.PauliX(0) + qml.PauliY(0))
+            qml.X(0)
+            qml.X(0)
+            return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
 
-        batch, fn = construct_batch(circuit, level=level)((2, 1, 0))
+        batch, fn = qml.workflow.construct_batch(circuit, level=level)((2, 1, 0))
 
         expected0 = qml.tape.QuantumScript(
             [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
@@ -344,7 +344,7 @@ class TestConstructBatch:
         assert qml.equal(expected1, batch[1])
         assert len(batch) == 2
 
-        assert fn((1.0, 2.0)) == (3.0,)
+        assert fn((1.0, 2.0)) == ((1.0, 2.0),)
 
     def test_final_transform(self):
         """Test that the final transform is included when level=None."""

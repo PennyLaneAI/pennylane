@@ -432,6 +432,7 @@ class TestDecomposition:
         ):
             op.decomposition()
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_nontensor_tensor_no_decomposition(self):
         """Checks that accessing the decomposition throws an error if the base is a Tensor
         object that is not a mathematical tensor"""
@@ -444,8 +445,8 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "base, base_string",
         (
-            (qml.PauliZ(0) @ qml.PauliY(1), "ZY"),
-            (qml.PauliY(0) @ qml.Identity(1) @ qml.PauliZ(2), "YIZ"),
+            (qml.prod(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
+            (qml.prod(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
         ),
     )
     def test_decomposition_into_pauli_rot(self, base, base_string):
@@ -459,9 +460,11 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
+
         op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
 
         if not op_class.has_generator:

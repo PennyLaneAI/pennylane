@@ -21,7 +21,17 @@ from typing import Union, Tuple
 
 import pennylane as qml
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import (
+    Hamiltonian,
+    LinearCombination,
+    Identity,
+    PauliX,
+    PauliY,
+    PauliZ,
+    Prod,
+    SProd,
+    Sum,
+)
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
@@ -325,7 +335,7 @@ def pauli_decompose(
             }
         )
 
-    return Hamiltonian(coeffs, obs)
+    return qml.Hamiltonian(coeffs, obs)
 
 
 def pauli_sentence(op):
@@ -411,7 +421,7 @@ def _(op: SProd):
     return ps
 
 
-@_pauli_sentence.register
+@_pauli_sentence.register(Hamiltonian)
 def _(op: Hamiltonian):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
@@ -431,6 +441,14 @@ def _(op: Hamiltonian):
         ps += sub_ps
 
     return ps
+
+
+@_pauli_sentence.register(LinearCombination)
+def _(op: LinearCombination):
+    if not all(is_pauli_word(o) for o in op.ops):
+        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
+
+    return op._build_pauli_rep()  # pylint: disable=protected-access
 
 
 @_pauli_sentence.register

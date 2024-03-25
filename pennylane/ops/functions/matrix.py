@@ -211,7 +211,8 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
         op = 1.0 * op  # convert to a Hamiltonian
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, qml.ops.Hamiltonian):
+
         return op.sparse_matrix(wire_order=wire_order).toarray()
 
     try:
