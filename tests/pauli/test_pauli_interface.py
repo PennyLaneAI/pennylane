@@ -16,6 +16,8 @@ Unit tests for the :mod:`pauli` interface functions in ``pauli/pauli_interface.p
 """
 import pytest
 
+import numpy as np
+
 import pennylane as qml
 
 from pennylane.pauli import pauli_word_prefactor
@@ -39,6 +41,13 @@ ops_factors = (
 def test_pauli_word_prefactor(op, true_prefactor):
     """Test that we can accurately determine the prefactor"""
     assert pauli_word_prefactor(op) == true_prefactor
+
+
+def test_pauli_word_prefactor_tensor_error():
+    """Test that an error is raised is the tensor is not a pauli sentence."""
+    op = qml.operation.Tensor(qml.Hermitian(np.eye(2), wires=0), qml.Hadamard(wires=1))
+    with pytest.raises(ValueError, match="Expected a valid Pauli word"):
+        pauli_word_prefactor(op)
 
 
 ops = (

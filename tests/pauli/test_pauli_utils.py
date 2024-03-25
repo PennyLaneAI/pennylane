@@ -77,6 +77,7 @@ def _make_pauli_word_strings():
         (PauliX(0) @ PauliZ(0), {0: 0}, "Y"),
         (3 * PauliZ(0) @ PauliY(3), {0: 0, 3: 1}, "ZY"),
         (qml.s_prod(8, qml.PauliX(0) @ qml.PauliZ(1)), {0: 0, 1: 1}, "XZ"),
+        (qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)]), None, "XY"),
     ]
 
 

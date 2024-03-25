@@ -1307,6 +1307,14 @@ class TestMeasurementsEqual:
         assert qml.equal(mp1, mp3)
         assert not qml.equal(mp1, mp4)
 
+    def test_shadow_expval_list_versus_operator(self):
+        """Check that if one shadow expval has an operator and the other has a list, they are not equal."""
+
+        op = qml.X(0)
+        m1 = qml.shadow_expval(H=op)
+        m2 = qml.shadow_expval(H=[op])
+        assert not qml.equal(m1, m2)
+
 
 @pytest.mark.usefixtures("use_legacy_opmath")  # TODO update qml.equal with new opmath
 class TestObservablesComparisons:
