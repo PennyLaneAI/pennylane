@@ -466,14 +466,11 @@ def _pauli_word_to_string_legacy(pauli_word, wire_map):
     # TODO: Give Hamiltonian a pauli rep to make this branch obsolete
     pauli_word = pauli_word.ops[0]
 
+    # If there is no wire map, we must infer from the structure of Paulis
     if wire_map is None:
         wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
 
     character_map = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
-
-    # If there is no wire map, we must infer from the structure of Paulis
-    if wire_map is None:
-        wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
 
     n_qubits = len(wire_map)
 
