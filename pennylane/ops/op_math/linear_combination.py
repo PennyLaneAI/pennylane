@@ -398,23 +398,23 @@ class LinearCombination(Sum):
         False
         """
 
-        if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
-            pr1.simplify()
-            pr2.simplify()
-            return pr1 == pr2
-
-        if isinstance(other, (LinearCombination, qml.ops.Hamiltonian)):
-            op1 = self.simplify()
-            op2 = other.simplify()
-            return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
-
-        if isinstance(other, (Tensor, Observable)):
-            op1 = self.simplify()
-            return op1._obs_data() == {
-                (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
-            }
-
         if isinstance(other, (Operator)):
+            if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
+                pr1.simplify()
+                pr2.simplify()
+                return pr1 == pr2
+
+            if isinstance(other, (LinearCombination, qml.ops.Hamiltonian)):
+                op1 = self.simplify()
+                op2 = other.simplify()
+                return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
+
+            if isinstance(other, (Tensor, Observable)):
+                op1 = self.simplify()
+                return op1._obs_data() == {
+                    (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
+                }
+        
             op1 = self.simplify()
             op2 = other.simplify()
             return qml.equal(op1, op2)

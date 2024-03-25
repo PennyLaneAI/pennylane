@@ -758,6 +758,11 @@ class TestLinearCombination:
     @pytest.mark.parametrize("H, op", COMPARE_WITH_OPS)
     def test_compare_to_simple_ops(self, H, op):
         assert H.compare(op)
+    
+    def test_compare_raises_error(self):
+        op = qml.ops.LinearCombination([], [])
+        with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
+            _ = op.compare(0)
 
     @pytest.mark.xfail
     def test_compare_gell_mann(self):
@@ -779,7 +784,6 @@ class TestLinearCombination:
         assert H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2)) is False
         assert H2.compare(H4) is False
 
-    @pytest.mark.xfail  # TODO: decide whether we want to continue to have this legacy behavior
     def test_LinearCombination_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
@@ -843,6 +847,24 @@ class TestLinearCombination:
             ],
         )
         assert expected.compare(out)
+    
+    def test_LinearCombination_matmul_overlapping_wires_raises_error(self):
+        """Test that an error is raised when attempting to multiply two
+        LinearCombination operators with overlapping wires"""
+        op1 = qml.ops.LinearCombination([1.], [X(0)])
+        op2 = qml.ops.LinearCombination([1.], [Y(0)])
+        with pytest.raises(ValueError, match="LinearCombinations can only be multiplied together"):
+            _ = op1 @ op2
+    
+    def test_matmul_with_non_pauli_op(self):
+        """Test multiplication with another operator that does not have a pauli rep"""
+        H = qml.ops.LinearCombination([0.5], [X(0)])
+        assert H.pauli_rep == PauliSentence({PauliWord({0:"X"}): 0.5})
+        op = qml.Hadamard(0)
+        
+        res = H @ op
+        assert res.pauli_rep is None
+        assert res.compare(qml.ops.LinearCombination([0.5], [X(0) @ qml.Hadamard(0)]))
 
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_LinearCombinations)
     def test_LinearCombination_matmul(self, H1, H2, H):
