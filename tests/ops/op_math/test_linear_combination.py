@@ -540,6 +540,11 @@ class TestLinearCombination:
 
     PAULI_REPS = (
         (
+            [],
+            [],
+            PauliSentence({})
+        ),
+        (
             list(range(3)),
             [X(i) for i in range(3)],
             PauliSentence({PauliWord({i: "X"}): 1.0 * i for i in range(3)}),
@@ -1464,6 +1469,19 @@ class TestGrouping:
         H = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc")
         H.compute_grouping()
         assert H.grouping_indices == ((0, 1), (2,))
+    
+    def test_grouping_raises_error(self):
+        """Check that compute_grouping raises an error when 
+        attempting to compute groups for non-Pauli operators"""
+        a = qml.Hadamard(0)
+        b = X(1)
+        c = Z(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        with pytest.raises(ValueError, match="Cannot compute grouping"):
+            H = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc")
+            H.compute_grouping()
 
     def test_set_grouping(self):
         """Test that we can set grouping indices."""
