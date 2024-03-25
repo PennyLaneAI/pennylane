@@ -1263,6 +1263,11 @@ class TestOperatorIntegration:
         assert op - dummy is True
         assert op * dummy is True
         assert op @ dummy is True
+    
+    def test_Observable_matmul_with_new_opmath(self):
+        """Test matmul of an Observable with a new opmath instance"""
+        res = qml.Hadamard(0) @ qml.s_prod(0.5, qml.PauliX(0))
+        assert isinstance(res, qml.ops.Prod)
 
     @pytest.mark.torch
     def test_mul_scalar_torch_tensor(self):
