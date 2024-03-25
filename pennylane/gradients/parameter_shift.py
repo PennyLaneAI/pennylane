@@ -64,7 +64,7 @@ def _square_observable(obs):
         # component observables independently. Note that
         # we assume all component observables are on distinct wires.
         components_squared = [
-            NONINVOLUTORY_OBS[o.name](o) for o in obs if o.name in NONINVOLUTORY_OBS
+            NONINVOLUTORY_OBS[o.name](o) for o in obs.obs if o.name in NONINVOLUTORY_OBS
         ]
         return qml.operation.Tensor(*components_squared)
 
