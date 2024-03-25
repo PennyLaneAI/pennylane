@@ -2016,6 +2016,7 @@ class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be
     differentiated"""
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_not_expval_error(self, broadcast):
         """Test that if the variance of the Hamiltonian is requested,
         an error is raised"""
