@@ -543,10 +543,6 @@ class TestPauliSentence:
             PauliSentence({PauliWord({0: "Z"}): 2, PauliWord({1: "Y"}): 1}),
         ),
         (
-            qml.operation.Tensor(qml.PauliZ(wires=0), qml.PauliY(wires=1)),
-            PauliSentence({PauliWord({0: "Z"}): 1, PauliWord({1: "Y"}): 1}),
-        ),
-        (
             qml.sum(
                 qml.s_prod(2, qml.PauliZ(wires=0)),
                 -0.5 * qml.prod(qml.PauliX(wires=0), qml.PauliZ(wires=1)),
@@ -555,6 +551,14 @@ class TestPauliSentence:
                 {
                     PauliWord({0: "Z"}): 2,
                     PauliWord({0: "X", 1: "Z"}): -0.5,
+                }
+            ),
+        ),
+        (
+            qml.operation.Tensor(qml.PauliX(wires=0), qml.PauliZ(wires=1)),
+            PauliSentence(
+                {
+                    PauliWord({0: "X", 1: "Z"}): 1,
                 }
             ),
         ),
