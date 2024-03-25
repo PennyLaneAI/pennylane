@@ -49,6 +49,7 @@ ops = (
     qml.s_prod(1.23, qml.sum(qml.PauliX(0), qml.PauliY(0))),
 )
 
+
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("op", ops)
 def test_pauli_word_prefactor_raises_error(op):
