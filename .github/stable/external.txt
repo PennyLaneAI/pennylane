@@ -37,7 +37,7 @@ exceptiongroup==1.2.0
 execnet==2.0.2
 executing==2.0.1
 fastjsonschema==2.19.1
-filelock==3.13.1
+filelock==3.13.2
 flaky==3.8.1
 flatbuffers==24.3.7
 fonttools==4.50.0
@@ -114,7 +114,7 @@ pexpect==4.9.0
 pillow==10.2.0
 platformdirs==4.2.0
 pluggy==1.4.0
-pre-commit==3.6.2
+pre-commit==3.7.0
 prometheus_client==0.20.0
 prompt-toolkit==3.0.43
 protobuf==4.25.3
@@ -132,9 +132,9 @@ pyparsing==3.1.2
 pyperclip==1.8.2
 pytest==8.1.1
 pytest-benchmark==4.0.0
-pytest-cov==4.1.0
+pytest-cov==5.0.0
 pytest-forked==1.6.0
-pytest-mock==3.12.0
+pytest-mock==3.14.0
 pytest-xdist==3.5.0
 python-dateutil==2.9.0.post0
 python-json-logger==2.0.7
@@ -144,7 +144,7 @@ pyzx==0.8.0
 qdldl==0.1.7.post0
 referencing==0.34.0
 requests==2.31.0
-requests-oauthlib==1.4.0
+requests-oauthlib==2.0.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rpds-py==0.18.0
