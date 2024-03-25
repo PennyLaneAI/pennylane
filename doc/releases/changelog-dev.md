@@ -254,6 +254,9 @@
 * Updated the final example in the `compile` docstring to use transforms correctly.
   [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
 
+* A link to the demos for using `qml.SpecialUnitary` and `qml.QNGOptimizer` has been added to their respective docstrings.
+  [(#5376)](https://github.com/PennyLaneAI/pennylane/pull/5376)
+
 <h3>Bug fixes 🐛</h3>
 
 * `jax.jit` now works with `qml.sample` with a multi-wire observable.
@@ -289,6 +292,7 @@ Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
+Isaac De Vlugt,
 Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
