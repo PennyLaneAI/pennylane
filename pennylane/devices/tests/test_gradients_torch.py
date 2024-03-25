@@ -21,8 +21,6 @@ import pennylane as qml
 
 torch = pytest.importorskip("torch")
 
-SKIP_IF_FINITE = ["backprop"]
-
 
 @pytest.mark.usefixtures("validate_diff_method")
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "hadamard"])
@@ -33,8 +31,6 @@ class TestGradients:
         """Test a basic function with one RX and one expectation."""
         wires = 2 if diff_method == "hadamard" else 1
         dev = device(wires=wires)
-        if dev.shots and diff_method in SKIP_IF_FINITE:
-            pytest.skip(f"{diff_method} does not work with finite shots")
         tol = tol(dev.shots)
         if diff_method == "hadamard":
             tol += 0.01
@@ -111,8 +107,6 @@ class TestGradients:
         """Test differentiation of a circuit returning probs()."""
         wires = 3 if diff_method == "hadamard" else 2
         dev = device(wires=wires)
-        if dev.shots and diff_method in SKIP_IF_FINITE:
-            pytest.skip(f"{diff_method} does not work with finite shots")
         tol = tol(dev.shots)
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
@@ -152,8 +146,6 @@ class TestGradients:
         """Test differentiation of a circuit with both scalar and array-like returns."""
         wires = 3 if diff_method == "hadamard" else 2
         dev = device(wires=wires)
-        if dev.shots and diff_method in SKIP_IF_FINITE:
-            pytest.skip(f"{diff_method} does not work with finite shots")
         tol = tol(dev.shots)
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
@@ -192,8 +184,6 @@ class TestGradients:
         """Test hessian computation."""
         wires = 3 if diff_method == "hadamard" else 1
         dev = device(wires=wires)
-        if dev.shots and diff_method in SKIP_IF_FINITE:
-            pytest.skip(f"{diff_method} does not work with finite shots")
         tol = tol(dev.shots)
 
         @qml.qnode(dev, diff_method=diff_method, max_diff=2)
