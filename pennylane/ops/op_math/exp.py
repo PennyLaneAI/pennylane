@@ -279,15 +279,10 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        if self.num_steps is not None and isinstance(base, (Hamiltonian, LinearCombination, Sum)):
+        if self.num_steps is not None and isinstance(base, Sum):
             # Apply trotter decomposition
-            coeffs = (
-                base.coeffs
-                if isinstance(base, (Hamiltonian, LinearCombination))
-                else [1] * len(base)
-            )
+            coeffs, ops = [1] * len(base), base.operands
             coeffs = [c * coeff for c in coeffs]
-            ops = base.ops if isinstance(base, (Hamiltonian, LinearCombination)) else base.operands
             return self._trotter_decomposition(ops, coeffs)
 
         # Store operator classes with generators
@@ -310,7 +305,7 @@ class Exp(ScalarSymbolicOp, Operation):
                 # Some generators are not wire-ordered (e.g. OrbitalRotation)
                 mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 
-                if qml.equal(base, mapped_wires_g) and math.real(coeff) == 0:
+                if qml.equal(mapped_wires_g, base) and math.real(coeff) == 0:
                     coeff = math.real(
                         -1j / c * coeff
                     )  # cancel the coefficients added by the generator
@@ -319,7 +314,7 @@ class Exp(ScalarSymbolicOp, Operation):
                 # could have absorbed the coefficient.
                 simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
 
-                if qml.equal(base, simplified_g) and math.real(coeff) == 0:
+                if qml.equal(simplified_g, base) and math.real(coeff) == 0:
                     coeff = math.real(-1j * coeff)  # cancel the coefficients added by the generator
                     return [op_class(coeff, g.wires)]
 

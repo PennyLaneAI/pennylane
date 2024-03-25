@@ -99,7 +99,7 @@ def cost_layer(gamma, hamiltonian):
         1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, (qml.Hamiltonian, qml.ops.LinearCombination)):
+    if not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise ValueError(
             f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )
@@ -161,7 +161,7 @@ def mixer_layer(alpha, hamiltonian):
         1: ──H───────────╰RXX(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, (qml.Hamiltonian, qml.ops.LinearCombination)):
+    if not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise ValueError(
             f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )

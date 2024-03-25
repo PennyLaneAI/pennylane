@@ -440,7 +440,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     if not is_pauli_word(pauli_word):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_word}")
-    if isinstance(pauli_word, qml.Hamiltonian):
+    if isinstance(pauli_word, qml.ops.Hamiltonian):
         # hamiltonian contains only one term
         return _pauli_word_to_string_legacy(pauli_word, wire_map)
 

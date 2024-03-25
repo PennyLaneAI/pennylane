@@ -194,7 +194,7 @@ def get_measurement_function(
                 return full_dot_products
 
             backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
-            if isinstance(measurementprocess.obs, (LinearCombination, Hamiltonian)):
+            if isinstance(measurementprocess.obs, (Hamiltonian, LinearCombination)):
                 # need to work out thresholds for when its faster to use "backprop mode" measurements
                 return sum_of_terms_method if backprop_mode else csr_dot_products
 
