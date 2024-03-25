@@ -458,7 +458,7 @@ class TestSPSAOptimizer:
 
         @qml.qnode(dev)
         def cost_fun(params, num_qubits=1):
-            qml.BasisState([1, 1, 0, 0], wires=range(num_qubits))
+            qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
             for i in range(num_qubits):
                 qml.Rot(*params[i], wires=0)
                 qml.CNOT(wires=[2, 3])
@@ -495,7 +495,7 @@ class TestSPSAOptimizer:
 
         @qml.qnode(dev)
         def cost_fun(params, num_qubits=1):
-            qml.BasisState([1, 1, 0, 0], wires=range(num_qubits))
+            qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
             for i in range(num_qubits):
                 qml.Rot(*params[i], wires=0)
                 qml.CNOT(wires=[2, 3])
