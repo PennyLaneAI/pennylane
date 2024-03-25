@@ -1238,6 +1238,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
