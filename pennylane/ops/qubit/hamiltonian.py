@@ -636,6 +636,13 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
+
+        if isinstance(other, qml.operation.Operator):
+            if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
+                pr1.simplify()
+                pr2.simplify()
+                return pr1 == pr2
+
         if isinstance(other, Hamiltonian):
             self.simplify()
             other.simplify()
@@ -760,6 +767,8 @@ class Hamiltonian(Observable):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
             self._coeffs = qml.math.multiply(a, self._coeffs)
+            if self.pauli_rep is not None:
+                self._pauli_rep = qml.math.multiply(a, self._pauli_rep)
             return self
 
         return NotImplemented
