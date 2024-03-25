@@ -234,6 +234,10 @@ class Prod(CompositeOp):
     _math_op = math.prod
 
     @property
+    def num_terms(self):
+        return reduce(math.multiply, (o.num_terms for o in self))
+
+    @property
     def is_hermitian(self):
         """Check if the product operator is hermitian.
 

@@ -109,6 +109,10 @@ class LinearCombination(Sum):
         new_op.data = data[2]
         return new_op
 
+    @property
+    def num_terms(self):
+        return sum(o.num_terms for o in self._ops)
+
     def __init__(
         self,
         coeffs,

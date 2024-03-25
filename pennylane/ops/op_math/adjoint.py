@@ -346,6 +346,16 @@ class Adjoint(SymbolicOp):
             return base.adjoint().simplify()
         return Adjoint(base=base.simplify())
 
+    @property
+    def num_terms(self):
+        return self.base.num_terms
+
+    def terms(self):
+        coeffs, ops = self.base.terms()
+        new_coeffs = [qml.math.conj(c) for c in coeffs]
+        new_ops = [qml.adjoint(o) for o in ops]
+        return new_coeffs, new_ops
+
 
 # pylint: disable=no-member
 class AdjointOperation(Adjoint, Operation):
