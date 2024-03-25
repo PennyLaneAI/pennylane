@@ -18,6 +18,7 @@ This module contains unit tests for ``qml.bind_parameters``.
 import pytest
 from gate_data import X, Y, Z, I, GELL_MANN
 
+import numpy as np
 import pennylane as qml
 
 from pennylane.ops.functions import bind_new_parameters
@@ -78,6 +79,11 @@ from pennylane.operation import Tensor
                 qml.s_prod(-0.5, qml.sum(qml.THermitian(GELL_MANN[1], 0), qml.GellMann(0, 2))),
                 qml.sum(qml.GellMann(1, 3), qml.THermitian(GELL_MANN[6], 1)),
             ),
+        ),
+        (
+            qml.ops.LinearCombination([2.0, 3.0], [qml.Hermitian(np.eye(2), 0), qml.X(0)]),
+            (1.0, -np.eye(2), -1.0),
+            qml.ops.LinearCombination([1.0, -1.0], [qml.Hermitian(-np.eye(2), 0), qml.X(0)]),
         ),
     ],
 )
@@ -184,28 +190,33 @@ def test_controlled_sequence():
     assert qml.equal(new_op.base, qml.RX(0.5, wires=3))
 
 
-@pytest.mark.parametrize(
-    "H, new_coeffs, expected_H",
-    [
+with qml.operation.disable_new_opmath_cm():
+    TEST_BIND_LEGACY_HAMILTONIAN = [
         (
-            qml.Hamiltonian(
+            qml.ops.Hamiltonian(
                 [1.1, 2.1, 3.1],
                 [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
             ),
             [1.2, 2.2, 3.2],
-            qml.Hamiltonian(
+            qml.ops.Hamiltonian(
                 [1.2, 2.2, 3.2],
                 [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
             ),
         ),
         (
-            qml.Hamiltonian([1.6, -1], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
+            qml.ops.Hamiltonian([1.6, -1], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
             [-1, 1.6],
-            qml.Hamiltonian([-1, 1.6], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
+            qml.ops.Hamiltonian([-1, 1.6], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
         ),
-    ],
+    ]
+
+
+@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.parametrize(
+    "H, new_coeffs, expected_H",
+    TEST_BIND_LEGACY_HAMILTONIAN,
 )
-def test_hamiltonian(H, new_coeffs, expected_H):
+def test_hamiltonian_legacy_opmath(H, new_coeffs, expected_H):
     """Test that `bind_new_parameters` with `Hamiltonian` returns a new
     operator with the new parameters without mutating the original
     operator."""
@@ -215,6 +226,45 @@ def test_hamiltonian(H, new_coeffs, expected_H):
     assert new_H is not H
 
 
+TEST_BIND_LINEARCOMBINATION = [
+    (
+        qml.ops.LinearCombination(
+            [1.1, 2.1, 3.1],
+            [qml.prod(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+        ),
+        [1.2, 2.2, 3.2],
+        qml.ops.LinearCombination(
+            [1.2, 2.2, 3.2],
+            [qml.prod(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+        ),
+    ),
+    (
+        qml.ops.LinearCombination(
+            [1.6, -1], [qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1), qml.PauliX(1)]
+        ),
+        [-1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
+        qml.ops.LinearCombination(
+            [-1, 1.6], [qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1), qml.PauliX(1)]
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "H, new_coeffs, expected_H",
+    TEST_BIND_LINEARCOMBINATION,
+)
+def test_linear_combination(H, new_coeffs, expected_H):
+    """Test that `bind_new_parameters` with `LinearCombination` returns a new
+    operator with the new parameters without mutating the original
+    operator."""
+    new_H = bind_new_parameters(H, new_coeffs)
+
+    assert qml.equal(new_H, expected_H)
+    assert new_H is not H
+
+
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_hamiltonian_grouping_indices():
     """Test that bind_new_parameters with a Hamiltonian preserves the grouping indices."""
     H = qml.Hamiltonian([1.0, 2.0], [qml.PauliX(0), qml.PauliX(1)])
