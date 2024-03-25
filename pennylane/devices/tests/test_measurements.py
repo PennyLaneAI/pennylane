@@ -27,6 +27,7 @@ from pennylane.measurements import (
     StateMeasurement,
     StateMP,
 )
+from pennylane.wires import Wires
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -1659,6 +1660,9 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return 1
 
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return 1
+
         @qml.qnode(dev)
         def circuit():
             qml.X(0)
@@ -1678,6 +1682,9 @@ class TestSampleMeasurement:
             """Dummy sampled measurement."""
 
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
+                return 1
+
+            def process_counts(self, counts: dict, wire_order: Wires):
                 return 1
 
         @qml.qnode(dev)
