@@ -17,7 +17,7 @@ distlib==0.3.8
 ecos==2.0.13
 exceptiongroup==1.2.0
 execnet==2.0.2
-filelock==3.13.2
+filelock==3.13.3
 flaky==3.8.1
 fonttools==4.50.0
 future==1.0.0

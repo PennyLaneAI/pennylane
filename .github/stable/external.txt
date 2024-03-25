@@ -37,7 +37,7 @@ exceptiongroup==1.2.0
 execnet==2.0.2
 executing==2.0.1
 fastjsonschema==2.19.1
-filelock==3.13.2
+filelock==3.13.3
 flaky==3.8.1
 flatbuffers==24.3.7
 fonttools==4.50.0
