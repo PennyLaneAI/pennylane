@@ -184,6 +184,10 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* `Sum.matrix` and `Prod.matrix` use the pauli representation for matrix computation,
+  which results in faster computation of the matrix.
+  [(5392)](https://github.com/PennyLaneAI/pennylane/pull/5392)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
