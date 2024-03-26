@@ -23,11 +23,15 @@ import warnings
 
 import pennylane as qml
 from pennylane import Snapshot
-from pennylane.operation import Tensor, StatePrepBase
+from pennylane.operation import DiagGatesUndefinedError, Tensor, StatePrepBase
 from pennylane.measurements import (
     MeasurementProcess,
     StateMeasurement,
     SampleMeasurement,
+)
+from pennylane.tape.tape import (
+    _validate_computational_basis_sampling,
+    rotations_and_diagonal_measurements,
 )
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
@@ -463,3 +467,56 @@ def validate_measurements(
                 )
 
     return (tape,), null_postprocessing
+
+
+@transform
+def split_up_non_commuting(tape):
+    """Split up the tape so that all measurements on each tape commute."""
+    if len(tape.measurements) == 1:
+        m0 = tape.measurements[0]
+        if (
+            isinstance(m0, qml.measurements.ExpectationMP)
+            and m0
+            and isinstance(m0.obs, qml.Hamiltonian)
+        ):
+            return qml.transforms.hamiltonian_expand(tape)
+
+    if all(
+        m.obs is None or (m.obs.pauli_rep and len(m.obs.pauli_rep) == 1) for m in tape.measurements
+    ):
+        return qml.transforms.split_non_commuting(tape)
+
+    return qml.transforms.sum_expand(tape)
+
+
+@transform
+def diagonalize_measurements(tape, name="device"):
+    """Split up non-commuting measurements and apply diagonalizing gates on the
+    resulting tapes.
+
+    """
+    batch, postprocessing = split_up_non_commuting(tape)
+
+    diagonal_batch = []
+    for t in batch:
+        if t.samples_computational_basis and len(t.measurements) > 1:
+            _validate_computational_basis_sampling(t.measurements)
+        diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(t)
+
+        # still need to handle measurements that dont have overlapping wires
+        for i, m in enumerate(diagonal_measurements):
+            if m.obs is not None:
+                try:
+                    diagonalizing_gates.extend(m.obs.diagonalizing_gates())
+                except DiagGatesUndefinedError as e:
+                    raise DeviceError(
+                        f"Observable {m.obs} does not define diagonalizing gates "
+                        f"and is not supported on device {name}."
+                    ) from e
+                diagonal_measurements[i] = type(m)(eigvals=m.eigvals(), wires=m.wires)
+
+        new_t = qml.tape.QuantumScript(
+            t.operations + diagonalizing_gates, diagonal_measurements, shots=tape.shots
+        )
+        diagonal_batch.append(new_t)
+    return tuple(diagonal_batch), postprocessing
