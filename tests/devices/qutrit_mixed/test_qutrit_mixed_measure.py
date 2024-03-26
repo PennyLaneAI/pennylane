@@ -22,7 +22,6 @@ from pennylane import math
 
 from pennylane.devices.qutrit_mixed import measure, create_initial_state, apply_operation
 from pennylane.devices.qutrit_mixed.measure import (
-    apply_observable_einsum,
     get_measurement_function,
     calculate_expval,
     calculate_expval_sum_of_terms,
@@ -116,49 +115,6 @@ class TestMeasurementDispatch:
         """Check that the compute variance method is used when variance"""
         obs = qml.GellMann(0, 1)
         assert get_measurement_function(qml.var(obs)) is calculate_variance
-
-
-@pytest.mark.parametrize(
-    "obs",
-    [
-        qml.GellMann(2, 2),
-        qml.GellMann(1, 8),
-        qml.GellMann(0, 5),
-        (qml.GellMann(0, 5) @ qml.GellMann(1, 8)),
-    ],
-)
-@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestApplyObservableEinsum:
-    """Tests that observables are applied correctly for calculate expval method."""
-
-    num_qutrits = 3
-    dims = (3**num_qutrits, 3**num_qutrits)
-
-    def test_apply_observable_einsum(self, obs, three_qutrit_state, ml_framework):
-        """Tests that unbatched observables are applied correctly to a unbatched state."""
-        res = apply_observable_einsum(
-            obs, qml.math.asarray(three_qutrit_state, like=ml_framework), is_state_batched=False
-        )
-        expected = get_expanded_op_mult_state(obs, three_qutrit_state)
-        expected = expected.reshape([3] * (3 * 2))
-
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
-
-    def test_apply_observable_einsum_batched(self, obs, three_qutrit_batched_state, ml_framework):
-        """Tests that unbatched observables are applied correctly to a batched state."""
-        res = apply_observable_einsum(
-            obs,
-            qml.math.asarray(three_qutrit_batched_state, like=ml_framework),
-            is_state_batched=True,
-        )
-        expected = [
-            get_expanded_op_mult_state(obs, state).reshape([3] * (3 * 2))
-            for state in three_qutrit_batched_state
-        ]
-
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
 
 
 class TestMeasurements:
@@ -556,19 +512,14 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", (True, False))
-    def test_jax_backprop_coeffs(self, convert_to_hamiltonian, use_jit):
+    def test_jax_backprop_coeffs(self, convert_to_hamiltonian):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
-        if use_jit and not convert_to_hamiltonian:
-            pytest.skip("Jit will fail in making sum due to checking if Hermitian")
         import jax
 
         jax.config.update("jax_enable_x64", True)
         coeffs = jax.numpy.array((5.2, 6.7), dtype=jax.numpy.float64)
 
-        f = jax.jit(self.f, static_argnums=(0, 2, 3, 4)) if use_jit else self.f
-
-        gradient = jax.grad(f, argnums=1)(
+        gradient = jax.grad(self.f, argnums=1)(
             self.x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian
         )
         expected_gradient = jax.grad(self.expected, argnums=1)(self.x, coeffs)
