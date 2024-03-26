@@ -113,7 +113,6 @@ PARAMETRIZED_OPERATIONS_COMBINATIONS = list(
     )
 )
 
-
 PARAMETRIZED_MEASUREMENTS = [
     qml.sample(qml.PauliY(0)),
     qml.sample(wires=0),
@@ -189,7 +188,6 @@ PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
         2,
     )
 )
-
 
 equal_hamiltonians = [
     (
@@ -1309,7 +1307,16 @@ class TestMeasurementsEqual:
         assert qml.equal(mp1, mp3)
         assert not qml.equal(mp1, mp4)
 
+    def test_shadow_expval_list_versus_operator(self):
+        """Check that if one shadow expval has an operator and the other has a list, they are not equal."""
 
+        op = qml.X(0)
+        m1 = qml.shadow_expval(H=op)
+        m2 = qml.shadow_expval(H=[op])
+        assert not qml.equal(m1, m2)
+
+
+@pytest.mark.usefixtures("use_legacy_opmath")  # TODO update qml.equal with new opmath
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
 
@@ -1330,6 +1337,10 @@ class TestObservablesComparisons:
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
     def test_hamiltonian_equal(self, H1, H2, res):
         """Tests that equality can be checked between Hamiltonians"""
+        if not qml.operation.active_new_opmath():
+            H1 = qml.operation.convert_to_legacy_H(H1)
+            H2 = qml.operation.convert_to_legacy_H(H2)
+
         assert qml.equal(H1, H2) == qml.equal(H2, H1)
         assert qml.equal(H1, H2) == res
 
@@ -1342,12 +1353,20 @@ class TestObservablesComparisons:
     @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
     def test_hamiltonians_and_tensors_equal(self, H, T, res):
         """Tests that equality can be checked between a Hamiltonian and a Tensor"""
+        if not qml.operation.active_new_opmath():
+            H = qml.operation.convert_to_legacy_H(H)
+            T = qml.operation.Tensor(*T.operands)
+
         assert qml.equal(H, T) == qml.equal(T, H)
         assert qml.equal(H, T) == res
 
     @pytest.mark.parametrize(("op1", "op2", "res"), equal_pauli_operators)
     def test_pauli_operator_equals(self, op1, op2, res):
         """Tests that equality can be checked between PauliX/Y/Z operators, and between Pauli operators and Hamiltonians"""
+        if not qml.operation.active_new_opmath():
+            op1 = qml.operation.convert_to_legacy_H(op1)
+            op2 = qml.operation.convert_to_legacy_H(op2)
+
         assert qml.equal(op1, op2) == qml.equal(op2, op1)
         assert qml.equal(op1, op2) == res
 
@@ -1719,11 +1738,10 @@ class TestProdComparisons:
     def test_prod_of_prods(self):
         """Test that prod of prods and just an equivalent Prod get compared correctly"""
         X = qml.PauliX
-        qml.operation.enable_new_opmath()
+
         op1 = (0.5 * X(0)) @ (0.5 * X(1)) @ (0.5 * X(2)) @ (0.5 * X(3)) @ (0.5 * X(4))
         op2 = qml.prod(*[0.5 * X(i) for i in range(5)])
         assert qml.equal(op1, op2)
-        qml.operation.disable_new_opmath()
 
 
 class TestSumComparisons:
@@ -1821,7 +1839,6 @@ class TestSumComparisons:
     def test_sum_of_sums(self):
         """Test that sum of sums and just an equivalent sum get compared correctly"""
         X = qml.PauliX
-        qml.operation.enable_new_opmath()
         op1 = (
             0.5 * X(0)
             + 0.5 * X(1)
@@ -1836,7 +1853,6 @@ class TestSumComparisons:
         )
         op2 = qml.sum(*[0.5 * X(i) for i in range(10)])
         assert qml.equal(op1, op2)
-        qml.operation.disable_new_opmath()
 
 
 def f1(p, t):

@@ -70,8 +70,8 @@ can potentially be quite expensive. Autograd would naively
 request indepedent vjps for each entry in the output, even though the internal circuits will be
 exactly the same.
 
-When normal caching provided by :func:`~.cache_execute` is present, the expensive part (re-executing
-identical circuits) is avoided, but when normal caching is turned off, the above can lead to an explosion
+When caching is enabled, the expensive part (re-executing identical circuits) is
+avoided, but when normal caching is turned off, the above can lead to an explosion
 in the number of required circuit executions.
 
 To avoid this explosion in the number of executed circuits when caching is turned off, we will instead internally

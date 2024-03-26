@@ -510,9 +510,8 @@ class TestPreprocessingIntegration:
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
-    @pytest.mark.parametrize(
-        "ops, measurement, message",
-        [
+    with qml.operation.disable_new_opmath_cm():
+        invalid_tape_adjoint_test_cases = [
             (
                 [qml.RX(0.1, wires=0)],
                 [qml.probs(op=qml.PauliX(0))],
@@ -523,6 +522,31 @@ class TestPreprocessingIntegration:
                 [qml.expval(qml.Hamiltonian([1], [qml.PauliZ(0)]))],
                 "not supported on adjoint",
             ),
+        ]
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.parametrize(
+        "ops, measurement, message",
+        invalid_tape_adjoint_test_cases,
+    )
+    @pytest.mark.filterwarnings("ignore:Differentiating with respect to")
+    def test_preprocess_invalid_tape_adjoint_legacy_opmath(self, ops, measurement, message):
+        """Test that preprocessing fails if adjoint differentiation is requested and an
+        invalid tape is used"""
+        qs = qml.tape.QuantumScript(ops, measurement)
+        execution_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+        program, _ = qml.device("default.qubit").preprocess(execution_config)
+        with pytest.raises(qml.DeviceError, match=message):
+            program([qs])
+
+    @pytest.mark.parametrize(
+        "ops, measurement, message",
+        [
+            (
+                [qml.RX(0.1, wires=0)],
+                [qml.probs(op=qml.PauliX(0))],
+                "adjoint diff supports either all expectation values or",
+            )
         ],
     )
     @pytest.mark.filterwarnings("ignore:Differentiating with respect to")
@@ -790,7 +814,10 @@ class TestAdjointDiffTapeValidation:
         assert len(res.operations) == 5
         assert res.trainable_params == [0, 1, 2, 3, 4]
 
-    def test_unsupported_obs(self):
+    @pytest.mark.usefixtures(
+        "use_legacy_opmath"
+    )  # this is only an issue for legacy Hamiltonian that does not define a matrix method
+    def test_unsupported_obs_legacy_opmath(self):
         """Test that the correct error is raised if a Hamiltonian measurement is differentiated"""
         obs = qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)])
         qs = qml.tape.QuantumScript([qml.RX(0.5, wires=1)], [qml.expval(obs)])
