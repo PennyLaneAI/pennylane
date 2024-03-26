@@ -154,14 +154,6 @@ def sum_of_terms_method(
     Returns:
         TensorLike: the result of the measurement
     """
-    if isinstance(measurementprocess.obs, Sum):
-        # Recursively call measure on each term, so that the best measurement method can
-        # be used for each term
-        return sum(
-            measure(ExpectationMP(term), state, is_state_batched=is_state_batched)
-            for term in measurementprocess.obs
-        )
-    # else hamiltonian
     return sum(
         c * measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
         for c, t in zip(*measurementprocess.obs.terms())
