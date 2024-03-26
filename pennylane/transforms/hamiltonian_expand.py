@@ -113,7 +113,10 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     if (
         len(tape.measurements) != 1
-        or not isinstance(hamiltonian := tape.measurements[0].obs, qml.Hamiltonian)
+        or not isinstance(
+            hamiltonian := tape.measurements[0].obs,
+            (qml.ops.Hamiltonian, qml.ops.LinearCombination),
+        )
         or not isinstance(tape.measurements[0], ExpectationMP)
     ):
         raise ValueError(

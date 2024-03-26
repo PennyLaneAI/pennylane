@@ -19,7 +19,7 @@ from typing import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian
+from pennylane.ops import Sum, Hamiltonian, LinearCombination
 from pennylane.measurements import (
     StateMeasurement,
     MeasurementProcess,
@@ -194,7 +194,7 @@ def get_measurement_function(
                 return full_dot_products
 
             backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
-            if isinstance(measurementprocess.obs, Hamiltonian):
+            if isinstance(measurementprocess.obs, (Hamiltonian, LinearCombination)):
                 # need to work out thresholds for when its faster to use "backprop mode" measurements
                 return sum_of_terms_method if backprop_mode else csr_dot_products
 

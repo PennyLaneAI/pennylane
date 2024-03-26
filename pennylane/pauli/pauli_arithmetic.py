@@ -25,7 +25,7 @@ from pennylane import math
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 
 
 I = "I"
@@ -520,10 +520,10 @@ class PauliWord(dict):
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
-            return Hamiltonian([1], [Identity(wires=wire_order)])
+            return qml.Hamiltonian([1], [Identity(wires=wire_order)])
 
         obs = [_make_operation(op, wire) for wire, op in self.items()]
-        return Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
+        return qml.Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
 
     def map_wires(self, wire_map: dict) -> "PauliWord":
         """Return a new PauliWord with the wires mapped."""
@@ -991,12 +991,12 @@ class PauliSentence(dict):
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
-            return Hamiltonian([], [])
+            return qml.Hamiltonian([], [])
 
         wire_order = wire_order or self.wires
         wire_order = list(wire_order)
 
-        return Hamiltonian(
+        return qml.Hamiltonian(
             list(self.values()),
             [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
         )
@@ -1007,6 +1007,8 @@ class PauliSentence(dict):
         for pw, coeff in items:
             if abs(coeff) <= tol:
                 del self[pw]
+        if len(self) == 0:
+            self = PauliSentence({})  # pylint: disable=self-cls-assignment
 
     def map_wires(self, wire_map: dict) -> "PauliSentence":
         """Return a new PauliSentence with the wires mapped."""

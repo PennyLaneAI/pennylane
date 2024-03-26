@@ -54,6 +54,7 @@ obs = {
     "Prod": qml.prod(qml.X(0), qml.Z(1)),
     "SProd": qml.s_prod(0.1, qml.Z(0)),
     "Sum": qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),
+    "LinearCombination": qml.ops.LinearCombination([1, 1], [qml.Z(0), qml.X(0)]),
 }
 
 all_obs = obs.keys()
@@ -65,7 +66,7 @@ all_available_obs = qml.ops._qubit__obs__.copy().union(  # pylint: disable=prote
 # Note that the identity is not technically a qubit observable
 all_available_obs |= {"Identity"}
 
-if not set(all_obs) == all_available_obs:
+if not set(all_obs) == all_available_obs | {"LinearCombination"}:
     raise ValueError(
         "A qubit observable has been added that is not being tested in the "
         "device test suite. Please add to the obs dictionary in "
@@ -158,7 +159,8 @@ class TestSupportedObservables:
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
-    def test_hamiltonian_diff(self, device_kwargs, tol):
+    @pytest.mark.parametrize("ham_constructor", [qml.ops.Hamiltonian, qml.ops.LinearCombination])
+    def test_hamiltonian_diff(self, ham_constructor, device_kwargs, tol):
         """Tests a simple VQE gradient using parameter-shift rules."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
@@ -170,7 +172,7 @@ class TestHamiltonianSupport:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
+                ham_constructor(
                     coeffs,
                     [qml.X(0), qml.Z(0)],
                 )
