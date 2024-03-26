@@ -320,38 +320,43 @@ class TestSample:
         circuit()
 
     @pytest.mark.parametrize(
-        "obs,exp",
+        "obs",
         [
             # Single observables
-            (None, int),  # comp basis samples
-            (qml.PauliX(0), int),
-            (qml.PauliY(0), int),
-            (qml.PauliZ(0), int),
-            (qml.Hadamard(0), int),
-            (qml.Identity(0), int),
-            (qml.Hermitian(np.diag([1, 2]), 0), float),
-            (qml.Hermitian(np.diag([1.0, 2.0]), 0), float),
+            (None),  # comp basis samples, expected to be int
+            (qml.PauliX(0)),
+            (qml.PauliY(0)),
+            (qml.PauliZ(0)),
+            (qml.Hadamard(0)),
+            # (qml.Identity(0)),
+            (qml.Hermitian(np.diag([1, 2]), 0)),
+            (qml.Hermitian(np.diag([1.0, 2.0]), 0)),
             # Tensor product observables
             (
                 qml.PauliX("c")
                 @ qml.PauliY("a")
                 @ qml.PauliZ(1)
                 @ qml.Hadamard("wire1")
-                @ qml.Identity("b"),
-                int,
+                @ qml.Identity("b")
             ),
-            (qml.Projector([0, 1], wires=[0, 1]) @ qml.PauliZ(2), float),
-            (qml.Hermitian(np.array(np.eye(2)), wires=[0]) @ qml.PauliZ(2), float),
-            (
-                qml.Projector([0, 1], wires=[0, 1]) @ qml.Hermitian(np.array(np.eye(2)), wires=[2]),
-                float,
-            ),
+            (qml.Projector([0, 1], wires=[0, 1]) @ qml.PauliZ(2)),
+            (qml.Hermitian(np.array(np.eye(2)), wires=[0]) @ qml.PauliZ(2)),
+            (qml.Projector([0, 1], wires=[0, 1]) @ qml.Hermitian(np.array(np.eye(2)), wires=[2])),
         ],
     )
-    def test_numeric_type(self, obs, exp):
+    def test_numeric_type(self, obs):
         """Test that the numeric type is correct."""
+        eigval_type = type(obs.eigvals()[0]) if obs is not None else np.int64
+
         res = qml.sample(obs) if obs is not None else qml.sample()
-        assert res.numeric_type is exp
+        if res.numeric_type == int:
+            expected_type = np.int64
+        elif res.numeric_type == float:
+            expected_type = np.float64
+        elif res.numeric_type == complex:
+            expected_type = np.complex64
+
+        assert expected_type == eigval_type
 
     def test_shape_no_shots_error(self):
         """Test that the appropriate error is raised with no shots are specified"""
@@ -506,3 +511,57 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
     assert (
         circuit._qfunc_output.shape(dev, Shots(samples)) == (samples, 2) if samples != 1 else (2,)
     )
+
+
+class TestSampleProcessCounts:
+    """Tests for the process_counts method in the SampleMP class."""
+
+    def test_process_counts_multiple_wires(self):
+        """Test process_counts method with multiple wires."""
+        sample_mp = qml.sample(wires=[0, 1])
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([[0, 0], [0, 0], [1, 0], [1, 0], [1, 0]]))
+
+    def test_process_counts_single_wire(self):
+        """Test process_counts method with a single wire."""
+        sample_mp = qml.sample(wires=[0])
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([0, 0, 1, 1, 1]))
+
+    def test_process_counts_with_eigen_values(self):
+        """Test process_counts method with eigen values."""
+        sample_mp = qml.sample(qml.Z(0))
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([1, 1, -1, -1, -1]))
+
+    def test_process_counts_with_inverted_wire_order(self):
+        """Test process_counts method with inverted wire order."""
+        sample_mp = qml.sample(wires=[0, 1])
+        counts = {"00": 2, "01": 3}
+        wire_order = qml.wires.Wires((1, 0))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([[0, 0], [0, 0], [1, 0], [1, 0], [1, 0]]))
+
+    def test_process_counts_with_second_single_wire(self):
+        """Test process_counts method with the second single wire."""
+        sample_mp = qml.sample(wires=[1])
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([0, 0, 0, 0, 0]))

@@ -153,8 +153,8 @@ class Select(Operation):
         >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
         >>> op = qml.Select(ops, control=[0,1])
         >>> op.decomposition()
-        [MultiControlledX(wires=[0, 1, 2], control_values="00"),
-         MultiControlledX(wires=[0, 1, 3], control_values="01"),
+        [MultiControlledX(wires=[0, 1, 2], control_values=[0, 0]),
+         MultiControlledX(wires=[0, 1, 3], control_values=[0, 1]),
          Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
@@ -187,8 +187,8 @@ class Select(Operation):
 
         >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
         >>> qml.Select.compute_decomposition(ops, control=[0,1])
-        [MultiControlledX(wires=[0, 1, 2], control_values="00"),
-         MultiControlledX(wires=[0, 1, 3], control_values="01"),
+        [MultiControlledX(wires=[0, 1, 2], control_values=[0, 0]),
+         MultiControlledX(wires=[0, 1, 3], control_values=[0, 1),
          Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """

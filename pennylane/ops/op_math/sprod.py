@@ -145,7 +145,7 @@ class SProd(ScalarSymbolicOp):
 
         if _pauli_rep:
             self._pauli_rep = _pauli_rep
-        elif (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+        elif (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
             self.batch_size is None
         ):
             scalar = copy(self.scalar)
@@ -261,7 +261,7 @@ class SProd(ScalarSymbolicOp):
     @property
     def has_matrix(self):
         """Bool: Whether or not the Operator returns a defined matrix."""
-        return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
+        return isinstance(self.base, qml.ops.Hamiltonian) or self.base.has_matrix
 
     @staticmethod
     def _matrix(scalar, mat):

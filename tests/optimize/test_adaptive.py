@@ -86,6 +86,7 @@ def test_step(circuit, energy_ref, pool):
     assert np.allclose(energy, energy_ref)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [
@@ -106,6 +107,7 @@ def test_step_and_cost_drain(circuit, energy_ref, pool):
     assert len(set(selected_excitations)) == len(selected_excitations)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [

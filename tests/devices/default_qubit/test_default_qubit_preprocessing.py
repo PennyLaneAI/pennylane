@@ -69,6 +69,12 @@ def test_snapshot_multiprocessing_execute():
 class TestConfigSetup:
     """Tests involving setting up the execution config."""
 
+    def test_error_if_device_option_not_available(self):
+        """Test that an error is raised if a device option is requested but not a valid option."""
+        config = qml.devices.ExecutionConfig(device_options={"bla": "val"})
+        with pytest.raises(qml.DeviceError, match="device option bla"):
+            qml.device("default.qubit").preprocess(config)
+
     def test_choose_best_gradient_method(self):
         """Test that preprocessing chooses backprop as the best gradient method."""
         config = qml.devices.ExecutionConfig(gradient_method="best")
@@ -86,6 +92,46 @@ class TestConfigSetup:
 
         assert new_config.use_device_gradient
         assert new_config.grad_on_execution
+
+    def test_chose_adjoint_as_best_if_max_workers_on_device(self):
+        """Test that adjoint is best if max_workers as present."""
+
+        dev = qml.device("default.qubit", max_workers=2)
+        config = qml.devices.ExecutionConfig(gradient_method="best")
+        _, config = dev.preprocess(config)
+        assert config.gradient_method == "adjoint"
+        assert config.use_device_gradient
+        assert config.grad_on_execution
+        assert config.use_device_jacobian_product
+
+    def test_chose_adjoint_as_best_if_max_workers_on_config(self):
+        """Test that adjoint is best if max_workers as present."""
+
+        dev = qml.device("default.qubit")
+        config = qml.devices.ExecutionConfig(
+            gradient_method="best", device_options={"max_workers": 2}
+        )
+        _, config = dev.preprocess(config)
+        assert config.gradient_method == "adjoint"
+        assert config.use_device_gradient
+        assert config.grad_on_execution
+        assert config.use_device_jacobian_product
+
+    def test_integration_uses_adjoint_if_maxworkers(self):
+        """Test that the workflow uses adjoint if the device has max_workers set."""
+
+        dev = qml.device("default.qubit", max_workers=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with dev.tracker:
+            qml.grad(circuit)(qml.numpy.array(0.1))
+
+        assert circuit.gradient_fn == "adjoint"
+        assert dev.tracker.totals["execute_and_derivative_batches"] == 1
 
 
 # pylint: disable=too-few-public-methods
@@ -464,9 +510,8 @@ class TestPreprocessingIntegration:
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
-    @pytest.mark.parametrize(
-        "ops, measurement, message",
-        [
+    with qml.operation.disable_new_opmath_cm():
+        invalid_tape_adjoint_test_cases = [
             (
                 [qml.RX(0.1, wires=0)],
                 [qml.probs(op=qml.PauliX(0))],
@@ -477,6 +522,31 @@ class TestPreprocessingIntegration:
                 [qml.expval(qml.Hamiltonian([1], [qml.PauliZ(0)]))],
                 "not supported on adjoint",
             ),
+        ]
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.parametrize(
+        "ops, measurement, message",
+        invalid_tape_adjoint_test_cases,
+    )
+    @pytest.mark.filterwarnings("ignore:Differentiating with respect to")
+    def test_preprocess_invalid_tape_adjoint_legacy_opmath(self, ops, measurement, message):
+        """Test that preprocessing fails if adjoint differentiation is requested and an
+        invalid tape is used"""
+        qs = qml.tape.QuantumScript(ops, measurement)
+        execution_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+        program, _ = qml.device("default.qubit").preprocess(execution_config)
+        with pytest.raises(qml.DeviceError, match=message):
+            program([qs])
+
+    @pytest.mark.parametrize(
+        "ops, measurement, message",
+        [
+            (
+                [qml.RX(0.1, wires=0)],
+                [qml.probs(op=qml.PauliX(0))],
+                "adjoint diff supports either all expectation values or",
+            )
         ],
     )
     @pytest.mark.filterwarnings("ignore:Differentiating with respect to")
@@ -744,7 +814,10 @@ class TestAdjointDiffTapeValidation:
         assert len(res.operations) == 5
         assert res.trainable_params == [0, 1, 2, 3, 4]
 
-    def test_unsupported_obs(self):
+    @pytest.mark.usefixtures(
+        "use_legacy_opmath"
+    )  # this is only an issue for legacy Hamiltonian that does not define a matrix method
+    def test_unsupported_obs_legacy_opmath(self):
         """Test that the correct error is raised if a Hamiltonian measurement is differentiated"""
         obs = qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)])
         qs = qml.tape.QuantumScript([qml.RX(0.5, wires=1)], [qml.expval(obs)])

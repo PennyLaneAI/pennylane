@@ -927,7 +927,22 @@ class TestApplyBroadcasted:
         expected = np.einsum("ij,lj->li", mat, state)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_direct_eval_hamiltonian_broadcasted_error_tf(self):
+    def test_direct_eval_hamiltonian_broadcasted_tf(self):
+        """Tests that the correct result is returned when attempting to evaluate a Hamiltonian with
+        broadcasting and shots=None directly via its sparse representation with TF."""
+        dev = qml.device("default.qubit.tf", wires=2)
+        ham = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit():
+            qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
+            return qml.expval(ham)
+
+        res = circuit()
+        assert qml.math.allclose(res, 0.2)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_direct_eval_hamiltonian_broadcasted_error_tf_legacy_opmath(self):
         """Tests that an error is raised when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with TF."""
         dev = qml.device("default.qubit.tf", wires=2)

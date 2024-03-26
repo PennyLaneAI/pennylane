@@ -14,7 +14,7 @@
 """
 This module contains the qml.equal function.
 """
-# pylint: disable=too-many-arguments,too-many-return-statements
+# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
 from collections.abc import Iterable
 from functools import singledispatch
 from typing import Union
@@ -28,7 +28,16 @@ from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
+from pennylane.ops import (
+    Hamiltonian,
+    LinearCombination,
+    Controlled,
+    Pow,
+    Adjoint,
+    Exp,
+    SProd,
+    CompositeOp,
+)
 from pennylane.templates.subroutines import ControlledSequence
 from pennylane.tape import QuantumTape
 
@@ -234,6 +243,12 @@ def _equal_operators(
     ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
         return False
 
+    if isinstance(op1, qml.Identity):
+        # All Identities are equivalent, independent of wires.
+        # We already know op1 and op2 are of the same type, so no need to check
+        # that op2 is also an Identity
+        return True
+
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
 
@@ -362,7 +377,7 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     if not isinstance(op2, Observable):
         return False
 
-    if isinstance(op2, Hamiltonian):
+    if isinstance(op2, (Hamiltonian, LinearCombination)):
         return op2.compare(op1)
 
     if isinstance(op2, Tensor):

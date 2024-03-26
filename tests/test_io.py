@@ -14,7 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.io` module.
 """
-from unittest.mock import Mock
+from unittest.mock import Mock, patch, mock_open
 import pytest
 
 import pennylane as qml
@@ -72,12 +72,12 @@ def mock_plugin_converters_fixture(monkeypatch):
 class TestLoad:
     """Test that the convenience load functions access the correct entrypoint."""
 
-    def test_converter_does_not_exist(self):
-        """Test that the proper error is raised if the converter does not exist."""
-        with pytest.raises(
-            ValueError, match="Converter does not exist. Make sure the required plugin is installed"
-        ):
-            qml.load("Test", format="some_non_existing_format")
+    def test_load_is_deprecated(self, monkeypatch):
+        """Test that qml.load is deprecated"""
+        mock_converter_dict = {entry: MockPluginConverter(entry) for entry in load_entry_points}
+        monkeypatch.setattr(qml.io, "plugin_converters", mock_converter_dict)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="deprecated"):
+            _ = qml.load("test", format="qiskit")
 
     @pytest.mark.parametrize(
         "method, entry_point_name",
@@ -115,13 +115,20 @@ class TestLoad:
         with pytest.raises(ValueError, match=r"Some Other Error"):
             method("Test")
 
+    def test_from_qasm_file_deprecated(self, monkeypatch):
+        """Tests that qml.from_qasm_file is deprecated."""
+        mock_converter_dict = {entry: MockPluginConverter(entry) for entry in load_entry_points}
+        monkeypatch.setattr(qml.io, "plugin_converters", mock_converter_dict)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="deprecated"):
+            with patch("builtins.open", mock_open(read_data="Test")):
+                _ = qml.from_qasm_file("test.qasm")
+
     @pytest.mark.parametrize(
         "method, entry_point_name",
         [
             (qml.from_qiskit, "qiskit"),
             (qml.from_qiskit_op, "qiskit_op"),
             (qml.from_qasm, "qasm"),
-            (qml.from_qasm_file, "qasm_file"),
             (qml.from_pyquil, "pyquil_program"),
             (qml.from_quil, "quil"),
             (qml.from_quil_file, "quil_file"),

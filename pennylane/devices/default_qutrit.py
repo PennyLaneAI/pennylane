@@ -33,6 +33,7 @@ tolerance = 1e-10
 OMEGA = qml.math.exp(2 * np.pi * 1j / 3)
 
 
+# pylint: disable=too-many-arguments
 class DefaultQutrit(QutritDevice):
     """Default qutrit device for PennyLane.
 
@@ -87,11 +88,7 @@ class DefaultQutrit(QutritDevice):
 
     # Identity is supported as an observable for qml.state() to work correctly. However, any
     # measurement types that rely on eigenvalue decomposition will not work with qml.Identity
-    observables = {
-        "THermitian",
-        "GellMann",
-        "Identity",
-    }
+    observables = {"THermitian", "GellMann", "Identity", "Prod"}
 
     # Static methods to use qml.math to allow for backprop differentiation
     _reshape = staticmethod(qml.math.reshape)

@@ -22,6 +22,7 @@ from collections.abc import Iterable
 from copy import copy
 import functools
 from typing import List
+from warnings import warn
 import numpy as np
 import scipy
 
@@ -65,6 +66,7 @@ class Hamiltonian(Observable):
 
     The Hamiltonian is represented as a linear combination of other operators, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
+
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
@@ -184,6 +186,16 @@ class Hamiltonian(Observable):
         method="rlf",
         id=None,
     ):
+        if qml.operation.active_new_opmath():
+            warn(
+                "Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. "
+                "Instead, use 'qml.Hamiltonian', or use 'qml.operation.disable_new_opmath()' "
+                "to continue to access the legacy functionality. See "
+                "https://docs.pennylane.ai/en/stable/development/deprecations.html for more "
+                "details.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
@@ -222,7 +234,25 @@ class Hamiltonian(Observable):
         # create the operator using each coefficient as a separate parameter;
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
+
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
+        self._pauli_rep = "unset"
+
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep != "unset":
+            return self._pauli_rep
+
+        if any(op.pauli_rep is None for op in self.ops):
+            self._pauli_rep = None
+            return self._pauli_rep
+
+        ps = qml.pauli.PauliSentence()
+        for coeff, term in zip(*self.terms()):
+            ps += term.pauli_rep * coeff
+
+        self._pauli_rep = ps
+        return self._pauli_rep
 
     def _check_batching(self):
         """Override for Hamiltonian, batching is not yet supported."""
@@ -607,6 +637,13 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
+
+        if isinstance(other, qml.operation.Operator):
+            if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
+                pr1.simplify()
+                pr2.simplify()
+                return pr1 == pr2
+
         if isinstance(other, Hamiltonian):
             self.simplify()
             other.simplify()
@@ -639,12 +676,12 @@ class Hamiltonian(Observable):
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
-            return qml.Hamiltonian(coeffs, terms, simplify=True)
+            return Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
             terms = [op @ copy(H) for op in ops1]
 
-            return qml.Hamiltonian(coeffs1, terms, simplify=True)
+            return Hamiltonian(coeffs1, terms, simplify=True)
 
         return NotImplemented
 
@@ -661,7 +698,7 @@ class Hamiltonian(Observable):
         if isinstance(H, (Tensor, Observable)):
             terms = [copy(H) @ op for op in ops1]
 
-            return qml.Hamiltonian(coeffs1, terms, simplify=True)
+            return Hamiltonian(coeffs1, terms, simplify=True)
 
         return NotImplemented
 
@@ -676,14 +713,14 @@ class Hamiltonian(Observable):
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
-            return qml.Hamiltonian(coeffs, ops, simplify=True)
+            return Hamiltonian(coeffs, ops, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
             coeffs = qml.math.concatenate(
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )
             ops.append(H)
-            return qml.Hamiltonian(coeffs, ops, simplify=True)
+            return Hamiltonian(coeffs, ops, simplify=True)
 
         return NotImplemented
 
@@ -694,7 +731,7 @@ class Hamiltonian(Observable):
         if isinstance(a, (int, float)):
             self_coeffs = copy(self.coeffs)
             coeffs = qml.math.multiply(a, self_coeffs)
-            return qml.Hamiltonian(coeffs, self.ops.copy())
+            return Hamiltonian(coeffs, self.ops.copy())
 
         return NotImplemented
 
@@ -731,6 +768,8 @@ class Hamiltonian(Observable):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
             self._coeffs = qml.math.multiply(a, self._coeffs)
+            if self.pauli_rep is not None:
+                self._pauli_rep = qml.math.multiply(a, self._pauli_rep)
             return self
 
         return NotImplemented
@@ -772,4 +811,5 @@ class Hamiltonian(Observable):
             if attr not in {"data", "_wires", "_ops"}:
                 setattr(new_op, attr, value)
         new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
+        new_op._pauli_rep = "unset"  # pylint: disable=protected-access
         return new_op
