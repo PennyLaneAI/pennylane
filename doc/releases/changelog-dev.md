@@ -290,7 +290,7 @@
   [(#5376)](https://github.com/PennyLaneAI/pennylane/pull/5376)
 
 * A code example in the `qml.measure` docstring has been added that showcases returning mid-circuit measurement statistics from QNodes.
-
+  [(#5441)](https://github.com/PennyLaneAI/pennylane/pull/5441)
 
 <h3>Bug fixes 🐛</h3>
 
