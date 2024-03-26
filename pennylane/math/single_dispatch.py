@@ -611,7 +611,7 @@ def _coerce_types_torch(tensors):
 
     if len(device_set) > 1:  # pragma: no cover
         # If data exists on two separate GPUs, outright fail
-        if len([i for i in dev_indices if i != None]) > 1:
+        if len([i for i in dev_indices if i is not None]) > 1:
             device_names = ", ".join(str(d) for d in device_set)
 
             raise RuntimeError(
