@@ -1059,7 +1059,22 @@ class TestHighLevelIntegration:
         # evaluated one expval altogether
         assert spy.call_count == 1
 
-    def test_direct_eval_hamiltonian_broadcasted_error_jax(self):
+    def test_direct_eval_linear_combination_broadcasted_jax(self):
+        """Tests that the correct result is returned when attempting to evaluate a Hamiltonian with
+        broadcasting and shots=None directly via its sparse representation with Jax."""
+        dev = qml.device("default.qubit.jax", wires=2)
+        H = qml.ops.LinearCombination(jnp.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def circuit():
+            qml.RX(jnp.zeros(5), 0)
+            return qml.expval(H)
+
+        res = circuit()
+        assert qml.math.allclose(res, 0.2)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_direct_eval_hamiltonian_broadcasted_error_jax_legacy_opmath(self):
         """Tests that an error is raised when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with Jax."""
         dev = qml.device("default.qubit.jax", wires=2)

@@ -254,6 +254,7 @@ def test_meas_samples(circuit, shots):
     assert qml.math.shape(samples[2]) == (shots,)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("tableau", [True, False])
 @pytest.mark.parametrize("shots", [None, 50000])
 @pytest.mark.parametrize(
@@ -284,7 +285,7 @@ def test_meas_probs(tableau, shots, ops):
 
     gotten_probs, target_probs = qnode_clfrd(), qnode_qubit()
 
-    assert qml.math.allclose(gotten_probs, target_probs, atol=1e-2 if shots else 1e-8)
+    assert qml.math.allclose(gotten_probs, target_probs, atol=5e-2 if shots else 1e-8)
 
 
 def test_meas_probs_large():

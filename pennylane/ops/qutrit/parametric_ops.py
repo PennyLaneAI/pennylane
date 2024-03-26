@@ -112,6 +112,8 @@ class TRX(Operation):
     _index_dict = {(0, 1): 1, (0, 2): 4, (1, 2): 6}
 
     def generator(self):
+        # this generator returns SProd, even with the old op_math, because other options are not suitable
+        # to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
@@ -257,6 +259,8 @@ class TRY(Operation):
     _index_dict = {(0, 1): 2, (0, 2): 5, (1, 2): 7}
 
     def generator(self):
+        # this generator returns SProd, even with the old op_math, because other options are not suitable
+        # to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
@@ -395,6 +399,8 @@ class TRZ(Operation):
     parameter_frequencies = [(0.5, 1)]
 
     def generator(self):
+        # these generators return SProd and Sum, even with the old op_math, because other options are
+        # not suitable to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
         if self.subspace == (0, 1):
             return qml.s_prod(-0.5, qml.GellMann(wires=self.wires, index=3))
 
