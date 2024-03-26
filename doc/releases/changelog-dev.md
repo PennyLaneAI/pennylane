@@ -292,6 +292,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * The `QNSPSAOptimizer` can now be used for more than one step.
+  [(#5439)](https://github.com/PennyLaneAI/pennylane/pull/5439)
 
 * `jax.jit` now works with `qml.sample` with a multi-wire observable.
   [(#5422)](https://github.com/PennyLaneAI/pennylane/pull/5422)
