@@ -38,7 +38,7 @@ numpy==1.26.4
 osqp==0.6.5
 packaging==24.0
 pathspec==0.12.1
-PennyLane_Lightning==0.36.0
+PennyLane_Lightning==0.35.1
 pillow==10.2.0
 platformdirs==4.2.0
 pluggy==1.4.0
