@@ -28,6 +28,9 @@ from pennylane.measurements import (
     var,
 )
 
+from pennylane.wires import Wires
+
+
 # pylint: disable=too-few-public-methods, unused-argument
 
 
@@ -90,6 +93,9 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
+
         dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         @qml.qnode(dev)
@@ -106,6 +112,9 @@ class TestSampleMeasurement:
             # pylint: disable=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
+
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
 
         dev = qml.device("default.qubit.legacy", wires=2)
 

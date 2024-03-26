@@ -70,7 +70,7 @@ class RX(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return qml.s_prod(-0.5, PauliX(wires=self.wires))
+        return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -166,7 +166,7 @@ class RY(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return qml.s_prod(-0.5, PauliY(wires=self.wires))
+        return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -261,7 +261,7 @@ class RZ(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return qml.s_prod(-0.5, PauliZ(wires=self.wires))
+        return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
