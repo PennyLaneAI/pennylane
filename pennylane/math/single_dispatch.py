@@ -620,8 +620,6 @@ def _coerce_types_torch(tensors):
         # Otherwise, automigrate data from CPU to GPU and carry on.
         dev_indices.remove(None)
         dev_id = dev_indices.pop()
-        torch.as_tensor(t, device=torch.device(f"cuda:{dev_id}"))
-
         tensors = [
             torch.as_tensor(t, device=torch.device(f"cuda:{dev_id}"))
             for t in tensors  # pragma: no cover
