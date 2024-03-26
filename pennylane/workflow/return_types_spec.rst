@@ -7,7 +7,7 @@ Return Type Specification
 With the exception of the specialized mid-circuit measurement return specification,
 the below description applies for the entire workflow, from the device instance all the
 way up to the ``QNode``.  The result object corresponding to a given circuit
-should match whether the circuit is being passed to a device, processed
+will match whether the circuit is being passed to a device, processed
 by a transform, having it's derivative bound to an ML interface, or returned from a ``QNode``.
 
 While this document says ``tuple`` and includes examples using ``tuple`` throughout this document, the
