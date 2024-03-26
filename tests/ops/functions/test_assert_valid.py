@@ -373,7 +373,11 @@ def test_generated_list_of_ops(class_to_validate):
 
 def test_explicit_list_of_ops(valid_instance):
     """Test the validity of operators that could not be auto-generated."""
-    assert_valid(valid_instance)
+    if valid_instance.name == "Hamiltonian":
+        with qml.operation.disable_new_opmath_cm():
+            assert_valid(valid_instance)
+    else:
+        assert_valid(valid_instance)
 
 
 def test_explicit_list_of_failing_ops(invalid_instance_and_error):

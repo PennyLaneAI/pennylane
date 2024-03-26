@@ -89,7 +89,7 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert repr(obs_out) == repr(obs_in)
+        assert qml.equal(obs_out, obs_in)
         assert obs_in.compare(obs_out)
 
     def test_bind_init(self, obs_in):
@@ -103,8 +103,47 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert repr(obs_out) == repr(obs_in)
+        assert qml.equal(obs_out, obs_in)
         assert obs_in.compare(obs_out)
+
+
+@pytest.mark.parametrize(
+    "obs_in",
+    [
+        qml.ops.LinearCombination([1.0, 2.0], [qml.X(0) @ qml.Z(1), qml.Y(1) @ qml.Z(2)]),
+        qml.ops.sum(qml.X(0), qml.Y(0)),
+        qml.ops.sum(qml.X(0) @ qml.Z(1), 3 * qml.Y(2)),
+        qml.ops.prod(qml.X(0), qml.Y(1)),
+        qml.ops.s_prod(1.2j, qml.X(1) @ qml.Y(2)),
+    ],
+)
+class TestDatasetArithmeticOperators:
+    """Tests serializing Observable operators using the ``qml.equal()`` method."""
+
+    def test_value_init(self, obs_in):
+        """Test that a DatasetOperator can be value-initialized
+        from an observable, and that the deserialized operator
+        is equivalent."""
+        dset_op = DatasetOperator(obs_in)
+
+        assert dset_op.info["type_id"] == "operator"
+        assert dset_op.info["py_type"] == get_type_str(type(obs_in))
+
+        obs_out = dset_op.get_value()
+        assert qml.equal(obs_out, obs_in)
+
+    def test_bind_init(self, obs_in):
+        """Test that DatasetOperator can be initialized from a HDF5 group
+        that contains an operator attribute."""
+        bind = DatasetOperator(obs_in).bind
+
+        dset_op = DatasetOperator(bind=bind)
+
+        assert dset_op.info["type_id"] == "operator"
+        assert dset_op.info["py_type"] == get_type_str(type(obs_in))
+
+        obs_out = dset_op.get_value()
+        assert qml.equal(obs_out, obs_in)
 
 
 class TestDatasetOperator:

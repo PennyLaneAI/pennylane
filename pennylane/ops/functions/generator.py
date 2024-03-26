@@ -21,8 +21,8 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import Hamiltonian, SProd, Prod, Sum
-from pennylane.operation import convert_to_legacy_H
+from pennylane.ops import Hamiltonian, LinearCombination, SProd, Prod, Sum
+from pennylane.operation import convert_to_H
 
 
 # pylint: disable=too-many-branches
@@ -30,7 +30,7 @@ def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~.Hamiltonian`."""
     wires = op.wires
 
-    if isinstance(gen, qml.Hamiltonian):
+    if isinstance(gen, (Hamiltonian, LinearCombination)):
         H = gen
 
     elif isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
@@ -43,10 +43,10 @@ def _generator_hamiltonian(gen, op):
         H = qml.pauli_decompose(mat, wire_order=wires, hide_identity=True)
 
     elif isinstance(gen, qml.operation.Observable):
-        H = 1.0 * gen
+        H = qml.Hamiltonian([1.0], [gen])
 
     elif isinstance(gen, (SProd, Prod, Sum)):
-        H = convert_to_legacy_H(gen)
+        H = convert_to_H(gen)
 
     return H
 
@@ -67,7 +67,7 @@ def _generator_prefactor(gen):
     if isinstance(gen, Prod):
         gen = qml.simplify(gen)
 
-    if isinstance(gen, Hamiltonian):
+    if isinstance(gen, (Hamiltonian, LinearCombination)):
         gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
 
     if isinstance(gen, Sum):

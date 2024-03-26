@@ -206,6 +206,7 @@ class TestRydbergDrive:
         assert len(Hd.ops) == 1
         assert qml.equal(Hd.ops[0], ops_expected[0])
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_no_detuning(self):
         """Test that when detuning not specified, the drive term is correctly defined."""
 
