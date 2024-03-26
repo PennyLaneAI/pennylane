@@ -291,6 +291,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `QNSPSAOptimizer` now properly handles differentiable parameters, resulting in being able to use it for more than one optimization step.
+  [(#5439)](https://github.com/PennyLaneAI/pennylane/pull/5439)
+
 * `jax.jit` now works with `qml.sample` with a multi-wire observable.
   [(#5422)](https://github.com/PennyLaneAI/pennylane/pull/5422)
 
