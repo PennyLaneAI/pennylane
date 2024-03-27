@@ -15,6 +15,8 @@
 Tests for the accessibility of the Lightning-Qubit device
 """
 import pytest
+from flaky import flaky
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -52,11 +54,7 @@ def test_no_backprop_auto_interface():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.raises(
-        qml.QuantumFunctionError,
-        match="The lightning.qubit device does not support native "
-        "computations with autodifferentiation frameworks.",
-    ):
+    with pytest.raises(qml.QuantumFunctionError, match="does not support backprop"):
         qml.QNode(circuit, dev, diff_method="backprop")
 
 
@@ -69,14 +67,29 @@ def test_finite_shots_adjoint():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.warns(
-        UserWarning,
-        match="Requested adjoint differentiation to be computed with finite shots. Adjoint differentiation always "
-        "calculated exactly.",
-    ):
-        qml.QNode(circuit, dev, diff_method="adjoint")
+    with pytest.raises(qml.QuantumFunctionError, match="does not support adjoint"):
+        qml.QNode(circuit, dev, diff_method="adjoint")()
 
 
+@flaky(max_runs=5)
+def test_finite_shots():
+    """Test that shots in LQ and DQ give the same results."""
+
+    dev = qml.device("lightning.qubit", wires=2, shots=50000)
+    dq = qml.device("default.qubit", shots=50000)
+
+    def circuit():
+        qml.RX(np.pi / 4, 0)
+        qml.RY(-np.pi / 4, 1)
+        return qml.expval(qml.PauliY(0))
+
+    circ0 = qml.QNode(circuit, dev, diff_method=None)
+    circ1 = qml.QNode(circuit, dq, diff_method=None)
+
+    assert np.allclose(circ0(), circ1(), rtol=0.01)
+
+
+@pytest.mark.skip(reason="New lightning.qubit needs to be updated to work with dtypes")
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
@@ -115,10 +128,9 @@ class TestDtypePreserved:
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
-        dev = qml.device("lightning.qubit", wires=3)
-        dev.C_DTYPE = c_dtype
+        dev = qml.device("lightning.qubit", wires=3, c_dtype=c_dtype)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.apply(measurement)

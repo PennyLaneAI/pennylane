@@ -126,14 +126,13 @@ class ApproxTimeEvolution(Operation):
         return cls(data[0], data[1], n=metadata[0])
 
     def __init__(self, hamiltonian, time, n, id=None):
-        if not isinstance(hamiltonian, qml.Hamiltonian):
+        if getattr(hamiltonian, "pauli_rep", None) is None:
             raise ValueError(
-                f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
+                f"hamiltonian must be a linear combination of pauli words, got {type(hamiltonian).__name__}"
             )
 
         # extract the wires that the op acts on
-        wire_list = [term.wires for term in hamiltonian.ops]
-        wires = qml.wires.Wires.all_wires(wire_list)
+        wires = hamiltonian.wires
 
         self._hyperparameters = {"hamiltonian": hamiltonian, "n": n}
 
@@ -187,38 +186,20 @@ class ApproxTimeEvolution(Operation):
         ... )
         [PauliRot(0.1, ZZ, wires=[0, 1]), PauliRot(0.2, X, wires=[0]), PauliRot(0.3, X, wires=[1])]
         """
-        pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
-
-        theta = []
-        pauli_words = []
-        wires = []
-        coeffs = coeffs_and_time[:-1]
         time = coeffs_and_time[-1]
-        for i, term in enumerate(hamiltonian.ops):
-            word = ""
 
-            try:
-                if isinstance(term.name, str):
-                    word = pauli[term.name]
+        single_round = []
+        with qml.QueuingManager.stop_recording():
+            for pw, coeff in hamiltonian.pauli_rep.items():
+                if len(pw) == 0:
+                    continue
+                theta = 2 * time * coeff / n
+                term_str = "".join(pw.values())
+                wires = qml.wires.Wires(pw.keys())
+                single_round.append(PauliRot(theta, term_str, wires=wires))
 
-                if isinstance(term.name, list):
-                    word = "".join(pauli[j] for j in term.name)
+        full_decomp = single_round * n
+        if qml.QueuingManager.recording():
+            _ = [qml.apply(op) for op in full_decomp]
 
-            except KeyError as error:
-                raise ValueError(
-                    f"hamiltonian must be written in terms of Pauli matrices, got {error}"
-                ) from error
-
-            # skips terms composed solely of identities
-            if word.count("I") != len(word):
-                theta.append((2 * time * coeffs[i]) / n)
-                pauli_words.append(word)
-                wires.append(term.wires)
-
-        op_list = []
-
-        for i in range(n):
-            for j, term in enumerate(pauli_words):
-                op_list.append(PauliRot(theta[j], term, wires=wires[j]))
-
-        return op_list
+        return full_decomp

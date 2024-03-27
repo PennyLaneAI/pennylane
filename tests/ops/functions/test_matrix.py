@@ -24,7 +24,7 @@ from gate_data import I, X, Y, Z, H, S, CNOT, Rotx as RX, Roty as RY
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import TransformError
 from pennylane.pauli import PauliWord, PauliSentence
 
 one_qubit_no_parameter = [
@@ -548,7 +548,7 @@ class TestValidation:
     def test_invalid_argument(self):
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
         with pytest.raises(
-            OperationTransformError,
+            TransformError,
             match="Input is not an Operator, tape, QNode, or quantum function",
         ):
             _ = qml.matrix(None)
@@ -563,13 +563,13 @@ class TestValidation:
         wires = [0, "b"]
 
         with pytest.raises(
-            OperationTransformError,
+            TransformError,
             match=r"Wires in circuit \[1, 0\] are inconsistent with those in wire_order \[0, 'b'\]",
         ):
             qml.matrix(circuit, wire_order=wires)()
 
         with pytest.raises(
-            OperationTransformError,
+            TransformError,
             match=r"Wires in circuit \[0\] are inconsistent with those in wire_order \[1\]",
         ):
             qml.matrix(qml.PauliX(0), wire_order=[1])
@@ -835,6 +835,16 @@ class TestWireOrderErrors:
 
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(circuit)
+
+    def test_op_class(self):
+        """Tests that an error is raised when calling qml.matrix without wire_order
+        on an operator class with multiple wires."""
+
+        with pytest.raises(ValueError, match=r"wire_order is required"):
+            _ = qml.matrix(qml.CNOT)(wires=[0, 1])
+
+        # No error should be raised if the operator class has only one wire.
+        _ = qml.matrix(qml.Hadamard)(wires=0)
 
     def test_no_error_cases(self):
         """Test that an error is not raised when calling qml.matrix on an operator, a

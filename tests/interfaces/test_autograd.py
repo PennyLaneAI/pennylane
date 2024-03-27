@@ -200,8 +200,8 @@ class TestBatchTransformExecution:
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(dev, "batch_transform")
 
-        with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
-            qml.execute([tape], dev, None, device_batch_transform=False)
+        res = qml.execute([tape], dev, None, device_batch_transform=False)
+        assert np.allclose(res[0], np.cos(y), atol=0.1)
 
         spy.assert_not_called()
 
@@ -228,7 +228,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.workflow, "cache_execute")
+        spy = mocker.spy(qml.workflow.execution._cache_transform, "_transform")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -241,7 +241,7 @@ class TestCaching:
 
         params = np.array([0.1, 0.2])
         qml.jacobian(cost)(params, cachesize=2)
-        cache = spy.call_args[0][1]
+        cache = spy.call_args.kwargs["cache"]
 
         assert cache.maxsize == 2
         assert cache.currsize == 2
@@ -250,7 +250,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.workflow, "cache_execute")
+        spy = mocker.spy(qml.workflow.execution._cache_transform, "_transform")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -265,7 +265,7 @@ class TestCaching:
         params = np.array([0.1, 0.2])
         qml.jacobian(cost)(params, cache=custom_cache)
 
-        cache = spy.call_args[0][1]
+        cache = spy.call_args.kwargs["cache"]
         assert cache is custom_cache
 
     def test_caching_param_shift(self, tol):
@@ -398,7 +398,7 @@ class TestCaching:
                 )[0]
             )
 
-        # no cache_execute caching, but jac for each batch still stored.
+        # no caching, but jac for each batch still stored.
         qml.jacobian(cost)(params, cache=None)
         assert dev.num_executions == 2
 
