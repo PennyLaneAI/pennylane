@@ -27,16 +27,9 @@ from pennylane.measurements import (
     ProbabilityMP,
     VarianceMP,
 )
-from pennylane.operation import Observable
 from pennylane.typing import TensorLike
 
-from .utils import (
-    get_einsum_mapping,
-    reshape_state_as_matrix,
-    get_num_wires,
-    get_new_state_einsum_indices,
-    QUDIT_DIM,
-)
+from .utils import reshape_state_as_matrix, get_num_wires, QUDIT_DIM
 from .apply_operation import apply_operation
 
 
