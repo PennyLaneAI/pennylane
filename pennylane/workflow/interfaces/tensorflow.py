@@ -118,6 +118,13 @@ def set_parameters_on_copy(tapes, params):
     return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
 
 
+def _get_parameters_dtype(parameters):
+    for p in parameters:
+        if qml.math.get_interface(p) == "tensorflow":
+            return p.dtype
+    return tf.float64
+
+
 def _to_tensors(x, dtype=None):
     """
     Convert a nested tuple structure of arrays into a nested tuple
@@ -212,7 +219,10 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
 
     # need to use same tapes for forward pass execution that we will use for the vjp
     # if we are using device derivatives (`not differentiable`) so we can find them in the cache
-    res = _to_tensors(execute_fn(numpy_tapes))
+    params_dtype = _get_parameters_dtype(parameters)
+    dtype = params_dtype if params_dtype in {tf.float64, tf.complex128} else None
+    # make sure is float64 if data is float64.  May cause errors otherwise if device returns float32 precision
+    res = _to_tensors(execute_fn(numpy_tapes), dtype=dtype)
 
     @tf.custom_gradient
     def custom_gradient_execute(*parameters):  # pylint:disable=unused-argument
