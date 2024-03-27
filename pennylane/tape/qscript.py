@@ -435,6 +435,8 @@ class QuantumScript:
                     {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
                     for i, d in enumerate(m.obs.data)
                 )
+            elif m.eigvals() is not None:
+                self._par_info.append({"op": m, "op_idx": idx + n_ops, "p_idx": 0})
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -641,6 +643,8 @@ class QuantumScript:
         for m in self.measurements:
             if m.obs is not None:
                 params.extend(m.obs.data)
+            elif m.eigvals() is not None:
+                params.append(m.eigvals())
         return params
 
     def bind_new_parameters(self, params: Sequence[TensorLike], indices: Sequence[int]):
@@ -703,12 +707,20 @@ class QuantumScript:
 
         for op_idx, p_indices in op_indices.items():
             op = new_ops[op_idx]
-            data = op.data if isinstance(op, Operator) else op.obs.data
+            if isinstance(op, Operator):
+                data = op.data
+            elif op.obs is not None:
+                data = op.obs.data
+            elif op.eigvals() is not None:
+                data = (op.eigvals(),)
 
             new_params = [params[p_indices[i]] if i in p_indices else d for i, d in enumerate(data)]
 
             if isinstance(op, Operator):
                 new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+            elif op.obs is None:
+                # measurement process with eigvals are wires
+                new_op = op.__class__(eigvals=new_params[0], wires=op.wires)
             else:
                 new_obs = qml.ops.functions.bind_new_parameters(op.obs, new_params)
                 new_op = op.__class__(obs=new_obs)

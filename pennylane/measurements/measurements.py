@@ -361,12 +361,12 @@ class MeasurementProcess(ABC):
                 return qml.math.asarray([self.mv[i] for i in range(2 ** len(self.wires))])
             return qml.math.arange(0, 2 ** len(self.wires), 1)
 
-        if self.obs is not None:
-            try:
-                return qml.eigvals(self.obs)
-            except DecompositionUndefinedError as e:
-                raise EigvalsUndefinedError from e
-        return self._eigvals
+        if self.obs is None:
+            return self._eigvals
+        try:
+            return qml.eigvals(self.obs)
+        except DecompositionUndefinedError as e:
+            raise EigvalsUndefinedError from e
 
     @property
     def has_decomposition(self):

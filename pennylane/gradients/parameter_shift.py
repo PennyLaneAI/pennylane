@@ -632,7 +632,15 @@ def _get_non_involuntory_indices(tape, var_indices):
     for i in var_indices:
         obs = tape.measurements[i].obs
 
-        if isinstance(obs, qml.operation.Tensor):
+        if obs is None:
+            # measurement uses eigvals instead
+            if any(
+                not qml.math.allclose(qml.math.abs(eig), 1)
+                for eig in tape.measurements[i].eigvals()
+            ):
+                non_involutory_indices.append(i)
+
+        elif isinstance(obs, qml.operation.Tensor):
             # Observable is a tensor product, we must investigate all constituent observables.
             if any(o.name in NONINVOLUTORY_OBS for o in tape.measurements[i].obs.obs):
                 non_involutory_indices.append(i)
@@ -692,17 +700,22 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
 
     for i in var_indices:
         obs = new_measurements[i].obs
-        new_measurements[i] = qml.expval(op=obs)
-        if obs.name in ["Hamiltonian", "LinearCombination", "Sum"]:
-            first_obs_idx = len(tape.operations)
-            for t_idx in reversed(range(len(tape.trainable_params))):
-                op, op_idx, _ = tape.get_operation(t_idx)
-                if op_idx < first_obs_idx:
-                    break  # already seen all observables
-                if op is obs:
-                    raise ValueError(
-                        "Can only differentiate Hamiltonian coefficients for expectations, not variances"
-                    )
+        if obs is None:
+            # measurement is in diagonal form using eigvals and wires
+            m = new_measurements[i]
+            new_measurements[i] = qml.measurements.ExpectationMP(eigvals=m.eigvals(), wires=m.wires)
+        else:
+            new_measurements[i] = qml.expval(op=obs)
+            if obs.name in ["Hamiltonian", "LinearCombination", "Sum"]:
+                first_obs_idx = len(tape.operations)
+                for t_idx in reversed(range(len(tape.trainable_params))):
+                    op, op_idx, _ = tape.get_operation(t_idx)
+                    if op_idx < first_obs_idx:
+                        break  # already seen all observables
+                    if op is obs:
+                        raise ValueError(
+                            "Can only differentiate Hamiltonian coefficients for expectations, not variances"
+                        )
 
     expval_tape = qml.tape.QuantumScript(
         tape.operations, new_measurements, shots=tape.shots, trainable_params=tape.trainable_params
@@ -732,8 +745,14 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         for i in non_involutory_indices:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            obs = _square_observable(tape.measurements[i].obs)
-            new_measurements[i] = qml.expval(obs)
+            if tape.measurements[i].obs is None:
+                # measurement represented by eigvals instead
+                m = tape.measurements[i]
+                eigs = m.eigvals() ** 2
+                new_measurements[i] = qml.measurements.ExpectationMP(eigvals=eigs, wires=m.wires)
+            else:
+                obs = _square_observable(tape.measurements[i].obs)
+                new_measurements[i] = qml.expval(obs)
 
         tape_with_obs_squared_expval = qml.tape.QuantumScript(
             tape.operations,

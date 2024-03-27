@@ -44,6 +44,7 @@ qubit_device_and_diff_method = [
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
+    [qml.device("mini.qubit"), "parameter-shift", False, False],
 ]
 
 interface_and_qubit_device_and_diff_method = [

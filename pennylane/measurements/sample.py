@@ -14,7 +14,6 @@
 """
 This module contains the qml.sample measurement.
 """
-import functools
 import warnings
 from typing import Sequence, Tuple, Optional, Union
 
@@ -182,10 +181,11 @@ class SampleMP(SampleMeasurement):
         return Sample
 
     @property
-    @functools.lru_cache()
     def numeric_type(self):
         # Note: we only assume an integer numeric type if the observable is a
         # built-in observable with integer eigenvalues or a tensor product thereof
+        if self._eigvals is not None:
+            return self._eigvals.dtype
         if self.obs is None:
             # Computational basis samples
             return int
@@ -200,7 +200,7 @@ class SampleMP(SampleMeasurement):
                 "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        if self.obs:
+        if self.obs or self._eigvals is not None:
             num_values_per_shot = 1  # one single eigenvalue
         else:
             # one value per wire
@@ -249,7 +249,7 @@ class SampleMP(SampleMeasurement):
         num_wires = samples.shape[-1]  # wires is the last dimension
 
         # If we're sampling wires or a list of mid-circuit measurements
-        if self.obs is None and not isinstance(self.mv, MeasurementValue):
+        if self.obs is None and not isinstance(self.mv, MeasurementValue) and self._eigvals is None:
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 

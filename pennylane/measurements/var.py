@@ -108,7 +108,9 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=op).process_samples(
+            samples = qml.measurements.SampleMP(
+                eigvals=self._eigvals, wires=self._wires, obs=op
+            ).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 
@@ -141,4 +143,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             probabilities (array): the probabilities of collapsing to eigen states
         """
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
-        return qml.math.dot(probabilities, (eigvals**2)) - qml.math.dot(probabilities, eigvals) ** 2
+        return (
+            qml.math.dot(probabilities, (eigvals**2)) - qml.math.dot(probabilities, eigvals) ** 2
+        )

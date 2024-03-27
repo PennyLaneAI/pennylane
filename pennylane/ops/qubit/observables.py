@@ -125,9 +125,7 @@ class Hermitian(Observable):
         [[ 6.+0.j  1.-2.j]
          [ 1.+2.j -1.+0.j]]
         """
-        A = qml.math.asarray(A)
-        Hermitian._validate_input(A)
-        return A
+        return qml.math.asarray(A)
 
     @property
     def eigendecomposition(self):
@@ -142,6 +140,9 @@ class Hermitian(Observable):
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
         Hmat = self.matrix()
+        if qml.math.is_abstract(Hmat):
+            w, U = qml.math.linalg.eig(Hmat)
+            return {"eigvec": U, "eigval": w}
         Hmat = qml.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
