@@ -139,6 +139,8 @@ class DefaultQutritMixed(Device):  # TODO
         * ``results``: The results of each call of :meth:`~.execute`
     """
 
+    _device_options = ("rng", "prng_key")  # tuple of string names for all the device options.
+
     @property
     def name(self):
         """The name of the device."""
@@ -171,6 +173,10 @@ class DefaultQutritMixed(Device):  # TODO
 
         """
         updated_values = {}
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
+
         if execution_config.gradient_method == "best":
             updated_values["gradient_method"] = "backprop"
         if execution_config.use_device_gradient is None:
@@ -178,22 +184,18 @@ class DefaultQutritMixed(Device):  # TODO
                 "best",
                 "backprop",
             }
-        if execution_config.use_device_jacobian_product is None:
-            updated_values["use_device_jacobian_product"] = (
-                execution_config.gradient_method == "adjoint"
-            )
-        if execution_config.grad_on_execution is None:
-            updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+        updated_values["use_device_jacobian_product"] = False  # TODO: Should this be removed?
+        updated_values["grad_on_execution"] = False
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
-        if "rng" not in updated_values["device_options"]:
-            updated_values["device_options"]["rng"] = self._rng
-        if "prng_key" not in updated_values["device_options"]:
-            updated_values["device_options"]["prng_key"] = self._prng_key
+
+        for option in self._device_options:
+            if option not in updated_values["device_options"]:
+                updated_values["device_options"][option] = getattr(self, f"_{option}")
         return replace(execution_config, **updated_values)
 
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,  # TODO
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
@@ -211,7 +213,7 @@ class DefaultQutritMixed(Device):  # TODO
         * Supports any qutrit operations that provide a matrix
         * Supports any qutrit Channels that provide kraus matrices
         * Currently does not support finite shots
-        * TODO ??? Currently does not intrinsically support parameter broadcasting
+        * Currently does not intrinsically support parameter broadcasting
 
         """
         config = self._setup_execution_config(execution_config)
