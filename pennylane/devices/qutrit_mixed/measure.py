@@ -202,8 +202,6 @@ def get_measurement_function(
     """
     if isinstance(measurementprocess, StateMeasurement):
         if isinstance(measurementprocess, ExpectationMP):
-            # TODO add faster methods
-            # TODO add support for sparce Hamiltonians
             if isinstance(measurementprocess.obs, (Hamiltonian, Sum)):
                 return calculate_expval_sum_of_terms
             if measurementprocess.obs.has_matrix:
