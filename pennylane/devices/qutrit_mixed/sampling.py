@@ -14,6 +14,7 @@
 """
 Code relevant for sampling a qutrit mixed state.
 """
+import functools
 import numpy as np
 import pennylane as qml
 from pennylane import math
@@ -129,10 +130,7 @@ def _measure_with_samples_diagonalizing_gates(
         if isinstance(mp, SampleMP):
             return math.squeeze(samples_processed)
         if isinstance(mp, CountsMP):
-
-            def process_func(x):
-                return _process_counts_samples(x, bool(mp.obs))
-
+            process_func = functools.partial(_process_counts_samples, mp_has_obs=mp.obs is not None)
         elif isinstance(mp, ExpectationMP):
             process_func = _process_expval_samples
         elif isinstance(mp, VarianceMP):
@@ -154,7 +152,6 @@ def _measure_with_samples_diagonalizing_gates(
             # Like default.qubit currently calling sample_state for each shot entry,
             # but it may be better to call sample_state just once with total_shots,
             # then use the shot_range keyword argument
-            print(s)
             samples = sample_state(
                 state,
                 shots=s,
@@ -187,7 +184,7 @@ def _measure_sum_with_samples(
     rng=None,
     prng_key=None,
 ):
-    """Sums expectation values of Sum or Hamiltonian Observables"""
+    """Compute expectation values of Sum or Hamiltonian Observables"""
     # mp.obs returns is the list of observables for Sum,
     # mp.obs.terms()[1] returns is the list of observables for Hamiltonian
     obs_terms = mp.obs if isinstance(mp.obs, Sum) else mp.obs.terms()[1]
@@ -281,7 +278,7 @@ def sample_state(
     rng=None,
     prng_key=None,
 ) -> np.ndarray:
-    """Returns a series of samples of a state.
+    """Returns a series of computational basis samples of a state.
 
     Args:
         state (array[complex]): A state vector to be sampled

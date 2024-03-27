@@ -24,6 +24,7 @@ performance improvements.
 
 Currently, PennyLane supports the
 `Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler
+and the CUDA Quantum compiler
 with the :func:`~.qjit` decorator. A significant benefit of Catalyst
 is the ability to preserve complex control flow around quantum
 operations — such as if statements and for loops, and including measurement
@@ -82,8 +83,8 @@ hybrid quantum-classical compilers with PennyLane, but does not provide
 a built-in compiler.
 
 Currently, only the `Catalyst <https://github.com/pennylaneai/catalyst>`__
-hybrid compiler is supported with PennyLane, however there are plans
-to incorporate additional compilers in the near future.
+hybrid compiler and CUDA Quantum compiler toolchains are supported with PennyLane,
+however there are plans to incorporate additional compilers in the near future.
 
 .. note::
 
@@ -122,7 +123,7 @@ compiled in the first call.
         qml.Hadamard(wires=0)
         qml.RX(theta, wires=1)
         qml.CNOT(wires=[0,1])
-        return qml.expval(qml.PauliZ(wires=1))
+        return qml.expval(qml.Z(1))
 
 >>> circuit(0.5)  # the first call, compilation occurs here
 array(0.)
@@ -164,7 +165,7 @@ rather than in Python at compile time. You can enable this feature via the
         else:
             qml.T(wires=0)
 
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
 >>> circuit(3)
 array(0.)

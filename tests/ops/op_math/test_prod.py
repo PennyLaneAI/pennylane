@@ -14,7 +14,7 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
-# pylint:disable=protected-access
+# pylint:disable=protected-access, unused-argument
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -87,6 +87,20 @@ ops_hermitian_status = (  # computed manually
     False,  # False
     False,  # False
 )
+
+
+def test_legacy_ops():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
+        _ = H.ops
+
+
+def test_legacy_coeffs():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
+        _ = H.coeffs
 
 
 # currently failing due to has_diagonalizing_gates logic
@@ -246,6 +260,17 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         x = qml.numpy.array([1.0, 2.0, 3.0])
         prod_op = prod(qml.PauliX(0), qml.RX(x, wires=0))
         assert prod_op.batch_size == 3
+
+    @pytest.mark.parametrize(
+        "op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI + PROD_TERMS_OP_PAIRS_MIXED
+    )
+    def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
+        """Test that calling Prod.terms does not queue anything."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.apply(op)
+            _, _ = op.terms()
+
+        assert q.queue == [op]
 
     def test_batch_size_None(self):
         """Test that the batch size is none if no factors have batching."""
@@ -947,6 +972,16 @@ class TestProperties:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
+    @pytest.mark.jax
+    def test_eigvals_jax_jit(self):
+        """Assert computing the eigvals of a Prod is compatible with jax-jit."""
+        import jax
+
+        def f(t1, t2):
+            return qml.prod(qml.RX(t1, 0), qml.RX(t2, 0)).eigvals()
+
+        assert qml.math.allclose(f(0.5, 1.0), jax.jit(f)(0.5, 1.0))
+
     # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
@@ -1261,7 +1296,11 @@ class TestSimplify:
         """Test that simplifying operators with a valid pauli representation works with tf interface."""
         import tensorflow as tf
 
-        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46j)
+        c1, c2, c3 = (
+            tf.Variable(1.23, dtype=tf.complex128),
+            tf.Variable(2.0, dtype=tf.complex128),
+            tf.Variable(2.46j, dtype=tf.complex128),
+        )
 
         op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
@@ -1372,11 +1411,11 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.probs(op=prod_op)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        x_probs = np.array([0.5, 0.5])
+        h_probs = np.array([np.cos(-np.pi / 4 / 2) ** 2, np.sin(-np.pi / 4 / 2) ** 2])
+        expected = np.tensordot(x_probs, h_probs, axes=0).flatten()
+        out = my_circ()
+        assert qml.math.allclose(out, expected)
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""

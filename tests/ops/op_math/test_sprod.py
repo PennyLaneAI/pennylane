@@ -711,6 +711,13 @@ class TestProperties:
             op = s_prod(scalar, qml.PauliX(wires=0))
             assert op.is_hermitian == hermitian_state
 
+    @pytest.mark.tf
+    def test_no_dtype_promotion(self):
+        import tensorflow as tf
+
+        op = qml.s_prod(tf.constant(0.5), qml.X(0))
+        assert op.scalar.dtype == next(iter(op.pauli_rep.values())).dtype
+
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
@@ -1009,13 +1016,10 @@ class TestIntegration:
         @qml.qnode(dev)
         def my_circ():
             qml.PauliX(0)
-            return qml.probs(op=sprod_op)
+            return qml.probs(op=sprod_op), qml.probs(op=qml.Hadamard(1))
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        res1, res2 = my_circ()
+        assert qml.math.allclose(res1, res2)
 
     def test_measurement_process_sample(self):
         """Test SProd class instance in sample measurement process."""

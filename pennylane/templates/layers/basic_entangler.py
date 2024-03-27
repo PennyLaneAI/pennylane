@@ -72,7 +72,7 @@ class BasicEntanglerLayers(Operation):
             @qml.qnode(dev)
             def circuit(weights):
                 qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi, pi]])
         [1., 1., -1.]
@@ -101,7 +101,7 @@ class BasicEntanglerLayers(Operation):
             @qml.qnode(dev)
             def circuit(weights):
                 qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi]])
         [-1, 1]
@@ -116,7 +116,7 @@ class BasicEntanglerLayers(Operation):
             @qml.qnode(dev)
             def circuit(weights):
                 qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.

@@ -196,7 +196,7 @@ def apply_operation(
     >>> state
     tensor([[1., 0.],
         [0., 0.]], requires_grad=True)
-    >>> apply_operation(qml.PauliX(0), state)
+    >>> apply_operation(qml.X(0), state)
     tensor([[0., 0.],
         [1., 0.]], requires_grad=True)
 
@@ -231,7 +231,7 @@ def apply_conditional(
     Returns:
         ndarray: output state
     """
-    if mid_measurements[op.meas_val.measurements[0]]:
+    if op.meas_val.concretize(mid_measurements):
         return apply_operation(
             op.then_op,
             state,
@@ -260,21 +260,24 @@ def apply_mid_measure(
     """
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
+    if not np.allclose(np.linalg.norm(state), 1.0):
+        mid_measurements[op] = 0
+        return np.zeros_like(state)
     wire = op.wires
     probs = qml.devices.qubit.measure(qml.probs(wire), state)
     sample = np.random.binomial(1, probs[1])
     mid_measurements[op] = sample
+    if op.postselect is not None and sample != op.postselect:
+        return np.zeros_like(state)
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)
     slices[axis] = int(not sample)
     state[tuple(slices)] = 0.0
     state_norm = np.linalg.norm(state)
-    if state_norm < 1.0e-15:
-        raise ValueError("Cannot normalize projected state.")
     state = state / state_norm
     if op.reset and sample == 1:
         state = apply_operation(
-            qml.PauliX(wire), state, is_state_batched=is_state_batched, debugger=debugger
+            qml.X(wire), state, is_state_batched=is_state_batched, debugger=debugger
         )
     return state
 
@@ -294,14 +297,14 @@ def apply_global_phase(
 
 
 @apply_operation.register
-def apply_paulix(op: qml.PauliX, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
     axis = op.wires[0] + is_state_batched
     return math.roll(state, 1, axis)
 
 
 @apply_operation.register
-def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply pauliz to state."""
 
     axis = op.wires[0] + is_state_batched

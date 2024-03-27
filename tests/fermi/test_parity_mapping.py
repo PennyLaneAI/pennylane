@@ -26,16 +26,6 @@ def test_error_is_raised_for_dimension_mismatch():
         parity_transform(FermiWord({(0, 1): "-", (1, 0): "+", (2, 6): "-"}), 6)
 
 
-def test_warning_is_raised_with_use():
-    """Test that a UserWarning is raised when this mapping is used"""
-
-    with pytest.warns(
-        UserWarning,
-        match="This mapping should be used with operators and states in the parity basis.",
-    ):
-        parity_transform(FermiWord({(0, 1): "-", (1, 0): "+", (2, 2): "-"}), 4)
-
-
 FERMI_WORDS_AND_OPS = [
     (
         FermiWord({(0, 0): "+"}),

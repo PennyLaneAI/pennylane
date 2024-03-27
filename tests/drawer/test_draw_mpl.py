@@ -398,3 +398,31 @@ def test_draw_mpl_with_control_in_adjoint():
     assert len(ax.lines) == 4  # three wires, one control
     assert len(ax.texts) == 4  # three wire labels, one gate label
     assert ax.texts[-1].get_text() == "X†"
+
+
+@pytest.mark.parametrize(
+    "device",
+    [qml.device("default.qubit.legacy", wires=2), qml.device("default.qubit", wires=2)],
+)
+def test_applied_transforms(device):
+    """Test that any transforms applied to the qnode are included in the output."""
+
+    @qml.transform
+    def just_pauli_x(_):
+        new_tape = qml.tape.QuantumScript([qml.PauliX(0)])
+        return (new_tape,), lambda res: res[0]
+
+    @just_pauli_x
+    @qml.qnode(device)
+    def my_circuit():
+        qml.SWAP(wires=(0, 1))
+        qml.CNOT(wires=(0, 1))
+        return qml.probs(wires=(0, 1))
+
+    _, ax = qml.draw_mpl(my_circuit)()
+
+    assert len(ax.lines) == 1  # single wire used in tape
+    assert len(ax.patches) == 1  # single pauli x gate
+    assert len(ax.texts) == 2  # one wire label, one gate label
+
+    plt.close()

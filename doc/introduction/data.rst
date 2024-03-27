@@ -126,7 +126,7 @@ We can use custom datasets to store any data generated in PennyLane and its supp
 To create a dataset, we can do the following:
 
 >>> coeffs = [1, 0.5]
->>> observables = [qml.PauliZ(wires=0), qml.PauliX(wires=1)]
+>>> observables = [qml.Z(0), qml.X(1)]
 >>> H = qml.Hamiltonian(coeffs, observables)
 >>> energies, _ = np.linalg.eigh(qml.matrix(H)) #Calculate the energies
 >>> dataset = qml.data.Dataset(data_name = "Example", hamiltonian=H, energies=energies)

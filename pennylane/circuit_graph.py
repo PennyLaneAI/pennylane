@@ -554,13 +554,13 @@ class CircuitGraph:
 
         >>> dev = qml.device('default.qubit', wires=3)
         >>> def circuit_measure_max_once():
-        ...     return qml.expval(qml.PauliX(wires=0))
+        ...     return qml.expval(qml.X(0))
         >>> qnode = qml.QNode(circuit_measure_max_once, dev)
         >>> qnode()
         >>> qnode.qtape.graph.max_simultaneous_measurements
         1
         >>> def circuit_measure_max_twice():
-        ...     return qml.expval(qml.PauliX(wires=0)), qml.probs(wires=0)
+        ...     return qml.expval(qml.X(0)), qml.probs(wires=0)
         >>> qnode = qml.QNode(circuit_measure_max_twice, dev)
         >>> qnode()
         >>> qnode.qtape.graph.max_simultaneous_measurements
