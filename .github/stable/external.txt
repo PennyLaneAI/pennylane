@@ -39,7 +39,7 @@ executing==2.0.1
 fastjsonschema==2.19.1
 filelock==3.13.3
 flaky==3.8.1
-flatbuffers==24.3.7
+flatbuffers==24.3.25
 fonttools==4.50.0
 fqdn==1.5.1
 future==1.0.0
@@ -123,8 +123,8 @@ ptyprocess==0.7.0
 pure-eval==0.2.2
 py==1.11.0
 py-cpuinfo==9.0.0
-pyasn1==0.5.1
-pyasn1-modules==0.3.0
+pyasn1==0.6.0
+pyasn1_modules==0.4.0
 pybind11==2.11.1
 pycparser==2.21
 Pygments==2.17.2
