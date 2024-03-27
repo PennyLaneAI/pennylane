@@ -599,16 +599,34 @@ def _coerce_types_torch(tensors):
     torch = _i("torch")
 
     # Extract existing set devices, if any
-    device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
-    if len(device_set) > 1:  # pragma: no cover
-        # GPU specific case
-        device_names = ", ".join(str(d) for d in device_set)
-        raise RuntimeError(
-            f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
-        )
+    device_set = set()
+    dev_indices = set()
+    for t in tensors:
+        if isinstance(t, torch.Tensor):
+            device_set.add(t.device.type)
+            dev_indices.add(t.device.index)
+        else:
+            device_set.add("cpu")
+            dev_indices.add(None)
 
-    device = device_set.pop() if len(device_set) == 1 else None
-    tensors = [torch.as_tensor(t, device=device) for t in tensors]
+    if len(device_set) > 1:  # pragma: no cover
+        # If data exists on two separate GPUs, outright fail
+        if len([i for i in dev_indices if i is not None]) > 1:
+            device_names = ", ".join(str(d) for d in device_set)
+
+            raise RuntimeError(
+                f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
+            )
+        # Otherwise, automigrate data from CPU to GPU and carry on.
+        dev_indices.remove(None)
+        dev_id = dev_indices.pop()
+        tensors = [
+            torch.as_tensor(t, device=torch.device(f"cuda:{dev_id}"))
+            for t in tensors  # pragma: no cover
+        ]
+    else:
+        device = device_set.pop()
+        tensors = [torch.as_tensor(t, device=device) for t in tensors]
 
     dtypes = {i.dtype for i in tensors}
 
