@@ -82,8 +82,9 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
         Python ``not``, ``and``, ``or``, do not work since these do not have dunder methods.
         Instead use ``~``, ``&``, ``|``.
 
-    Mid-circuit measurement results can also be returned from QNodes with :func:`sample` (finite 
-    shots) and :func:`expval` (finite shots and analytic).
+    Mid-circuit measurement results can be processed with the usual measurement functions such as
+    :func:`~.expval`. For QNodes with finite shots, :func:`~.sample` applied to a mid-circuit measurement
+    result will return a binary sequence of samples.
     
     .. code-block:: python3
 
