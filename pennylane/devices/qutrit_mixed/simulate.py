@@ -13,6 +13,8 @@
 # limitations under the License.
 """Simulate a quantum script for a qutrit mixed state device."""
 # pylint: disable=protected-access
+from numpy.random import default_rng
+
 import pennylane as qml
 from pennylane.typing import Result
 
