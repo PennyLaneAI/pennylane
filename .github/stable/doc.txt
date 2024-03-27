@@ -115,7 +115,7 @@ typing_extensions==4.10.0
 tzdata==2024.1
 urllib3==1.26.18
 Werkzeug==3.0.1
-wrapt==1.14.1
+wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
 yarl==1.9.4
 zipp==3.18.1
