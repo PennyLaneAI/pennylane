@@ -291,6 +291,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Tensorflow can now handle devices with float32 results but float64 input parameters.
+
 * `jax.jit` now works with `qml.sample` with a multi-wire observable.
   [(#5422)](https://github.com/PennyLaneAI/pennylane/pull/5422)
 
