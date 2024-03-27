@@ -76,7 +76,7 @@ def shadow_expval(tape: QuantumTape, H, k=1) -> (Sequence[QuantumTape], Callable
 
     .. code-block:: python3
 
-        H = qml.PauliZ(0) @ qml.PauliZ(1)
+        H = qml.Z(0) @ qml.Z(1)
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
         @partial(qml.shadows.shadow_expval, H, k=1)
@@ -116,9 +116,7 @@ def _shadow_state_diffable(tape, wires):
     for w in wires_list:
         observables = []
         # Create all combinations of possible Pauli products P_i P_j P_k.... for w wires
-        for obs in product(
-            *[[qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ] for _ in range(len(w))]
-        ):
+        for obs in product(*[[qml.Identity, qml.X, qml.Y, qml.Z] for _ in range(len(w))]):
             # Perform tensor product (((P_i @ P_j) @ P_k ) @ ....)
             observables.append(reduce(lambda a, b: a @ b, [ob(wire) for ob, wire in zip(obs, w)]))
         all_observables.extend(observables)

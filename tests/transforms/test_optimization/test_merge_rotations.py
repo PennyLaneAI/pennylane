@@ -384,9 +384,6 @@ class TestMergeRotationsInterfaces:
         """Test QNode and gradient in JAX interface."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -411,11 +408,6 @@ class TestMergeRotationsInterfaces:
         0 rotation angles does not break things."""
 
         import jax
-
-        # Enable float64 support
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         @jax.jit
         @qml.qnode(qml.device("default.qubit", wires=["w1", "w2"]), interface="jax")
@@ -518,3 +510,18 @@ class TestTransformDispatch:
         res = transformed_qnode([0.1, 0.2, 0.3, 0.4])
         exp_res = qnode_circuit([0.1, 0.2, 0.3, 0.4])
         assert np.allclose(res, exp_res)
+
+
+@pytest.mark.xfail
+def test_merge_rotations_non_commuting_observables():
+    """Test that merge_roatations works with non-commuting observables."""
+
+    @qml.transforms.merge_rotations
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.RX(-x, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
+
+    res = circuit(0.5)
+    assert qml.math.allclose(res[0], 1.0)
+    assert qml.math.allclose(res[1], 0.0)

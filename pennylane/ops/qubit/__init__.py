@@ -24,7 +24,6 @@ The operations are divided into the following files:
   located in ``non_parameteric_ops.py`` instead.
 * ``parametric_ops_single_qubit.py``: Core single qubit parametric operations.
 * ``parametric_ops_multi_qubit.py``: Core multi-qubit parametric operations.
-* ``parametric_ops_controlled.py``: Controlled parametric operations.
 * ``qchem_ops.py``: Operations for quantum chemistry applications.
 * ``state_preparation.py``: Operations that initialize the state.
 * ``special_unitary.py``: The ``SpecialUnitary`` operation.
@@ -36,7 +35,6 @@ from .non_parametric_ops import *
 from .observables import *
 from .parametric_ops_single_qubit import *
 from .parametric_ops_multi_qubit import *
-from .parametric_ops_controlled import *
 from .qchem_ops import *
 from .state_preparation import *
 from .special_unitary import SpecialUnitary
@@ -49,39 +47,31 @@ __ops__ = {
     "Snapshot",
     "Hadamard",
     "PauliX",
+    "X",
     "PauliY",
+    "Y",
     "PauliZ",
+    "Z",
     "PauliRot",
     "MultiRZ",
     "S",
     "T",
     "SX",
-    "CNOT",
-    "CCZ",
-    "CH",
     "SWAP",
     "ISWAP",
     "SISWAP",
     "SQISW",
-    "CSWAP",
     "PSWAP",
     "ECR",
-    "Toffoli",
     "RX",
     "RY",
     "RZ",
     "PhaseShift",
     "PCPhase",
-    "ControlledPhaseShift",
     "CPhaseShift00",
     "CPhaseShift01",
     "CPhaseShift10",
-    "CPhase",
     "Rot",
-    "CRX",
-    "CRY",
-    "CRZ",
-    "CRot",
     "U1",
     "U2",
     "U3",
@@ -96,7 +86,6 @@ __ops__ = {
     "QubitUnitary",
     "BlockEncode",
     "SpecialUnitary",
-    "MultiControlledX",
     "IntegerComparator",
     "DiagonalQubitUnitary",
     "SingleExcitation",
@@ -118,8 +107,11 @@ __ops__ = {
 __obs__ = {
     "Hadamard",
     "PauliX",
+    "X",
     "PauliY",
+    "Y",
     "PauliZ",
+    "Z",
     "Hermitian",
     "Projector",
     "SparseHamiltonian",

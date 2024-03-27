@@ -20,7 +20,7 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 from pennylane.measurements import Shots
 
 torch = pytest.importorskip("torch")

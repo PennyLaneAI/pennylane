@@ -85,6 +85,7 @@ class DoubleFactorization(Operation):
         default value of 0.0016 Ha (chemical accuracy). The costs are computed using Eqs. (C39-C40)
         of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
     """
+
     num_wires = AnyWires
     grad_method = None
 
@@ -157,6 +158,24 @@ class DoubleFactorization(Operation):
         )
 
         super().__init__(wires=range(self.qubits))
+
+    def _flatten(self):
+        return (self.one_electron, self.two_electron), (
+            ("error", self.error),
+            ("rank_r", self.rank_r),
+            ("rank_m", self.rank_m),
+            ("rank_max", self.rank_max),
+            ("tol_factor", self.tol_factor),
+            ("tol_eigval", self.tol_eigval),
+            ("br", self.br),
+            ("alpha", self.alpha),
+            ("beta", self.beta),
+            ("chemist_notation", True),
+        )
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, **dict(metadata))
 
     @staticmethod
     def estimation_cost(lamb, error):

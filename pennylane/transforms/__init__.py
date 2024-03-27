@@ -163,21 +163,6 @@ instead to the documentation of :func:`qml.transform <pennylane.transform>`.
     ~transforms.core.transform_dispatcher
     ~transforms.core.transform_program
 
-Old transforms framework
-------------------------
-
-These utility functions were previously used to create transforms in PennyLane and are now
-deprecated. It is now recommended to use :class:`qml.transform <pennylane.transform>`
-for the creation of custom transforms.
-
-.. autosummary::
-    :toctree: api
-
-    ~single_tape_transform
-    ~batch_transform
-    ~qfunc_transform
-    ~op_transform
-
 Transforming circuits
 ---------------------
 
@@ -261,8 +246,8 @@ passes on a QNode to maximize gate reduction before execution.
 .. code-block:: python
 
         dev = qml.device("default.qubit", wires=1)
-        @qml.merge_rotations
-        @qml.cancel_inverses
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
         @qml.qnode(device=dev):
         def circuit(x, y):
             qml.Hadamard(wires=0)
@@ -271,7 +256,7 @@ passes on a QNode to maximize gate reduction before execution.
             qml.RY(y, wires=0)
             qml.RZ(y, wires=0)
             qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
 In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
 merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.
@@ -284,11 +269,13 @@ For gradient transforms, refer to the examples in :doc:`gradients documentation 
 Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
 for a comprehensive overview of transforms and core functionalities, consult the :doc:`transforms documentation <../code/qml_transforms>`.
 """
+
+# Leave as alias for backwards-compatibility
+from pennylane.tape import make_qscript as make_tape
+
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, TransformError
-from .batch_transform import batch_transform, map_batch_transform
-from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
-from .op_transforms import op_transform
+from .batch_transform import map_batch_transform
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
@@ -296,12 +283,9 @@ from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 
 
-from .decompositions import (
-    clifford_t_decomposition,
-    one_qubit_decomposition,
-    two_qubit_decomposition,
-)
+from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
+from .dynamic_one_shot import dynamic_one_shot
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
@@ -334,6 +318,7 @@ from .tape_expand import (
     expand_trainable_multipar,
     create_expand_fn,
     create_decomp_expand_fn,
+    create_expand_trainable_multipar,
     set_decomposition,
 )
 from .transpile import transpile

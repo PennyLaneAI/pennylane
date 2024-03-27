@@ -283,9 +283,6 @@ class TestComputeJVPSingle:
         """Test that using the JAX interface the dtype of the result is
         determined by the dtype of the dy."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dtype = dtype1
         dtype1 = getattr(jax.numpy, dtype1)
@@ -466,7 +463,7 @@ class TestJVP:
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         if batch_dim is not None:
-            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
+            pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
@@ -495,7 +492,7 @@ class TestJVP:
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         if batch_dim is not None:
-            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
+            pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
@@ -529,7 +526,7 @@ class TestJVP:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs and a single parameter"""
         if batch_dim is not None:
-            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
+            pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
 
@@ -564,7 +561,7 @@ class TestJVP:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs and multiple parameters"""
         if batch_dim is not None:
-            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
+            pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
@@ -982,9 +979,11 @@ class TestBatchJVP:
             tapes,
             tangents,
             param_shift,
-            reduction=lambda jvps, x: jvps.extend(qml.math.reshape(x, (1,)))
-            if not isinstance(x, tuple) and x.shape == ()
-            else jvps.extend(x),
+            reduction=lambda jvps, x: (
+                jvps.extend(qml.math.reshape(x, (1,)))
+                if not isinstance(x, tuple) and x.shape == ()
+                else jvps.extend(x)
+            ),
         )
         res = fn(dev.execute(v_tapes))
 

@@ -87,6 +87,8 @@ class TestSampleState:
         """Tests that sample_state calls _sample_state_jax if the seed is a JAX PRNG key"""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
         state = qml.math.array(two_qubit_state, like="jax")
 
@@ -808,6 +810,8 @@ class TestBroadcastingPRNG:
     def test_sample_measure(self, mocker):
         """Test that broadcasting works for qml.sample and single shots"""
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
 

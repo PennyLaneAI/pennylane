@@ -26,6 +26,11 @@ def test_standard_validity():
     qml.ops.functions.assert_valid(op)
 
 
+def test_repr():
+    op = qml.Permute([2, 1, 0], wires=(0, 1, 2))
+    assert repr(op) == "Permute((2, 1, 0), wires=[0, 1, 2])"
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

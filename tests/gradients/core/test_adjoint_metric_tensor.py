@@ -288,9 +288,6 @@ class TestAdjointMetricTensorTape:
         calling the adjoint metric tensor directly on a tape."""
 
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
@@ -403,16 +400,14 @@ class TestAdjointMetricTensorQNode:
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.skip("JAX does not support forward pass execution of the metric tensor.")
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the output is correct when using JAX and
         calling the adjoint metric tensor on a QNode."""
 
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
@@ -424,7 +419,7 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.adjoint_metric_tensor(circuit)(*j_params)
+        mt = qml.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))(*j_params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -538,9 +533,6 @@ class TestAdjointMetricTensorDifferentiability:
         calling the adjoint metric tensor on a QNode."""
 
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         expected = qml.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)

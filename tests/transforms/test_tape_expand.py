@@ -388,7 +388,7 @@ class TestExpandInvalidTrainable:
 
 
 # Custom decomposition functions for testing.
-def custom_cnot(wires):
+def custom_cnot(wires, **_):
     return [
         qml.Hadamard(wires=wires[1]),
         qml.CZ(wires=[wires[0], wires[1]]),
@@ -808,7 +808,7 @@ class TestCreateCustomDecompExpandFn:
         # check that new instances of the operator are not affected by the modifications made to get the decomposition
         assert [op1 == op2 for op1, op2 in zip(CustomOp(0).decomposition(), original_decomp)]
 
-    def test_custom_decomp_in_separate_context_legacy(self):
+    def test_custom_decomp_in_separate_context_legacy_opmath(self):
         """Test that the set_decomposition context manager works."""
 
         dev = qml.device("default.qubit.legacy", wires=2)
@@ -912,3 +912,33 @@ class TestCreateCustomDecompExpandFn:
             res.append(cost(x))
 
         assert res[0] == res[1]
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_custom_decomp_with_mcm(self, shots):
+        """Test that specifying a single custom decomposition works as expected."""
+
+        custom_decomps = {"Hadamard": custom_hadamard}
+        decomp_dev = qml.device("default.qubit", shots=shots, custom_decomps=custom_decomps)
+
+        @qml.qnode(decomp_dev, expansion_strategy="device")
+        def circuit():
+            qml.Hadamard(wires=0)
+            _ = qml.measure(0)
+            qml.CNOT(wires=[0, 1])
+            _ = qml.measure(1)
+            return qml.expval(qml.PauliZ(0))
+
+        _ = circuit()
+        decomp_ops = circuit.tape.operations
+
+        print(decomp_ops)
+        assert len(decomp_ops) == 4 if shots is None else 5
+
+        assert decomp_ops[0].name == "RZ"
+        assert np.isclose(decomp_ops[0].parameters[0], np.pi)
+
+        assert decomp_ops[1].name == "RY"
+        assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
+
+        assert decomp_ops[2].name == "CNOT"
+        assert decomp_ops[3].name == "CNOT"

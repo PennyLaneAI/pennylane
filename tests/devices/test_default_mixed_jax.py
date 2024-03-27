@@ -89,6 +89,30 @@ class TestQNodeIntegration:
 
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("n_qubits", [1, 2])
+    def test_qubit_density_matrix_jit_compatible(self, n_qubits, mocker):
+        """Test that _apply_density_matrix works with jax-jit"""
+
+        dev = qml.device("default.mixed", wires=n_qubits)
+        spy = mocker.spy(dev, "_apply_density_matrix")
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(state_ini):
+            qml.QubitDensityMatrix(state_ini, wires=[0])
+            return qml.state()
+
+        state_ini = jnp.array([1, 0])
+        rho_ini = jnp.tensordot(state_ini, state_ini, axes=0)
+        rho_out = circuit(rho_ini)
+        spy.assert_called_once()
+        assert qml.math.get_interface(rho_out) == "jax"
+
+        dim = 2**n_qubits
+        expected = np.zeros((dim, dim))
+        expected[0, 0] = 1.0
+        assert np.array_equal(rho_out, expected)
+
 
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode

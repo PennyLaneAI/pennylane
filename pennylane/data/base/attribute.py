@@ -65,11 +65,11 @@ class AttributeInfo(MutableMapping):
         py_type: Optional[str] = None,
         **kwargs: Any,
     ):
-        ...
+        pass
 
     @overload
     def __init__(self):  # need at least two overloads when using @overload
-        ...
+        pass
 
     def __init__(self, attrs_bind: Optional[typing.MutableMapping[str, Any]] = None, **kwargs: Any):
         object.__setattr__(self, "attrs_bind", attrs_bind if attrs_bind is not None else {})
@@ -431,7 +431,7 @@ def attribute(
 
     **Example**
 
-    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
     >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
     >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
     ...     hamiltonian,

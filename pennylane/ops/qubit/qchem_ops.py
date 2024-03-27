@@ -147,7 +147,7 @@ class SingleExcitation(Operation):
 
         @qml.qnode(dev)
         def circuit(phi):
-            qml.PauliX(wires=0)
+            qml.X(0)
             qml.SingleExcitation(phi, wires=[0, 1])
             return qml.state()
 
@@ -171,7 +171,7 @@ class SingleExcitation(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return 0.25 * (qml.PauliX(w1) @ qml.PauliY(w2) - qml.PauliY(w1) @ qml.PauliX(w2))
+        return qml.Hamiltonian([0.25, -0.25], [qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2)])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -298,6 +298,7 @@ class SingleExcitationMinus(Operation):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -315,11 +316,9 @@ class SingleExcitationMinus(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return 0.25 * (
-            -qml.Identity(w1)
-            + qml.PauliX(w1) @ qml.PauliY(w2)
-            - qml.PauliY(w1) @ qml.PauliX(w2)
-            - qml.PauliZ(w1) @ qml.PauliZ(w2)
+        return qml.Hamiltonian(
+            [-0.25, 0.25, -0.25, -0.25],
+            [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
         )
 
     def __init__(self, phi, wires, id=None):
@@ -370,11 +369,11 @@ class SingleExcitationMinus(Operation):
         **Example:**
 
         >>> qml.SingleExcitationMinus.compute_decomposition(1.23, wires=(0,1))
-        [PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        [X(0),
+        X(1),
         ControlledPhaseShift(-0.615, wires=[1, 0]),
-        PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        X(0),
+        X(1),
         ControlledPhaseShift(-0.615, wires=[0, 1]),
         CNOT(wires=[0, 1]),
         CRY(1.23, wires=[1, 0]),
@@ -382,11 +381,11 @@ class SingleExcitationMinus(Operation):
 
         """
         decomp_ops = [
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(-phi / 2, wires=[wires[1], wires[0]]),
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(-phi / 2, wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(phi, wires=[wires[1], wires[0]]),
@@ -427,6 +426,7 @@ class SingleExcitationPlus(Operation):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -444,11 +444,9 @@ class SingleExcitationPlus(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return 0.25 * (
-            qml.Identity(w1)
-            + qml.PauliX(w1) @ qml.PauliY(w2)
-            - qml.PauliY(w1) @ qml.PauliX(w2)
-            + qml.PauliZ(w1) @ qml.PauliZ(w2)
+        return qml.Hamiltonian(
+            [0.25, 0.25, -0.25, 0.25],
+            [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
         )
 
     def __init__(self, phi, wires, id=None):
@@ -499,11 +497,11 @@ class SingleExcitationPlus(Operation):
         **Example:**
 
         >>> qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
-        [PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        [X(0),
+        X(1),
         ControlledPhaseShift(0.615, wires=[1, 0]),
-        PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        X(0),
+        X(1),
         ControlledPhaseShift(0.615, wires=[0, 1]),
         CNOT(wires=[0, 1]),
         CRY(1.23, wires=[1, 0]),
@@ -511,11 +509,11 @@ class SingleExcitationPlus(Operation):
 
         """
         decomp_ops = [
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(phi / 2, wires=[wires[1], wires[0]]),
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(phi / 2, wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(phi, wires=[wires[1], wires[0]]),
@@ -573,13 +571,14 @@ class DoubleExcitation(Operation):
 
         @qml.qnode(dev)
         def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
+            qml.X(0)
+            qml.X(1)
             qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
             return qml.state()
 
         circuit(0.1)
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -597,18 +596,19 @@ class DoubleExcitation(Operation):
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
-        coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
-        obs = [
-            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
-            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
-            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
-            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
-            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
-            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
-            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
-            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
-        ]
-        return qml.Hamiltonian(coeffs, obs)
+        return qml.Hamiltonian(
+            [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
+            [
+                qml.X(w0) @ qml.X(w1) @ qml.X(w2) @ qml.Y(w3),
+                qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.X(w3),
+                qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.X(w3),
+                qml.X(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.Y(w3),
+                qml.Y(w0) @ qml.X(w1) @ qml.X(w2) @ qml.X(w3),
+                qml.Y(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Y(w3),
+                qml.Y(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Y(w3),
+                qml.Y(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.X(w3),
+            ],
+        )
 
     def pow(self, z):
         return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
@@ -761,6 +761,7 @@ class DoubleExcitationPlus(Operation):
         wires (Sequence[int]): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -842,6 +843,7 @@ class DoubleExcitationMinus(Operation):
         wires (Sequence[int]): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -948,6 +950,7 @@ class OrbitalRotation(Operation):
                 0.99750208+0.j,  0.        +0.j,  0.        +0.j,
                 0.        +0.j])
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -965,11 +968,14 @@ class OrbitalRotation(Operation):
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
-        return 0.25 * (
-            qml.PauliX(w0) @ qml.PauliZ(w1) @ qml.PauliY(w2)
-            - (qml.PauliY(w0) @ qml.PauliZ(w1) @ qml.PauliX(w2))
-            + (qml.PauliX(w1) @ qml.PauliZ(w2) @ qml.PauliY(w3))
-            - (qml.PauliY(w1) @ qml.PauliZ(w2) @ qml.PauliX(w3))
+        return qml.Hamiltonian(
+            [0.25, -0.25, 0.25, -0.25],
+            [
+                qml.X(w0) @ qml.Z(w1) @ qml.Y(w2),
+                (qml.Y(w0) @ qml.Z(w1) @ qml.X(w2)),
+                (qml.X(w1) @ qml.Z(w2) @ qml.Y(w3)),
+                (qml.Y(w1) @ qml.Z(w2) @ qml.X(w3)),
+            ],
         )
 
     def __init__(self, phi, wires, id=None):
@@ -1129,7 +1135,7 @@ class FermionicSWAP(Operation):
         >>> dev = qml.device('default.qubit', wires=2)
         >>> @qml.qnode(dev)
         ... def circuit(phi):
-        ...     qml.PauliX(wires=1)
+        ...     qml.X(1)
         ...     qml.FermionicSWAP(phi, wires=[0, 1])
         ...     return qml.state()
         >>> circuit(0.1)
@@ -1153,11 +1159,15 @@ class FermionicSWAP(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return 0.5 * qml.Identity(w1) @ qml.Identity(w2) - 0.25 * (
-            qml.Identity(w1) @ qml.PauliZ(w2)
-            + qml.PauliZ(w1) @ qml.Identity(w2)
-            + qml.PauliX(w1) @ qml.PauliX(w2)
-            + qml.PauliY(w1) @ qml.PauliY(w2)
+        return qml.Hamiltonian(
+            [0.5, -0.25, -0.25, -0.25, -0.25],
+            [
+                qml.Identity(w1) @ qml.Identity(w2),
+                qml.Identity(w1) @ qml.Z(w2),
+                qml.Z(w1) @ qml.Identity(w2),
+                qml.X(w1) @ qml.X(w2),
+                qml.Y(w1) @ qml.Y(w2),
+            ],
         )
 
     def __init__(self, phi, wires, id=None):

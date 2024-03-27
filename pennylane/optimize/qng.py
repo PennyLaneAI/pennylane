@@ -100,7 +100,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
-    ...     return qml.expval(qml.PauliX(0) + qml.PauliX(1))
+    ...     return qml.expval(qml.X(0) + qml.X(1))
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` function:
@@ -123,7 +123,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. seealso::
 
-        See the :ref:`quantum natural gradient example <quantum_natural_gradient>`
+        See the :doc:`quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`
         for more details on Fubini-Study metric tensor and this optimization class.
 
     Keyword Args:
@@ -178,11 +178,11 @@ class QNGOptimizer(GradientDescentOptimizer):
             prior to the step
         """
         # pylint: disable=arguments-differ
-        if not isinstance(qnode, (qml.QNode, qml.ExpvalCost)) and metric_tensor_fn is None:
+        if not isinstance(qnode, qml.QNode) and metric_tensor_fn is None:
             raise ValueError(
-                "The objective function must either be encoded as a single QNode or "
-                "an ExpvalCost object for the natural gradient to be automatically computed. "
-                "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
+                "The objective function must be encoded as a single QNode for the natural gradient "
+                "to be automatically computed. Otherwise, metric_tensor_fn must be explicitly "
+                "provided to the optimizer."
             )
 
         if recompute_tensor or self.metric_tensor is None:

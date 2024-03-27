@@ -302,9 +302,12 @@ class TestCompileIntegration:
 
         # Push commuting gates to the right and merging rotations gives a circuit
         # with alternating RX and CNOT gates
+        # pylint: disable=expression-not-assigned
         def qfunc(x, params):
             qml.templates.AngleEmbedding(x, wires=range(3))
-            qml.templates.BasicEntanglerLayers(params, wires=range(3))
+            qml.adjoint(
+                qml.adjoint(qml.templates.BasicEntanglerLayers(params, wires=range(3)))
+            ) ** 2
             return qml.expval(qml.PauliZ(wires=2))
 
         dev = qml.device("default.qubit", wires=3)
@@ -321,7 +324,7 @@ class TestCompileIntegration:
         transformed_result = transformed_qnode(x, params)
         assert np.allclose(original_result, transformed_result)
 
-        names_expected = ["RX", "CNOT"] * 6
+        names_expected = ["RX", "CNOT"] * 12
         wires_expected = [
             Wires(0),
             Wires([0, 1]),
@@ -329,7 +332,7 @@ class TestCompileIntegration:
             Wires([1, 2]),
             Wires(2),
             Wires([2, 0]),
-        ] * 2
+        ] * 4
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
@@ -465,10 +468,6 @@ class TestCompileInterfaces:
         import jax
         from jax import numpy as jnp
 
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         original_qnode = qml.QNode(qfunc_emb, dev_3wires, diff_method=diff_method)
         transformed_qnode = qml.QNode(transformed_qfunc_emb, dev_3wires, diff_method=diff_method)
 
@@ -495,9 +494,6 @@ class TestCompileInterfaces:
         """Test that compilation pipelines work with jax.jit, unitary_to_rot, and fusion."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 

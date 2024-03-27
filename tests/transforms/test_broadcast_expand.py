@@ -63,17 +63,9 @@ def exp_fn_Y1(x, y, z):
     return out[0] if len(out) == 1 else out
 
 
-def exp_fn_Z0Y1(x, y, z):
-    return exp_fn_Z0(x, y, z) * exp_fn_Y1(x, y, z)
-
-
-def exp_fn_Z0_and_Y1(x, y, z):
-    return qml.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
-
-
-def exp_fn_H0(x, y, z):
-    return exp_fn_Z0(x, y, z) * coeffs0[0] + exp_fn_Y1(x, y, z) * coeffs0[1]
-
+exp_fn_Z0Y1 = lambda x, y, z: exp_fn_Z0(x, y, z) * exp_fn_Y1(x, y, z)
+exp_fn_Z0_and_Y1 = lambda x, y, z: qml.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
+exp_fn_H0 = lambda x, y, z: exp_fn_Z0(x, y, z) * coeffs0[0] + exp_fn_Y1(x, y, z) * coeffs0[1]
 
 observables_and_exp_fns = [
     ([qml.PauliZ(0)], exp_fn_Z0),
@@ -161,7 +153,8 @@ class TestBroadcastExpand:
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_autograd(self, params, obs, exp_fn):
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_autograd(self, params, obs, exp_fn, diff_method):
         """Test that the expansion works with autograd and is differentiable."""
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
         diff_method = "parameter-shift"
@@ -185,7 +178,8 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("use_jit", [True, False])
-    def test_jax(self, params, obs, exp_fn, use_jit):
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_jax(self, params, obs, exp_fn, use_jit, diff_method):
         """Test that the expansion works with jax and is differentiable."""
         # pylint: disable=too-many-arguments
         import jax
@@ -252,7 +246,8 @@ class TestBroadcastExpand:
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_torch(self, params, obs, exp_fn):
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_torch(self, params, obs, exp_fn, diff_method):
         """Test that the expansion works with torch and is differentiable."""
         import torch
 

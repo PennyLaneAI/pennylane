@@ -24,6 +24,7 @@ from gate_data import TSHIFT, TCLOCK
 from pennylane import numpy as npp
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.ops.qutrit import validate_subspace
 
 
 PARAMETRIZED_OPERATIONS = [
@@ -406,6 +407,24 @@ control_data = [
 def test_control_wires(op, control_wires):
     """Test the ``control_wires`` attribute for parametrized operations."""
     assert op.control_wires == control_wires
+
+
+qutrit_subspace_error_data = [
+    ([1, 1], "Elements of subspace list must be unique."),
+    ([1, 2, 3], "The subspace must be a sequence with"),
+    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
+    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
+    ([1], "The subspace must be a sequence with"),
+    (0, "The subspace must be a sequence with two unique"),
+]
+
+
+@pytest.mark.parametrize("subspace, err_msg", qutrit_subspace_error_data)
+def test_qutrit_subspace_op_errors(subspace, err_msg):
+    """Test that the correct errors are raised when subspace is incorrectly defined"""
+
+    with pytest.raises(ValueError, match=err_msg):
+        _ = validate_subspace(subspace)
 
 
 @pytest.mark.parametrize(

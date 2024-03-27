@@ -15,5 +15,3 @@ r"""This module contains decompositions for quantum circuits.
 """
 
 from .clifford_t_transform import clifford_t_decomposition
-from .single_qubit_unitary import one_qubit_decomposition
-from .two_qubit_unitary import two_qubit_decomposition

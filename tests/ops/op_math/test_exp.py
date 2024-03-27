@@ -33,6 +33,7 @@ from pennylane.ops.op_math import Evolution, Exp
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pauli_base(self, constructor):
         """Test initialization with no coeff and a simple base."""
         base = qml.PauliX("a")
@@ -432,6 +433,7 @@ class TestDecomposition:
         ):
             op.decomposition()
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_nontensor_tensor_no_decomposition(self):
         """Checks that accessing the decomposition throws an error if the base is a Tensor
         object that is not a mathematical tensor"""
@@ -444,8 +446,8 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "base, base_string",
         (
-            (qml.PauliZ(0) @ qml.PauliY(1), "ZY"),
-            (qml.PauliY(0) @ qml.Identity(1) @ qml.PauliZ(2), "YIZ"),
+            (qml.prod(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
+            (qml.prod(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
         ),
     )
     def test_decomposition_into_pauli_rot(self, base, base_string):
@@ -457,10 +459,29 @@ class TestDecomposition:
         pr = op.decomposition()[0]
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
+    @pytest.mark.parametrize(
+        "base, base_string",
+        (
+            (qml.operation.Tensor(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
+            (qml.operation.Tensor(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
+        ),
+    )
+    def test_decomposition_tensor_into_pauli_rot(self, base, base_string):
+        """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
+        theta = 3.21
+        op = Exp(base, -0.5j * theta)
+
+        assert op.has_decomposition
+        pr = op.decomposition()[0]
+        assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
+
     @pytest.mark.parametrize("op_name", all_qubit_operators)
-    def test_generator_decomposition(self, op_name):
+    @pytest.mark.parametrize("str_wires", (True, False))
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+    def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
+
         op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
 
         if not op_class.has_generator:
@@ -481,6 +502,9 @@ class TestDecomposition:
             if op_class.num_wires in {AnyWires, AllWires}
             else list(range(op_class.num_wires))
         )
+        if str_wires:
+            alphabet = ("a", "b", "c", "d", "e", "f", "g")
+            wires = [alphabet[w] for w in wires]
 
         # PauliRot and PCPhase each have an extra required arg
         if op_class is qml.PauliRot:
@@ -649,14 +673,14 @@ class TestMiscMethods:
         t = qml.PauliX(0) @ qml.PauliX(1)
         isingxx = Exp(t, 0.25j)
 
-        assert repr(isingxx) == "Exp(0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
+        assert repr(isingxx) == "Exp(0.25j X(0) @ X(1))"
 
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qml.S(0) @ qml.PauliX(0)
         op = qml.ops.Exp(base, 3)  # pylint:disable=no-member
 
-        assert repr(op) == "Exp(3 S(wires=[0]) @ PauliX(wires=[0]))"
+        assert repr(op) == "Exp(3 S(wires=[0]) @ X(0))"
 
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are the same as the base diagonalizing gates."""

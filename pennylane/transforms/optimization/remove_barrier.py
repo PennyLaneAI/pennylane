@@ -41,8 +41,8 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=1)
             qml.Barrier(wires=[0,1])
-            qml.PauliX(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.X(0)
+            return qml.expval(qml.Z(0))
 
     The barrier is then removed before execution.
 
@@ -57,8 +57,8 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 qml.Hadamard(wires=0)
                 qml.Hadamard(wires=1)
                 qml.Barrier(wires=[0,1])
-                qml.PauliX(wires=0)
-                return qml.expval(qml.PauliZ(0))
+                qml.X(0)
+                return qml.expval(qml.Z(0))
 
         The circuit before optimization:
 

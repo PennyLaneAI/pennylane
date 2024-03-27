@@ -43,8 +43,7 @@ PennyLane in combination with JAX, we have to generate JAX-compatible quantum no
 
     .. code-block:: python
 
-        from jax.config import config
-        config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
 
 
 Construction via the decorator

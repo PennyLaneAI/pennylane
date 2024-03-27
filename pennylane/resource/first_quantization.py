@@ -135,6 +135,19 @@ class FirstQuantization(Operation):
 
         super().__init__(wires=range(self.qubits))
 
+    def _flatten(self):
+        return (self.n, self.eta), (
+            ("omega", self.omega),
+            ("error", self.error),
+            ("charge", self.charge),
+            ("br", self.br),
+            ("vectors", self.vectors),
+        )
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, **dict(metadata))
+
     @staticmethod
     def success_prob(n, br):
         r"""Return the probability of success for state preparation.

@@ -64,9 +64,11 @@ def qcut_processing_fn(
     # each tape contains only expval measurements or sample measurements, so
     # stacking won't create any ragged arrays
     results = [
-        qml.math.stack(tape_res)
-        if isinstance(tape_res, tuple)
-        else qml.math.reshape(tape_res, [-1])
+        (
+            qml.math.stack(tape_res)
+            if isinstance(tape_res, tuple)
+            else qml.math.reshape(tape_res, [-1])
+        )
         for tape_res in results
     ]
 

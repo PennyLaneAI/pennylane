@@ -16,6 +16,8 @@ Unit tests for the ControlledSequence subroutine.
 """
 import pytest
 import numpy as np
+
+from pennylane import numpy as pnp
 import pennylane as qml
 
 from pennylane.wires import Wires
@@ -23,7 +25,6 @@ from pennylane.wires import Wires
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
-@pytest.mark.xfail  # to be fixed by shortcut #49175
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
@@ -140,13 +141,13 @@ class TestMethods:
         assert new_op.base.wires == Wires(["a", "b"])
         assert new_op.control == Wires(["c", "d"])
 
-    def test_compute_decomposition(self):
-        """Test that the decomposition is as expected"""
+    def test_compute_decomposition_lazy(self):
+        """Test compute_decomposition with lazy=True"""
         base = qml.RZ(4.3, 1)
         control_wires = [0, 2, 3]
 
         decomp = qml.ControlledSequence.compute_decomposition(
-            base=base, control_wires=control_wires
+            base=base, control_wires=control_wires, lazy=True
         )
 
         assert len(decomp) == len(control_wires)
@@ -158,14 +159,28 @@ class TestMethods:
         for op, w in zip(decomp, control_wires):
             assert op.base.control_wires == Wires(w)
 
+    def test_compute_decomposition_not_lazy(self):
+        """Test compute_decomposition with lazy=False"""
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=["a", 1, "blue"])
+
+        decomp = op.compute_decomposition(base=op.base, control_wires=op.control, lazy=False)
+        expected_decomp = [
+            qml.CRX(0.25 * 4, wires=["a", 3]),
+            qml.CRX(0.25 * 2, wires=[1, 3]),
+            qml.CRX(0.25 * 1, wires=["blue", 3]),
+        ]
+
+        for op1, op2 in zip(decomp, expected_decomp):
+            assert op1 == op2
+
     def test_decomposition(self):
         op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=["a", 1, "blue"])
 
         decomp = op.decomposition()
         expected_decomp = [
-            qml.ops.op_math.Controlled(qml.RX(0.25, wires=3), control_wires="a") ** 4,
-            qml.ops.op_math.Controlled(qml.RX(0.25, wires=3), control_wires=1) ** 2,
-            qml.ops.op_math.Controlled(qml.RX(0.25, wires=3), control_wires="blue") ** 1,
+            qml.CRX(0.25 * 4, wires=["a", 3]),
+            qml.CRX(0.25 * 2, wires=[1, 3]),
+            qml.CRX(0.25 * 1, wires=["blue", 3]),
         ]
 
         for op1, op2 in zip(decomp, expected_decomp):
@@ -311,7 +326,6 @@ class TestIntegration:
 
         _ = circuit()
 
-    @pytest.mark.xfail(reason="not working yet")
     def test_gradient_with_composite_op_base(self):
         """Test executing and getting the gradient of a circuit with a
         ControlledSequence based on a CompositeOp"""
@@ -325,10 +339,10 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def circuit(thetas):
-            qml.ControlledSequence(U(thetas, wires=[0, 1]), control=[2, 3])
-            return qml.state()
+            qml.ControlledSequence(U(thetas), control=[2, 3])
+            return qml.expval(qml.PauliZ(0))
 
-        thetas = np.array([1.0, 1.0], requires_grad=True)
+        thetas = pnp.array([1.0, 1.0], requires_grad=True)
         _ = circuit(thetas)
         _ = qml.grad(circuit)(thetas)
 
@@ -342,7 +356,7 @@ class TestQPEResults:
 
         unitary = qml.RX(phase, wires=[0])
         estimation_wires = range(1, 6)
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", wires=range(6))
 
         @qml.qnode(dev)
         def circuit():
@@ -364,7 +378,7 @@ class TestQPEResults:
         """Tests that the QPE defined using ControlledSequence works correctly for compound operators"""
         unitary = qml.RX(phase, wires=[0]) @ qml.CNOT(wires=[0, 1])
         estimation_wires = range(2, 6)
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", wires=range(6))
 
         @qml.qnode(dev)
         def circuit():

@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import disable_new_opmath, enable_new_opmath
+from pennylane.operation import active_new_opmath
 from pennylane.fermi import from_string
 
 
@@ -224,31 +224,35 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, h_ref):
         )
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     r"""Test that diff_hamiltonian returns the correct Hamiltonian."""
 
     mol = qchem.Molecule(symbols, geometry)
     args = []
     h = qchem.diff_hamiltonian(mol)(*args)
-    h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
+
+    ops = [
+        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
+        for op in map(qml.simplify, h_ref_data[1])
+    ]
+    h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
     assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
     assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
         qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
     )
 
-    enable_new_opmath()
-    h_pl_op = qchem.diff_hamiltonian(mol)(*args)
-    disable_new_opmath()
+    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
 
     wire_order = h_ref.wires
-    assert not isinstance(h_pl_op, qml.Hamiltonian)
     assert np.allclose(
-        qml.matrix(h_pl_op, wire_order=wire_order),
+        qml.matrix(h, wire_order=wire_order),
         qml.matrix(h_ref, wire_order=wire_order),
     )
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_diff_hamiltonian_active_space():
     r"""Test that diff_hamiltonian works when an active space is defined."""
 
@@ -260,13 +264,7 @@ def test_diff_hamiltonian_active_space():
 
     h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
 
-    assert isinstance(h, qml.Hamiltonian)
-
-    enable_new_opmath()
-    h_op = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
-    disable_new_opmath()
-
-    assert not isinstance(h_op, qml.Hamiltonian)
+    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
 
 
 def test_gradient_expvalH():
@@ -317,6 +315,7 @@ def test_gradient_expvalH():
     assert np.allclose(grad_qml[0][0], grad_finitediff)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestJax:
     @pytest.mark.jax
     def test_gradient_expvalH(self):
@@ -344,9 +343,7 @@ class TestJax:
                 qml.PauliX(0)
                 qml.PauliX(1)
                 qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-                enable_new_opmath()
                 h_qubit = qchem.diff_hamiltonian(mol)(*args)
-                disable_new_opmath()
                 return qml.expval(h_qubit)
 
             return circuit

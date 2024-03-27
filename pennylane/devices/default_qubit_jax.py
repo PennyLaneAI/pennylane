@@ -25,7 +25,6 @@ from pennylane.typing import TensorLike
 try:
     import jax
     import jax.numpy as jnp
-    from jax.config import config as jax_config
     from jax.experimental.ode import odeint
 
     from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
@@ -64,7 +63,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
     ... def circuit(x):
     ...     qml.RX(x[1], wires=0)
     ...     qml.Rot(x[0], x[1], x[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> weights = jnp.array([0.2, 0.5, 0.1])
     >>> grad_fn = jax.grad(circuit)
     >>> print(grad_fn(weights))
@@ -93,7 +92,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
             @qml.qnode(dev, interface="jax", diff_method="backprop")
             def circuit():
                 qml.Hadamard(0)
-                return qml.sample(qml.PauliZ(wires=0))
+                return qml.sample(qml.Z(0))
 
             a = circuit()
             b = circuit() # Bad! b will be the exact same samples as a.
@@ -110,7 +109,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
                 @qml.qnode(dev, interface="jax", diff_method="backprop")
                 def circuit():
                     qml.Hadamard(0)
-                    return qml.sample(qml.PauliZ(wires=0))
+                    return qml.sample(qml.Z(0))
                 return circuit()
 
             key1 = jax.random.PRNGKey(0)
@@ -166,7 +165,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
     operations = DefaultQubitLegacy.operations.union({"ParametrizedEvolution"})
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
-        if jax_config.read("jax_enable_x64"):
+        if jax.config.read("jax_enable_x64"):
             c_dtype = jnp.complex128
             r_dtype = jnp.float64
         else:

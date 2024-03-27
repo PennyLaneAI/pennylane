@@ -20,7 +20,10 @@ import copy
 import warnings
 import types
 
+from typing import Sequence
+
 import pennylane as qml
+from pennylane.typing import ResultBatch
 
 
 class TransformError(Exception):
@@ -68,6 +71,7 @@ class TransformDispatcher:
         classical_cotransform=None,
         is_informative=False,
         final_transform=False,
+        use_argnum_in_expand=False,
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
@@ -76,6 +80,7 @@ class TransformDispatcher:
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._qnode_transform = self.default_qnode_transform
+        self._use_argnum_in_expand = use_argnum_in_expand
         functools.update_wrapper(self, transform)
 
     def __call__(self, *targs, **tkwargs):  # pylint: disable=too-many-return-statements
@@ -121,33 +126,21 @@ class TransformDispatcher:
             return self._device_transform(obj, targs, tkwargs)
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
+        if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
+            return self._batch_transform(obj, targs, tkwargs)
 
         # Input is not a QNode nor a quantum tape nor a device.
         # Assume Python decorator syntax:
         #
         # result = some_transform(*transform_args)(qnode)(*qnode_args)
 
-        warnings.warn(
+        raise TransformError(
             "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
-            "deprecated and will be removed in a future version. Please decorate "
-            "with @functools.partial(transform_fn, **transform_kwargs) instead, "
-            "or call the transform directly using qnode = transform_fn(qnode, "
+            "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
+            "instead, or call the transform directly using qnode = transform_fn(qnode, "
             "**transform_kwargs). Visit the deprecations page for more details: "
-            "https://docs.pennylane.ai/en/stable/development/deprecations.html",
-            qml.PennyLaneDeprecationWarning,
+            "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
         )
-
-        if obj is not None:
-            targs = (obj, *targs)
-
-        def wrapper(obj):
-            return self(obj, *targs, **tkwargs)
-
-        wrapper.__doc__ = (
-            f"Partial of transform {self._transform} with bound arguments and keyword arguments."
-        )
-
-        return wrapper
 
     def __repr__(self):
         return f"<transform: {self._transform.__name__}>"
@@ -217,7 +210,11 @@ class TransformDispatcher:
         qnode = copy.copy(qnode)
 
         if self.expand_transform:
-            qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
+            qnode.add_transform(
+                TransformContainer(
+                    self._expand_transform, targs, tkwargs, use_argnum=self._use_argnum_in_expand
+                )
+            )
         qnode.add_transform(
             TransformContainer(
                 self._transform,
@@ -238,7 +235,8 @@ class TransformDispatcher:
                 qfunc_output = qfunc(*args, **kwargs)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
+            with qml.QueuingManager.stop_recording():
+                transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
 
             if len(transformed_tapes) != 1:
                 raise TransformError(
@@ -326,6 +324,48 @@ class TransformDispatcher:
 
         return TransformedDevice(original_device, self._transform)
 
+    def _batch_transform(self, original_batch, targs, tkwargs):
+        """Apply the transform on a batch of tapes"""
+        execution_tapes = []
+        batch_fns = []
+        tape_counts = []
+
+        for t in original_batch:
+            # Preprocess the tapes by applying batch transforms
+            # to each tape, and storing corresponding tapes
+            # for execution, processing functions, and list of tape lengths.
+            new_tapes, fn = self(t, *targs, **tkwargs)
+            execution_tapes.extend(new_tapes)
+            batch_fns.append(fn)
+            tape_counts.append(len(new_tapes))
+
+        def processing_fn(res: ResultBatch) -> ResultBatch:
+            """Applies a batch of post-processing functions to results.
+
+            Args:
+                res (ResultBatch): the results of executing a batch of circuits
+
+            Returns:
+                ResultBatch : results that have undergone classical post processing
+
+            Closure variables:
+                tape_counts: the number of tapes outputted from each application of the transform
+                batch_fns: the post processing functions to apply to each sub-batch
+
+            """
+            count = 0
+            final_results = []
+
+            for f, s in zip(batch_fns, tape_counts):
+                # apply any batch transform post-processing
+                new_res = f(res[count : count + s])
+                final_results.append(new_res)
+                count += s
+
+            return tuple(final_results)
+
+        return tuple(execution_tapes), processing_fn
+
 
 class TransformContainer:
     """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
@@ -348,6 +388,7 @@ class TransformContainer:
         classical_cotransform=None,
         is_informative=False,
         final_transform=False,
+        use_argnum=False,
     ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
         self._args = args or []
@@ -355,6 +396,10 @@ class TransformContainer:
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
         self._final_transform = is_informative or final_transform
+        self._use_argnum = use_argnum
+
+    def __repr__(self):
+        return f"<{self._transform.__name__}({self._args}, {self._kwargs})>"
 
     def __iter__(self):
         return iter(

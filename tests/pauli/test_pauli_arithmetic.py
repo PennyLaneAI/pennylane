@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods,too-many-arguments,protected-access
+
 import pickle
 from copy import copy, deepcopy
 import pytest
@@ -20,9 +21,8 @@ import pytest
 from scipy import sparse
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
+from pennylane.operation import Tensor
 from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
-
 
 matI = np.eye(2)
 matX = np.array([[0, 1], [1, 0]])
@@ -38,6 +38,9 @@ pw1 = PauliWord({0: I, 1: X, 2: Y})
 pw2 = PauliWord({"a": X, "b": X, "c": Z})
 pw3 = PauliWord({0: Z, "b": Z, "c": Z})
 pw4 = PauliWord({})
+pw_id = pw4  # Identity PauliWord
+
+words = [pw1, pw2, pw3, pw4]
 
 ps1 = PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5})
 ps2 = PauliSentence({pw1: -1.23, pw2: -4j, pw3: 0.5})
@@ -46,6 +49,50 @@ ps2_hamiltonian = PauliSentence({pw1: -1.23, pw2: -4, pw3: 0.5})
 ps3 = PauliSentence({pw3: -0.5, pw4: 1})
 ps4 = PauliSentence({pw4: 1})
 ps5 = PauliSentence({})
+
+sentences = [ps1, ps2, ps3, ps4, ps5, ps1_hamiltonian, ps2_hamiltonian]
+
+X0 = PauliWord({0: "X"})
+Y0 = PauliWord({0: "Y"})
+Z0 = PauliWord({0: "Z"})
+
+
+def test_pw_pw_multiplication_non_commutativity():
+    """Test that pauli word matrix multiplication is non-commutative and returns correct result"""
+
+    res1 = X0 @ Y0
+    res2 = Y0 @ X0
+    assert res1 == 1j * Z0
+    assert res2 == -1j * Z0
+
+
+def test_ps_ps_multiplication_non_commutativity():
+    """Test that pauli sentence matrix multiplication is non-commutative and returns correct result"""
+
+    pauliX = PauliSentence({PauliWord({0: "X"}): 1.0})
+    pauliY = PauliSentence({PauliWord({0: "Y"}): 1.0})
+    pauliZ = PauliSentence({PauliWord({0: "Z"}): 1j})
+
+    res1 = pauliX @ pauliY
+    res2 = pauliY @ pauliX
+    assert res1 == pauliZ
+    assert res2 == -1 * pauliZ
+
+
+def _pauli_to_op(p):
+    """convert PauliWord or PauliSentence to Operator"""
+    return p.operation()
+
+
+def _pw_to_ps(p):
+    """convert PauliWord to PauliSentence"""
+    return PauliSentence({p: 1.0})
+
+
+def _id(p):
+    """Leave operator as is"""
+    # this is used for parametrization of tests
+    return p
 
 
 class TestPauliWord:
@@ -59,6 +106,11 @@ class TestPauliWord:
         pw = PauliWord({0: I, 1: X, 2: Y})
         assert 3 not in pw.keys()
         assert pw[3] == I
+
+    def test_pauli_rep(self):
+        """Test trivial pauli_rep property"""
+        pw = PauliWord({0: "I", 1: "X", 2: Y})
+        assert pw.pauli_rep == PauliSentence({pw: 1})
 
     def test_set_items(self):
         """Test that setting items raises an error"""
@@ -114,21 +166,179 @@ class TestPauliWord:
         assert str(pw) == str_rep
         assert repr(pw) == str_rep
 
-    tup_pws_mult = (
+    def test_add_pw_pw_different(self):
+        """Test adding two pauli words that are distinct"""
+        res1 = pw1 + pw2
+        true_res1 = PauliSentence({pw1: 1.0, pw2: 1.0})
+        assert res1 == true_res1
+
+    def test_add_pw_pw_same(self):
+        """Test adding two pauli words that are the same"""
+        res1 = pw1 + pw1
+        true_res1 = PauliSentence({pw1: 2.0})
+        assert res1 == true_res1
+
+    def test_add_pw_sclar_different(self):
+        """Test adding pauli word and scalar that are distinct (i.e. non-identity)"""
+        res1 = pw1 + 1.5
+        true_res1 = PauliSentence({pw1: 1.0, pw_id: 1.5})
+        assert res1 == true_res1
+
+    def test_add_pw_scalar_same(self):
+        """Test adding pauli word and scalar that are the same (i.e. both identity)"""
+        res1 = pw_id + 1.5
+        true_res1 = PauliSentence({pw_id: 2.5})
+        assert res1 == true_res1
+
+    def test_iadd_pw_pw_different(self):
+        """Test inplace-adding two pauli words that are distinct"""
+        res1 = copy(pw1)
+        res2 = copy(pw1)
+        res1 += pw2
+        true_res1 = PauliSentence({pw1: 1.0, pw2: 1.0})
+        assert res1 == true_res1
+        assert res2 == pw1  # original pw is unaltered after copy
+
+    def test_iadd_pw_pw_same(self):
+        """Test inplace-adding two pauli words that are the same"""
+        res1 = copy(pw1)
+        res2 = copy(pw1)
+        res1 += pw1
+        true_res1 = PauliSentence({pw1: 2.0})
+        assert res1 == true_res1
+        assert res2 == pw1  # original pw is unaltered after copy
+
+    def test_iadd_pw_scalar_different(self):
+        """Test inplace-adding pauli word and scalar that are distinct (i.e. non-identity)"""
+        res1 = copy(pw1)
+        res2 = copy(pw1)
+        res1 += 1.5
+        true_res1 = PauliSentence({pw1: 1.0, pw_id: 1.5})
+        assert res1 == true_res1
+        assert res2 == pw1  # original pw is unaltered after copy
+
+    def test_iadd_pw_scalar_same(self):
+        """Test inplace-adding two pauli words that are the same (i.e. both identity)"""
+        res1 = copy(pw_id)
+        res2 = copy(pw_id)
+        res1 += 1.5
+        true_res1 = PauliSentence({pw_id: 2.5})
+        assert res1 == true_res1
+        assert res2 == pw_id  # original pw is unaltered after copy
+
+    sub_pw_pw = (
+        (
+            pw1,
+            pw1,
+            PauliSentence({pw1: 0.0}),
+            PauliSentence({pw1: 0.0}),
+        ),
+        (
+            pw1,
+            pw2,
+            PauliSentence({pw1: 1.0, pw2: -1.0}),
+            PauliSentence({pw1: -1.0, pw2: 1.0}),
+        ),
+    )
+
+    @pytest.mark.parametrize("pauli1, pauli2, true_res1, true_res2", sub_pw_pw)
+    def test_sub_PW_and_PW(self, pauli1, pauli2, true_res1, true_res2):
+        """Test subtracting PauliWord from PauliWord"""
+        res1 = pauli1 - pauli2
+        res2 = pauli2 - pauli1
+        assert res1 == true_res1
+        assert res2 == true_res2
+
+    # psx does not contain identity, so simply add it to the definition with pw_id
+    sub_pw_scalar = (
+        (
+            pw1,
+            1.0,
+            PauliSentence({pw1: 1.0, pw_id: -1}),
+            PauliSentence({pw1: -1, pw_id: 1}),
+        ),
+        (
+            pw_id,
+            0.5,
+            PauliSentence({pw_id: 0.5}),
+            PauliSentence({pw_id: -0.5}),
+        ),
+    )
+
+    @pytest.mark.parametrize("pw, scalar, true_res1, true_res2", sub_pw_scalar)
+    def test_sub_PW_and_scalar(self, pw, scalar, true_res1, true_res2):
+        """Test subtracting scalar from PauliWord"""
+        res1 = pw - scalar
+        res2 = scalar - pw
+        assert res1 == true_res1
+        assert res2 == true_res2
+
+    tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
         (pw1, pw3, PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}), 1.0),
         (pw2, pw3, PauliWord({"a": X, "b": Y, 0: Z}), -1.0j),
         (pw3, pw4, pw3, 1.0),
     )
 
-    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_mult)
-    def test_mul(self, word1, word2, result_pw, coeff):
+    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_matmult)
+    def test_matmul(self, word1, word2, result_pw, coeff):
+        """Test the user facing matrix multiplication between two pauli words"""
         copy_pw1 = copy(word1)
         copy_pw2 = copy(word2)
 
-        assert word1 * word2 == (result_pw, coeff)
+        assert word1 @ word2 == PauliSentence({result_pw: coeff})
         assert copy_pw1 == word1  # check for mutation of the pw themselves
         assert copy_pw2 == word2
+
+    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_matmult)
+    def test_private_private_matmul(self, word1, word2, result_pw, coeff):
+        """Test the private matrix multiplication that returns a tuple (new_word, coeff)"""
+        copy_pw1 = copy(word1)
+        copy_pw2 = copy(word2)
+
+        assert word1._matmul(word2) == (result_pw, coeff)
+        assert copy_pw1 == word1  # check for mutation of the pw themselves
+        assert copy_pw2 == word2
+
+    @pytest.mark.parametrize("pw", words)
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0, np.int64(1), np.float32(0.5)])
+    def test_mul(self, pw, scalar):
+        """Test scalar multiplication"""
+        res1 = scalar * pw
+        res2 = pw * scalar
+        assert isinstance(res1, PauliSentence)
+        assert list(res1.values()) == [scalar]
+        assert isinstance(res2, PauliSentence)
+        assert list(res2.values()) == [scalar]
+
+    @pytest.mark.parametrize("pw", words)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_truediv(self, pw, scalar):
+        """Test scalar multiplication"""
+        res1 = pw / scalar
+        assert isinstance(res1, PauliSentence)
+        assert list(res1.values()) == [1 / scalar]
+
+    @pytest.mark.parametrize("pw", words)
+    def test_raise_error_for_non_scalar(self, pw):
+        """Test that the correct error is raised when attempting to multiply a PauliWord by a sclar"""
+        with pytest.raises(ValueError, match="Attempting to multiply"):
+            _ = [0.5] * pw
+
+    def test_mul_raise_not_implemented_non_numerical_data_recursive(self):
+        """Test that TypeError is raised when trying to multiply by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliWord can only"):
+            _ = "0.5" * pw1
+
+    def test_mul_raise_not_implemented_non_numerical_data(self):
+        """Test that TypeError is raised when trying to multiply by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliWord can only"):
+            _ = pw1 * "0.5"
+
+    def test_truediv_raise_not_implemented_non_numerical_data(self):
+        """Test that TypeError is raised when trying to divide by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliWord can only be"):
+            _ = pw1 / "0.5"
 
     tup_pws_mat_wire = (
         (pw1, [2, 0, 1], np.kron(np.kron(matY, matI), matX)),
@@ -137,19 +347,10 @@ class TestPauliWord:
         (pw3, [0, "b", "c"], np.kron(np.kron(matZ, matZ), matZ)),
     )
 
-    def test_to_mat_error(self):
-        """Test that an appropriate error is raised when an empty
-        PauliWord is cast to matrix."""
-        with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
-            pw4.to_mat(wire_order=[])
-
-        with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
-            pw4.to_mat(wire_order=Wires([]))
-
-    pw1 = PauliWord({0: I, 1: X, 2: Y})
-    pw2 = PauliWord({"a": X, "b": X, "c": Z})
-    pw3 = PauliWord({0: Z, "b": Z, "c": Z})
-    pw4 = PauliWord({})
+    def test_to_mat_empty(self):
+        """Test that an empty PauliWord is turned to the trivial 1 matrix"""
+        res = pw4.to_mat(wire_order=[])
+        assert res == np.ones((1, 1))
 
     pw_wire_order = ((pw1, [0, 1]), (pw1, [0, 1, 3]), (pw2, [0]))
 
@@ -212,31 +413,57 @@ class TestPauliWord:
         assert op.name == id.name
         assert op.wires == id.wires
 
-    def test_operation_empty_error(self):
-        """Test that a ValueError is raised if an empty PauliWord is
-        cast to a PL operation."""
-        with pytest.raises(ValueError, match="Can't get the operation for an empty PauliWord."):
-            pw4.operation()
+    def test_operation_empty_nowires(self):
+        """Test that an empty PauliWord is cast to qml.Identity() operation."""
+        res = pw4.operation()
+        assert res == qml.Identity()
 
     tup_pw_hamiltonian = (
-        (PauliWord({0: X}), 1 * qml.PauliX(wires=0)),
-        (pw1, 1 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)),
-        (pw2, 1 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")),
-        (pw3, 1 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c")),
+        (PauliWord({0: X}), qml.Hamiltonian([1], [qml.PauliX(wires=0)])),
+        (
+            pw1,
+            qml.Hamiltonian([1], [qml.operation.Tensor(qml.PauliX(wires=1), qml.PauliY(wires=2))]),
+        ),
+        (
+            pw2,
+            qml.Hamiltonian(
+                [1],
+                [
+                    qml.operation.Tensor(
+                        qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")
+                    )
+                ],
+            ),
+        ),
+        (
+            pw3,
+            qml.Hamiltonian(
+                [1],
+                [
+                    qml.operation.Tensor(
+                        qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")
+                    )
+                ],
+            ),
+        ),
     )
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("pw, h", tup_pw_hamiltonian)
     def test_hamiltonian(self, pw, h):
         """Test that a PauliWord can be cast to a Hamiltonian."""
         pw_h = pw.hamiltonian()
+        h = qml.operation.convert_to_legacy_H(h)
         assert pw_h.compare(h)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity Hamiltonian."""
         op = PauliWord({}).hamiltonian(wire_order=[0, 1])
-        id = 1 * qml.Identity(wires=[0, 1])
+        id = qml.Hamiltonian([1], [qml.Identity(wires=[0, 1])])
         assert op.compare(id)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliWord is
         cast to a Hamiltonian."""
@@ -274,6 +501,13 @@ class TestPauliSentence:
         assert new_pw not in ps.keys()
         assert ps[new_pw] == 0.0
 
+    @pytest.mark.parametrize("pw", words)
+    def test_wires_not_reordered(self, pw):
+        """Test that wires are set correctly and not reshuffled when put in a PS"""
+        true_wires = pw.wires
+        ps = PauliSentence({pw: 1.0})
+        assert ps.wires == true_wires
+
     def test_set_items(self):
         """Test that we can add to a PauliSentence"""
         pw = PauliWord({0: X})
@@ -284,6 +518,11 @@ class TestPauliSentence:
 
         ps[new_pw] = 3.45
         assert new_pw in ps.keys() and ps[new_pw] == 3.45
+
+    def test_pauli_rep(self):
+        """Test trivial pauli_rep property"""
+        ps = PauliSentence({PauliWord({0: "I", 1: "X", 2: Y}): 1j, X0: 2.0})
+        assert ps.pauli_rep == ps
 
     tup_ps_str = (
         (
@@ -370,31 +609,122 @@ class TestPauliSentence:
                 }
             ),
         ),
+        (
+            PauliSentence({PauliWord({0: "X"}): 1.0}),  # ps @ pw disjoint wires
+            PauliWord({1: "X"}),
+            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0}),
+        ),
+        (
+            PauliSentence({PauliWord({0: "X"}): 1.0}),  # ps @ pw same wires same op
+            PauliWord({0: "X"}),
+            PauliSentence({PauliWord({}): 1.0}),
+        ),
+        (
+            PauliSentence({PauliWord({0: "X"}): 1.0}),  # ps @ pw same wires different op
+            PauliWord({0: "Y"}),
+            PauliSentence({PauliWord({0: "Z"}): 1j}),
+        ),
+        (
+            PauliSentence(
+                {PauliWord({0: "Y"}): 1.0}
+            ),  # ps @ pw same wires different op check minus sign
+            PauliWord({0: "X"}),
+            PauliSentence({PauliWord({0: "Z"}): -1j}),
+        ),
+        (
+            PauliWord({1: "X"}),  # pw @ ps disjoint wires
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0}),
+        ),
+        (
+            PauliWord({0: "X"}),  # ps @ pw same wires same op
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliSentence({PauliWord({}): 1.0}),
+        ),
+        (
+            PauliWord({0: "X"}),  # ps @ pw same wires different op
+            PauliSentence({PauliWord({0: "Y"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z"}): 1j}),
+        ),
+        (
+            PauliWord({0: "Y"}),  # ps @ pw same wires different op check minus sign
+            PauliSentence({PauliWord({0: "X"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z"}): -1j}),
+        ),
     )
 
-    @pytest.mark.parametrize("string1, string2, res", tup_ps_mult)
-    def test_mul(self, string1, string2, res):
-        """Test that the correct result of multiplication is produced."""
-        copy_ps1 = copy(string1)
-        copy_ps2 = copy(string2)
+    @pytest.mark.parametrize("pauli1, pauli2, res", tup_ps_mult)
+    def test_matmul(self, pauli1, pauli2, res):
+        """Test that the correct result of matrix multiplication is produced."""
+        copy_ps1 = copy(pauli1)
+        copy_ps2 = copy(pauli2)
 
-        simplified_product = string1 * string2
+        simplified_product = pauli1 @ pauli2
         simplified_product.simplify()
 
         assert simplified_product == res
-        assert string1 == copy_ps1
-        assert string2 == copy_ps2
+        assert pauli1 == copy_ps1
+        assert pauli2 == copy_ps2
 
-    tup_ps_add = (  # computed by hand
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0, np.int64(1), np.float64(1.0)])
+    def test_mul(self, ps, scalar):
+        """Test scalar multiplication"""
+        res1 = scalar * ps
+        res2 = ps * scalar
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+
+    def test_mul_raise_not_implemented_non_numerical_data_recursive(self):
+        """Test that TypeError is raised when trying to multiply by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliSentence can only"):
+            _ = "0.5" * ps1
+
+    def test_mul_raise_not_implemented_non_numerical_data(self):
+        """Test that TypeError is raised when trying to multiply by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliSentence can only"):
+            _ = ps1 * "0.5"
+
+    def test_truediv_raise_not_implemented_non_numerical_data(self):
+        """Test that TypeError is raised when trying to divide by non-numerical data"""
+        with pytest.raises(TypeError, match="PauliSentence can only"):
+            _ = ps1 / "0.5"
+
+    @pytest.mark.parametrize("ps", sentences)
+    def test_raise_error_for_non_scalar(self, ps):
+        """Test that the correct error is raised when attempting to multiply a PauliSentence by a sclar"""
+        with pytest.raises(ValueError, match="Attempting to multiply"):
+            _ = [0.5] * ps
+
+    def test_add_raises_other_types(self):
+        """Test that adding types other than PauliWord, PauliSentence or a scalar raises an error"""
+        with pytest.raises(TypeError, match="Cannot add"):
+            _ = ps1 + qml.PauliX(0)
+
+        with pytest.raises(TypeError, match="Cannot add"):
+            _ = qml.PauliX(0) + ps1
+
+        with pytest.raises(TypeError, match="Cannot add"):
+            _ = ps1 + "asd"
+
+        copy_ps = copy(ps1)
+        with pytest.raises(TypeError, match="Cannot add"):
+            copy_ps += qml.PauliX(0)
+
+        copy_ps = copy(ps1)
+        with pytest.raises(TypeError, match="Cannot add"):
+            copy_ps += "asd"
+
+    add_ps_ps = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
         (ps1, ps2, PauliSentence({})),
         (ps1, ps3, PauliSentence({pw1: 1.23, pw2: 4j, pw3: -1, pw4: 1})),
         (ps2, ps5, ps2),
     )
 
-    @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
-    def test_add(self, string1, string2, result):
-        """Test that the correct result of addition is produced."""
+    @pytest.mark.parametrize("string1, string2, result", add_ps_ps)
+    def test_add_PS_and_PS(self, string1, string2, result):
+        """Test adding two PauliSentences"""
         copy_ps1 = copy(string1)
         copy_ps2 = copy(string2)
 
@@ -405,14 +735,138 @@ class TestPauliSentence:
         assert string1 == copy_ps1
         assert string2 == copy_ps2
 
-    ps_match = (
-        (ps4, "Can't get the matrix of an empty PauliWord."),
-        (ps5, "Can't get the matrix of an empty PauliSentence."),
+    add_ps_pw = (
+        (ps1, pw1, PauliSentence({pw1: 2.23, pw2: 4j, pw3: -0.5})),
+        (ps1, pw2, PauliSentence({pw1: 1.23, pw2: 1 + 4j, pw3: -0.5})),
+        (ps1, pw4, PauliSentence({pw1: 1.23, pw2: 4j, pw3: -0.5, pw4: 1.0})),
+        (ps3, pw1, PauliSentence({pw1: 1.0, pw3: -0.5, pw4: 1})),
     )
 
-    @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
-    def test_iadd(self, string1, string2, result):
-        """Test that the correct result of inplace addition is produced and other object is not changed."""
+    @pytest.mark.parametrize("ps, pw, true_res", add_ps_pw)
+    def test_add_PS_and_PW(self, ps, pw, true_res):
+        """Test adding PauliSentence and PauliWord"""
+        res1 = ps + pw
+        res2 = pw + ps
+        assert res1 == true_res
+        assert res2 == true_res
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_add_PS_and_scalar(self, scalar):
+        """Test adding PauliSentence and scalar"""
+        res1 = ps1 + scalar
+        res2 = scalar + ps1
+        assert res1[pw_id] == scalar
+        assert res2[pw_id] == scalar
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_iadd_PS_and_scalar(self, scalar):
+        """Test inplace adding PauliSentence and scalar"""
+        copy_ps1 = copy(ps1)
+        copy_ps2 = copy(ps1)
+        copy_ps1 += scalar
+        assert copy_ps1[pw_id] == scalar
+        assert copy_ps2 == ps1
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_add_PS_and_scalar_with_1_present(self, scalar):
+        """Test adding scalar to a PauliSentence that already contains identity"""
+        res1 = ps4 + scalar
+        res2 = scalar + ps4
+        assert res1[pw_id] == 1 + scalar
+        assert res2[pw_id] == 1 + scalar
+
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_iadd_PS_and_scalar_1_present(self, scalar):
+        """Test inplace adding scalar to PauliSentence that already contains identity"""
+        copy_ps1 = copy(ps4)
+        copy_ps2 = copy(ps4)
+        copy_ps1 += scalar
+        assert copy_ps1[pw_id] == 1 + scalar
+        assert copy_ps2 == ps4
+
+    psx = PauliSentence(
+        {pw1: 1.5, pw2: 4j, pw3: -0.5}
+    )  # problems with numerical accuracy for subtracting 1.23 - 1 = 0.2299999998
+    sub_ps_pw = (
+        (
+            psx,
+            pw1,
+            PauliSentence({pw1: 0.5, pw2: 4j, pw3: -0.5}),
+            PauliSentence({pw1: -0.5, pw2: -4j, pw3: +0.5}),
+        ),
+        (
+            psx,
+            pw2,
+            PauliSentence({pw1: 1.5, pw2: -1.0 + 4j, pw3: -0.5}),
+            PauliSentence({pw1: -1.5, pw2: 1.0 - 4j, pw3: +0.5}),
+        ),
+        (
+            psx,
+            pw4,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw4: -1.0}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: +0.5, pw4: 1.0}),
+        ),
+        (
+            ps3,
+            pw1,
+            PauliSentence({pw1: -1.0, pw3: -0.5, pw4: 1}),
+            PauliSentence({pw1: 1.0, pw3: 0.5, pw4: -1}),
+        ),
+    )
+
+    @pytest.mark.parametrize("ps, pw, true_res1, true_res2", sub_ps_pw)
+    def test_sub_PS_and_PW(self, ps, pw, true_res1, true_res2):
+        """Test subtracting PauliWord from PauliSentence"""
+        res1 = ps - pw
+        res2 = pw - ps
+        assert res1 == true_res1
+        assert res2 == true_res2
+
+    # psx does not contain identity, so simply add it to the definition with pw_id
+    sub_ps_scalar = (
+        (
+            psx,
+            1.0,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -1}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 1}),
+        ),
+        (
+            psx,
+            0.5,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -0.5}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 0.5}),
+        ),
+        (
+            psx,
+            0.5j,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -0.5j}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 0.5j}),
+        ),
+        (
+            psx,
+            0.5 + 0.5j,
+            PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5, pw_id: -0.5 - 0.5j}),
+            PauliSentence({pw1: -1.5, pw2: -4j, pw3: 0.5, pw_id: 0.5 + 0.5j}),
+        ),
+        (
+            ps3,
+            0.5 + 0.5j,
+            PauliSentence({pw3: -0.5, pw4: 0.5 - 0.5j}),
+            PauliSentence({pw3: 0.5, pw4: -0.5 + 0.5j}),
+        ),
+    )
+
+    @pytest.mark.parametrize("ps, scalar, true_res1, true_res2", sub_ps_scalar)
+    def test_sub_PS_and_scalar(self, ps, scalar, true_res1, true_res2):
+        """Test subtracting scalar from PauliSentence"""
+        res1 = ps - scalar
+        res2 = scalar - ps
+        assert res1 == true_res1
+        assert res2 == true_res2
+
+    @pytest.mark.parametrize("string1, string2, result", add_ps_ps)
+    def test_iadd_ps_ps(self, string1, string2, result):
+        """Test that the correct result of inplace addition with PauliSentence is produced and other object is not changed."""
         copied_string1 = copy(string1)
         copied_string2 = copy(string2)
         copied_string1 += copied_string2
@@ -421,15 +875,39 @@ class TestPauliSentence:
         assert copied_string1 == result  # Check if the modified object matches the expected result
         assert copied_string2 == string2  # Ensure the original object is not modified
 
-    @pytest.mark.parametrize("ps, match", ps_match)
-    def test_to_mat_error_empty(self, ps, match):
-        """Test that an appropriate error is raised when an empty
-        PauliSentence or PauliWord is cast to matrix."""
-        with pytest.raises(ValueError, match=match):
-            ps.to_mat(wire_order=[])
+    @pytest.mark.parametrize("ps, pw, res", add_ps_pw)
+    def test_iadd_ps_pw(self, ps, pw, res):
+        """Test that the correct result of inplace addition with PauliWord is produced and other object is not changed."""
+        copy_ps1 = copy(ps)
+        copy_ps2 = copy(ps)
+        copy_ps1 += pw
+        assert copy_ps1 == res  # Check if the modified object matches the expected result
+        assert copy_ps2 == ps  # Ensure the original object is not modified
 
-        with pytest.raises(ValueError, match=match):
-            ps.to_mat(wire_order=Wires([]))
+    PS_EMPTY_CASES = (
+        (PauliSentence({}), np.zeros((1, 1))),
+        (PauliSentence({PauliWord({}): 1.0}), np.ones((1, 1))),
+        (PauliSentence({PauliWord({}): 2.5}), 2.5 * np.ones((1, 1))),
+        (
+            PauliSentence({PauliWord({}): 2.5, PauliWord({0: "X"}): 1.0}),
+            2.5 * np.eye(2) + qml.matrix(qml.PauliX(0)),
+        ),
+    )
+
+    @pytest.mark.parametrize("ps, true_res", PS_EMPTY_CASES)
+    def test_to_mat_empty(self, ps, true_res):
+        """Test that empty PauliSentences and PauliSentences with empty PauliWords are handled correctly"""
+
+        res_dense = ps.to_mat()
+        assert np.allclose(res_dense, true_res)
+        res_sparse = ps.to_mat(format="csr")
+        assert sparse.issparse(res_sparse)
+        assert qml.math.allclose(res_sparse.todense(), true_res)
+
+    def test_empty_pauli_to_mat_with_wire_order(self):
+        """Test the to_mat method with an empty PauliSentence and PauliWord and an external wire order."""
+        actual = PauliSentence({PauliWord({}): 1.5}).to_mat([0, 1])
+        assert np.allclose(actual, 1.5 * np.eye(4))
 
     ps_wire_order = ((ps1, []), (ps1, [0, 1, 2, "a", "b"]), (ps3, [0, 1, "c"]))
 
@@ -441,10 +919,14 @@ class TestPauliSentence:
         with pytest.raises(ValueError, match=match):
             ps.to_mat(wire_order=wire_order)
 
-    def test_to_mat_identity(self):
-        """Test that an identity matrix is return if wire_order is provided."""
-        assert np.allclose(ps5.to_mat(wire_order=[0, 1]), np.eye(4))
-        assert sparse.issparse(ps5.to_mat(wire_order=[0, 1], format="csr"))
+    def test_to_mat_empty_sentence_with_wires(self):
+        """Test that a zero matrix is returned if wire_order is provided on an empty PauliSentence."""
+        true_res = np.zeros((4, 4))
+        res_dense = ps5.to_mat(wire_order=[0, 1])
+        assert np.allclose(res_dense, true_res)
+        res_sparse = ps5.to_mat(wire_order=[0, 1], format="csr")
+        assert sparse.issparse(res_sparse)
+        assert qml.math.allclose(res_sparse.todense(), true_res)
 
     tup_ps_mat = (
         (
@@ -575,13 +1057,13 @@ class TestPauliSentence:
         assert op.name == id.name
         assert op.wires == id.wires
 
-    def test_operation_empty_error(self):
+    def test_operation_empty_nowires(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a PL operation."""
-        with pytest.raises(ValueError, match="Can't get the operation for an empty PauliWord."):
-            ps4.operation()
-        with pytest.raises(ValueError, match="Can't get the operation for an empty PauliSentence."):
-            ps5.operation()
+        res1 = ps4.operation()
+        assert res1 == qml.Identity()
+        res2 = ps5.operation()
+        assert res2 == qml.s_prod(0, qml.Identity())
 
     def test_operation_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""
@@ -591,38 +1073,57 @@ class TestPauliSentence:
         assert qml.equal(op, id)
 
     tup_ps_hamiltonian = (
-        (PauliSentence({PauliWord({0: X}): 1}), 1 * qml.PauliX(wires=0)),
+        (PauliSentence({PauliWord({0: X}): 1}), qml.Hamiltonian([1], [qml.PauliX(wires=0)])),
         (
             ps1_hamiltonian,
-            +1.23 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)
-            + 4 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")
-            - 0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c"),
+            qml.Hamiltonian(
+                [1.23, 4.0, -0.5],
+                [
+                    Tensor(qml.PauliX(wires=1), qml.PauliY(wires=2)),
+                    Tensor(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
+                    Tensor(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+                ],
+            ),
         ),
         (
             ps2_hamiltonian,
-            -1.23 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)
-            - 4 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")
-            + 0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c"),
+            qml.Hamiltonian(
+                [-1.23, -4.0, 0.5],
+                [
+                    Tensor(qml.PauliX(wires=1), qml.PauliY(wires=2)),
+                    Tensor(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
+                    Tensor(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+                ],
+            ),
         ),
         (
             ps3,
-            -0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c")
-            + 1 * qml.Identity(wires=[0, "b", "c"]),
+            qml.Hamiltonian(
+                [-0.5, 1.0],
+                [
+                    Tensor(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+                    qml.Identity(wires=[0, "b", "c"]),
+                ],
+            ),
         ),
     )
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("ps, h", tup_ps_hamiltonian)
     def test_hamiltonian(self, ps, h):
         """Test that a PauliSentence can be cast to a Hamiltonian."""
         ps_h = ps.hamiltonian()
+        h = qml.operation.convert_to_legacy_H(h)
         assert ps_h.compare(h)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
         op = ps5.hamiltonian(wire_order=[0, 1])
         id = qml.Hamiltonian([], [])
         assert op.compare(id)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a Hamiltonian."""
@@ -631,6 +1132,7 @@ class TestPauliSentence:
         ):
             ps5.hamiltonian()
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""
         op = ps5.hamiltonian(wire_order=["a", "b"])
@@ -687,3 +1189,359 @@ class TestPauliSentence:
                 PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
             }
         )
+
+
+class TestPaulicomms:
+    """Test 'native' commutator in PauliWord and PauliSentence"""
+
+    def test_pauli_word_comm_raises_NotImplementedError(self):
+        """Test that a NotImplementedError is raised when a PauliWord.commutator() for type that is not PauliWord, PauliSentence or Operator"""
+        op1 = PauliWord({0: "X"})
+        matrix = np.eye(2)
+        with pytest.raises(NotImplementedError, match="Cannot compute natively a commutator"):
+            op1.commutator(matrix)
+
+    def test_pauli_raises_NotImplementedError_without_pauli_rep_ps(self):
+        """Test that a NotImplementedError is raised in PauliSentence when ``other`` is an operator without a pauli_rep"""
+        with pytest.raises(
+            NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
+        ):
+            _ = ps1.commutator(qml.Hadamard(0))
+
+    def test_pauli_raises_NotImplementedError_without_pauli_rep_pw(self):
+        """Test that a NotImplementedError is raised in PauliWord when ``other`` is an operator without a pauli_rep"""
+        with pytest.raises(
+            NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
+        ):
+            _ = pw1.commutator(qml.Hadamard(0))
+
+    def test_commutators_with_zeros_ps(self):
+        """Test that commutators between PauliSentences where one represents the 0 word is treated correctly"""
+        op_zero = PauliSentence({})
+        op = PauliSentence({PauliWord({0: "X"}): 1.0})
+
+        assert op_zero.commutator(op) == op_zero
+        assert op.commutator(op_zero) == op_zero
+
+    data_pauli_relations_commutes = [
+        # word and word
+        (X0, X0, PauliSentence({})),
+        (Y0, Y0, PauliSentence({})),
+        (Z0, Z0, PauliSentence({})),
+        (PauliWord({"a": X}), PauliWord({"a": X}), PauliSentence({})),
+        (PauliWord({"a": X}), PauliWord({"b": Y}), PauliSentence({})),
+    ]
+
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)
+    def test_zero_return_pauli_word(self, op1, op2, true_res):
+        """Test the return when both operators are zero"""
+        res1 = op1.commutator(op2)
+        res1m = op2.commutator(op1)
+        assert res1 == true_res
+        assert res1m == true_res
+
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)
+    def test_zero_return_pauli_word_different_types(self, op1, op2, true_res, convert1):
+        """Test the return when both operators are zero and potentially of different type"""
+        op1 = convert1(op1)
+        res2 = op1.commutator(op2)
+        res2m = op2.commutator(op1)
+        assert res2 == true_res
+        assert res2m == true_res
+
+    @pytest.mark.parametrize("convert1", [_id, _pauli_to_op, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)
+    def test_zero_return_pauli_word_different_types_with_operator(
+        self, op1, op2, true_res, convert1
+    ):
+        """Test the return when both operators are zero and potentially of different type"""
+        op1 = convert1(op1)
+        res = op2.commutator(op1)
+        assert res == true_res
+
+    data_pauli_relations = [
+        # word and word
+        (X0, X0, PauliSentence({})),
+        (Y0, Y0, PauliSentence({})),
+        (Z0, Z0, PauliSentence({})),
+        (X0, Y0, PauliSentence({Z0: 2j})),
+        (Y0, Z0, PauliSentence({X0: 2j})),
+        (Z0, X0, PauliSentence({Y0: 2j})),
+        (Y0, X0, PauliSentence({Z0: -2j})),
+        (Z0, Y0, PauliSentence({X0: -2j})),
+        (X0, Z0, PauliSentence({Y0: -2j})),
+    ]
+
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations)
+    def test_pauli_word_commutator(self, op1, op2, true_res):
+        """Test native comm in PauliWord class"""
+        res1 = op1.commutator(op2)
+        res1m = op2.commutator(op1)
+        assert res1 == true_res
+        assert res1m == -1 * true_res
+
+    data_pauli_relations_private_func = (
+        # test when using the private _comm function that returns a tuple instead of a PauliSentence
+        (X0, X0, pw_id, 0),
+        (Y0, Y0, pw_id, 0),
+        (Z0, Z0, pw_id, 0),
+        (X0, Y0, Z0, 2j),
+        (Y0, Z0, X0, 2j),
+        (Z0, X0, Y0, 2j),
+        (Y0, X0, Z0, -2j),
+        (Z0, Y0, X0, -2j),
+        (X0, Z0, Y0, -2j),
+    )
+
+    @pytest.mark.parametrize("op1, op2, true_word, true_coeff", data_pauli_relations_private_func)
+    def test_pauli_word_private_commutator(self, op1, op2, true_word, true_coeff):
+        """Test native _comm in PauliWord class that returns tuples"""
+        res1 = op1._commutator(op2)
+        res1m = op2._commutator(op1)
+        assert res1[0] == true_word
+        assert res1[1] == true_coeff
+        assert res1m[0] == true_word
+        assert res1m[1] == -1 * true_coeff
+
+    data_pauli_relations_different_types = [
+        (X0, Y0, PauliSentence({Z0: 2j})),
+        (Y0, Z0, PauliSentence({X0: 2j})),
+        (Z0, X0, PauliSentence({Y0: 2j})),
+        (Y0, X0, PauliSentence({Z0: -2j})),
+        (Z0, Y0, PauliSentence({X0: -2j})),
+        (X0, Z0, PauliSentence({Y0: -2j})),
+    ]
+
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
+    @pytest.mark.parametrize("convert2", [_id, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
+    def test_pauli_word_comm_different_types(self, op1, op2, true_res, convert1, convert2):
+        """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator"""
+        op1 = convert1(op1)
+        op2 = convert2(op2)
+        res2 = op1.commutator(op2)
+        res2m = op2.commutator(op1)
+        assert res2 == true_res
+        assert res2m == -1 * true_res
+        assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
+
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
+    @pytest.mark.parametrize("convert2", [_pauli_to_op])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
+    def test_pauli_word_comm_different_types_with_ops(self, op1, op2, true_res, convert1, convert2):
+        """Test native comm in between a PauliWord, PauliSentence and Operator"""
+        op1 = convert1(op1)
+        op2 = convert2(op2)
+        res2 = op1.commutator(op2)
+        assert res2 == true_res
+        assert isinstance(res2, PauliSentence)
+
+    data_pauli_relations_commutes = [
+        (X0, X0, PauliSentence({})),
+        (Y0, Y0, PauliSentence({})),
+        (Z0, Z0, PauliSentence({})),
+    ]
+
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
+    def test_pauli_word_comm_commutes(self, op1, op2, true_res, convert1):
+        """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
+        op1 = convert1(op1)
+        op2 = qml.pauli.pauli_sentence(op2)
+        res2 = op1.commutator(op2)
+        res2m = op2.commutator(op1)
+        assert res2 == true_res
+        assert res2m == -1 * true_res
+        assert all(isinstance(res, PauliSentence) for res in [res2, res2m])
+
+    @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
+    @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
+    def test_pauli_commutator_with_operator(self, op1, op2, true_res, convert1):
+        """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
+        op1 = convert1(op1)
+        op2 = _pauli_to_op(op2)
+        res2 = op1.commutator(op2)
+        assert res2 == true_res
+        assert isinstance(res2, PauliSentence)
+
+    data_consistency_paulis = [
+        PauliWord({0: "X", 1: "X"}),
+        PauliWord({0: "Y"}) + PauliWord({1: "Y"}),
+        1.5 * PauliWord({0: "Y"}) + 0.5 * PauliWord({1: "Y"}),
+    ]
+
+    @pytest.mark.parametrize("op1", data_consistency_paulis)
+    @pytest.mark.parametrize("op2", data_consistency_paulis)
+    def test_consistency_pw_ps(self, op1, op2):
+        """Test consistent behavior when inputting PauliWord and PauliSentence"""
+        op1 = PauliWord({0: "X", 1: "X"})
+        op2 = PauliWord({0: "Y"}) + PauliWord({1: "Y"})
+        res1 = op1.commutator(op2)
+        res2 = qml.commutator(op1, op2, pauli=True)
+        assert res1 == res2
+
+
+class TestPauliArithmeticIntegration:
+    def test_pauli_arithmetic_integration(self):
+        """Test creating operators from PauliWord, PauliSentence and scalars"""
+        res = 1.0 + 3.0 * pw1 + 1j * ps3 - 1.0 * ps1
+        true_res = PauliSentence({pw1: -1.23 + 3, pw2: -4j, pw3: 0.5 - 0.5j, pw_id: 1 + 1j})
+        assert res == true_res
+
+    def test_construct_XXZ_model(self):
+        """Test that constructing the XXZ model results in the correct matrix"""
+        n_wires = 4
+        J_orthogonal = 1.5
+        J_zz = 0.5
+        h = 2.0
+        # Construct XXZ Hamiltonian using paulis
+        paulis = [
+            J_orthogonal
+            * (
+                PauliWord({i: "X", (i + 1) % n_wires: "X"})
+                + PauliWord({i: "Y", (i + 1) % n_wires: "Y"})
+            )
+            for i in range(n_wires)
+        ]
+        paulis += [J_zz * PauliWord({i: "Z", (i + 1) % n_wires: "Z"}) for i in range(n_wires)]
+        paulis += [h * PauliWord({i: "Z"}) for i in range(n_wires)]
+        H = sum(paulis) + 10.0
+
+        # Construct XXZ Hamiltonian using PL ops
+        ops = [
+            J_orthogonal
+            * (
+                qml.PauliX(i) @ qml.PauliX((i + 1) % n_wires)
+                + qml.PauliY(i) @ qml.PauliY((i + 1) % n_wires)
+            )
+            for i in range(n_wires)
+        ]
+        ops += [J_zz * qml.PauliZ(i) @ qml.PauliZ((i + 1) % n_wires) for i in range(n_wires)]
+        ops += [h * qml.PauliZ(i) for i in range(n_wires)]
+        H_true = qml.sum(*ops) + 10.0
+
+        assert qml.math.allclose(H.to_mat(), qml.matrix(H_true))
+
+
+@pytest.mark.all_interfaces
+class TestPauliArithmeticWithADInterfaces:
+    """Test pauli arithmetic with different automatic differentiation interfaces"""
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_torch_initialization(self, scalar):
+        """Test initializing PauliSentence from torch tensor"""
+        import torch
+
+        tensor = scalar * torch.ones(4)
+        res = PauliSentence(dict(zip(words, tensor)))
+        assert all(isinstance(val, torch.Tensor) for val in res.values())
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_autograd_initialization(self, scalar):
+        """Test initializing PauliSentence from autograd array"""
+
+        tensor = scalar * np.ones(4)
+        res = PauliSentence(dict(zip(words, tensor)))
+        assert all(isinstance(val, np.ndarray) for val in res.values())
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_jax_initialization(self, scalar):
+        """Test initializing PauliSentence from jax array"""
+        import jax.numpy as jnp
+
+        tensor = scalar * jnp.ones(4)
+        res = PauliSentence(dict(zip(words, tensor)))
+        assert all(isinstance(val, jnp.ndarray) for val in res.values())
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_tf_initialization(self, scalar):
+        """Test initializing PauliSentence from tf tensor"""
+        import tensorflow as tf
+
+        tensor = scalar * tf.ones(4, dtype=tf.complex64)
+        res = PauliSentence(dict(zip(words, tensor)))
+        assert all(isinstance(val, tf.Tensor) for val in res.values())
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_torch_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with a torch tensor works and results in the correct types"""
+        import torch
+
+        res1 = torch.tensor(scalar) * ps
+        res2 = ps * torch.tensor(scalar)
+        res3 = ps / torch.tensor(scalar)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
+        assert all(isinstance(val, torch.Tensor) for val in res1.values())
+        assert all(isinstance(val, torch.Tensor) for val in res2.values())
+        assert all(isinstance(val, torch.Tensor) for val in res3.values())
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_autograd_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with an autograd array works and results in the correct types"""
+
+        res1 = np.array(scalar) * ps
+        res2 = ps * np.array(scalar)
+        res3 = ps / np.array(scalar)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
+        assert all(isinstance(val, np.ndarray) for val in res1.values())
+        assert all(isinstance(val, np.ndarray) for val in res2.values())
+        assert all(isinstance(val, np.ndarray) for val in res3.values())
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_jax_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with a jax array works and results in the correct types"""
+        import jax.numpy as jnp
+
+        res1 = jnp.array(scalar) * ps
+        res2 = ps * jnp.array(scalar)
+        res3 = ps / jnp.array(scalar)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
+        assert all(isinstance(val, jnp.ndarray) for val in res1.values())
+        assert all(isinstance(val, jnp.ndarray) for val in res2.values())
+        assert all(isinstance(val, jnp.ndarray) for val in res3.values())
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("ps", sentences)
+    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    def test_tf_scalar_multiplication(self, ps, scalar):
+        """Test that multiplying with a tf tensor works and results in the correct types"""
+        import tensorflow as tf
+
+        res1 = tf.constant(scalar, dtype=tf.complex64) * ps
+        res2 = ps * tf.constant(scalar, dtype=tf.complex64)
+        res3 = ps / tf.constant(scalar, dtype=tf.complex64)
+        assert isinstance(res1, PauliSentence)
+        assert isinstance(res2, PauliSentence)
+        assert isinstance(res3, PauliSentence)
+        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
+        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
+        assert all(isinstance(val, tf.Tensor) for val in res1.values())
+        assert all(isinstance(val, tf.Tensor) for val in res2.values())
+        assert all(isinstance(val, tf.Tensor) for val in res3.values())

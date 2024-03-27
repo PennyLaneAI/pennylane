@@ -29,11 +29,15 @@ def seed():
     np.random.seed(0)
 
 
-def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
-    """Computes the ExpvalCost and catches the initial deprecation warning."""
+def generate_cost_fn(ansatz, hamiltonian, device, **kwargs):
+    """Generates a QNode and computes the expectation value of a cost Hamiltonian with respect
+    to the parameters provided to an ansatz"""
 
-    with pytest.warns(UserWarning, match="is deprecated,"):
-        res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
+    @qml.qnode(device, **kwargs)
+    def res(params):
+        ansatz(params, wires=device.wires)
+        return qml.expval(hamiltonian)
+
     return res
 
 
@@ -59,8 +63,6 @@ OBSERVABLES_NO_HERMITIAN = [
     (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
     (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
 ]
-
-JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
 
 hamiltonians_with_expvals = [
     ((-0.6,), (qml.PauliZ(0),), [-0.6 * 1.0]),
@@ -273,7 +275,7 @@ class TestVQE:
         """Tests that the cost function evaluates properly"""
         hamiltonian = qml.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
-        expval = catch_warn_ExpvalCost(ansatz, hamiltonian, dev)
+        expval = generate_cost_fn(ansatz, hamiltonian, dev)
         assert expval(params).dtype == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
@@ -284,32 +286,8 @@ class TestVQE:
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
         hamiltonian = qml.Hamiltonian(coeffs, observables)
-        cost = catch_warn_ExpvalCost(lambda params, **kwargs: None, hamiltonian, dev)
+        cost = generate_cost_fn(lambda params, **kwargs: None, hamiltonian, dev)
         assert cost([]) == sum(expected)
-
-    @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
-    def test_cost_invalid_ansatz(self, ansatz, mock_device):
-        """Tests that the cost function raises an exception if the ansatz is not valid"""
-        hamiltonian = qml.Hamiltonian((1.0,), [qml.PauliZ(0)])
-        with pytest.raises(ValueError, match="not a callable function."):
-            catch_warn_ExpvalCost(4, hamiltonian, mock_device())
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
-    def test_passing_kwargs(self, coeffs, observables, expected):
-        """Test that the step size and order used for the finite differences
-        differentiation method were passed to the QNode instances using the
-        keyword arguments."""
-        dev = qml.device("default.qubit", wires=2)
-        hamiltonian = qml.Hamiltonian(coeffs, observables)
-        cost = catch_warn_ExpvalCost(
-            lambda params, **kwargs: None, hamiltonian, dev, h=123, order=2
-        )
-
-        # Checking that the qnodes contain the step size and order
-        for qnode in cost.qnodes:
-            assert qnode.gradient_kwargs["h"] == 123
-            assert qnode.gradient_kwargs["order"] == 2
 
     # pylint: disable=protected-access
     @pytest.mark.torch
@@ -317,27 +295,29 @@ class TestVQE:
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
     def test_optimize_torch(self, dev_name, shots):
-        """Test that an ExpvalCost with observable optimization gives the same result as another
-        ExpvalCost without observable optimization."""
+        """Test that a Hamiltonian cost function is the same with and without
+        grouping optimization when using the Torch interface."""
+
+        if dev_name == "default.qubit.legacy" and shots is None:
+            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
 
         dev = qml.device(dev_name, wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
+        hamiltonian1.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
+        cost = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian1,
             dev,
-            optimize=True,
             interface="torch",
             diff_method="parameter-shift",
         )
-        cost2 = catch_warn_ExpvalCost(
+        cost2 = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian2,
             dev,
-            optimize=False,
             interface="torch",
             diff_method="parameter-shift",
         )
@@ -366,27 +346,26 @@ class TestVQE:
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
     def test_optimize_tf(self, shots):
-        """Test that an ExpvalCost with observable optimization gives the same result as another
-        ExpvalCost without observable optimization."""
+        """Test that a Hamiltonian cost function is the same with and without
+        grouping optimization when using the TensorFlow interface."""
 
         dev = qml.device("default.qubit", wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
+        hamiltonian1.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
+        cost = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian1,
             dev,
-            optimize=True,
             interface="tf",
             diff_method="parameter-shift",
         )
-        cost2 = catch_warn_ExpvalCost(
+        cost2 = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian2,
             dev,
-            optimize=False,
             interface="tf",
             diff_method="parameter-shift",
         )
@@ -413,27 +392,26 @@ class TestVQE:
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
     def test_optimize_autograd(self, shots):
-        """Test that an ExpvalCost with observable optimization gives the same result as another
-        ExpvalCost without observable optimization."""
+        """Test that a Hamiltonian cost function is the same with and without
+        grouping optimization when using the autograd interface."""
 
         dev = qml.device("default.qubit", wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
+        hamiltonian1.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
+        cost = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian1,
             dev,
-            optimize=True,
             interface="autograd",
             diff_method="parameter-shift",
         )
-        cost2 = catch_warn_ExpvalCost(
+        cost2 = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian2,
             dev,
-            optimize=False,
             interface="autograd",
             diff_method="parameter-shift",
         )
@@ -458,9 +436,9 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_multiple_terms_autograd(self):
-        """Test that an ExpvalCost with observable optimization gives the same
-        result as another ExpvalCost without observable optimization even when there
-        are non-unique Hamiltonian terms."""
+        """Test that a Hamiltonian cost function is the same with and without
+        grouping optimization when using the autograd interface, even when
+        there are non-unique Hamiltonian terms."""
 
         dev = qml.device("default.qubit", wires=5)
         obs = [
@@ -477,20 +455,19 @@ class TestVQE:
         coefs = (np.random.rand(len(obs)) - 0.5) * 2
         hamiltonian1 = qml.Hamiltonian(coefs, obs)
         hamiltonian2 = qml.Hamiltonian(coefs, obs)
+        hamiltonian1.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
+        cost = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian1,
             dev,
-            optimize=True,
             interface="autograd",
             diff_method="parameter-shift",
         )
-        cost2 = catch_warn_ExpvalCost(
+        cost2 = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian2,
             dev,
-            optimize=False,
             interface="autograd",
             diff_method="parameter-shift",
         )
@@ -515,8 +492,8 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.torch
     def test_optimize_multiple_terms_torch(self):
-        """Test that an ExpvalCost with observable optimization gives the same
-        result as another ExpvalCost without observable optimization even when there
+        """Test that a Hamiltonian cost function is the same with and without
+        grouping optimization when using the Torch interface, even when there
         are non-unique Hamiltonian terms."""
 
         dev = qml.device("default.qubit", wires=5)
@@ -534,20 +511,19 @@ class TestVQE:
         coefs = (np.random.rand(len(obs)) - 0.5) * 2
         hamiltonian1 = qml.Hamiltonian(coefs, obs)
         hamiltonian2 = qml.Hamiltonian(coefs, obs)
+        hamiltonian1.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
+        cost = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian1,
             dev,
-            optimize=True,
             interface="torch",
             diff_method="parameter-shift",
         )
-        cost2 = catch_warn_ExpvalCost(
+        cost2 = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian2,
             dev,
-            optimize=False,
             interface="torch",
             diff_method="parameter-shift",
         )
@@ -573,9 +549,9 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.tf
     def test_optimize_multiple_terms_tf(self):
-        """Test that an ExpvalCost with observable optimization gives the same
-        result as another ExpvalCost without observable optimization even when there
-        are non-unique Hamiltonian terms."""
+        """Test that a Hamiltonian cost function is the same with and without
+        grouping optimization when using the TensorFlow interface, even when
+        there are non-unique Hamiltonian terms."""
 
         dev = qml.device("default.qubit", wires=5)
         obs = [
@@ -592,20 +568,19 @@ class TestVQE:
         coefs = (np.random.rand(len(obs)) - 0.5) * 2
         hamiltonian1 = qml.Hamiltonian(coefs, obs)
         hamiltonian2 = qml.Hamiltonian(coefs, obs)
+        hamiltonian1.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
+        cost = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian1,
             dev,
-            optimize=True,
             interface="tf",
             diff_method="parameter-shift",
         )
-        cost2 = catch_warn_ExpvalCost(
+        cost2 = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian2,
             dev,
-            optimize=False,
             interface="tf",
             diff_method="parameter-shift",
         )
@@ -631,25 +606,25 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_grad(self):
-        """Test that the gradient of ExpvalCost is accessible and correct when using observable
-        optimization and the autograd interface."""
+        """Test that the gradient of a Hamiltonian cost function is accessible
+        and correct when using observable grouping optimization and the
+        autograd interface."""
         dev = qml.device("default.qubit", wires=4)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
+        hamiltonian1.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
+        cost = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian1,
             dev,
-            optimize=True,
             diff_method="parameter-shift",
         )
-        cost2 = catch_warn_ExpvalCost(
+        cost2 = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian2,
             dev,
-            optimize=False,
             diff_method="parameter-shift",
         )
 
@@ -672,16 +647,18 @@ class TestVQE:
     @pytest.mark.autograd
     @pytest.mark.parametrize("opt", [True, False])
     def test_grad_zero_hamiltonian(self, opt):
-        """Test that the gradient of ExpvalCost is accessible and correct when using observable
-        optimization and the autograd interface with a zero Hamiltonian."""
+        """Test that the gradient of a Hamiltonian cost function is accessible
+        and correct when using observable grouping optimization and the
+        autograd interface, with a zero Hamiltonian."""
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = qml.Hamiltonian([0], [qml.PauliX(0)])
+        if opt:
+            hamiltonian.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
+        cost = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian,
             dev,
-            optimize=opt,
             diff_method="parameter-shift",
         )
 
@@ -695,18 +672,19 @@ class TestVQE:
     @pytest.mark.torch
     @pytest.mark.slow
     def test_optimize_grad_torch(self):
-        """Test that the gradient of ExpvalCost is accessible and correct when using observable
-        optimization and the Torch interface."""
+        """Test that the gradient of a Hamiltonian cost function is accessible
+        and correct when using observable grouping optimization and the Torch
+        interface."""
         import torch
 
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
+        hamiltonian.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
+        cost = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian,
             dev,
-            optimize=True,
             interface="torch",
         )
 
@@ -724,15 +702,17 @@ class TestVQE:
     @pytest.mark.tf
     @pytest.mark.slow
     def test_optimize_grad_tf(self):
-        """Test that the gradient of ExpvalCost is accessible and correct when using observable
-        optimization and the TensorFlow interface."""
+        """Test that the gradient of a Hamiltonian cost function is accessible
+        and correct when using observable grouping optimization and the
+        TensorFlow interface."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
+        hamiltonian.compute_grouping()
 
-        cost = catch_warn_ExpvalCost(
-            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, interface="tf"
+        cost = generate_cost_fn(
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, interface="tf"
         )
 
         np.random.seed(1967)
@@ -746,26 +726,6 @@ class TestVQE:
         dc = tape.gradient(res, w).numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad)
-
-    def test_multiple_devices_opt_true(self):
-        """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
-        dev = [qml.device("default.qubit", wires=2), qml.device("default.qubit", wires=2)]
-
-        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
-
-        with pytest.raises(ValueError, match="Using multiple devices is not supported when"):
-            catch_warn_ExpvalCost(qml.templates.StronglyEntanglingLayers, h, dev, optimize=True)
-
-    def test_variance_error(self):
-        """Test that an error is raised if attempting to use ExpvalCost to measure
-        variances"""
-        dev = qml.device("default.qubit", wires=4)
-        hamiltonian = big_hamiltonian
-
-        with pytest.raises(ValueError, match="sums of expectation values"):
-            catch_warn_ExpvalCost(
-                qml.templates.StronglyEntanglingLayers, hamiltonian, dev, measure="var"
-            )
 
 
 # Test data
@@ -930,6 +890,9 @@ class TestNewVQE:
         assert res[0] == circuit1()
         assert res[1] == circuit1()
 
+    # the LinearCombination implementation does have diagonalizing gates,
+    # but legacy Hamiltonian does not and fails
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -944,6 +907,9 @@ class TestNewVQE:
         with pytest.raises(NotImplementedError):
             circuit()
 
+    # the LinearCombination implementation does have diagonalizing gates,
+    # but legacy Hamiltonian does not and fails
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_error_sample_measurement(self):
         """Tests that error is thrown if sample(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -1053,7 +1019,31 @@ class TestNewVQE:
         dc = jax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
+    @pytest.mark.xfail(
+        reason="diagonalizing gates defined but not used, should not be included in specs"
+    )
     def test_specs(self):
+        """Test that the specs of a VQE circuit can be computed"""
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(H)
+
+        res = qml.specs(circuit)()
+
+        assert res["num_observables"] == 1
+
+        # currently this returns 1 instead, because diagonalizing gates exist for H,
+        # but they aren't used in executing this qnode
+        # to be revisited in [sc-59117]
+        assert res["num_diagonalizing_gates"] == 0
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_specs_legacy_opmath(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])
@@ -1091,7 +1081,7 @@ class TestInterfaces:
         a, b = 0.54, 0.123
         params = np.array([a, b])
 
-        cost = catch_warn_ExpvalCost(ansatz, H, dev, interface=interface)
+        cost = generate_cost_fn(ansatz, H, dev, interface=interface)
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(params)
 
@@ -1120,7 +1110,7 @@ class TestInterfaces:
         a, b = 0.54, 0.123
         params = torch.autograd.Variable(torch.tensor([a, b]), requires_grad=True)
 
-        cost = catch_warn_ExpvalCost(ansatz, H, dev, interface="torch")
+        cost = generate_cost_fn(ansatz, H, dev, interface="torch")
         loss = cost(params)
         loss.backward()
 
@@ -1150,7 +1140,7 @@ class TestInterfaces:
         H = qml.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = tf.Variable([a, b], dtype=tf.float64)
-        cost = catch_warn_ExpvalCost(ansatz, H, dev, interface="tf")
+        cost = generate_cost_fn(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
             loss = cost(params)
@@ -1185,7 +1175,7 @@ class TestInterfaces:
         w = tf.Variable(params)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = catch_warn_ExpvalCost(ansatz, H, dev, interface="tf")
+        cost = generate_cost_fn(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
             loss = cost(w)
@@ -1196,7 +1186,7 @@ class TestInterfaces:
         w = torch.autograd.Variable(w, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = catch_warn_ExpvalCost(ansatz, H, dev, interface="torch")
+        cost = generate_cost_fn(ansatz, H, dev, interface="torch")
         loss = cost(w)
         loss.backward()
         res_torch = w.grad.numpy()
@@ -1204,7 +1194,7 @@ class TestInterfaces:
         # NumPy interface
         w = params
         ansatz = qml.templates.layers.StronglyEntanglingLayers
-        cost = catch_warn_ExpvalCost(ansatz, H, dev, interface="autograd")
+        cost = generate_cost_fn(ansatz, H, dev, interface="autograd")
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(w)
 

@@ -19,10 +19,12 @@ page in the developement guide.
 # pylint: disable=protected-access, expression-not-assigned
 
 import pytest
+import numpy as np
 import pennylane as qml
 
 from pennylane.drawer import tape_mpl
 from pennylane.tape import QuantumScript
+from pennylane.ops.op_math import Controlled
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -55,6 +57,17 @@ def test_fontsize():
     _, ax = tape_mpl(tape1, fontsize=20)
     for t in ax.texts:
         assert t.get_fontsize() == 20
+    plt.close()
+
+
+def test_fig_argument():
+    """Test figure argument is used correctly"""
+
+    fig = plt.figure()
+    output_fig, ax = tape_mpl(tape1, fontsize=20, fig=fig)
+
+    assert ax.get_figure() == fig
+    assert output_fig == fig
     plt.close()
 
 
@@ -308,7 +321,7 @@ class TestSpecialGates:
         """Test MultiControlledX special call with provided control values."""
 
         with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values="0101")
+            qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values=[0, 1, 0, 1])
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
@@ -359,6 +372,8 @@ class TestSpecialGates:
         for i in range(3):
             assert ax.patches[i].center == (layer, i)
 
+        plt.close()
+
     def test_Barrier(self):
         """Test Barrier gets correct special call."""
 
@@ -370,6 +385,8 @@ class TestSpecialGates:
 
         assert len(ax.lines) == 3
         assert len(ax.collections) == 2
+        assert np.allclose(ax.collections[0].get_color(), np.array([[0.0, 0.0, 0.0, 1.0]]))  # black
+        assert np.allclose(ax.collections[0].get_color(), np.array([[0.0, 0.0, 0.0, 1.0]]))  # black
 
         plt.close()
 
@@ -522,20 +539,22 @@ class TestControlledGates:
 
         with qml.queuing.AnnotatedQueue() as q_tape:
             # pylint:disable=no-member
-            qubit_unitary = qml.QubitUnitary(qml.matrix(qml.RX)(0, 0), wires=4)
+            qubit_unitary = qml.QubitUnitary(qml.RX.compute_matrix(0), wires=4)
             qml.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
 
         tape = QuantumScript.from_queue(q_tape)
         self.check_tape_controlled_qubit_unitary(tape)
+
+        plt.close()
 
     def test_nested_control_values_bool(self):
         """Test control_values get displayed correctly for nested controlled operations
         when they are provided as a list of bools."""
 
         with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.ctrl(
-                qml.ctrl(qml.PauliX(wires=4), control=[2, 3], control_values=[1, 0]),
-                control=[0, 1],
+            Controlled(
+                qml.ctrl(qml.PauliY(wires=4), control=[2, 3], control_values=[1, 0]),
+                control_wires=[0, 1],
                 control_values=[1, 0],
             )
 
@@ -635,6 +654,8 @@ class TestGeneralOperations:
         assert ax.patches[0].get_y() == -self.width / 2.0
         assert ax.patches[0].get_width() == self.width
         assert ax.patches[0].get_height() == 2 + self.width
+
+        plt.close()
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):
@@ -830,7 +851,7 @@ class TestClassicalControl:
         [_, cwire] = ax.lines
 
         assert cwire.get_xdata() == [0, 0, 0, 1, 1, 1, 2, 2, 2]
-        assert cwire.get_ydata() == [0.6, 0, 0.6, 0.6, 0, 0.6, 0.6, 0, 0.6]
+        assert cwire.get_ydata() == [1, 0, 1, 1, 0, 1, 1, 0, 1]
 
         [pe1, pe2] = cwire.get_path_effects()
 
@@ -843,6 +864,7 @@ class TestClassicalControl:
             "linewidth": 3 * plt.rcParams["lines.linewidth"],
             "foreground": "white",  # figure.facecolor for black white sytle
         }
+        plt.close()
 
     def test_combo_measurement(self):
         """Test a control that depends on two mid circuit measurements."""
@@ -859,10 +881,10 @@ class TestClassicalControl:
         [_, _, cwire1, cwire2, eraser] = ax.lines
 
         assert cwire1.get_xdata() == [0, 0, 0, 2, 2, 2]
-        assert cwire1.get_ydata() == [1.6, 0, 1.6, 1.6, 0, 1.6]
+        assert cwire1.get_ydata() == [2, 0, 2, 2, 0, 2]
 
         assert cwire2.get_xdata() == [1, 1, 1, 2, 2, 2]
-        assert cwire2.get_ydata() == [1.85, 1, 1.85, 1.85, 0, 1.85]
+        assert cwire2.get_ydata() == [2.25, 1, 2.25, 2.25, 0, 2.25]
 
         for cwire in [cwire1, cwire2]:
             [pe1, pe2] = cwire.get_path_effects()
@@ -878,9 +900,11 @@ class TestClassicalControl:
             }
 
         assert eraser.get_xdata() == (1.8, 2)
-        assert eraser.get_ydata() == (1.6, 1.6)
+        assert eraser.get_ydata() == (2, 2)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+
+        plt.close()
 
     def test_combo_measurement_non_terminal(self):
         """Test a combination measurement where the classical wires continue on.
@@ -899,10 +923,10 @@ class TestClassicalControl:
         [_, _, cwire1, cwire2, eraser] = ax.lines
 
         assert cwire1.get_xdata() == [0, 0, 0, 2, 2, 2, 3, 3, 3]
-        assert cwire1.get_ydata() == [1.6, 0, 1.6, 1.6, 0, 1.6, 1.6, 0, 1.6]
+        assert cwire1.get_ydata() == [2, 0, 2, 2, 0, 2, 2, 0, 2]
 
         assert cwire2.get_xdata() == [1, 1, 1, 2, 2, 2, 4, 4, 4]
-        assert cwire2.get_ydata() == [1.85, 1, 1.85, 1.85, 0, 1.85, 1.85, 1, 1.85]
+        assert cwire2.get_ydata() == [2.25, 1, 2.25, 2.25, 0, 2.25, 2.25, 1, 2.25]
 
         for cwire in [cwire1, cwire2]:
             [pe1, pe2] = cwire.get_path_effects()
@@ -918,6 +942,76 @@ class TestClassicalControl:
             }
 
         assert eraser.get_xdata() == (1.8, 2.2)
-        assert eraser.get_ydata() == (1.6, 1.6)
+        assert eraser.get_ydata() == (2, 2)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+
+        plt.close()
+
+    def test_single_mcm_measure(self):
+        """Test a final measurement of a mid circuit measurement."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.expval(m0)
+        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q))
+
+        assert len(ax.patches) == 6  # two measurement boxes
+        assert ax.patches[3].get_x() == 1 - 0.75 / 2 + 0.2  # 1 - box_length/2 + pad
+        assert qml.math.allclose(ax.patches[3].get_y(), 1 - 0.75 / 2 + 0.2)  # 1- box_length/2 + pad
+
+        assert ax.patches[4].center == (
+            1,
+            1 + 0.15 * 0.75,
+        )  # 1 +0.15 *box_length
+        assert isinstance(ax.patches[5], mpl.patches.FancyArrow)
+
+        [_, cwire] = ax.lines
+        assert cwire.get_xdata() == [0, 0, 0, 1, 1, 1]
+        assert cwire.get_ydata() == [1, 0, 1, 1, 1, 1]
+
+        [pe1, pe2] = cwire.get_path_effects()
+
+        # probably not a good way to test this, but the best I can figure out
+        assert pe1._gc == {
+            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "foreground": "black",  # lines.color for black white style
+        }
+        assert pe2._gc == {
+            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "foreground": "white",  # figure.facecolor for black white sytle
+        }
+
+    def test_multiple_mcm_measure(self):
+        """Test final measurements of multiple mid circuit measurements"""
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            m1 = qml.measure(0)
+            _ = qml.measure(0)
+            m2 = qml.measure(0)
+            _ = qml.measure(0)
+            qml.sample([m0, m1])
+            qml.expval(m2)
+        _, ax = qml.drawer.tape_mpl(qml.tape.QuantumScript.from_queue(q))
+
+        [_, cwire0, cwire1, cwire2] = ax.lines
+        assert cwire0.get_xdata() == [0, 0, 0, 5, 5, 5]
+        assert cwire0.get_ydata() == [1, 0, 1, 1, 1, 1]
+        assert cwire1.get_xdata() == [1, 1, 1, 5, 5, 5]
+        assert cwire1.get_ydata() == [1.25, 0, 1.25, 1.25, 1.25, 1.25]
+        assert cwire2.get_xdata() == [3, 3, 3, 5, 5, 5]
+        assert cwire2.get_ydata() == [1.5, 0, 1.5, 1.5, 1.5, 1.5]
+
+        assert len(ax.patches) == 18  # 6 * 3
+
+        final_measure_box = ax.patches[15]
+        assert final_measure_box.get_x() == 5 - 0.75 / 2 + 0.2  # 5 - box_length/2 + pad
+        assert qml.math.allclose(
+            final_measure_box.get_y(), 1 - 0.75 / 2 + 0.2
+        )  # 1- box_length/2 + pad
+
+        assert (
+            final_measure_box.get_height() == 0.75 - 2 * 0.2 + 2 * 0.25
+        )  # box_length - 2 * pad + 2 *cwire_scaling
+
+        plt.close()

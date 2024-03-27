@@ -196,7 +196,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     @property
     def has_matrix(self):
-        return self.base.has_matrix or isinstance(self.base, qml.Hamiltonian)
+        return self.base.has_matrix or isinstance(self.base, qml.ops.Hamiltonian)
 
     @property
     def hash(self):
@@ -243,7 +243,7 @@ class ScalarSymbolicOp(SymbolicOp):
             tensor_like: matrix representation
         """
         # compute base matrix
-        if isinstance(self.base, qml.Hamiltonian):
+        if isinstance(self.base, qml.ops.Hamiltonian):
             base_matrix = qml.matrix(self.base)
         else:
             base_matrix = self.base.matrix()
@@ -255,7 +255,7 @@ class ScalarSymbolicOp(SymbolicOp):
             base_matrix = qml.math.convert_like(base_matrix, self.scalar)
         elif scalar_interface == "tensorflow":
             # just cast everything to complex128. Otherwise we may have casting problems
-            # where things get truncated like in SProd(tf.Variable(0.1), qml.PauliX(0))
+            # where things get truncated like in SProd(tf.Variable(0.1), qml.X(0))
             scalar = qml.math.cast(scalar, "complex128")
             base_matrix = qml.math.cast(base_matrix, "complex128")
 

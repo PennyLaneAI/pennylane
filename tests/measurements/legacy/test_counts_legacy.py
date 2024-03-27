@@ -172,20 +172,19 @@ class TestCountsIntegration:
         assert circuit._qfunc_output.return_type is Counts  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("shots", [1000, [1000, 1000]])
-    @pytest.mark.parametrize("phi", np.arange(np.pi / 4, 2 * np.pi, np.pi / 2))
     @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
-    def test_observable_is_measurement_value(self, shots, phi, device_name):
+    def test_observable_is_measurement_value(self, shots, device_name):
         """Test that counts for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
-        def circuit(phi):
-            qml.RX(phi, 0)
+        def circuit():
+            qml.Hadamard(0)
             m0 = qml.measure(0)
             return qml.counts(m0)
 
-        res = circuit(phi)
+        res = circuit()
         if isinstance(shots, list):
             assert isinstance(res, tuple)
             assert len(res) == 2
@@ -201,22 +200,21 @@ class TestCountsIntegration:
             assert set(res.keys()) == {0, 1}
 
     @pytest.mark.parametrize("shots", [1000, [1000, 1000]])
-    @pytest.mark.parametrize("phi", np.arange(np.pi / 4, 2 * np.pi, np.pi / 2))
     @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
-    def test_observable_is_composite_measurement_value(self, shots, phi, device_name):
+    def test_observable_is_composite_measurement_value(self, shots, device_name):
         """Test that counts for mid-circuit measurement values
         are correct for a composite measurement value."""
         dev = qml.device(device_name, wires=4, shots=shots)
 
         @qml.qnode(dev)
-        def circuit(phi):
-            qml.RX(phi, 0)
+        def circuit():
+            qml.Hadamard(0)
             m0 = qml.measure(0)
-            qml.RX(0.5 * phi, 1)
+            qml.Hadamard(1)
             m1 = qml.measure(1)
             return qml.counts(m0 + m1)
 
-        res = circuit(phi)
+        res = circuit()
         if isinstance(shots, list):
             assert isinstance(res, tuple)
             assert len(res) == 2

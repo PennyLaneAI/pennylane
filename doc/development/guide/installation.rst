@@ -22,8 +22,6 @@ be installed alongside PennyLane:
 
 The following Python packages are optional:
 
-* `dask["parallel"] <https://dask.org/>`_, for parallel QNodeCollection execution
-* `tensornetwork <https://github.com/google/TensorNetwork>`_ >= 0.3, for the ``default.tensor`` plugin
 * `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qml.qchem`` module
 
 If you currently do not have Python 3 installed, we recommend

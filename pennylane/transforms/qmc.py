@@ -47,7 +47,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
     updated_operations.append(PauliX(target_wire))
     updated_operations.append(Hadamard(target_wire))
 
-    control_values = "0" * (len(wires) - 1) + "1"
+    control_values = [0] * (len(wires) - 1) + [1]
     control_wires = wires[1:] + control_wire
     updated_operations.append(
         MultiControlledX(
@@ -122,7 +122,7 @@ def apply_controlled_Q(
         wires = Wires(wires)
         target_wire = Wires(target_wire)
         control_wire = Wires(control_wire)
-        work_wires = Wires(work_wires)
+        work_wires = Wires(work_wires) if work_wires is not None else Wires([])
 
         if not wires.contains_wires(target_wire):
             raise ValueError("The target wire must be contained within wires")

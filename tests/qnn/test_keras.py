@@ -920,3 +920,42 @@ def test_specs():
     assert info["num_trainable_params"] == 2
     assert info["interface"] == "tf"
     assert info["device_name"] == "default.qubit"
+
+
+@pytest.mark.slow
+@pytest.mark.tf
+def test_save_and_load_preserves_weights(tmpdir):
+    """
+    Test that saving and loading a model doesn't lose the weights. This particular
+    test is important aside from `test_save_whole_model` because a bug caused issues
+    when the name of (at least one of) your weights is 'weights'.
+    """
+
+    dev = qml.device("default.qubit")
+    n_qubits = 2
+
+    @qml.qnode(dev)
+    def circuit(inputs, weights):
+        qml.AngleEmbedding(inputs, wires=range(n_qubits))
+        qml.RX(weights[0], 0)
+        qml.RX(weights[1], 1)
+        return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+    weight_shapes = {"weights": (n_qubits,)}
+    quantum_layer = qml.qnn.KerasLayer(circuit, weight_shapes, output_dim=2)
+
+    model0 = tf.keras.models.Sequential()
+    model0.add(quantum_layer)
+    model0.add(tf.keras.layers.Dense(2, activation=tf.nn.softmax, input_shape=(2,)))
+
+    model0.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
+
+    num_points = 5
+    dummy_input_data = np.random.uniform(0, np.pi, size=(num_points, 2))
+    dummy_output_data = np.random.randint(2, size=(num_points, 2))
+
+    model0.fit(dummy_input_data, dummy_output_data, epochs=1, batch_size=0)
+    file = str(tmpdir) + "/model"
+    model0.save(file)
+    loaded_model = tf.keras.models.load_model(file)
+    assert np.array_equal(model0.layers[0].weights, loaded_model.layers[0].weights)

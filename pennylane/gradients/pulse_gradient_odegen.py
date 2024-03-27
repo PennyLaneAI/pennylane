@@ -32,8 +32,8 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_tape_batching,
     assert_no_variance,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
+    choose_trainable_params,
+    find_and_validate_gradient_methods,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -289,7 +289,8 @@ def _expval_pulse_odegen(tape, argnum, atol):
             parameter-shift rule.
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         atol (float): absolute tolerance used to determine vanishing contributions.
 
     Returns:
@@ -430,7 +431,8 @@ def pulse_odegen(
         tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
@@ -469,9 +471,9 @@ def pulse_odegen(
 
         jax.config.update("jax_enable_x64", True)
         H = (
-            qml.pulse.constant * qml.PauliY(0)
-            + jnp.polyval * qml.PauliY(1)
-            + qml.pulse.constant * (qml.PauliZ(0) @ qml.PauliX(1))
+            qml.pulse.constant * qml.Y(0)
+            + jnp.polyval * qml.Y(1)
+            + qml.pulse.constant * (qml.Z(0) @ qml.X(1))
         )
         params = [jnp.array(0.2), jnp.array([0.6, 0.2]), jnp.array(0.4)]
         t = [0.1, 0.9]
@@ -486,7 +488,7 @@ def pulse_odegen(
         @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
         def circuit(params):
             op = qml.evolve(H)(params, t)
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.X(0))
 
     We registered the ``QNode`` to be differentiated with the ``pulse_odegen`` method.
     This allows us to simply differentiate it with ``jax.grad``, which internally
@@ -684,14 +686,13 @@ def pulse_odegen(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=pulse_odegen)
+    trainable_params = choose_trainable_params(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     return _expval_pulse_odegen(tape, argnum, atol)
 

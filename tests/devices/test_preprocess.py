@@ -26,7 +26,7 @@ from pennylane.devices.preprocess import (
     no_sampling,
     validate_device_wires,
     validate_multiprocessing_workers,
-    warn_about_trainable_observables,
+    validate_adjoint_trainable_params,
     _operator_decomposition_gen,
     decompose,
     validate_observables,
@@ -136,11 +136,18 @@ def test_no_sampling():
         no_sampling(tape2, name="abc")
 
 
-def test_warn_about_trainable_observables():
-    """Tests warning raised for warn_about_trainable_observables."""
+def test_validate_adjoint_trainable_params_obs_warning():
+    """Tests warning raised for validate_adjoint_trainable_params with trainable observables."""
     tape = qml.tape.QuantumScript([], [qml.expval(2 * qml.PauliX(0))])
     with pytest.warns(UserWarning, match="Differentiating with respect to the input "):
-        warn_about_trainable_observables(tape)
+        validate_adjoint_trainable_params(tape)
+
+
+def test_validate_adjoint_trainable_params_state_prep_error():
+    """Tests error raised for validate_adjoint_trainable_params with trainable state-preps."""
+    tape = qml.tape.QuantumScript([qml.StatePrep(qml.numpy.array([1.0, 0.0]), wires=[0])])
+    with pytest.raises(qml.QuantumFunctionError, match="Differentiating with respect to"):
+        validate_adjoint_trainable_params(tape)
 
 
 class TestValidateDeviceWires:
@@ -223,7 +230,18 @@ class TestValidateObservables:
         with pytest.raises(DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
 
-    def test_valid_tensor_observable(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_invalid_tensor_observable_legacy(self):
+        """Test that expand_fn throws an error when a tensor includes invalid obserables"""
+        tape = QuantumScript(
+            ops=[qml.PauliX(0), qml.PauliY(1)],
+            measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
+        )
+        with pytest.raises(DeviceError, match="not supported on device"):
+            validate_observables(tape, lambda obj: obj.name == "PauliX")
+
+    @pytest.mark.usefixtures("use_legacy_opmath")  # only required for legacy observables
+    def test_valid_tensor_observable_legacy_opmath(self):
         """Test that a valid tensor ovservable passes without error."""
         tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
         assert (
@@ -298,12 +316,12 @@ class TestValidateMeasurements:
             validate_measurements(tape, lambda obj: True)
 
 
-class TestExpandFnTransformations:
-    """Tests for the behavior of the `expand_fn` helper."""
+class TestDecomposeTransformations:
+    """Tests for the behavior of the `decompose` helper."""
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_decompose_expand_unsupported_op(self, shots):
-        """Test that expand_fn expands the tape when unsupported operators are present"""
+        """Test that decompose expands the tape when unsupported operators are present"""
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements, shots=shots)

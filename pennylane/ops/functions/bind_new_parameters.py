@@ -16,7 +16,7 @@ This module contains the qml.bind_new_parameters function.
 """
 # pylint: disable=missing-docstring
 
-from typing import Sequence
+from typing import Sequence, Union
 import copy
 from functools import singledispatch
 
@@ -111,18 +111,28 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
     return op.__class__(*new_operands)
 
 
-@bind_new_parameters.register
-def bind_new_parameters_cy(
-    op: qml.CY, params: Sequence[TensorLike]
-):  # pylint:disable=unused-argument
+@bind_new_parameters.register(qml.CY)
+@bind_new_parameters.register(qml.CZ)
+@bind_new_parameters.register(qml.CH)
+@bind_new_parameters.register(qml.CCZ)
+@bind_new_parameters.register(qml.CSWAP)
+@bind_new_parameters.register(qml.CNOT)
+@bind_new_parameters.register(qml.Toffoli)
+@bind_new_parameters.register(qml.MultiControlledX)
+def bind_new_parameters_copy(op, params: Sequence[TensorLike]):  # pylint:disable=unused-argument
     return copy.copy(op)
 
 
-@bind_new_parameters.register
-def bind_new_parameters_cz(
-    op: qml.CZ, params: Sequence[TensorLike]
-):  # pylint:disable=unused-argument
-    return copy.copy(op)
+@bind_new_parameters.register(qml.CRX)
+@bind_new_parameters.register(qml.CRY)
+@bind_new_parameters.register(qml.CRZ)
+@bind_new_parameters.register(qml.CRot)
+@bind_new_parameters.register(qml.ControlledPhaseShift)
+def bind_new_parameters_parametric_controlled_ops(
+    op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot, qml.ControlledPhaseShift],
+    params: Sequence[TensorLike],
+):
+    return op.__class__(*params, wires=op.wires)
 
 
 @bind_new_parameters.register
@@ -188,8 +198,11 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
     return Pow(bind_new_parameters(op.base, params), op.scalar)
 
 
-@bind_new_parameters.register
-def bind_new_parameters_hamiltonian(op: qml.Hamiltonian, params: Sequence[TensorLike]):
+@bind_new_parameters.register(qml.ops.Hamiltonian)
+@bind_new_parameters.register(qml.ops.LinearCombination)
+def bind_new_parameters_hamiltonian(
+    op: Union[qml.ops.Hamiltonian, qml.ops.LinearCombination], params: Sequence[TensorLike]
+):
     new_H = qml.Hamiltonian(params, op.ops)
     if op.grouping_indices is not None:
         new_H.grouping_indices = op.grouping_indices

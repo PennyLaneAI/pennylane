@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the var module"""
+
+from flaky import flaky
 import numpy as np
 import pytest
 
@@ -22,9 +24,10 @@ from pennylane.measurements import Variance, Shots
 class TestVar:
     """Tests for the var function"""
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 5000, [5000, 5000]])
     def test_value(self, tol, shots):
         """Test that the var function works"""
+
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -71,7 +74,7 @@ class TestVar:
 
         circuit()
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_measurement_value(
         self, shots, phi, tol, tol_stochastic
@@ -86,13 +89,14 @@ class TestVar:
             m0 = qml.measure(0)
             return qml.var(m0)
 
-        res = circuit(phi)
-
         atol = tol if shots is None else tol_stochastic
         expected = np.sin(phi / 2) ** 2 - np.sin(phi / 2) ** 4
-        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @flaky(max_runs=5)
+    @pytest.mark.parametrize("shots", [None, 5555, [5555, 5555]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_composite_measurement_value(
         self, shots, phi, tol, tol_stochastic
@@ -111,8 +115,6 @@ class TestVar:
             m2 = qml.measure(2)
             return qml.var(m0 - 2 * m1 + m2)
 
-        res = circuit(phi, shots=shots)
-
         @qml.qnode(dev)
         def expected_circuit(phi):
             qml.RX(phi, 0)
@@ -129,7 +131,9 @@ class TestVar:
         )
 
         atol = tol if shots is None else tol_stochastic
-        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi, shots=shots)
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""
@@ -174,7 +178,7 @@ class TestVar:
         assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
-    @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])
     def test_projector_var(self, state, shots):
         """Tests that the variance of a ``Projector`` object is computed correctly."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
@@ -211,3 +215,20 @@ class TestVar:
             return qml.var(obs_2)
 
         assert circuit() == circuit2()
+
+    @pytest.mark.parametrize(
+        "wire, expected",
+        [
+            (0, 1.0),
+            (1, 0.0),
+        ],
+    )
+    def test_estimate_variance_with_counts(self, wire, expected):
+        """Test that the variance of an observable is estimated correctly using counts."""
+        counts = {"000": 100, "100": 100}
+
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        res = qml.var(qml.Z(wire)).process_counts(counts=counts, wire_order=wire_order)
+
+        assert np.allclose(res, expected)

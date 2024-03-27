@@ -42,7 +42,7 @@ class TestExceptions:
 
         with pytest.raises(
             ValueError,
-            match="The objective function must either be encoded as a single QNode or an ExpvalCost object",
+            match="The objective function must be encoded as a single QNode.",
         ):
             opt.step(cost, params)
 
@@ -58,6 +58,32 @@ class TestOptimize:
         @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        var = np.array([0.011, 0.012])
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        step1, res = opt.step_and_cost(circuit, var)
+        step2 = opt.step(circuit, var)
+
+        expected = circuit(var)
+        expected_step = var - opt.stepsize * 4 * qml.grad(circuit)(var)
+        assert np.all(res == expected)
+        assert np.allclose(step1, expected_step)
+        assert np.allclose(step2, expected_step)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_step_and_cost_autograd_with_gen_hamiltonian_legacy_opmath(self):
+        """Test that the correct cost and step is returned via the
+        step_and_cost method for the QNG optimizer when the generator
+        of an operator is a Hamiltonian"""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
             qml.RY(params[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
@@ -114,15 +140,18 @@ class TestOptimize:
         opt = qml.QNGOptimizer(stepsize=0.01)
 
         # With autograd gradient function
-        grad_fn = qml.grad(circuit)
-        step1, cost1 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
-        step2 = opt.step(circuit, var, grad_fn=grad_fn)
+        grad_fn1 = qml.grad(circuit)
+        step1, cost1 = opt.step_and_cost(circuit, var, grad_fn=grad_fn1)
+        step2 = opt.step(circuit, var, grad_fn=grad_fn1)
 
         # With more custom gradient function, forward has to be computed explicitly.
-        grad_fn = lambda param: np.array(qml.grad(circuit)(param))
-        step3, cost2 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
-        opt.step(circuit, var, grad_fn=grad_fn)
-        expected_step = var - opt.stepsize * 4 * grad_fn(var)
+        def grad_fn2(param):
+            return np.array(qml.grad(circuit)(param))
+
+        # grad_fn = lambda param: np.array(qml.grad(circuit)(param))
+        step3, cost2 = opt.step_and_cost(circuit, var, grad_fn=grad_fn2)
+        opt.step(circuit, var, grad_fn=grad_fn2)
+        expected_step = var - opt.stepsize * 4 * grad_fn2(var)
         expected_cost = circuit(var)
 
         for step in [step1, step2, step3, step3]:
@@ -147,15 +176,17 @@ class TestOptimize:
         opt = qml.QNGOptimizer(stepsize=0.01)
 
         # With autograd gradient function
-        grad_fn = qml.grad(circuit)
-        step1, cost1 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
-        step2 = opt.step(circuit, *var, grad_fn=grad_fn)
+        grad_fn1 = qml.grad(circuit)
+        step1, cost1 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn1)
+        step2 = opt.step(circuit, *var, grad_fn=grad_fn1)
 
         # With more custom gradient function, forward has to be computed explicitly.
-        grad_fn = lambda params_0, params_1: np.array(qml.grad(circuit)(params_0, params_1))
-        step3, cost2 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
-        opt.step(circuit, *var, grad_fn=grad_fn)
-        expected_step = var - opt.stepsize * 4 * grad_fn(*var)
+        def grad_fn2(params_0, params_1):
+            return np.array(qml.grad(circuit)(params_0, params_1))
+
+        step3, cost2 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn2)
+        opt.step(circuit, *var, grad_fn=grad_fn2)
+        expected_step = var - opt.stepsize * 4 * grad_fn2(*var)
         expected_cost = circuit(*var)
 
         for step in [step1, step2, step3, step3]:
@@ -163,6 +194,7 @@ class TestOptimize:
         assert np.isclose(cost1, expected_cost)
         assert np.isclose(cost2, expected_cost)
 
+    @pytest.mark.slow
     def test_qubit_rotation(self, tol):
         """Test qubit rotation has the correct QNG value
         every step, the correct parameter updates,

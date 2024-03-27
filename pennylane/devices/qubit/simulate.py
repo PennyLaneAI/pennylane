@@ -19,6 +19,9 @@ from numpy.random import default_rng
 import numpy as np
 
 import pennylane as qml
+from pennylane.measurements import (
+    MidMeasureMP,
+)
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
@@ -98,7 +101,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
     return state, shots
 
 
-def get_final_state(circuit, debugger=None, interface=None):
+def get_final_state(circuit, debugger=None, interface=None, mid_measurements=None):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -108,6 +111,7 @@ def get_final_state(circuit, debugger=None, interface=None):
         circuit (.QuantumScript): The single circuit to simulate
         debugger (._Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
@@ -125,8 +129,13 @@ def get_final_state(circuit, debugger=None, interface=None):
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
-        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
-
+        state = apply_operation(
+            op,
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+            mid_measurements=mid_measurements,
+        )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             state, circuit._shots = _postselection_postprocess(
@@ -134,7 +143,7 @@ def get_final_state(circuit, debugger=None, interface=None):
             )
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
-        is_state_batched = is_state_batched or op.batch_size is not None
+        is_state_batched = is_state_batched or (op.batch_size is not None)
 
     for _ in range(len(circuit.wires) - len(circuit.op_wires)):
         # if any measured wires are not operated on, we pad the state with zeros.
@@ -231,13 +240,52 @@ def simulate(
 
     This function assumes that all operations provide matrices.
 
-    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
     >>> simulate(qs)
     (0.36235775447667357,
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
+    has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
+    if circuit.shots and has_mcm:
+        return simulate_one_shot_native_mcm(circuit, rng, prng_key, debugger, interface)
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+
+
+def simulate_one_shot_native_mcm(
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+) -> Result:
+    """Simulate a single shot of a single quantum script with native mid-circuit measurements.
+
+    Args:
+        circuit (QuantumTape): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
+        debugger (_Debugger): The debugger to use
+        interface (str): The machine learning interface to create the initial state with
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+        dict: The mid-circuit measurement results of the simulation
+    """
+    mcm_dict = {}
+    state, is_state_batched = get_final_state(
+        circuit, debugger=debugger, interface=interface, mid_measurements=mcm_dict
+    )
+    if not np.allclose(np.linalg.norm(state), 1.0):
+        return None, mcm_dict
+    return (
+        measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
+        mcm_dict,
+    )

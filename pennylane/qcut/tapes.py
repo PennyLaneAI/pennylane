@@ -22,23 +22,16 @@ from typing import Callable, List, Sequence, Tuple, Union
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane import apply, expval
+from pennylane import expval
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP
 from pennylane.operation import Operator, Tensor
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import string_to_pauli_word
-from pennylane.queuing import AnnotatedQueue, WrappedObj
+from pennylane.queuing import WrappedObj
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
-from .utils import (
-    MeasureNode,
-    PrepareNode,
-    _prep_iplus_state,
-    _prep_one_state,
-    _prep_plus_state,
-    _prep_zero_state,
-)
+from .utils import MeasureNode, PrepareNode
 
 
 def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
@@ -69,7 +62,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
             qml.RY(0.9, wires=0),
             qml.CNOT(wires=[0, 1]),
         ]
-        measurements = [qml.expval(qml.PauliZ(1))]
+        measurements = [qml.expval(qml.Z(1))]
         tape = qml.tape.QuantumTape(ops,)
 
     Its corresponding circuit graph can be found using
@@ -87,16 +80,17 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
-        if obs is not None and isinstance(obs, Tensor):
+        if obs is not None and isinstance(obs, (Tensor, qml.ops.Prod)):
             if isinstance(m, SampleMP):
                 raise ValueError(
                     "Sampling from tensor products of observables "
                     "is not supported in circuit cutting"
                 )
-            for o in obs.obs:
-                m_ = m.__class__(obs=o)
 
+            for o in obs.operands if isinstance(obs, qml.ops.op_math.Prod) else obs.obs:
+                m_ = m.__class__(obs=o)
                 _add_operator_node(graph, m_, order, wire_latest_node)
+
         elif isinstance(m, SampleMP) and obs is None:
             for w in m.wires:
                 s_ = qml.sample(qml.Projector([1], wires=w))
@@ -142,7 +136,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
             qml.qcut.PrepareNode(wires=1),
             qml.CNOT(wires=[1, 0]),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
@@ -169,50 +163,52 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     copy_meas = [copy.copy(op) for _, op in ordered_ops if isinstance(op, MeasurementProcess)]
     observables = []
 
-    with AnnotatedQueue() as q:
-        for op in copy_ops:
-            op = qml.map_wires(op, wire_map=wire_map, queue=True)
-            if isinstance(op, MeasureNode):
-                assert len(op.wires) == 1
-                measured_wire = op.wires[0]
+    operations_from_graph = []
+    measurements_from_graph = []
+    for op in copy_ops:
+        op = qml.map_wires(op, wire_map=wire_map, queue=False)
+        operations_from_graph.append(op)
+        if isinstance(op, MeasureNode):
+            assert len(op.wires) == 1
+            measured_wire = op.wires[0]
 
-                new_wire = _find_new_wire(wires)
-                wires += new_wire
+            new_wire = _find_new_wire(wires)
+            wires += new_wire
 
-                original_wire = reverse_wire_map[measured_wire]
-                wire_map[original_wire] = new_wire
-                reverse_wire_map[new_wire] = original_wire
+            original_wire = reverse_wire_map[measured_wire]
+            wire_map[original_wire] = new_wire
+            reverse_wire_map[new_wire] = original_wire
 
-        if copy_meas:
-            measurement_types = {type(meas) for meas in copy_meas}
-            if len(measurement_types) > 1:
-                raise ValueError(
-                    "Only a single return type can be used for measurement "
-                    "nodes in graph_to_tape"
-                )
-            measurement_type = measurement_types.pop()
+    if copy_meas:
+        measurement_types = {type(meas) for meas in copy_meas}
+        if len(measurement_types) > 1:
+            raise ValueError(
+                "Only a single return type can be used for measurement nodes in graph_to_tape"
+            )
+        measurement_type = measurement_types.pop()
 
-            if measurement_type not in {SampleMP, ExpectationMP}:
-                raise ValueError(
-                    "Invalid return type. Only expectation value and sampling measurements "
-                    "are supported in graph_to_tape"
-                )
+        if measurement_type not in {SampleMP, ExpectationMP}:
+            raise ValueError(
+                "Invalid return type. Only expectation value and sampling measurements "
+                "are supported in graph_to_tape"
+            )
 
-            for meas in copy_meas:
-                meas = qml.map_wires(meas, wire_map=wire_map)
-                obs = meas.obs
-                observables.append(obs)
+        for meas in copy_meas:
+            meas = qml.map_wires(meas, wire_map=wire_map)
+            obs = meas.obs
+            observables.append(obs)
 
-                if measurement_type is SampleMP:
-                    apply(meas)
+            if measurement_type is SampleMP:
+                measurements_from_graph.append(meas)
 
-            if measurement_type is ExpectationMP:
-                if len(observables) > 1:
-                    qml.expval(Tensor(*observables))
-                else:
-                    qml.expval(obs)
+        if measurement_type is ExpectationMP:
+            if len(observables) > 1:
+                prod_type = qml.prod if qml.operation.active_new_opmath() else Tensor
+                measurements_from_graph.append(qml.expval(prod_type(*observables)))
+            else:
+                measurements_from_graph.append(qml.expval(obs))
 
-    return QuantumScript.from_queue(q)
+    return QuantumScript(ops=operations_from_graph, measurements=measurements_from_graph)
 
 
 def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict):
@@ -236,7 +232,28 @@ def _find_new_wire(wires: Wires) -> int:
     return ctr
 
 
-PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]
+def _create_prep_list():
+    """
+    Creates a predetermined list for converting PrepareNodes to an associated Operation for use
+    within the expand_fragment_tape function.
+    """
+
+    def _prep_zero(wire):
+        return [qml.Identity(wire)]
+
+    def _prep_one(wire):
+        return [qml.X(wire)]
+
+    def _prep_plus(wire):
+        return [qml.Hadamard(wire)]
+
+    def _prep_iplus(wire):
+        return [qml.Hadamard(wire), qml.S(wires=wire)]
+
+    return [_prep_zero, _prep_one, _prep_plus, _prep_iplus]
+
+
+PREPARE_SETTINGS = _create_prep_list()
 
 
 def expand_fragment_tape(
@@ -318,20 +335,19 @@ def expand_fragment_tape(
                 id(n): PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
             }
 
-            with AnnotatedQueue() as q:
+            ops_list = []
+
+            with qml.QueuingManager.stop_recording():
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
-                        prepare_mapping[id(op)](w)
+                        ops_list.extend(prepare_mapping[id(op)](w))
                     elif not isinstance(op, MeasureNode):
-                        apply(op)
+                        ops_list.append(op)
+                measurements = _get_measurements(group, tape.measurements)
 
-                with qml.QueuingManager.stop_recording():
-                    measurements = _get_measurements(group, tape.measurements)
-                for meas in measurements:
-                    apply(meas)
-
-            tapes.append(QuantumScript.from_queue(q))
+            qs = qml.tape.QuantumScript(ops=ops_list, measurements=measurements)
+            tapes.append(qs)
 
     return tapes, prepare_nodes, measure_nodes
 

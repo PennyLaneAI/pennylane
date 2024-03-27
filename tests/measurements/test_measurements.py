@@ -375,11 +375,11 @@ class TestProperties:
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
         m = qml.expval(op=qml.PauliZ(wires="a") @ qml.PauliZ(wires="b"))
-        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
+        expected = "expval(Z('a') @ Z('b'))"
         assert str(m) == expected
 
         m = qml.probs(op=qml.PauliZ(wires="a"))
-        expected = "probs(PauliZ(wires=['a']))"
+        expected = "probs(Z('a'))"
         assert str(m) == expected
 
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
@@ -583,6 +583,9 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qml.math.sum(samples[..., self.wires])
 
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
+
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
@@ -600,6 +603,9 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
+
             @property
             def return_type(self):
                 return Sample
@@ -616,22 +622,6 @@ class TestSampleMeasurement:
             match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
-
-    def test_process_counts_not_implemented(self):
-        """Test that process_counts is not implemented by default."""
-
-        class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
-            def process_samples(self, samples, wire_order, shot_range, bin_size):
-                return qml.math.sum(samples[..., self.wires])
-
-            @property
-            def return_type(self):
-                return Sample
-
-        m = MyMeasurement(wires=[0])
-        with pytest.raises(NotImplementedError):
-            m.process_counts({"0": 10}, wire_order=qml.wires.Wires(0))
 
 
 class TestStateMeasurement:
@@ -689,6 +679,9 @@ class TestMeasurementTransform:
 
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return [True]
+
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 

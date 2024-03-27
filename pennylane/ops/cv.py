@@ -44,7 +44,7 @@ from scipy.linalg import block_diag
 from pennylane import math as qml_math
 from pennylane.operation import AnyWires, CVObservable, CVOperation
 
-from .identity import Identity  # pylint: disable=unused-import
+from .identity import Identity, I  # pylint: disable=unused-import
 from .meta import Snapshot  # pylint: disable=unused-import
 
 _two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
@@ -103,6 +103,7 @@ class Rotation(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
@@ -152,6 +153,7 @@ class Squeezing(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "A"
@@ -207,6 +209,7 @@ class Displacement(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "A"
@@ -268,6 +271,7 @@ class Beamsplitter(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 2
     grad_method = "A"
@@ -330,6 +334,7 @@ class TwoModeSqueezing(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 2
 
@@ -392,6 +397,7 @@ class QuadraticPhase(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
 
@@ -446,6 +452,7 @@ class ControlledAddition(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 2
     grad_method = "A"
@@ -503,6 +510,7 @@ class ControlledPhase(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 2
     grad_method = "A"
@@ -547,6 +555,7 @@ class Kerr(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -576,6 +585,7 @@ class CrossKerr(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 2
     grad_method = "F"
@@ -605,6 +615,7 @@ class CubicPhase(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -654,6 +665,7 @@ class InterferometerUnitary(CVOperation):
         wires (Sequence[Any] or Any): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = AnyWires
     grad_method = None
@@ -706,6 +718,7 @@ class CoherentState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
@@ -730,6 +743,7 @@ class SqueezedState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
@@ -764,6 +778,7 @@ class DisplacedSqueezedState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 4
     num_wires = 1
     grad_method = "F"
@@ -787,6 +802,7 @@ class ThermalState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -815,6 +831,7 @@ class GaussianState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = AnyWires
     grad_method = "F"
@@ -841,6 +858,7 @@ class FockState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = None
@@ -932,6 +950,7 @@ class FockStateVector(CVOperation):
                 return qml.expval(qml.NumberOperator(wires=0))
 
     """
+
     num_params = 1
     num_wires = AnyWires
     grad_method = "F"
@@ -980,6 +999,7 @@ class FockDensityMatrix(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = AnyWires
     grad_method = "F"
@@ -1015,6 +1035,7 @@ class CatState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 3
     num_wires = 1
     grad_method = "F"
@@ -1054,6 +1075,7 @@ class NumberOperator(CVObservable):
     Args:
         wires (Sequence[Any] or Any): the wire the operation acts on
     """
+
     num_params = 0
     num_wires = 1
 
@@ -1109,6 +1131,7 @@ class TensorN(CVObservable):
         >>> cv_obs.ev_order
         2
     """
+
     num_params = 0
     num_wires = AnyWires
     ev_order = None
@@ -1151,6 +1174,7 @@ class QuadX(CVObservable):
     Args:
         wires (Sequence[Any] or Any): the wire the operation acts on
     """
+
     num_params = 0
     num_wires = 1
 
@@ -1184,6 +1208,7 @@ class QuadP(CVObservable):
     Args:
         wires (Sequence[Any] or Any): the wire the operation acts on
     """
+
     num_params = 0
     num_wires = 1
 
@@ -1220,6 +1245,7 @@ class QuadOperator(CVObservable):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
 
@@ -1298,6 +1324,7 @@ class PolyXP(CVObservable):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_params = 1
     num_wires = AnyWires
 
@@ -1356,6 +1383,7 @@ class FockStateProjector(CVObservable):
         wires (Sequence[Any] or Any): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = AnyWires
 

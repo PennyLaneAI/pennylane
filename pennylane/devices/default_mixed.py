@@ -537,7 +537,7 @@ class DefaultMixed(QubitDevice):
         if dm_dim != state.shape[0]:
             raise ValueError("Density matrix must be of length (2**wires, 2**wires)")
 
-        if not qnp.allclose(
+        if not qml.math.is_abstract(state) and not qnp.allclose(
             qnp.trace(qnp.reshape(state, (state_dim, state_dim))), 1.0, atol=tolerance
         ):
             raise ValueError("Trace of density matrix is not equal one.")
@@ -573,7 +573,7 @@ class DefaultMixed(QubitDevice):
                     right_axes.append(index + self.num_wires)
             transpose_axes = left_axes + right_axes
             rho = qnp.transpose(rho, axes=transpose_axes)
-            assert qnp.allclose(
+            assert qml.math.is_abstract(rho) or qnp.allclose(
                 qnp.trace(qnp.reshape(rho, (2**self.num_wires, 2**self.num_wires))),
                 1.0,
                 atol=tolerance,
@@ -581,6 +581,19 @@ class DefaultMixed(QubitDevice):
 
             self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
             self._pre_rotated_state = self._state
+
+    def _apply_snapshot(self, operation):
+        """Applies the snapshot operation"""
+        measurement = operation.hyperparameters["measurement"]
+        if measurement:
+            raise DeviceError("Snapshots of measurements are not yet supported on default.mixed")
+        if self._debugger and self._debugger.active:
+            dim = 2**self.num_wires
+            density_matrix = qnp.reshape(self._state, (dim, dim))
+            if operation.tag:
+                self._debugger.snapshots[operation.tag] = density_matrix
+            else:
+                self._debugger.snapshots[len(self._debugger.snapshots)] = density_matrix
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
@@ -605,13 +618,7 @@ class DefaultMixed(QubitDevice):
             return
 
         if isinstance(operation, Snapshot):
-            if self._debugger and self._debugger.active:
-                dim = 2**self.num_wires
-                density_matrix = qnp.reshape(self._state, (dim, dim))
-                if operation.tag:
-                    self._debugger.snapshots[operation.tag] = density_matrix
-                else:
-                    self._debugger.snapshots[len(self._debugger.snapshots)] = density_matrix
+            self._apply_snapshot(operation)
             return
 
         matrices = self._get_kraus(operation)

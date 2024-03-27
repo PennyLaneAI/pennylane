@@ -18,6 +18,7 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
+
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional, Union
@@ -185,19 +186,6 @@ class MeasurementProcess(ABC):
 
             self._eigvals = qml.math.asarray(eigvals)
 
-        # TODO: remove the following lines once devices
-        # have been refactored to accept and understand receiving
-        # measurement processes rather than specific observables.
-
-        # The following lines are only applicable for measurement processes
-        # that do not have corresponding observables (e.g., Probability). We use
-        # them to 'trick' the device into thinking it has received an observable.
-
-        # Below, we imitate an identity observable, so that the
-        # device undertakes no action upon receiving this observable.
-        self.name = "Identity"
-        self.data = []
-
         # Queue the measurement process
         self.queue()
 
@@ -302,7 +290,7 @@ class MeasurementProcess(ABC):
             return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{self.return_type.value}(wires={self.wires.tolist()})"
+        return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
@@ -359,7 +347,7 @@ class MeasurementProcess(ABC):
 
         **Example:**
 
-        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
+        >>> m = MeasurementProcess(Expectation, obs=qml.X(1))
         >>> m.eigvals()
         array([1, -1])
 
@@ -528,7 +516,7 @@ class SampleMeasurement(MeasurementProcess):
     >>> dev = qml.device("default.qubit", wires=2, shots=1000)
     >>> @qml.qnode(dev)
     ... def circuit():
-    ...     qml.PauliX(0)
+    ...     qml.X(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
     >>> circuit()
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
@@ -554,6 +542,7 @@ class SampleMeasurement(MeasurementProcess):
                 provided, the entire shot range is treated as a single bin.
         """
 
+    @abstractmethod
     def process_counts(self, counts: dict, wire_order: Wires):
         """Calculate the measurement given a counts histogram dictionary.
 
@@ -563,7 +552,6 @@ class SampleMeasurement(MeasurementProcess):
 
         Note that the input dictionary may only contain states with non-zero entries (``all_outcomes=False``).
         """
-        raise NotImplementedError
 
 
 class StateMeasurement(MeasurementProcess):

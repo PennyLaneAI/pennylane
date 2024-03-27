@@ -22,15 +22,17 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import numpy as np
 
 import pennylane as qml
-from pennylane.interfaces.jacobian_products import (
+from pennylane.workflow.jacobian_products import (
     JacobianProductCalculator,
     TransformJacobianProducts,
     DeviceDerivatives,
     DeviceJacobianProducts,
+    LightningVJPs,
 )
 
 dev = qml.device("default.qubit")
 dev_old = qml.device("default.qubit.legacy", wires=5)
+dev_lightning = qml.device("lightning.qubit", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 dev_ps = ParamShiftDerivativesDevice()
 ps_config = qml.devices.ExecutionConfig(gradient_method="parameter-shift")
@@ -52,6 +54,7 @@ legacy_device_jacs = DeviceDerivatives(dev_old, gradient_kwargs={"method": "adjo
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
 device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
+lightning_vjps = LightningVJPs(dev_lightning, {"method": "adjoint_jacobian"})
 
 transform_jpc_matrix = [param_shift_jpc, param_shift_cached_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs, device_ps_jacs]
@@ -64,6 +67,10 @@ jpc_matrix = [
     device_ps_jacs,
     device_native_jps,
     device_ps_native_jps,
+    pytest.param(
+        lightning_vjps,
+        marks=pytest.mark.skip(reason="Lighting JPC needs to be updated for new API"),
+    ),
 ]
 
 
@@ -169,6 +176,47 @@ class TestBasics:
         )
 
         assert repr(jpc) == expected
+
+    def test_lightning_vjps_repr(self):
+        """Test the repr method for lightning vjps."""
+
+        device = qml.device("lightning.qubit", wires=5)
+        gradient_kwargs = {"use_device_state": True}
+
+        jpc = LightningVJPs(device, gradient_kwargs)
+
+        assert repr(jpc) == "<LightningVJPs: lightning.qubit, {'use_device_state': True}>"
+
+    def test_lightning_vjps_exp_error(self):
+        """Test that having non-expval measurements when computing VJPs raises an error."""
+        device = qml.device("lightning.qubit", wires=5)
+        gradient_kwargs = {"use_device_state": True}
+        jpc = LightningVJPs(device, gradient_kwargs)
+
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.123, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])]
+        )
+
+        with pytest.raises(
+            NotImplementedError, match="Lightning device VJPs only support expectation values."
+        ):
+            _ = jpc.compute_vjp([tape], [])
+
+    def test_lightning_vjps_batched_dy(self):
+        """Test that computing VJPs with batched dys raise an error."""
+        device = qml.device("lightning.qubit", wires=5)
+        gradient_kwargs = {"use_device_state": True}
+        jpc = LightningVJPs(device, gradient_kwargs)
+
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.123, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))]
+        )
+        dys = ((np.array([0.0, 1.0]), np.array([1.0, 0.0])),)
+
+        with pytest.raises(
+            NotImplementedError, match="Lightning device VJPs are not supported with jax jacobians."
+        ):
+            _ = jpc.compute_vjp([tape], dys)
 
 
 @pytest.mark.parametrize("jpc", jpc_matrix)
@@ -299,7 +347,7 @@ class TestJacobianProductResults:
             dy2 = (0.4, 0.5)
             dy = (dy1, dy2)
         else:
-            dy = ((0.5, 0.6), (0.9,))
+            dy = ((0.5, 0.6), 0.9)
 
         vjps = jpc.compute_vjp((tape1, tape2), dy)
 

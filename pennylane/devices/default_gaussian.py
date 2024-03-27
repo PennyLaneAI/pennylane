@@ -648,6 +648,7 @@ class DefaultGaussian(Device):
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
     """
+
     name = "Default Gaussian PennyLane plugin"
     short_name = "default.gaussian"
     pennylane_requires = __version__

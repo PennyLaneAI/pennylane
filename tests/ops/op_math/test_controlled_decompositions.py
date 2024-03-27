@@ -14,8 +14,10 @@
 """
 Tests for the controlled decompositions.
 """
-import pytest
 
+import itertools
+
+import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.ops import ctrl_decomp_zyz
@@ -28,6 +30,8 @@ from pennylane.ops.op_math.controlled_decompositions import (
     _convert_to_su2,
     _bisect_compute_a,
     _bisect_compute_b,
+    _decompose_mcx_with_one_worker,
+    _decompose_mcx_with_many_workers,
 )
 from pennylane.ops.op_math.controlled import (
     Controlled,
@@ -129,6 +133,41 @@ class TestControlledDecompositionZYZ:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
+    def test_decomposition_circuit_gradient(self, control_wires, tol):
+        """Tests that the controlled decomposition of a single-qubit operation
+        behaves as expected in a quantum circuit"""
+        n_qubits = 4
+        np.random.seed(1337)
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+        init_state = np.random.rand(2**n_qubits) + 1.0j * np.random.rand(2**n_qubits)
+        init_state /= np.sqrt(np.dot(np.conj(init_state), init_state))
+        init_state = np.array(init_state)
+        target_wires = [0]
+        control_values = [True] * len(control_wires)
+
+        def circuit(p):
+            qml.StatePrep(init_state, wires=range(n_qubits))
+            qml.ctrl(
+                qml.Rot(*p, wires=target_wires),
+                control_wires,
+                control_values=control_values,
+            )
+            return qml.probs(wires=target_wires)
+
+        circ_ad = qml.QNode(circuit, dev, diff_method="adjoint")
+        circ_bp = qml.QNode(circuit, dev, diff_method="backprop")
+        par = qml.numpy.array([0.1234, 0.235, 0.5678])
+        jac_ad = qml.jacobian(circ_ad)(par)
+        jac_bp = qml.jacobian(circ_bp)(par)
+
+        # different methods must agree
+        assert jac_ad.size == 2 * 3
+        assert np.allclose(jac_ad.shape, [2, 3])
+        assert np.allclose(jac_ad.shape, jac_bp.shape)
+        assert np.allclose(jac_ad, jac_bp, atol=tol, rtol=0)
+
     @pytest.mark.parametrize("op", su2_ops)
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
     def test_decomposition_matrix(self, op, control_wires, tol):
@@ -193,16 +232,59 @@ class TestControlledDecompositionZYZ:
         decomp = ctrl_decomp_zyz(op, [1])
         expected = [
             qml.RZ(np.pi, wires=0),
-            qml.MultiControlledX(wires=[1, 0]),
+            qml.CNOT(wires=[1, 0]),
             qml.RZ(-np.pi / 2, wires=0),
-            qml.MultiControlledX(wires=[1, 0]),
+            qml.CNOT(wires=[1, 0]),
             qml.RZ(-np.pi / 2, wires=0),
         ]
 
         assert len(decomp) == 5
-        assert all(qml.equal(o, e) for o, e in zip(decomp, expected))
+        assert decomp == expected
 
-    @pytest.mark.xfail
+    @pytest.mark.parametrize(
+        "composite_op, want_decomp",
+        [
+            (
+                qml.ops.Prod(qml.PauliX(0), qml.PauliX(0)),  # type: ignore
+                [
+                    qml.CNOT(wires=[1, 0]),
+                    qml.CNOT(wires=[1, 0]),
+                ],
+            ),
+            (
+                qml.s_prod(1j, qml.PauliX(0)),
+                [
+                    qml.RZ(7 * np.pi / 2, wires=0),
+                    qml.RY(np.pi / 2, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RY(-np.pi / 2, wires=0),
+                    qml.RZ(-2 * np.pi, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RZ(-3 * np.pi / 2, wires=0),
+                ],
+            ),
+            (
+                (
+                    qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
+                    + qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
+                ),
+                [
+                    qml.RZ(np.pi / 2, wires=0),
+                    qml.RY(np.pi / 2, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RY(-np.pi / 2, wires=0),
+                    qml.RZ(-2 * np.pi, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RZ(3 * np.pi / 2, wires=0),
+                ],
+            ),
+        ],
+    )
+    def test_composite_ops(self, composite_op, want_decomp):
+        """Test that ZYZ decomposition is used for composite operators."""
+        have_decomp = ctrl_decomp_zyz(composite_op, 1)
+        assert have_decomp == want_decomp
+
     @pytest.mark.parametrize("test_expand", [False, True])
     def test_zyz_decomp_no_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
@@ -227,7 +309,6 @@ class TestControlledDecompositionZYZ:
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))  # pylint:disable=no-member
         assert equal_list(decomp, expected)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("test_expand", [False, True])
     def test_zyz_decomp_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
@@ -254,6 +335,22 @@ class TestControlledDecompositionZYZ:
         decomp = decomp.expand().circuit if test_expand else decomp.decomposition()
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
         assert equal_list(decomp, expected)
+
+    @pytest.mark.torch
+    def test_zyz_decomp_with_torch_params(self):
+        """Tests that the ZYZ decomposition runs when the target operation parameters
+        are of type torch.Tensor"""
+        import torch
+
+        target_op1 = qml.RY(torch.Tensor([1.2]), 0)
+        target_op2 = qml.RY(1.2, 0)
+
+        torch_decomp = ctrl_decomp_zyz(target_op1, 1)
+        decomp = ctrl_decomp_zyz(target_op2, 1)
+
+        assert np.all(
+            [qml.equal(op1, op2, check_interface=False) for op1, op2 in zip(torch_decomp, decomp)]
+        )
 
 
 class TestControlledBisectOD:
@@ -368,15 +465,11 @@ class TestControlledBisectOD:
 
         assert len(op_seq) == 8
 
-        mcx1 = qml.MultiControlledX(
-            control_wires=Wires([1, 2, 3]), wires=Wires(0), work_wires=Wires([4, 5])
-        )
+        mcx1 = qml.MultiControlledX(wires=Wires([1, 2, 3, 0]), work_wires=Wires([4, 5]))
         assert qml.equal(mcx1, op_seq[0])
         assert qml.equal(mcx1, op_seq[4])
 
-        mcx2 = qml.MultiControlledX(
-            control_wires=Wires([4, 5]), wires=Wires(0), work_wires=Wires([1, 2, 3])
-        )
+        mcx2 = qml.Toffoli(wires=[4, 5, 0])
         assert qml.equal(mcx2, op_seq[2])
         assert qml.equal(mcx2, op_seq[6])
 
@@ -630,7 +723,6 @@ class TestControlledBisectGeneral:
         expected = expected_circuit()
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("op", zip(gen_ops, gen_ops_best))
     @pytest.mark.parametrize("control_wires", cw5)
     @pytest.mark.parametrize("all_the_way_from_ctrl", [False, True])
@@ -640,6 +732,8 @@ class TestControlledBisectGeneral:
         """
         op, best = op
         if all_the_way_from_ctrl:
+            if not isinstance(op, qml.Rot):
+                pytest.xfail(reason="decompositions do not match")
             if isinstance(op, qml.PauliX):
                 # X has its own special case
                 pytest.skip()
@@ -663,6 +757,69 @@ class TestControlledBisectGeneral:
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
+
+
+class TestMCXDecomposition:
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
+    def test_decomposition_with_many_workers(self, n_ctrl_wires):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on the case where there are many work wires."""
+        # pylint: disable=protected-access
+        control_wires = range(n_ctrl_wires)
+        target_wire = n_ctrl_wires
+        work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
+
+        dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert all(isinstance(op, qml.Toffoli) for op in tape.operations)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(wires=list(control_wires) + [target_wire])
+            for op in tape.operations:
+                op.queue()
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array(
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+        ).T
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
+    def test_decomposition_with_one_worker(self, n_ctrl_wires):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on the case where there is one work wire."""
+
+        # pylint: disable=protected-access
+        control_wires = Wires(range(n_ctrl_wires))
+        target_wire = n_ctrl_wires
+        work_wires = n_ctrl_wires + 1
+
+        dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            _decompose_mcx_with_one_worker(control_wires, target_wire, work_wires)
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = tape.expand(depth=1)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(wires=list(control_wires) + [target_wire])
+            for op in tape.operations:
+                op.queue()
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array(
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+        ).T
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
 
 def test_ControlledQubitUnitary_has_decomposition_correct():
