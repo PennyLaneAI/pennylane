@@ -291,6 +291,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
+  [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
+
 * Fix Torch tensor locality with autoray-registered coerce method.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
 
