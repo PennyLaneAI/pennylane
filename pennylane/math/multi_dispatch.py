@@ -333,6 +333,7 @@ def dot(tensor1, tensor2, like=None):
     x, y = np.coerce([tensor1, tensor2], like=like)
 
     if like == "torch":
+
         if x.ndim == 0 and y.ndim == 0:
             return x * y
 
