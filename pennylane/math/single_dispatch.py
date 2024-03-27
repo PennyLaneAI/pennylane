@@ -265,6 +265,9 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
+ar.register_function("tensorflow", "finfo", _i("tf").experimental.numpy.finfo)
+
+
 def _tf_convert_to_tensor(x, **kwargs):
     if isinstance(x, _i("tf").Tensor) and "dtype" in kwargs:
         return _i("tf").cast(x, **kwargs)

@@ -347,6 +347,7 @@ def _decomposition_2_cnots(U, wires):
     part has the same spectrum as U, and then we can recover A, B, C, D.
     """
     # Compute the rotation angles
+
     u = math.dot(Edag, math.dot(U, E))
     gammaU = math.dot(u, math.T(u))
     evs, _ = math.linalg.eig(gammaU)
@@ -383,7 +384,11 @@ def _decomposition_2_cnots(U, wires):
     else:
         # For the non-special case, the eigenvalues come in conjugate pairs.
         # We need to find two non-conjugate eigenvalues to extract the angles.
-        x = math.angle(evs[0])
+
+        # need to perturb x by 5 precision to avoid a discontinuity at a special case.
+        # see https://github.com/PennyLaneAI/pennylane/issues/5308
+        precision = qml.math.finfo(U.dtype).eps
+        x = math.angle(evs[0]) + 5 * precision
         y = math.angle(evs[1])
 
         # If it was the conjugate, grab a different eigenvalue.
