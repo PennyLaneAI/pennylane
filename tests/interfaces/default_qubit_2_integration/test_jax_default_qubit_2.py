@@ -127,6 +127,7 @@ no_shots = Shots(None)
 shots_2_10k = Shots((10000, 10000))
 dev_def = DefaultQubit()
 dev_ps = ParamShiftDerivativesDevice(seed=54353453)
+dev_mini = qml.device("mini.qubit")
 test_matrix = [
     ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),  # 0
     ({"gradient_fn": param_shift}, no_shots, dev_def),  # 1
@@ -134,6 +135,8 @@ test_matrix = [
     ({"gradient_fn": "adjoint"}, no_shots, dev_def),  # 3
     ({"gradient_fn": "adjoint", "device_vjp": True}, no_shots, dev_def),  # 4
     ({"gradient_fn": "device"}, shots_2_10k, dev_ps),  # 5
+    ({"gradient_fn": param_shift}, no_shots, dev_mini),  # 6
+    ({"gradient_fn": param_shift}, Shots(100000), dev_mini),  # 7
 ]
 
 

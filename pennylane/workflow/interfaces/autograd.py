@@ -106,7 +106,8 @@ def _to_autograd(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     """
     if isinstance(result, dict):
         return result
-    if isinstance(result, (list, tuple)):
+    # pylint: disable=no-member
+    if isinstance(result, (list, tuple, autograd.builtins.tuple, autograd.builtins.list)):
         return tuple(_to_autograd(r) for r in result)
     return autograd.numpy.array(result)
 

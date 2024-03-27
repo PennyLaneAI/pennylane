@@ -490,12 +490,20 @@ def split_up_non_commuting(tape):
 
 
 @transform
-def diagonalize_measurements(tape, name="device"):
+def diagonalize_measurements(tape, stopping_condition=None, name="device"):
     """Split up non-commuting measurements and apply diagonalizing gates on the
     resulting tapes.
 
     """
     batch, postprocessing = split_up_non_commuting(tape)
+
+    if stopping_condition is None:
+
+        def stopping_condition(_):
+            return True
+
+    def decomposer(obj):
+        return obj.decomposition()
 
     diagonal_batch = []
     for t in batch:
@@ -507,12 +515,23 @@ def diagonalize_measurements(tape, name="device"):
         for i, m in enumerate(diagonal_measurements):
             if m.obs is not None:
                 try:
-                    diagonalizing_gates.extend(m.obs.diagonalizing_gates())
-                except DiagGatesUndefinedError as e:
+                    diag_gates = m.obs.diagonalizing_gates()
+                    expanded_diag_gates = [
+                        final_op
+                        for op in diag_gates
+                        for final_op in _operator_decomposition_gen(
+                            op,
+                            stopping_condition,
+                            decomposer=decomposer,
+                            name=name,
+                        )
+                    ]
+                except (DiagGatesUndefinedError, qml.operation.DecompositionUndefinedError) as e:
                     raise DeviceError(
                         f"Observable {m.obs} does not define diagonalizing gates "
                         f"and is not supported on device {name}."
                     ) from e
+                diagonalizing_gates.extend(expanded_diag_gates)
                 diagonal_measurements[i] = type(m)(eigvals=m.eigvals(), wires=m.wires)
 
         new_t = qml.tape.QuantumScript(

@@ -41,6 +41,7 @@ def sample_state(state: np.ndarray, shots: int, seed=None):
     rng = np.random.default_rng(seed)
     basis_samples = rng.choice(basis_states, shots, p=probs)
 
+    # convert basis state integers to array of booleans
     bin_strings = (format(s, f"0{num_wires}b") for s in basis_samples)
     return np.array([[int(val) for val in s] for s in bin_strings])
 
@@ -130,7 +131,9 @@ class MiniQubit(Device):
             skip_initial_state_prep=False,
             name="mini.qubit",
         )
-        program.add_transform(diagonalize_measurements, name="mini.qubit")
+        program.add_transform(
+            diagonalize_measurements, stopping_condition=supports_operation, name="mini.qubit"
+        )
         program.add_transform(validate_measurements, name="mini.qubit")
         program.add_transform(qml.transforms.broadcast_expand)
 
