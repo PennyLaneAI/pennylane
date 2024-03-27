@@ -265,7 +265,12 @@ def apply_mid_measure(
         return np.zeros_like(state)
     wire = op.wires
     probs = qml.devices.qubit.measure(qml.probs(wire), state)
-    sample = np.random.binomial(1, probs[1])
+
+    try:
+        sample = np.random.binomial(1, probs[1])
+    except ValueError as e:
+        sample = np.random.binomial(1, np.round(probs[1], 15))
+
     mid_measurements[op] = sample
     if op.postselect is not None and sample != op.postselect:
         return np.zeros_like(state)
