@@ -82,9 +82,9 @@ def get_final_state(circuit, debugger=None, interface=None):
 
     num_operated_wires = len(circuit.op_wires)
     for i in range(len(circuit.wires) - num_operated_wires):
-        # If any measured wires are not operated on, we pad the dm with zeros.
+        # If any measured wires are not operated on, we pad the density matrix with zeros.
         # We know they belong at the end because the circuit is in standard wire-order
-        # F
+        # Since it is a dm, we must pad it with 0s on the last row and last column
         current_axis = num_operated_wires + i + is_state_batched
         state = qml.math.stack(
             ([state] + [qml.math.zeros_like(state)] * (QUDIT_DIM - 1)), axis=current_axis
@@ -127,7 +127,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
         return tuple(measure(mp, state, is_state_batched) for mp in circuit.measurements)
 
     # finite-shot case
-    rng = default_rng(rng)  # TODO: Done in sampling anyway should I have it here too?
+    rng = default_rng(rng)
     results = tuple(
         measure_with_samples(
             mp,
