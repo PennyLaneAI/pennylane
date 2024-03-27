@@ -542,6 +542,7 @@ class SampleMeasurement(MeasurementProcess):
                 provided, the entire shot range is treated as a single bin.
         """
 
+    @abstractmethod
     def process_counts(self, counts: dict, wire_order: Wires):
         """Calculate the measurement given a counts histogram dictionary.
 
@@ -551,7 +552,6 @@ class SampleMeasurement(MeasurementProcess):
 
         Note that the input dictionary may only contain states with non-zero entries (``all_outcomes=False``).
         """
-        raise NotImplementedError
 
 
 class StateMeasurement(MeasurementProcess):

@@ -412,4 +412,6 @@ class GlobalPhase(Operation):
         return [GlobalPhase(z * self.data[0], self.wires)]
 
     def generator(self):
+        # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
+        # it otherwise can't handle Identity with no wires, see PR #5194
         return qml.s_prod(-1, qml.I(self.wires))

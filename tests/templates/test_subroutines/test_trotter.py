@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
+from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
 
 test_hamiltonians = (
@@ -475,6 +476,75 @@ class TestPrivateFunctions:
         assert all(
             qml.equal(op1, op2) for op1, op2 in zip(decomp, expected_expansion)
         )  # Expected expression
+
+
+class TestError:
+    """Test the error method of the TrotterProduct class"""
+
+    @pytest.mark.parametrize("fast", (True, False))
+    def test_invalid_method(self, fast):
+        """Test that passing an invalid method raises an error."""
+        method = "crazy"
+        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), 1.23)
+        with pytest.raises(ValueError, match=f"The '{method}' method is not supported"):
+            _ = op.error(method, fast=fast)
+
+    def test_one_norm_error_method(self):
+        """Test that the one-norm error method works as expected."""
+        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), time=0.05, order=4)
+        expected_error = ((10**5 + 1) / 120) * (0.1**5)
+
+        for computed_error in (
+            op.error(method="one-norm"),
+            op.error(method="one-norm", fast=False),
+        ):
+            assert isinstance(computed_error, SpectralNormError)
+            assert qnp.isclose(computed_error.error, expected_error)
+
+    def test_commutator_error_method(self):
+        """Test that the commutator error method works as expected."""
+        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), time=0.05, order=2, n=10)
+        expected_error = (32 / 3) * (0.05**3) * (1 / 100)
+
+        for computed_error in (
+            op.error(method="commutator"),
+            op.error(method="commutator", fast=False),
+        ):
+            assert isinstance(computed_error, SpectralNormError)
+            assert qnp.isclose(computed_error.error, expected_error)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "method, expected_error", (("one-norm", 0.001265625), ("commutator", 0.001))
+    )
+    @pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
+    def test_error_interfaces(self, method, interface, expected_error):
+        """Test that the error method works with all interfaces"""
+
+        time = qml.math.array(0.1, like=interface)
+        coeffs = qml.math.array([1.0, 0.5], like=interface)
+
+        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
+
+        op = qml.TrotterProduct(hamiltonian, time, n=2, order=2)
+        computed_error = op.error(method=method)
+
+        assert isinstance(computed_error, SpectralNormError)
+        assert qml.math.get_interface(computed_error.error) == interface
+
+        assert qnp.isclose(computed_error.error, qml.math.array(expected_error, like=interface))
+
+    @pytest.mark.tf
+    def test_tensorflow_interface(self):
+        """Test that an error is raised if a TrotterProduct with
+        tensorflow parameters is used to compute error."""
+
+        coeffs = qml.math.array([1.0, 0.5], like="tensorflow")
+        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
+
+        op = qml.TrotterProduct(hamiltonian, 1.23, order=2, n=5)
+        with pytest.raises(TypeError, match="Calculating error bound for Tensorflow objects"):
+            _ = op.error()
 
 
 class TestDecomposition:

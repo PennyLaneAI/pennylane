@@ -15,7 +15,7 @@
 """Setup file for package installation."""
 # pylint: disable=unspecified-encoding, consider-using-with
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")

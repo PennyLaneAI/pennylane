@@ -50,7 +50,9 @@ def _cut_circuit_expand(
 
     # Expand the tapes for handling Hamiltonian with two or more terms
     tape_meas_ops = tape.measurements
-    if tape_meas_ops and isinstance(tape_meas_ops[0].obs, qml.Hamiltonian):
+    if tape_meas_ops and isinstance(
+        tape_meas_ops[0].obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
+    ):
         if len(tape_meas_ops) > 1:
             raise NotImplementedError(
                 "Hamiltonian expansion is supported only with a single Hamiltonian"

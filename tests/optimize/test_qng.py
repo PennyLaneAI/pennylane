@@ -73,6 +73,32 @@ class TestOptimize:
         assert np.allclose(step1, expected_step)
         assert np.allclose(step2, expected_step)
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_step_and_cost_autograd_with_gen_hamiltonian_legacy_opmath(self):
+        """Test that the correct cost and step is returned via the
+        step_and_cost method for the QNG optimizer when the generator
+        of an operator is a Hamiltonian"""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        var = np.array([0.011, 0.012])
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        step1, res = opt.step_and_cost(circuit, var)
+        step2 = opt.step(circuit, var)
+
+        expected = circuit(var)
+        expected_step = var - opt.stepsize * 4 * qml.grad(circuit)(var)
+        assert np.all(res == expected)
+        assert np.allclose(step1, expected_step)
+        assert np.allclose(step2, expected_step)
+
     def test_step_and_cost_autograd_with_gen_hamiltonian(self):
         """Test that the correct cost and step is returned via the
         step_and_cost method for the QNG optimizer when the generator
