@@ -268,7 +268,7 @@ def apply_mid_measure(
 
     try:
         sample = np.random.binomial(1, probs[1])
-    except ValueError as e:
+    except ValueError as e:  # pylint: disable=unused-variable
         sample = np.random.binomial(1, np.round(probs[1], 15))
 
     mid_measurements[op] = sample
