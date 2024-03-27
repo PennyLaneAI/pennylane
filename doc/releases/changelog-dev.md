@@ -291,6 +291,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
+
 * Fix Torch tensor locality with autoray-registered coerce method.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
 
