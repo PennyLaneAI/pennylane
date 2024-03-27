@@ -293,6 +293,9 @@
 
 * Tensorflow can now handle devices with float32 results but float64 input parameters.
 
+* Fix Torch tensor locality with autoray-registered coerce method.
+  [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
+
 * `jax.jit` now works with `qml.sample` with a multi-wire observable.
   [(#5422)](https://github.com/PennyLaneAI/pennylane/pull/5422)
 
