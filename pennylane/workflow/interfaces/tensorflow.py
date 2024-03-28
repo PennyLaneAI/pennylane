@@ -125,7 +125,13 @@ def _get_parameters_dtype(parameters):
     return tf.float64
 
 
-def _to_tensors(x, dtype=None):
+_complex_dtype_map = {
+    tf.float32: tf.complex64,
+    tf.float64: tf.complex128,
+}
+
+
+def _to_tensors(x, dtype=None, complex_safe=False):
     """
     Convert a nested tuple structure of arrays into a nested tuple
     structure of TF tensors
@@ -135,8 +141,10 @@ def _to_tensors(x, dtype=None):
         return x
 
     if isinstance(x, (tuple, list)):
-        return tuple(_to_tensors(x_, dtype=dtype) for x_ in x)
+        return tuple(_to_tensors(x_, dtype=dtype, complex_safe=complex_safe) for x_ in x)
 
+    if complex_safe and "complex" in qml.math.get_dtype_name(x):
+        return tf.convert_to_tensor(x, dtype=_complex_dtype_map.get(dtype, dtype))
     return tf.convert_to_tensor(x, dtype=dtype)
 
 
@@ -222,7 +230,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
     params_dtype = _get_parameters_dtype(parameters)
     dtype = params_dtype if params_dtype in {tf.float64, tf.complex128} else None
     # make sure is float64 if data is float64.  May cause errors otherwise if device returns float32 precision
-    res = _to_tensors(execute_fn(numpy_tapes), dtype=dtype)
+    res = _to_tensors(execute_fn(numpy_tapes), dtype=dtype, complex_safe=True)
 
     @tf.custom_gradient
     def custom_gradient_execute(*parameters):  # pylint:disable=unused-argument

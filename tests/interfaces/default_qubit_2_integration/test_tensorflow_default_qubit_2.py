@@ -824,7 +824,7 @@ def test_device_returns_float32(diff_method):
 
     class Float32Dev(qml.devices.DefaultQubit):
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
-            results = super().exeute(circuits, execution_config)
+            results = super().execute(circuits, execution_config)
             return _to_float32(results)
 
     dev = Float32Dev()
