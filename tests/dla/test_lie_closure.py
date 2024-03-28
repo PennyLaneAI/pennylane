@@ -300,7 +300,7 @@ class TestLieClosure:
         assert "epoch 1 of lie_closure, dla size is 3" in captured.out
         assert "epoch 2 of lie_closure, dla size is 4" in captured.out
         assert "After 2 epochs, reached a dla size of 4" in captured.out
-    
+
     def test_max_iterations(self, capsys):
         """Test that max_iterations truncates the lie closure iteration at the right point"""
         n = 3
@@ -313,7 +313,10 @@ class TestLieClosure:
 
         res = qml.dla.lie_closure(generators, verbose=True, max_iterations=1)
         captured = capsys.readouterr()
-        assert captured.out == "epoch 1 of lie_closure, dla size is 4\nAfter 1 epochs, reached a dla size of 8\n"
+        assert (
+            captured.out
+            == "epoch 1 of lie_closure, dla size is 4\nAfter 1 epochs, reached a dla size of 8\n"
+        )
         assert len(res) == 8
 
     def test_simple_lie_closure(self):

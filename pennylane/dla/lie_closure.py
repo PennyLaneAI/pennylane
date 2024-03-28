@@ -89,7 +89,7 @@ def lie_closure(
      -1.0 * (X(1) @ Y(0)),
      -1.0 * (Y(1) @ X(0)),
      -1.0 * (Y(1) @ Y(0))]
-    
+
     Note that we normalize by removing the factors of :math:`2i`, though minus signs are left intact.
 
     .. details::
@@ -120,7 +120,8 @@ def lie_closure(
     # This check and conversion is ignored in pauli=True mode
     if not pauli and not all(isinstance(op, PauliSentence) for op in generators):
         generators = [
-            rep if (rep:=op.pauli_rep) is not None else qml.pauli.pauli_sentence(op) for op in generators
+            rep if (rep := op.pauli_rep) is not None else qml.pauli.pauli_sentence(op)
+            for op in generators
         ]
 
     vspace = PauliVSpace(generators)
@@ -147,7 +148,7 @@ def lie_closure(
         old_length = new_length
         new_length = len(vspace)
         epoch += 1
-    
+
     if verbose > 0:
         print(f"After {epoch} epochs, reached a dla size of {new_length}")
 
