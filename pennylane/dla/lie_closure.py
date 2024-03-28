@@ -95,7 +95,7 @@ def lie_closure(
 
     .. details::
         :title: Usage Details
-    
+
         Note that by default, ``lie_closure`` returns PennyLane operators. Internally we use the more
         efficient representation in terms of :class:`~PauliSentence` by making use of the ``op.pauli_rep``
         attribute of operators composed of Pauli operators. If desired, this format can be returned by using
