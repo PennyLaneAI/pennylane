@@ -23,7 +23,7 @@ from pennylane.pauli import PauliWord, PauliSentence
 n = 3
 gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(n - 1)]
 gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(n)]
-Ising3 = qml.dla.lie_closure(gens)
+Ising3 = qml.dla.lie_closure(gens, pauli=True)
 
 
 class TestAdjointRepr:
