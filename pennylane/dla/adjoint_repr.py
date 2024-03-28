@@ -87,6 +87,10 @@ def adjoint_repr(dla):
            [ 0., -0., -0., -0., -0.,  0.]])
 
     """
+    if any((op.pauli_rep is None) for op in dla):
+        raise ValueError(f"Cannot compute adjoint representation of non-pauli operators. Received {dla}.")
+    dla = [op.pauli_rep for op in dla]
+
     commutators = _all_commutators(dla)
 
     rep = np.zeros((len(dla), len(dla), len(dla)), dtype=float)
