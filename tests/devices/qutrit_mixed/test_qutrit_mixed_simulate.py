@@ -62,7 +62,7 @@ def expected_TRX_circ_state(phi, subspace):
 
 
 class TestCurrentlyUnsupportedCases:
-    """Test currently unsupported cases, such as sampling expval or samples without shots"""
+    """Test currently unsupported cases, such as sampling counts or samples without shots, or probs with shots"""
 
     # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
