@@ -299,7 +299,6 @@ class TestLieClosure:
         captured = capsys.readouterr()
         assert captured.out == "epoch 1 of lie_closure\nepoch 2 of lie_closure\n"
 
-
     def test_simple_lie_closure(self):
         """Test simple lie_closure example"""
         gen11 = dla11[:-1]
