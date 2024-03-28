@@ -779,7 +779,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd_legacy(self):
+    def test_no_trainable_params_qnode_autograd_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -795,7 +795,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.torch
-    def test_no_trainable_params_qnode_torch_legacy(self):
+    def test_no_trainable_params_qnode_torch_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.torch", wires=2)
@@ -811,7 +811,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf_legacy(self):
+    def test_no_trainable_params_qnode_tf_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -827,7 +827,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.jax
-    def test_no_trainable_params_qnode_jax_legacy(self):
+    def test_no_trainable_params_qnode_jax_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.jax", wires=2)

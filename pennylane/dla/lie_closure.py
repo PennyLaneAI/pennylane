@@ -28,7 +28,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 
 def lie_closure(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
-    max_iterations: int = 1e4,
+    max_iterations: int = 10000,
     verbose: int = 0,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the Lie closure over commutation of a set of generators
@@ -43,7 +43,8 @@ def lie_closure(
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
             Lie closure.
-        max_iterations (int): maximum depth of nested commutators to consider.
+        max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
+        verbose (int): verbosity during Lie closure calculation. Default is ``0``.
 
     Returns:
         list[`~.PauliSentence`]: a basis of ``PauliSentence`` instances that is closed under
