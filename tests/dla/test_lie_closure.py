@@ -292,10 +292,17 @@ dla11 = [
 class TestLieClosure:
     """Tests for qml.dla.lie_closure()"""
 
+    def test_verbose(self, capsys):
+        """Test the verbose output"""
+        gen11 = dla11[:-1]
+        _ = lie_closure(gen11, verbose=True)
+        captured = capsys.readouterr()
+        assert captured.out == "epoch 1 of lie_closure\nepoch 2 of lie_closure\n"
+
     def test_simple_lie_closure(self):
         """Test simple lie_closure example"""
         gen11 = dla11[:-1]
-        res11 = lie_closure(gen11)
+        res11 = lie_closure(gen11, pauli=True)
         assert res11 == dla11
 
         dla12 = [
@@ -309,7 +316,7 @@ class TestLieClosure:
             PauliSentence({PauliWord({0: "Z"}): -2.0, PauliWord({1: "Z"}): 2.0}),
         ]
         gen12 = dla12[:-1]
-        res12 = lie_closure(gen12)
+        res12 = lie_closure(gen12, pauli=True)
         assert PauliVSpace(res12) == PauliVSpace(dla12)
 
     def test_lie_closure_with_pl_ops(self):
@@ -322,6 +329,8 @@ class TestLieClosure:
         ]
         gen11 = dla[:-1]
         res11 = lie_closure(gen11)
+
+        res11 = [op.pauli_rep for op in res11]  # back to pauli_rep for easier comparison
         assert PauliVSpace(res11) == PauliVSpace(dla11)
 
     def test_lie_closure_with_PauliWords(self):
@@ -339,6 +348,8 @@ class TestLieClosure:
         dla = [op.pauli_rep for op in dla]
 
         res = lie_closure(gen)
+
+        res = [op.pauli_rep for op in res]  # convert to pauli_rep for easier comparison
         assert PauliVSpace(res) == PauliVSpace(dla)
 
     @pytest.mark.parametrize("n", range(2, 5))
