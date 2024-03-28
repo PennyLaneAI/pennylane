@@ -132,7 +132,6 @@ def test_accumulate_native_mcm_unsupported_error():
 
 
 def test_all_invalid_shots_circuit():
-
     dev = qml.device("default.qubit")
 
     @qml.qnode(dev)

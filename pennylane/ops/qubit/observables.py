@@ -439,10 +439,15 @@ class BasisStateProjector(Projector, Operation):
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
-        state = list(qml.math.toarray(state).astype(int))
 
-        if not set(state).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
+        if not qml.math.is_abstract(state):
+            # for cases like [jax.numpy.array(0), jax.numpy.array(1)]
+            state_array = qml.math.asarray(state)
+            state_array = qml.math.cast(state_array, int)
+            if not all(x in [0, 1] for x in state_array):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_array}")
+        else:
+            state_array = qml.math.asarray(state)
 
         super().__init__(state, wires=wires, id=id)
 
@@ -528,9 +533,13 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
-        w = np.zeros(2 ** len(basis_state))
-        idx = int("".join(str(i) for i in basis_state), 2)
-        w[idx] = 1
+        w = qml.math.zeros(2 ** len(basis_state), like=basis_state)
+        idx = qml.math.dot(basis_state, 2 ** qml.math.arange(len(basis_state) - 1, -1, -1))
+        if qml.math.get_interface(w) == "jax":
+            w = qml.math.put(w, idx, 1, inplace=False)
+        else:
+            qml.math.put(w, idx, qml.math.convert_like(float(1), w))  # Default behavior for non-JAX interfaces
+
         return w
 
     @staticmethod
