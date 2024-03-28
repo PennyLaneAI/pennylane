@@ -749,12 +749,6 @@ class TestConditionalOperations:
             "default.qubit",
             "default.mixed",
             "lightning.qubit",
-            # pytest.param(
-            #    "lightning.qubit",
-            #    marks=pytest.mark.xfail(
-            #        reason="Lightning adjoint decomposition needs to be updated"
-            #    ),
-            # ),
         ],
     )
     @pytest.mark.parametrize("ops", [(qml.RX, qml.CRX), (qml.RY, qml.CRY), (qml.RZ, qml.CRZ)])
