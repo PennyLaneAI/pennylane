@@ -88,7 +88,9 @@ def adjoint_repr(dla):
 
     """
     if any((op.pauli_rep is None) for op in dla):
-        raise ValueError(f"Cannot compute adjoint representation of non-pauli operators. Received {dla}.")
+        raise ValueError(
+            f"Cannot compute adjoint representation of non-pauli operators. Received {dla}."
+        )
     dla = [op.pauli_rep for op in dla]
 
     commutators = _all_commutators(dla)

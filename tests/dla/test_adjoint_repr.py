@@ -50,7 +50,7 @@ class TestAdjointRepr:
                 )
                 res.simplify()
                 assert comm_res == res
-    
+
     @pytest.mark.parametrize("dla", [Ising3])
     def test_use_operators(self, dla):
         """Test that operators can be passed and lead to the same result"""
@@ -60,9 +60,10 @@ class TestAdjointRepr:
         ad_rep = adjoint_repr(ops)
         assert qml.math.allclose(ad_rep, ad_rep_true)
 
-
     def test_raise_error_for_non_paulis(self):
         """Test that an error is raised when passing operators that do not have a pauli_rep"""
         gens = [qml.Hadamard(0), qml.X(0)]
-        with pytest.raises(ValueError, match="Cannot compute adjoint representation of non-pauli operators"):
+        with pytest.raises(
+            ValueError, match="Cannot compute adjoint representation of non-pauli operators"
+        ):
             qml.dla.adjoint_repr(gens)
