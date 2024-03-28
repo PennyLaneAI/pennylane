@@ -17,7 +17,8 @@ Contains the condition transform.
 from functools import wraps
 from typing import Type
 
-from pennylane.operation import AnyWires, Operation
+from pennylane import QueuingManager
+from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.tape import make_qscript
 from pennylane.compiler import compiler
 
@@ -89,11 +90,12 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`.
 
     Args:
-        condition (.MeasurementValue): a conditional expression involving a mid-circuit
-           measurement value (see :func:`.pennylane.measure`)
-        true_fn (callable): The quantum function of PennyLane operation to
+        condition (Union[.MeasurementValue, bool]): a conditional expression involving a mid-circuit
+           measurement value (see :func:`.pennylane.measure`). This can only be of type ``bool`` when
+           decorated by :func:`~.qjit`.
+        true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
-        false_fn (callable): The quantum function of PennyLane operation to
+        false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
             be used when is decorated by :func:`~.qjit`.
@@ -118,7 +120,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             qml.RY(-np.pi/2, wires=[2])
             m_1 = qml.measure(2)
             qml.cond(m_1 == 0, qml.RX)(y, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(1))
 
     .. code-block :: pycon
 
@@ -157,9 +159,9 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             def ansatz_false():
                 qml.RY(x, wires=0)
 
-            qml.cond(x > 1.4, ansatz_true, ansatz_false)
+            qml.cond(x > 1.4, ansatz_true, ansatz_false)()
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(1.4)
     array(0.16996714)
@@ -183,8 +185,8 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             def false_fn():
                 qml.RX(x ** 2, wires=0)
 
-            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))
-            return qml.expval(qml.PauliZ(0))
+            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))()
+            return qml.expval(qml.Z(0))
 
     >>> circuit(1.2)
     array(0.13042371)
@@ -209,7 +211,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
                 qml.cond(m_0, qfunc)(x, wires=[1])
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         .. code-block :: pycon
 
@@ -244,7 +246,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
                 qml.cond(m_0, qfunc1, qfunc2)(x, wires=[1])
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         .. code-block :: pycon
 
@@ -264,7 +266,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 m_0 = qml.measure(0)
                 qml.cond(m_0, qfunc1)(x, wires=[1])
                 qml.cond(~m_0, qfunc2)(x, wires=[1])
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         .. code-block :: pycon
 
@@ -294,7 +296,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
                 qml.cond(m_0, lambda: qfunc1(a, wire=1), lambda: qfunc2(x, y, z, wire=1))()
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         .. code-block :: pycon
 
@@ -318,7 +320,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
         if false_fn:
             cond_func.otherwise(false_fn)
 
-        return cond_func()
+        return cond_func
 
     if elifs:
         raise ConditionalTransformError("'elif' branches are not supported in interpreted mode.")
@@ -332,6 +334,17 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
         @wraps(true_fn)
         def wrapper(*args, **kwargs):
             # We assume that the callable is a quantum function
+
+            recorded_ops = [a for a in args if isinstance(a, Operator)] + [
+                k for k in kwargs.values() if isinstance(k, Operator)
+            ]
+
+            # This will dequeue all operators passed in as arguments to the qfunc that is
+            # being conditioned. These are queued incorrectly due to be fully constructed
+            # before the wrapper function is called.
+            if recorded_ops and QueuingManager.recording():
+                for op in recorded_ops:
+                    QueuingManager.remove(op)
 
             # 1. Apply true_fn conditionally
             qscript = make_qscript(true_fn)(*args, **kwargs)

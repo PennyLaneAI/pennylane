@@ -174,6 +174,22 @@ class TestMeasurements:
         res = simulate(qs)
         assert np.allclose(res, expected)
 
+    @pytest.mark.jax
+    def test_op_math_observable_jit_compatible(self):
+        import jax
+
+        dev = qml.device("default.qubit", wires=4)
+
+        O1 = qml.X(0)
+        O2 = qml.X(0)
+
+        @qml.qnode(dev, interface="jax")
+        def qnode(t1, t2):
+            return qml.expval(qml.prod(O1, qml.RX(t1, 0), O2, qml.RX(t2, 0)))
+
+        t1, t2 = 0.5, 1.0
+        assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
+
 
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
@@ -418,9 +434,8 @@ class TestSumOfTermsDifferentiability:
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)  # otherwise output is too noisy
+        jax.config.update("jax_enable_x64", True)
 
         x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
         coeffs = (5.2, 6.7)

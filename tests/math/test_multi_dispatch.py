@@ -17,7 +17,6 @@
 import autoray
 import numpy as onp
 import pytest
-import scipy as s
 from autoray import numpy as anp
 
 from pennylane import math as fn
@@ -157,18 +156,6 @@ def test_unwrap():
     assert fn.get_interface(out[3][1]) == "numpy"
 
     assert out[4] == 0.5
-
-
-def test_kron():
-    """Test that a deprecation warning is avoided when arrays
-    are dispatched to scipy.kron."""
-    m1 = s.array([[0, 1], [1, 0]])
-    m2 = s.array([[1, 0], [0, 1]])
-    expected_result = onp.kron(m1, m2)
-
-    assert np.allclose(expected_result, fn.kron(m1, m2, like="scipy"))
-    with pytest.warns(DeprecationWarning):
-        _ = s.kron(m1, m2)
 
 
 @pytest.mark.parametrize(
@@ -328,3 +315,86 @@ class TestNorm:
         grad = qml_grad(fn.norm)(arr)
         expected_grad = (norm**-1) * arr.conj()
         assert fn.allclose(grad, expected_grad)
+
+
+@pytest.mark.all_interfaces
+class TestSVD:
+    mat = [
+        [-0.00707107 + 0.0j, 1.00707107 + 0.0j],
+        [0.99292893 + 0.0j, -0.00707107 + 0.0j],
+    ]
+
+    mats_interface = (
+        (
+            onp.array(mat),
+            "numpy",
+        ),
+        (
+            torch.tensor(mat),
+            "torch",
+        ),
+        (
+            tf.Variable(mat),
+            "tensorflow",
+        ),
+        (
+            jnp.array(mat),
+            "jax",
+        ),
+    )
+
+    @pytest.mark.parametrize("mat, expected_intrf", mats_interface)
+    @pytest.mark.parametrize(
+        "expected_results",
+        [
+            (
+                [
+                    [
+                        [0.92388093 + 0.0j, -0.38268036 + 0.0j],
+                        [-0.38268048 + 0.0j, -0.9238808 + 0.0j],
+                    ],
+                    [1.0100001, 0.98999995],
+                    [[-0.3826802 + 0.0j, 0.9238809 + 0.0j], [-0.9238809 + 0.0j, -0.3826802 + 0.0j]],
+                ],
+            ),
+        ],
+    )
+    def test_svd_full(self, mat, expected_intrf, expected_results):
+        """Test that svd is correct and works for each interface. Asking for the full decomposition"""
+        results_svd = fn.svd(mat, compute_uv=True)
+        for n in range(len(expected_results)):
+            assert fn.get_interface(results_svd[n]) == expected_intrf
+        if expected_intrf == "tensorflow":
+            recovered_matrix = fn.matmul(
+                fn.matmul(
+                    results_svd[0],
+                    fn.diag(np.array(results_svd[1], dtype="complex128"), like=expected_intrf),
+                ),
+                results_svd[2],
+                like=expected_intrf,
+            )
+        else:
+            recovered_matrix = fn.matmul(
+                fn.matmul(
+                    results_svd[0],
+                    fn.diag(results_svd[1], like=expected_intrf),
+                ),
+                results_svd[2],
+                like=expected_intrf,
+            )
+
+        assert np.allclose(mat, recovered_matrix, rtol=1e-04)
+
+    @pytest.mark.parametrize("mat, expected_intrf", mats_interface)
+    @pytest.mark.parametrize(
+        "expected_results",
+        [
+            ([[1.0100001, 0.98999995]]),
+        ],
+    )
+    def test_svd_only_sv(self, mat, expected_intrf, expected_results):
+        """Test that svd is correct and works for each interface. Asking only for singular values."""
+        results_svd = fn.svd(mat, compute_uv=False)
+
+        assert np.allclose(results_svd, expected_results)
+        assert fn.get_interface(results_svd) == expected_intrf

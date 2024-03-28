@@ -172,19 +172,19 @@ class TestCountsIntegration:
         assert circuit._qfunc_output.return_type is Counts  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("shots", [1000, [1000, 1000]])
-    @pytest.mark.parametrize("phi", np.arange(np.pi / 4, 2 * np.pi, np.pi / 2))
-    def test_observable_is_measurement_value(self, shots, phi):
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value(self, shots, device_name):
         """Test that counts for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+        dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
-        def circuit(phi):
-            qml.RX(phi, 0)
+        def circuit():
+            qml.Hadamard(0)
             m0 = qml.measure(0)
             return qml.counts(m0)
 
-        res = circuit(phi)
+        res = circuit()
         if isinstance(shots, list):
             assert isinstance(res, tuple)
             assert len(res) == 2
@@ -199,11 +199,72 @@ class TestCountsIntegration:
             assert len(res) == 2
             assert set(res.keys()) == {0, 1}
 
+    @pytest.mark.parametrize("shots", [1000, [1000, 1000]])
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_composite_measurement_value(self, shots, device_name):
+        """Test that counts for mid-circuit measurement values
+        are correct for a composite measurement value."""
+        dev = qml.device(device_name, wires=4, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            m0 = qml.measure(0)
+            qml.Hadamard(1)
+            m1 = qml.measure(1)
+            return qml.counts(m0 + m1)
+
+        res = circuit()
+        if isinstance(shots, list):
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+
+            for r in res:
+                assert isinstance(r, dict)
+                assert len(r) == 3
+                assert set(r.keys()) == {0, 1, 2}
+
+        else:
+            assert isinstance(res, dict)
+            assert len(res) == 3
+            assert set(res.keys()) == {0, 1, 2}
+
+    @pytest.mark.parametrize("shots", [1000, [1000, 1000]])
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value_list(self, shots, device_name):
+        """Test that counts for mid-circuit measurement values
+        are correct for a list of measurement values."""
+        dev = qml.device(device_name, wires=4, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            m0 = qml.measure(0)
+            qml.Hadamard(1)
+            m1 = qml.measure(1)
+            return qml.counts([m0, m1])
+
+        res = circuit()
+        if isinstance(shots, list):
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+
+            for r in res:
+                assert isinstance(r, dict)
+                assert len(r) == 4
+                assert set(r.keys()) == {"00", "01", "10", "11"}
+
+        else:
+            assert isinstance(res, dict)
+            assert len(res) == 4
+            assert set(res.keys()) == {"00", "01", "10", "11"}
+
     @pytest.mark.parametrize("shots", [5, [5, 5]])
-    def test_observable_is_measurement_value_all_outcomes(self, shots):
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value_all_outcomes(self, shots, device_name):
         """Test that counts for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+        dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit():
@@ -212,7 +273,6 @@ class TestCountsIntegration:
             return qml.counts(m0, all_outcomes=True)
 
         res = circuit()
-        print(res)
         if isinstance(shots, list):
             assert isinstance(res, tuple)
             assert len(res) == 2
@@ -230,6 +290,80 @@ class TestCountsIntegration:
             assert set(res.keys()) == {0, 1}
             assert res[0] == 0
             assert res[1] == 5
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_composite_measurement_value_all_outcomes(self, shots, device_name):
+        """Test that counts for mid-circuit measurement values
+        are correct for a composite measurement value."""
+        dev = qml.device(device_name, wires=4, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            m0 = qml.measure(0)
+            qml.PauliX(1)
+            m1 = qml.measure(1)
+            return qml.counts(m0 + m1, all_outcomes=True)
+
+        res = circuit()
+        if isinstance(shots, list):
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+
+            for r in res:
+                assert isinstance(r, dict)
+                assert len(r) == 3
+                assert set(r.keys()) == {0, 1, 2}
+                assert r[0] == 0
+                assert r[1] == 0
+                assert r[2] == 5
+
+        else:
+            assert isinstance(res, dict)
+            assert len(res) == 3
+            assert set(res.keys()) == {0, 1, 2}
+            assert res[0] == 0
+            assert res[1] == 0
+            assert res[2] == 5
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value_list_all_outcomes(self, shots, device_name):
+        """Test that counts for mid-circuit measurement values
+        are correct for a list of measurement values."""
+        dev = qml.device(device_name, wires=4, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            m0 = qml.measure(0)
+            qml.PauliX(1)
+            m1 = qml.measure(1)
+            return qml.counts([m0, m1], all_outcomes=True)
+
+        res = circuit()
+        if isinstance(shots, list):
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+
+            for r in res:
+                assert isinstance(r, dict)
+                assert len(r) == 4
+                assert set(r.keys()) == {"00", "01", "10", "11"}
+                assert r["00"] == 0
+                assert r["01"] == 0
+                assert r["10"] == 0
+                assert r["11"] == 5
+
+        else:
+            assert isinstance(res, dict)
+            assert len(res) == 4
+            assert set(res.keys()) == {"00", "01", "10", "11"}
+            assert res["00"] == 0
+            assert res["01"] == 0
+            assert res["10"] == 0
+            assert res["11"] == 5
 
     def test_providing_no_observable_and_no_wires_counts(self, mocker):
         """Test that we can provide no observable and no wires to sample function"""

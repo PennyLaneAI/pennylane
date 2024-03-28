@@ -27,7 +27,7 @@ from pennylane import ops
 from pennylane.measurements import MidMeasureMP
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections
+from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
 from .style import _set_style
 
 has_mpl = True
@@ -107,8 +107,7 @@ def _(op: ops.Toffoli, drawer, layer, _):
 
 @_add_operation_to_drawer.register
 def _(op: ops.MultiControlledX, drawer, layer, _):
-    control_values = [(i == "1") for i in op.hyperparameters["control_values"]]
-    drawer.CNOT(layer, op.wires, control_values=control_values)
+    drawer.CNOT(layer, op.active_wires, control_values=op.control_values)
 
 
 @_add_operation_to_drawer.register
@@ -126,8 +125,10 @@ def _(op: ops.Barrier, drawer, layer, _):
     mapped_wires = op.wires if len(op.wires) != 0 else list(range(drawer.n_wires))
     ymin = min(mapped_wires) - 0.5
     ymax = max(mapped_wires) + 0.5
-    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
-    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
+    # by default, uses rcParams['lines.color'] at time when displayed, not at time when added to figure
+    # so we have to force it to use the value at the time the line was added to the figure
+    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax, color=mpl.pyplot.rcParams["lines.color"])
+    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax, color=mpl.pyplot.rcParams["lines.color"])
 
 
 @_add_operation_to_drawer.register
@@ -172,18 +173,23 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
 def _get_measured_wires(measurements, wires) -> set:
     measured_wires = set()
     for m in measurements:
-        # state and probs
-        if len(m.wires) == 0:
-            return wires
+        if not m.mv:
+            # state and probs
+            if len(m.wires) == 0:
+                return wires
 
-        for wire in m.wires:
-            measured_wires.add(wire)
+            for wire in m.wires:
+                measured_wires.add(wire)
     return measured_wires
 
 
 def _add_classical_wires(drawer, layers, wires):
     for cwire, (cwire_layers, layer_wires) in enumerate(zip(layers, wires), start=drawer.n_wires):
         xs, ys = [], []
+
+        len_diff = len(cwire_layers) - len(layer_wires)
+        if len_diff > 0:
+            layer_wires += [cwire] * len_diff
         for l, w in zip(cwire_layers, layer_wires):
             xs.extend([l, l, l])
             ys.extend([cwire, w, cwire])
@@ -191,7 +197,18 @@ def _add_classical_wires(drawer, layers, wires):
         drawer.classical_wire(xs, ys)
 
 
-def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+def _get_measured_bits(measurements, bit_map, offset):
+    measured_bits = []
+    for m in measurements:
+        if isinstance(m.mv, list):
+            for mv in m.mv:
+                measured_bits += [bit_map[mcm] + offset for mcm in mv.measurements]
+        elif m.mv:
+            measured_bits += [bit_map[mcm] + offset for mcm in m.mv.measurements]
+    return measured_bits
+
+
+def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig=None, **kwargs):
     """Private function wrapped with styling."""
     wire_options = kwargs.get("wire_options", None)
     label_options = kwargs.get("label_options", None)
@@ -200,8 +217,9 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
+    bit_map = default_bit_map(tape)
 
-    layers = drawable_layers(tape.operations, {i: i for i in tape.wires})
+    layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
 
     for i, layer in enumerate(layers):
         if any(isinstance(o, qml.measurements.MidMeasureMP) and o.reset for o in layer):
@@ -210,10 +228,14 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    bit_map, cwire_layers, cwire_wires = cwire_connections(layers)
+    cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
 
     drawer = MPLDrawer(
-        n_layers=n_layers, n_wires=n_wires, c_wires=len(bit_map), wire_options=wire_options
+        n_layers=n_layers,
+        n_wires=n_wires,
+        c_wires=len(bit_map),
+        wire_options=wire_options,
+        fig=fig,
     )
 
     config = _Config(
@@ -240,10 +262,17 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     for wire in _get_measured_wires(tape.measurements, list(range(n_wires))):
         drawer.measure(n_layers, wire)
 
+    measured_bits = _get_measured_bits(tape.measurements, bit_map, drawer.n_wires)
+    if measured_bits:
+        drawer.measure(n_layers, measured_bits)
+
     return drawer.fig, drawer.ax
 
 
-def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=None, **kwargs):
+# pylint: disable=too-many-arguments
+def tape_mpl(
+    tape, wire_order=None, show_all_wires=False, decimals=None, style=None, *, fig=None, **kwargs
+):
     """Produces a matplotlib graphic from a tape.
 
     Args:
@@ -266,6 +295,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
         label_options (dict): matplotlib formatting options for the wire labels
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
+        fig (None or matplotlib Figure): Matplotlib figure to plot onto. If None, then create a new figure.
 
     Returns:
         matplotlib.figure.Figure, matplotlib.axes._axes.Axes: The key elements for matplotlib's object oriented interface.
@@ -282,7 +312,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
             qml.RX(1.2345, wires=0),
             qml.CRZ(1.2345, wires=(3,0))
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
         fig, ax = tape_mpl(tape)
@@ -304,7 +334,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
     .. code-block:: python
 
         ops = [qml.RX(1.23456, wires=0), qml.Rot(1.2345,2.3456, 3.456, wires=0)]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape2 = qml.tape.QuantumTape(ops, measurements)
 
         fig, ax = tape_mpl(tape2, decimals=2)
@@ -380,7 +410,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
     You can also control the appearance with matplotlib's provided tools, see the
     `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
     For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
-    ``plt.rcParams``, ``qml.drawer.tape_mpl`` must be run with ``style=None``:
+    ``plt.rcParams``, ``qml.drawer.tape_mpl`` must be run with ``style="rcParams"``:
 
     .. code-block:: python
 
@@ -394,7 +424,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
         plt.rcParams['lines.linewidth'] = 5
         plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-        fig, ax = tape_mpl(tape, style=None)
+        fig, ax = tape_mpl(tape, style="rcParams")
 
     .. figure:: ../../_static/tape_mpl/rcparams.png
             :align: center
@@ -423,7 +453,12 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
         _set_style(style)
     try:
         return _tape_mpl(
-            tape, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals, **kwargs
+            tape,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            fig=fig,
+            **kwargs,
         )
     finally:
         if update_style:

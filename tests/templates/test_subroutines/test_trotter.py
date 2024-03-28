@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
+from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
 
 test_hamiltonians = (
@@ -33,6 +34,7 @@ test_hamiltonians = (
     qml.dot(
         [1, -0.5, 0.5], [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(0)]
     ),  # H = Identity
+    qml.dot([2, 2, 2], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
 )
 
 p_4 = (4 - 4 ** (1 / 3)) ** -1
@@ -161,6 +163,51 @@ test_decompositions = (
             qml.exp(qml.PauliZ(0), p_4 * -0.5 * 4.2j / 2),
             qml.exp(qml.Identity(wires=[0, 1]), p_4 * 4.2j / 2),
         ],
+        (3, 1): [
+            qml.exp(qml.PauliX(0), 8.4j),
+            qml.exp(qml.PauliY(0), 8.4j),
+            qml.exp(qml.PauliZ(1), 8.4j),
+        ],
+        (3, 2): [
+            qml.exp(qml.PauliX(0), 8.4j / 2),
+            qml.exp(qml.PauliY(0), 8.4j / 2),
+            qml.exp(qml.PauliZ(1), 8.4j / 2),
+            qml.exp(qml.PauliZ(1), 8.4j / 2),
+            qml.exp(qml.PauliY(0), 8.4j / 2),
+            qml.exp(qml.PauliX(0), 8.4j / 2),
+        ],
+        (3, 4): [
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),  # S_2(p * t) ^ 2
+            qml.exp(qml.PauliX(0), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliY(0), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliY(0), (1 - 4 * p_4) * 8.4j / 2),
+            qml.exp(qml.PauliX(0), (1 - 4 * p_4) * 8.4j / 2),  # S_2((1 - 4p) * t)
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliZ(1), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliY(0), p_4 * 8.4j / 2),
+            qml.exp(qml.PauliX(0), p_4 * 8.4j / 2),  # S_2(p * t) ^ 2
+        ],
     }
 )
 
@@ -218,7 +265,8 @@ class TestInitialization:
         """Test an error is raised of an incorrect type is passed"""
         if raise_error:
             with pytest.raises(
-                TypeError, match="The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
+                TypeError,
+                match="The given operator must be a PennyLane ~.Hamiltonian, ~.Sum or ~.SProd",
             ):
                 qml.TrotterProduct(hamiltonian, time=1.23)
 
@@ -250,10 +298,19 @@ class TestInitialization:
         except ValueError:
             assert False  # No error should be raised if the check_hermitian flag is disabled
 
-    def test_error_hamiltonian(self):
-        """Test that an error is raised if the input hamultonian has only 1 term."""
-        with pytest.raises(ValueError, match="There should be atleast 2 terms in the Hamiltonian."):
-            qml.TrotterProduct(qml.Hamiltonian([1.0], [qml.PauliX(0)]), 1.23, n=2, order=4)
+    @pytest.mark.parametrize(
+        "hamiltonian",
+        (
+            qml.Hamiltonian([1.0], [qml.PauliX(0)]),
+            qml.dot([2.0], [qml.PauliY(0)]),
+        ),
+    )
+    def test_error_hamiltonian(self, hamiltonian):
+        """Test that an error is raised if the input Hamiltonian has only 1 term."""
+        with pytest.raises(
+            ValueError, match="There should be at least 2 terms in the Hamiltonian."
+        ):
+            qml.TrotterProduct(hamiltonian, 1.23, n=2, order=4)
 
     @pytest.mark.parametrize("order", (-1, 0, 0.5, 3, 7.0))
     def test_error_order(self, order):
@@ -271,6 +328,9 @@ class TestInitialization:
         """Test that all of the attributes are initalized correctly."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order, check_hermitian=False)
+
+        if isinstance(hamiltonian, qml.ops.op_math.SProd):
+            hamiltonian = hamiltonian.simplify()
 
         assert op.wires == hamiltonian.wires
         assert op.parameters == [time]
@@ -302,6 +362,9 @@ class TestInitialization:
         """Test that the flatten and unflatten methods work correctly."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
+
+        if isinstance(hamiltonian, qml.ops.op_math.SProd):
+            hamiltonian = hamiltonian.simplify()
 
         data, metadata = op._flatten()
         assert qml.equal(data[0], hamiltonian)
@@ -413,6 +476,75 @@ class TestPrivateFunctions:
         assert all(
             qml.equal(op1, op2) for op1, op2 in zip(decomp, expected_expansion)
         )  # Expected expression
+
+
+class TestError:
+    """Test the error method of the TrotterProduct class"""
+
+    @pytest.mark.parametrize("fast", (True, False))
+    def test_invalid_method(self, fast):
+        """Test that passing an invalid method raises an error."""
+        method = "crazy"
+        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), 1.23)
+        with pytest.raises(ValueError, match=f"The '{method}' method is not supported"):
+            _ = op.error(method, fast=fast)
+
+    def test_one_norm_error_method(self):
+        """Test that the one-norm error method works as expected."""
+        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), time=0.05, order=4)
+        expected_error = ((10**5 + 1) / 120) * (0.1**5)
+
+        for computed_error in (
+            op.error(method="one-norm"),
+            op.error(method="one-norm", fast=False),
+        ):
+            assert isinstance(computed_error, SpectralNormError)
+            assert qnp.isclose(computed_error.error, expected_error)
+
+    def test_commutator_error_method(self):
+        """Test that the commutator error method works as expected."""
+        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), time=0.05, order=2, n=10)
+        expected_error = (32 / 3) * (0.05**3) * (1 / 100)
+
+        for computed_error in (
+            op.error(method="commutator"),
+            op.error(method="commutator", fast=False),
+        ):
+            assert isinstance(computed_error, SpectralNormError)
+            assert qnp.isclose(computed_error.error, expected_error)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "method, expected_error", (("one-norm", 0.001265625), ("commutator", 0.001))
+    )
+    @pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
+    def test_error_interfaces(self, method, interface, expected_error):
+        """Test that the error method works with all interfaces"""
+
+        time = qml.math.array(0.1, like=interface)
+        coeffs = qml.math.array([1.0, 0.5], like=interface)
+
+        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
+
+        op = qml.TrotterProduct(hamiltonian, time, n=2, order=2)
+        computed_error = op.error(method=method)
+
+        assert isinstance(computed_error, SpectralNormError)
+        assert qml.math.get_interface(computed_error.error) == interface
+
+        assert qnp.isclose(computed_error.error, qml.math.array(expected_error, like=interface))
+
+    @pytest.mark.tf
+    def test_tensorflow_interface(self):
+        """Test that an error is raised if a TrotterProduct with
+        tensorflow parameters is used to compute error."""
+
+        coeffs = qml.math.array([1.0, 0.5], like="tensorflow")
+        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
+
+        op = qml.TrotterProduct(hamiltonian, 1.23, order=2, n=5)
+        with pytest.raises(TypeError, match="Calculating error bound for Tensorflow objects"):
+            _ = op.error()
 
 
 class TestDecomposition:

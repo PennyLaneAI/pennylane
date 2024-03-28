@@ -1164,9 +1164,6 @@ class TestSpsaGradientDifferentiation:
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
         execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute

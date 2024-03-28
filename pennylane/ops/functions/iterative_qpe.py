@@ -39,34 +39,39 @@ def iterative_qpe(base, ancilla, iters):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", shots = 5)
+        dev = qml.device("default.qubit", shots=5)
 
         @qml.qnode(dev)
         def circuit():
 
           # Initial state
-          qml.PauliX(wires = [0])
+          qml.X(0)
 
           # Iterative QPE
-          measurements = qml.iterative_qpe(qml.RZ(2., wires = [0]), ancilla = 1, iters = 3)
+          measurements = qml.iterative_qpe(qml.RZ(2.0, wires=[0]), ancilla=1, iters=3)
 
-          return [qml.sample(op = meas) for meas in measurements]
+          return qml.sample(measurements)
 
     .. code-block:: pycon
 
         >>> print(circuit())
-        [array([0, 0, 0, 0, 0]), array([1, 0, 0, 0, 0]), array([0, 1, 1, 1, 1])]
+        [[0 0 1]
+         [0 0 1]
+         [0 0 1]
+         [1 1 1]
+         [0 0 1]]
 
-    The output is an array of size ``(number of iterations, number of shots)``.
+    The output is an array of size ``(number of shots, number of iterations)``.
 
     .. code-block:: pycon
 
-        >>> print(qml.draw(circuit)())
+        >>> print(qml.draw(circuit, max_length=150)())
 
-        1: ──H─╭●────────────H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤  Sample  Sample  Sample
-        0: ──X─╰RZ(2.00)⁴⋅⁰──────║──────────╰RZ(2.00)²⋅⁰──║──────────────║──────────╰RZ(2.00)¹⋅⁰──║──────────║──────────────────────┤
-                                 ╚════════════════════════╝══════════════║════════════════════════║══════════╝
-                                                                         ╚════════════════════════╝
+        0: ──X─╭RZ(2.00)⁴─────────────────╭RZ(2.00)²────────────────────────────╭RZ(2.00)¹────────────────────────────────────┤
+        1: ──H─╰●──────────H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤
+                               ╚══════════════════════╩══════════════║══════════════════════║══════════╩══════════════║═══════╡ ╭Sample[MCM]
+                                                                     ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
+                                                                                                                      ╚═══════╡ ╰Sample[MCM]
     """
 
     measurements = []

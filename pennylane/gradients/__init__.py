@@ -221,7 +221,7 @@ gradients to be computed:
         qml.RY(weights[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.RX(weights[2], wires=1)
-        return qml.expval(qml.PauliZ(1))
+        return qml.expval(qml.Z(1))
 
 >>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 >>> circuit(weights)
@@ -248,7 +248,7 @@ Another way to compute higher-order derivatives is by passing the ``max_diff`` a
         qml.RY(weights[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.RX(weights[2], wires=1)
-        return qml.expval(qml.PauliZ(1))
+        return qml.expval(qml.Z(1))
 
 >>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 >>> qml.jacobian(qml.jacobian(circuit))(weights)  # hessian
@@ -275,7 +275,7 @@ a datastructure representing variational quantum algorithms:
         qml.RY(weights[1], wires=1),
         qml.CNOT(wires=[0, 1]),
         qml.RX(weights[2], wires=1)]
-    measurements = [qml.expval(qml.PauliZ(1))]
+    measurements = [qml.expval(qml.Z(1))]
     tape = qml.tape.QuantumTape(ops, measurements)
 
 Unlike when transforming a QNode, transforming a tape directly
@@ -338,8 +338,7 @@ from . import hadamard_gradient
 from . import pulse_gradient
 from . import pulse_gradient_odegen
 
-from .gradient_transform import gradient_transform, SUPPORTED_GRADIENT_KWARGS
-from .hessian_transform import hessian_transform
+from .gradient_transform import SUPPORTED_GRADIENT_KWARGS
 from .finite_difference import finite_diff, finite_diff_coeffs
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv

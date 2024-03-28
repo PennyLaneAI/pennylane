@@ -700,7 +700,7 @@ class TestExpval:
             m.setattr("numpy.mean", lambda obs, axis=None: obs)
             res = dev.expval(obs)
 
-        assert res == obs
+        assert res == np.array(obs)
 
     def test_no_eigval_error(self, mock_qutrit_device_with_original_statistics):
         """Tests that an error is thrown if expval is called with an observable that does
@@ -762,7 +762,7 @@ class TestVar:
             m.setattr("numpy.var", lambda obs, axis=None: obs)
             res = dev.var(obs)
 
-        assert res == obs
+        assert res == np.array(obs)
 
     def test_no_eigval_error(self, mock_qutrit_device_with_original_statistics):
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""

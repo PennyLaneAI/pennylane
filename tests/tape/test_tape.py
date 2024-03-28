@@ -146,6 +146,7 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_tensor_observables_tensor_init(self):
         """Test that tensor observables are correctly processed from the annotated
         queue. Here, we test multiple tensor observables constructed via explicit
@@ -1220,6 +1221,16 @@ class TestExpand:
         assert qml.equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
         assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
         assert expanded.shots is tape.shots
+
+    def test_expand_tape_does_not_check_mp_name_by_default(self, recwarn):
+        """Test that calling expand_tape does not refer to MP.name"""
+
+        def stop_at(obj):
+            return obj.name in ["PauliX"]
+
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
+        qs.expand(stop_at=stop_at)
+        assert len(recwarn) == 0
 
 
 class TestExecution:

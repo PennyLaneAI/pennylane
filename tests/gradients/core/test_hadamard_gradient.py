@@ -818,7 +818,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd_legacy(self):
+    def test_no_trainable_params_qnode_autograd_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -834,7 +834,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.torch
-    def test_no_trainable_params_qnode_torch_legacy(self):
+    def test_no_trainable_params_qnode_torch_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.torch", wires=2)
@@ -850,7 +850,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf_legacy(self):
+    def test_no_trainable_params_qnode_tf_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -866,7 +866,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.jax
-    def test_no_trainable_params_qnode_jax_legacy(self):
+    def test_no_trainable_params_qnode_jax_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.jax", wires=2)
@@ -1168,9 +1168,6 @@ class TestHadamardTestGradDiff:
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=3)
         execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute

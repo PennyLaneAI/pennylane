@@ -23,6 +23,9 @@ from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
+from tests.param_shift_dev import ParamShiftDerivativesDevice
+
+# dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [qml.device("default.qubit"), "finite-diff", False, False],
     [qml.device("default.qubit"), "parameter-shift", False, False],
@@ -31,6 +34,10 @@ qubit_device_and_diff_method = [
     [qml.device("default.qubit"), "adjoint", False, False],
     [qml.device("default.qubit"), "spsa", False, False],
     [qml.device("default.qubit"), "hadamard", False, False],
+    [ParamShiftDerivativesDevice(), "parameter-shift", False, False],
+    [ParamShiftDerivativesDevice(), "best", False, False],
+    [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
+    [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
 ]
 
 interface_qubit_device_and_diff_method = [
@@ -50,6 +57,7 @@ interface_qubit_device_and_diff_method = [
     ["auto", DefaultQubit(), "adjoint", False, False],
     ["auto", DefaultQubit(), "spsa", False, False],
     ["auto", DefaultQubit(), "hadamard", False, False],
+    # ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, True],
 ]
 
 pytestmark = pytest.mark.autograd
@@ -114,7 +122,6 @@ class TestQNode:
         # gradients should work
         grad = qml.grad(circuit)(a)
 
-        assert isinstance(grad, float)
         assert grad.shape == tuple()
 
     def test_jacobian(self, interface, dev, diff_method, grad_on_execution, tol, device_vjp):
@@ -207,8 +214,8 @@ class TestQNode:
 
     def test_jacobian_options(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test setting jacobian options"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "finite-diff":
+            pytest.skip("Test only supports finite diff.")
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
@@ -530,14 +537,17 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
+        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
+
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
+        assert cost_fn.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
@@ -553,6 +563,9 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -560,9 +573,7 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
@@ -590,6 +601,8 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -597,9 +610,7 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
@@ -656,6 +667,9 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -663,9 +677,7 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
@@ -707,6 +719,8 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
+        if "lightning" in getattr(dev, "short_name", ""):
+            pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -714,9 +728,7 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
@@ -834,7 +846,7 @@ class TestQubitIntegration:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
-        dev1 = dev
+        dev1 = qml.device("default.qubit")
 
         @qnode(dev1, **kwargs)
         def circuit1(a, b, c):
@@ -1306,8 +1318,6 @@ class TestQubitIntegration:
 
     def test_state(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test that the state can be returned and differentiated"""
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support states")
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
@@ -1352,6 +1362,8 @@ class TestQubitIntegration:
         self, state, interface, dev, diff_method, grad_on_execution, device_vjp, tol
     ):
         """Test that the variance of a projector is correctly returned"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint supports either expvals or diagonal measurements.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -1359,9 +1371,7 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support projectors")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
@@ -1543,7 +1553,11 @@ class TestTapeExpansion:
         assert np.allclose(grad[1], expected_c, atol=tol)
 
         # test second-order derivatives
-        if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
+        if (
+            diff_method in ("parameter-shift", "backprop")
+            and max_diff == 2
+            and dev.name != "param_shift.qubit"
+        ):
             if diff_method == "backprop":
                 with pytest.warns(UserWarning, match=r"Output seems independent of input."):
                     grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
@@ -1622,7 +1636,7 @@ class TestTapeExpansion:
         assert np.allclose(grad[1], expected_c, atol=tol)
 
         # test second-order derivatives
-        if diff_method == "parameter-shift" and max_diff == 2:
+        if diff_method == "parameter-shift" and max_diff == 2 and dev.name != "param_shift.qubit":
             grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c, shots=50000)
             assert np.allclose(grad2_c, 0, atol=tol)
 
@@ -1638,7 +1652,6 @@ class TestTapeExpansion:
 class TestSample:
     """Tests for the sample integration"""
 
-    @pytest.mark.xfail
     def test_backprop_error(self):
         """Test that sampling in backpropagation grad_on_execution raises an error"""
         dev = DefaultQubit()
@@ -1648,7 +1661,9 @@ class TestSample:
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        with pytest.raises(qml.QuantumFunctionError, match="only supported when shots=None"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="does not support backprop with requested"
+        ):
             circuit(shots=10)
 
     def test_sample_dimension(self):
@@ -1824,8 +1839,6 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1851,8 +1864,6 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1883,8 +1894,6 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned."""
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1908,9 +1917,6 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a single params return an array."""
-
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1938,9 +1944,6 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
-
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1975,9 +1978,6 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,

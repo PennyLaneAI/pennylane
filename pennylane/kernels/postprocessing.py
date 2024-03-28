@@ -14,7 +14,7 @@
 """
 This file contains functionalities for postprocessing of kernel matrices.
 """
-from pennylane import numpy as np
+import numpy as np
 
 
 def threshold_matrix(K):

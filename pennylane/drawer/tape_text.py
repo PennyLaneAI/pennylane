@@ -20,10 +20,18 @@ This module contains logic for the text based circuit drawer through the ``tape_
 from dataclasses import dataclass
 from typing import Optional
 import pennylane as qml
-from pennylane.measurements import Expectation, Probability, Sample, Variance, State, MidMeasureMP
+from pennylane.measurements import (
+    Expectation,
+    Probability,
+    Sample,
+    Variance,
+    State,
+    Counts,
+    MidMeasureMP,
+)
 
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections
+from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
 
 
 @dataclass
@@ -160,13 +168,51 @@ measurement_label_map = {
     Expectation: lambda label: f"<{label}>",
     Probability: lambda label: f"Probs[{label}]" if label else "Probs",
     Sample: lambda label: f"Sample[{label}]" if label else "Sample",
+    Counts: lambda label: f"Counts[{label}]" if label else "Counts",
     Variance: lambda label: f"Var[{label}]",
     State: lambda label: "State",
 }
 
 
+def _add_cwire_measurement_grouping_symbols(mcms, layer_str, config):
+    """Adds symbols indicating the extent of a given object for mid-circuit measurement
+    statistics."""
+    if len(mcms) > 1:
+        n_wires = len(config.wire_map)
+        mapped_bits = [config.bit_map[m] for m in mcms]
+        min_b, max_b = min(mapped_bits) + n_wires, max(mapped_bits) + n_wires
+
+        layer_str[min_b] = "╭"
+        layer_str[max_b] = "╰"
+
+        for b in range(min_b + 1, max_b):
+            layer_str[b] = "├" if b - n_wires in mapped_bits else "│"
+
+    return layer_str
+
+
+def _add_cwire_measurement(m, layer_str, config):
+    """Updates ``layer_str`` with the ``m`` measurement when it is used
+    for collecting mid-circuit measurement statistics."""
+    mcms = [v.measurements[0] for v in m.mv] if isinstance(m.mv, list) else m.mv.measurements
+    layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
+
+    mv_label = "MCM"
+    meas_label = measurement_label_map[m.return_type](mv_label)
+
+    n_wires = len(config.wire_map)
+    for mcm in mcms:
+        ind = config.bit_map[mcm] + n_wires
+        layer_str[ind] += meas_label
+
+    return layer_str
+
+
 def _add_measurement(m, layer_str, config):
     """Updates ``layer_str`` with the ``m`` measurement."""
+    if m.mv is not None:
+        return _add_cwire_measurement(m, layer_str, config)
+
     layer_str = _add_grouping_symbols(m, layer_str, config)
 
     if m.obs is None:
@@ -228,8 +274,8 @@ def tape_text(
             qml.Toffoli(wires=(0, 1, "aux"))
         ]
         measurements = [
-            qml.expval(qml.PauliZ("aux")),
-            qml.var(qml.PauliZ(0) @ qml.PauliZ(1)),
+            qml.expval(qml.Z("aux")),
+            qml.var(qml.Z(0) @ qml.Z(1)),
             qml.probs(wires=(0, 1, 2, "aux"))
         ]
         tape = qml.tape.QuantumTape(ops, measurements)
@@ -361,7 +407,7 @@ def tape_text(
 
         with qml.tape.QuantumTape() as tape:
             with qml.tape.QuantumTape() as tape_inner:
-                qml.PauliX(0)
+                qml.X(0)
 
         cache = {'tape_offset': 3}
         print(qml.drawer.tape_text(tape, cache=cache))
@@ -383,24 +429,22 @@ def tape_text(
     tape_cache = []
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    bit_map = default_bit_map(tape)
     n_wires = len(wire_map)
+    n_bits = len(bit_map)
     if n_wires == 0:
         return ""
 
     # Used to store lines that are hitting the maximum length
     finished_lines = []
 
-    layers_list = [
-        drawable_layers(tape.operations, wire_map=wire_map),
-        drawable_layers(tape.measurements, wire_map=wire_map),
-    ]
-    add_list = [_add_op, _add_measurement]
-    wire_fillers = ["─", " "]
-    bit_fillers = ["═", " "]
-    enders = [True, False]  # add "─┤" after all operations
+    layers = drawable_layers(tape.operations, wire_map=wire_map, bit_map=bit_map)
+    final_operations_layer = len(layers) - 1
+    layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
 
-    bit_map, cwire_layers, _ = cwire_connections(layers_list[0] + layers_list[1])
-    n_bits = len(bit_map)
+    # Update bit map and collect information about connections between mid-circuit measurements,
+    # classical conditions, and terminal measurements for processing mid-circuit measurements.
+    cwire_layers, _ = cwire_connections(layers, bit_map)
 
     wire_totals = [f"{wire}: " for wire in wire_map]
     bit_totals = ["" for _ in range(n_bits)]
@@ -409,93 +453,96 @@ def tape_text(
     wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
     bit_totals = [s.rjust(line_length, " ") for s in bit_totals]
 
-    for layers, add, w_filler, b_filler, ender in zip(
-        layers_list, add_list, wire_fillers, bit_fillers, enders
-    ):
-        # Collect information needed for drawing layers
-        config = _Config(
-            wire_map=wire_map,
-            bit_map=bit_map,
-            cur_layer=-1,
-            cwire_layers=cwire_layers,
-            decimals=decimals,
-            cache=cache,
-        )
+    # Collect information needed for drawing layers
+    config = _Config(
+        wire_map=wire_map,
+        bit_map=bit_map,
+        cur_layer=-1,
+        cwire_layers=cwire_layers,
+        decimals=decimals,
+        cache=cache,
+    )
 
-        for i, layer in enumerate(layers):
-            # Add filler before current layer
-            layer_str = [w_filler] * n_wires + [" "] * n_bits
-            for b in bit_map.values():
-                cur_b_filler = b_filler if min(cwire_layers[b]) < i < max(cwire_layers[b]) else " "
-                layer_str[b + n_wires] = cur_b_filler
+    for i, layer in enumerate(layers):
+        # Update fillers and helper function
+        w_filler = "─" if i <= final_operations_layer else " "
+        b_filler = "═" if i <= final_operations_layer else " "
+        add_fn = _add_op if i <= final_operations_layer else _add_measurement
 
-            config.cur_layer = i
-            # Keep track of mid-circuit measurements in each layer that are used
-            # for conditions, if any
-            cur_layer_mid_measure = None
+        # Create initial strings for the current layer using wire and cwire fillers
+        layer_str = [w_filler] * n_wires + [" "] * n_bits
+        for b in bit_map.values():
+            cur_b_filler = b_filler if min(cwire_layers[b]) < i < max(cwire_layers[b]) else " "
+            layer_str[b + n_wires] = cur_b_filler
 
-            for op in layer:
-                if isinstance(op, qml.tape.QuantumScript):
-                    layer_str = _add_grouping_symbols(op, layer_str, config)
-                    label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
-                    for w in op.wires:
-                        layer_str[wire_map[w]] += label
-                    tape_cache.append(op)
-                else:
-                    layer_str = add(op, layer_str, config)
+        config.cur_layer = i
 
-                    if isinstance(op, MidMeasureMP) and op in bit_map:
-                        cur_layer_mid_measure = op
+        ##########################################
+        # Update current layer strings with labels
+        ##########################################
+        for op in layer:
+            if isinstance(op, qml.tape.QuantumScript):
+                layer_str = _add_grouping_symbols(op, layer_str, config)
+                label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
+                for w in op.wires:
+                    layer_str[wire_map[w]] += label
+                tape_cache.append(op)
+            else:
+                layer_str = add_fn(op, layer_str, config)
 
-            # Adjust width for wire filler on unused wires
-            max_label_len = max(len(s) for s in layer_str)
-            for w in range(n_wires):
-                layer_str[w] = layer_str[w].ljust(max_label_len, w_filler)
+        #################################################
+        # Left justify layer strings and pad on the right
+        #################################################
+        # Adjust width for wire filler on unused wires
+        max_label_len = max(len(s) for s in layer_str)
+        for w in range(n_wires):
+            layer_str[w] = layer_str[w].ljust(max_label_len, w_filler)
 
-            # Adjust width for bit filler on unused bits
+        # Adjust width for bit filler on unused bits
+        for b in range(n_bits):
+            cur_b_filler = b_filler if cwire_layers[b][0] <= i < cwire_layers[b][-1] else " "
+            layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
+
+        line_length += max_label_len + 1  # one for the filler character
+
+        ##################
+        # Create new lines
+        ##################
+        if line_length > max_length:
+            # move totals into finished_lines and reset totals
+            finished_lines += wire_totals + bit_totals
+            finished_lines[-1] += "\n"
+            wire_totals = [w_filler] * n_wires
+
+            # Bit totals for new lines for warped drawings need to be consistent with the
+            # current bit filler
+            bit_totals = []
             for b in range(n_bits):
-                if cur_layer_mid_measure is not None:
-                    # This condition is needed to pad the filler on the bits under MidMeasureMPs
-                    # that are used for conditions correctly
-                    cur_b_filler = (
-                        b_filler
-                        if bit_map[cur_layer_mid_measure] >= b and i < cwire_layers[b][-1]
-                        else " "
-                    )
-                else:
-                    cur_b_filler = b_filler if cwire_layers[b][0] < i < cwire_layers[b][-1] else " "
-                layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
+                cur_b_filler = b_filler if cwire_layers[b][0] < i <= cwire_layers[b][-1] else " "
+                bit_totals.append(cur_b_filler)
 
-            line_length += max_label_len + 1  # one for the filler character
+            line_length = 2 + max_label_len
 
-            if line_length > max_length:
-                # move totals into finished_lines and reset totals
-                finished_lines += wire_totals + bit_totals
-                finished_lines[-1] += "\n"
-                wire_totals = [w_filler] * n_wires
+        ###################################################
+        # Join current layer with lines for previous layers
+        ###################################################
+        # Joining is done by adding a filler at the end of the previous layer
+        wire_totals = [w_filler.join([t, s]) for t, s in zip(wire_totals, layer_str[:n_wires])]
 
-                # Bit totals for new lines for warped drawings need to be consistent with the
-                # current bit filler
-                bit_totals = []
-                for b in range(n_bits):
-                    cur_b_filler = (
-                        b_filler if cwire_layers[b][0] < i <= cwire_layers[b][-1] else " "
-                    )
-                    bit_totals.append(cur_b_filler)
+        for j, (bt, s) in enumerate(zip(bit_totals, layer_str[n_wires : n_wires + n_bits])):
+            cur_b_filler = b_filler if cwire_layers[j][0] < i <= cwire_layers[j][-1] else " "
+            bit_totals[j] = cur_b_filler.join([bt, s])
 
-                line_length = 2 + max_label_len
-
-            # Join current layer with lines for previous layers. Joining is done by adding a filler at
-            # the end of the previous layer
-            wire_totals = [w_filler.join([t, s]) for t, s in zip(wire_totals, layer_str[:n_wires])]
-
-            for j, (bt, s) in enumerate(zip(bit_totals, layer_str[n_wires : n_wires + n_bits])):
-                cur_b_filler = b_filler if cwire_layers[j][0] < i <= cwire_layers[j][-1] else " "
-                bit_totals[j] = cur_b_filler.join([bt, s])
-
-        if ender:
+        ################################################
+        # Add ender characters to final operations layer
+        ################################################
+        if i == final_operations_layer:
             wire_totals = [f"{s}─┤" for s in wire_totals]
-            bit_totals = [f"{s}  " for s in bit_totals]
+            for b in range(n_bits):
+                if cwire_layers[b][-1] > final_operations_layer:
+                    bit_totals[b] += "═╡"
+                else:
+                    bit_totals[b] += "  "
 
             line_length += 2
 

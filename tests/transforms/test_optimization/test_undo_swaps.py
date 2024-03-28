@@ -26,6 +26,32 @@ from pennylane.transforms.optimization import undo_swaps
 class TestUndoSwaps:
     """Test that check the main functionalities of the `undo_swaps` transform"""
 
+    def test_transform_non_standard_operations(self):
+        """Test that the transform works on non-standard operations with nesting or hyperparameters."""
+
+        ops = [
+            qml.adjoint(qml.S(0)),
+            qml.PauliRot(1.2, "XY", wires=(0, 2)),
+            qml.ctrl(qml.PauliX(0), [2, 3], control_values=[0, 0]),
+            qml.SWAP((0, 1)),
+        ]
+
+        tape = qml.tape.QuantumScript(ops, [qml.state()], shots=100)
+        batch, fn = qml.transforms.undo_swaps(tape)
+
+        expected_ops = [
+            qml.adjoint(qml.S(1)),
+            qml.PauliRot(1.2, "XY", wires=(1, 2)),
+            qml.ctrl(qml.PauliX(1), [2, 3], control_values=[0, 0]),
+        ]
+        assert len(batch) == 1
+        assert batch[0].shots == tape.shots
+
+        assert fn(["a"]) == "a"
+
+        for op1, expected in zip(batch[0].operations, expected_ops):
+            assert op1 == expected
+
     def test_one_qubit_gates_transform(self):
         """Test that a single-qubit gate changes correctly with a SWAP."""
 
@@ -257,10 +283,6 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in JAX interface."""
         import jax
         from jax import numpy as jnp
-
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)

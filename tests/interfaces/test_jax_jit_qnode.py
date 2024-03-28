@@ -855,10 +855,10 @@ class TestShotsIntegration:
         # if we set the shots to None, backprop can now be used
         cost_fn(a, b, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert cost_fn.gradient_fn == "backprop"
 
-        # original QNode settings are unaffected
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
         cost_fn(a, b)
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
 
@@ -1385,7 +1385,6 @@ class TestQubitIntegrationHigherOrder:
 
 
 # TODO: Add CV test when return types and custom diff are compatible
-@pytest.mark.xfail(reason="CV variables with new return types.")
 @pytest.mark.parametrize(
     "diff_method,kwargs",
     [
@@ -1776,9 +1775,7 @@ class TestJIT:
         dev = qml.device(dev_name, wires=num_wires)
 
         gradient_kwargs = {}
-        if diff_method == "adjoint":
-            pytest.xfail(reason="The adjoint method is not using host-callback currently")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
 
@@ -1870,14 +1867,20 @@ class TestJIT:
 
         assert jax.numpy.allclose(circuit(), jax.numpy.array([1.0, 0.0]))
 
-    @pytest.mark.xfail(
-        reason="Non-trainable parameters are not being correctly unwrapped by the interface"
-    )
+    # @pytest.mark.xfail(
+    #     reason="Non-trainable parameters are not being correctly unwrapped by the interface"
+    # )
     def test_gradient_subset(
         self, dev_name, diff_method, grad_on_execution, jacobian, tol, interface
     ):
         """Test derivative calculation of a scalar valued QNode with respect
         to a subset of arguments"""
+        if diff_method == "spsa" and not grad_on_execution:
+            pytest.xfail(reason="incorrect jacobian results")
+
+        if diff_method == "hadamard" and not grad_on_execution:
+            pytest.xfail(reason="XLA raised wire error")
+
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
@@ -1914,7 +1917,7 @@ class TestJIT:
 
         gradient_kwargs = {}
         if diff_method == "adjoint":
-            pytest.xfail(reason="The adjoint method is not using host-callback currently")
+            pytest.xfail(reason="Adjoint does not support probs.")
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA

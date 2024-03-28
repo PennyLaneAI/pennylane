@@ -547,7 +547,7 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        H = qml.Hamiltonian(coeffs=[0.5, 0.5], observables=[qml.PauliZ(0), qml.PauliZ(1)])
+        H = qml.Hamiltonian(coeffs=[0.5, 0.5], observables=[qml.Z(0), qml.Z(1)])
 
         @qml.qnode(dev)
         def circ(params):
@@ -692,7 +692,7 @@ def quantum_fisher(
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        H = 1.*qml.PauliX(0) @ qml.PauliX(1) - 0.5 * qml.PauliZ(1)
+        H = 1.*qml.X(0) @ qml.X(1) - 0.5 * qml.Z(1)
 
         @qml.qnode(dev)
         def circ(params):
@@ -736,7 +736,7 @@ def quantum_fisher(
 
     """
 
-    if device.shots and isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
+    if device.shots or not isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
         tapes, processing_fn = metric_tensor(tape, *args, **kwargs)
 
         def processing_fn_multiply(res):
@@ -864,7 +864,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
         @qml.qnode(dev, interface="jax")
         def circuit1():
-            qml.PauliZ(wires=0)
+            qml.Z(0)
             return qml.state()
 
     >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))

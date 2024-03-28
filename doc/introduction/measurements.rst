@@ -195,9 +195,9 @@ For example, we could run the previous circuit with ``all_outcomes=True``:
 >>> print(result)
 {'00': 518, '01': 0, '10': 0, '11': 482}
 
-Note: For complicated Hamiltonians, this can add considerable overhead time (due to the cost of calculating 
-eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output 
-dictionary showing possible computational basis states grows rapidly. 
+Note: For complicated Hamiltonians, this can add considerable overhead time (due to the cost of calculating
+eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output
+dictionary showing possible computational basis states grows rapidly.
 
 If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
 a tuple is returned to provide differentiability for the outputs of QNodes.
@@ -208,11 +208,11 @@ a tuple is returned to provide differentiability for the outputs of QNodes.
     def circuit():
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0,1])
-        qml.PauliX(wires=1)
+        qml.X(1)
         return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.counts()
 
 >>> circuit()
-(-0.036, 0.036, {'01': 482, '10': 518}) 
+(-0.036, 0.036, {'01': 482, '10': 518})
 
 Probability
 -----------
@@ -242,6 +242,9 @@ The returned probability array uses lexicographical ordering,
 so corresponds to a :math:`99.75\%` probability of measuring
 state :math:`|00\rangle`, and a :math:`0.25\%` probability of
 measuring state :math:`|01\rangle`.
+
+
+.. _mid_circuit_measurements:
 
 Mid-circuit measurements and conditional operations
 ---------------------------------------------------
@@ -296,6 +299,44 @@ The decorator syntax applies equally well:
     @qml.defer_measurements
     def qnode(x, y):
         (...)
+
+The one-shot transform
+**********************
+
+Devices supporting mid-circuit measurements (defined using
+:func:`~.pennylane.measure`) and conditional operations (defined using
+:func:`~.pennylane.cond`) natively can estimate dynamic circuits by executing
+them one shot at a time. This is the default behaviour of a `~.pennylane.QNode` that has a
+device supporting mid-circuit measurements, as well as any `~.pennylane.QNode` with the
+:func:`~.pennylane.dynamic_one_shot` quantum function transform.
+As the name suggests, this transform only works for a `~.pennylane.QNode` executing with finite shots
+and it will raise an error if the device does not support mid-circuit measurements
+natively.
+The :func:`~.pennylane.defer_measurements` transform therefore remains the default for
+analytic calculations.
+
+The :func:`~.pennylane.dynamic_one_shot` transform is usually advantageous compared
+with the :func:`~.pennylane.defer_measurements` transform in the
+large-number-of-mid-circuit-measurements and small-number-of-shots limit.  This is because, unlike the
+deferred measurement principle, the method does not need an additional wire for every
+mid-circuit measurement present in the circuit. Otherwise, one generally gets
+equivalent results, so you may try both in an attempt to improve performance without
+worrying further about accuracy.
+
+The transform can be applied to a QNode as follows:
+
+.. code-block:: python
+
+    @qml.dynamic_one_shot
+    @qml.qnode(dev)
+    def my_quantum_function(x, y):
+        (...)
+
+.. warning::
+
+    Dynamic circuits executed with shots should be differentiated with the finite-difference method.
+    If the ``defer_measurements`` transform is used in analytic mode, ``backprop`` is also a viable
+    option.
 
 Resetting wires
 ***************
@@ -402,17 +443,71 @@ statistics are :class:`~.pennylane.devices.DefaultQubit`, :class:`~.pennylane.de
         qml.cond(m0, qml.RY)(y, wires=1)
         return qml.probs(wires=1), qml.probs(op=m0)
 
-Executing this QNode:
+Executing this ``QNode``:
 
 >>> func(np.pi / 2, np.pi / 4)
 (tensor([0.9267767, 0.0732233], requires_grad=True),
  tensor([0.5, 0.5], requires_grad=True))
 
+Users can also collect statistics on mid-circuit measurements manipulated using arithmetic/boolean operators.
+This works for both unary and binary operators. To see a full list of supported operators, refer to the
+:func:`~.pennylane.measure` documentation. An example for collecting such statistics is shown below:
+
+.. code-block:: python3
+
+    import pennylane as qml
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(phi, theta):
+        qml.RX(phi, wires=0)
+        m0 = qml.measure(wires=0)
+        qml.RY(theta, wires=1)
+        m1 = qml.measure(wires=1)
+        return qml.sample(~m0 - 2 * m1)
+
+Executing this ``QNode``:
+
+>>> circuit(1.23, 4.56, shots=5)
+array([-1, -2,  1, -1,  1])
+
+Collecting statistics for mid-circuit measurements manipulated using arithmetic/boolean operators is supported
+with ``qml.expval``, ``qml.var``, ``qml.sample``, and ``qml.counts``.
+
+Moreover, statistics for multiple mid-circuit measurements can be collected by passing lists of mid-circuit
+measurement values to the measurement process:
+
+.. code-block:: python3
+
+    import pennylane as qml
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(phi, theta):
+        qml.RX(phi, wires=0)
+        m0 = qml.measure(wires=0)
+        qml.RY(theta, wires=1)
+        m1 = qml.measure(wires=1)
+        return qml.sample([m0, m1])
+
+Executing this ``QNode``:
+
+>>> circuit(1.23, 4.56, shots=5)
+array([[0, 1],
+       [1, 1],
+       [0, 1],
+       [0, 0],
+       [1, 1]])
+
+Collecting statistics for sequences of mid-circuit measurements is supported with ``qml.sample``,
+``qml.probs``, and ``qml.counts``.
+
 .. warning::
 
-    Currently, statistics can only be collected for single mid-circuit measurement values. Moreover, any
-    measurement values manipulated using boolean or arithmetic operators cannot be used. These can lead to
-    unexpected/incorrect behaviour.
+    When collecting statistics for a list of mid-circuit measurements, values manipulated using
+    arithmetic operators should not be used as this behaviour is not supported.
 
 Changing the number of shots
 ----------------------------

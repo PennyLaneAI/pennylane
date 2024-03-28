@@ -31,14 +31,16 @@ class TestAttribute:
     """Test addition and inclusion of operations and subclasses in attributes."""
 
     def test_invalid_input(self):
-        """Test that anything that is not a string or Operation throws an error."""
-        # Test something that is not an object
-        with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
-            assert 3 not in new_attribute
+        """Test that anything that is not a string or Operation returns False."""
+        assert 3 not in new_attribute
 
         # Test a dummy object that is not an Operation.
-        with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
-            assert object() not in new_attribute
+        assert object() not in new_attribute
+
+    def test_measurement_process_input(self):
+        """Test that MeasurementProcesses are valid objects to check inside Attributes"""
+        assert qml.measurements.MidMeasureMP(0) not in new_attribute
+        assert qml.expval(qml.PauliX(0)) not in new_attribute
 
     def test_string_inclusion(self):
         """Test that we can check inclusion using strings."""
@@ -82,7 +84,7 @@ class TestAttribute:
 
     def test_tensor_check(self):
         """Test that we can ask if a tensor is in the attribute."""
-        assert not qml.PauliX(wires=0) @ qml.PauliZ(wires=1) in new_attribute
+        assert qml.operation.Tensor(qml.PauliX(wires=0), qml.PauliZ(wires=1)) not in new_attribute
 
 
 single_scalar_single_wire_ops = [

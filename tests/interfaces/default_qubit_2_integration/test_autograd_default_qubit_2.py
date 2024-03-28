@@ -22,7 +22,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute
+from pennylane import execute
 from pennylane.measurements import Shots
 
 pytestmark = pytest.mark.autograd
@@ -265,9 +265,6 @@ class TestAutogradExecuteIntegration:
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
-
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -567,9 +564,6 @@ class TestAutogradExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("adjoint differentiation does not suppport probabilities.")
-
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -622,8 +616,6 @@ class TestAutogradExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]

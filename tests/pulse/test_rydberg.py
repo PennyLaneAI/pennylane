@@ -173,7 +173,9 @@ class TestRydbergDrive:
         assert Hd.pulses == H1.pulses + H2.pulses
 
         # Hamiltonian is as expected
-        assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
+        actual = Hd([0.5, -0.5], t=5).simplify()
+        expected = H_expected([0.5, -0.5], t=5).simplify()
+        assert qml.equal(actual, expected)
 
     def test_no_amplitude(self):
         """Test that when amplitude is not specified, the drive term is correctly defined."""
@@ -193,7 +195,9 @@ class TestRydbergDrive:
         coeffs_expected = [f]
         H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
-        assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
+        actual = Hd([0.1], 10).simplify()
+        expected = H_expected([0.1], 10).simplify()
+        assert qml.equal(actual, expected)
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([0, 3])
         assert Hd.settings is None
@@ -202,6 +206,7 @@ class TestRydbergDrive:
         assert len(Hd.ops) == 1
         assert qml.equal(Hd.ops[0], ops_expected[0])
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_no_detuning(self):
         """Test that when detuning not specified, the drive term is correctly defined."""
 

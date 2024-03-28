@@ -131,11 +131,6 @@ class TestUpdate:
     @pytest.mark.parametrize("sample_ms", sample_measurements)
     def test_update_circuit_info_sampling(self, sample_ms):
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), sample_ms])
-        with pytest.warns(UserWarning, match="QuantumScript.is_sampled is deprecated"):
-            assert qs.is_sampled is True
-        with pytest.warns(UserWarning, match="QuantumScript.all_sampled is deprecated"):
-            assert qs.all_sampled is False
-
         shadow_mp = sample_ms.return_type not in (
             qml.measurements.Shadow,
             qml.measurements.ShadowExpval,
@@ -143,20 +138,12 @@ class TestUpdate:
         assert qs.samples_computational_basis is shadow_mp
 
         qs = QuantumScript(measurements=[sample_ms, sample_ms, qml.sample()])
-        with pytest.warns(UserWarning, match="QuantumScript.is_sampled is deprecated"):
-            assert qs.is_sampled is True
-        with pytest.warns(UserWarning, match="QuantumScript.all_sampled is deprecated"):
-            assert qs.all_sampled is True
         assert qs.samples_computational_basis is True
 
     def test_update_circuit_info_no_sampling(self):
         """Test that all_sampled, is_sampled and samples_computational_basis properties are set to False if no sampling
         measurement process exists."""
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
-        with pytest.warns(UserWarning, match="QuantumScript.is_sampled is deprecated"):
-            assert qs.is_sampled is False
-        with pytest.warns(UserWarning, match="QuantumScript.all_sampled is deprecated"):
-            assert qs.all_sampled is False
         assert qs.samples_computational_basis is False
 
     def test_samples_computational_basis_correctly(self):

@@ -169,9 +169,6 @@ class TestMergeAmplitudeEmbeddingInterfaces:
     def test_merge_amplitude_embedding_jax(self):
         """Test QNode in JAX interface."""
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         def qfunc(amplitude):
             qml.AmplitudeEmbedding(amplitude, wires=0)

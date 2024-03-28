@@ -380,13 +380,21 @@ class TestMeasurementValueManipulation:
         w.r.t a more complicated MeasurementValue"""
         a = MeasurementValue([mp1], lambda v: v)
         b = MeasurementValue([mp2], lambda v: v)
-        assert (
-            str(a + b)
-            == """if m0=0,m1=0 => 0
-if m0=0,m1=1 => 1
-if m0=1,m1=0 => 1
-if m0=1,m1=1 => 2"""
+        assert str(a + b) == (
+            "if m0=0,m1=0 => 0\nif m0=0,m1=1 => 1\nif m0=1,m1=0 => 1\nif m0=1,m1=1 => 2"
         )
+
+    def test_repr(self):
+        """Test that the output of the __repr__ dubder method is as expected."""
+        m = qml.measure(0)
+        assert repr(m) == "MeasurementValue(wires=[0])"
+
+    def test_complex_repr(self):
+        """Test that the output of the __repr__ dunder method is as expected
+        w.r.t a more complicated MeasurementValue"""
+        a = MeasurementValue([mp1], lambda v: v)
+        b = MeasurementValue([mp2], lambda v: v)
+        assert repr(a + b) == "MeasurementValue(wires=[0, 1])"
 
     def test_map_wires(self):
         """Test that map_wires works as expected."""

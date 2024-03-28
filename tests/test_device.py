@@ -61,6 +61,21 @@ def mock_device_with_observables(monkeypatch):
 
 
 @pytest.fixture(scope="function")
+def mock_device_with_identity(monkeypatch):
+    """A function to create a mock device with non-empty observables"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, "__abstractmethods__", frozenset())
+        m.setattr(Device, "operations", mock_device_paulis + ["Identity"])
+        m.setattr(Device, "observables", mock_device_paulis + ["Identity"])
+        m.setattr(Device, "short_name", "MockDevice")
+
+        def get_device(wires=1):
+            return Device(wires=wires)
+
+        yield get_device
+
+
+@pytest.fixture(scope="function")
 def mock_device_supporting_paulis(monkeypatch):
     """A function to create a mock device with non-empty observables"""
     with monkeypatch.context() as m:
@@ -290,7 +305,7 @@ class TestDeviceSupportedLogic:
             dev.supports_observable(operation)
 
 
-class TestInternalFunctions:
+class TestInternalFunctions:  # pylint:disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
 
     # pylint: disable=unnecessary-dunder-call
@@ -325,7 +340,8 @@ class TestInternalFunctions:
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
-    def test_check_validity_on_tensor_support(self, mock_device_supporting_paulis):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_check_validity_on_tensor_support_legacy_opmath(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with tensor support capability"""
         dev = mock_device_supporting_paulis()
 
@@ -341,6 +357,23 @@ class TestInternalFunctions:
         with pytest.raises(DeviceError, match="Tensor observables not supported"):
             dev.check_validity(queue, observables)
 
+    def test_check_validity_on_prod_support(self, mock_device_supporting_paulis):
+        """Tests the function Device.check_validity with prod support capability"""
+        dev = mock_device_supporting_paulis()
+
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
+
+        observables = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
+
+        # mock device does not support Tensor product
+        with pytest.raises(DeviceError, match="Observable Prod not supported"):
+            dev.check_validity(queue, observables)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_check_validity_on_invalid_observable_with_tensor_support(self, monkeypatch):
         """Tests the function Device.check_validity with tensor support capability
         but with an invalid observable"""
@@ -406,6 +439,15 @@ class TestInternalFunctions:
         with pytest.raises(ValueError, match="Postselection is not supported"):
             dev.check_validity(queue, observables)
 
+    def test_check_validity_on_non_observable_measurement(self, mock_device_with_identity, recwarn):
+        """Test that using non-observable measurements like state() works."""
+        dev = mock_device_with_identity(wires=1)
+        queue = []
+        observables = [qml.state()]
+
+        dev.check_validity(queue, observables)
+        assert len(recwarn) == 0
+
     def test_args(self, mock_device):
         """Test that the device requires correct arguments"""
         with pytest.raises(
@@ -467,7 +509,10 @@ class TestInternalFunctions:
         without expanding measurements."""
 
         ops = [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]
-        measurements = [qml.expval(qml.PauliZ(0)), qml.expval(2 * qml.PauliX(0) @ qml.PauliY(1))]
+        measurements = [
+            qml.expval(qml.PauliZ(0)),
+            qml.expval(qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliY(1)])),
+        ]
         circuit = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
         dev = mock_device_with_paulis_hamiltonian_and_methods(wires=3)
@@ -612,6 +657,21 @@ class TestInternalFunctions:
         assert new_tape.wires == tape.wires
         assert new_tape.batch_size == tape.batch_size
         assert new_tape.output_dim == tape.output_dim
+
+    def test_default_expand_fn_with_invalid_op(self, mock_device_with_operations, recwarn):
+        """Test that default_expand_fn works with an invalid op and some measurement."""
+        invalid_tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))])
+        expected_tape = qml.tape.QuantumScript([qml.RZ(np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))])
+        dev = mock_device_with_operations(wires=1)
+        expanded_tape = dev.expand_fn(invalid_tape, max_expansion=3)
+        assert qml.equal(expanded_tape, expected_tape)
+        assert len(recwarn) == 0
+
+    def test_stopping_condition_passes_with_non_obs_mp(self, mock_device_with_identity, recwarn):
+        """Test that Device.stopping_condition passes with non-observable measurements"""
+        dev = mock_device_with_identity(wires=1)
+        assert dev.stopping_condition(qml.state())
+        assert len(recwarn) == 0
 
 
 # pylint: disable=too-few-public-methods

@@ -134,7 +134,7 @@ def test_grover_diffusion_matrix(n_wires):
     oplist = list(itertools.repeat(Hadamard.compute_matrix(), n_wires - 1))
     oplist.append(PauliZ.compute_matrix())
 
-    ctrl_str = "0" * (n_wires - 1)
+    ctrl_str = [0] * (n_wires - 1)
     CX = MultiControlledX(
         control_values=ctrl_str,
         wires=wires,
@@ -260,5 +260,5 @@ def test_decomposition_matrix(n_wires):
     wires = list(range(n_wires))
     op = qml.GroverOperator(wires)
     mat1 = op.matrix()
-    mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()))
+    mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wires)
     assert np.allclose(mat1, mat2)

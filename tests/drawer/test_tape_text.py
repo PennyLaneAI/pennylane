@@ -25,6 +25,8 @@ from pennylane.drawer.tape_text import (
     _add_grouping_symbols,
     _add_cond_grouping_symbols,
     _add_mid_measure_grouping_symbols,
+    _add_cwire_measurement_grouping_symbols,
+    _add_cwire_measurement,
     _add_measurement,
     _add_op,
     _Config,
@@ -34,16 +36,21 @@ from pennylane.tape import QuantumScript, QuantumTape
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_bit_map = {}
 
-default_mid_measure_1 = qml.measurements.MidMeasureMP(0, id="foo")
-default_mid_measure_2 = qml.measurements.MidMeasureMP(0, id="bar")
+default_mid_measure_1 = qml.measurements.MidMeasureMP(0, id="1")
+default_mid_measure_2 = qml.measurements.MidMeasureMP(0, id="2")
+default_mid_measure_3 = qml.measurements.MidMeasureMP(0, id="3")
 default_measurement_value_1 = qml.measurements.MeasurementValue(
     [default_mid_measure_1], lambda v: v
 )
 default_measurement_value_2 = qml.measurements.MeasurementValue(
     [default_mid_measure_2], lambda v: v
 )
+default_measurement_value_3 = qml.measurements.MeasurementValue(
+    [default_mid_measure_3], lambda v: v
+)
 cond_bit_map_1 = {default_mid_measure_1: 0}
 cond_bit_map_2 = {default_mid_measure_1: 0, default_mid_measure_2: 1}
+stats_bit_map_1 = {default_mid_measure_1: 0, default_mid_measure_2: 1, default_mid_measure_3: 2}
 
 
 def get_conditional_op(mv, true_fn, *args, **kwargs):
@@ -169,6 +176,62 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 cur_layer=cur_layer,
                 cwire_layers=[[0], [1]],
             ),
+        )
+
+    @pytest.mark.parametrize(
+        "mps, bit_map, out",
+        [
+            ([default_mid_measure_1], stats_bit_map_1, [" "] * (4 + len(stats_bit_map_1))),
+            (
+                [default_mid_measure_1, default_mid_measure_3],
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭", "│", "╰"],
+            ),
+            (
+                [default_mid_measure_1, default_mid_measure_2, default_mid_measure_3],
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭", "├", "╰"],
+            ),
+        ],
+    )
+    def test_add_cwire_measurement_grouping_symbols(self, mps, bit_map, out):
+        """Test private _add_cwire_measurement_grouping_symbols renders as expected."""
+        layer_str = [" "] * (len(default_wire_map) + len(bit_map))
+
+        assert out == _add_cwire_measurement_grouping_symbols(
+            mps, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map)
+        )
+
+    @pytest.mark.parametrize(
+        "mp, bit_map, out",
+        [
+            (
+                qml.sample([default_measurement_value_1]),
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + [" Sample[MCM]", " ", " "],
+            ),
+            (
+                qml.expval(default_measurement_value_1 * default_measurement_value_3),
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭<MCM>", "│", "╰<MCM>"],
+            ),
+            (
+                qml.counts(
+                    default_measurement_value_1
+                    + default_measurement_value_2
+                    - default_measurement_value_3
+                ),
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭Counts[MCM]", "├Counts[MCM]", "╰Counts[MCM]"],
+            ),
+        ],
+    )
+    def test_add_cwire_measurement(self, mp, bit_map, out):
+        """Test private _add_cwire_measurement renders as expected."""
+        layer_str = [" "] * (len(default_wire_map) + len(bit_map))
+
+        assert out == _add_cwire_measurement(
+            mp, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map)
         )
 
     @pytest.mark.parametrize(
@@ -471,7 +534,7 @@ class TestMaxLength:
 
 single_op_tests_data = [
     (
-        qml.MultiControlledX(wires=[0, 1, 2, 3], control_values="010"),
+        qml.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0]),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  ",
     ),
     (
@@ -513,12 +576,15 @@ single_op_tests_data = [
     (qml.probs(op=qml.PauliZ(0)), "0: ───┤  Probs[Z]"),
     (qml.sample(wires=0), "0: ───┤  Sample"),
     (qml.sample(op=qml.PauliX(0)), "0: ───┤  Sample[X]"),
-    (qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)), "0: ───┤ ╭<𝓗(0.10)>\n1: ───┤ ╰<𝓗(0.10)>"),
+    (
+        qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)),
+        "0: ───┤ ╭<(0.10*X)@Y>\n1: ───┤ ╰<(0.10*X)@Y>",
+    ),
     (
         qml.expval(
             0.1 * qml.PauliX(0) + 0.2 * qml.PauliY(1) + 0.3 * qml.PauliZ(0) + 0.4 * qml.PauliZ(1)
         ),
-        "0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>",
+        "0: ───┤ ╭<(((0.10*X)+(0.20*Y))+(0.30*Z))+(0.40*Z)>\n1: ───┤ ╰<(((0.10*X)+(0.20*Y))+(0.30*Z))+(0.40*Z)>",
     ),
     # Operations (both regular and controlled) and nested multi-valued controls
     (qml.ctrl(qml.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),

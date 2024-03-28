@@ -994,9 +994,6 @@ class TestFiniteDiffGradients:
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
         execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
@@ -1033,9 +1030,6 @@ class TestFiniteDiffGradients:
     ):  # pylint: disable=unused-argument
         """Tests that the output of the finite-difference transform is similar using or not diff method on the QNode."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
         x = jax.numpy.array(0.543)
@@ -1081,9 +1075,6 @@ class TestJaxArgnums:
     def test_single_expectation_value(self, argnums, interface, approx_order, strategy):
         """Test for single expectation value."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1115,9 +1106,6 @@ class TestJaxArgnums:
     def test_multi_expectation_values(self, argnums, interface, approx_order, strategy):
         """Test for multiple expectation values."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1152,9 +1140,6 @@ class TestJaxArgnums:
     def test_hessian(self, argnums, interface, approx_order, strategy):
         """Test for hessian."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 

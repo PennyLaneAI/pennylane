@@ -125,3 +125,13 @@ class TestStateVector:
         res = np.reshape(op.state_vector(wire_order=[1, 0]) ** 2, (-1,))
         expected = np.array([0.0, 0.5, 0.25, 0.25])
         assert np.allclose(res, expected)
+
+    def test_CosineWindow_state_vector_subset_of_wires(self):
+        """Tests that the state vector works with not all state wires."""
+        op = qml.CosineWindow([2, 1])
+        res = op.state_vector(wire_order=[0, 1, 2])
+        assert res.shape == (2, 2, 2)
+
+        expected_10 = qml.CosineWindow([0, 1]).state_vector(wire_order=[1, 0])
+        expected = np.stack([expected_10, np.zeros_like(expected_10)])
+        assert np.allclose(res, expected)

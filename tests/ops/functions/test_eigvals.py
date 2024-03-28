@@ -22,7 +22,7 @@ import scipy
 from gate_data import CNOT, H, I, S, X, Y, Z
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import TransformError
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -40,7 +40,7 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 def test_invalid_argument():
     """Assert error raised when input is neither a tape, QNode, nor quantum function"""
     with pytest.raises(
-        OperationTransformError,
+        TransformError,
         match="Input is not an Operator, tape, QNode, or quantum function",
     ):
         _ = qml.eigvals(None)
@@ -117,13 +117,30 @@ class TestSingleOperation:
         expected = np.linalg.eigvals(qml.matrix(qml.CNOT(wires=[0, 1])))
         assert np.allclose(np.sort(res), np.sort(expected))
 
-    def test_tensor_product(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_tensor_product_legacy_opmath(self):
         """Test a tensor product"""
         res = qml.eigvals(qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(1))
         expected = reduce(np.kron, [[1, -1], [1, 1], [1, -1]])
         assert np.allclose(res, expected)
 
+    def test_tensor_product(self):
+        """Test a tensor product"""
+        res = qml.eigvals(qml.prod(qml.PauliX(0), qml.Identity(1), qml.PauliZ(1), lazy=False))
+        expected = [1.0, -1.0, -1.0, 1.0]
+        assert np.allclose(res, expected)
+
     def test_hamiltonian(self):
+        """Test that the matrix of a Hamiltonian is correctly returned"""
+        ham = qml.PauliZ(0) @ qml.PauliY(1) - 0.5 * qml.PauliX(1)
+
+        res = qml.eigvals(ham)
+
+        expected = np.linalg.eigvalsh(reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [I, X]))
+        assert np.allclose(res, expected)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_hamiltonian_legacy_opmath(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
         ham = qml.PauliZ(0) @ qml.PauliY(1) - 0.5 * qml.PauliX(1)
 

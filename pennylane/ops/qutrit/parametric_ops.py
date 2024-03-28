@@ -24,6 +24,29 @@ from pennylane.operation import Operation
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
 
+def validate_subspace(subspace):
+    """Validate the subspace for qutrit operations.
+
+    This method determines whether a given subspace for qutrit operations
+    is defined correctly or not. If not, a ``ValueError`` is thrown.
+
+    Args:
+        subspace (tuple[int]): Subspace to check for correctness
+    """
+    if not hasattr(subspace, "__iter__") or len(subspace) != 2:
+        raise ValueError(
+            "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
+        )
+
+    if not all(s in {0, 1, 2} for s in subspace):
+        raise ValueError("Elements of the subspace must be 0, 1, or 2.")
+
+    if subspace[0] == subspace[1]:
+        raise ValueError("Elements of subspace list must be unique.")
+
+    return tuple(sorted(subspace))
+
+
 class TRX(Operation):
     r"""
     The single qutrit X rotation
@@ -74,6 +97,7 @@ class TRX(Operation):
            [0.        +0.j        , 0.96891242+0.j        , 0.        -0.24740396j],
            [0.        +0.j        , 0.        -0.24740396j, 0.96891242+0.j        ]])
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -88,10 +112,12 @@ class TRX(Operation):
     _index_dict = {(0, 1): 1, (0, 2): 4, (1, 2): 6}
 
     def generator(self):
+        # this generator returns SProd, even with the old op_math, because other options are not suitable
+        # to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
-        self._subspace = self.validate_subspace(subspace)
+        self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
@@ -218,6 +244,7 @@ class TRY(Operation):
            [ 0.        +0.j,  0.96891242+0.j, -0.24740396-0.j],
            [ 0.        +0.j,  0.24740396+0.j,  0.96891242+0.j]])
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -232,10 +259,12 @@ class TRY(Operation):
     _index_dict = {(0, 1): 2, (0, 2): 5, (1, 2): 7}
 
     def generator(self):
+        # this generator returns SProd, even with the old op_math, because other options are not suitable
+        # to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
-        self._subspace = self.validate_subspace(subspace)
+        self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
@@ -358,6 +387,7 @@ class TRZ(Operation):
            [0.        +0.j        , 0.96891242-0.24740396j, 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 0.96891242+0.24740396j]])
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -369,6 +399,8 @@ class TRZ(Operation):
     parameter_frequencies = [(0.5, 1)]
 
     def generator(self):
+        # these generators return SProd and Sum, even with the old op_math, because other options are
+        # not suitable to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
         if self.subspace == (0, 1):
             return qml.s_prod(-0.5, qml.GellMann(wires=self.wires, index=3))
 
@@ -382,7 +414,7 @@ class TRZ(Operation):
         return qml.dot(coeffs, obs)
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
-        self._subspace = self.validate_subspace(subspace)
+        self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }

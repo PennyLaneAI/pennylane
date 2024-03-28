@@ -84,10 +84,14 @@ class TestCounts:
         assert repr(m1) == "CountsMP(wires=[0], all_outcomes=True)"
 
         m2 = CountsMP(obs=qml.PauliX(0), all_outcomes=True)
-        assert repr(m2) == "CountsMP(PauliX(wires=[0]), all_outcomes=True)"
+        assert repr(m2) == "CountsMP(X(0), all_outcomes=True)"
 
         m3 = CountsMP(eigvals=(-1, 1), all_outcomes=False)
         assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
+
+        mv = qml.measure(0)
+        m4 = CountsMP(obs=mv, all_outcomes=False)
+        assert repr(m4) == "CountsMP(MeasurementValue(wires=[0]), all_outcomes=False)"
 
 
 class TestProcessSamples:
@@ -170,9 +174,65 @@ class TestProcessSamples:
         result = qml.counts(mv).process_samples(samples, wire_order=[0])
 
         assert len(result) == 2
-        assert set(result.keys()) == {"0", "1"}
-        assert result["0"] == np.count_nonzero(samples[:, 0] == 0)
-        assert result["1"] == np.count_nonzero(samples[:, 0] == 1)
+        assert set(result.keys()) == {0, 1}
+        assert result[0] == np.count_nonzero(samples[:, 0] == 0)
+        assert result[1] == np.count_nonzero(samples[:, 0] == 1)
+
+    def test_counts_shape_composite_measurement_value(self):
+        """Test that the counts output is correct for composite mid-circuit measurement
+        values."""
+        shots = 1000
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        result = qml.counts(op=m0 | m1).process_samples(samples, wire_order=[0, 1])
+
+        assert len(result) == 2
+        assert set(result.keys()) == {0, 1}
+        samples = np.apply_along_axis((lambda x: x[0] | x[1]), axis=1, arr=samples)
+        assert result[0] == np.count_nonzero(samples == 0)
+        assert result[1] == np.count_nonzero(samples == 1)
+
+    def test_counts_shape_measurement_value_list(self):
+        """Test that the counts output is correct for list mid-circuit measurement
+        values."""
+        shots = 1000
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        result = qml.counts(op=[m0, m1]).process_samples(samples, wire_order=[0, 1])
+
+        assert len(result) == 4
+        assert set(result.keys()) == {"00", "01", "10", "11"}
+        assert result["00"] == np.count_nonzero([np.allclose(s, [0, 0]) for s in samples])
+        assert result["01"] == np.count_nonzero([np.allclose(s, [0, 1]) for s in samples])
+        assert result["10"] == np.count_nonzero([np.allclose(s, [1, 0]) for s in samples])
+        assert result["11"] == np.count_nonzero([np.allclose(s, [1, 1]) for s in samples])
+
+    def test_mixed_lists_as_op_not_allowed(self):
+        """Test that passing a list not containing only measurement values raises an error."""
+        m0 = qml.measure(0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.counts(op=[m0, qml.PauliZ(0)])
+
+    def test_composed_measurement_value_lists_not_allowed(self):
+        """Test that passing a list containing measurement values composed with arithmetic
+        raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        m2 = qml.measure(2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.counts(op=[m0 + m1, m2])
 
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""
@@ -224,15 +284,65 @@ class TestProcessSamples:
         result1 = qml.counts(mv, all_outcomes=False).process_samples(samples, wire_order=[0])
 
         assert len(result1) == 1
-        assert set(result1.keys()) == {"0"}
-        assert result1["0"] == shots
+        assert set(result1.keys()) == {0}
+        assert result1[0] == shots
 
         result2 = qml.counts(mv, all_outcomes=True).process_samples(samples, wire_order=[0])
 
         assert len(result2) == 2
-        assert set(result2.keys()) == {"0", "1"}
-        assert result2["0"] == shots
-        assert result2["1"] == 0
+        assert set(result2.keys()) == {0, 1}
+        assert result2[0] == shots
+        assert result2[1] == 0
+
+    def test_counts_all_outcomes_composite_measurement_value(self):
+        """Test that the counts output is correct when all_outcomes is passed
+        for composite mid-circuit measurement values."""
+        shots = 1000
+        samples = np.zeros((shots, 2)).astype(np.int64)
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        mv = (m0 - 1) * 2 * (m1 + 1) - 2  # 00 equates to -4
+
+        result1 = qml.counts(mv, all_outcomes=False).process_samples(samples, wire_order=[0, 1])
+
+        assert len(result1) == 1
+        assert set(result1.keys()) == {-4}
+        assert result1[-4] == shots
+
+        result2 = qml.counts(mv, all_outcomes=True).process_samples(samples, wire_order=[0, 1])
+
+        # Possible outcomes are -4, -6, -2
+        assert len(result2) == 3
+        assert set(result2.keys()) == {-6, -4, -2}
+        assert result2[-4] == shots
+        assert result2[-6] == result2[-2] == 0
+
+    def test_counts_all_outcomes_measurement_value_list(self):
+        """Test that the counts output is correct when all_outcomes is passed
+        for a list of mid-circuit measurement values."""
+        shots = 1000
+        samples = np.zeros((shots, 2)).astype(np.int64)
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        result1 = qml.counts([m0, m1], all_outcomes=False).process_samples(
+            samples, wire_order=[0, 1]
+        )
+
+        assert len(result1) == 1
+        assert set(result1.keys()) == {"00"}
+        assert result1["00"] == shots
+
+        result2 = qml.counts([m0, m1], all_outcomes=True).process_samples(
+            samples, wire_order=[0, 1]
+        )
+
+        assert len(result2) == 4
+        assert set(result2.keys()) == {"00", "01", "10", "11"}
+        assert result2["00"] == shots
+        assert result2["01"] == 0
+        assert result2["10"] == 0
+        assert result2["11"] == 0
 
 
 class TestCountsIntegration:
@@ -757,3 +867,74 @@ def test_batched_counts_and_expval_operator_finite_shots(interface):
     assert isinstance(res, tuple) and len(res) == 2
     assert res[0] == type(res[0])([{-1: n_shots}, {1: n_shots}])
     assert len(res[1]) == 2 and qml.math.allequal(res[1], [-1, 1])
+
+
+class TestProcessCounts:
+    """Unit tests for the counts.process_counts method"""
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_should_not_modify_counts_dictionary(self, all_outcomes):
+        """Tests that count dictionary is not modified"""
+
+        counts = {"000": 100, "100": 100}
+        expected = counts.copy()
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        qml.counts(wires=(0, 1), all_outcomes=all_outcomes).process_counts(counts, wire_order)
+
+        assert counts == expected
+
+    def test_all_outcomes_is_true(self):
+        """When all_outcomes is True, 0 count should be added to missing outcomes in the counts dictionary"""
+
+        counts_to_process = {"00": 100, "10": 100}
+        wire_order = qml.wires.Wires((0, 1))
+
+        actual = qml.counts(wires=wire_order, all_outcomes=True).process_counts(
+            counts_to_process, wire_order=wire_order
+        )
+
+        expected_counts = {"00": 100, "01": 0, "10": 100, "11": 0}
+        assert actual == expected_counts
+
+    def test_all_outcomes_is_false(self):
+        """When all_outcomes is True, 0 count should be removed from the counts dictionary"""
+
+        counts_to_process = {"00": 0, "01": 0, "10": 0, "11": 100}
+        wire_order = qml.wires.Wires((0, 1))
+
+        actual = qml.counts(wires=wire_order, all_outcomes=False).process_counts(
+            counts_to_process, wire_order=wire_order
+        )
+
+        expected_counts = {"11": 100}
+        assert actual == expected_counts
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            ((0, 1), {"00": 100, "10": 100}),
+            ((1, 0), {"00": 100, "01": 100}),
+        ],
+    )
+    def test_wire_order(self, wires, expected):
+        """Test impact of wires in qml.counts"""
+        counts = {"000": 100, "100": 100}
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        actual = qml.counts(wires=wires, all_outcomes=False).process_counts(counts, wire_order)
+
+        assert actual == expected
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_process_count_returns_same_count_dictionary(self, all_outcomes):
+        """
+        Test that process_count returns same dictionary when all outcomes are in count dictionary and wire_order is same
+        """
+
+        expected = {"0": 100, "1": 100}
+        wires = qml.wires.Wires(0)
+
+        actual = qml.counts(wires=wires, all_outcomes=all_outcomes).process_counts(expected, wires)
+
+        assert actual == expected

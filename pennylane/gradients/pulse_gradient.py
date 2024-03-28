@@ -31,8 +31,8 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_tape_batching,
     assert_no_variance,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
+    choose_trainable_params,
+    find_and_validate_gradient_methods,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -337,7 +337,8 @@ def stoch_pulse_grad(
         tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         num_split_times (int): number of time samples to use in the stochastic parameter-shift
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
@@ -395,13 +396,13 @@ def stoch_pulse_grad(
         def sin(p, t):
             return jax.numpy.sin(p * t)
 
-        ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
-        Y_plus_X = qml.dot([1/5, 3/5], [qml.PauliY(0), qml.PauliX(1)])
-        H = 0.5 * qml.PauliX(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
+        ZZ = qml.Z(0) @ qml.Z(1)
+        Y_plus_X = qml.dot([1/5, 3/5], [qml.Y(0), qml.X(1)])
+        H = 0.5 * qml.X(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
 
         def ansatz(params):
             qml.evolve(H)(params, (0.2, 0.4))
-            return qml.expval(qml.PauliY(1))
+            return qml.expval(qml.Y(1))
 
         qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
 
@@ -621,14 +622,13 @@ def stoch_pulse_grad(
     if use_broadcasting and tape.batch_size is not None:
         raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=stoch_pulse_grad)
+    trainable_params = choose_trainable_params(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     sampler_seed = sampler_seed or np.random.randint(18421)
     key = jax.random.PRNGKey(sampler_seed)

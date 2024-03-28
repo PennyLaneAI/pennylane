@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,24 +25,27 @@ import logging
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.ops.op_math.condition import Conditional
+from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 
 from . import Device
+from .modifiers import single_tape_support, simulator_tracking
 from .preprocess import (
     decompose,
+    mid_circuit_measurements,
     validate_observables,
     validate_measurements,
     validate_multiprocessing_workers,
     validate_device_wires,
-    warn_about_trainable_observables,
+    validate_adjoint_trainable_params,
     no_sampling,
 )
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qubit.simulate import simulate, get_final_state, measure_final_state
-from .qubit.sampling import get_num_shots_and_executions
 from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 
 logger = logging.getLogger(__name__)
@@ -65,6 +68,7 @@ observables = {
     "Projector",
     "SparseHamiltonian",
     "Hamiltonian",
+    "LinearCombination",
     "Sum",
     "SProd",
     "Prod",
@@ -86,10 +90,15 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "Snapshot":
         return True
-    if op.__class__.__name__ == "Pow" and qml.operation.is_trainable(op):
+    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
 
     return op.has_matrix
+
+
+def stopping_condition_shots(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator object is supported by the device with shots."""
+    return isinstance(op, (Conditional, MidMeasureMP)) or stopping_condition(op)
 
 
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
@@ -104,7 +113,90 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     )
 
 
-def _add_adjoint_transforms(program: TransformProgram) -> None:
+def null_postprocessing(results):
+    """An empty post-processing function."""
+    return results[0]
+
+
+def all_state_postprocessing(results, measurements, wire_order):
+    """Process a state measurement back into the original measurements."""
+    result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
+    return result[0] if len(measurements) == 1 else result
+
+
+@qml.transform
+def adjoint_state_measurements(
+    tape: QuantumTape, device_vjp=False
+) -> (Tuple[QuantumTape], Callable):
+    """Perform adjoint measurement preprocessing.
+
+    * Allows a tape with only expectation values through unmodified
+    * Raises an error if non-expectation value measurements exist and any have diagonalizing gates
+    * Turns the circuit into a state measurement + classical postprocesssing for arbitrary measurements
+
+    Args:
+        tape (QuantumTape): the input circuit
+
+    """
+    if all(isinstance(m, qml.measurements.ExpectationMP) for m in tape.measurements):
+        return (tape,), null_postprocessing
+
+    if any(len(m.diagonalizing_gates()) > 0 for m in tape.measurements):
+        raise qml.DeviceError(
+            "adjoint diff supports either all expectation values or only measurements without observables."
+        )
+
+    params = tape.get_parameters()
+
+    if device_vjp:
+        for p in params:
+            if (
+                qml.math.requires_grad(p)
+                and qml.math.get_interface(p) == "tensorflow"
+                and qml.math.get_dtype_name(p) in {"float32", "complex64"}
+            ):
+                raise ValueError(
+                    "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
+                )
+
+    complex_data = [qml.math.cast(p, complex) for p in params]
+    tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
+    new_mp = qml.measurements.StateMP(wires=tape.wires)
+    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
+    return (state_tape,), partial(
+        all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
+    )
+
+
+def adjoint_ops(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator is supported by adjoint differentiation."""
+    return not isinstance(op, MidMeasureMP) and (
+        op.num_params == 0
+        or not qml.operation.is_trainable(op)
+        or (op.num_params == 1 and op.has_generator)
+    )
+
+
+def adjoint_observables(obs: qml.operation.Operator) -> bool:
+    """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
+    return obs.has_matrix
+
+
+def _supports_adjoint(circuit):
+    if circuit is None:
+        return True
+
+    prog = TransformProgram()
+    _add_adjoint_transforms(prog)
+
+    try:
+        prog((circuit,))
+    except (qml.operation.DecompositionUndefinedError, qml.DeviceError, AttributeError):
+        return False
+    return True
+
+
+def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
 
@@ -116,34 +208,23 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
 
     """
 
-    def adjoint_ops(op: qml.operation.Operator) -> bool:
-        """Specify whether or not an Operator is supported by adjoint differentiation."""
-        return op.num_params == 0 or op.num_params == 1 and op.has_generator
-
-    def adjoint_observables(obs: qml.operation.Operator) -> bool:
-        """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
-        return obs.has_matrix
-
-    def accepted_adjoint_measurement(m: qml.measurements.MeasurementProcess) -> bool:
-        return isinstance(m, qml.measurements.ExpectationMP)
-
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
     program.add_transform(
-        decompose,
-        stopping_condition=adjoint_ops,
-        name=name,
+        decompose, stopping_condition=adjoint_ops, name=name, skip_initial_state_prep=False
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
         validate_measurements,
-        analytic_measurements=accepted_adjoint_measurement,
         name=name,
     )
+    program.add_transform(adjoint_state_measurements, device_vjp=device_vjp)
     program.add_transform(qml.transforms.broadcast_expand)
-    program.add_transform(warn_about_trainable_observables)
+    program.add_transform(validate_adjoint_trainable_params)
 
 
+@simulator_tracking
+@single_tape_support
 class DefaultQubit(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 
@@ -181,7 +262,7 @@ class DefaultQubit(Device):
         for i in range(num_qscripts):
             params = rng.random(shape)
             op = qml.StronglyEntanglingLayers(params, wires=range(n_wires))
-            qs = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+            qs = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))])
             qscripts.append(qs)
 
     >>> dev = DefaultQubit()
@@ -209,7 +290,7 @@ class DefaultQubit(Device):
 
         @jax.jit
         def f(x):
-            qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
             program, execution_config = dev.preprocess()
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
@@ -262,9 +343,9 @@ class DefaultQubit(Device):
         machine. You can control the number of threads per process with the environment
         variables:
 
-        * OMP_NUM_THREADS
-        * MKL_NUM_THREADS
-        * OPENBLAS_NUM_THREADS
+        * ``OMP_NUM_THREADS``
+        * ``MKL_NUM_THREADS``
+        * ``OPENBLAS_NUM_THREADS``
 
         where the last two are specific to the MKL and OpenBLAS libraries specifically.
 
@@ -302,6 +383,11 @@ class DefaultQubit(Device):
     """
     A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and
     subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
+    """
+
+    _device_options = ("max_workers", "rng", "prng_key")
+    """
+    tuple of string names for all the device options.
     """
 
     # pylint:disable = too-many-arguments
@@ -343,32 +429,20 @@ class DefaultQubit(Device):
         """
         if execution_config is None:
             return True
-        # backpropagation currently supported for all supported circuits
-        # will later need to add logic if backprop requested with finite shots
-        # do once device accepts finite shots
-        if (
-            execution_config.gradient_method == "backprop"
-            and execution_config.device_options.get("max_workers", self._max_workers) is None
-            and execution_config.interface is not None
-        ):
-            return True
 
-        if (
-            execution_config.gradient_method == "adjoint"
-            and execution_config.use_device_gradient is not False
-        ):
+        no_max_workers = (
+            execution_config.device_options.get("max_workers", self._max_workers) is None
+        )
+
+        if execution_config.gradient_method in {"backprop", "best"} and no_max_workers:
             if circuit is None:
                 return True
+            return not circuit.shots and not any(
+                isinstance(m.obs, qml.SparseHamiltonian) for m in circuit.measurements
+            )
 
-            prog = TransformProgram()
-            _add_adjoint_transforms(prog)
-
-            try:
-                prog((circuit,))
-            except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
-                return False
-            return True
-
+        if execution_config.gradient_method in {"adjoint", "best"}:
+            return _supports_adjoint(circuit=circuit)
         return False
 
     def preprocess(
@@ -397,9 +471,12 @@ class DefaultQubit(Device):
         transform_program = TransformProgram()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(qml.defer_measurements, device=self)
+        transform_program.add_transform(mid_circuit_measurements, device=self)
         transform_program.add_transform(
-            decompose, stopping_condition=stopping_condition, name=self.name
+            decompose,
+            stopping_condition=stopping_condition,
+            stopping_condition_shots=stopping_condition_shots,
+            name=self.name,
         )
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
@@ -417,7 +494,9 @@ class DefaultQubit(Device):
             transform_program.add_transform(no_sampling, name="backprop + default.qubit")
 
         if config.gradient_method == "adjoint":
-            _add_adjoint_transforms(transform_program)
+            _add_adjoint_transforms(
+                transform_program, device_vjp=config.use_device_jacobian_product
+            )
 
         return transform_program, config
 
@@ -432,27 +511,33 @@ class DefaultQubit(Device):
 
         """
         updated_values = {}
+
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
+
+        gradient_method = execution_config.gradient_method
         if execution_config.gradient_method == "best":
-            updated_values["gradient_method"] = "backprop"
+            no_max_workers = (
+                execution_config.device_options.get("max_workers", self._max_workers) is None
+            )
+            gradient_method = "backprop" if no_max_workers else "adjoint"
+            updated_values["gradient_method"] = gradient_method
+
         if execution_config.use_device_gradient is None:
-            updated_values["use_device_gradient"] = execution_config.gradient_method in {
-                "best",
+            updated_values["use_device_gradient"] = gradient_method in {
                 "adjoint",
                 "backprop",
             }
         if execution_config.use_device_jacobian_product is None:
-            updated_values["use_device_jacobian_product"] = (
-                execution_config.gradient_method == "adjoint"
-            )
+            updated_values["use_device_jacobian_product"] = gradient_method == "adjoint"
         if execution_config.grad_on_execution is None:
-            updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+            updated_values["grad_on_execution"] = gradient_method == "adjoint"
+
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
-        if "max_workers" not in updated_values["device_options"]:
-            updated_values["device_options"]["max_workers"] = self._max_workers
-        if "rng" not in updated_values["device_options"]:
-            updated_values["device_options"]["rng"] = self._rng
-        if "prng_key" not in updated_values["device_options"]:
-            updated_values["device_options"]["prng_key"] = self._prng_key
+        for option in self._device_options:
+            if option not in updated_values["device_options"]:
+                updated_values["device_options"][option] = getattr(self, f"_{option}")
         return replace(execution_config, **updated_values)
 
     def execute(
@@ -469,11 +554,6 @@ class DefaultQubit(Device):
                 ),
             )
 
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (
@@ -482,7 +562,7 @@ class DefaultQubit(Device):
             else None
         )
         if max_workers is None:
-            results = tuple(
+            return tuple(
                 simulate(
                     c,
                     rng=self._rng,
@@ -493,94 +573,48 @@ class DefaultQubit(Device):
                 )
                 for c in circuits
             )
-        else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-            _wrap_simulate = partial(simulate, debugger=None, interface=interface)
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                exec_map = executor.map(
-                    _wrap_simulate,
-                    vanilla_circuits,
-                    seeds,
-                    [self._prng_key] * len(vanilla_circuits),
-                )
-                results = tuple(exec_map)
 
-            # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
+        _wrap_simulate = partial(simulate, debugger=None, interface=interface)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            exec_map = executor.map(
+                _wrap_simulate,
+                vanilla_circuits,
+                seeds,
+                [self._prng_key] * len(vanilla_circuits),
+            )
+            results = tuple(exec_map)
 
-        if self.tracker.active:
-            self.tracker.update(batches=1)
-            self.tracker.record()
-            for i, c in enumerate(circuits):
-                qpu_executions, shots = get_num_shots_and_executions(c)
-                res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
-                if c.shots:
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        shots=shots,
-                        resources=c.specs["resources"],
-                    )
-                else:
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        resources=c.specs["resources"],
-                    )
-                self.tracker.record()
+        # reset _rng to mimic serial behavior
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-        return results[0] if is_single_circuit else results
+        return results
 
     def compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
-            self.tracker.record()
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            res = tuple(adjoint_jacobian(circuit) for circuit in circuits)
-        else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
-                res = tuple(exec_map)
+            return tuple(adjoint_jacobian(circuit) for circuit in circuits)
 
-            # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
+            res = tuple(exec_map)
 
-        return res[0] if is_single_circuit else res
+        # reset _rng to mimic serial behavior
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return res
 
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_derivative_batches=1,
-                executions=len(circuits),
-                derivatives=len(circuits),
-            )
-            self.tracker.record()
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
@@ -607,8 +641,7 @@ class DefaultQubit(Device):
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-        results, jacs = tuple(zip(*results))
-        return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
+        return tuple(zip(*results))
 
     def supports_jvp(
         self,
@@ -635,28 +668,19 @@ class DefaultQubit(Device):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-            tangents = [tangents]
-
-        if self.tracker.active:
-            self.tracker.update(jvp_batches=1, jvps=len(circuits))
-            self.tracker.record()
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            res = tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
-        else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
+            return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
 
-            # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
 
-        return res[0] if is_single_circuit else res
+        # reset _rng to mimic serial behavior
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return res
 
     def execute_and_compute_jvp(
         self,
@@ -664,20 +688,6 @@ class DefaultQubit(Device):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-            tangents = [tangents]
-
-        if self.tracker.active:
-            for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_jvp_batches=1, executions=len(circuits), jvps=len(circuits)
-            )
-            self.tracker.record()
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
@@ -704,8 +714,7 @@ class DefaultQubit(Device):
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-        results, jvps = tuple(zip(*results))
-        return (results[0], jvps[0]) if is_single_circuit else (results, jvps)
+        return tuple(zip(*results))
 
     def supports_vjp(
         self,
@@ -732,15 +741,45 @@ class DefaultQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-            cotangents = [cotangents]
+        r"""The vector jacobian product used in reverse-mode differentiation. ``DefaultQubit`` uses the
+        adjoint differentiation method to compute the VJP.
 
-        if self.tracker.active:
-            self.tracker.update(vjp_batches=1, vjps=len(circuits))
-            self.tracker.record()
+        Args:
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
+            cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
+                of numbers.
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            tensor-like: A numeric result of computing the vector jacobian product
+
+        **Definition of vjp:**
+
+        If we have a function with jacobian:
+
+        .. math::
+
+            \vec{y} = f(\vec{x}) \qquad J_{i,j} = \frac{\partial y_i}{\partial x_j}
+
+        The vector jacobian product is the inner product of the derivatives of the output ``y`` with the
+        Jacobian matrix. The derivatives of the output vector are sometimes called the **cotangents**.
+
+        .. math::
+
+            \text{d}x_i = \Sigma_{i} \text{d}y_i J_{i,j}
+
+        **Shape of cotangents:**
+
+        The value provided to ``cotangents`` should match the output of :meth:`~.execute`. For computing the full Jacobian,
+        the cotangents can be batched to vectorize the computation. In this case, the cotangents can have the following
+        shapes. ``batch_size`` below refers to the number of entries in the Jacobian:
+
+        * For a state measurement, the cotangents must have shape ``(batch_size, 2 ** n_wires)``
+        * For ``n`` expectation values, the cotangents must have shape ``(n, batch_size)``. If ``n = 1``,
+          then the shape must be ``(batch_size,)``.
+
+        """
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
@@ -750,19 +789,19 @@ class DefaultQubit(Device):
                     None if self._state_cache is None else self._state_cache.get(circuit.hash, None)
                 )
 
-            res = tuple(
+            return tuple(
                 adjoint_vjp(circuit, cots, state=_state(circuit))
                 for circuit, cots in zip(circuits, cotangents)
             )
-        else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
 
-            # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
 
-        return res[0] if is_single_circuit else res
+        # reset _rng to mimic serial behavior
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return res
 
     def execute_and_compute_vjp(
         self,
@@ -770,19 +809,6 @@ class DefaultQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-            cotangents = [cotangents]
-
-        if self.tracker.active:
-            for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_vjp_batches=1, executions=len(circuits), vjps=len(circuits)
-            )
-            self.tracker.record()
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
@@ -810,8 +836,7 @@ class DefaultQubit(Device):
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-        results, vjps = tuple(zip(*results))
-        return (results[0], vjps[0]) if is_single_circuit else (results, vjps)
+        return tuple(zip(*results))
 
 
 def _adjoint_jac_wrapper(c, rng=None, prng_key=None, debugger=None):

@@ -93,7 +93,7 @@ class TestSimplifyTapes:
             build_op()
 
         tape = QuantumScript.from_queue(q_tape, shots=shots)
-        s_tape = qml.simplify(tape)
+        [s_tape], _ = qml.simplify(tape)
         assert len(s_tape) == 1
         s_op = s_tape[0]
         assert isinstance(s_op, qml.ops.Prod)  # pylint: disable=no-member
@@ -111,7 +111,7 @@ class TestSimplifyTapes:
 
         tape = QuantumScript.from_queue(q_tape)
         simplified_tape_op = qml.PauliZ(1)
-        s_tape = qml.simplify(tape)
+        [s_tape], _ = qml.simplify(tape)
         s_op = s_tape.operations[0]
         assert isinstance(s_op, qml.PauliZ)
         assert s_op.data == simplified_tape_op.data
@@ -138,9 +138,12 @@ class TestSimplifyQNodes:
 
         s_qnode = qml.simplify(qnode)
         assert s_qnode() == qnode()
-        assert len(s_qnode.tape) == 2
-        s_op = s_qnode.tape.operations[0]
-        s_obs = s_qnode.tape.observables[0]
+
+        [s_tape], _ = s_qnode.transform_program([s_qnode.tape])
+        assert len(s_tape) == 2
+
+        s_op = s_tape.operations[0]
+        s_obs = s_tape.observables[0]
         assert isinstance(s_op, qml.PauliZ)
         assert s_op.data == simplified_tape_op.data
         assert s_op.wires == simplified_tape_op.wires

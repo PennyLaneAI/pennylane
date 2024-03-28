@@ -20,7 +20,7 @@ from typing import List, Sequence
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 from .utils import MeasureNode, PrepareNode
 
@@ -64,9 +64,11 @@ def qcut_processing_fn(
     # each tape contains only expval measurements or sample measurements, so
     # stacking won't create any ragged arrays
     results = [
-        qml.math.stack(tape_res)
-        if isinstance(tape_res, tuple)
-        else qml.math.reshape(tape_res, [-1])
+        (
+            qml.math.stack(tape_res)
+            if isinstance(tape_res, tuple)
+            else qml.math.reshape(tape_res, [-1])
+        )
         for tape_res in results
     ]
 
@@ -111,14 +113,14 @@ def qcut_processing_fn_sample(
         sample = []
         for fragment_result, out_degree in zip(result, out_degrees):
             sample.append(fragment_result[: -out_degree or None])
-        samples.append(np.hstack(sample))
-    return [qml.math.convert_like(np.array(samples), res0)]
+        samples.append(pnp.hstack(sample))
+    return [qml.math.convert_like(pnp.array(samples), res0)]
 
 
 def qcut_processing_fn_mc(
     results: Sequence,
     communication_graph: MultiDiGraph,
-    settings: np.ndarray,
+    settings: pnp.ndarray,
     shots: int,
     classical_processing_fn: callable,
 ):
@@ -163,11 +165,11 @@ def qcut_processing_fn_mc(
             sample_terminal.append(fragment_result[: -out_degree or None])
             sample_mid.append(fragment_result[-out_degree or len(fragment_result) :])
 
-        sample_terminal = np.hstack(sample_terminal)
-        sample_mid = np.hstack(sample_mid)
+        sample_terminal = pnp.hstack(sample_terminal)
+        sample_mid = pnp.hstack(sample_mid)
 
-        assert set(sample_terminal).issubset({np.array(0), np.array(1)})
-        assert set(sample_mid).issubset({np.array(-1), np.array(1)})
+        assert set(sample_terminal).issubset({pnp.array(0), pnp.array(1)})
+        assert set(sample_mid).issubset({pnp.array(-1), pnp.array(1)})
         # following Eq.(35) of Peng et.al: https://arxiv.org/abs/1904.00102
         f = classical_processing_fn(sample_terminal)
         if not -1 <= f <= 1:
@@ -175,13 +177,13 @@ def qcut_processing_fn_mc(
                 "The classical processing function supplied must "
                 "give output in the interval [-1, 1]"
             )
-        sigma_s = np.prod(sample_mid)
+        sigma_s = pnp.prod(sample_mid)
         t_s = f * sigma_s
-        c_s = np.prod([evals[s] for s in setting])
+        c_s = pnp.prod([evals[s] for s in setting])
         K = len(sample_mid)
         expvals.append(8**K * c_s * t_s)
 
-    return qml.math.convert_like(np.mean(expvals), res0)
+    return qml.math.convert_like(pnp.mean(expvals), res0)
 
 
 def _reshape_results(results: Sequence, shots: int) -> List[List]:

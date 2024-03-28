@@ -33,7 +33,7 @@ class Attribute(set):
 
     We can check either a string or an Operation for inclusion in this set:
 
-    >>> qml.PauliX(0) in pauli_ops
+    >>> qml.X(0) in pauli_ops
     True
     >>> "Hadamard" in pauli_ops
     False
@@ -74,26 +74,20 @@ class Attribute(set):
         if isinstance(obj, str):
             return super().__contains__(obj)
 
-        try:
-            # Hotfix: return False for all tensors.
-            # Can be removed or updated when tensor class is
-            # improved.
-            if isinstance(obj, Tensor):
-                return False
+        # Hotfix: return False for all tensors.
+        # Can be removed or updated when tensor class is
+        # improved.
+        if isinstance(obj, Tensor):
+            return False
 
-            if isinstance(obj, Operator):
-                return super().__contains__(obj.name)
+        if isinstance(obj, Operator):
+            return super().__contains__(obj.name)
 
-            if isclass(obj):
-                if issubclass(obj, Operator):
-                    return super().__contains__(obj.__name__)
+        if isclass(obj):
+            if issubclass(obj, Operator):
+                return super().__contains__(obj.__name__)
 
-            raise TypeError
-
-        except TypeError as e:
-            raise TypeError(
-                "Only an Operator or string representing an Operator can be checked for attribute inclusion."
-            ) from e
+        return False
 
 
 composable_rotations = Attribute(
@@ -158,7 +152,23 @@ self_inverses = Attribute(
 """Attribute: Operations that are their own inverses."""
 
 
-symmetric_over_all_wires = Attribute(["CZ", "CCZ", "SWAP"])
+symmetric_over_all_wires = Attribute(
+    [
+        "CZ",
+        "CCZ",
+        "SWAP",
+        "IsingXX",
+        "Identity",
+        "ISWAP",
+        "SISWAP",
+        "SQISW",
+        "MultiRZ",
+        "IsingXY",
+        "IsingYY",
+        "IsingZZ",
+        "PSWAP",
+    ]
+)
 """Attribute: Operations that are the same if you exchange the order of wires.
 
 For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,

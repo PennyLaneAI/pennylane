@@ -645,9 +645,11 @@ class TestParamShift:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         gradient_recipes = tuple(
-            [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
-            if i in ops_with_custom_recipe
-            else None
+            (
+                [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
+                if i in ops_with_custom_recipe
+                else None
+            )
             for i in range(2)
         )
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
@@ -1236,6 +1238,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
@@ -2145,6 +2148,7 @@ class TestParameterShiftRule:
         # + 2 operations x 2 shifted positions + 1 unshifted term          <-- <H^2>
         assert len(tapes) == (2 * 2 + 1) + (2 * 2 + 1)
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
     def test_projector_variance(self, state, tol):
         """Test that the variance of a projector is correctly returned"""
@@ -3122,10 +3126,31 @@ class TestParamShiftGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("broadcast", [True, False])
 class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be
     differentiated"""
+
+    def test_not_var_or_exp_val_error(self, broadcast):
+        """Tests error raised when the counts of the Hamiltonian is requested"""
+        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
+        coeffs = np.array([0.1, 0.2, 0.3])
+        H = qml.Hamiltonian(coeffs, obs)
+
+        weights = np.array([0.4, 0.5])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.counts(H)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = {2, 3, 4}
+
+        with pytest.raises(ValueError, match="Can only differentiate Hamiltonian coefficients"):
+            qml.gradients.param_shift(tape, broadcast=broadcast)
 
     def test_not_expval_error(self, broadcast):
         """Test that if the variance of the Hamiltonian is requested,
@@ -3432,9 +3457,7 @@ class TestHamiltonianExpvalGradients:
         # assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         # assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
-    # TODO: Torch support for param-shift
     @pytest.mark.torch
-    @pytest.mark.xfail
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
     def test_torch(self, dev_name, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
@@ -3457,14 +3480,16 @@ class TestHamiltonianExpvalGradients:
         expected = self.cost_fn_expected(
             weights.detach().numpy(), coeffs1.detach().numpy(), coeffs2.detach().numpy()
         )
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        res = tuple(tuple(_r.detach() for _r in r) for r in res)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        pytest.xfail("does not work with new return system")
         # second derivative wrt to Hamiltonian coefficients should be zero
-        hess = torch.autograd.functional.jacobian(
-            lambda *args: self.cost_fn(*args, dev, broadcast), (weights, coeffs1, coeffs2)
-        )
-        assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-        assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
+        # hess = torch.autograd.functional.jacobian(
+        #     lambda *args: self.cost_fn(*args, dev, broadcast), (weights, coeffs1, coeffs2)
+        # )
+        # assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
+        # assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])

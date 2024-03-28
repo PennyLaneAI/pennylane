@@ -25,6 +25,8 @@ from pennylane.devices import DefaultQubitLegacy
 from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
+np.random.seed(0)
+
 h_val = 0.1
 spsa_shot_vec_tol = 0.31
 
@@ -802,9 +804,11 @@ class TestSpsaGradientIntegration:
             assert np.allclose(res_1, [0, np.cos(y)], atol=spsa_shot_vec_tol, rtol=0)
 
     def test_var_expectation_values(self, approx_order, strategy, validate):
-        """Tests correct output shape and evaluation for a tape with expval and var outputs"""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        """Tests correct output shape and evaluation for a tape
+        with expval and var outputs"""
         rng = np.random.default_rng(52)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=rng)
+
         x = 0.543
         y = -0.654
 
@@ -1162,9 +1166,6 @@ class TestSpsaGradientDifferentiation:
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
         execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute

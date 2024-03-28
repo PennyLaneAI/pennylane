@@ -16,8 +16,8 @@ Contains the TTN template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
+import numpy as np
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 
 
@@ -48,7 +48,7 @@ def compute_indices(wires, n_block_wires):
             f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
-    if not np.log2(n_wires / n_block_wires).is_integer():
+    if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
         warnings.warn(
             f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
         )
@@ -127,7 +127,7 @@ class TTN(Operation):
             @qml.qnode(dev)
             def circuit(template_weights):
                 qml.TTN(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.PauliZ(wires=n_wires-1))
+                return qml.expval(qml.Z(n_wires-1))
 
         >>> print(qml.draw(circuit, expansion_strategy='device')(template_weights))
         0: ─╭●──RY(0.10)────────────────┤
@@ -228,7 +228,7 @@ class TTN(Operation):
         """
 
         n_wires = len(wires)
-        if not np.log2(n_wires / n_block_wires).is_integer():
+        if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
             warnings.warn(
                 f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
             )

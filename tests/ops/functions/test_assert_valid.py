@@ -351,46 +351,37 @@ def create_op_instance(c):
 
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
-    if fail_reason := {
-        qml.Identity: "empty decomposition, matrix differs from decomp's matrix",
-        qml.GlobalPhase: "empty decomposition, matrix differs from decomp's matrix",
-        qml.PhaseShift: "decomposition still needs GlobalPhase, see #4657",
-    }.get(class_to_validate):
-        pytest.xfail(reason=fail_reason)
     if class_to_validate.__module__[14:20] == "qutrit":
-        # QutritBasisState actually passes validation... but it shouldn't
         pytest.xfail(reason="qutrit ops fail matrix validation")
 
     # If you defined a new Operator and this call to `create_op_instance` failed, it might
     # be the fault of the test and not your Operator. Please do one of the following things:
     #   1. Update your Operator to meet PL standards so it passes
     #   2. Improve `create_op_instance` so it can create an instance of your op (it is quite hacky)
-    #   3. Add your class to the "manually validated ops" section of `_SKIP_OP_TYPES`
-    #      in ./conftest.py, and add an instance of it to "test_explicit_list_of_ops" below
+    #   3. Add an instance of your class to `_INSTANCES_TO_TEST` in ./conftest.py
+    #       Note: if it then fails validation, move it to `_INSTANCES_TO_FAIL` as described below.
     op = create_op_instance(class_to_validate)
+
     # If you defined a new Operator and this call to `assert_valid` failed, the Operator doesn't
     # follow PL standards. Please do one of the following things:
     #   1. Preferred action: Update your Operator to meet PL standards so it passes
-    #   2. Add your Operator to the `fail_reason` dict above, with an explanation for why it needs
-    #      to go against PL standards
+    #   2. Add an instance of your class to `_INSTANCES_TO_FAIL` in ./conftest.py, along with the
+    #       exception type raised by the assertion and a comment explaining the assumption your
+    #       operator makes.
     assert_valid(op)
 
 
-@pytest.mark.parametrize(
-    "op",
-    [
-        qml.sum(qml.PauliX(0), qml.PauliZ(0)),
-        qml.BasisState([1], wires=[0]),
-        qml.ControlledQubitUnitary(np.eye(2), control_wires=1, wires=0),
-        qml.QubitStateVector([0, 1], wires=0),
-        qml.QubitChannel(
-            [np.array([[1.0, 0.0], [0.0, 0.9486833]]), np.array([[0.0, 0.31622777], [0.0, 0.0]])],
-            wires=0,
-        ),
-        qml.MultiControlledX(wires=[0, 1]),
-        qml.Projector([1], 0),  # the state-vector version is already tested
-    ],
-)
-def test_explicit_list_of_ops(op):
+def test_explicit_list_of_ops(valid_instance):
     """Test the validity of operators that could not be auto-generated."""
-    assert_valid(op)
+    if valid_instance.name == "Hamiltonian":
+        with qml.operation.disable_new_opmath_cm():
+            assert_valid(valid_instance)
+    else:
+        assert_valid(valid_instance)
+
+
+def test_explicit_list_of_failing_ops(invalid_instance_and_error):
+    """Test instances of ops that fail validation."""
+    op, exc_type = invalid_instance_and_error
+    with pytest.raises(exc_type):
+        assert_valid(op)

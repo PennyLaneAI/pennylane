@@ -19,6 +19,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=too-many-arguments
 import abc
 import itertools
 import warnings
@@ -31,7 +32,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.interfaces import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -41,6 +41,7 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     MeasurementValue,
+    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     SampleMeasurement,
@@ -52,7 +53,6 @@ from pennylane.measurements import (
     VnEntropyMP,
     Shots,
 )
-from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.resource import Resources
 from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumTape
@@ -274,13 +274,41 @@ class QubitDevice(Device):
 
         self.check_validity(circuit.operations, circuit.observables)
 
+        has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
+        if has_mcm:
+            kwargs["mid_measurements"] = {}
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
+        self.apply(
+            circuit.operations,
+            rotations=self._get_diagonalizing_gates(circuit),
+            **kwargs,
+        )
+        if has_mcm:
+            mid_measurements = kwargs["mid_measurements"]
+            mid_values = np.array(tuple(mid_measurements.values()))
+            if np.any(mid_values == -1):
+                for k, v in tuple(mid_measurements.items()):
+                    if v == -1:
+                        mid_measurements.pop(k)
+                return None, mid_measurements
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
+            # Lightning does not support apply(rotations) anymore, so we need to rotate here
+            # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
+            is_lightning = (
+                hasattr(self, "name")
+                and isinstance(self.name, str)
+                and "Lightning" in self.name
+                and getattr(self, "_CPP_BINARY_AVAILABLE", False)
+            )
+            diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
+                self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
+                self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
         if self._shot_vector is not None:
@@ -311,7 +339,7 @@ class QubitDevice(Device):
             )
             self.tracker.record()
 
-        return results
+        return (results, mid_measurements) if has_mcm else results
 
     def shot_vec_statistics(self, circuit: QuantumTape):
         """Process measurement results from circuit execution using a device
@@ -329,7 +357,7 @@ class QubitDevice(Device):
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
         Returns:
-            tuple: stastics for each shot item from the shot vector
+            tuple: statistics for each shot item from the shot vector
         """
         results = []
         s1 = 0
@@ -613,7 +641,12 @@ class QubitDevice(Device):
 
         for m in measurements:
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
-            obs = m.obs or m.mv or m
+            if isinstance(m.mv, list):
+                # MeasurementProcess stores information needed for processing if terminal measurement
+                # uses a list of mid-circuit measurement values
+                obs = m
+            else:
+                obs = m.obs or m.mv or m
             # Check if there is an overriden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
@@ -636,7 +669,7 @@ class QubitDevice(Device):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif isinstance(m, ProbabilityMP):
-                result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+                result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
 
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
@@ -722,8 +755,9 @@ class QubitDevice(Device):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
             elif m.return_type is not None:
+                name = obs.name if isinstance(obs, qml.operation.Operator) else type(obs).__name__
                 raise qml.QuantumFunctionError(
-                    f"Unsupported return type specified for observable {obs.name}"
+                    f"Unsupported return type specified for observable {name}"
                 )
             else:
                 result = None
@@ -1031,7 +1065,7 @@ class QubitDevice(Device):
         n_snapshots = self.shots
         seed = obs.seed
 
-        with set_shots(self, shots=1):
+        with qml.workflow.set_shots(self, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
@@ -1040,7 +1074,7 @@ class QubitDevice(Device):
             # are the same for different executions with the same seed
             rng = np.random.RandomState(seed)
             recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+            obs_list = [qml.X, qml.Y, qml.Z]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
 
@@ -1302,21 +1336,17 @@ class QubitDevice(Device):
         return self._reshape(prob, flat_shape)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        if isinstance(observable, BasisStateProjector):
-            # branch specifically to handle the basis state projector observable
-            idx = int("".join(str(i) for i in observable.parameters[0]), 2)
-            probs = self.probability(
-                wires=observable.wires, shot_range=shot_range, bin_size=bin_size
-            )
-            return probs[idx]
-
         # exact expectation value
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals()
-                    if not isinstance(observable, MeasurementValue)
-                    else np.arange(2 ** len(observable.wires)),
+                    (
+                        observable.eigvals()
+                        if not isinstance(observable, MeasurementValue)
+                        # Indexing a MeasurementValue gives the output of the processing function
+                        # for that index as a binary number.
+                        else [observable[i] for i in range(2 ** len(observable.measurements))]
+                    ),
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1337,21 +1367,17 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-        if isinstance(observable, BasisStateProjector):
-            # branch specifically to handle the basis state projector observable
-            idx = int("".join(str(i) for i in observable.parameters[0]), 2)
-            probs = self.probability(
-                wires=observable.wires, shot_range=shot_range, bin_size=bin_size
-            )
-            return probs[idx] - probs[idx] ** 2
-
         # exact variance value
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals()
-                    if not isinstance(observable, MeasurementValue)
-                    else np.arange(2 ** len(observable.wires)),
+                    (
+                        observable.eigvals()
+                        if not isinstance(observable, MeasurementValue)
+                        # Indexing a MeasurementValue gives the output of the processing function
+                        # for that index as a binary number.
+                        else [observable[i] for i in range(2 ** len(observable.measurements))]
+                    ),
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1425,7 +1451,7 @@ class QubitDevice(Device):
         batched_ndims = 2
         shape = samples.shape
 
-        if mp.obs is None and mp.mv is None:
+        if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = np.array([sample for sample in samples if not np.any(np.isnan(sample))])
             samples = qml.math.cast_like(samples, qml.math.int8(0))
@@ -1434,11 +1460,7 @@ class QubitDevice(Device):
             if mp.all_outcomes:
                 outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
         elif mp.all_outcomes:
-            outcomes = (
-                qml.eigvals(mp.obs)
-                if mp.obs is not None
-                else np.arange(0, 2 ** len(mp.mv.wires), 1)
-            )
+            outcomes = mp.eigvals()
 
         batched = len(shape) == batched_ndims
         if not batched:
@@ -1481,14 +1503,15 @@ class QubitDevice(Device):
         if isinstance(mp, MeasurementProcess):
             if mp.obs is not None:
                 observable = mp.obs
-            elif mp.mv is not None:
+            elif mp.mv is not None and isinstance(mp.mv, MeasurementValue):
                 observable = mp.mv
             else:
                 no_observable_provided = True
 
-        # translate to wire labels used by device
+        # translate to wire labels used by device. observable is list when measuring sequence
+        # of multiple MeasurementValues
         device_wires = self.map_wires(observable.wires)
-        name = observable.name
+        name = None if no_observable_provided else observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples
@@ -1518,7 +1541,11 @@ class QubitDevice(Device):
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
             if isinstance(observable, MeasurementValue):
-                samples = np.arange(0, 2 ** len(observable.wires), 1)[indices]
+                eigvals = self._asarray(
+                    [observable[i] for i in range(2 ** len(observable.measurements))],
+                    dtype=self.R_DTYPE,
+                )
+                samples = eigvals[indices]
             else:
                 try:
                     samples = observable.eigvals()[indices]
@@ -1564,6 +1591,8 @@ class QubitDevice(Device):
 
             * Only expectation values are supported as measurements.
 
+            * Cannot differentiate with respect to state-prep operations.
+
             * Does not work for parametrized observables like
               :class:`~.Hamiltonian` or :class:`~.Hermitian`.
 
@@ -1602,7 +1631,7 @@ class QubitDevice(Device):
                     f" measurement {m.__class__.__name__}"
                 )
 
-            if m.obs.name == "Hamiltonian":
+            if not m.obs.has_matrix:
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support Hamiltonian observables."
                 )

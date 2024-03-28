@@ -17,7 +17,7 @@ from typing import Sequence, Callable
 
 # pylint: disable= no-value-for-parameter, protected-access, not-callable
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.tape import QuantumTape
 from pennylane import transform
 
@@ -210,17 +210,17 @@ class AdaptiveOptimizer:
                 )
             ]
 
-        params = np.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
+        params = pnp.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
         qnode.func = self._circuit
         grads = qml.grad(qnode)(params, gates=operator_pool, initial_circuit=circuit.func)
 
-        selected_gates = [operator_pool[np.argmax(abs(grads))]]
+        selected_gates = [operator_pool[pnp.argmax(abs(grads))]]
         optimizer = qml.GradientDescentOptimizer(stepsize=self.stepsize)
 
         if params_zero:
-            params = np.zeros(len(selected_gates))
+            params = pnp.zeros(len(selected_gates))
         else:
-            params = np.array([gate.parameters[0] for gate in selected_gates], requires_grad=True)
+            params = pnp.array([gate.parameters[0] for gate in selected_gates], requires_grad=True)
 
         for _ in range(self.param_steps):
             params, _ = optimizer.step_and_cost(

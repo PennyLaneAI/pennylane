@@ -110,12 +110,14 @@ class TestVar:
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
     def test_observable_is_measurement_value(
-        self, shots, phi, mocker, tol, tol_stochastic
+        self, shots, phi, mocker, tol, tol_stochastic, device_name
     ):  # pylint: disable=too-many-arguments
         """Test that variances for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+        np.random.seed(42)
+        dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -131,7 +133,56 @@ class TestVar:
         atol = tol if shots is None else tol_stochastic
         expected = np.sin(phi / 2) ** 2 - np.sin(phi / 2) ** 4
         assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
-        custom_measurement_process(new_dev, spy)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_composite_measurement_value(
+        self, shots, phi, mocker, tol, tol_stochastic, device_name
+    ):  # pylint: disable=too-many-arguments
+        """Test that variances for mid-circuit measurement values
+        are correct for a composite measurement value."""
+        np.random.seed(42)
+        dev = qml.device(device_name, wires=6, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(0.5 * phi, 1)
+            m1 = qml.measure(1)
+            qml.RX(2 * phi, 2)
+            m2 = qml.measure(2)
+            return qml.var(m0 - 2 * m1 + m2)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "var")
+
+        res = circuit(phi, shots=shots)
+
+        @qml.qnode(dev)
+        def expected_circuit(phi):
+            qml.RX(phi, 0)
+            qml.RX(0.5 * phi, 1)
+            qml.RX(2 * phi, 2)
+            return qml.probs(wires=[0, 1, 2])
+
+        probs = expected_circuit(phi, shots=None)
+        # List of possible outcomes by applying the formula to the binary repr of the indices
+        outcomes = np.array([0.0, 1.0, -2.0, -1.0, 1.0, 2.0, -1.0, 0.0])
+        expected = (
+            sum(probs[i] * outcomes[i] ** 2 for i in range(len(probs)))
+            - sum(probs[i] * outcomes[i] for i in range(len(probs))) ** 2
+        )
+
+        atol = tol if shots is None else tol_stochastic
+        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize(
         "obs",

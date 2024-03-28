@@ -15,7 +15,7 @@
 This module contains some useful utility functions for circuit drawing.
 """
 from pennylane.ops import Controlled, Conditional
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MeasurementProcess, MidMeasureMP, MeasurementValue
 
 
 def default_wire_map(tape):
@@ -31,6 +31,40 @@ def default_wire_map(tape):
     # Use dictionary to preserve ordering, sets break order
     used_wires = {wire: None for op in tape for wire in op.wires}
     return {wire: ind for ind, wire in enumerate(used_wires)}
+
+
+def default_bit_map(tape):
+    """Create a dictionary mapping ``MidMeasureMP``'s to indices corresponding to classical
+    wires. We only add mid-circuit measurements that are used for classical conditions and for
+    collecting statistics to this dictionary.
+
+    Args:
+        tape [~.tape.QuantumTape]: the QuantumTape containing operations and measurements
+
+    Returns:
+        dict: map from mid-circuit measurements to classical wires."""
+    bit_map = {}
+
+    for op in tape:
+        if isinstance(op, Conditional):
+            for m in op.meas_val.measurements:
+                bit_map[m] = None
+
+        if isinstance(op, MeasurementProcess) and op.mv is not None:
+            if isinstance(op.mv, MeasurementValue):
+                for m in op.mv.measurements:
+                    bit_map[m] = None
+            else:
+                for m in op.mv:
+                    bit_map[m.measurements[0]] = None
+
+    cur_cwire = 0
+    for op in tape:
+        if isinstance(op, MidMeasureMP) and op in bit_map:
+            bit_map[op] = cur_cwire
+            cur_cwire += 1
+
+    return bit_map
 
 
 def convert_wire_order(tape, wire_order=None, show_all_wires=False):
@@ -87,15 +121,17 @@ def unwrap_controls(op):
         next_ctrl = op
 
         while hasattr(next_ctrl, "base"):
-            base_control_wires = getattr(next_ctrl.base, "control_wires", [])
-            control_wires += base_control_wires
 
-            base_control_values = next_ctrl.base.hyperparameters.get(
-                "control_values", [True] * len(base_control_wires)
-            )
+            if isinstance(next_ctrl.base, Controlled):
+                base_control_wires = getattr(next_ctrl.base, "control_wires", [])
+                control_wires += base_control_wires
 
-            if control_values is not None:
-                control_values.extend(base_control_values)
+                base_control_values = next_ctrl.base.hyperparameters.get(
+                    "control_values", [True] * len(base_control_wires)
+                )
+
+                if control_values is not None:
+                    control_values.extend(base_control_values)
 
             next_ctrl = next_ctrl.base
 
@@ -103,21 +139,23 @@ def unwrap_controls(op):
     return control_wires, control_values
 
 
-def cwire_connections(layers):
+def cwire_connections(layers, bit_map):
     """Extract the information required for classical control wires.
 
     Args:
         layers (List[List[.Operator, .MeasurementProcess]]): the operations and measurements sorted
             into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
+        bit_map (Dict): Dictionary containing mid-circuit measurements that are used for
+            classical conditions or measurement statistics as keys.
 
     Returns:
-        dict, list, list: map from mid circuit measurement to classical wire, list of list of accessed layers
-            for each classical wire, and largest wire corresponding to the accessed layers in the list above.
+        list, list: list of list of accessed layers for each classical wire, and largest wire
+        corresponding to the accessed layers in the list above.
 
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
     ...     m1 = qml.measure(1)
-    ...     qml.cond(m0 & m1, qml.PauliY)(0)
+    ...     qml.cond(m0 & m1, qml.Y)(0)
     ...     qml.cond(m0, qml.S)(3)
     >>> tape = qml.tape.QuantumScript.from_queue(q)
     >>> layers = drawable_layers(tape)
@@ -134,26 +172,32 @@ def cwire_connections(layers):
     layer will always be the one with the mid circuit measurement.
 
     """
-    bit_map = {}
-    for layer in layers:
-        for op in layer:
-            if isinstance(op, Conditional):
-                for m in op.meas_val.measurements:
-                    bit_map[m] = None  # place holder till next pass
+    if len(bit_map) == 0:
+        return [], []
 
     connected_layers = [[] for _ in bit_map]
     connected_wires = [[] for _ in bit_map]
-    num_cwires = 0
+
     for layer_idx, layer in enumerate(layers):
         for op in layer:
             if isinstance(op, MidMeasureMP) and op in bit_map:
-                bit_map[op] = num_cwires
-                connected_layers[num_cwires].append(layer_idx)
-                connected_wires[num_cwires].append(op.wires[0])
-                num_cwires += 1
+                connected_layers[bit_map[op]].append(layer_idx)
+                connected_wires[bit_map[op]].append(op.wires[0])
+
             elif isinstance(op, Conditional):
                 for m in op.meas_val.measurements:
                     cwire = bit_map[m]
                     connected_layers[cwire].append(layer_idx)
                     connected_wires[cwire].append(max(op.wires))
-    return bit_map, connected_layers, connected_wires
+
+            elif isinstance(op, MeasurementProcess) and op.mv is not None:
+                if isinstance(op.mv, MeasurementValue):
+                    for m in op.mv.measurements:
+                        cwire = bit_map[m]
+                        connected_layers[cwire].append(layer_idx)
+                else:
+                    for m in op.mv:
+                        cwire = bit_map[m.measurements[0]]
+                        connected_layers[cwire].append(layer_idx)
+
+    return connected_layers, connected_wires

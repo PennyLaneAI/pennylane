@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adagrad optimizer"""
-from pennylane.numpy import sqrt
+from numpy import sqrt
 from .gradient_descent import GradientDescentOptimizer
 
 

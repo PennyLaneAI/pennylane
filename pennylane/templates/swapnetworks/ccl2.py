@@ -16,8 +16,8 @@ Contains the TwoLocalSwapNetwork template.
 """
 
 import warnings
+import numpy as np
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 from pennylane.ops import SWAP, FermionicSWAP
 

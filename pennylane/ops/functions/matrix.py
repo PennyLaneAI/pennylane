@@ -14,21 +14,23 @@
 """
 This module contains the qml.matrix function.
 """
-# pylint: disable=protected-access
-from typing import Sequence, Callable
+# pylint: disable=protected-access,too-many-branches
+from typing import Sequence, Callable, Union
 from functools import partial
 
 import pennylane as qml
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import TransformError
 from pennylane import transform
 from pennylane.typing import TensorLike
+from pennylane.operation import Operator
+from pennylane.pauli import PauliWord, PauliSentence
 
 
-def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
+def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
     Args:
-        op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
+        op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
         wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
             The default wire order depends on the type of ``op``:
 
@@ -43,7 +45,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     Returns:
         TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        If an operator is provided as input, the matrix is returned directly in the form of a tensor.
+        If an operator, :class:`~PauliWord` or :class:`~PauliSentence` is provided as input, the matrix is returned directly in the form of a tensor.
         Otherwise, the transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
         Executing this circuit will provide its matrix representation.
 
@@ -77,6 +79,13 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     .. details::
         :title: Usage Details
 
+        ``qml.matrix`` can also be used with :class:`~PauliWord` and :class:`~PauliSentence` instances.
+        Internally, we are using their ``to_mat()`` methods.
+
+        >>> X0 = PauliWord({0:"X"})
+        >>> np.allclose(qml.matrix(X0), X0.to_mat())
+        True
+
         ``qml.matrix`` can also be used with QNodes, tapes, or quantum functions that
         contain multiple operations.
 
@@ -86,7 +95,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 
             def circuit(theta):
                 qml.RX(theta, wires=1)
-                qml.PauliZ(wires=0)
+                qml.Z(0)
 
         We can use ``qml.matrix`` to generate a new function that returns the unitary matrix
         corresponding to the function ``circuit``:
@@ -116,7 +125,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
         .. code-block:: python
 
             def circuit(theta):
-                qml.RX(theta, wires=1) qml.PauliZ(wires=0)
+                qml.RX(theta, wires=1) qml.Z(0)
                 qml.CNOT(wires=[0, 1])
 
             def cost(theta):
@@ -167,23 +176,49 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
             wires specified, and this is the order in which wires appear in ``circuit()``.
 
     """
-    if not isinstance(op, qml.operation.Operator):
-        if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
-            raise OperationTransformError(
-                "Input is not an Operator, tape, QNode, or quantum function"
-            )
+    if not isinstance(op, Operator):
+
+        if isinstance(op, (PauliWord, PauliSentence)):
+            if wire_order is None and len(op.wires) > 1:
+                raise ValueError(
+                    "wire_order is required by qml.matrix() for PauliWords "
+                    "or PauliSentences with more than one wire."
+                )
+            return op.to_mat(wire_order=wire_order)
+
+        if isinstance(op, qml.tape.QuantumScript):
+            if wire_order is None and len(op.wires) > 1:
+                raise ValueError(
+                    "wire_order is required by qml.matrix() for tapes with more than one wire."
+                )
+
+        elif isinstance(op, qml.QNode):
+            if wire_order is None and op.device.wires is None:
+                raise ValueError(
+                    "wire_order is required by qml.matrix() for QNodes if the device does "
+                    "not have wires specified."
+                )
+
+        elif callable(op):
+            if getattr(op, "num_wires", 0) != 1 and wire_order is None:
+                raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
+
+        else:
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
+
         return _matrix_transform(op, wire_order=wire_order)
 
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
         op = 1.0 * op  # convert to a Hamiltonian
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, qml.ops.Hamiltonian):
+
         return op.sparse_matrix(wire_order=wire_order).toarray()
 
     try:
         return op.matrix(wire_order=wire_order)
     except:  # pylint: disable=bare-except
-        return matrix(op.expand(), wire_order=wire_order)
+        return matrix(op.expand(), wire_order=wire_order or op.wires)
 
 
 @partial(transform, is_informative=True)
@@ -194,7 +229,7 @@ def _matrix_transform(
         raise qml.operation.MatrixUndefinedError
 
     if wire_order and not set(tape.wires).issubset(wire_order):
-        raise OperationTransformError(
+        raise TransformError(
             f"Wires in circuit {list(tape.wires)} are inconsistent with "
             f"those in wire_order {list(wire_order)}"
         )

@@ -103,7 +103,7 @@ def density_matrix(wires) -> "DensityMatrixMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliY(wires=0)
+            qml.Y(0)
             qml.Hadamard(wires=1)
             return qml.density_matrix([0])
 
@@ -151,7 +151,7 @@ class StateMP(StateMeasurement):
         num_shot_elements = (
             sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
-        dim = 2 ** len(device.wires)
+        dim = 2 ** len(self.wires) if self.wires else 2 ** len(device.wires)
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):

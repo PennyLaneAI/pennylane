@@ -33,9 +33,12 @@ This module contains functions that act on operators and tapes.
     ~matrix
     ~simplify
     ~iterative_qpe
+    ~commutator
+    ~comm
 
 """
 from .bind_new_parameters import bind_new_parameters
+from .commutator import commutator, comm
 from .dot import dot
 from .eigvals import eigvals
 from .equal import equal

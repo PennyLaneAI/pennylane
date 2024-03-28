@@ -19,7 +19,7 @@ from typing import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian
+from pennylane.ops import Sum, Hamiltonian, LinearCombination
 from pennylane.measurements import (
     StateMeasurement,
     MeasurementProcess,
@@ -134,10 +134,9 @@ def full_dot_products(
         TensorLike: the result of the measurement
     """
     ket = apply_operation(measurementprocess.obs, state, is_state_batched=is_state_batched)
-    total_indices = len(state.shape) - is_state_batched
-    flattened_state = flatten_state(state, total_indices)
-    flattened_ket = flatten_state(ket, total_indices)
-    dot_product = math.sum(math.conj(flattened_state) * flattened_ket, axis=int(is_state_batched))
+    dot_product = math.sum(
+        math.conj(state) * ket, axis=tuple(range(int(is_state_batched), math.ndim(state)))
+    )
     return math.real(dot_product)
 
 
@@ -195,7 +194,7 @@ def get_measurement_function(
                 return full_dot_products
 
             backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
-            if isinstance(measurementprocess.obs, Hamiltonian):
+            if isinstance(measurementprocess.obs, (Hamiltonian, LinearCombination)):
                 # need to work out thresholds for when its faster to use "backprop mode" measurements
                 return sum_of_terms_method if backprop_mode else csr_dot_products
 

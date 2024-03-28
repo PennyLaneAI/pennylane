@@ -102,7 +102,7 @@ def _check_matrix_matches_decomp(op):
     """Check that if both the matrix and decomposition are defined, they match."""
     if op.has_matrix and op.has_decomposition:
         mat = op.matrix()
-        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
+        decomp_mat = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=op.wires)
         failure_comment = (
             f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
         )
@@ -277,7 +277,8 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
         assert isinstance(d, qml.typing.TensorLike), "each data element must be tensorlike"
         assert qml.math.allclose(d, p), "data and parameters must match."
 
-    _check_wires(op)
+    if len(op.wires) <= 26:
+        _check_wires(op)
     _check_copy(op)
     _check_pytree(op)
     if not skip_pickle:

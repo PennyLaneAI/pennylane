@@ -21,10 +21,10 @@ from itertools import compress
 from pathlib import Path
 from typing import Any, List, Sequence, Tuple, Union
 
+import numpy as np
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import Operation
 
 
@@ -85,7 +85,7 @@ def kahypar_cut(
             qml.RX(0.432, wires=0),
             qml.RY(0.543, wires="a"),
         ]
-        measurements = [qml.expval(qml.PauliZ(wires=[0]))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can let KaHyPar automatically find the optimal edges to place cuts:
