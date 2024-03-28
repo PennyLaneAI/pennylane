@@ -51,7 +51,7 @@ with AnnotatedQueue() as q_tape2:
     qml.expval(H2)
 tape2 = QuantumScript.from_queue(q_tape2)
 
-H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
+H3 = qml.Hamiltonian([1.5, 0.3], [qml.Z(0) @ qml.Z(1), qml.X(1)])
 
 with AnnotatedQueue() as q3:
     qml.PauliX(0)
@@ -59,14 +59,18 @@ with AnnotatedQueue() as q3:
 
 
 tape3 = QuantumScript.from_queue(q3)
-H4 = (
-    qml.PauliX(0) @ qml.PauliZ(2)
-    + 3 * qml.PauliZ(2)
-    - 2 * qml.PauliX(0)
-    + qml.PauliZ(2)
-    + qml.PauliZ(2)
-)
-H4 += qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
+
+H4 = qml.Hamiltonian(
+    [1, 3, -2, 1, 1, 1],
+    [
+        qml.PauliX(0) @ qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliX(0),
+        qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2),
+    ],
+).simplify()
 
 with AnnotatedQueue() as q4:
     qml.Hadamard(0)
@@ -480,7 +484,7 @@ class TestSumExpand:
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
-    def test_sums_legacy(self, qscript, output):
+    def test_sums_legacy_opmath(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
         dev_old = qml.device("default.qubit.legacy", wires=4)
         tapes, fn = sum_expand(qscript)
