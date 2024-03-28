@@ -30,6 +30,7 @@ def lie_closure(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
     max_iterations: int = 10000,
     verbose: int = 0,
+    pauli: bool = False,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the Lie closure over commutation of a set of generators
 
@@ -45,6 +46,10 @@ def lie_closure(
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (int): verbosity during Lie closure calculation. Default is ``0``.
+        pauli (bool): Indicates whether it is assumed that :class:`~PauliSentence` instances are input and returned.
+            This can help with performance to avoid unnecessary conversions from :class:`~PauliSentence` to :class:`~Operator`
+            or :class:`~PauliWord` and vice versa. Note that the input in that case also has to be :class:`~PauliSentence` instances.
+            Default is ``False``.
 
     Returns:
         list[`~.PauliSentence`]: a basis of ``PauliSentence`` instances that is closed under
@@ -81,14 +86,40 @@ def lie_closure(
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.dla.lie_closure(ops)
     >>> print(dla)
-    [1.0 * X(1) @ X(0),
-     1.0 * Z(0),
-     1.0 * Z(1),
-     -1.0 * X(1) @ Y(0),
-     -1.0 * Y(1) @ X(0),
-     -1.0 * Y(1) @ Y(0)]
+    [X(1) @ X(0),
+     Z(0),
+     Z(1),
+     -1.0 * (X(1) @ Y(0)),
+     -1.0 * (Y(1) @ X(0)),
+     -1.0 * (Y(1) @ Y(0))]
+
+    .. details::
+        :title: Usage Details
+    
+        Note that by default, ``lie_closure`` returns PennyLane operators. Internally we use the more
+        efficient representation in terms of :class:`~PauliSentence` by making use of the ``op.pauli_rep``
+        attribute of operators composed of Pauli operators. If desired, this format can be returned by using
+        the keyword ``pauli=True``. In that case, the input is also assumed to be a :class:`~PauliSentence` instance.
+
+        >>> ops = [
+        ...     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.}),
+        ...     PauliSentence({PauliWord({0: "Z"}): 1.}),
+        ...     PauliSentence({PauliWord({1: "Z"}): 1.}),
+        ... ]
+        >>> dla = qml.dla.lie_closure(ops, pauli=True)
+        >>> print(dla)
+        [1.0 * X(0) @ X(1),
+         1.0 * Z(0),
+         1.0 * Z(1),
+         -1.0 * Y(0) @ X(1),
+         -1.0 * X(0) @ Y(1),
+         -1.0 * Y(0) @ Y(1)]
+        >>> type(dla[0])
+        pennylane.pauli.pauli_arithmetic.PauliSentence
+
     """
-    if not all(isinstance(op, PauliSentence) for op in generators):
+    # This check and conversion is ignored in pauli=True mode
+    if not pauli and not all(isinstance(op, PauliSentence) for op in generators):
         generators = [
             op.pauli_rep if op.pauli_rep else qml.pauli.pauli_sentence(op) for op in generators
         ]
@@ -118,7 +149,11 @@ def lie_closure(
         new_length = len(vspace)
         epoch += 1
 
-    return vspace.basis
+    res = vspace.basis
+    if not pauli:
+        res = [op.operation() for op in res]
+
+    return res
 
 
 class PauliVSpace:
