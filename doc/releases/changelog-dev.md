@@ -291,6 +291,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `QNode` now resets if an error occurs during execution.
+
 * Fix Torch tensor locality with autoray-registered coerce method.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
 

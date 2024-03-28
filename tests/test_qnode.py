@@ -1860,3 +1860,20 @@ class TestTapeExpansion:
         ):
             x = pnp.array([0.5, 0.4, 0.3], requires_grad=True)
             circuit.construct([x], {})
+
+
+def test_resets_after_execution_error():
+    """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
+
+    class BadOp(qml.operation.Operator):
+        pass
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit(x):
+        BadOp(x, wires=0)
+        return qml.state()
+
+    with pytest.raises(qml.DeviceError):
+        circuit(qml.numpy.array(0.1))
+
+    assert circuit.interface == "auto"
