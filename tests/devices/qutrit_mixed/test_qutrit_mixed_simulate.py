@@ -114,7 +114,7 @@ class TestStatePrepBase:
 
 
 class TestBasicCircuit:
-    """Tests a basic circuit with one rx gate and two simple expectation values."""
+    """Tests a basic circuit with one TRX gate and a few simple expectation values."""
 
     @staticmethod
     def get_TRX_quantum_script(phi, subspace):
