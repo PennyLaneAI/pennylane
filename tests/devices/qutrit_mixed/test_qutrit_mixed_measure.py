@@ -470,7 +470,7 @@ class TestSumOfTermsDifferentiability:
         ],
     )
     def test_autograd_backprop(self, convert_to_hamiltonian, coeffs):
-        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
+        """Test that backpropagation derivatives work in autograd with Hamiltonians and large sums."""
         x = qml.numpy.array(self.x)
         out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x, coeffs)
@@ -482,7 +482,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.autograd
     def test_autograd_backprop_coeffs(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
+        """Test that backpropagation derivatives work in autograd with the coefficients of Hamiltonians and large sums."""
         coeffs = qml.numpy.array((2.5, 6.2), requires_grad=True)
         gradient = qml.grad(self.f, argnum=1)(
             self.x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian
@@ -494,7 +494,7 @@ class TestSumOfTermsDifferentiability:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
-        """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
+        """Test that backpropagation derivatives work with jax with Hamiltonians and large sums."""
         import jax
 
         jax.config.update("jax_enable_x64", True)
@@ -513,7 +513,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.jax
     def test_jax_backprop_coeffs(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
+        """Test that backpropagation derivatives work with jax with the coefficients of Hamiltonians and large sums."""
         import jax
 
         jax.config.update("jax_enable_x64", True)
@@ -548,7 +548,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.torch
     def test_torch_backprop_coeffs(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
+        """Test that backpropagation derivatives work with torch with the coefficients of Hamiltonians and large sums."""
         import torch
 
         coeffs = torch.tensor((9.2, 6.2), requires_grad=True, dtype=torch.float64)
@@ -585,7 +585,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.tf
     def test_tf_backprop_coeffs(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
+        """Test that backpropagation derivatives work with tensorflow with the coefficients of Hamiltonians and large sums."""
         import tensorflow as tf
 
         coeffs = tf.Variable([8.3, 5.7])
