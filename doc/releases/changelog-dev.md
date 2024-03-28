@@ -204,6 +204,7 @@
 
 * `simulate` functionality added to new `qutrit_mixed` module from `qml.devices`. This allows for simulation of a 
   noisy qutrit circuit with measurement and sampling.
+  [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
 * Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
