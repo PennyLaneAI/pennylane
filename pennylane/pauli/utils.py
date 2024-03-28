@@ -20,7 +20,7 @@ representation of Pauli words and applications, see:
 * `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
-from functools import lru_cache, reduce, singledispatch
+from functools import lru_cache, singledispatch
 from itertools import product
 from typing import List, Union
 
@@ -28,7 +28,16 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd
+from pennylane.ops import (
+    Hamiltonian,
+    LinearCombination,
+    Identity,
+    PauliX,
+    PauliY,
+    PauliZ,
+    Prod,
+    SProd,
+)
 from pennylane.wires import Wires
 
 # To make this quicker later on
@@ -119,8 +128,9 @@ def _is_pw_tensor(observable: Tensor):
     return set(observable.name).issubset(pauli_word_names)
 
 
-@_is_pauli_word.register
-def _is_pw_ham(observable: Hamiltonian):
+@_is_pauli_word.register(Hamiltonian)
+@_is_pauli_word.register(LinearCombination)
+def _is_pw_ham(observable: Union[Hamiltonian, LinearCombination]):
     return False if len(observable.ops) != 1 else is_pauli_word(observable.ops[0])
 
 
@@ -430,19 +440,37 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     if not is_pauli_word(pauli_word):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_word}")
-    if isinstance(pauli_word, Hamiltonian):
+    if isinstance(pauli_word, qml.ops.Hamiltonian):
         # hamiltonian contains only one term
-        pauli_word = pauli_word.ops[0]
-    elif isinstance(pauli_word, SProd):
-        pauli_word = pauli_word.base
-    if isinstance(pauli_word, Prod):
-        pauli_word = Tensor(*pauli_word.operands)
+        return _pauli_word_to_string_legacy(pauli_word, wire_map)
 
-    character_map = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
+    pr = next(iter(pauli_word.pauli_rep.keys()))
 
     # If there is no wire map, we must infer from the structure of Paulis
     if wire_map is None:
         wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
+
+    n_qubits = len(wire_map)
+
+    # Set default value of all characters to identity
+    pauli_string = ["I"] * n_qubits
+
+    for wire, op_label in pr.items():
+        pauli_string[wire_map[wire]] = op_label
+
+    return "".join(pauli_string)
+
+
+def _pauli_word_to_string_legacy(pauli_word, wire_map):
+    """Turn a legacy Hamiltonian operator to strings"""
+    # TODO: Give Hamiltonian a pauli rep to make this branch obsolete
+    pauli_word = pauli_word.ops[0]
+
+    # If there is no wire map, we must infer from the structure of Paulis
+    if wire_map is None:
+        wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
+
+    character_map = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
     n_qubits = len(wire_map)
 
@@ -565,31 +593,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     if wire_map is None:
         wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
 
-    n_qubits = len(wire_map)
-
-    # If there is only a single qubit, we can return the matrix directly
-    if n_qubits == 1:
-        return pauli_word.matrix()
-
-    # There may be more than one qubit in the Pauli but still only
-    # one of them with anything acting on it, so take that into account
-    pauli_names = [pauli_word.name] if isinstance(pauli_word.name, str) else pauli_word.name
-
-    # Special case: the identity Pauli
-    if pauli_names == ["Identity"]:
-        return np.eye(2**n_qubits)
-
-    # If there is more than one qubit, we must go through the wire map wire
-    # by wire and pick out the relevant matrices
-    pauli_mats = [ID_MAT for x in range(n_qubits)]
-
-    for wire_label, wire_idx in wire_map.items():
-        if wire_label in pauli_word.wires.labels:
-            op_idx = pauli_word.wires.labels.index(wire_label)
-            # compute_matrix() only works because we work with Paulis here
-            pauli_mats[wire_idx] = getattr(qml, pauli_names[op_idx]).compute_matrix()
-
-    return reduce(np.kron, pauli_mats)
+    return pauli_word.matrix(wire_map)
 
 
 def is_qwc(pauli_vec_1, pauli_vec_2):

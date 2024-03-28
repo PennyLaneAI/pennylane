@@ -27,6 +27,7 @@ from pennylane.queuing import (
 )
 
 
+# pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
 class TestStopRecording:
     """Test the stop_recording method of QueuingManager."""
 
@@ -211,6 +212,7 @@ class TestAnnotatedQueue:
         assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_append_tensor_ops_overloaded(self):
         """Test that Tensor ops created using `@`
         are successfully added to the queue, as well as the `Tensor` object."""
@@ -221,6 +223,17 @@ class TestAnnotatedQueue:
             tensor_op = A @ B
         assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
+
+    def test_append_prod_ops_overloaded(self):
+        """Test that Prod ops created using `@`
+        are successfully added to the queue, as well as the `Prod` object."""
+
+        with AnnotatedQueue() as q:
+            A = qml.PauliZ(0)
+            B = qml.PauliY(1)
+            prod_op = A @ B
+        assert q.queue == [prod_op]
+        assert prod_op.operands == (A, B)
 
     def test_get_info(self):
         """Test that get_info correctly returns an annotation"""
