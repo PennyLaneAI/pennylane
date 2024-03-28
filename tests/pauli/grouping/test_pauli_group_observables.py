@@ -396,11 +396,6 @@ class TestGroupObservables:
     def test_return_new_opmath(self):
         """Test that using new opmath causes grouped observables to have Prods instead of
         Tensors"""
-        old_observables = [
-            Tensor(PauliX(0), PauliZ(1)),
-            Tensor(PauliY(2), PauliZ(1)),
-            Tensor(PauliZ(1), PauliZ(2)),
-        ]
         new_observables = [
             qml.prod(PauliX(0), PauliZ(1)),
             qml.prod(PauliY(2), PauliZ(1)),
@@ -412,13 +407,39 @@ class TestGroupObservables:
             qml.s_prod(1.5, qml.prod(PauliZ(1), PauliZ(2))),
         ]
 
-        old_groups = group_observables(old_observables)
         new_groups = group_observables(new_observables)
         mixed_groups = group_observables(mixed_observables)
 
-        assert all(isinstance(o, Tensor) for g in old_groups for o in g)
         assert all(isinstance(o, qml.ops.Prod) for g in new_groups for o in g)
         assert all(isinstance(o, qml.ops.Prod) for g in mixed_groups for o in g)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_return_new_opmath_legacy_opmath(self):
+        """Test that using new opmath causes grouped observables to have Prods instead of
+        Tensors"""
+        old_observables = [
+            Tensor(PauliX(0), PauliZ(1)),
+            Tensor(PauliY(2), PauliZ(1)),
+            Tensor(PauliZ(1), PauliZ(2)),
+        ]
+
+        old_groups = group_observables(old_observables)
+
+        assert all(isinstance(o, Tensor) for g in old_groups for o in g)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_return_deactive_opmath_prod(self):
+        """Test that using new opmath causes grouped observables to have Prods instead of
+        Tensors"""
+        observables = [
+            qml.prod(PauliX(0), PauliZ(1)),
+            qml.prod(PauliY(2), PauliZ(1)),
+            qml.prod(PauliZ(1), PauliZ(2)),
+        ]
+
+        old_groups = group_observables(observables)
+
+        assert all(isinstance(o, qml.ops.Prod) for g in old_groups for o in g)
 
 
 class TestDifferentiable:

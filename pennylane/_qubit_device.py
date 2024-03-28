@@ -304,10 +304,10 @@ class QubitDevice(Device):
                 and getattr(self, "_CPP_BINARY_AVAILABLE", False)
             )
             diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
-            if is_lightning and diagonalizing_gates:
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
-            if is_lightning and diagonalizing_gates:
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
@@ -1631,7 +1631,7 @@ class QubitDevice(Device):
                     f" measurement {m.__class__.__name__}"
                 )
 
-            if m.obs.name == "Hamiltonian":
+            if not m.obs.has_matrix:
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support Hamiltonian observables."
                 )

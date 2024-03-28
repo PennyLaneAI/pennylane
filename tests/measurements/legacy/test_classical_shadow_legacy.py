@@ -420,7 +420,7 @@ class TestExpvalForward:
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)
 
-        msg = "Observable must be a linear combination of Pauli observables"
+        msg = "Observable must have a valid pauli representation."
         with pytest.raises(ValueError, match=msg):
             circuit(qml.Hadamard(0) @ qml.Hadamard(2))
 
