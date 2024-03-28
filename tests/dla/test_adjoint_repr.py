@@ -62,8 +62,8 @@ class TestAdjointRepr:
 
     def test_raise_error_for_non_paulis(self):
         """Test that an error is raised when passing operators that do not have a pauli_rep"""
-        gens = [qml.Hadamard(0), qml.X(0)]
+        generators = [qml.Hadamard(0), qml.X(0)]
         with pytest.raises(
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
-            qml.dla.adjoint_repr(gens)
+            qml.dla.adjoint_repr(generators)
