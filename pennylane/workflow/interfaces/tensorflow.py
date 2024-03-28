@@ -122,7 +122,7 @@ def _get_parameters_dtype(parameters):
     for p in parameters:
         if qml.math.get_interface(p) == "tensorflow":
             return p.dtype
-    return tf.float64
+    return None
 
 
 _complex_dtype_map = {
