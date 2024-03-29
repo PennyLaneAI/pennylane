@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for simulate in devices/qutrit_mixed."""
+from functools import reduce
 
 import pytest
 from flaky import flaky
@@ -339,19 +340,23 @@ class TestBroadcasting:
 
 @pytest.mark.parametrize("extra_wires", [1, 3])
 class TestStatePadding:
-    """TODO"""
+    """Tests if the state zeros padding works as expected for when operators don't act on all
+    measured wires."""
 
     @staticmethod
-    def get_expected_dm(x):
+    def get_expected_dm(x, extra_wires):
         """Gets the final density matrix of the circuit described in `get_ops_and_measurements`."""
         vec = np.zeros(9, dtype=complex)
         vec[1] = -1j * np.cos(x / 2)
         vec[6] = -1j * np.sin(x / 2)
-        return np.outer(vec, np.conj(vec)).reshape((3,) * 4)
+        state = np.outer(vec, np.conj(vec))
+        zero_padding = np.zeros((3**extra_wires, 3**extra_wires))
+        zero_padding[0, 0] = 1
+        return np.kron(state, zero_padding)
 
     @staticmethod
     def get_quantum_script(x, extra_wires):
-        """Gets a quantum script of a circuit that has more measured wires than operated wires."""
+        """Gets a quantum script of a circuit where operators don't act on all measured wires."""
         ops = [
             qml.TRX(np.pi, wires=1, subspace=(0, 1)),
             qml.TRY(x, wires=0, subspace=(0, 2)),
@@ -360,40 +365,29 @@ class TestStatePadding:
         return qml.tape.QuantumScript(ops, [qml.density_matrix(wires=range(2 + extra_wires))])
 
     def test_extra_measurement_wires(self, extra_wires):
-        """Tests if correct state is returned when there are more measurement
-        wires than operating wires."""
+        """Tests if correct state is returned when operators don't act on all measured wires."""
         x = 1.32
+        final_dim = 3 ** (2 + extra_wires)
 
         qs = self.get_quantum_script(x, extra_wires)
         state = get_final_state(qs)[0]
-        expected_state = self.get_expected_dm(x)
         assert state.shape == (3,) * (2 + extra_wires) * 2
 
-        state_indices = tuple([slice(3), slice(3)] + [0 for _ in range(extra_wires)]) * 2
-        assert math.allclose(state[state_indices], expected_state)
-
-        zero_indices = tuple([slice(3), slice(3)] + [slice(1, 3) for _ in range(extra_wires)]) * 2
-        assert not state[zero_indices].any()
+        expected_state = self.get_expected_dm(x, extra_wires)
+        assert math.allclose(state.reshape((final_dim, final_dim)), expected_state)
 
     def test_extra_measurement_wires_broadcasting(self, extra_wires):
-        """Tests if correct state is returned when there are more measurement
-        wires than operating wires on broadcasted state."""
+        """Tests if correct state is returned when there is broadcasting and
+        operators don't act on all measured wires."""
         x = np.array([1.32, 0.56, 2.81, 2.1])
+        final_dim = 3 ** (2 + extra_wires)
 
         qs = self.get_quantum_script(x, extra_wires)
         state = get_final_state(qs)[0]
         assert state.shape == tuple([4] + [3] * (2 + extra_wires) * 2)
 
-        expected_state = [self.get_expected_dm(x_val) for x_val in x]
-        state_indices = tuple(
-            [slice(4)] + ([slice(3), slice(3)] + [0 for _ in range(extra_wires)]) * 2
-        )
-        assert math.allclose(state[state_indices], expected_state)
-
-        zero_indices = tuple(
-            [slice(4)] + ([slice(3), slice(3)] + [slice(1, 3) for _ in range(extra_wires)]) * 2
-        )
-        assert not state[zero_indices].any()
+        expected_state = [self.get_expected_dm(x_val, extra_wires) for x_val in x]
+        assert math.allclose(state.reshape((len(x), final_dim, final_dim)), expected_state)
 
 
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
