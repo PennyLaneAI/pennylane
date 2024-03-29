@@ -212,8 +212,6 @@ class DefaultQutritMixed(Device):  # TODO
 
         * Supports any qutrit operations that provide a matrix
         * Supports any qutrit Channels that provide kraus matrices
-        * Currently does not support finite shots
-        * Currently does not intrinsically support parameter broadcasting
 
         """
         config = self._setup_execution_config(execution_config)
