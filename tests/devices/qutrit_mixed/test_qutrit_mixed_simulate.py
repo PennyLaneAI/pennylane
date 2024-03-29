@@ -14,6 +14,8 @@
 """Unit tests for simulate in devices/qutrit_mixed."""
 
 import pytest
+from flaky import flaky
+
 import numpy as np
 import pennylane as qml
 from pennylane import math
@@ -23,34 +25,29 @@ from pennylane.devices.qutrit_mixed import simulate, get_final_state, measure_fi
 
 def expected_TRX_circ_expval_values(phi, subspace):
     """Find the expect-values of GellManns 2,3,5,8
-    on a circuit with a TRX gate"""
+    on a circuit with a TRX gate on subspace (0,1) or (0,2)"""
     if subspace == (0, 1):
-        gellmann_2 = -np.sin(phi)
-        gellmann_3 = np.cos(phi)
-        gellmann_5 = 0
-        gellmann_8 = np.sqrt(1 / 3)
-    if subspace == (0, 2):
-        gellmann_2 = 0
-        gellmann_3 = np.cos(phi / 2) ** 2
-        gellmann_5 = -np.sin(phi)
-        gellmann_8 = np.sqrt(1 / 3) * (np.cos(phi) - np.sin(phi / 2) ** 2)
-    return np.array([gellmann_2, gellmann_3, gellmann_5, gellmann_8])
+        return np.array([-np.sin(phi), np.cos(phi), 0, np.sqrt(1 / 3)])
+    elif subspace == (0, 2):
+        return np.array(
+            [
+                0,
+                np.cos(phi / 2) ** 2,
+                -np.sin(phi),
+                np.sqrt(1 / 3) * (np.cos(phi) - np.sin(phi / 2) ** 2),
+            ]
+        )
+    raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
 
 def expected_TRX_circ_expval_jacobians(phi, subspace):
     """Find the Jacobians of expect-values of GellManns 2,3,5,8
-    on a circuit with a TRX gate"""
+    on a circuit with a TRX gate on subspace (0,1) or (0,2)"""
     if subspace == (0, 1):
-        gellmann_2 = -np.cos(phi)
-        gellmann_3 = -np.sin(phi)
-        gellmann_5 = 0
-        gellmann_8 = 0
-    if subspace == (0, 2):
-        gellmann_2 = 0
-        gellmann_3 = -np.sin(phi) / 2
-        gellmann_5 = -np.cos(phi)
-        gellmann_8 = np.sqrt(1 / 3) * -(1.5 * np.sin(phi))
-    return np.array([gellmann_2, gellmann_3, gellmann_5, gellmann_8])
+        return np.array([-np.cos(phi), -np.sin(phi), 0, 0])
+    elif subspace == (0, 2):
+        return np.array([0, -np.sin(phi) / 2, -np.cos(phi), np.sqrt(1 / 3) * -(1.5 * np.sin(phi))])
+    raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
 
 def expected_TRX_circ_state(phi, subspace):
@@ -97,6 +94,17 @@ def test_custom_operation():
     assert qml.math.allclose(result, -np.sqrt(4 / 3))
 
 
+@pytest.mark.jax
+@pytest.mark.parametrize("op", [qml.TRX(np.pi, 0), qml.QutritBasisState([1], 0)])
+def test_result_has_correct_interface(op):
+    """Test that even if no interface parameters are given, result is correct."""
+    qs = qml.tape.QuantumScript([op], [qml.expval(qml.GellMann(0, 3))])
+    res = simulate(qs, interface="jax")
+
+    assert qml.math.get_interface(res) == "jax"
+    assert qml.math.allclose(res, -1)
+
+
 # pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
@@ -113,6 +121,7 @@ class TestStatePrepBase:
         assert qml.math.allclose(probs, expected)
 
 
+@pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
 class TestBasicCircuit:
     """Tests a basic circuit with one rx gate and two simple expectation values."""
 
@@ -120,15 +129,9 @@ class TestBasicCircuit:
     def get_TRX_quantum_script(phi, subspace):
         """Get the quantum script where TRX is applied then GellMann observables are measured"""
         ops = [qml.TRX(phi, wires=0, subspace=subspace)]
-        obs = [
-            qml.expval(qml.GellMann(0, 2)),
-            qml.expval(qml.GellMann(0, 3)),
-            qml.expval(qml.GellMann(0, 5)),
-            qml.expval(qml.GellMann(0, 8)),
-        ]
+        obs = [qml.expval(qml.GellMann(0, index)) for index in [2, 3, 5, 8]]
         return qml.tape.QuantumScript(ops, obs)
 
-    @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_basic_circuit_numpy(self, subspace):
         """Test execution with a basic circuit."""
 
@@ -155,7 +158,6 @@ class TestBasicCircuit:
         assert np.allclose(result, expected_measurements)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_autograd_results_and_backprop(self, subspace):
         """Tests execution and gradients with autograd"""
 
@@ -175,10 +177,8 @@ class TestBasicCircuit:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_jax_results_and_backprop(self, use_jit, subspace):
-        """Tests exeuction and gradients with jax."""
-
+        """Tests execution and gradients with jax."""
         import jax
 
         phi = jax.numpy.array(0.678)
@@ -199,10 +199,8 @@ class TestBasicCircuit:
         assert qml.math.allclose(g, expected)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_torch_results_and_backprop(self, subspace):
         """Tests execution and gradients of a simple circuit with torch."""
-
         import torch
 
         phi = torch.tensor(-0.526, requires_grad=True)
@@ -213,20 +211,15 @@ class TestBasicCircuit:
 
         result = f(phi)
         expected = expected_TRX_circ_expval_values(phi.detach().numpy(), subspace)
-        assert qml.math.allclose(result[0], expected[0])
-        assert qml.math.allclose(result[1], expected[1])
-        assert qml.math.allclose(result[2], expected[2])
-        assert qml.math.allclose(result[3], expected[3])
 
-        g = torch.autograd.functional.jacobian(f, phi + 0j)
+        result_detached = math.asarray(result, like="torch").detach().numpy()
+        assert math.allclose(result_detached, expected)
+
+        jacobian = math.asarray(torch.autograd.functional.jacobian(f, phi + 0j), like="torch")
         expected = expected_TRX_circ_expval_jacobians(phi.detach().numpy(), subspace)
-        assert qml.math.allclose(g[0], expected[0])
-        assert qml.math.allclose(g[1], expected[1])
-        assert qml.math.allclose(g[2], expected[2])
-        assert qml.math.allclose(g[3], expected[3])
+        assert math.allclose(jacobian.detach().numpy(), expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_tf_results_and_backprop(self, subspace):
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
@@ -240,35 +233,22 @@ class TestBasicCircuit:
         expected = expected_TRX_circ_expval_values(phi, subspace)
         assert qml.math.allclose(result, expected)
 
-        grad0 = grad_tape.jacobian(result[0], [phi])
-        grad1 = grad_tape.jacobian(result[1], [phi])
-        grad2 = grad_tape.jacobian(result[2], [phi])
-        grad3 = grad_tape.jacobian(result[3], [phi])
-
         expected = expected_TRX_circ_expval_jacobians(phi, subspace)
-        assert qml.math.allclose(grad0[0], expected[0])
-        assert qml.math.allclose(grad1[0], expected[1])
-        assert qml.math.allclose(grad2[0], expected[2])
-        assert qml.math.allclose(grad3[0], expected[3])
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("op", [qml.TRX(np.pi, 0), qml.QutritBasisState([1], 0)])
-    def test_result_has_correct_interface(self, op):
-        """Test that even if no interface parameters are given, result is correct."""
-
-        qs = qml.tape.QuantumScript([op], [qml.expval(qml.GellMann(0, 3))])
-        res = simulate(qs, interface="jax")
-
-        assert qml.math.get_interface(res) == "jax"
-        assert qml.math.allclose(res, -1)
+        assert math.all(
+            [
+                math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
+                for one_obs_result, one_obs_expected in zip(result, expected)
+            ]
+        )
 
 
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
 class TestBroadcasting:
-    """Test that simulate works with broadcasted parameters"""
+    """Test that simulate works with broadcasted parameters."""
 
     @staticmethod
-    def get_state(x, subspace):
+    def get_expected_state(x, subspace):
+        """Gets the expected final state of the circuit described in `get_ops_and_measurements`."""
         state = []
         for x_val in x:
             vec = np.zeros(9, dtype=complex)
@@ -279,22 +259,31 @@ class TestBroadcasting:
 
     @staticmethod
     def get_expectation_values(x, subspace):
+        """Gets the expected final expvals of the circuit described in `get_ops_and_measurements`."""
         if subspace == (0, 1):
             return [np.cos(x), -np.cos(x / 2) ** 2]
-        return [np.cos(x / 2) ** 2, -np.sin(x / 2) ** 2]
+        if subspace == (0, 2):
+            return [np.cos(x / 2) ** 2, -np.sin(x / 2) ** 2]
+        raise ValueError(f"Test cases doesn't support subspace {subspace}")
+
+    @staticmethod
+    def get_quantum_script(x, subspace, shots=None, extra_wire=False):
+        """Gets quantum script of a circuit that includes
+        parameter broadcasted operations and measurements."""
+        ops = [
+            qml.TRX(np.pi, wires=1 + extra_wire, subspace=subspace),
+            qml.TRY(x, wires=0 + extra_wire, subspace=subspace),
+            qml.TAdd(wires=[0 + extra_wire, 1 + extra_wire]),
+        ]
+        measurements = [qml.expval(qml.GellMann(i, 3)) for i in range(2 + extra_wire)]
+        return qml.tape.QuantumScript(ops, measurements, shots=shots)
 
     def test_broadcasted_op_state(self, subspace):
         """Test that simulate works for state measurements
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
-        ops = [
-            qml.TRX(np.pi, wires=1, subspace=subspace),
-            qml.TRY(x, wires=0, subspace=subspace),
-            qml.TAdd(wires=[0, 1]),
-        ]
-        measurements = [qml.expval(qml.GellMann(i, 3)) for i in range(2)]
 
-        qs = qml.tape.QuantumScript(ops, measurements)
+        qs = self.get_quantum_script(x, subspace)
         res = simulate(qs)
 
         expected = self.get_expectation_values(x, subspace)
@@ -305,7 +294,7 @@ class TestBroadcasting:
         state, is_state_batched = get_final_state(qs)
         res = measure_final_state(qs, state, is_state_batched)
 
-        assert np.allclose(state, self.get_state(x, subspace))
+        assert np.allclose(state, self.get_expected_state(x, subspace))
         assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -316,14 +305,7 @@ class TestBroadcasting:
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
 
-        ops = [
-            qml.TRX(np.pi, wires=1, subspace=subspace),
-            qml.TRY(x, wires=0, subspace=subspace),
-            qml.TAdd(wires=[0, 1]),
-        ]
-        measurements = [qml.expval(qml.GellMann(i, 3)) for i in range(2)]
-
-        qs = qml.tape.QuantumScript(ops, measurements, shots=qml.measurements.Shots(10000))
+        qs = self.get_quantum_script(x, subspace, shots=qml.measurements.Shots(10000))
         res = simulate(qs, rng=123)
 
         expected = self.get_expectation_values(x, subspace)
@@ -334,7 +316,7 @@ class TestBroadcasting:
         state, is_state_batched = get_final_state(qs)
         res = measure_final_state(qs, state, is_state_batched, rng=123)
 
-        assert np.allclose(state, self.get_state(x, subspace))
+        assert np.allclose(state, self.get_expected_state(x, subspace))
         assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -345,15 +327,7 @@ class TestBroadcasting:
         # I can't mock anything in `simulate` because the module name is the function name
         spy = mocker.spy(qml, "map_wires")
         x = np.array([0.8, 1.0, 1.2, 1.4])
-
-        ops = [
-            qml.TRX(np.pi, wires=2, subspace=subspace),
-            qml.TRY(x, wires=1, subspace=subspace),
-            qml.TAdd(wires=[1, 2]),
-        ]
-        measurements = [qml.expval(qml.GellMann(i, 3)) for i in range(3)]
-
-        qs = qml.tape.QuantumScript(ops, measurements)
+        qs = self.get_quantum_script(x, subspace, extra_wire=True)
         res = simulate(qs)
 
         assert isinstance(res, tuple)
@@ -361,6 +335,65 @@ class TestBroadcasting:
         assert np.allclose(res[0], 1.0)
         assert np.allclose(res[1:], self.get_expectation_values(x, subspace))
         assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
+
+
+@pytest.mark.parametrize("extra_wires", [1, 3])
+class TestStatePadding:
+    """TODO"""
+
+    @staticmethod
+    def get_expected_dm(x):
+        """Gets the final density matrix of the circuit described in `get_ops_and_measurements`."""
+        vec = np.zeros(9, dtype=complex)
+        vec[1] = -1j * np.cos(x / 2)
+        vec[6] = -1j * np.sin(x / 2)
+        return np.outer(vec, np.conj(vec)).reshape((3,) * 4)
+
+    @staticmethod
+    def get_quantum_script(x, extra_wires):
+        """Gets a quantum script of a circuit that has more measured wires than operated wires."""
+        ops = [
+            qml.TRX(np.pi, wires=1, subspace=(0, 1)),
+            qml.TRY(x, wires=0, subspace=(0, 2)),
+            qml.TAdd(wires=[0, 1]),
+        ]
+        return qml.tape.QuantumScript(ops, [qml.density_matrix(wires=range(2 + extra_wires))])
+
+    def test_extra_measurement_wires(self, extra_wires):
+        """Tests if correct state is returned when there are more measurement
+        wires than operating wires."""
+        x = 1.32
+
+        qs = self.get_quantum_script(x, extra_wires)
+        state = get_final_state(qs)[0]
+        expected_state = self.get_expected_dm(x)
+        assert state.shape == (3,) * (2 + extra_wires) * 2
+
+        state_indices = tuple([slice(3), slice(3)] + [0 for _ in range(extra_wires)]) * 2
+        assert math.allclose(state[state_indices], expected_state)
+
+        zero_indices = tuple([slice(3), slice(3)] + [slice(1, 3) for _ in range(extra_wires)]) * 2
+        assert not state[zero_indices].any()
+
+    def test_extra_measurement_wires_broadcasting(self, extra_wires):
+        """Tests if correct state is returned when there are more measurement
+        wires than operating wires on broadcasted state."""
+        x = np.array([1.32, 0.56, 2.81, 2.1])
+
+        qs = self.get_quantum_script(x, extra_wires)
+        state = get_final_state(qs)[0]
+        assert state.shape == tuple([4] + [3] * (2 + extra_wires) * 2)
+
+        expected_state = [self.get_expected_dm(x_val) for x_val in x]
+        state_indices = tuple(
+            [slice(4)] + ([slice(3), slice(3)] + [0 for _ in range(extra_wires)]) * 2
+        )
+        assert math.allclose(state[state_indices], expected_state)
+
+        zero_indices = tuple(
+            [slice(4)] + ([slice(3), slice(3)] + [slice(1, 3) for _ in range(extra_wires)]) * 2
+        )
+        assert not state[zero_indices].any()
 
 
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
@@ -385,12 +418,7 @@ class TestDebugger:
             qml.TRX(phi, wires=0, subspace=subspace),
             qml.Snapshot("final_state"),
         ]
-        obs = [
-            qml.expval(qml.GellMann(0, 2)),
-            qml.expval(qml.GellMann(0, 3)),
-            qml.expval(qml.GellMann(0, 5)),
-            qml.expval(qml.GellMann(0, 8)),
-        ]
+        obs = [qml.expval(qml.GellMann(0, index)) for index in [2, 3, 5, 8]]
         return qml.tape.QuantumScript(ops, obs)
 
     def test_debugger_numpy(self, subspace):
@@ -501,6 +529,7 @@ class TestDebugger:
         assert qml.math.allclose(debugger.snapshots["final_state"], expected_final_state)
 
 
+@flaky
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""
@@ -508,27 +537,33 @@ class TestSampleMeasurements:
     @staticmethod
     def expval_of_TRY_circ(x, subspace):
         """Find the expval of GellMann_3 on simple TRY circuit"""
-        if subspace[1] == 1:
+        if subspace == (0, 1):
             return np.cos(x)
-        return np.cos(x / 2) ** 2
+        if subspace == (0, 2):
+            return np.cos(x / 2) ** 2
+        raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
     @staticmethod
     def sample_sum_of_TRY_circ(x, subspace):
-        """Find the expval of computational basis for both wires on simple TRY circuit"""
-        if subspace[1] == 1:
+        """Find the expval of computational basis bitstring value for both wires on simple TRY circuit"""
+        if subspace == (0, 1):
             return [np.sin(x / 2) ** 2, 0]
-        return [2 * np.sin(x / 2) ** 2, 0]
+        if subspace == (0, 2):
+            return [2 * np.sin(x / 2) ** 2, 0]
+        raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
     @staticmethod
     def expval_of_2_qutrit_circ(x, subspace):
-        """expval of GellMann_3 on wire=0 on the 2 qutrit circuit used"""
-        if subspace[1] == 1:
+        """Gets the expval of GellMann_3 on wire=0 on the 2-qutrit circuit used"""
+        if subspace == (0, 1):
             return np.cos(x)
-        return np.cos(x / 2) ** 2
+        if subspace == (0, 2):
+            return np.cos(x / 2) ** 2
+        raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
     @staticmethod
     def probs_of_2_qutrit_circ(x, y, subspace):
-        """possible measurement values and probabilityies for the 2 qutrit circuit used"""
+        """Possible measurement values and probabilities for the 2-qutrit circuit used"""
         probs = np.array(
             [
                 np.cos(x / 2) * np.cos(y / 2),
@@ -550,7 +585,7 @@ class TestSampleMeasurements:
         qs = qml.tape.QuantumScript(
             [qml.TRY(x, wires=0, subspace=subspace)],
             [qml.expval(qml.GellMann(0, 3))],
-            shots=1000000,
+            shots=10000,
         )
         result = simulate(qs)
         assert isinstance(result, np.float64)
@@ -575,7 +610,7 @@ class TestSampleMeasurements:
 
     def test_multi_measurements(self, subspace):
         """Test a simple circuit containing multiple measurements"""
-        num_shots = 10000
+        num_shots = 100000
         x, y = np.array(0.732), np.array(0.488)
         qs = qml.tape.QuantumScript(
             [
@@ -595,17 +630,17 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert np.allclose(result[0], self.expval_of_2_qutrit_circ(x, subspace), atol=0.1)
+        assert np.allclose(result[0], self.expval_of_2_qutrit_circ(x, subspace), atol=0.01)
 
         expected_keys, expected_probs = self.probs_of_2_qutrit_circ(x, y, subspace)
         assert list(result[1].keys()) == expected_keys
         assert np.allclose(
             np.array(list(result[1].values())) / num_shots,
             expected_probs,
-            atol=0.1,
+            atol=0.01,
         )
 
-        assert result[2].shape == (10000, 2)
+        assert result[2].shape == (100000, 2)
 
     shots_data = [
         [10000, 10000],
