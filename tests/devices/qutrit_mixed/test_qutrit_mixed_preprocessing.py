@@ -18,7 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
-from pennylane.devices.default_qutrit_mixed import DefaultQutritMixed, stopping_condition
+from pennylane.devices.default_qutrit_mixed import DefaultQutritMixed  # , stopping_condition
 
 
 class NoMatOp(qml.operation.Operation):
