@@ -60,7 +60,7 @@ def expected_TRX_circ_state(phi, subspace):
 
 
 class TestCurrentlyUnsupportedCases:
-    """Test currently unsupported cases, such as sampling expval or samples without shots"""
+    """Test currently unsupported cases, such as sampling counts or samples without shots, or probs with shots"""
 
     # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
@@ -124,7 +124,7 @@ class TestStatePrepBase:
 
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
 class TestBasicCircuit:
-    """Tests a basic circuit with one rx gate and two simple expectation values."""
+    """Tests a basic circuit with one TRX gate and a few simple expectation values."""
 
     @staticmethod
     def get_TRX_quantum_script(phi, subspace):

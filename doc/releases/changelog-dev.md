@@ -204,6 +204,7 @@
 
 * `simulate` functionality added to new `qutrit_mixed` module from `qml.devices`. This allows for simulation of a 
   noisy qutrit circuit with measurement and sampling.
+  [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
 * Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
@@ -293,6 +294,9 @@
   [(#5376)](https://github.com/PennyLaneAI/pennylane/pull/5376)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix Torch tensor locality with autoray-registered coerce method.
+  [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
 
 * `jax.jit` now works with `qml.sample` with a multi-wire observable.
   [(#5422)](https://github.com/PennyLaneAI/pennylane/pull/5422)
