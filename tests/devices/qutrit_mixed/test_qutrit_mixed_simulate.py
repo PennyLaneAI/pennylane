@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for simulate in devices/qutrit_mixed."""
-from functools import reduce
-
 import pytest
 from flaky import flaky
 
@@ -29,7 +27,7 @@ def expected_TRX_circ_expval_values(phi, subspace):
     on a circuit with a TRX gate on subspace (0,1) or (0,2)"""
     if subspace == (0, 1):
         return np.array([-np.sin(phi), np.cos(phi), 0, np.sqrt(1 / 3)])
-    elif subspace == (0, 2):
+    if subspace == (0, 2):
         return np.array(
             [
                 0,
@@ -46,7 +44,7 @@ def expected_TRX_circ_expval_jacobians(phi, subspace):
     on a circuit with a TRX gate on subspace (0,1) or (0,2)"""
     if subspace == (0, 1):
         return np.array([-np.cos(phi), -np.sin(phi), 0, 0])
-    elif subspace == (0, 2):
+    if subspace == (0, 2):
         return np.array([0, -np.sin(phi) / 2, -np.cos(phi), np.sqrt(1 / 3) * -(1.5 * np.sin(phi))])
     raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
