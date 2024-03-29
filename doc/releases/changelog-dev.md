@@ -206,6 +206,10 @@
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
 
+* Created the `DefaultQutritMixed` class which implements `device.Device` with an implementation 
+  for `preprocess`, `execute` has not been implemented yet.
+  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
+
 <h3>Breaking changes 💔</h3>
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
