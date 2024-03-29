@@ -295,6 +295,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix failing tests due to changes with Lightning's adjoint diff pipeline.
+  [(#5450)](https://github.com/PennyLaneAI/pennylane/pull/5450)
+
 * Fix Torch tensor locality with autoray-registered coerce method.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
 
