@@ -824,7 +824,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
     def processing_fn(results):
         start = 0
         grads = []
-        print(gradient_data)
         for num_tapes, cjacs, int_prefactor, psr_coeffs in gradient_data:
             if num_tapes == 0:
                 grads.append(None)
