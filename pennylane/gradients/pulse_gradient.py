@@ -787,7 +787,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
     """
     tapes = []
     gradient_data = []
-    for idx, trainable_idx in enumerate(tape.trainable_params):
+    for idx in range(len(tape.trainable_params)):
         if idx not in argnum:
             # Only the number of tapes is needed to indicate a zero gradient entry
             gradient_data.append((0, None, None, None))
