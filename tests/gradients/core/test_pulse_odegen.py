@@ -848,13 +848,13 @@ class TestPulseOdegenEdgeCases:
         batched_tapes, batched_fn = pulse_odegen(tape, argnum=0)
         batched_grad = batched_fn(dev.execute(batched_tapes))
         separate_tapes = [
-            qml.tape.QuantumScript([qml.RX(_x, 0), op], [qml.expval(qml.PauliZ(0))]) for _x in x]
+            qml.tape.QuantumScript([qml.RX(_x, 0), op], [qml.expval(qml.PauliZ(0))]) for _x in x
+        ]
         for t in separate_tapes:
             t.trainable_params = [1]
         separate_tapes_and_fns = [pulse_odegen(t, argnum=0) for t in separate_tapes]
         separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
         assert np.allclose(batched_grad, separate_grad)
-
 
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable

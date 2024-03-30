@@ -776,10 +776,13 @@ class TestStochPulseGradErrors:
         batched_tapes, batched_fn = stoch_pulse_grad(tape, argnum=0, num_split_times=1)
         batched_grad = batched_fn(dev.execute(batched_tapes))
         separate_tapes = [
-            qml.tape.QuantumScript([qml.RX(_x, 0), op], [qml.expval(qml.PauliZ(0))]) for _x in x]
+            qml.tape.QuantumScript([qml.RX(_x, 0), op], [qml.expval(qml.PauliZ(0))]) for _x in x
+        ]
         for t in separate_tapes:
             t.trainable_params = [1]
-        separate_tapes_and_fns = [stoch_pulse_grad(t, argnum=0, num_split_times=1) for t in separate_tapes]
+        separate_tapes_and_fns = [
+            stoch_pulse_grad(t, argnum=0, num_split_times=1) for t in separate_tapes
+        ]
         separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
         assert np.allclose(batched_grad, separate_grad)
 

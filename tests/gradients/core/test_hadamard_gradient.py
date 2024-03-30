@@ -85,7 +85,9 @@ class TestHadamardGrad:
         batched_tapes, batched_fn = qml.gradients.hadamard_grad(tape)
         batched_grad = batched_fn(dev.execute(batched_tapes))
         separate_tapes = [
-            qml.tape.QuantumScript([qml.RY(0.6, 0), qml.RX(_x, 0)], [qml.expval(qml.PauliZ(0))]) for _x in x]
+            qml.tape.QuantumScript([qml.RY(0.6, 0), qml.RX(_x, 0)], [qml.expval(qml.PauliZ(0))])
+            for _x in x
+        ]
         for t in separate_tapes:
             t.trainable_params = [0]
         separate_tapes_and_fns = [qml.gradients.hadamard_grad(t) for t in separate_tapes]
