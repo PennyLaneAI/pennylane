@@ -66,6 +66,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
+  broadcasting is in non-trainable parameters.
+  [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
+
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
@@ -339,4 +343,5 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
 Jay Soni,
-Matthew Silverman.
+Matthew Silverman,
+David Wierichs.
