@@ -833,7 +833,7 @@ class TestParamShiftRaisesWithBroadcasted:
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
         parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = "Computing the gradient of broadcasted tapes with the parameter-shift rule"
+        _match = r"Computing the gradient of broadcasted tapes .* using the parameter-shift rule"
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.param_shift(tape)
 
