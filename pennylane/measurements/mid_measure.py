@@ -85,8 +85,8 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     Mid-circuit measurement results can be processed with the usual measurement functions such as
     :func:`~.expval`. For QNodes with finite shots, :func:`~.sample` applied to a mid-circuit measurement
     result will return a binary sequence of samples.
-    See 
-    `here <https://xanaduai-pennylane--5441.com.readthedocs.build/en/5441/introduction/measurements.html#mid-circuit-measurement-statistics>`_  
+    See
+    `here <https://docs.pennylane.ai/en/stable/introduction/measurements.html#mid-circuit-measurement-statistics>`_
     for more details.
 
     .. code-block:: python3
@@ -99,11 +99,11 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
             qml.RY(y, wires=1)
             m0 = qml.measure(1)
             return (
-                qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0), qml.sample(m0) 
+                qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0), qml.sample(m0)
             )
 
     >>> circuit(1.0, 2.0, shots=10000)
-    (0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702}, array([0, 1, 1, ..., 1, 1, 1]))    
+    (0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702}, array([0, 1, 1, ..., 1, 1, 1]))
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
