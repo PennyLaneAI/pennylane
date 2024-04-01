@@ -753,8 +753,17 @@ class TestSample:
         that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
+
+        class MyObs(qml.operation.Observable):
+            """Observable with no eigenvalue representation defined."""
+
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
-            dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+            dev.sample(MyObs(wires=[0]))
 
 
 class TestSampleWithBroadcasting:
@@ -814,8 +823,17 @@ class TestSampleWithBroadcasting:
         that does not have eigenvalues defined when using broadcasting."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
+
+        class MyObs(qml.operation.Observable):
+            """Observable with no eigenvalue representation defined."""
+
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
-            dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+            dev.sample(MyObs(wires=[0]))
 
 
 class TestEstimateProb:

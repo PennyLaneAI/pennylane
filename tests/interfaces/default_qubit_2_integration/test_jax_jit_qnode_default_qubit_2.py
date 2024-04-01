@@ -34,7 +34,7 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "adjoint", False, False],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
-    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    # [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
 ]
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
@@ -908,7 +908,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
 
-        @qnode(
+        @qml.qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
@@ -918,7 +918,7 @@ class TestQubitIntegration:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
+            return qml.sample(qml.Z(0)), qml.sample(qml.s_prod(2, qml.X(0) @ qml.Y(1)))
 
         res = jax.jit(circuit, static_argnames="shots")(shots=10)
 

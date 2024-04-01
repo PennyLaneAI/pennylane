@@ -598,9 +598,9 @@ def _build_generator(operation, wire_order, op_gen=None):
                     f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
                 ) from exc
     else:  # check that user-provided generator is correct
-        if not isinstance(op_gen, (qml.Hamiltonian, PauliSentence)) and not isinstance(
-            getattr(op_gen, "pauli_rep", None), PauliSentence
-        ):
+        if not isinstance(
+            op_gen, (qml.ops.Hamiltonian, qml.ops.LinearCombination, PauliSentence)
+        ) and not isinstance(getattr(op_gen, "pauli_rep", None), PauliSentence):
             raise ValueError(
                 f"Generator for the operation needs to be a valid operator, but got {type(op_gen)}."
             )

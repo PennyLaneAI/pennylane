@@ -18,6 +18,8 @@ import functools
 import warnings
 from typing import Sequence, Tuple, Optional, Union
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -198,24 +200,28 @@ class SampleMP(SampleMeasurement):
                 "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
+        if self.obs:
+            num_values_per_shot = 1  # one single eigenvalue
+        else:
+            # one value per wire
+            num_values_per_shot = len(self.wires) if len(self.wires) > 0 else len(device.wires)
 
-        def _single_int_shape(shot_val, num_wires):
+        def _single_int_shape(shot_val, num_values):
             # singleton dimensions, whether in shot val or num_wires are squeezed away
             inner_shape = []
             if shot_val != 1:
                 inner_shape.append(shot_val)
-            if num_wires != 1:
-                inner_shape.append(num_wires)
+            if num_values != 1:
+                inner_shape.append(num_values)
             return tuple(inner_shape)
 
         if not shots.has_partitioned_shots:
-            return _single_int_shape(shots.total_shots, len_wires)
+            return _single_int_shape(shots.total_shots, num_values_per_shot)
 
         shape = []
         for s in shots.shot_vector:
             for _ in range(s.copies):
-                shape.append(_single_int_shape(s.shots, len_wires))
+                shape.append(_single_int_shape(s.shots, num_values_per_shot))
 
         return tuple(shape)
 
@@ -268,3 +274,45 @@ class SampleMP(SampleMeasurement):
                 ) from e
 
         return samples if bin_size is None else samples.reshape((bin_size, -1))
+
+    def process_counts(self, counts: dict, wire_order: Wires):
+        samples = []
+        mapped_counts = self._map_counts(counts, wire_order)
+        for outcome, count in mapped_counts.items():
+            outcome_sample = self._compute_outcome_sample(outcome)
+            if len(self.wires) == 1:
+                # If only one wire is sampled, flatten the list
+                outcome_sample = outcome_sample[0]
+            samples.extend([outcome_sample] * count)
+
+        return np.array(samples)
+
+    def _map_counts(self, counts_to_map, wire_order) -> dict:
+        """
+        Args:
+            counts_to_map: Dictionary where key is binary representation of the outcome and value is its count
+            wire_order: Order of wires to which counts_to_map should be ordered in
+
+        Returns:
+            Dictionary where counts_to_map has been reordered according to wire_order
+        """
+        with qml.QueuingManager.stop_recording():
+            helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
+        return helper_counts.process_counts(counts_to_map, wire_order)
+
+    def _compute_outcome_sample(self, outcome) -> list:
+        """
+        Args:
+            outcome (str): The binary string representation of the measurement outcome.
+
+        Returns:
+            list: A list of outcome samples for given binary string.
+                If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
+        """
+        outcome_samples = [int(bit) for bit in outcome]
+
+        if self.eigvals() is not None:
+            eigvals = self.eigvals()
+            outcome_samples = [eigvals[outcome] for outcome in outcome_samples]
+
+        return outcome_samples
