@@ -518,7 +518,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         template_weights = [[0.1, -0.3]] * n_blocks
         dev = device(n_wires)
 
-
         @qml.qnode(dev)
         def circuit(template_weights):
             qml.MERA(range(n_wires), n_block_wires, block, n_params_block, template_weights)
@@ -542,7 +541,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
         template_weights = [[0.1, -0.3]] * n_blocks
         dev = device(n_wires)
-
 
         @qml.qnode(dev)
         def circuit(template_weights):
