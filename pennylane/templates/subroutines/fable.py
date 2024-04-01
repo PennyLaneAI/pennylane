@@ -44,19 +44,14 @@ class FABLE(Operation):
 
     .. code-block:: python
 
-        A = np.array([[-0.51192128, -0.51192128,  0.6237114 ,  0.6237114 ],
-                [ 0.97041007,  0.97041007,  0.99999329,  0.99999329],
-                [ 0.82429855,  0.82429855,  0.98175843,  0.98175843],
-                [ 0.99675093,  0.99675093,  0.83514837,  0.83514837]])
-        ancilla = ["ancilla"]
-        s = int(np.log2(A.shape[0]))
-        wires_i = [f"i{index}" for index in range(s)]
-        wires_j = [f"j{index}" for index in range(s)]
-        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
+        A = np.array([[0.1, 0.2],
+                [0.3, 0.4]])
+        wire_order = ["ancilla", "i1", "i0", "j1", "j0"]
+
         dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def example_circuit():
-            qml.FABLE(A, tol=0.01)
+            qml.FABLE(A, tol=0)
             return qml.state()
 
     We can see that :math:`A` has been block encoded in the matrix of the circuit:
@@ -64,13 +59,11 @@ class FABLE(Operation):
     >>> M = len(A) * qml.matrix(circuit, wire_order=wire_order)().real[0 : len(A), 0 : len(A)]
     ... print(f"Block-encoded matrix:\n{M}", "\n")
     Block-encoded matrix:
-    [[-0.51192128 -0.51192128  0.6237114   0.6237114 ]
-    [ 0.97041007  0.97041007  0.99999329  0.99999329]
-    [ 0.82429855  0.82429855  0.98175843  0.98175843]
-    [ 0.99675093  0.99675093  0.83514837  0.83514837]]
+    [[0.1 0.2]
+    [0.3 0.4]]
 
     .. note::
-        By default it is assumed that the matrix is an NxN square matrix, where N is a power of 2. However, for matrices of arbitrary size,
+        By default it is assumed that the matrix is an :math:`(N \times N)` square matrix, where :math:`N` is a power of 2. However, for matrices of arbitrary size,
         we add zeros to reach the correct dimension. It is also assumed that the values of the input matrix are within [-1, 1]. Apply a subnormalization factor if needed.
     """
 
