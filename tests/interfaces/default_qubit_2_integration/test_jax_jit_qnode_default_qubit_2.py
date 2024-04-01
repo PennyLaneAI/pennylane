@@ -21,7 +21,9 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubit, LegacyDeviceFacade
+
+legacy_dev = LegacyDeviceFacade(qml.device("default.qubit.legacy", wires=(0, 1, 2, "a", "b")))
 
 # device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
@@ -34,6 +36,10 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "adjoint", False, False],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
+    [legacy_dev, "backprop", False, False],
+    [legacy_dev, "parameter-shift", False, False],
+    [legacy_dev, "adjoint", True, False],
+    [legacy_dev, "adjoint", False, False],
     # [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
 ]
 interface_and_qubit_device_and_diff_method = [
@@ -431,6 +437,10 @@ class TestVectorValuedQNode:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
+
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
+
         gradient_kwargs = {}
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -484,6 +494,8 @@ class TestVectorValuedQNode:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
         gradient_kwargs = {}
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -570,6 +582,8 @@ class TestVectorValuedQNode:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
         gradient_kwargs = {}
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -646,6 +660,8 @@ class TestVectorValuedQNode:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
         kwargs = {}
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -699,6 +715,8 @@ class TestVectorValuedQNode:
             pytest.xfail("gradient transforms have a different vjp shape convention.")
         if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
         gradient_kwargs = {}
         if diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
@@ -905,8 +923,8 @@ class TestQubitIntegration:
         if grad_on_execution:
             pytest.skip("Sampling not possible with forward grad_on_execution differentiation.")
 
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint warns with finite shots")
+        if diff_method in {"adjoint", "backprop"}:
+            pytest.xfail("adjoint and backprop incompatible with finite shots.")
 
         @qml.qnode(
             dev,
