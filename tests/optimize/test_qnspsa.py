@@ -455,4 +455,6 @@ def test_workflow_integration():
         params, loss = opt.step_and_cost(cost, params)
 
     assert qml.math.allclose(loss, -1, atol=1e-3)
-    assert qml.math.allclose(params, np.array([np.pi, 0]), atol=1e-2)
+    # compare sine of params and target params as could converge to params + 2* np.pi
+    target_params = np.array([np.pi, 0])
+    assert qml.math.allclose(np.sin(params), np.sin(target_params), atol=1e-2)
