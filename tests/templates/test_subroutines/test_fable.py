@@ -47,15 +47,21 @@ def generate_FABLE_circuit(A, tol):
 
     nots = {}
     for theta, control_index in zip(thetas, control_wires):
-        if abs(2 * theta) > tol:
+        if qml.math.is_abstract(theta):
             for c_wire in nots:
                 qml.CNOT(wires=[c_wire] + ancilla)
             qml.RY(2 * theta, wires=ancilla)
-            nots = {}
-        if wire_map[control_index] in nots:
-            del nots[wire_map[control_index]]
-        else:
             nots[wire_map[control_index]] = 1
+        else:
+            if abs(2 * theta) > tol:
+                for c_wire in nots:
+                    qml.CNOT(wires=[c_wire] + ancilla)
+                qml.RY(2 * theta, wires=ancilla)
+                nots = {}
+            if wire_map[control_index] in nots:
+                del nots[wire_map[control_index]]
+            else:
+                nots[wire_map[control_index]] = 1
 
     for c_wire in nots:
         qml.CNOT([c_wire] + ancilla)
@@ -228,6 +234,7 @@ class TestFable:
             FABLE(input_matrix)
             return qml.expval(qml.PauliZ(wires=0))
 
+        @jax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
             generate_FABLE_circuit(input_matrix, 0)
