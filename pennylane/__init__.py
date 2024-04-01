@@ -89,9 +89,7 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     defer_measurements,
-    qfunc_transform,
-    op_transform,
-    single_tape_transform,
+    dynamic_one_shot,
     quantum_monte_carlo,
     apply_controlled_Q,
     commutation_dag,
@@ -135,8 +133,6 @@ import pennylane.compiler
 
 import pennylane.data
 
-import pennylane.interfaces
-
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
@@ -147,6 +143,18 @@ class QuantumFunctionError(Exception):
 
 class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
+
+
+del globals()["Hamiltonian"]
+
+
+def __getattr__(name):
+    if name == "Hamiltonian":
+        if pennylane.operation.active_new_opmath():
+            return pennylane.ops.LinearCombination
+        return pennylane.ops.Hamiltonian
+
+    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 
 
 def _get_device_entrypoints():

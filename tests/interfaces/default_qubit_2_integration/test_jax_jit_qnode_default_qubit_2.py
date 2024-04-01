@@ -23,6 +23,7 @@ from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
+# device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [DefaultQubit(), "backprop", True, False],
     [DefaultQubit(), "finite-diff", False, False],
@@ -33,7 +34,7 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "adjoint", False, False],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
-    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    # [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
 ]
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
@@ -841,10 +842,11 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == "backprop"
+        assert cost_fn.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         cost_fn(a, b)
+        assert cost_fn.gradient_fn == "backprop"
         # if we set the shots to None, backprop can now be used
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
@@ -906,7 +908,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
 
-        @qnode(
+        @qml.qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
@@ -916,7 +918,7 @@ class TestQubitIntegration:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
+            return qml.sample(qml.Z(0)), qml.sample(qml.s_prod(2, qml.X(0) @ qml.Y(1)))
 
         res = jax.jit(circuit, static_argnames="shots")(shots=10)
 

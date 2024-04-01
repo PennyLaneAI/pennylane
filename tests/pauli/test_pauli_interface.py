@@ -16,6 +16,8 @@ Unit tests for the :mod:`pauli` interface functions in ``pauli/pauli_interface.p
 """
 import pytest
 
+import numpy as np
+
 import pennylane as qml
 
 from pennylane.pauli import pauli_word_prefactor
@@ -27,6 +29,8 @@ ops_factors = (
     (qml.Identity(0), 1),
     (qml.PauliX(0) @ qml.PauliY(1), 1),
     (qml.PauliX(0) @ qml.PauliY(0), 1j),
+    (qml.operation.Tensor(qml.X(0), qml.Y(1)), 1),
+    (qml.operation.Tensor(qml.X(0), qml.Y(0)), 1j),
     (qml.Hamiltonian([-1.23], [qml.PauliZ(0)]), -1.23),
     (qml.prod(qml.PauliX(0), qml.PauliY(1)), 1),
     (qml.s_prod(1.23, qml.s_prod(-1j, qml.PauliZ(0))), -1.23j),
@@ -37,6 +41,13 @@ ops_factors = (
 def test_pauli_word_prefactor(op, true_prefactor):
     """Test that we can accurately determine the prefactor"""
     assert pauli_word_prefactor(op) == true_prefactor
+
+
+def test_pauli_word_prefactor_tensor_error():
+    """Test that an error is raised is the tensor is not a pauli sentence."""
+    op = qml.operation.Tensor(qml.Hermitian(np.eye(2), wires=0), qml.Hadamard(wires=1))
+    with pytest.raises(ValueError, match="Expected a valid Pauli word"):
+        pauli_word_prefactor(op)
 
 
 ops = (
@@ -50,6 +61,7 @@ ops = (
 )
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("op", ops)
 def test_pauli_word_prefactor_raises_error(op):
     """Test that an error is raised when the operator provided is not a valid PauliWord."""

@@ -87,7 +87,7 @@ class ControlledQubitUnitary(ControlledOp):
     Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
        [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
 
-    Typically controlled operations apply a desired gate if the control qubits
+    Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
     it is necessary to apply a gate conditioned on all qubits being in the
     :math:`\vert 0\rangle` state, or a mix of the two.
@@ -217,6 +217,9 @@ class CH(ControlledOp):
         target_wires = wires[1:]
         super().__init__(qml.Hadamard(wires=target_wires), control_wires, id=id)
 
+    def __repr__(self):
+        return f"CH(wires={self.wires.tolist()})"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -267,7 +270,7 @@ class CH(ControlledOp):
         **Example:**
 
         >>> print(qml.CH.compute_decomposition([0, 1]))
-        [qml.RY(-0.78539816339, wires=[1]), CZ(wires=[0, 1]), qml.RY(0.78539816339, wires=[1])]
+        [RY(-0.7853981633974483, wires=[1]), CZ(wires=[0, 1]), RY(0.7853981633974483, wires=[1])]
 
         """
         return [
@@ -323,6 +326,9 @@ class CY(ControlledOp):
         control_wire, wire = wires
         super().__init__(qml.Y(wire), control_wire, id=id)
 
+    def __repr__(self):
+        return f"CY(wires={self.wires.tolist()})"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -373,7 +379,7 @@ class CY(ControlledOp):
         **Example:**
 
         >>> print(qml.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
+        [CRY(3.141592653589793, wires=[0, 1])), S(wires=[0])]
 
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
@@ -422,6 +428,9 @@ class CZ(ControlledOp):
     def __init__(self, wires, id=None):
         control_wire, wire = wires
         super().__init__(qml.Z(wires=wire), control_wire, id=id)
+
+    def __repr__(self):
+        return f"CZ(wires={self.wires.tolist()})"
 
     @staticmethod
     @lru_cache()
@@ -502,6 +511,9 @@ class CSWAP(ControlledOp):
         control_wires = wires[:1]
         target_wires = wires[1:]
         super().__init__(qml.SWAP(wires=target_wires), control_wires, id=id)
+
+    def __repr__(self):
+        return f"CSWAP(wires={self.wires.tolist()})"
 
     @staticmethod
     @lru_cache()
@@ -620,6 +632,9 @@ class CCZ(ControlledOp):
         target_wires = wires[2:]
         super().__init__(qml.PauliZ(wires=target_wires), control_wires, id=id)
 
+    def __repr__(self):
+        return f"CCZ(wires={self.wires.tolist()})"
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -678,20 +693,20 @@ class CCZ(ControlledOp):
 
         >>> qml.CCZ.compute_decomposition((0,1,2))
         [CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        T(wires=[1]),
-        CNOT(wires=[0, 1]),
-        Hadamard(wires=[2]),
-        T(wires=[0]),
-        Adjoint(T)(wires=[1]),
-        CNOT(wires=[0, 1]),
-        Hadamard(wires=[2]),]
+         Adjoint(T(wires=[2])),
+         CNOT(wires=[0, 2]),
+         T(wires=[2]),
+         CNOT(wires=[1, 2]),
+         Adjoint(T(wires=[2])),
+         CNOT(wires=[0, 2]),
+         T(wires=[2]),
+         T(wires=[1]),
+         CNOT(wires=[0, 1]),
+         Hadamard(wires=[2]),
+         T(wires=[0]),
+         Adjoint(T(wires=[1])),
+         CNOT(wires=[0, 1]),
+         Hadamard(wires=[2])]
 
         """
         return [
@@ -903,20 +918,20 @@ class Toffoli(ControlledOp):
 
         >>> qml.Toffoli.compute_decomposition((0,1,2))
         [Hadamard(wires=[2]),
-        CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        CNOT(wires=[1, 2]),
-        Adjoint(T)(wires=[2]),
-        CNOT(wires=[0, 2]),
-        T(wires=[2]),
-        T(wires=[1]),
-        CNOT(wires=[0, 1]),
-        Hadamard(wires=[2]),
-        T(wires=[0]),
-        Adjoint(T)(wires=[1]),
-        CNOT(wires=[0, 1])]
+         CNOT(wires=[1, 2]),
+         Adjoint(T(wires=[2])),
+         CNOT(wires=[0, 2]),
+         T(wires=[2]),
+         CNOT(wires=[1, 2]),
+         Adjoint(T(wires=[2])),
+         CNOT(wires=[0, 2]),
+         T(wires=[2]),
+         T(wires=[1]),
+         CNOT(wires=[0, 1]),
+         Hadamard(wires=[2]),
+         T(wires=[0]),
+         Adjoint(T(wires=[1])),
+         CNOT(wires=[0, 1])]
 
         """
         return [
@@ -1024,21 +1039,35 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=too-many-arguments
     def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
-        if wires is None:
-            raise ValueError("Must specify the wires where the operation acts on")
-        wires = wires if isinstance(wires, Wires) else Wires(wires)
+
+        # First raise deprecation warnings regardless of the validity of other arguments
+        if isinstance(control_values, str):
+            warnings.warn(
+                "Specifying control values using a bitstring is deprecated, and will not be "
+                "supported in future releases, Use a list of booleans or integers instead.",
+                qml.PennyLaneDeprecationWarning,
+            )
         if control_wires is not None:
             warnings.warn(
-                "The control_wires keyword will be removed soon. Use wires = (control_wires, "
-                "target_wire) instead. See the documentation for more information.",
+                "The control_wires keyword for MultiControlledX is deprecated, and will "
+                "be removed soon. Use wires = (*control_wires, target_wire) instead.",
                 UserWarning,
             )
+
+        if wires is None:
+            raise ValueError("Must specify the wires where the operation acts on")
+
+        wires = wires if isinstance(wires, Wires) else Wires(wires)
+
+        if control_wires is not None:
             if len(wires) != 1:
                 raise ValueError("MultiControlledX accepts a single target wire.")
+            control_wires = Wires(control_wires)
         else:
             if len(wires) < 2:
                 raise ValueError(
-                    f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. Need at least 2."
+                    f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. "
+                    f"Need at least 2."
                 )
             control_wires = wires[:-1]
             wires = wires[-1:]
@@ -1079,12 +1108,12 @@ class MultiControlledX(ControlledOp):
 
         **Example**
 
-        >>> print(qml.MultiControlledX.compute_matrix([0], 1))
+        >>> print(qml.MultiControlledX.compute_matrix([0], [1]))
         [[1. 0. 0. 0.]
          [0. 1. 0. 0.]
          [0. 0. 0. 1.]
          [0. 0. 1. 0.]]
-        >>> print(qml.MultiControlledX.compute_matrix([1], 0))
+        >>> print(qml.MultiControlledX.compute_matrix([1], [0]))
         [[0. 1. 0. 0.]
          [1. 0. 0. 0.]
          [0. 0. 1. 0.]
@@ -1219,6 +1248,9 @@ class CRX(ControlledOp):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+
+    def __repr__(self):
+        return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -1365,6 +1397,9 @@ class CRY(ControlledOp):
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[0], id=id)
 
+    def __repr__(self):
+        return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
+
     @classmethod
     def _unflatten(cls, data, metadata):
         base = data[0]
@@ -1390,10 +1425,10 @@ class CRY(ControlledOp):
         **Example**
 
         >>> qml.CRY.compute_matrix(torch.tensor(0.5))
-        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
-                [ 0.0000,  1.0000,  0.0000,  0.0000],
-                [ 0.0000,  0.0000,  0.9689, -0.2474],
-                [ 0.0000,  0.0000,  0.2474,  0.9689]], dtype=torch.float64)
+        tensor([[ 1.0000+0.j,  0.0000+0.j,  0.0000+0.j,  0.0000+0.j],
+                [ 0.0000+0.j,  1.0000+0.j,  0.0000+0.j,  0.0000+0.j],
+                [ 0.0000+0.j,  0.0000+0.j,  0.9689+0.j, -0.2474-0.j],
+                [ 0.0000+0.j,  0.0000+0.j,  0.2474+0.j,  0.9689+0.j]])
         """
         interface = qml.math.get_interface(theta)
 
@@ -1509,6 +1544,9 @@ class CRZ(ControlledOp):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+
+    def __repr__(self):
+        return f"CRZ({self.data[0]}, wires={self.wires})"
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -1687,6 +1725,10 @@ class CRot(ControlledOp):
     def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
         super().__init__(qml.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0], id=id)
 
+    def __repr__(self):
+        params = ", ".join([repr(p) for p in self.parameters])
+        return f"CRot({params}, wires={self.wires})"
+
     @classmethod
     def _unflatten(cls, data, metadata):
         base = data[0]
@@ -1780,14 +1822,14 @@ class CRot(ControlledOp):
 
         **Example:**
 
-        >>> qml.PhaseShift.compute_decomposition(1.234, wires=0)
-        [RZ(-1.1, wires=[1]),
-        CNOT(wires=[0, 1]),
-        RZ(-2.3, wires=[1]),
-        RY(-1.15, wires=[1]),
-        CNOT(wires=[0, 1]),
-        RY(1.15, wires=[1]),
-        RZ(3.4, wires=[1])]
+        >>> qml.CRot.compute_decomposition(1.234, 2.34, 3.45, wires=[0, 1])
+        [RZ(-1.108, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RZ(-2.342, wires=[1]),
+         RY(-1.17, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RY(1.17, wires=[1]),
+         RZ(3.45, wires=[1])]
 
         """
         return [
@@ -1842,6 +1884,9 @@ class ControlledPhaseShift(ControlledOp):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+
+    def __repr__(self):
+        return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -1951,10 +1996,10 @@ class ControlledPhaseShift(ControlledOp):
 
         >>> qml.ControlledPhaseShift.compute_decomposition(1.234, wires=(0,1))
         [PhaseShift(0.617, wires=[0]),
-        CNOT(wires=[0, 1]),
-        PhaseShift(-0.617, wires=[1]),
-        CNOT(wires=[0, 1]),
-        PhaseShift(0.617, wires=[1])]
+         CNOT(wires=[0, 1]),
+         PhaseShift(-0.617, wires=[1]),
+         CNOT(wires=[0, 1]),
+         PhaseShift(0.617, wires=[1])]
 
         """
         return [

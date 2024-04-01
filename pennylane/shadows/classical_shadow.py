@@ -228,11 +228,27 @@ class ClassicalShadow:
             (T, 2**n, 2**n),
         )
 
+    def _convert_to_pauli_words_with_pauli_rep(self, pr, num_wires):
+        """Convert to recipe using pauli representation"""
+        pr_to_recipe_map = {"X": 0, "Y": 1, "Z": 2, "I": -1}
+
+        coeffs_and_words = []
+        for pw, c in pr.items():
+            word = [-1] * num_wires
+            for i, s in pw.items():
+                word[self.wire_map.index(i)] = pr_to_recipe_map[s]
+
+            coeffs_and_words.append((c, word))
+
+        return coeffs_and_words
+
     def _convert_to_pauli_words(self, observable):
         """Given an observable, obtain a list of coefficients and Pauli words, the
         sum of which is equal to the observable"""
 
         num_wires = self.bits.shape[1]
+
+        # Legacy support for old opmath
         obs_to_recipe_map = {"PauliX": 0, "PauliY": 1, "PauliZ": 2, "Identity": -1}
 
         def pauli_list_to_word(obs):
@@ -253,15 +269,21 @@ class ClassicalShadow:
             word = pauli_list_to_word(observable.obs)
             return [(1, word)]
 
-        # TODO: cases for new operator arithmetic
-
-        if isinstance(observable, qml.Hamiltonian):
+        if isinstance(observable, qml.ops.Hamiltonian):
             coeffs_and_words = []
             for coeff, op in zip(observable.data, observable.ops):
                 coeffs_and_words.extend(
                     [(coeff * c, w) for c, w in self._convert_to_pauli_words(op)]
                 )
             return coeffs_and_words
+
+        # Support for all operators with a valid pauli_rep
+        if (pr := observable.pauli_rep) is not None:
+            return self._convert_to_pauli_words_with_pauli_rep(pr, num_wires)
+
+        raise ValueError(
+            "Observable must have a valid pauli representation. Recevied {observable} with observable.pauli_rep = {pr}"
+        )
 
     def expval(self, H, k=1):
         r"""Compute expectation value of an observable :math:`H`.
@@ -306,7 +328,7 @@ class ClassicalShadow:
         >>> shadow.expval(H, k=1)
         array(1.9980000000000002)
         """
-        if not isinstance(H, Iterable):
+        if not isinstance(H, (list, tuple)):
             H = [H]
 
         coeffs_and_words = [self._convert_to_pauli_words(h) for h in H]

@@ -56,7 +56,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
     Returns:
-        (function or :class:`~.operation.Operator`): If an Operator is provided, returns a Controlled version of the Operator.
+        function or :class:`~.operation.Operator`: If an Operator is provided, returns a Controlled version of the Operator.
         If a function is provided, returns a function with the same call signature that creates a controlled version of the
         provided function.
 
@@ -131,7 +131,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
 
 def create_controlled_op(op, control, control_values=None, work_wires=None):
-    """Default `qml.ctrl` implementation, allowing other implementations to call it when needed."""
+    """Default ``qml.ctrl`` implementation, allowing other implementations to call it when needed."""
 
     control = qml.wires.Wires(control)
     if isinstance(control_values, (int, bool)):
@@ -667,6 +667,8 @@ class Controlled(SymbolicOp):
         projectors = (
             qml.Projector([val], wires=w) for val, w in zip(self.control_values, self.control_wires)
         )
+        # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
+        # it otherwise can't handle ControlledGlobalPhase, see PR #5194
         return qml.prod(*projectors, sub_gen)
 
     @property

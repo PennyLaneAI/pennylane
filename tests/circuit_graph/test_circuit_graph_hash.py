@@ -23,21 +23,23 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
 
+@pytest.mark.usefixtures("use_legacy_opmath")
 class TestCircuitGraphHash:
     """Test the creation of a hash on a CircuitGraph"""
 
-    numeric_queues = [
-        ([qml.RX(0.3, wires=[0])], [], "RX!0.3![0]|||"),
-        (
-            [
-                qml.RX(0.3, wires=[0]),
-                qml.RX(0.4, wires=[1]),
-                qml.RX(0.5, wires=[2]),
-            ],
-            [],
-            "RX!0.3![0]RX!0.4![1]RX!0.5![2]|||",
-        ),
-    ]
+    with qml.operation.disable_new_opmath_cm():
+        numeric_queues = [
+            ([qml.RX(0.3, wires=[0])], [], "RX!0.3![0]|||"),
+            (
+                [
+                    qml.RX(0.3, wires=[0]),
+                    qml.RX(0.4, wires=[1]),
+                    qml.RX(0.5, wires=[2]),
+                ],
+                [],
+                "RX!0.3![0]RX!0.4![1]RX!0.5![2]|||",
+            ),
+        ]
 
     @pytest.mark.parametrize("queue, observable_queue, expected_string", numeric_queues)
     def test_serialize_numeric_arguments(self, queue, observable_queue, expected_string):
@@ -48,33 +50,38 @@ class TestCircuitGraphHash:
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
 
-    returntype1 = qml.expval
-    returntype2 = qml.var
+    with qml.operation.disable_new_opmath_cm():
+        returntype1 = qml.expval
+        returntype2 = qml.var
 
-    observable1 = qml.PauliZ(wires=[0])
-    observable2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
-    observable3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
+        observable1 = qml.PauliZ(wires=[0])
+        observable2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
+        observable3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
 
-    numeric_observable_queue = [
-        (returntype1, observable1, "|||ObservableReturnTypes.Expectation!PauliZ[0]"),
-        (
-            returntype1,
-            observable2,
-            "|||ObservableReturnTypes.Expectation!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
-        ),
-        (
-            returntype1,
-            observable3,
-            "|||ObservableReturnTypes.Expectation!['PauliZ', 'PauliZ'][0, 1]",
-        ),
-        (returntype2, observable1, "|||ObservableReturnTypes.Variance!PauliZ[0]"),
-        (
-            returntype2,
-            observable2,
-            "|||ObservableReturnTypes.Variance!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
-        ),
-        (returntype2, observable3, "|||ObservableReturnTypes.Variance!['PauliZ', 'PauliZ'][0, 1]"),
-    ]
+        numeric_observable_queue = [
+            (returntype1, observable1, "|||ObservableReturnTypes.Expectation!PauliZ[0]"),
+            (
+                returntype1,
+                observable2,
+                "|||ObservableReturnTypes.Expectation!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
+            ),
+            (
+                returntype1,
+                observable3,
+                "|||ObservableReturnTypes.Expectation!['PauliZ', 'PauliZ'][0, 1]",
+            ),
+            (returntype2, observable1, "|||ObservableReturnTypes.Variance!PauliZ[0]"),
+            (
+                returntype2,
+                observable2,
+                "|||ObservableReturnTypes.Variance!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
+            ),
+            (
+                returntype2,
+                observable3,
+                "|||ObservableReturnTypes.Variance!['PauliZ', 'PauliZ'][0, 1]",
+            ),
+        ]
 
     @pytest.mark.parametrize("obs, op, expected_string", numeric_observable_queue)
     def test_serialize_numeric_arguments_observables_expval_var(self, obs, op, expected_string):
