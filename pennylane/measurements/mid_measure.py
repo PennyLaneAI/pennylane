@@ -85,9 +85,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     Mid-circuit measurement results can be processed with the usual measurement functions such as
     :func:`~.expval`. For QNodes with finite shots, :func:`~.sample` applied to a mid-circuit measurement
     result will return a binary sequence of samples.
-    See
-    `here <https://docs.pennylane.ai/en/stable/introduction/measurements.html#mid-circuit-measurement-statistics>`_
-    for more details.
+    See :ref:`here <mid_circuit_measurements>` for more details.
 
     .. code-block:: python3
 
