@@ -151,15 +151,7 @@ def dot(
     # Convert possible PauliWord and PauliSentence instances to operation
     ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
-    # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
-    ops = (convert_to_opmath(op) for op in ops)
-
-    operands = [op if coeff == 1 else qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
-    return (
-        operands[0]
-        if len(operands) == 1
-        else qml.sum(*operands, grouping_type=grouping_type, method=method)
-    )
+    return qml.ops.LinearCombination(coeffs, ops, grouping_type=grouping_type, method=method)
 
 
 def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
