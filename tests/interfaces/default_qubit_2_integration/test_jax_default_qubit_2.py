@@ -127,6 +127,9 @@ no_shots = Shots(None)
 shots_2_10k = Shots((10000, 10000))
 dev_def = DefaultQubit()
 dev_ps = ParamShiftDerivativesDevice(seed=54353453)
+dev_legacy = qml.devices.LegacyDeviceFacade(
+    qml.device("default.qubit.legacy", wires=(0, 1, 2, "a", "b"))
+)
 test_matrix = [
     ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),  # 0
     ({"gradient_fn": param_shift}, no_shots, dev_def),  # 1
@@ -134,6 +137,10 @@ test_matrix = [
     ({"gradient_fn": "adjoint"}, no_shots, dev_def),  # 3
     ({"gradient_fn": "adjoint", "device_vjp": True}, no_shots, dev_def),  # 4
     ({"gradient_fn": "device"}, shots_2_10k, dev_ps),  # 5
+    ({"gradient_fn": param_shift}, Shots(100000), dev_legacy),  # 6
+    ({"gradient_fn": param_shift}, no_shots, dev_legacy),  # 7
+    ({"gradient_fn": "backprop"}, no_shots, dev_legacy),  # 8
+    ({"gradient_fn": "adjoint"}, no_shots, dev_legacy),  # 9
 ]
 
 
@@ -240,6 +247,9 @@ class TestJaxExecuteIntegration:
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
+
+        if device.name == "default.qubit.legacy" and execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -520,6 +530,9 @@ class TestJaxExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
+        if device.name == "default.qubit.legacy" and execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
+
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -582,6 +595,9 @@ class TestJaxExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        if device.name == "default.qubit.legacy" and execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -713,13 +729,13 @@ class TestHamiltonianWorkflows:
         def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             H1 = qml.Hamiltonian(coeffs1, obs1)
-            if use_new_op_math:
-                H1 = qml.pauli.pauli_sentence(H1).operation()
+            if not use_new_op_math:
+                H1 = qml.operation.convert_to_legacy_H(H1)
 
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
-            if use_new_op_math:
-                H2 = qml.pauli.pauli_sentence(H2).operation()
+            if not use_new_op_math:
+                H2 = qml.operation.convert_to_legacy_H(H2)
 
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
@@ -765,9 +781,14 @@ class TestHamiltonianWorkflows:
         )
 
     def test_multiple_hamiltonians_not_trainable(
-        self, execute_kwargs, cost_fn, shots, use_new_op_math
+        self, device, execute_kwargs, cost_fn, shots, use_new_op_math
     ):
         """Test hamiltonian with no trainable parameters."""
+
+        if device.name == "default.qubit.legacy" and shots:
+            pytest.xfail(
+                "default.qubit.legacy cannot handle multiple hamiltonians with finite-shots"
+            )
 
         if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
@@ -792,8 +813,15 @@ class TestHamiltonianWorkflows:
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, use_new_op_math):
+    def test_multiple_hamiltonians_trainable(
+        self, device, execute_kwargs, cost_fn, shots, use_new_op_math
+    ):
         """Test hamiltonian with trainable parameters."""
+        if device.name == "default.qubit.legacy" and shots:
+            pytest.xfail(
+                "default.qubit.legacy cannot handle multiple hamiltonians with finite-shots"
+            )
+
         if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
         if use_new_op_math:

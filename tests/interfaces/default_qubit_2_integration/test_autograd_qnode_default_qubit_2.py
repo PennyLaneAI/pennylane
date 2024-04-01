@@ -21,9 +21,11 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubit, LegacyDeviceFacade
 
 from tests.param_shift_dev import ParamShiftDerivativesDevice
+
+legacy_dev = LegacyDeviceFacade(qml.device("default.qubit.legacy", wires=5))
 
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
@@ -31,6 +33,7 @@ qubit_device_and_diff_method = [
     [qml.device("default.qubit"), "parameter-shift", False, False],
     [qml.device("default.qubit"), "backprop", True, False],
     [qml.device("default.qubit"), "adjoint", True, False],
+    [qml.device("default.qubit"), "adjoint", True, True],
     [qml.device("default.qubit"), "adjoint", False, False],
     [qml.device("default.qubit"), "spsa", False, False],
     [qml.device("default.qubit"), "hadamard", False, False],
@@ -38,6 +41,13 @@ qubit_device_and_diff_method = [
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
+    [legacy_dev, "finite-diff", False, False],
+    [legacy_dev, "parameter-shift", False, False],
+    [legacy_dev, "backprop", True, False],
+    [legacy_dev, "adjoint", True, False],
+    [legacy_dev, "adjoint", False, False],
+    [legacy_dev, "spsa", False, False],
+    [legacy_dev, "hadamard", False, False],
 ]
 
 interface_qubit_device_and_diff_method = [
@@ -1840,6 +1850,9 @@ class TestReturn:
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
 
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
+
         @qnode(
             dev,
             interface="autograd",
@@ -1864,6 +1877,9 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
 
         @qnode(
             dev,
@@ -1895,6 +1911,9 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned."""
 
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
+
         @qnode(
             dev,
             interface="autograd",
@@ -1917,6 +1936,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
 
         @qnode(
             dev,
@@ -1944,6 +1966,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
 
         @qnode(
             dev,
@@ -1978,6 +2003,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
 
         @qnode(
             dev,

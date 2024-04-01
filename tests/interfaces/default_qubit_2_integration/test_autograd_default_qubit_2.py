@@ -126,6 +126,9 @@ class TestCaching:
 
 # add tests for lightning 2 when possible
 # set rng for device when possible
+legacy_dev = qml.devices.LegacyDeviceFacade(
+    qml.device("default.qubit.legacy", wires=(0, 1, 2, "a", "b"))
+)
 test_matrix = [
     ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),
     ({"gradient_fn": param_shift}, Shots((100000, 100000)), DefaultQubit(seed=42)),
@@ -155,6 +158,26 @@ test_matrix = [
         {"gradient_fn": "device", "device_vjp": True},
         Shots((100000, 100000)),
         ParamShiftDerivativesDevice(seed=10490244),
+    ),
+    (
+        {"gradient_fn": "backprop"},
+        Shots(None),
+        legacy_dev,
+    ),
+    (
+        {"gradient_fn": "adjoint", "grad_on_execution": True},
+        Shots(None),
+        legacy_dev,
+    ),
+    (
+        {"gradient_fn": "adjoint", "grad_on_execution": False},
+        Shots(None),
+        legacy_dev,
+    ),
+    (
+        {"gradient_fn": qml.gradients.param_shift},
+        Shots(None),
+        legacy_dev,
     ),
 ]
 
@@ -189,7 +212,13 @@ class TestAutogradExecuteIntegration:
         if execute_kwargs.get("grad_on_execution", False):
             assert device.tracker.totals["execute_and_derivative_batches"] == 1
         else:
-            assert device.tracker.totals["batches"] == 1
+            expected = (
+                2
+                if isinstance(device, qml.devices.LegacyDeviceFacade)
+                and execute_kwargs.get("grad_on_execution", False)
+                else 1
+            )
+            assert device.tracker.totals["batches"] == expected
         assert device.tracker.totals["executions"] == 2  # different wires so different hashes
 
         assert len(res) == 2
@@ -265,6 +294,11 @@ class TestAutogradExecuteIntegration:
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
+
+        if execute_kwargs["gradient_fn"] == "adjoint" and isinstance(
+            device, qml.devices.LegacyDeviceFacade
+        ):
+            pytest.xfail("probs with adjoint")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -564,6 +598,11 @@ class TestAutogradExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
+        if execute_kwargs["gradient_fn"] == "adjoint" and isinstance(
+            device, qml.devices.LegacyDeviceFacade
+        ):
+            pytest.xfail("probs with adjoint")
+
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -616,6 +655,11 @@ class TestAutogradExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        if execute_kwargs["gradient_fn"] == "adjoint" and isinstance(
+            device, qml.devices.LegacyDeviceFacade
+        ):
+            pytest.xfail("probs with adjoint")
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -738,13 +782,13 @@ class TestHamiltonianWorkflows:
         def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             H1 = qml.Hamiltonian(coeffs1, obs1)
-            if use_new_op_math:
-                H1 = qml.pauli.pauli_sentence(H1).operation()
+            if not use_new_op_math:
+                H1 = qml.operation.convert_to_legacy_H(H1)
 
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
-            if use_new_op_math:
-                H2 = qml.pauli.pauli_sentence(H2).operation()
+            if not use_new_op_math:
+                H2 = qml.operation.convert_to_legacy_H(H2)
 
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
