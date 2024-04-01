@@ -291,6 +291,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `QNode` interface now resets if an error occurs during execution.
+  [(#5449)](https://github.com/PennyLaneAI/pennylane/pull/5449)
+
 * Fix failing tests due to changes with Lightning's adjoint diff pipeline.
   [(#5450)](https://github.com/PennyLaneAI/pennylane/pull/5450)
 
