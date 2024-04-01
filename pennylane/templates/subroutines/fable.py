@@ -30,7 +30,8 @@ class FABLE(Operation):
 
 
     Args:
-        A (tensor_like): an :math:`(N \times N)` matrix to be encoded, where N should have dimension equal to 2^n where n is an integer
+        A (tensor_like): an :math:`(N \times N)` matrix to be encoded, where :math:`N`
+        should have dimension equal to :math:`2^n` where :math:`n` is an integer
         tol (float): rotation gates that have an angle value smaller than this tolerance are removed
         id (str or None): string representing the operation (optional)
 
