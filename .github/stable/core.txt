@@ -35,13 +35,13 @@ osqp==0.6.5
 packaging==24.0
 pathspec==0.12.1
 PennyLane_Lightning==0.36.0
-pillow==10.2.0
+pillow==10.3.0
 platformdirs==4.2.0
 pluggy==1.4.0
 pre-commit==3.7.0
 py==1.11.0
 py-cpuinfo==9.0.0
-pybind11==2.11.1
+pybind11==2.12.0
 pyparsing==3.1.2
 pytest==8.1.1
 pytest-benchmark==4.0.0

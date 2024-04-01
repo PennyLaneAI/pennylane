@@ -30,7 +30,7 @@ jax==0.4.23
 jaxlib==0.4.23
 kiwisolver==1.4.5
 matplotlib==3.8.3
-ml-dtypes==0.3.2
+ml-dtypes==0.4.0
 mypy-extensions==1.0.0
 networkx==3.2.1
 nodeenv==1.8.0
@@ -40,13 +40,13 @@ osqp==0.6.5
 packaging==24.0
 pathspec==0.12.1
 PennyLane_Lightning==0.36.0
-pillow==10.2.0
+pillow==10.3.0
 platformdirs==4.2.0
 pluggy==1.4.0
 pre-commit==3.7.0
 py==1.11.0
 py-cpuinfo==9.0.0
-pybind11==2.11.1
+pybind11==2.12.0
 pyparsing==3.1.2
 pytest==8.1.1
 pytest-benchmark==4.0.0
