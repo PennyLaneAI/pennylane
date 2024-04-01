@@ -61,7 +61,7 @@ packaging==24.0
 pandas==2.2.1
 pennylane-sphinx-theme==0.5.5
 PennyLane_Lightning==0.35.1
-pillow==10.2.0
+pillow==10.3.0
 pluggy==1.4.0
 protobuf==3.19.6
 PubChemPy==1.0.4
