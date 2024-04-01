@@ -518,7 +518,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         template_weights = [[0.1, -0.3]] * n_blocks
         dev = device(n_wires)
 
-        dev = qml.device("default.qubit", wires=range(n_wires))
 
         @qml.qnode(dev)
         def circuit(template_weights):
@@ -544,7 +543,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         template_weights = [[0.1, -0.3]] * n_blocks
         dev = device(n_wires)
 
-        dev = qml.device("default.qubit", wires=range(n_wires))
 
         @qml.qnode(dev)
         def circuit(template_weights):
