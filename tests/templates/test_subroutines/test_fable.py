@@ -272,3 +272,40 @@ class TestFable:
         grads2 = grad_fn2(input_autograd)
 
         assert qml.math.allclose(grads, grads2)
+
+    def test_default_lightning_devices(self, input_matrix):
+        """Test that FABLE executes with the default.qubit and lightning.qubit simulators."""
+        ancilla = ["ancilla"]
+        s = int(np.log2(np.array(input_matrix).shape[0]))
+        wires_i = [f"i{index}" for index in range(s)]
+        wires_j = [f"j{index}" for index in range(s)]
+        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            FABLE(input_matrix, tol=0.01)
+            return qml.state()
+
+        dev2 = qml.device("lightning.qubit")
+
+        @qml.qnode(dev2)
+        def circuit_lightning():
+            FABLE(input_matrix, tol=0.01)
+            return qml.state()
+
+        expected = (
+            len(input_matrix)
+            * qml.matrix(circuit, wire_order=wire_order)().real[
+                0 : len(input_matrix), 0 : len(input_matrix)
+            ]
+        )
+
+        lightning = (
+            len(input_matrix)
+            * qml.matrix(circuit_lightning, wire_order=wire_order)().real[
+                0 : len(input_matrix), 0 : len(input_matrix)
+            ]
+        )
+        assert np.allclose(lightning, expected)
