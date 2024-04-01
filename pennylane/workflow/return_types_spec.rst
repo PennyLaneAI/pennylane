@@ -4,8 +4,10 @@
 Return Type Specification
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-With the exception of the specialized mid-circuit measurement return specification,
-the below description applies for the entire workflow, from the device instance all the
+This page describes the shape and type of the numerical output from executing a quantum circuit
+in PennyLane.
+
+The specification applies for the entire workflow, from the device instance all the
 way up to the ``QNode``.  The result object corresponding to a given circuit
 will match whether the circuit is being passed to a device, processed
 by a transform, having it's derivative bound to an ML interface, or returned from a ``QNode``.
@@ -52,7 +54,8 @@ array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        0, 0, 0, 0, 0, 0])
 
 
-**Empty Wires:**
+Empty Wires
+^^^^^^^^^^^
 
 Some measurments allow broadcasting over all available wires, like ``qml.probs()``, ``qml.sample()``,
 or ``qml.state()``. In such a case, the measurement process instance should have empty wires.
@@ -66,7 +69,8 @@ array([1., 0.])
 >>> qml.device('lightning.qubit', wires=(0,1,2)).execute(tape)
 array([1., 0., 0., 0., 0., 0., 0., 0.])
 
-**Broadcasting:**
+Broadcasting
+^^^^^^^^^^^^
 
 Parameter broadcasting adds a leading dimension to the numeric array itself.
 
@@ -115,7 +119,8 @@ measurement process ``qml.expval(qml.Z(0))``, the second entry corresponds to th
 >>> qml.device('default.qubit').execute(tape)
 (1.0, array([1., 0.]), array([1.+0.j, 0.+0.j]))
 
-**Shot vectors:**
+Shot vectors
+^^^^^^^^^^^^
 
 When a shot vector is present ``shots.has_partitioned_shot``, the measurement instead becomes a
 tuple where each entry corresponds to a different shot value.
