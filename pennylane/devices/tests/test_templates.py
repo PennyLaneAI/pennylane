@@ -551,8 +551,23 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         expected = 0.8719048589118708
         assert np.isclose(res, expected, atol=tol(dev.shots))
 
-    def test_MottonenStatePreparation(self, device, tol):
-        """Test the MottonenStatePreparation template."""
+    def test_MottonenStatePreparation_probs(self, device, tol):
+        """Test the MottonenStatePreparation template (up to a phase)."""
+        dev = device(3)
+
+        @qml.qnode(dev)
+        def circuit(state):
+            qml.MottonenStatePreparation(state_vector=state, wires=range(3))
+            return qml.probs()
+
+        state = np.array([1, 2j, 3, 4j, 5, 6j, 7, 8j])
+        state = state / np.linalg.norm(state)
+        res = circuit(state)
+        expected = np.abs(state**2)
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    def test_MottonenStatePreparation_state(self, device, tol):
+        """Test the MottonenStatePreparation template on analytic-mode devices."""
         dev = device(3)
         if dev.shots:
             pytest.skip("test only works with analytic-mode simulations")
