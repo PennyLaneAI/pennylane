@@ -297,7 +297,7 @@ class Adjoint(SymbolicOp):
         return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
 
     def matrix(self, wire_order=None):
-        if isinstance(self.base, qml.Hamiltonian):
+        if isinstance(self.base, qml.ops.Hamiltonian):
             base_matrix = qml.matrix(self.base, wire_order=wire_order)
         else:
             base_matrix = self.base.matrix(wire_order=wire_order)
@@ -401,7 +401,7 @@ class AdjointOperation(Adjoint, Operation):
         return self.base.has_generator
 
     def generator(self):
-        return qml.s_prod(-1.0, self.base.generator())
+        return -1 * self.base.generator()
 
 
 class AdjointObs(Adjoint, Observable):

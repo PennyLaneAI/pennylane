@@ -17,7 +17,16 @@ Utility functions to interact with and extract information from Pauli words and 
 from typing import Union
 from functools import singledispatch
 
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd
+from pennylane.ops import (
+    Hamiltonian,
+    LinearCombination,
+    Identity,
+    PauliX,
+    PauliY,
+    PauliZ,
+    Prod,
+    SProd,
+)
 from pennylane.operation import Tensor
 
 from .utils import is_pauli_word
@@ -72,8 +81,9 @@ def _pw_prefactor_tensor(observable: Tensor):
     raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
-@_pauli_word_prefactor.register
-def _pw_prefactor_ham(observable: Hamiltonian):
+@_pauli_word_prefactor.register(Hamiltonian)
+@_pauli_word_prefactor.register(LinearCombination)
+def _pw_prefactor_ham(observable: Union[Hamiltonian, LinearCombination]):
     if is_pauli_word(observable):
         return observable.coeffs[0]
     raise ValueError(f"Expected a valid Pauli word, got {observable}")

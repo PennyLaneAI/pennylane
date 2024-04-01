@@ -1238,6 +1238,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
@@ -2147,6 +2148,7 @@ class TestParameterShiftRule:
         # + 2 operations x 2 shifted positions + 1 unshifted term          <-- <H^2>
         assert len(tapes) == (2 * 2 + 1) + (2 * 2 + 1)
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
     def test_projector_variance(self, state, tol):
         """Test that the variance of a projector is correctly returned"""
@@ -3082,10 +3084,31 @@ class TestParamShiftGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("broadcast", [True, False])
 class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be
     differentiated"""
+
+    def test_not_var_or_exp_val_error(self, broadcast):
+        """Tests error raised when the counts of the Hamiltonian is requested"""
+        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
+        coeffs = np.array([0.1, 0.2, 0.3])
+        H = qml.Hamiltonian(coeffs, obs)
+
+        weights = np.array([0.4, 0.5])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.counts(H)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = {2, 3, 4}
+
+        with pytest.raises(ValueError, match="Can only differentiate Hamiltonian coefficients"):
+            qml.gradients.param_shift(tape, broadcast=broadcast)
 
     def test_not_expval_error(self, broadcast):
         """Test that if the variance of the Hamiltonian is requested,

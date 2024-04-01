@@ -100,8 +100,8 @@ class TestIntegrationSingleReturn:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
-        assert res.shape == ()
-        assert isinstance(res, (np.ndarray, np.float64))
+        assert qml.math.shape(res) == ()
+        assert isinstance(res, (np.ndarray, np.float64, float))
 
     @pytest.mark.parametrize("device", devices)
     def test_var(self, device):
@@ -118,8 +118,8 @@ class TestIntegrationSingleReturn:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
-        assert res.shape == ()
-        assert isinstance(res, (np.ndarray, np.float64))
+        assert qml.math.shape(res) == ()
+        assert isinstance(res, (np.ndarray, np.float64, float))
 
     @pytest.mark.parametrize("device", devices)
     def test_vn_entropy(self, device):
@@ -991,11 +991,11 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == ()
+        assert isinstance(res[0], (np.ndarray, np.float64, float))
+        assert qml.math.shape(res[0]) == ()
 
-        assert isinstance(res[1], (np.ndarray, np.float64))
-        assert res[1].shape == ()
+        assert isinstance(res[1], (np.ndarray, np.float64, float))
+        assert qml.math.shape(res[1]) == ()
 
     @pytest.mark.parametrize("device", devices)
     def test_multiple_var(self, device):
@@ -1020,11 +1020,11 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == ()
+        assert isinstance(res[0], (np.ndarray, np.float64, float))
+        assert qml.math.shape(res[0]) == ()
 
-        assert isinstance(res[1], (np.ndarray, np.float64))
-        assert res[1].shape == ()
+        assert isinstance(res[1], (np.ndarray, np.float64, float))
+        assert qml.math.shape(res[1]) == ()
 
     # op1, wires1, op2, wires2
     multi_probs_data = [
@@ -1141,16 +1141,16 @@ class TestIntegrationMultipleReturns:
         assert len(res) == 4
 
         assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == (2 ** len(wires1),)
+        assert qml.math.shape(res[0]) == (2 ** len(wires1),)
 
-        assert isinstance(res[1], (np.ndarray, np.float64))
-        assert res[1].shape == ()
+        assert isinstance(res[1], (np.ndarray, np.float64, float))
+        assert qml.math.shape(res[1]) == ()
 
         assert isinstance(res[2], (np.ndarray, np.float64))
-        assert res[2].shape == (2 ** len(wires2),)
+        assert qml.math.shape(res[2]) == (2 ** len(wires2),)
 
-        assert isinstance(res[3], (np.ndarray, np.float64))
-        assert res[3].shape == ()
+        assert isinstance(res[3], (np.ndarray, np.float64, float))
+        assert qml.math.shape(res[3]) == ()
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data_qutrit)
@@ -1277,8 +1277,8 @@ class TestIntegrationMultipleReturns:
 
         assert isinstance(res, list)
         assert len(res) == 1
-        assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == ()
+        assert isinstance(res[0], (np.ndarray, np.float64, float))
+        assert qml.math.shape(res[0]) == ()
 
     shot_vectors = [None, [10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
 
@@ -1306,8 +1306,8 @@ class TestIntegrationMultipleReturns:
             assert isinstance(res, list)
             assert len(res) == wires
             for r in res:
-                assert isinstance(r, (np.ndarray, np.float64))
-                assert r.shape == ()
+                assert isinstance(r, (np.ndarray, np.float64, float))
+                assert qml.math.shape(r) == ()
 
         else:
             for r in res:
@@ -1315,8 +1315,8 @@ class TestIntegrationMultipleReturns:
                 assert len(r) == wires
 
                 for t in r:
-                    assert isinstance(t, (np.ndarray, np.float64))
-                    assert t.shape == ()
+                    assert isinstance(t, (np.ndarray, np.float64, float))
+                    assert qml.math.shape(t) == ()
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("comp_basis_sampling", [qml.sample(), qml.counts()])

@@ -166,7 +166,7 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
             # there is no influence of this operation on any of the observables
             return "0"
 
-    return par_info["op"].grad_method
+    return getattr(par_info["op"], "grad_method", None)
 
 
 def _find_gradient_methods(tape, trainable_param_indices, use_graph=True):
