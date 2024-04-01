@@ -392,70 +392,80 @@ def bravyi_kitaev(
     return _bravyi_kitaev_dispatch(fermi_operator, n, ps, wire_map, tol)
 
 
-def _update_set(j, n):
+def _update_set(j, bin_rng):
     """
     Computes the update set of the j-th orbital in n qubits.
 
     Args:
         j (int) : the orbital index
-        n (int) : the total number of qubits
+        bin_rng (int) : Binary range for given number of qubits
 
     Returns:
         numpy.ndarray: Array containing the update set
     """
     indices = np.array([], dtype=int)
 
-    if n % 2 == 0:
-        if j < n / 2:
-            indices = np.append(indices, np.append(n - 1, _update_set(j, int(n / 2))))
+    if bin_rng % 2 == 0:
+        if j < bin_rng / 2:
+            indices = np.append(indices, np.append(bin_rng - 1, _update_set(j, int(bin_rng / 2))))
         else:
-            indices = np.append(indices, _update_set(j - int(n / 2), int(n / 2)) + int(n / 2))
+            indices = np.append(
+                indices, _update_set(j - int(bin_rng / 2), int(bin_rng / 2)) + int(bin_rng / 2)
+            )
     return indices
 
 
-def _parity_set(j, n):
+def _parity_set(j, bin_rng):
     """
     Computes the parity set of the j-th orbital in n qubits.
 
     Args:
         j (int) : the orbital index
-        n (int) : the total number of qubits
+        bin_rng (int) : Binary range for given number of qubits
 
     Returns:
         numpy.ndarray: Array of qubits which determine the parity of qubit j
     """
 
     indices = np.array([], dtype=int)
-    if n % 2 == 0:
-        if j < n / 2:
-            indices = np.append(indices, _parity_set(j, int(n / 2)))
+    if bin_rng % 2 == 0:
+        if j < bin_rng / 2:
+            indices = np.append(indices, _parity_set(j, int(bin_rng / 2)))
         else:
             indices = np.append(
                 indices,
-                np.append(_parity_set(j - int(n / 2), int(n / 2)) + int(n / 2), int(n / 2 - 1)),
+                np.append(
+                    _parity_set(j - int(bin_rng / 2), int(bin_rng / 2)) + int(bin_rng / 2),
+                    int(bin_rng / 2 - 1),
+                ),
             )
 
     return indices
 
 
-def _flip_set(j, n):
+def _flip_set(j, bin_rng):
     """
     Computes the flip set of the j-th orbital in n qubits.
 
     Args:
         j (int) : the orbital index
-        n (int) : the total number of qubits
+        bin_rng (int) : Binary range for given number of qubits
     Returns:
         numpy.ndarray: Array containing information if the phase of orbital j is same as qubit j.
     """
     indices = np.array([])
-    if n % 2 == 0:
-        if j < n / 2:
-            indices = np.append(indices, _flip_set(j, int(n / 2)))
-        elif n / 2 <= j < n - 1:
-            indices = np.append(indices, _flip_set(j - int(n / 2), int(n / 2)) + int(n / 2))
+    if bin_rng % 2 == 0:
+        if j < bin_rng / 2:
+            indices = np.append(indices, _flip_set(j, int(bin_rng / 2)))
+        elif bin_rng / 2 <= j < bin_rng - 1:
+            indices = np.append(
+                indices, _flip_set(j - int(bin_rng / 2), int(bin_rng / 2)) + int(bin_rng / 2)
+            )
         else:
-            indices = np.append(np.append(indices, _flip_set(j - n / 2, n / 2) + n / 2), n / 2 - 1)
+            indices = np.append(
+                np.append(indices, _flip_set(j - bin_rng / 2, bin_rng / 2) + bin_rng / 2),
+                bin_rng / 2 - 1,
+            )
     return indices
 
 
