@@ -291,6 +291,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `QNSPSAOptimizer` now properly handles differentiable parameters, resulting in being able to use it for more than one optimization step.
+  [(#5439)](https://github.com/PennyLaneAI/pennylane/pull/5439)
+
 * The `QNode` interface now resets if an error occurs during execution.
   [(#5449)](https://github.com/PennyLaneAI/pennylane/pull/5449)
 
