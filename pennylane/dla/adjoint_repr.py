@@ -81,7 +81,7 @@ def adjoint_repr(dla):
     .. math:: [i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma.
 
     Let us confirm those with some examples. Take :math:`[iG_1, iG_3] = [iZ_0, -iY_0 X_1] = i 2 X_0 X_1 = i 2 G_0`, so
-    we should have :math:`f^0_{1, 3} = 1.`, which is indeed the case.
+    we should have :math:`f^0_{1, 3} = 2`, which is indeed the case.
 
     >>> adjoint_rep[0, 1, 3]
     2.
@@ -96,6 +96,8 @@ def adjoint_repr(dla):
            [ 0., -0., -0., -0., -0.,  0.]])
 
     Note that we neither enforce nor assume normalization by default.
+
+    >>>
 
     """
     if any((op.pauli_rep is None) for op in dla):
