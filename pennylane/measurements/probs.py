@@ -20,10 +20,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
-from torch import get_default_dtype
 from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
-
 
 
 def probs(wires=None, op=None) -> "ProbabilityMP":
@@ -240,12 +238,11 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
         # when using the torch interface with float32 as default dtype,
         # probabilities must be renormalized as they may not sum to one
-        if str(get_default_dtype()) == "torch.float32":
-            norm = qml.math.sum(prob, axis=-1)
-            if norm.shape != ():
-                norm = norm[:, np.newaxis]
-            if not (norm.shape == () and norm == 0.0):
-                prob = prob / norm
+        norm = qml.math.sum(prob, axis=-1)
+        if norm.shape != ():
+            norm = norm[:, np.newaxis]
+        if not (norm.shape == () and norm == 0.0):
+            prob = prob / norm
         return prob
 
     def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
