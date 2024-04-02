@@ -64,6 +64,9 @@
 * Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
+* `qml.sample`, `qml.expval`, `qml.counts`, `qml.var` now supports specifying `eigvals` instead of observables.
+  [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
+
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
