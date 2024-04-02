@@ -40,6 +40,7 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
+    MeasurementRegister,
     MeasurementValue,
     MidMeasureMP,
     MutualInfoMP,
@@ -290,7 +291,7 @@ class QubitDevice(Device):
                 for k, v in tuple(mid_measurements.items()):
                     if v == -1:
                         mid_measurements.pop(k)
-                return None, mid_measurements
+                return (MeasurementRegister(register=mid_measurements),)
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
@@ -316,6 +317,8 @@ class QubitDevice(Device):
 
         else:
             results = self.statistics(circuit)
+            if has_mcm:
+                results.append(MeasurementRegister(register=mid_measurements))
             single_measurement = len(circuit.measurements) == 1
 
             results = results[0] if single_measurement else tuple(results)
@@ -339,7 +342,7 @@ class QubitDevice(Device):
             )
             self.tracker.record()
 
-        return (results, mid_measurements) if has_mcm else results
+        return results
 
     def shot_vec_statistics(self, circuit: QuantumTape):
         """Process measurement results from circuit execution using a device

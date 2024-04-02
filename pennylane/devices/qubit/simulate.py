@@ -280,14 +280,14 @@ def simulate_one_shot_native_mcm(
         tuple(TensorLike): The results of the simulation
         dict: The mid-circuit measurement results of the simulation
     """
-    mcm_dict = {}
+    mid_measurements = {}
     state, is_state_batched = get_final_state(
-        circuit, debugger=debugger, interface=interface, mid_measurements=mcm_dict
+        circuit, debugger=debugger, interface=interface, mid_measurements=mid_measurements
     )
     measurements = []
     if np.allclose(np.linalg.norm(state), 1.0):
         measurements.append(
             measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
         )
-    measurements.append(MeasurementRegister(register=mcm_dict))
-    return measurements
+    measurements.append(MeasurementRegister(register=mid_measurements))
+    return tuple(measurements)
