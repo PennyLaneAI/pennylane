@@ -316,7 +316,7 @@ def bravyi_kitaev(
         Hamiltonians created with this mapping should be used with operators and states that are
         compatible with the Bravyi-Kitaev basis.
 
-    In Bravyi-Kitaev mapping, both occupation number and parity of the orbitals is stored non-locally.
+    In Bravyi-Kitaev mapping, both occupation number and parity of the orbitals are stored non-locally.
     In comparison, :func:`~.jordan_wigner` stores the occupation number locally while saving the parity non-locally and vice-versa for :func:`~.parity_transform`.
 
     In Bravyi-Kitaev mapping, the fermionic creation and annihilation operators for even labelled orbitals are mapped to the Pauli operators as
