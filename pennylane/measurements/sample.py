@@ -26,9 +26,14 @@ from pennylane.wires import Wires
 
 from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 from .mid_measure import MeasurementValue
+from pennylane.typing import TensorLike
 
 
-def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -> "SampleMP":
+def sample(
+    op: Optional[Union[Operator, MeasurementValue]] = None,
+    wires=None,
+    eigvals: Optional[TensorLike] = None,
+) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -42,6 +47,8 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
             for mid-circuit measurements, ``op`` should be a``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
 
     Returns:
         SampleMP: Measurement process instance
@@ -156,7 +163,7 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
             )
         wires = Wires(wires)
 
-    return SampleMP(obs=op, wires=wires)
+    return SampleMP(obs=op, wires=wires, eigvals=eigvals)
 
 
 class SampleMP(SampleMeasurement):
@@ -249,7 +256,7 @@ class SampleMP(SampleMeasurement):
         num_wires = samples.shape[-1]  # wires is the last dimension
 
         # If we're sampling wires or a list of mid-circuit measurements
-        if self.obs is None and not isinstance(self.mv, MeasurementValue):
+        if self.obs is None and not isinstance(self.mv, MeasurementValue) and self._eigvals is None:
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 

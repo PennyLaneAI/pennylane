@@ -24,9 +24,15 @@ from pennylane.wires import Wires
 
 from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
+from pennylane.typing import TensorLike
 
 
-def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
+def counts(
+    op=None,
+    wires=None,
+    all_outcomes=False,
+    eigvals: Optional[TensorLike] = None,
+) -> "CountsMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -42,6 +48,8 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
             op is None
         all_outcomes(bool): determines whether the returned dict will contain only the observed
             outcomes (default), or whether it will display all possible outcomes for the system
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
 
     Returns:
         CountsMP: Measurement process instance
@@ -153,7 +161,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
             )
         wires = Wires(wires)
 
-    return CountsMP(obs=op, wires=wires, all_outcomes=all_outcomes)
+    return CountsMP(obs=op, wires=wires, eigvals=eigvals, all_outcomes=all_outcomes)
 
 
 class CountsMP(SampleMeasurement):
@@ -339,6 +347,15 @@ class CountsMP(SampleMeasurement):
             states, _counts = result
             for state, count in zip(qml.math.unwrap(states), _counts):
                 outcome_dict[state] = count
+
+        def outcome_to_eigval(outcome: str):
+            return self.eigvals()[int(outcome, 2)]
+
+        if self._eigvals is not None:
+            outcome_dicts = [
+                {outcome_to_eigval(outcome): count for outcome, count in outcome_dict.items()}
+                for outcome_dict in outcome_dicts
+            ]
 
         return outcome_dicts if batched else outcome_dicts[0]
 

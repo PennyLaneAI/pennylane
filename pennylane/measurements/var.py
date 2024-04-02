@@ -16,22 +16,31 @@
 This module contains the qml.var measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple, Union, Optional
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
+from pennylane.typing import TensorLike
 
 
-def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
+def var(
+    op: Union[Operator, MeasurementValue] = None,
+    wires=None,
+    eigvals: Optional[TensorLike] = None,
+) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:
         op (Union[Operator, MeasurementValue]): a quantum observable object.
             To get variances for mid-circuit measurements, ``op`` should be a
             ``MeasurementValue``.
+        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY
+            set wires if op is None
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
 
     Returns:
         VarianceMP: Measurement process instance
@@ -62,8 +71,12 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
             "qml.var does not support measuring sequences of measurements or observables"
         )
 
+    if op is None:
+        return VarianceMP(wires=wires, eigvals=eigvals)
+
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
+
     return VarianceMP(obs=op)
 
 
@@ -108,7 +121,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=op).process_samples(
+            samples = qml.sample(op=op, eigvals=self._eigvals).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 

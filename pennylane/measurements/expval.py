@@ -15,16 +15,21 @@
 This module contains the qml.expval measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple, Union, Optional
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
+from pennylane.typing import TensorLike
 
 
-def expval(op: Union[Operator, MeasurementValue]):
+def expval(
+    op: Union[Operator, MeasurementValue] = None,
+    wires=None,
+    eigvals: Optional[TensorLike] = None,
+):
     r"""Expectation value of the supplied observable.
 
     **Example:**
@@ -49,6 +54,10 @@ def expval(op: Union[Operator, MeasurementValue]):
         op (Union[Observable, MeasurementValue]): a quantum observable object. To
             get expectation values for mid-circuit measurements, ``op`` should be
             a ``MeasurementValue``.
+        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY
+            set wires if op is None
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
 
     Returns:
         ExpectationMP: measurement process instance
@@ -66,6 +75,9 @@ def expval(op: Union[Operator, MeasurementValue]):
         raise NotImplementedError(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
+
+    if op is None:
+        return ExpectationMP(wires=wires, eigvals=eigvals)
 
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -114,7 +126,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=op).process_samples(
+            samples = qml.sample(op=op, eigvals=self._eigvals).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 
