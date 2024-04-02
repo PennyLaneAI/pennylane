@@ -208,6 +208,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `MeasurementRegister` class is introduce so that native-mcm workflows return tuples of measurement processes, not an _ad hoc_ dictionary of mid-circuit measurements.
+  [(#5461)](https://github.com/PennyLaneAI/pennylane/pull/5461)
+
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
 
