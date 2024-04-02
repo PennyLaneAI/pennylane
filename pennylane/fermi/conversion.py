@@ -492,7 +492,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
         (_, wire), sign = item
         if wire >= n:
             raise ValueError(
-                f"Can't create or annihilate a particle on qubit number {wire} for a system with only {n} qubits"
+                f"Can't create or annihilate a particle on qubit number {wire} for a system with only {n} qubits."
             )
 
         U_set = list(filter(lambda x: x < n, _update_set(wire, bin_rng)))
