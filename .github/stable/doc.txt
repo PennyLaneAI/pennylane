@@ -13,7 +13,7 @@ cachetools==5.3.3
 certifi==2024.2.2
 charset-normalizer==3.3.2
 cirq-core==1.3.0
-contourpy==1.2.0
+contourpy==1.2.1
 cycler==0.12.1
 deprecation==2.1.0
 docutils==0.16
