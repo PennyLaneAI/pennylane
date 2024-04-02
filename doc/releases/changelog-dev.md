@@ -148,14 +148,6 @@
   SpectralNormError(6.166666666666668e-06)
   ```
 
-<h3>Improvements 🛠</h3>
-
-* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
-  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
-
-* Operators can now be left multiplied `x * op` by numpy arrays.
-  [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
-
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
@@ -183,6 +175,8 @@
 * Obtaining classical shadows using the `default.clifford` device is now compatible with
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
+
+* `qml.specs` now returns information regarding algorithmic errors for the qnode as well.
 
 <h4>Community contributions 🥳</h4>
 
