@@ -236,7 +236,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # flatten and return probabilities
         return qml.math.reshape(prob, flat_shape)
 
-
     def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
         with qml.QueuingManager.stop_recording():
             helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
