@@ -97,8 +97,6 @@ def adjoint_repr(dla):
 
     Note that we neither enforce nor assume normalization by default.
 
-    >>>
-
     """
     if any((op.pauli_rep is None) for op in dla):
         raise ValueError(
