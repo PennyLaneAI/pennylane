@@ -275,16 +275,8 @@ class TestPauliVSpace:
 
 dla11 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
-    PauliSentence(
-        {
-            PauliWord({0: "Z"}): 1.0,
-        }
-    ),
-    PauliSentence(
-        {
-            PauliWord({1: "Z"}): 1.0,
-        }
-    ),
+    PauliSentence({PauliWord({0: "Z"}): 1.0}),
+    PauliSentence({PauliWord({1: "Z"}): 1.0}),
     PauliSentence({PauliWord({0: "Y", 1: "X"}): -1.0, PauliWord({0: "X", 1: "Y"}): 1.0}),
 ]
 
