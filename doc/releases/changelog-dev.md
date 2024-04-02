@@ -177,6 +177,7 @@
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
 * `qml.specs` now returns information regarding algorithmic errors for the qnode as well.
+  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
 
 <h4>Community contributions 🥳</h4>
 
