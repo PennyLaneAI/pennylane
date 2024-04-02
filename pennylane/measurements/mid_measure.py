@@ -314,12 +314,8 @@ class MeasurementRegister(MeasurementProcess):
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         register (dict): Dictionary with MidMeasureMP keys and mid-circuit measurement values.
-        id (str): Custom label given to a measurement instance.
+        id (str): Custom label given to a measurement register instance.
     """
-
-    # def _flatten(self):
-    #     metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
-    #     return (None, None), metadata
 
     def __init__(
         self,
@@ -332,24 +328,12 @@ class MeasurementRegister(MeasurementProcess):
         self.register = register
 
     @property
-    def return_type(self):
-        return int
-
-    @property
-    def samples_computational_basis(self):
-        return False
-
-    @property
-    def _queue_category(self):
-        return "_ops"
-
-    @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
             tuple(self.wires.tolist()),
-            self.data(),
+            self.data,
             self.id,
         )
 
