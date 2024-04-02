@@ -34,9 +34,6 @@ def lie_closure(
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the Lie closure over commutation of a set of generators
 
-    The Lie closure of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}` is computed by
-    taking all possible nested commutators until no new (i.e. linearly independent) operator is produced.
-
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
     For such generators, one computes all nested commutators :math:`[G_i, [G_j, .., [G_k, G_\ell]]]` until no new operators are generated from commutation.
     All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
@@ -48,7 +45,7 @@ def lie_closure(
         verbose (int): verbosity during Lie closure calculation. Default is ``0``.
         pauli (bool): Indicates whether it is assumed that :class:`~PauliSentence` instances are input and returned.
             This can help with performance to avoid unnecessary conversions from :class:`~PauliSentence` to :class:`~Operator`
-            or :class:`~PauliWord` and vice versa. Note that the input in that case also has to be :class:`~PauliSentence` instances.
+            or :class:`~PauliWord` and vice versa. Note that the input in that case also has to be a list of :class:`~PauliSentence` instances.
             Default is ``False``.
 
     Returns:
@@ -63,13 +60,13 @@ def lie_closure(
     ops = [X(0) @ X(1), Z(0), Z(1)]
     ```
 
-    A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)`.
+    A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
 
     ```python
     >>> qml.commutator(X(0) @ X(1), Z(0))
-    2j * (Y(0) @ X(1))
-    >>> qml.commutator(X(0) @ X(1), Z(0))
-    2j * (X(0) @ Y(1))
+    -2j * (X(1) @ Y(0))
+    >>> qml.commutator(X(0) @ X(1), Z(1))
+    -2j * (Y(1) @ X(0))
     ```
 
     A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
@@ -92,6 +89,8 @@ def lie_closure(
      -1.0 * (X(1) @ Y(0)),
      -1.0 * (Y(1) @ X(0)),
      -1.0 * (Y(1) @ Y(0))]
+
+    Note that we normalize by removing the factors of :math:`2i`, though minus signs are left intact.
 
     .. details::
         :title: Usage Details
@@ -121,7 +120,8 @@ def lie_closure(
     # This check and conversion is ignored in pauli=True mode
     if not pauli and not all(isinstance(op, PauliSentence) for op in generators):
         generators = [
-            op.pauli_rep if op.pauli_rep else qml.pauli.pauli_sentence(op) for op in generators
+            rep if (rep := op.pauli_rep) is not None else qml.pauli.pauli_sentence(op)
+            for op in generators
         ]
 
     vspace = PauliVSpace(generators)
@@ -130,9 +130,9 @@ def lie_closure(
     old_length = 0  # dummy value
     new_length = len(vspace)
 
-    while new_length > old_length or epoch > max_iterations:
+    while (new_length > old_length) and (epoch < max_iterations):
         if verbose > 0:
-            print(f"epoch {epoch+1} of lie_closure")
+            print(f"epoch {epoch+1} of lie_closure, dla size is {new_length}")
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
             if len(com) == 0:  # skip because operators commute
@@ -148,6 +148,9 @@ def lie_closure(
         old_length = new_length
         new_length = len(vspace)
         epoch += 1
+
+    if verbose > 0:
+        print(f"After {epoch} epochs, reached a dla size of {new_length}")
 
     res = vspace.basis
     if not pauli:
@@ -247,7 +250,7 @@ class PauliVSpace:
         self._basis = []
         rank = 0
 
-        self._M = np.zeros((num_pw, rank), dtype=complex)
+        self._M = np.zeros((num_pw, rank), dtype=float)
         self._rank = rank
         self._num_pw = num_pw
 
@@ -385,6 +388,13 @@ class PauliVSpace:
 
         rank1 = np.linalg.matrix_rank(self._M)
         rank2 = np.linalg.matrix_rank(other._M)
-        rank3 = np.linalg.matrix_rank(np.concatenate([self._M, other._M], axis=1))
+
+        # To accommodate the case where the _pw_to_idx have
+        # different permutations, re-arrange ``other`` with the order of ``self``
+        other_M = np.zeros((other._num_pw, other._rank), dtype=float)
+        for i, ps in enumerate(other.basis):
+            for pw, value in ps.items():
+                other_M[self._pw_to_idx[pw], i] = value
+        rank3 = np.linalg.matrix_rank(np.concatenate([self._M, other_M], axis=1))
 
         return rank1 == rank2 and rank2 == rank3
