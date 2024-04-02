@@ -21,10 +21,10 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+from pennylane.typing import TensorLike
 
 from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
-from pennylane.typing import TensorLike
 
 
 def counts(

@@ -21,9 +21,10 @@ from typing import Sequence, Tuple, Union, Optional
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+
 from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
-from pennylane.typing import TensorLike
 
 
 def var(
