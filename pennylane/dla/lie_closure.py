@@ -250,7 +250,7 @@ class PauliVSpace:
         self._basis = []
         rank = 0
 
-        self._M = np.zeros((num_pw, rank), dtype=complex)
+        self._M = np.zeros((num_pw, rank), dtype=float)
         self._rank = rank
         self._num_pw = num_pw
 
