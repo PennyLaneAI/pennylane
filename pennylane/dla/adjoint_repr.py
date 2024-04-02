@@ -17,6 +17,7 @@ from itertools import combinations
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.pauli import PauliSentence
 
 
@@ -91,14 +92,21 @@ def adjoint_repr(dla):
         raise ValueError(
             f"Cannot compute adjoint representation of non-pauli operators. Received {dla}."
         )
-    dla = [op.pauli_rep for op in dla]
+    dla_normalized = []
+    for op in dla:
+        op = op.pauli_rep
+        op /= (op.pauli_rep @ op.pauli_rep).trace()
+        dla_normalized.append(op)
+    # dla = [op.pauli_rep for op in dla]
 
-    commutators = _all_commutators(dla)
+    commutators = _all_commutators(dla_normalized)
 
-    rep = np.zeros((len(dla), len(dla), len(dla)), dtype=float)
-    for i, op in enumerate(dla):
+    rep = np.zeros((len(dla_normalized), len(dla_normalized), len(dla_normalized)), dtype=float)
+    for i, op in enumerate(dla_normalized):
         for (j, k), res in commutators.items():
-            value = (-1j * (op @ res).trace()).real
+            tr = (op @ res).trace()
+            value = (-1j * tr).real
+            # value = qml.math.sign(tr)
             rep[i, j, k] = value
             rep[i, k, j] = -value
 
