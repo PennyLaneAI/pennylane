@@ -337,7 +337,7 @@ def bravyi_kitaev(
         \end{align*}
 
 
-    and the fermionic creation and annihilation operators for odd labelled orbitals are mapped to the Pauli operators as
+    and the fermionic creation and annihilation operators for odd-labelled orbitals are mapped to the Pauli operators as
 
     .. math::
 
