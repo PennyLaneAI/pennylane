@@ -288,7 +288,7 @@ class TestFable:
             FABLE(input_matrix, tol=0.01)
             return qml.state()
 
-        dev2 = qml.device("lightning.qubit", wires=5)
+        dev2 = qml.device("lightning.qubit", wires=wire_order)
 
         @qml.qnode(dev2)
         def circuit_lightning():
