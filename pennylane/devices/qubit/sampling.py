@@ -448,10 +448,9 @@ def sample_state(
         # probabilities must be renormalized as they may not sum to one
         # see https://github.com/PennyLaneAI/pennylane/issues/5444
         norm = qml.math.sum(probs, axis=-1)
-        if norm.shape != ():
-            norm = norm[:, np.newaxis]
-        if not (norm.shape == () and norm == 0.0):
-            probs = probs / norm
+        abs_diff = np.abs(norm - 1)
+        if np.any((abs_diff > 0)) and np.all((abs_diff < 1e-07)):
+            probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
 
         # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
