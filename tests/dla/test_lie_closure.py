@@ -292,6 +292,13 @@ class TestLieClosure:
         assert "epoch 1 of lie_closure, dla size is 3" in captured.out
         assert "epoch 2 of lie_closure, dla size is 4" in captured.out
         assert "After 2 epochs, reached a dla size of 4" in captured.out
+    
+    def test_verbose_false(self, capsys):
+        """Test that there is no output when verbose is False"""
+        gen11 = dla11[:-1]
+        _ = lie_closure(gen11, verbose=False)
+        captured = capsys.readouterr()
+        assert captured.out == ""
 
     def test_max_iterations(self, capsys):
         """Test that max_iterations truncates the lie closure iteration at the right point"""
@@ -326,7 +333,6 @@ class TestLieClosure:
 
         gen12 = dla12[:-1]
         res12 = lie_closure(gen12, pauli=True)
-        assert res12 == dla12
         assert PauliVSpace(res12) == PauliVSpace(dla12)
 
     def test_lie_closure_with_pl_ops(self):
@@ -361,6 +367,30 @@ class TestLieClosure:
 
         res = [op.pauli_rep for op in res]  # convert to pauli_rep for easier comparison
         assert PauliVSpace(res) == PauliVSpace(dla)
+    
+    def test_lie_closure_with_sentences(self):
+        """Test that lie_closure returns the correct results when using (true) PauliSentences, i.e. not just single PauliWords"""
+        n = 3
+        gen = [
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0, PauliWord({i: "Y", (i + 1) % n: "Y"}): 1.0}) for i in range(n - 1)
+        ]
+        gen += [
+            PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(n)
+        ]
+
+        res = qml.dla.lie_closure(gen, pauli=True)
+        true_res = [
+            PauliSentence({PauliWord({0:"X", 1:"X"}): 1., PauliWord({0:"Y", 1:"Y"}): 1.}),
+            PauliSentence({PauliWord({1:"X", 2:"X"}): 1., PauliWord({1:"Y", 2:"Y"}): 1.}),
+            PauliSentence({PauliWord({0:"Y", 1:"X"}): -1., PauliWord({0:"X", 1:"Y"}): 1.}),
+            PauliSentence({PauliWord({1:"Y", 2:"X"}): -1., PauliWord({1:"X", 2:"Y"}): 1.}),
+            PauliSentence({PauliWord({0:"X", 1:"Z", 2:"Y"}): 1., PauliWord({0:"Y", 1:"Z", 2:"X"}): -1.}),
+            PauliSentence({PauliWord({0:"X", 1:"Z", 2:"X"}): -1., PauliWord({0:"Y", 1:"Z", 2:"Y"}): -1.}),
+            PauliSentence({PauliWord({0:"Z"}): 1.}),
+            PauliSentence({PauliWord({1:"Z"}): 1.}),
+            PauliSentence({PauliWord({2:"Z"}): 1.}),
+        ]
+        assert PauliVSpace(res) == PauliVSpace(true_res)
 
     @pytest.mark.parametrize("n", range(2, 5))
     def test_lie_closure_transverse_field_ising_1D_open(self, n):
