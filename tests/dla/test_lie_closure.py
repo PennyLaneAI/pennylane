@@ -319,16 +319,14 @@ class TestLieClosure:
 
         dla12 = [
             PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
-            PauliSentence(
-                {
-                    PauliWord({0: "Z"}): 1.0,
-                }
-            ),
+            PauliSentence({PauliWord({0: "Z"}): 1.0}),
             PauliSentence({PauliWord({0: "Y", 1: "X"}): -1.0, PauliWord({0: "X", 1: "Y"}): 1.0}),
             PauliSentence({PauliWord({0: "Z"}): -2.0, PauliWord({1: "Z"}): 2.0}),
         ]
+
         gen12 = dla12[:-1]
         res12 = lie_closure(gen12, pauli=True)
+        assert res12 == dla12
         assert PauliVSpace(res12) == PauliVSpace(dla12)
 
     def test_lie_closure_with_pl_ops(self):
