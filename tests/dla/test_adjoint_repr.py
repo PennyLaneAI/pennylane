@@ -20,10 +20,24 @@ import pennylane as qml
 from pennylane.dla import adjoint_repr
 from pennylane.pauli import PauliWord, PauliSentence
 
-n = 3
-gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(n - 1)]
-gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(n)]
+## Construct some example DLAs
+# TFIM
+gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(2)]
+gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
 Ising3 = qml.dla.lie_closure(gens, pauli=True)
+
+# XXZ-type DLA, i.e. with true PauliSentences
+gens2 = [
+    PauliSentence(
+        {
+            PauliWord({i: "X", i + 1: "X"}): 1.0,
+            PauliWord({i: "Y", i + 1: "Y"}): 1.0,
+        }
+    )
+    for i in range(2)
+]
+gens2 += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
+XXZ3 = qml.dla.lie_closure(gens2, pauli=True)
 
 
 class TestAdjointRepr:
@@ -36,14 +50,14 @@ class TestAdjointRepr:
         assert adjoint.shape == (d, d, d)
         assert adjoint.dtype == float
 
-    @pytest.mark.parametrize("dla", [Ising3])
+    @pytest.mark.parametrize("dla", [Ising3, XXZ3])
     def test_adjoint_repr_elements(self, dla):
         r"""Test relation :math:`[i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma`."""
         d = len(dla)
         ad_rep = adjoint_repr(dla)
         for i in range(d):
             for j in range(d):
-                comm_res = -1j * dla[i].commutator(dla[j]) / 2
+                comm_res = -1j * dla[i].commutator(dla[j])
                 res = sum(
                     np.array(c, dtype=complex) * dla[gamma]
                     for gamma, c in enumerate(ad_rep[:, i, j])

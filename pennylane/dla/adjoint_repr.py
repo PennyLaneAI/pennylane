@@ -98,7 +98,7 @@ def adjoint_repr(dla):
     rep = np.zeros((len(dla), len(dla), len(dla)), dtype=float)
     for i, op in enumerate(dla):
         for (j, k), res in commutators.items():
-            value = (-1j * (op @ res).trace() / 2).real
+            value = (-1j * (op @ res).trace()).real
             rep[i, j, k] = value
             rep[i, k, j] = -value
 
