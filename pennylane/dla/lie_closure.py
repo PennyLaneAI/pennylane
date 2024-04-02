@@ -389,7 +389,7 @@ class PauliVSpace:
         rank1 = np.linalg.matrix_rank(self._M)
         rank2 = np.linalg.matrix_rank(other._M)
 
-        # To accommodate the case where the _pw_to_idx have 
+        # To accommodate the case where the _pw_to_idx have
         # different permutations, re-arrange ``other`` with the order of ``self``
         other_M = np.zeros((other._num_pw, other._rank), dtype=float)
         for i, ps in enumerate(other.basis):
