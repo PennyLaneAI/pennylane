@@ -28,6 +28,10 @@ torch = pytest.importorskip("torch", minversion="1.3")
 jacobian = torch.autograd.functional.jacobian
 hessian = torch.autograd.functional.hessian
 
+legacy_dev = qml.devices.LegacyDeviceFacade(
+    qml.device("default.qubit.legacy", wires=(0, 1, 2, "a", "b"))
+)
+
 # device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [DefaultQubit(), "finite-diff", False, False],
@@ -44,6 +48,11 @@ qubit_device_and_diff_method = [
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
+    #
+    [legacy_dev, "parameter-shift", False, False],
+    [legacy_dev, "backprop", True, False],
+    [legacy_dev, "adjoint", True, False],
+    [legacy_dev, "adjoint", False, False],
 ]
 
 interface_and_qubit_device_and_diff_method = [
