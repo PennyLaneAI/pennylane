@@ -66,7 +66,7 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
     >>> qml.specs(circuit)(x, add_ry=False)
     {'resources': Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1}),
     gate_sizes=defaultdict(<class 'int'>, {1: 1, 2: 1}), depth=2, shots=Shots(total_shots=None, shot_vector=())),
-    'algorithmic_errors': {'SpectralNormError': SpectralNormError(4.0)},
+    'errors': {'SpectralNormError': SpectralNormError(4.0)},
     'num_observables': 1,
     'num_diagonalizing_gates': 0,
     'num_trainable_params': 1,
@@ -89,7 +89,7 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
             * ``"num_observables"`` number of observables in the qnode
             * ``"num_diagonalizing_gates"`` number of diagonalizing gates required for execution of the qnode
             * ``"resources"``: a :class:`~.resource.Resources` object containing resource quantities used by the qnode
-            * ``"algorithmic_errors"`` combined algorithmic errors from the quantum operations executed by the qnode
+            * ``"errors"``: combined algorithmic errors from the quantum operations executed by the qnode
             * ``"num_used_wires"``: number of wires used by the circuit
             * ``"num_device_wires"``: number of wires in device
             * ``"depth"``: longest path in directed acyclic graph representation

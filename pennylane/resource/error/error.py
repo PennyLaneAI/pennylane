@@ -159,9 +159,9 @@ def _compute_algo_error(tape) -> Dict[str, AlgorithmicError]:
     op_errors = {}
     for op in tape.operations:
         if issubclass(op.__class__, ErrorOperation):
-            error_val = op.error() # get error object from the op
-            error_str = getattr(error_val.__class__, "__name__") # get name of the class as str
-            error_obj = op_errors.get(error_str, None) # attempt obtaining error from dict
+            error_val = op.error()  # get error object from the op
+            error_str = getattr(error_val.__class__, "__name__")  # get name of the class as str
+            error_obj = op_errors.get(error_str, None)  # attempt obtaining error from dict
             op_errors[error_str] = error_val if error_obj is None else error_obj.combine(error_val)
 
     return op_errors

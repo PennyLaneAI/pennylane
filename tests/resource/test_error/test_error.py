@@ -181,3 +181,69 @@ class TestErrorOperation:
                 num_wires = 3
 
             _ = NoErrorOp(wires=[1, 2, 3])
+
+
+class MultiplicativeError(AlgorithmicError):
+    """Multiplicative error object"""
+
+    def combine(self, other):
+        return self.__class__(self.error * other.error)
+
+    def __repr__(self):
+        """Return formal string representation."""
+        return f"MultiplicativeError({self.error})"
+
+
+class AdditiveError(AlgorithmicError):
+    """Additive error object"""
+
+    def combine(self, other):
+        return self.__class__(self.error + other.error)
+
+    def __repr__(self):
+        """Return formal string representation."""
+        return f"AdditiveError({self.error})"
+
+
+class TestSpecAndTracker:
+    """Test capture of ErrorOperation in specs and tracker."""
+
+    class CustomErrorOp1(ErrorOperation):
+        """Custome error operation with multiplicative error"""
+
+        def __init__(self, phase, wires):
+            self.phase = phase
+            super().__init__(phase, wires=wires)
+
+        def error(self, *args, **kwargs):
+            return MultiplicativeError(self.phase)
+
+    class CustomErrorOp2(ErrorOperation):
+        """Custome error with additive error"""
+
+        def __init__(self, flips, wires):
+            self.flips = flips
+            super().__init__(flips, wires=wires)
+
+        def error(self, *args, **kwargs):
+            return AdditiveError(self.flips)
+
+    dev = qml.device("null.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(self, interface=None):
+        """circuit with custom ops"""
+        self.CustomErrorOp1(0.31, [0])
+        self.CustomErrorOp2(0.12, [1])
+        self.CustomErrorOp1(0.24, [1])
+        self.CustomErrorOp2(0.73, [0])
+        return qml.state()
+
+    def test_specs(self):
+        """Test that error method works as expected"""
+
+        algo_errors = qml.specs(self.circuit)(self, interface=None)["errors"]
+        assert len(algo_errors) == 2
+        assert all(error in algo_errors for error in ["MultiplicativeError", "AdditiveError"])
+        assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
+        assert algo_errors["AdditiveError"].error == 0.73 + 0.12

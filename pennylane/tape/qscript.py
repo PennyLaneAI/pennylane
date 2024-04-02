@@ -997,7 +997,7 @@ class QuantumScript:
 
             self._specs = {
                 "resources": resources,
-                "algorithmic_errors": algo_errors,
+                "errors": algo_errors,
                 "num_observables": len(self.observables),
                 "num_diagonalizing_gates": len(self.diagonalizing_gates),
                 "num_trainable_params": self.num_params,
