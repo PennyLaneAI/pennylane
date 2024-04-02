@@ -294,6 +294,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
+  [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
+
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
   [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
 
