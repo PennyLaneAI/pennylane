@@ -307,6 +307,65 @@ class MidMeasureMP(MeasurementProcess):
         return "MidMeasureMP"
 
 
+class MeasurementRegister(MeasurementProcess):
+    """Register of mid-circuit measurements.
+
+    Args:
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        register (dict): Dictionary with MidMeasureMP keys and mid-circuit measurement values.
+        id (str): Custom label given to a measurement instance.
+    """
+
+    # def _flatten(self):
+    #     metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
+    #     return (None, None), metadata
+
+    def __init__(
+        self,
+        wires: Optional[Wires] = None,
+        register: Optional[dict] = None,
+        id: Optional[str] = None,
+    ):
+        self.batch_size = None
+        super().__init__(wires=Wires(wires), id=id)
+        self.register = register
+
+    @property
+    def return_type(self):
+        return int
+
+    @property
+    def samples_computational_basis(self):
+        return False
+
+    @property
+    def _queue_category(self):
+        return "_ops"
+
+    @property
+    def hash(self):
+        """int: Returns an integer hash uniquely representing the measurement process"""
+        fingerprint = (
+            self.__class__.__name__,
+            tuple(self.wires.tolist()),
+            self.data(),
+            self.id,
+        )
+
+        return hash(fingerprint)
+
+    @property
+    def data(self):
+        """The data of the measurement. Needed to match the Operator API."""
+        return list(self.register.items())
+
+    @property
+    def name(self):
+        """The name of the measurement. Needed to match the Operator API."""
+        return "MeasurementRegister"
+
+
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
 

@@ -21,6 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import (
     MidMeasureMP,
+    MeasurementRegister,
 )
 from pennylane.typing import Result
 
@@ -283,9 +284,10 @@ def simulate_one_shot_native_mcm(
     state, is_state_batched = get_final_state(
         circuit, debugger=debugger, interface=interface, mid_measurements=mcm_dict
     )
-    if not np.allclose(np.linalg.norm(state), 1.0):
-        return None, mcm_dict
-    return (
-        measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
-        mcm_dict,
-    )
+    measurements = []
+    if np.allclose(np.linalg.norm(state), 1.0):
+        measurements.append(
+            measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+        )
+    measurements.append(MeasurementRegister(register=mcm_dict))
+    return measurements

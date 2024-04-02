@@ -727,7 +727,6 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
 
     pdA2_fn = None
     if non_involutory_indices:
-
         new_measurements = list(tape.measurements)
         for i in non_involutory_indices:
             # We need to calculate d<A^2>/dp; to do so, we replace the

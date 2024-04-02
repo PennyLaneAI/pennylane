@@ -26,6 +26,7 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     MidMeasureMP,
+    MeasurementRegister,
     ProbabilityMP,
     SampleMP,
     VarianceMP,
@@ -103,10 +104,12 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
             return tuple(final_results)
         all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
         for res in results:
-            one_shot_meas, mcm_values_dict = res
-            if one_shot_meas is None:
+            if len(res) == 1 and isinstance(res[0], MeasurementRegister):
                 continue
             valid_shots += 1
+            one_shot_meas, mcm_values_dict = res[0:-1], res[-1].register
+            if len(one_shot_meas) == 1:
+                one_shot_meas = one_shot_meas[0]
             all_shot_meas = accumulate_native_mcm(aux_tape, all_shot_meas, one_shot_meas)
             list_mcm_values_dict.append(mcm_values_dict)
         if not valid_shots:
