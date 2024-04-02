@@ -11,8 +11,8 @@ Pending deprecations
 
 * PennyLane Lightning and Catalyst will no longer support manylinux2014 (GLIBC 2.17) compatible Linux operating systems and will be migrated to manylinux_2_28 (GLIBC 2.28). See [pypa/manylinux](https://github.com/pypa/manylinux) for additional details.
   
-  - Last supported version of manylinux2014 with v0.36
-  - Fully migrated to manylinux_2_28 with v0.37
+  - Last supported version of ``manylinux2014`` with v0.36
+  - Fully migrated to ``manylinux_2_28`` with v0.37
 
 * ``MultiControlledX`` is the only controlled operation that still supports specifying control
   values with a bit string. In the future, it will no longer accepts strings as control values.
