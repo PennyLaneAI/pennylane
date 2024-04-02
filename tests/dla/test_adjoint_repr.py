@@ -50,33 +50,17 @@ class TestAdjointRepr:
         assert adjoint.shape == (d, d, d)
         assert adjoint.dtype == float
 
-    @pytest.mark.parametrize("dla_unnormalized", [Ising3, XXZ3])
-    def test_adjoint_repr_elements(self, dla_unnormalized):
+    @pytest.mark.parametrize("dla", [Ising3, XXZ3])
+    def test_adjoint_repr_elements(self, dla):
         r"""Test relation :math:`[i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma`."""
-        dla = []
-        for op in dla_unnormalized:
-            op = op.pauli_rep
-            op /= (op.pauli_rep @ op.pauli_rep).trace()
-            dla.append(op)
-        
-        # check orthonormalization
-        A = np.zeros((len(dla), len(dla)), dtype=complex)
-
-        for i, op1 in enumerate(dla):
-            for j, op2 in enumerate(dla):
-                A[i, j] = (op1 @ op2).trace()
-
-        assert qml.math.allclose(A, np.eye(len(dla)))
 
         d = len(dla)
         ad_rep = adjoint_repr(dla)
         for i in range(d):
             for j in range(d):
-                # all_wires = qml.wires.Wires.all_wires([dla[i].wires, dla[j].wires])
-                # norm_ = 2**len(all_wires)
+
                 comm_res = -1j * dla[i].commutator(dla[j])
-                # if comm_res != PauliSentence({}):
-                #     comm_res = comm_res / qml.math.abs(next(iter(comm_res.values())))
+
                 res = sum(
                     np.array(c, dtype=complex) * dla[gamma]
                     for gamma, c in enumerate(ad_rep[:, i, j])
