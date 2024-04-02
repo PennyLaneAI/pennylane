@@ -94,7 +94,7 @@ def adjoint_repr(dla):
            [-0., -2., -0.,  0.,  0.,  0.],
            [-0., -0., -2.,  0.,  0.,  0.],
            [ 0., -0., -0., -0., -0.,  0.]])
-    
+
     Note that we neither enforce nor assume normalization by default.
 
     """
@@ -111,7 +111,7 @@ def adjoint_repr(dla):
     for i, op in enumerate(dla):
         for (j, k), res in commutators.items():
             value = (-1j * (op @ res).trace()).real
-            value = value / (op@op).trace() # v = ∑ (v · e_j / ||e_j||^2) * e_j
+            value = value / (op @ op).trace()  # v = ∑ (v · e_j / ||e_j||^2) * e_j
             rep[i, j, k] = value
             rep[i, k, j] = -value
 
