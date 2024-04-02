@@ -913,14 +913,14 @@ class TestStochPulseGrad:
 
         jax.config.update("jax_enable_x64", True)
         params = [jnp.array(0.24)]
-        T = t if isinstance(t, tuple) else (0, t)
+        delta_t = t[-1] - t[0] if isinstance(t, tuple) else t
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
         op = qml.evolve(ham_single_q_const)(params, t)
         tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
 
         dev = qml.device(dev_name, wires=1)
         # Effective rotation parameter
-        p = params[0] * (delta_t := T[-1] - T[0])
+        p = params[0] * delta_t
         r = qml.execute([tape], dev, None)
         assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -940,7 +940,6 @@ class TestStochPulseGrad:
         jax.config.update("jax_enable_x64", True)
         params = [jnp.array(0.04)]
         t = 0.1
-        T = (0, t)
         y = 0.3
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
         op = qml.evolve(ham_single_q_const)(params, t)
