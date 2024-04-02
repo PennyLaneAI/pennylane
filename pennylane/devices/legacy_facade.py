@@ -66,8 +66,7 @@ def set_shots(device, shots):
     original_shot_vector = device._shot_vector  # pylint: disable=protected-access
 
     try:
-        if device.shots != shots:
-            device.shots = shots
+        device.shots = shots
         yield
     finally:
         device.shots = original_shots

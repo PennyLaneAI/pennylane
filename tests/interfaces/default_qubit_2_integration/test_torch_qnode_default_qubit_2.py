@@ -669,6 +669,10 @@ class TestQubitIntegration:
         with prob and expval outputs"""
         if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail(
+                "default.qubit.legacy does not support measuring probabilities with lightning."
+            )
         kwargs = {}
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -727,6 +731,10 @@ class TestQubitIntegration:
         with prob and expval outputs"""
         if "lightning" in getattr(dev, "short_name", ""):
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
+        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
+            pytest.xfail(
+                "default.qubit.legacy does not support measuring probabilities with lightning."
+            )
         kwargs = dict(
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
@@ -1077,6 +1085,8 @@ class TestQubitIntegration:
 
         if dev.name == "param_shift.qubit":
             pytest.skip("parameter shift does not support measuring the state.")
+        if dev.name == "default.qubit.legacy":
+            pytest.xfail("default.qubit.legacy has different wires.")
 
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
@@ -1166,6 +1176,8 @@ class TestQubitIntegration:
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
+        if dev.name == "default.qubit.legacy":
+            pytest.skip("device does not support postselection.")
 
         @qml.qnode(
             dev,
