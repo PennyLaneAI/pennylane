@@ -293,7 +293,7 @@
 
 * Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
   creating an inconsistency with other differentiation methods and preventing some use cases.
-  [(#5457)](https://github.com/PennyLaneAI/pennylane/pull/5457)
+  [(#5458)](https://github.com/PennyLaneAI/pennylane/pull/5458)
 
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
   [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
