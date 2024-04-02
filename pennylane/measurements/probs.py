@@ -20,9 +20,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
+from torch import get_default_dtype
 from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
-from torch import get_default_dtype
+
 
 
 def probs(wires=None, op=None) -> "ProbabilityMP":
