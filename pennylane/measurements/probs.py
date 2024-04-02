@@ -234,16 +234,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # rearrange wires if necessary
         prob = qml.math.transpose(prob, desired_axes)
         # flatten and return probabilities
-        prob = qml.math.reshape(prob, flat_shape)
+        return qml.math.reshape(prob, flat_shape)
 
-        # when using the torch interface with float32 as default dtype,
-        # probabilities must be renormalized as they may not sum to one
-        norm = qml.math.sum(prob, axis=-1)
-        if norm.shape != ():
-            norm = norm[:, np.newaxis]
-        if not (norm.shape == () and norm == 0.0):
-            prob = prob / norm
-        return prob
 
     def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
         with qml.QueuingManager.stop_recording():

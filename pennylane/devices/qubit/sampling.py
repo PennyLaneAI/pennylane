@@ -443,6 +443,16 @@ def sample_state(
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     if is_state_batched:
+
+        # when using the torch interface with float32 as default dtype,
+        # probabilities must be renormalized as they may not sum to one
+        # see https://github.com/PennyLaneAI/pennylane/issues/5444
+        norm = qml.math.sum(probs, axis=-1)
+        if norm.shape != ():
+            norm = norm[:, np.newaxis]
+        if not (norm.shape == () and norm == 0.0):
+            probs = probs / norm
+
         # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
     else:
