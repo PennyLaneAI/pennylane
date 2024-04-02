@@ -319,7 +319,7 @@ class QubitDevice(Device):
             results = self.statistics(circuit)
             if has_mcm:
                 results.append(MeasurementRegister(register=mid_measurements))
-            single_measurement = len(circuit.measurements) == 1
+            single_measurement = len(circuit.measurements) == 1 and not has_mcm
 
             results = results[0] if single_measurement else tuple(results)
         # increment counter for number of executions of qubit device
