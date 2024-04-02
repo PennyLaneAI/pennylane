@@ -240,9 +240,27 @@ class TestSpecAndTracker:
         return qml.state()
 
     def test_specs(self):
-        """Test that error method works as expected"""
+        """Test that specs are tracking errors as expected."""
 
         algo_errors = qml.specs(self.circuit)(self, interface=None)["errors"]
+        assert len(algo_errors) == 2
+        assert all(error in algo_errors for error in ["MultiplicativeError", "AdditiveError"])
+        assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
+        assert algo_errors["AdditiveError"].error == 0.73 + 0.12
+
+    def test_tracker(self):
+        """Test that tracker are tracking errors as expected."""
+
+        # little hack for stopping device-level decomposition for custom ops
+        def preprocess(execution_config=qml.devices.DefaultExecutionConfig):
+            return qml.transforms.core.TransformProgram(), execution_config
+
+        self.dev.preprocess = preprocess
+
+        with qml.Tracker(self.dev) as tracker:
+            self.circuit(self, interface=None)
+
+        algo_errors = tracker.latest["errors"]
         assert len(algo_errors) == 2
         assert all(error in algo_errors for error in ["MultiplicativeError", "AdditiveError"])
         assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
