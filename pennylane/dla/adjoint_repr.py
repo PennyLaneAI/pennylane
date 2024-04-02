@@ -32,7 +32,7 @@ def _all_commutators(ops):
 
 def adjoint_repr(dla):
     r"""
-    Compute the adjoint representation of dynamical Lie algebra (DLA)
+    Compute the adjoint representation of a dynamical Lie algebra (DLA)
 
     Given a DLA :math:`\{G_1, G_2, .. G_\mathfrak{d} \}` of dimension :math:`\mathfrak{d}`,
     the adjoint representation :math:`\left(\text{ad}(iG_\gamma)\right)_{\alpha, \beta} = f^\gamma__{\alpha, \beta}` is given by the structure constants
@@ -44,7 +44,7 @@ def adjoint_repr(dla):
             generators via :func:`~lie_closure`.
 
     Returns:
-        matrix: The adjoint representation of dimension :math:`\mathfrak{d} \times \mathfrak{d} \times \mathfrak{d}`.
+        matrix: The adjoint representation of shape ``(d, d, d)``.
 
     **Example**
 

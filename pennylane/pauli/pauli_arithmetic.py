@@ -610,9 +610,7 @@ class PauliSentence(dict):
         0.5
 
         """
-        if (id0 := PauliWord({})) in self:
-            return self[id0]
-        return 0.0
+        return self.get(PauliWord({}), 0.0)
 
     def __add__(self, other):
         """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.
