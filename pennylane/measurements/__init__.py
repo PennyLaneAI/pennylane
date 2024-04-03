@@ -271,6 +271,7 @@ from .measurements import (
     Counts,
     Expectation,
     MeasurementProcess,
+    MeasurementRegister,
     MeasurementShapeError,
     MeasurementTransform,
     MidMeasure,
