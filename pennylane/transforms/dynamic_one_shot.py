@@ -26,7 +26,7 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     MidMeasureMP,
-    MeasurementRegister,
+    MeasurementRegisterMP,
     ProbabilityMP,
     SampleMP,
     VarianceMP,
@@ -102,14 +102,25 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 final_results.append(processing_fn(results[0:s], has_partitioned_shots=False))
                 del results[0:s]
             return tuple(final_results)
+        post_process_tape = qml.tape.QuantumScript(
+            aux_tape.operations,
+            aux_tape.measurements[0:-1],
+            shots=aux_tape.shots,
+            trainable_params=aux_tape.trainable_params,
+        )
         all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
         for res in results:
-            if len(res) == 1 and isinstance(res[0], MeasurementRegister):
+            mcm_values_dict = res if len(post_process_tape.measurements) == 0 else res[-1]
+            if any(v == -1 for v in mcm_values_dict.values()):
                 continue
             valid_shots += 1
-            one_shot_meas = res[0] if len(res) == 2 else res[0:-1]
-            mcm_values_dict = res[-1].register
-            all_shot_meas = accumulate_native_mcm(aux_tape, all_shot_meas, one_shot_meas)
+            if len(post_process_tape.measurements) == 0:
+                one_shot_meas = []
+            elif len(post_process_tape.measurements) == 1:
+                one_shot_meas = res[0]
+            else:
+                one_shot_meas = res[0:-1]
+            all_shot_meas = accumulate_native_mcm(post_process_tape, all_shot_meas, one_shot_meas)
             list_mcm_values_dict.append(mcm_values_dict)
         if not valid_shots:
             warnings.warn(
@@ -163,6 +174,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
                 new_measurements.append(m)
+    new_measurements.append(MeasurementRegisterMP(wires=circuit.wires))
     return qml.tape.QuantumScript(
         circuit.operations, new_measurements, shots=1, trainable_params=circuit.trainable_params
     )

@@ -19,10 +19,7 @@ from numpy.random import default_rng
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import (
-    MidMeasureMP,
-    MeasurementRegister,
-)
+from pennylane.measurements import MidMeasureMP
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
@@ -154,7 +151,10 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
     return state, is_state_batched
 
 
-def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
+# pylint: disable=too-many-arguments
+def measure_final_state(
+    circuit, state, is_state_batched, rng=None, prng_key=None, mid_measurements: dict = None
+) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
@@ -171,6 +171,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be for sampling.
+        mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
         Tuple[TensorLike]: The measurement results
@@ -178,8 +179,11 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
 
     circuit = circuit.map_to_standard_wires()
 
+    # analytic case
+
     if not circuit.shots:
-        # analytic case
+        if mid_measurements is not None:
+            raise TypeError("Native mid-circuit measurements are not supported with finite shots.")
 
         if len(circuit.measurements) == 1:
             return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
@@ -198,6 +202,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
         is_state_batched=is_state_batched,
         rng=rng,
         prng_key=prng_key,
+        mid_measurements=mid_measurements,
     )
 
     if len(circuit.measurements) == 1:
@@ -284,10 +289,16 @@ def simulate_one_shot_native_mcm(
     state, is_state_batched = get_final_state(
         circuit, debugger=debugger, interface=interface, mid_measurements=mid_measurements
     )
-    measurements = []
-    if np.allclose(np.linalg.norm(state), 1.0):
-        measurements.append(
-            measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
-        )
-    measurements.append(MeasurementRegister(register=mid_measurements))
-    return tuple(measurements)
+    if any(v == -1 for v in mid_measurements.values()):
+        # the state is likely non-orthonormal, let's orthonormalize it
+        state[:] = 0.0
+        slices = [slice(0, 1, 1)] * qml.math.ndim(state)
+        state[tuple(slices)] = 1.0
+    return measure_final_state(
+        circuit,
+        state,
+        is_state_batched,
+        rng=rng,
+        prng_key=prng_key,
+        mid_measurements=mid_measurements,
+    )

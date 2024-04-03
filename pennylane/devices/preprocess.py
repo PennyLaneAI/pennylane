@@ -26,6 +26,7 @@ from pennylane import Snapshot
 from pennylane.operation import Tensor, StatePrepBase
 from pennylane.measurements import (
     MeasurementProcess,
+    MeasurementRegisterMP,
     StateMeasurement,
     SampleMeasurement,
 )
@@ -448,7 +449,7 @@ def validate_measurements(
     if sample_measurements is None:
 
         def sample_measurements(m):
-            return isinstance(m, SampleMeasurement)
+            return isinstance(m, (MeasurementRegisterMP, SampleMeasurement))
 
     if tape.shots:
         for m in tape.measurements:

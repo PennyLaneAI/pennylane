@@ -106,6 +106,7 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     return isinstance(
         m,
         (
+            qml.measurements.MeasurementRegisterMP,
             qml.measurements.SampleMeasurement,
             qml.measurements.ClassicalShadowMP,
             qml.measurements.ShadowExpvalMP,

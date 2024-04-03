@@ -40,7 +40,7 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
-    MeasurementRegister,
+    MeasurementRegisterMP,
     MeasurementValue,
     MidMeasureMP,
     MutualInfoMP,
@@ -286,12 +286,11 @@ class QubitDevice(Device):
         )
         if has_mcm:
             mid_measurements = kwargs["mid_measurements"]
-            mid_values = np.array(tuple(mid_measurements.values()))
-            if np.any(mid_values == -1):
-                for k, v in tuple(mid_measurements.items()):
-                    if v == -1:
-                        mid_measurements.pop(k)
-                return (MeasurementRegister(register=mid_measurements),)
+            if any(v == -1 for v in mid_measurements.values()):
+                # the state is likely non-orthonormal, let's orthonormalize it
+                self.state[:] = 0.0
+                slices = [slice(0, 1, 1)] * qml.math.ndim(self.state)
+                self.state[tuple(slices)] = 1.0
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
@@ -316,9 +315,7 @@ class QubitDevice(Device):
             results = self.shot_vec_statistics(circuit)
 
         else:
-            results = self.statistics(circuit)
-            if has_mcm:
-                results.append(MeasurementRegister(register=mid_measurements))
+            results = self.statistics(circuit, mid_measurements=mid_measurements)
             single_measurement = len(circuit.measurements) == 1 and not has_mcm
 
             results = results[0] if single_measurement else tuple(results)
@@ -592,7 +589,11 @@ class QubitDevice(Device):
         )
 
     def statistics(
-        self, circuit: QuantumTape, shot_range=None, bin_size=None
+        self,
+        circuit: QuantumTape,
+        shot_range=None,
+        bin_size=None,
+        mid_measurements=None,
     ):  # pylint: disable=too-many-statements
         """Process measurement results from circuit execution and return statistics.
 
@@ -606,6 +607,7 @@ class QubitDevice(Device):
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
+            mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -658,6 +660,10 @@ class QubitDevice(Device):
                     result = method(m, shot_range=shot_range, bin_size=bin_size)
             # 1. Based on the measurement type, compute statistics
             # Pass instances directly
+            elif isinstance(m, MeasurementRegisterMP):
+                m.validate(mid_measurements)
+                result = mid_measurements
+
             elif isinstance(m, ExpectationMP):
                 result = self.expval(obs, shot_range=shot_range, bin_size=bin_size)
 

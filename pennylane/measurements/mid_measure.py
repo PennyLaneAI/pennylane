@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, MidMeasure
+from .measurements import MeasurementProcess, MidMeasure, MeasurementRegister
 
 
 def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[int] = None):
@@ -307,25 +307,21 @@ class MidMeasureMP(MeasurementProcess):
         return "MidMeasureMP"
 
 
-class MeasurementRegister(MeasurementProcess):
+class MeasurementRegisterMP(MeasurementProcess):
     """Register of mid-circuit measurements.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
-        register (dict): Dictionary with MidMeasureMP keys and mid-circuit measurement values.
         id (str): Custom label given to a measurement register instance.
     """
 
     def __init__(
         self,
         wires: Optional[Wires] = None,
-        register: Optional[dict] = None,
         id: Optional[str] = None,
     ):
-        self.batch_size = None
         super().__init__(wires=Wires(wires), id=id)
-        self.register = register
 
     @property
     def hash(self):
@@ -333,7 +329,6 @@ class MeasurementRegister(MeasurementProcess):
         fingerprint = (
             self.__class__.__name__,
             tuple(self.wires.tolist()),
-            self.data,
             self.id,
         )
 
@@ -342,12 +337,25 @@ class MeasurementRegister(MeasurementProcess):
     @property
     def data(self):
         """The data of the measurement. Needed to match the Operator API."""
-        return list(self.register.items())
+        return []
 
     @property
     def name(self):
         """The name of the measurement. Needed to match the Operator API."""
-        return "MeasurementRegister"
+        return "MeasurementRegisterMP"
+
+    @property
+    def return_type(self):
+        return MeasurementRegister
+
+    def validate(self, register: dict):
+        """Validates the register of mid-circuit measurements."""
+        if not isinstance(register, dict):
+            raise TypeError("A MeasurementRegisterMP requires a dictionary on initialization.")
+        if not all(isinstance(k, MidMeasureMP) for k in register.keys()):
+            raise TypeError(
+                "A MeasurementRegisterMP requires a dictionary with MidMeasureMP keys on initialization."
+            )
 
 
 class MeasurementValue(Generic[T]):

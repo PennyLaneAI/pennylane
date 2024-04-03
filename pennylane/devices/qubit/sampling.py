@@ -22,6 +22,7 @@ from pennylane.measurements import (
     Shots,
     ExpectationMP,
     ClassicalShadowMP,
+    MeasurementRegisterMP,
     ShadowExpvalMP,
     CountsMP,
 )
@@ -52,10 +53,17 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     mp_no_obs = []
     mp_no_obs_indices = []
 
+    # mid-circuit measurement register
+    mcm_reg = []
+    mcm_reg_indices = []
+
     for i, mp in enumerate(mps):
         if isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
             mp_other_obs.append([mp])
             mp_other_obs_indices.append([i])
+        elif isinstance(mp, MeasurementRegisterMP):
+            mcm_reg.append(mp)
+            mcm_reg_indices.append(i)
         elif mp.obs is None:
             mp_no_obs.append(mp)
             mp_no_obs_indices.append(i)
@@ -86,8 +94,11 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     mp_no_obs_indices = [mp_no_obs_indices] if mp_no_obs else []
     mp_no_obs = [mp_no_obs] if mp_no_obs else []
 
-    all_mp_groups = mp_pauli_groups + mp_no_obs + mp_other_obs
-    all_indices = group_indices + mp_no_obs_indices + mp_other_obs_indices
+    mcm_reg_indices = [mcm_reg_indices] if mcm_reg else []
+    mcm_reg = [mcm_reg] if mcm_reg else []
+
+    all_mp_groups = mcm_reg + mp_pauli_groups + mp_no_obs + mp_other_obs
+    all_indices = mcm_reg_indices + group_indices + mp_no_obs_indices + mp_other_obs_indices
 
     return all_mp_groups, all_indices
 
@@ -160,6 +171,7 @@ def measure_with_samples(
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
+    mid_measurements=None,
 ) -> List[TensorLike]:
     """
     Returns the samples of the measurement process performed on the given state.
@@ -177,6 +189,7 @@ def measure_with_samples(
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
         List[TensorLike[Any]]: Sample measurement results
@@ -186,6 +199,10 @@ def measure_with_samples(
 
     all_res = []
     for group in groups:
+        if isinstance(group[0], MeasurementRegisterMP):
+            group[0].validate(mid_measurements)
+            all_res.append(mid_measurements)
+            continue
         if isinstance(group[0], ExpectationMP) and isinstance(
             group[0].obs, (Hamiltonian, LinearCombination)
         ):
