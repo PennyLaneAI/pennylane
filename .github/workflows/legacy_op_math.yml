@@ -11,4 +11,4 @@ jobs:
     with:
       branch: 'master'
       run_lightened_ci: false
-      use_new_opmath: false
+      # use_new_opmath: false
