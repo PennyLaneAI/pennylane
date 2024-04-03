@@ -3,7 +3,6 @@ name: Legacy opmath tests
 on:
   schedule:
     - cron: "0 0 2 * *"
-  pull_request:
   workflow_dispatch:
 
 jobs:
