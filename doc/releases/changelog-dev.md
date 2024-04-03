@@ -164,7 +164,7 @@
   ops = [X(0) @ X(1), Z(0), Z(1)]
   ```
 
-  A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)`.
+  A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
 
   ```python
   >>> qml.commutator(X(0) @ X(1), Z(0))

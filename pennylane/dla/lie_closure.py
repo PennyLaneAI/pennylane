@@ -56,30 +56,23 @@ def lie_closure(
 
     Let us walk through a simple example of computing the Lie closure of the generators of the transverse field Ising model on two qubits.
 
-    ```python
-    ops = [X(0) @ X(1), Z(0), Z(1)]
-    ```
+    >>> ops = [X(0) @ X(1), Z(0), Z(1)]
 
-    A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
+    A first round of commutators between all elements yields the new operators ``Y(0) @ X(1)`` and ``X(0) @ Y(1)`` (omitting scalar prefactors).
 
-    ```python
     >>> qml.commutator(X(0) @ X(1), Z(0))
     -2j * (X(1) @ Y(0))
     >>> qml.commutator(X(0) @ X(1), Z(1))
     -2j * (Y(1) @ X(0))
-    ```
 
     A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
 
-    ```python
     >>> qml.commutator(X(0) @ Y(1), Z(0))
     -2j * (Y(0) @ Y(1))
-    ```
 
     After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
-    This can be done in short via `qml.dla.lie_closure` as follows.
+    This can be done in short via ``lie_closure`` as follows.
 
-    ```python
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.dla.lie_closure(ops)
     >>> print(dla)
