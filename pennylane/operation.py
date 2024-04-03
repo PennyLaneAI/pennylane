@@ -405,7 +405,41 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-class Operator(abc.ABC):
+import jax
+
+class AbstractOperator(jax.core.AbstractValue):
+    """Abstract PennyLane observable."""
+
+    hash_value = hash("PennyLaneOperator")
+
+    def __eq__(self, other):  # pragma: nocover
+        return isinstance(other, AbstractOperator)
+
+    def __hash__(self):  # pragma: nocover
+        return self.hash_value
+
+jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
+
+class Meta(type):
+
+    def __init__(cls, *args, **kwargs):
+        cls.primitive = jax.core.Primitive(cls.__name__)
+        
+        @cls.primitive.def_impl
+        def default_call(*args, **kwargs):
+            inst = cls.__new__(cls, *args, **kwargs)
+            cls.__init__(inst, *args, **kwargs)
+            return inst
+
+        @cls.primitive.def_abstract_eval
+        def abstract_init(*args, int=None, **kwargs):
+            return AbstractOperator()
+    
+    def __call__(cls, *args, **kwargs):
+        return cls.primitive.bind(*args, **kwargs)
+
+
+class Operator(metaclass=Meta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -1796,7 +1830,7 @@ class Operation(Operator):
             self.grad_recipe = [None] * self.num_params
 
 
-class Channel(Operation, abc.ABC):
+class Channel(Operation):
     r"""Base class for quantum channels.
 
     Quantum channels have to define an additional numerical representation

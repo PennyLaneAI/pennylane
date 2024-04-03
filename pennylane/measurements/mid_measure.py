@@ -307,7 +307,41 @@ class MidMeasureMP(MeasurementProcess):
         return "MidMeasureMP"
 
 
-class MeasurementValue(Generic[T]):
+import jax
+
+class AbstractMeasurementValue(jax.core.AbstractValue):
+    """Abstract PennyLane observable."""
+
+    hash_value = hash("AbstractMeasurementValue")
+
+    def __eq__(self, other):  # pragma: nocover
+        return isinstance(other, AbstractMeasurementValeu)
+
+    def __hash__(self):  # pragma: nocover
+        return self.hash_value
+
+jax.core.raise_to_shaped_mappings[AbstractMeasurementValue] = lambda aval, _: aval
+
+class Meta(type):
+
+    def __init__(cls, *args, **kwargs):
+        cls.primitive = jax.core.Primitive(cls.__name__)
+        
+        @cls.primitive.def_impl
+        def default_call(*args, **kwargs):
+            inst = cls.__new__(cls, *args, **kwargs)
+            cls.__init__(inst, *args, **kwargs)
+            return inst
+
+        @cls.primitive.def_abstract_eval
+        def abstract_init(*args, int=None, **kwargs):
+            return AbstractMeasurementValue()
+    
+    def __call__(cls, *args, **kwargs):
+        return cls.primitive.bind(*args, **kwargs)
+
+
+class MeasurementValue(Generic[T], metaclass=Meta):
     """A class representing unknown measurement outcomes in the qubit model.
 
     Measurements on a single qubit in the computational basis are assumed.
