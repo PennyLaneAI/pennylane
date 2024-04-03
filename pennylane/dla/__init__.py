@@ -14,6 +14,8 @@
 r"""
 (Dynamical) Lie Algebra functionality in PennyLane.
 
+See our :doc:`introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
+
 .. currentmodule:: pennylane.pulse
 
 .. autosummary::
