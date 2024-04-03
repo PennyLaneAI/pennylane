@@ -102,7 +102,6 @@ def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
 def bind_new_parameters_linear_combination(
     op: qml.ops.LinearCombination, params: Sequence[TensorLike]
 ):
-    print("LinearCombination dispatch")
     new_coeffs, new_ops = [], []
     i = 0
     for o in op.ops:
@@ -125,7 +124,6 @@ def bind_new_parameters_linear_combination(
 
 @bind_new_parameters.register
 def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLike]):
-    print("composite op dispatch")
     new_operands = []
 
     for operand in op.operands:
