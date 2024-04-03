@@ -449,7 +449,7 @@ def sample_state(
         # see https://github.com/PennyLaneAI/pennylane/issues/5444
         norm = qml.math.sum(probs, axis=-1)
         abs_diff = np.abs(norm - 1)
-        if np.any((abs_diff > 0)) and np.all((abs_diff < 1e-07)):
+        if np.any(abs_diff > 0) and np.all(abs_diff < 1e-07):
             probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
 
         # rng.choice doesn't support broadcasting
