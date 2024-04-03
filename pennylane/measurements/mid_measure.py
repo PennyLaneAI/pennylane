@@ -29,7 +29,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     supplied qubit.
 
     Measurement outcomes can be used to conditionally apply operations and measurement
-    statistics can be gathered and returned by a quantum function. 
+    statistics can be gathered and returned by a quantum function.
 
     If a device doesn't support mid-circuit measurements natively, then the
     QNode will apply the :func:`defer_measurements` transform.
