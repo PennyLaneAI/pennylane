@@ -297,6 +297,9 @@
 * The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
   [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
 
+* Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
+  [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
+
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
   [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
 
