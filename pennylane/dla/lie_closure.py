@@ -65,7 +65,7 @@ def lie_closure(
     >>> qml.commutator(X(0) @ X(1), Z(1))
     -2j * (Y(1) @ X(0))
 
-    A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
+    A next round of commutators between all elements further yields the new operator ``Y(0) @ Y(1)``.
 
     >>> qml.commutator(X(0) @ Y(1), Z(0))
     -2j * (Y(0) @ Y(1))
