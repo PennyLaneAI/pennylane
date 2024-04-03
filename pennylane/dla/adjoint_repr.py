@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
-# pylint: disable=too-many-arguments
 from itertools import combinations
 
 import numpy as np
@@ -33,7 +32,7 @@ def _all_commutators(ops):
 
 def adjoint_repr(dla):
     r"""
-    Compute the adjoint representation of a dynamical Lie algebra (DLA)
+    Compute the adjoint representation of a dynamical Lie algebra (DLA).
 
     Given a DLA :math:`\{G_1, G_2, .. G_\mathfrak{d} \}` of dimension :math:`\mathfrak{d}`,
     the structure constants yield the decomposition of all commutators in terms of DLA elements,
@@ -45,7 +44,8 @@ def adjoint_repr(dla):
 
     .. math:: f^\gamma__{\alpha, \beta} = \frac{\text{tr}\left(i G_\gamma \cdot \left[i G_\alpha, i G_\beta \right] \right)}{\text{tr}\left( G_\gamma G_\gamma \right)}.
 
-    We neither assume nor enforce normalization of the DLA elements :math:`G_\alpha`, hence the normalization
+    The inputs are assumed to be orthogonal. However, we neither assume nor enforce normalization of the DLA elements
+    :math:`G_\alpha`, hence the normalization
     factor :math:`\text{tr}\left( G_\gamma G_\gamma \right)` in the decomposition.
 
     Args:
@@ -70,7 +70,7 @@ def adjoint_repr(dla):
     >>> print(dla)
     [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), -1.0 * Y(0) @ Y(1)]
 
-    The dimension of the DLA is :math:`\mathfrak{d} = 6`. Hence, the adjoint representation has shape ``(6, 6, 6)``.
+    The dimension of the DLA is :math:`\mathfrak{d} = 6`. Hence, the structure constants have shape ``(6, 6, 6)``.
 
     >>> adjoint_rep = qml.dla.adjoint_repr(dla)
     >>> adjoint_rep.shape
@@ -86,7 +86,7 @@ def adjoint_repr(dla):
     >>> adjoint_rep[0, 1, 3]
     2.
 
-    We can also look at the overall adjoint action of the first element of the DLA, :math:`G_0`, ``dla[0] = X(0) @ X(1)``.
+    We can also look at the overall adjoint action of the first element of the DLA on other elements, :math:`G_0`, ``dla[0] = X(0) @ X(1)``.
     >>> adjoint_rep[0]
     array([[ 0.,  0.,  0.,  0.,  0.,  0.],
            [-0.,  0.,  0.,  2.,  0.,  0.],

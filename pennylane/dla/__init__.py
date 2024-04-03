@@ -22,6 +22,7 @@ See our :doc:`introduction to Dynamical Lie Algebras for quantum practitioners <
     :toctree: api
 
     ~lie_closure
+    ~adjoint_repr
 
 """
 
