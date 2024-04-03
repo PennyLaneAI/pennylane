@@ -94,11 +94,11 @@ on:
         required: false
         type: string
         default: ''
-      # use_new_opmath:
-        # description: Whether to use the new op_math or not when running the tests
-        # required: false
-        # type: bool
-        # default: true
+      use_new_opmath:
+        description: Whether to use the new op_math or not when running the tests
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   test:
