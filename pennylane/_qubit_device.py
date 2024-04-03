@@ -291,6 +291,8 @@ class QubitDevice(Device):
                 self.state[:] = 0.0
                 slices = [slice(0, 1, 1)] * qml.math.ndim(self.state)
                 self.state[tuple(slices)] = 1.0
+        else:
+            mid_measurements = None
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
