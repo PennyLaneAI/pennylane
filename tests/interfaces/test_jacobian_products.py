@@ -67,10 +67,7 @@ jpc_matrix = [
     device_ps_jacs,
     device_native_jps,
     device_ps_native_jps,
-    pytest.param(
-        lightning_vjps,
-        marks=pytest.mark.skip(reason="Lighting JPC needs to be updated for new API"),
-    ),
+    lightning_vjps,
 ]
 
 

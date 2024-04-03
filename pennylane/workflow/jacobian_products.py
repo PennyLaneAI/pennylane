@@ -23,6 +23,7 @@ from cachetools import LRUCache
 import numpy as np
 
 import pennylane as qml
+from pennylane.devices import ExecutionConfig
 from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch, TensorLike
 
@@ -693,7 +694,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
         return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
 
 
-class LightningVJPs(DeviceDerivatives):  # pragma: no cover
+class LightningVJPs(DeviceDerivatives):
     """Calculates VJPs natively using lightning.qubit.
 
     Args:
@@ -741,10 +742,16 @@ class LightningVJPs(DeviceDerivatives):  # pragma: no cover
                 raise NotImplementedError(
                     "Lightning device VJPs are not supported with jax jacobians."
                 )
-            vjp_f = self._device.vjp(
-                numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
-            )
-            out = vjp_f(numpy_tape)
+
+            if self._device._new_API:  # pylint: disable=protected-access
+                config = ExecutionConfig(gradient_keyword_arguments=self._processed_gradient_kwargs)
+                out = self._device.compute_vjp(numpy_tape, dyi, config)
+            else:
+                vjp_f = self._device.vjp(
+                    numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
+                )
+                out = vjp_f(numpy_tape)
+
             if len(tape.trainable_params) == 1:
                 out = (out,)
             results.append(out)
