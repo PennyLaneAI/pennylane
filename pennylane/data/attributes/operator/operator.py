@@ -25,7 +25,6 @@ import pennylane as qml
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
 from pennylane.operation import Operator, Tensor
-from pennylane.ops.qubit.hamiltonian import Hamiltonian as LegacyHamiltonian
 
 from ._wires import wires_to_json
 
