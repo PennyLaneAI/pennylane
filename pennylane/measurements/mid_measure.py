@@ -15,13 +15,14 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional
+from typing import Generic, Optional, TypeVar
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, MidMeasure, MeasurementRegister
+from .measurements import MeasurementProcess, MeasurementRegister, MidMeasure
 
 
 def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[int] = None):

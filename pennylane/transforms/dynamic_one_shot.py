@@ -14,10 +14,11 @@
 """
 Contains the batch dimension transform.
 """
+import warnings
+
 # pylint: disable=import-outside-toplevel
 from collections import Counter
 from typing import Callable, Sequence
-import warnings
 
 import numpy as np
 
@@ -25,8 +26,8 @@ import pennylane as qml
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
-    MidMeasureMP,
     MeasurementRegisterMP,
+    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
     VarianceMP,

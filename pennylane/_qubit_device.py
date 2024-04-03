@@ -21,12 +21,12 @@ This module contains the :class:`QubitDevice` abstract base class.
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 # pylint: disable=too-many-arguments
 import abc
+import inspect
 import itertools
+import logging
 import warnings
 from collections import defaultdict
-from typing import Union, List
-import inspect
-import logging
+from typing import List, Union
 
 import numpy as np
 
@@ -39,8 +39,8 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     MeasurementProcess,
-    MeasurementTransform,
     MeasurementRegisterMP,
+    MeasurementTransform,
     MeasurementValue,
     MidMeasureMP,
     MutualInfoMP,
@@ -48,14 +48,14 @@ from pennylane.measurements import (
     SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
+    Shots,
     StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
-    Shots,
 )
+from pennylane.operation import Operation, operation_derivative
 from pennylane.resource import Resources
-from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 

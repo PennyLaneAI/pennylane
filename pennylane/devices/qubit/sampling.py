@@ -12,21 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to sample a state."""
-from typing import List, Union, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
+
 import pennylane as qml
-from pennylane.ops import Sum, Hamiltonian, SProd, Prod, LinearCombination
 from pennylane.measurements import (
-    SampleMeasurement,
-    Shots,
-    ExpectationMP,
     ClassicalShadowMP,
-    MeasurementRegisterMP,
-    ShadowExpvalMP,
     CountsMP,
+    ExpectationMP,
+    MeasurementRegisterMP,
+    SampleMeasurement,
+    ShadowExpvalMP,
+    Shots,
 )
+from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 from pennylane.typing import TensorLike
+
 from .apply_operation import apply_operation
 from .measure import flatten_state
 

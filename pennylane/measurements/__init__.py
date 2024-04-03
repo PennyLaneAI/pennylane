@@ -276,8 +276,8 @@ from .measurements import (
     MidMeasure,
     MutualInfo,
     ObservableReturnTypes,
-    Purity,
     Probability,
+    Purity,
     Sample,
     SampleMeasurement,
     Shadow,
@@ -287,12 +287,12 @@ from .measurements import (
     Variance,
     VnEntropy,
 )
-from .mid_measure import MeasurementValue, MeasurementRegisterMP, MidMeasureMP, measure
+from .mid_measure import MeasurementRegisterMP, MeasurementValue, MidMeasureMP, measure
 from .mutual_info import MutualInfoMP, mutual_info
-from .purity import PurityMP, purity
 from .probs import ProbabilityMP, probs
+from .purity import PurityMP, purity
 from .sample import SampleMP, sample
-from .shots import Shots, ShotCopies
-from .state import StateMP, DensityMatrixMP, density_matrix, state
+from .shots import ShotCopies, Shots
+from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy
