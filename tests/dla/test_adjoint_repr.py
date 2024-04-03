@@ -59,7 +59,7 @@ class TestAdjointRepr:
         for i in range(d):
             for j in range(d):
 
-                comm_res = -1j * dla[i].commutator(dla[j])
+                comm_res = 1j * dla[i].commutator(dla[j])
 
                 res = sum(
                     np.array(c, dtype=complex) * dla[gamma]
