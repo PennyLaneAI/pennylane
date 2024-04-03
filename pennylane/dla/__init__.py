@@ -16,7 +16,7 @@ r"""
 
 See our :doc:`introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
-.. currentmodule:: pennylane.pulse
+.. currentmodule:: pennylane.dla
 
 .. autosummary::
     :toctree: api
@@ -24,6 +24,5 @@ See our :doc:`introduction to Dynamical Lie Algebras for quantum practitioners <
     ~lie_closure
 
 """
-
 
 from .lie_closure import lie_closure
