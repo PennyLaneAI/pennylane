@@ -16,6 +16,12 @@ r"""
 
 See our :doc:`introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
+Overview
+--------
+
+Functions
+^^^^^^^^^
+
 .. currentmodule:: pennylane.dla
 
 .. autosummary::
