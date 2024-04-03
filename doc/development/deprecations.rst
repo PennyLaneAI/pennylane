@@ -9,7 +9,7 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* PennyLane Lightning and Catalyst will no longer support manylinux2014 (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to manylinux_2_28 (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
+* PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
   
   - Last supported version of ``manylinux2014`` with v0.36
   - Fully migrated to ``manylinux_2_28`` with v0.37
