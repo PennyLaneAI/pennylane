@@ -89,10 +89,10 @@ def adjoint_repr(dla):
     We can also look at the overall adjoint action of the first element of the DLA on other elements, :math:`G_0`, ``dla[0] = X(0) @ X(1)``.
     >>> adjoint_rep[0]
     array([[ 0.,  0.,  0.,  0.,  0.,  0.],
-           [-0.,  0.,  0.,  -2.,  0.,  0.],
-           [-0.,  0.,  0.,  0.,  -2.,  0.],
-           [-0., 2., -0.,  0.,  0.,  0.],
-           [-0., -0., 2.,  0.,  0.,  0.],
+           [-0.,  0.,  0., -2.,  0.,  0.],
+           [-0.,  0.,  0.,  0., -2.,  0.],
+           [-0.,  2., -0.,  0.,  0.,  0.],
+           [-0., -0.,  2.,  0.,  0.,  0.],
            [ 0., -0., -0., -0., -0.,  0.]])
 
     Note that we neither enforce nor assume normalization by default.
