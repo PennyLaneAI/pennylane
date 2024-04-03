@@ -132,14 +132,14 @@ def lie_closure(
 
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose > 0:
-            print(f"epoch {epoch+1} of lie_closure, dla size is {new_length}")
+            print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
             if len(com) == 0:  # skip because operators commute
                 continue
 
             # result is always purely imaginary
-            # TODO potentially renormalize?
+            # remove common factor 2 with Pauli commutators
             for pw, val in com.items():
                 com[pw] = val.imag / 2
             vspace.add(com)
@@ -150,7 +150,7 @@ def lie_closure(
         epoch += 1
 
     if verbose > 0:
-        print(f"After {epoch} epochs, reached a dla size of {new_length}")
+        print(f"After {epoch} epochs, reached a DLA size of {new_length}")
 
     res = vspace.basis
     if not pauli:
