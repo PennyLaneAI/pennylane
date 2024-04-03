@@ -82,6 +82,27 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
         Python ``not``, ``and``, ``or``, do not work since these do not have dunder methods.
         Instead use ``~``, ``&``, ``|``.
 
+    Mid-circuit measurement results can be processed with the usual measurement functions such as
+    :func:`~.expval`. For QNodes with finite shots, :func:`~.sample` applied to a mid-circuit measurement
+    result will return a binary sequence of samples.
+    See :ref:`here <mid_circuit_measurements_statistics>` for more details.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            m0 = qml.measure(1)
+            return (
+                qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0), qml.sample(m0)
+            )
+
+    >>> circuit(1.0, 2.0, shots=10000)
+    (0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702}, array([0, 1, 1, ..., 1, 1, 1]))
+
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
         reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
