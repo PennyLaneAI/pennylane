@@ -349,6 +349,7 @@ class MeasurementRegisterMP(MeasurementProcess):
     def return_type(self):
         return MeasurementRegister
 
+    # pylint : disable=no-self-use
     def validate(self, register: dict):
         """Validates the register of mid-circuit measurements."""
         if not isinstance(register, dict):

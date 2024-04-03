@@ -286,6 +286,31 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
         validate_measurements(measure_f, shots, results1, results2)
 
 
+# @flaky(max_runs=5)
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("reset", [False, True])
+def test_single_mcm_multiple_measure_obs(postselect, reset):
+    """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
+    conditional gate. Multiple measurements of common observables are performed at the end."""
+
+    dev = qml.device("default.qubit", shots=5000)
+    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+
+    @qml.qnode(dev)
+    def func(x, y, z):
+        obs_tape(x, y, z, reset=reset, postselect=postselect)
+        return qml.counts(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(*params)
+    results2 = func2(*params)
+
+    for measure_f, res1, res2 in zip([qml.counts, qml.expval], results1, results2):
+        validate_measurements(measure_f, 5000, res1, res2)
+
+
 @flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 3000, [3000, 3001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])

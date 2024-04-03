@@ -18,7 +18,12 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MidMeasureMP, MeasurementValue
+from pennylane.measurements import (
+    MidMeasureMP,
+    MeasurementRegisterMP,
+    MeasurementRegister,
+    MeasurementValue,
+)
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
@@ -70,6 +75,51 @@ class TestMeasure:
 
         label = mp.label()
         assert label == expected
+
+
+class TestMeasurementRegister:
+    """Test MeasurementRegister methods."""
+
+    def test_hash(self):
+        """Test that the hash for `MeasurementRegisterMP` is defined correctly."""
+        mreg1 = MeasurementRegisterMP(wires=Wires(0), id="m0")
+        mreg2 = MeasurementRegisterMP(wires=Wires(1), id="m1")
+        mreg3 = MeasurementRegisterMP(wires=Wires(0), id="m0")
+        assert mreg2.hash != mreg1.hash
+        assert mreg2.hash != mreg3.hash
+        assert mreg1.hash == mreg3.hash
+
+    def test_data(self):
+        """Test that the data for `MeasurementRegisterMP` is defined correctly."""
+        mreg1 = MeasurementRegisterMP(wires=Wires(0), id="m0")
+        assert isinstance(mreg1.data, list)
+        assert not mreg1.data
+
+    def test_name(self):
+        """Test that the name for `MeasurementRegisterMP` is defined correctly."""
+        mreg1 = MeasurementRegisterMP(wires=Wires(0), id="m0")
+        assert mreg1.name == "MeasurementRegisterMP"
+
+    def test_return_type(self):
+        """Test that the return type for `MeasurementRegisterMP` is defined correctly."""
+        mreg1 = MeasurementRegisterMP(wires=Wires(0), id="m0")
+        assert mreg1.return_type == MeasurementRegister
+
+    def test_validate(self):
+        """Test that the validate method works correctly."""
+        mreg1 = MeasurementRegisterMP(wires=Wires(0), id="m0")
+        assert mreg1.validate({}) is None
+        assert mreg1.validate({MidMeasureMP(0): 0}) is None
+        with pytest.raises(
+            TypeError,
+            match="A MeasurementRegisterMP requires a dictionary",
+        ):
+            mreg1.validate(0)
+        with pytest.raises(
+            TypeError,
+            match="A MeasurementRegisterMP requires a dictionary with MidMeasureMP",
+        ):
+            mreg1.validate({"a": 0})
 
 
 mp1 = MidMeasureMP(Wires(0), id="m0")

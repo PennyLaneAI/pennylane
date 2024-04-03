@@ -288,9 +288,9 @@ class QubitDevice(Device):
             mid_measurements = kwargs["mid_measurements"]
             if any(v == -1 for v in mid_measurements.values()):
                 # the state is likely non-orthonormal, let's orthonormalize it
-                self.state[:] = 0.0
-                slices = [slice(0, 1, 1)] * qml.math.ndim(self.state)
-                self.state[tuple(slices)] = 1.0
+                self._state[:] = 0.0
+                slices = [slice(0, 1, 1)] * qml.math.ndim(self._state)
+                self._state[tuple(slices)] = 1.0
         else:
             mid_measurements = None
 
