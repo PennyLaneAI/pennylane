@@ -1,8 +1,7 @@
-
-
 import jax
 
 from pennylane.queuing import QueuingManager
+
 
 def create_primitive(cls):
     primitive = jax.core.Primitive(cls.__name__)
@@ -16,4 +15,5 @@ def create_primitive(cls):
     def _(*args, wires, **kwargs):
         cls(*args, wires=wires, **kwargs)
         return ()
+
     return primitive

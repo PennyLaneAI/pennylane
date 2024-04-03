@@ -111,7 +111,9 @@ class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
     quantum tape."""
 
+
 import jax
+
 
 class AbstractMeasurement(jax.core.AbstractValue):
     """Abstract PennyLane observable."""
@@ -124,13 +126,14 @@ class AbstractMeasurement(jax.core.AbstractValue):
     def __hash__(self):  # pragma: nocover
         return self.hash_value
 
+
 jax.core.raise_to_shaped_mappings[AbstractMeasurement] = lambda aval, _: aval
 
-class Meta(type):
 
+class Meta(type):
     def __init__(cls, *args, **kwargs):
         cls.primitive = jax.core.Primitive(cls.__name__)
-        
+
         @cls.primitive.def_impl
         def default_call(*args, **kwargs):
             inst = cls.__new__(cls, *args, **kwargs)
@@ -140,10 +143,9 @@ class Meta(type):
         @cls.primitive.def_abstract_eval
         def abstract_init(*args, int=None, **kwargs):
             return AbstractMeasurement()
-    
+
     def __call__(cls, *args, **kwargs):
         return cls.primitive.bind(*args, **kwargs)
-
 
 
 class MeasurementProcess(metaclass=Meta):
