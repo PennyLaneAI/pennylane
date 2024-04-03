@@ -42,7 +42,7 @@ def adjoint_repr(dla):
     The adjoint representation :math:`\left(\text{ad}(iG_\gamma)\right)_{\alpha, \beta} = f^\gamma__{\alpha, \beta}` is given by those structure constants,
     which can be computed via
 
-    .. math:: f^\gamma__{\alpha, \beta} = \frac{\text{tr}\left(i G_\gamma \cdot \left[i G_\alpha, i G_\beta \right] \right)}{\text{tr}\left( G_\gamma G_\gamma \right)}.
+    .. math:: f^\gamma__{\alpha, \beta} = -\frac{\text{tr}\left(i G_\gamma \cdot \left[i G_\alpha, i G_\beta \right] \right)}{\text{tr}\left( G_\gamma G_\gamma \right)}.
 
     The inputs are assumed to be orthogonal. However, we neither assume nor enforce normalization of the DLA elements
     :math:`G_\alpha`, hence the normalization
@@ -80,19 +80,19 @@ def adjoint_repr(dla):
 
     .. math:: [i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma.
 
-    Let us confirm those with some examples. Take :math:`[iG_1, iG_3] = [iZ_0, -iY_0 X_1] = i 2 X_0 X_1 = i 2 G_0`, so
-    we should have :math:`f^0_{1, 3} = 2`, which is indeed the case.
+    Let us confirm those with some examples. Take :math:`[iG_1, iG_3] = [iZ_0, -iY_0 X_1] = -i 2 X_0 X_1 = -i 2 G_0`, so
+    we should have :math:`f^0_{1, 3} = -2`, which is indeed the case.
 
     >>> adjoint_rep[0, 1, 3]
-    2.
+    -2.
 
     We can also look at the overall adjoint action of the first element of the DLA on other elements, :math:`G_0`, ``dla[0] = X(0) @ X(1)``.
     >>> adjoint_rep[0]
     array([[ 0.,  0.,  0.,  0.,  0.,  0.],
-           [-0.,  0.,  0.,  2.,  0.,  0.],
-           [-0.,  0.,  0.,  0.,  2.,  0.],
-           [-0., -2., -0.,  0.,  0.,  0.],
-           [-0., -0., -2.,  0.,  0.,  0.],
+           [-0.,  0.,  0.,  -2.,  0.,  0.],
+           [-0.,  0.,  0.,  0.,  -2.,  0.],
+           [-0., 2., -0.,  0.,  0.,  0.],
+           [-0., -0., 2.,  0.,  0.,  0.],
            [ 0., -0., -0., -0., -0.,  0.]])
 
     Note that we neither enforce nor assume normalization by default.
