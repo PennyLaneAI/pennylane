@@ -14,7 +14,7 @@
 """
 LinearCombination class
 """
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
 
 import itertools
 import numbers
@@ -124,6 +124,18 @@ class LinearCombination(Sum):
                 "Could not create valid LinearCombination; "
                 "number of coefficients and operators does not match."
             )
+        if _pauli_rep is None:
+            _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
+
+        if simplify:
+            # simplify upon initialization changes ops such that they wouldnt be removed in self.queue() anymore
+            if qml.QueuingManager.recording():
+                for o in observables:
+                    qml.QueuingManager.remove(o)
+
+            coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(
+                coeffs, observables, _pauli_rep
+            )
 
         self._coeffs = coeffs
 
@@ -131,29 +143,24 @@ class LinearCombination(Sum):
 
         self._hyperparameters = {"ops": self._ops}
 
-        self._grouping_indices = None
-
-        with qml.QueuingManager().stop_recording():
-            operands = [qml.s_prod(c, op) for c, op in zip(coeffs, observables)]
+        with qml.QueuingManager.stop_recording():
+            operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
 
         super().__init__(
             *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
         )
 
-        if simplify:
-            # TODO clean up this logic, seems unnecesssarily complicated
+    @staticmethod
+    def _build_pauli_rep_static(coeffs, observables):
+        """PauliSentence representation of the Sum of operations."""
 
-            simplified_coeffs, simplified_ops, pr = self._simplify_coeffs_ops()
-
-            self._coeffs = (
-                simplified_coeffs  # Losing gradient in case of torch interface at this point
-            )
-
-            self._ops = simplified_ops
-            with qml.QueuingManager().stop_recording():
-                operands = [qml.s_prod(c, op) for c, op in zip(self._coeffs, self._ops)]
-
-            super().__init__(*operands, id=id, _pauli_rep=pr)
+        if all(pauli_reps := [op.pauli_rep for op in observables]):
+            new_rep = qml.pauli.PauliSentence()
+            for c, ps in zip(coeffs, pauli_reps):
+                for pw, coeff in ps.items():
+                    new_rep[pw] += coeff * c
+            return new_rep
+        return None
 
     def _check_batching(self):
         """Override for LinearCombination, batching is not yet supported."""
@@ -275,44 +282,43 @@ class LinearCombination(Sum):
     def name(self):
         return "LinearCombination"
 
+    @staticmethod
     @qml.QueuingManager.stop_recording()
-    def _simplify_coeffs_ops(self, cutoff=1.0e-12):
+    def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
         Returns:
             coeffs, ops, pauli_rep"""
 
-        if len(self.ops) == 0:
-            return [], [], self.pauli_rep
+        if len(ops) == 0:
+            return [], [], pr
 
         # try using pauli_rep:
-        if pr := self.pauli_rep:
-
-            wire_order = self.wires
+        if pr is not None:
             if len(pr) == 0:
                 return [], [], pr
 
             # collect coefficients and ops
-            coeffs = []
-            ops = []
+            new_coeffs = []
+            new_ops = []
 
             for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=wire_order)
-                ops.append(pw_op)
-                coeffs.append(coeff)
+                pw_op = pw.operation(wire_order=pr.wires)
+                new_ops.append(pw_op)
+                new_coeffs.append(coeff)
 
-            return coeffs, ops, pr
+            return new_coeffs, new_ops, pr
 
-        if len(self.ops) == 1:
-            return self.coeffs, [self.ops[0].simplify()], pr
+        if len(ops) == 1:
+            return coeffs, [ops[0].simplify()], pr
 
-        op_as_sum = qml.sum(*self.operands)
+        op_as_sum = qml.dot(coeffs, ops)
         op_as_sum = op_as_sum.simplify(cutoff)
-        coeffs, ops = op_as_sum.terms()
-        return coeffs, ops, None
+        new_coeffs, new_ops = op_as_sum.terms()
+        return new_coeffs, new_ops, pr
 
     def simplify(self, cutoff=1.0e-12):
-        coeffs, ops, pr = self._simplify_coeffs_ops(cutoff)
+        coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def _obs_data(self):
@@ -392,23 +398,23 @@ class LinearCombination(Sum):
         False
         """
 
-        if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
-            pr1.simplify()
-            pr2.simplify()
-            return pr1 == pr2
-
-        if isinstance(other, (LinearCombination, qml.ops.Hamiltonian)):
-            op1 = self.simplify()
-            op2 = other.simplify()
-            return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
-
-        if isinstance(other, (Tensor, Observable)):
-            op1 = self.simplify()
-            return op1._obs_data() == {
-                (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
-            }
-
         if isinstance(other, (Operator)):
+            if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
+                pr1.simplify()
+                pr2.simplify()
+                return pr1 == pr2
+
+            if isinstance(other, (LinearCombination, qml.ops.Hamiltonian)):
+                op1 = self.simplify()
+                op2 = other.simplify()
+                return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
+
+            if isinstance(other, (Tensor, Observable)):
+                op1 = self.simplify()
+                return op1._obs_data() == {
+                    (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
+                }
+
             op1 = self.simplify()
             op2 = other.simplify()
             return qml.equal(op1, op2)

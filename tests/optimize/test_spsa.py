@@ -458,7 +458,7 @@ class TestSPSAOptimizer:
 
         @qml.qnode(dev)
         def cost_fun(params, num_qubits=1):
-            qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
+            qml.BasisState([1, 1, 0, 0], wires=range(num_qubits))
             for i in range(num_qubits):
                 qml.Rot(*params[i], wires=0)
                 qml.CNOT(wires=[2, 3])
@@ -479,7 +479,6 @@ class TestSPSAOptimizer:
         assert np.all(params != init_params)
         assert energy < init_energy
 
-    @pytest.mark.xfail  # TODO: lightning supports LinearCombination
     @pytest.mark.slow
     def test_lighting_device(self):
         """Test SPSAOptimizer implementation with lightning.qubit device."""
@@ -495,7 +494,7 @@ class TestSPSAOptimizer:
 
         @qml.qnode(dev)
         def cost_fun(params, num_qubits=1):
-            qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
+            qml.BasisState([1, 1, 0, 0], wires=range(num_qubits))
             for i in range(num_qubits):
                 qml.Rot(*params[i], wires=0)
                 qml.CNOT(wires=[2, 3])

@@ -336,7 +336,7 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
-        if isinstance(H, (qml.Hamiltonian, ParametrizedHamiltonian)):
+        if isinstance(H, (qml.ops.Hamiltonian, qml.ops.LinearCombination, ParametrizedHamiltonian)):
             # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = coeffs + list(H.coeffs.copy())
             new_ops = ops + H.ops.copy()
@@ -361,7 +361,7 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
-        if isinstance(H, (qml.Hamiltonian, ParametrizedHamiltonian)):
+        if isinstance(H, (qml.ops.Hamiltonian, qml.ops.LinearCombination, ParametrizedHamiltonian)):
             # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = list(H.coeffs.copy()) + coeffs
             new_ops = H.ops.copy() + ops

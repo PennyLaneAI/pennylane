@@ -61,6 +61,26 @@ non_pauli_words = [
 ]
 
 
+def _make_pauli_word_strings():
+    return [
+        (PauliX(0), {0: 0}, "X"),
+        (Identity(0), {0: 0}, "I"),
+        (PauliZ(0) @ PauliY(1), {0: 0, 1: 1}, "ZY"),
+        (PauliX(1), {0: 0, 1: 1}, "IX"),
+        (PauliX(1), None, "X"),
+        (PauliX(1), {1: 0, 0: 1}, "XI"),
+        (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
+        (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
+        (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
+        (4.5 * PauliX(0), {0: 0}, "X"),
+        (qml.prod(PauliX(0), PauliY(1)), {0: 0, 1: 1}, "XY"),
+        (PauliX(0) @ PauliZ(0), {0: 0}, "Y"),
+        (3 * PauliZ(0) @ PauliY(3), {0: 0, 3: 1}, "ZY"),
+        (qml.s_prod(8, qml.PauliX(0) @ qml.PauliZ(1)), {0: 0, 1: 1}, "XZ"),
+        (qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)]), None, "XY"),
+    ]
+
+
 class TestGroupingUtils:
     """Basic usage and edge-case tests for the measurement optimization utility functions."""
 
@@ -418,38 +438,30 @@ class TestGroupingUtils:
         with pytest.raises(ValueError, match="Expected a binary array, instead got"):
             qwc_complement_adj_matrix(not_binary_observables)
 
-    @pytest.mark.parametrize(
-        "pauli_word,wire_map,expected_string",
-        [
-            (PauliX(0), {0: 0}, "X"),
-            (Identity(0), {0: 0}, "I"),
-            (PauliZ(0) @ PauliY(1), {0: 0, 1: 1}, "ZY"),
-            (PauliX(1), {0: 0, 1: 1}, "IX"),
-            (PauliX(1), None, "X"),
-            (PauliX(1), {1: 0, 0: 1}, "XI"),
-            (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
-            (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
-            (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
-            (4.5 * PauliX(0), {0: 0}, "X"),
-            (qml.prod(PauliX(0), PauliY(1)), {0: 0, 1: 1}, "XY"),
-            (PauliX(0) @ PauliZ(0), {0: 0}, "Y"),
-            (3 * PauliZ(0) @ PauliY(3), {0: 0, 3: 1}, "ZY"),
-            (qml.s_prod(8, qml.PauliX(0) @ qml.PauliZ(1)), {0: 0, 1: 1}, "XZ"),
-        ],
-    )
+    PAULI_WORD_STRINGS = _make_pauli_word_strings()
+
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+    @pytest.mark.parametrize("pauli_word,wire_map,expected_string", PAULI_WORD_STRINGS)
     def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):
         """Test that Pauli words are correctly converted into strings."""
         obtained_string = pauli_word_to_string(pauli_word, wire_map)
         assert obtained_string == expected_string
 
+    def test_pauli_word_to_string_tensor(self):
+        """Test pauli_word_to_string with tensor instances."""
+        op = qml.operation.Tensor(qml.X(0), qml.Y(1))
+        assert pauli_word_to_string(op) == "XY"
+
+        op = qml.operation.Tensor(qml.Z(0), qml.Y(1), qml.X(2))
+        assert pauli_word_to_string(op) == "ZYX"
+
+    with qml.operation.disable_new_opmath_cm():
+        PAULI_WORD_STRINGS_LEGACY = _make_pauli_word_strings()
+
     @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_pauli_word_to_string_legacy_opmath(self):
+    @pytest.mark.parametrize("pauli_word,wire_map,expected_string", PAULI_WORD_STRINGS_LEGACY)
+    def test_pauli_word_to_string_legacy_opmath(self, pauli_word, wire_map, expected_string):
         """Test that Pauli words are correctly converted into strings."""
-        pauli_word, wire_map, expected_string = (
-            qml.Hamiltonian([4], [qml.PauliX(0) @ qml.PauliZ(1)]),
-            {0: 0, 1: 1},
-            "XZ",
-        )
         obtained_string = pauli_word_to_string(pauli_word, wire_map)
         assert obtained_string == expected_string
 

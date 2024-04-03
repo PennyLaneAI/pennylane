@@ -539,6 +539,7 @@ class TestLinearCombination:
     """Test the LinearCombination class"""
 
     PAULI_REPS = (
+        ([], [], PauliSentence({})),
         (
             list(range(3)),
             [X(i) for i in range(3)],
@@ -754,6 +755,11 @@ class TestLinearCombination:
     def test_compare_to_simple_ops(self, H, op):
         assert H.compare(op)
 
+    def test_compare_raises_error(self):
+        op = qml.ops.LinearCombination([], [])
+        with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
+            _ = op.compare(0)
+
     @pytest.mark.xfail
     def test_compare_gell_mann(self):
         """Tests that the compare method returns the correct result for LinearCombinations
@@ -774,7 +780,6 @@ class TestLinearCombination:
         assert H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2)) is False
         assert H2.compare(H4) is False
 
-    @pytest.mark.xfail  # TODO: decide whether we want to continue to have this legacy behavior
     def test_LinearCombination_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
@@ -838,6 +843,24 @@ class TestLinearCombination:
             ],
         )
         assert expected.compare(out)
+
+    def test_LinearCombination_matmul_overlapping_wires_raises_error(self):
+        """Test that an error is raised when attempting to multiply two
+        LinearCombination operators with overlapping wires"""
+        op1 = qml.ops.LinearCombination([1.0], [X(0)])
+        op2 = qml.ops.LinearCombination([1.0], [Y(0)])
+        with pytest.raises(ValueError, match="LinearCombinations can only be multiplied together"):
+            _ = op1 @ op2
+
+    def test_matmul_with_non_pauli_op(self):
+        """Test multiplication with another operator that does not have a pauli rep"""
+        H = qml.ops.LinearCombination([0.5], [X(0)])
+        assert H.pauli_rep == PauliSentence({PauliWord({0: "X"}): 0.5})
+        op = qml.Hadamard(0)
+
+        res = H @ op
+        assert res.pauli_rep is None
+        assert res.compare(qml.ops.LinearCombination([0.5], [X(0) @ qml.Hadamard(0)]))
 
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_LinearCombinations)
     def test_LinearCombination_matmul(self, H1, H2, H):
@@ -1465,6 +1488,19 @@ class TestGrouping:
         H.compute_grouping()
         assert H.grouping_indices == ((0, 1), (2,))
 
+    def test_grouping_raises_error(self):
+        """Check that compute_grouping raises an error when
+        attempting to compute groups for non-Pauli operators"""
+        a = qml.Hadamard(0)
+        b = X(1)
+        c = Z(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        with pytest.raises(ValueError, match="Cannot compute grouping"):
+            H = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc")
+            H.compute_grouping()
+
     def test_set_grouping(self):
         """Test that we can set grouping indices."""
         H = qml.ops.LinearCombination([1.0, 2.0, 3.0], [X(0), X(1), Z(0)])
@@ -1818,61 +1854,12 @@ class TestLinearCombinationDifferentiation:
 
         assert np.allclose(grad, grad_expected)
 
-    @pytest.mark.xfail  # TODO simplify doesnt work with differentiation in torch
     @pytest.mark.torch
+    @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_torch_simplify(self, group):
+    def test_trainable_coeffs_torch_simplify(self, group, simplify):
         """Test the torch interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a LinearCombination expectation"""
-        simplify = True
-        coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
-        param = torch.tensor(1.7, requires_grad=True)
-
-        # differentiating a circuit with measurement expval(H)
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
-        def circuit(coeffs, param):
-            qml.RX(param, wires=0)
-            qml.RY(param, wires=0)
-            return qml.expval(
-                qml.ops.LinearCombination(
-                    coeffs,
-                    [X(0), Z(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
-            )
-
-        res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
-        grad = (coeffs.grad, param.grad)
-
-        # differentiating a cost that combines circuits with
-        # measurements expval(Pauli)
-
-        # we need to create new tensors here
-        coeffs2 = torch.tensor([-0.05, 0.17], requires_grad=True)
-        param2 = torch.tensor(1.7, requires_grad=True)
-
-        half1 = qml.QNode(circuit1, dev, interface="torch", diff_method="backprop")
-        half2 = qml.QNode(circuit2, dev, interface="torch", diff_method="backprop")
-
-        def combine(coeffs, param):
-            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
-
-        res_expected = combine(coeffs2, param2)
-        res_expected.backward()
-        grad_expected = (coeffs2.grad, param2.grad)
-
-        assert qml.math.allclose(grad[0], grad_expected[0])
-        assert qml.math.allclose(grad[1], grad_expected[1])
-
-    @pytest.mark.torch
-    @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_torch(self, group):
-        """Test the torch interface by comparing the differentiation of linearly combined subcircuits
-        with the differentiation of a LinearCombination expectation"""
-        simplify = False
-
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
         param = torch.tensor(1.7, requires_grad=True)
 

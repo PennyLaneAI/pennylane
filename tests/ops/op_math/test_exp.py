@@ -33,6 +33,7 @@ from pennylane.ops.op_math import Evolution, Exp
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pauli_base(self, constructor):
         """Test initialization with no coeff and a simple base."""
         base = qml.PauliX("a")
@@ -458,13 +459,29 @@ class TestDecomposition:
         pr = op.decomposition()[0]
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
-    # TODO: currently fail, related to generators, waiting for
+    @pytest.mark.parametrize(
+        "base, base_string",
+        (
+            (qml.operation.Tensor(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
+            (qml.operation.Tensor(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
+        ),
+    )
+    def test_decomposition_tensor_into_pauli_rot(self, base, base_string):
+        """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
+        theta = 3.21
+        op = Exp(base, -0.5j * theta)
+
+        assert op.has_decomposition
+        pr = op.decomposition()[0]
+        assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
+
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
-        assert qml.operation.active_new_opmath()
+
         op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
 
         if not op_class.has_generator:

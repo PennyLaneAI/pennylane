@@ -269,7 +269,7 @@ class ClassicalShadow:
             word = pauli_list_to_word(observable.obs)
             return [(1, word)]
 
-        if isinstance(observable, qml.Hamiltonian):
+        if isinstance(observable, qml.ops.Hamiltonian):
             coeffs_and_words = []
             for coeff, op in zip(observable.data, observable.ops):
                 coeffs_and_words.extend(

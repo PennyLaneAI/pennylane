@@ -650,6 +650,7 @@ class TestMatrix:
         with pytest.raises(qml.operation.MatrixUndefinedError):
             Adjoint(base).matrix()
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_adj_hamiltonian(self):
         """Test that a we can take the adjoint of a hamiltonian."""
         U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0) @ qml.PauliZ(wires=1)])

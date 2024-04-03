@@ -135,6 +135,19 @@
   but for usage with new operator arithmetic.
   [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
 
+* The `qml.TrotterProduct` operator now supports error estimation functionality. 
+  [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
+
+  ```pycon
+  >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+  >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+  >>> op.error(method="one-norm")
+  SpectralNormError(8.039062500000003e-06)
+  >>>
+  >>> op.error(method="commutator")
+  SpectralNormError(6.166666666666668e-06)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
@@ -177,6 +190,9 @@
  `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
   [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
 
+* Replaced `cache_execute` with an alternate implementation based on `@transform`.
+  [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
+
 * The `QNode` now defers `diff_method` validation to the device under the new device api `qml.devices.Device`.
   [(#5176)](https://github.com/PennyLaneAI/pennylane/pull/5176)
 
@@ -186,8 +202,9 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
-* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, and `CountsMP`.
+* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
+  [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
 
 <h3>Breaking changes 💔</h3>
 
@@ -269,7 +286,31 @@
 * Updated the final example in the `compile` docstring to use transforms correctly.
   [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
 
+* A link to the demos for using `qml.SpecialUnitary` and `qml.QNGOptimizer` has been added to their respective docstrings.
+  [(#5376)](https://github.com/PennyLaneAI/pennylane/pull/5376)
+
+* A code example in the `qml.measure` docstring has been added that showcases returning mid-circuit measurement statistics from QNodes.
+  [(#5441)](https://github.com/PennyLaneAI/pennylane/pull/5441)
+
 <h3>Bug fixes 🐛</h3>
+
+* Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
+  [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
+
+* The `QNSPSAOptimizer` now properly handles differentiable parameters, resulting in being able to use it for more than one optimization step.
+  [(#5439)](https://github.com/PennyLaneAI/pennylane/pull/5439)
+
+* The `QNode` interface now resets if an error occurs during execution.
+  [(#5449)](https://github.com/PennyLaneAI/pennylane/pull/5449)
+
+* Fix failing tests due to changes with Lightning's adjoint diff pipeline.
+  [(#5450)](https://github.com/PennyLaneAI/pennylane/pull/5450)
+
+* Fix Torch tensor locality with autoray-registered coerce method.
+  [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
+
+* `jax.jit` now works with `qml.sample` with a multi-wire observable.
+  [(#5422)](https://github.com/PennyLaneAI/pennylane/pull/5422)
 
 * `qml.qinfo.quantum_fisher` now works with non-`default.qubit` devices.
   [(#5423)](https://github.com/PennyLaneAI/pennylane/pull/5423)
@@ -277,8 +318,19 @@
 * We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
   [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
 
-* Fixed `TestQubitIntegration.test_counts` in `tests/interfaces/test_jax_qnode.py` to always produce counts for all outcomes.
+* Fixed `TestQubitIntegration.test_counts` in `tests/interfaces/test_jax_qnode.py` to always produce counts for all
+  outcomes.
   [(#5336)](https://github.com/PennyLaneAI/pennylane/pull/5336)
+
+* Fixed `PauliSentence.to_mat(wire_order)` to support identities with wires.
+  [(#5407)](https://github.com/PennyLaneAI/pennylane/pull/5407)
+
+* `CompositeOp.map_wires` now correctly maps the `overlapping_ops` property.
+  [(#5430)](https://github.com/PennyLaneAI/pennylane/pull/5430)
+
+* Update `DefaultQubit.supports_derivatives` to correctly handle circuits containing `MidMeasureMP` with adjoint
+  differentiation.
+  [(#5434)](https://github.com/PennyLaneAI/pennylane/pull/5434)
 
 <h3>Contributors ✍️</h3>
 
@@ -290,6 +342,7 @@ Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
+Isaac De Vlugt,
 Amintor Dusko,
 Pietropaolo Frisoni,
 Soran Jahangiri,
@@ -297,4 +350,5 @@ Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
+Jay Soni,
 Matthew Silverman.

@@ -64,7 +64,7 @@ def _square_observable(obs):
         # component observables independently. Note that
         # we assume all component observables are on distinct wires.
         components_squared = [
-            NONINVOLUTORY_OBS[o.name](o) for o in obs if o.name in NONINVOLUTORY_OBS
+            NONINVOLUTORY_OBS[o.name](o) for o in obs.obs if o.name in NONINVOLUTORY_OBS
         ]
         return qml.operation.Tensor(*components_squared)
 
@@ -693,7 +693,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     for i in var_indices:
         obs = new_measurements[i].obs
         new_measurements[i] = qml.expval(op=obs)
-        if obs.name in {"Hamiltonian", "LinearCombination", "Sum"}:
+        if obs.name in ["Hamiltonian", "LinearCombination", "Sum"]:
             first_obs_idx = len(tape.operations)
             for t_idx in reversed(range(len(tape.trainable_params))):
                 op, op_idx, _ = tape.get_operation(t_idx)

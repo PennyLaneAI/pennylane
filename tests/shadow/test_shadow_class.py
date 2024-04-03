@@ -78,6 +78,7 @@ class TestIntegrationShadows:
     """Integration tests for classical shadows class"""
 
     @pytest.mark.parametrize("shadow", shadows)
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pauli_string_expval(self, shadow):
         """Testing the output of expectation values match those of exact evaluation"""
 
@@ -101,8 +102,11 @@ class TestIntegrationShadows:
 
     @pytest.mark.parametrize("H", Hs)
     @pytest.mark.parametrize("shadow", shadows)
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_expval_input_types(self, shadow, H):
         """Test ClassicalShadow.expval can handle different inputs"""
+        if not qml.operation.active_new_opmath():
+            H = qml.operation.convert_to_legacy_H(H)
         assert qml.math.allclose(shadow.expval(H, k=2), 1.0, atol=1e-1)
 
     def test_reconstruct_bell_state(self):
