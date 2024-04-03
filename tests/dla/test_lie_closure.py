@@ -449,7 +449,7 @@ class TestLieClosure:
         assert len(res) == (2 ** (n - 1)) ** 2 - 1
 
     def test_lie_closure_heisenberg_generators_even(self):
-        """Test the resulting DLA from Heisenberg generators with odd n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
+        """Test the resulting DLA from Heisenberg generators with even n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
         n = 4
         # dim of su(N) is N ** 2 - 1
         # Heisenberg generates (su(2**(n-2)))**4 for n>=4 even   => dim should be 4*((2**(n-2))**2 - 1)

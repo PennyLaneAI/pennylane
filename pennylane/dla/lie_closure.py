@@ -42,7 +42,7 @@ def lie_closure(
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
-        verbose (int): verbosity during Lie closure calculation. Default is ``0``.
+        verbose (Union[int, bool]): verbosity during Lie closure calculation. Default is ``0``.
         pauli (bool): Indicates whether it is assumed that :class:`~PauliSentence` instances are input and returned.
             This can help with performance to avoid unnecessary conversions from :class:`~PauliSentence` to :class:`~Operator`
             or :class:`~PauliWord` and vice versa. Note that the input in that case also has to be a list of :class:`~PauliSentence` instances.
@@ -77,7 +77,7 @@ def lie_closure(
     ```
 
     After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
-    This can now be done in short via `qml.dla.lie_closure` as follows.
+    This can be done in short via `qml.dla.lie_closure` as follows.
 
     ```python
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
