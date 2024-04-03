@@ -42,7 +42,7 @@ def lie_closure(
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
-        verbose (int): verbosity during Lie closure calculation. Default is ``0``.
+        verbose (Union[int, bool]): verbosity during Lie closure calculation. Default is ``0``.
         pauli (bool): Indicates whether it is assumed that :class:`~PauliSentence` instances are input and returned.
             This can help with performance to avoid unnecessary conversions from :class:`~PauliSentence` to :class:`~Operator`
             or :class:`~PauliWord` and vice versa. Note that the input in that case also has to be a list of :class:`~PauliSentence` instances.
@@ -56,30 +56,23 @@ def lie_closure(
 
     Let us walk through a simple example of computing the Lie closure of the generators of the transverse field Ising model on two qubits.
 
-    ```python
-    ops = [X(0) @ X(1), Z(0), Z(1)]
-    ```
+    >>> ops = [X(0) @ X(1), Z(0), Z(1)]
 
-    A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
+    A first round of commutators between all elements yields the new operators ``Y(0) @ X(1)`` and ``X(0) @ Y(1)`` (omitting scalar prefactors).
 
-    ```python
     >>> qml.commutator(X(0) @ X(1), Z(0))
     -2j * (X(1) @ Y(0))
     >>> qml.commutator(X(0) @ X(1), Z(1))
     -2j * (Y(1) @ X(0))
-    ```
 
-    A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
+    A next round of commutators between all elements further yields the new operator ``Y(0) @ Y(1)``.
 
-    ```python
     >>> qml.commutator(X(0) @ Y(1), Z(0))
     -2j * (Y(0) @ Y(1))
-    ```
 
     After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
-    This can now be done in short via `qml.dla.lie_closure` as follows.
+    This can be done in short via ``lie_closure`` as follows.
 
-    ```python
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.dla.lie_closure(ops)
     >>> print(dla)
@@ -132,14 +125,14 @@ def lie_closure(
 
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose > 0:
-            print(f"epoch {epoch+1} of lie_closure, dla size is {new_length}")
+            print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
             if len(com) == 0:  # skip because operators commute
                 continue
 
             # result is always purely imaginary
-            # TODO potentially renormalize?
+            # remove common factor 2 with Pauli commutators
             for pw, val in com.items():
                 com[pw] = val.imag / 2
             vspace.add(com)
@@ -150,7 +143,7 @@ def lie_closure(
         epoch += 1
 
     if verbose > 0:
-        print(f"After {epoch} epochs, reached a dla size of {new_length}")
+        print(f"After {epoch} epochs, reached a DLA size of {new_length}")
 
     res = vspace.basis
     if not pauli:

@@ -11,7 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A module containing functionality for (dynamical) Lie algebras"""
+r"""
+(Dynamical) Lie Algebra functionality in PennyLane.
+
+See our :doc:`introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
+
+.. currentmodule:: pennylane.pulse
+
+.. autosummary::
+    :toctree: api
+
+    ~lie_closure
+
+"""
 
 
 from .lie_closure import lie_closure

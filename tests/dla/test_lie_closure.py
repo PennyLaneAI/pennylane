@@ -289,9 +289,9 @@ class TestLieClosure:
         gen11 = dla11[:-1]
         _ = lie_closure(gen11, verbose=True)
         captured = capsys.readouterr()
-        assert "epoch 1 of lie_closure, dla size is 3" in captured.out
-        assert "epoch 2 of lie_closure, dla size is 4" in captured.out
-        assert "After 2 epochs, reached a dla size of 4" in captured.out
+        assert "epoch 1 of lie_closure, DLA size is 3" in captured.out
+        assert "epoch 2 of lie_closure, DLA size is 4" in captured.out
+        assert "After 2 epochs, reached a DLA size of 4" in captured.out
 
     def test_verbose_false(self, capsys):
         """Test that there is no output when verbose is False"""
@@ -314,7 +314,7 @@ class TestLieClosure:
         captured = capsys.readouterr()
         assert (
             captured.out
-            == "epoch 1 of lie_closure, dla size is 4\nAfter 1 epochs, reached a dla size of 8\n"
+            == "epoch 1 of lie_closure, DLA size is 4\nAfter 1 epochs, reached a DLA size of 8\n"
         )
         assert len(res) == 8
 
@@ -449,7 +449,7 @@ class TestLieClosure:
         assert len(res) == (2 ** (n - 1)) ** 2 - 1
 
     def test_lie_closure_heisenberg_generators_even(self):
-        """Test the resulting DLA from Heisenberg generators with odd n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
+        """Test the resulting DLA from Heisenberg generators with even n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
         n = 4
         # dim of su(N) is N ** 2 - 1
         # Heisenberg generates (su(2**(n-2)))**4 for n>=4 even   => dim should be 4*((2**(n-2))**2 - 1)

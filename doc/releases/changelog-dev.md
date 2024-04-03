@@ -221,7 +221,7 @@
   ops = [X(0) @ X(1), Z(0), Z(1)]
   ```
 
-  A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)`.
+  A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
 
   ```python
   >>> qml.commutator(X(0) @ X(1), Z(0))
@@ -392,6 +392,9 @@
 
 * A link to the demos for using `qml.SpecialUnitary` and `qml.QNGOptimizer` has been added to their respective docstrings.
   [(#5376)](https://github.com/PennyLaneAI/pennylane/pull/5376)
+
+* A code example in the `qml.measure` docstring has been added that showcases returning mid-circuit measurement statistics from QNodes.
+  [(#5441)](https://github.com/PennyLaneAI/pennylane/pull/5441)
 
 <h3>Bug fixes 🐛</h3>
 
