@@ -529,6 +529,7 @@ class PauliWord(dict):
         """Return a new PauliWord with the wires mapped."""
         return self.__class__({wire_map.get(w, w): op for w, op in self.items()})
 
+pw_id = PauliWord({}) # empty pauli word to be re-used
 
 class PauliSentence(dict):
     r"""Dictionary representing a linear combination of Pauli words, with the keys
@@ -610,7 +611,7 @@ class PauliSentence(dict):
         0.5
 
         """
-        return self.get(PauliWord({}), 0.0)
+        return self.get(pw_id, 0.0)
 
     def __add__(self, other):
         """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.
