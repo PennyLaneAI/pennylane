@@ -24,6 +24,7 @@ from enum import Enum
 from typing import Sequence, Tuple, Optional, Union
 
 import pennylane as qml
+from pennylane.capture import Meta
 from pennylane.operation import Operator, DecompositionUndefinedError, EigvalsUndefinedError
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
@@ -110,42 +111,6 @@ Purity = ObservableReturnTypes.Purity
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
     quantum tape."""
-
-
-import jax
-
-
-class AbstractMeasurement(jax.core.AbstractValue):
-    """Abstract PennyLane observable."""
-
-    hash_value = hash("AbstractMeasurement")
-
-    def __eq__(self, other):  # pragma: nocover
-        return isinstance(other, AbstractMeasurement)
-
-    def __hash__(self):  # pragma: nocover
-        return self.hash_value
-
-
-jax.core.raise_to_shaped_mappings[AbstractMeasurement] = lambda aval, _: aval
-
-
-class Meta(type):
-    def __init__(cls, *args, **kwargs):
-        cls.primitive = jax.core.Primitive(cls.__name__)
-
-        @cls.primitive.def_impl
-        def default_call(*args, **kwargs):
-            inst = cls.__new__(cls, *args, **kwargs)
-            cls.__init__(inst, *args, **kwargs)
-            return inst
-
-        @cls.primitive.def_abstract_eval
-        def abstract_init(*args, int=None, **kwargs):
-            return AbstractMeasurement()
-
-    def __call__(cls, *args, **kwargs):
-        return cls.primitive.bind(*args, **kwargs)
 
 
 class MeasurementProcess(metaclass=Meta):
