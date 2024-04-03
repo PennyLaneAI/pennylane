@@ -268,8 +268,11 @@ def apply_mid_measure(
 
     try:
         sample = np.random.binomial(1, probs[1])
-    except ValueError as e:  # pragma: no-cover, pylint: disable=unused-variable
-        sample = np.random.binomial(1, np.round(probs[1], 15))
+    except ValueError as e:  # pragma: no-cover
+        if probs[1] > 1:  # MachEps error, safe to catch
+            sample = np.random.binomial(1, np.round(probs[1], 15))
+        else:  # Other general error, continue to fail
+            raise e
 
     mid_measurements[op] = sample
     if op.postselect is not None and sample != op.postselect:
