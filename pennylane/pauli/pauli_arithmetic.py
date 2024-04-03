@@ -529,7 +529,9 @@ class PauliWord(dict):
         """Return a new PauliWord with the wires mapped."""
         return self.__class__({wire_map.get(w, w): op for w, op in self.items()})
 
-pw_id = PauliWord({}) # empty pauli word to be re-used
+
+pw_id = PauliWord({})  # empty pauli word to be re-used
+
 
 class PauliSentence(dict):
     r"""Dictionary representing a linear combination of Pauli words, with the keys
