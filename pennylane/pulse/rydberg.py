@@ -123,11 +123,6 @@ def rydberg_interaction(
     )
 
 
-def test_for_ci():
-    """docstring for pylint"""
-    return 3
-
-
 def rydberg_drive(amplitude, phase, detuning, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser field
 
