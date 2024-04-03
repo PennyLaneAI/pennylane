@@ -97,33 +97,20 @@ def bind_new_parameters_angle_embedding(op: qml.AngleEmbedding, params: Sequence
 def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
     return qml.Identity(*params, wires=op.wires)
 
-
-@bind_new_parameters.register
-def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLike]):
-    new_operands = []
-
-    for operand in op.operands:
-        op_num_params = operand.num_params
-        sub_params = params[:op_num_params]
-        params = params[op_num_params:]
-        new_operands.append(bind_new_parameters(operand, sub_params))
-
-    return op.__class__(*new_operands)
-
-
 @bind_new_parameters.register
 def bind_new_parameters_linear_combination(
     op: qml.ops.LinearCombination, params: Sequence[TensorLike]
 ):
-
+    print("LinearCombination dispatch")
     new_coeffs, new_ops = [], []
     i = 0
     for o in op.ops:
         new_coeffs.append(params[i])
         i += 1
-        if isinstance(o, qml.Hermitian):
-            new_ops.append(qml.Hermitian(params[i], wires=o.wires))
-            i += 1
+        if o.data:
+            sub_data = params[i : i + len(o.data)]
+            new_ops.append(bind_new_parameters(o, sub_data))
+            i += len(sub_data)
         else:
             new_ops.append(o)
 
@@ -133,6 +120,19 @@ def bind_new_parameters_linear_combination(
         new_H.grouping_indices = op.grouping_indices
 
     return new_H
+
+@bind_new_parameters.register
+def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLike]):
+    print("composite op dispatch")
+    new_operands = []
+
+    for operand in op.operands:
+        op_num_params = operand.num_params
+        sub_params = params[:op_num_params]
+        params = params[op_num_params:]
+        new_operands.append(bind_new_parameters(operand, sub_params))
+
+    return op.__class__(*new_operands)
 
 
 @bind_new_parameters.register(qml.CY)
@@ -222,12 +222,11 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
     return Pow(bind_new_parameters(op.base, params), op.scalar)
 
 
-@bind_new_parameters.register(qml.ops.Hamiltonian)
-@bind_new_parameters.register(qml.ops.LinearCombination)
+@bind_new_parameters.register
 def bind_new_parameters_hamiltonian(
-    op: Union[qml.ops.Hamiltonian, qml.ops.LinearCombination], params: Sequence[TensorLike]
+    op: qml.ops.Hamiltonian, params: Sequence[TensorLike]
 ):
-    new_H = qml.Hamiltonian(params, op.ops)
+    new_H = qml.ops.Hamiltonian(params, op.ops)
     if op.grouping_indices is not None:
         new_H.grouping_indices = op.grouping_indices
     return new_H
