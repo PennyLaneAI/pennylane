@@ -662,6 +662,9 @@ class Hamiltonian(Observable):
         coeffs1 = copy(self.coeffs)
         ops1 = self.ops.copy()
 
+        qml.QueuingManager.remove(H)
+        qml.QueuingManager.remove(self)
+
         if isinstance(H, Hamiltonian):
             shared_wires = Wires.shared_wires([self.wires, H.wires])
             if len(shared_wires) > 0:
