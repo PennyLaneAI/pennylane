@@ -28,8 +28,8 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
-    Measurement outcomes can be obtained and used to conditionally apply
-    operations.
+    Measurement outcomes can be used to conditionally apply operations and measurement
+    statistics can be gathered and returned by a quantum function. 
 
     If a device doesn't support mid-circuit measurements natively, then the
     QNode will apply the :func:`defer_measurements` transform.
@@ -56,7 +56,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Wires can be reused after measurement. Moreover, measured wires can be reset
-    to the :math:`|0 \rangle` by setting ``reset=True``.
+    to the :math:`|0 \rangle` state by setting ``reset=True``.
 
     .. code-block:: python3
 
@@ -73,7 +73,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     >>> func()
     tensor([1., 0.], requires_grad=True)
 
-    Mid circuit measurements can be manipulated using the following arithmetic operators:
+    Mid-circuit measurements can be manipulated using the following arithmetic operators:
     ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
     ``>=``, ``<``, ``>`` with other mid-circuit measurements or scalars.
 
@@ -100,11 +100,11 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
                 qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0), qml.sample(m0)
             )
 
-    >>> circuit(1.0, 2.0, shots=10000)
+    >>> circuit(1.0, 2.0, shots=1000)
     (0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702}, array([0, 1, 1, ..., 1, 1, 1]))
 
     Args:
-        wires (Wires): The wire of the qubit the measurement process applies to.
+        wires (Wires): The wire to measure.
         reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
             state after measurement.
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
