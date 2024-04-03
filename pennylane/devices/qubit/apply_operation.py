@@ -266,9 +266,9 @@ def apply_mid_measure(
     wire = op.wires
     probs = qml.devices.qubit.measure(qml.probs(wire), state)
 
-    try:
+    try:  # pragma: no cover
         sample = np.random.binomial(1, probs[1])
-    except ValueError as e:  # pragma: no-cover
+    except ValueError as e:  # pragma: no cover
         if probs[1] > 1:  # MachEps error, safe to catch
             sample = np.random.binomial(1, np.round(probs[1], 15))
         else:  # Other general error, continue to fail
