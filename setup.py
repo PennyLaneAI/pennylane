@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """Setup file for package installation."""
+# pylint: disable=unspecified-encoding, consider-using-with
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
@@ -28,9 +29,9 @@ requirements = [
     "toml",
     "appdirs",
     "semantic-version>=2.7",
-    "autoray>=0.3.1",
+    "autoray>=0.6.1",
     "cachetools",
-    "pennylane-lightning>=0.32",
+    "pennylane-lightning>=0.35",
     "requests",
     "typing_extensions",
 ]
@@ -57,10 +58,11 @@ info = {
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
+            "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
-    "description": "PennyLane is a Python quantum machine learning library by Xanadu Inc.",
+    "description": "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network.",
     "long_description": open("README.md").read(),
     "long_description_content_type": "text/markdown",
     "provides": ["pennylane"],
@@ -85,6 +87,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Physics",
 ]

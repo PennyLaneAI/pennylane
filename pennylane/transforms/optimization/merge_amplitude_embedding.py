@@ -14,11 +14,12 @@
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 from typing import Sequence, Callable
 
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.tape import QuantumTape
 from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
 from pennylane.math import flatten, reshape
+from pennylane.queuing import QueuingManager
 
 
 @transform
@@ -26,56 +27,68 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
     r"""Quantum function transform to combine amplitude embedding templates that act on different qubits.
 
     Args:
-        tape (QuantumTape): A quantum tape.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
 
     **Example**
 
-    Consider the following quantum function.
+    >>> dev = qml.device('default.qubit', wires=4)
+
+    You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
 
-        def qfunc():
+        @qml.transforms.merge_amplitude_embedding
+        @qml.qnode(device=dev)
+        def circuit():
             qml.CNOT(wires = [0,1])
             qml.AmplitudeEmbedding([0,1], wires = 2)
             qml.AmplitudeEmbedding([0,1], wires = 3)
             return qml.state()
 
-    The circuit before compilation will not work because of using two amplitude embedding.
+    >>> circuit()
+    [1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
 
-    Using the transformation we can join the different amplitude embedding into a single one:
+    .. details::
+        :title: Usage Details
 
-    >>> dev = qml.device('default.qubit', wires=4)
-    >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)())
-    0: ─╭●──────────────────────┤  State
-    1: ─╰X──────────────────────┤  State
-    2: ─╭AmplitudeEmbedding(M0)─┤  State
-    3: ─╰AmplitudeEmbedding(M0)─┤  State
-    M0 =
-    [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+        You can also apply it on quantum function.
+
+        .. code-block:: python
+
+            def qfunc():
+                qml.CNOT(wires = [0,1])
+                qml.AmplitudeEmbedding([0,1], wires = 2)
+                qml.AmplitudeEmbedding([0,1], wires = 3)
+                return qml.state()
+
+        The circuit before compilation will not work because of using two amplitude embedding.
+
+        Using the transformation we can join the different amplitude embedding into a single one:
+
+        >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)())
+        0: ─╭●──────────────────────┤  State
+        1: ─╰X──────────────────────┤  State
+        2: ─╭AmplitudeEmbedding(M0)─┤  State
+        3: ─╰AmplitudeEmbedding(M0)─┤  State
+        M0 =
+        [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
 
     """
-    # Make a working copy of the list to traverse
-    list_copy = tape.operations.copy()
-    not_amplitude_embedding = []
+    new_operations = []
     visited_wires = set()
     input_wires, input_vectors, input_batch_size = [], [], []
-    while len(list_copy) > 0:
-        current_gate = list_copy[0]
+    for current_gate in tape.operations:
         wires_set = set(current_gate.wires)
 
         # Check if the current gate is an AmplitudeEmbedding.
         if not isinstance(current_gate, AmplitudeEmbedding):
-            not_amplitude_embedding.append(current_gate)
-            list_copy.pop(0)
+            new_operations.append(current_gate)
             visited_wires = visited_wires.union(wires_set)
             continue
 
@@ -87,7 +100,6 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
         input_wires.append(current_gate.wires)
         input_vectors.append(current_gate.parameters[0])
         input_batch_size.append(current_gate.batch_size)
-        list_copy.pop(0)
         visited_wires = visited_wires.union(wires_set)
 
     if len(input_wires) > 0:
@@ -106,11 +118,8 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
             else:
                 final_vector = flatten(final_vector)
 
-        AmplitudeEmbedding(final_vector, wires=final_wires)
-
-    new_operations = []
-    for gate in not_amplitude_embedding:
-        new_operations.append(gate)
+        with QueuingManager.stop_recording():
+            new_operations.insert(0, AmplitudeEmbedding(final_vector, wires=final_wires))
 
     new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
 

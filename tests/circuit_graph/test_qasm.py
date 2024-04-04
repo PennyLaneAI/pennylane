@@ -98,6 +98,35 @@ class TestToQasmUnitTests:
 
         assert res == expected
 
+    def test_to_ApproxTimeEvolution(self):
+        """Test for case that requires a decomposition depth of 3 to successfully convert to a MutliRZ"""
+        H = qml.Hamiltonian(
+            [
+                1,
+            ],
+            [
+                qml.PauliZ(0) @ qml.PauliZ(1),
+            ],
+        )
+        circuit = qml.tape.QuantumScript([qml.ApproxTimeEvolution(H, 1, n=1)])
+        res = circuit.to_openqasm(wires=Wires([0, 1]))
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            cx q[0],q[1];
+            rz(2.0) q[1];
+            cx q[0],q[1];
+            measure q[0] -> c[0];
+            measure q[1] -> c[1];
+            """
+        )
+
+        assert res == expected
+
     def test_rotation_gate_decomposition(self):
         """Test that gates not natively supported by QASM, such as the
         rotation gate, are correctly decomposed and serialized."""
@@ -673,6 +702,35 @@ class TestQNodeQasmIntegrationTests:
             qreg q[1];
             creg c[1];
             rx(3.142) q[0];
+            measure q[0] -> c[0];
+            """
+        )
+
+        assert res == expected
+
+    @pytest.mark.tf
+    def test_tf_interface_information_removed(self):
+        """Test that interface information from tensorflow is not included in the
+        parameter string for parameterized operators"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def qnode(param):
+            qml.RX(param, wires="a")
+            return qml.expval(qml.PauliZ("a"))
+
+        qnode(tf.Variable(1.2))
+        res = qnode.qtape.to_openqasm()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[1];
+            creg c[1];
+            rx(1.2) q[0];
             measure q[0] -> c[0];
             """
         )

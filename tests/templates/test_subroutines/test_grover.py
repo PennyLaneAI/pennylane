@@ -92,6 +92,7 @@ decomp_3wires = [
     qml.PauliZ,
     qml.Hadamard,
     qml.Hadamard,
+    qml.GlobalPhase,
 ]
 
 
@@ -104,6 +105,7 @@ def decomposition_wires(wires):
         wires[2],
         wires[0],
         wires[1],
+        wires,
     ]
     return wire_order
 
@@ -132,7 +134,7 @@ def test_grover_diffusion_matrix(n_wires):
     oplist = list(itertools.repeat(Hadamard.compute_matrix(), n_wires - 1))
     oplist.append(PauliZ.compute_matrix())
 
-    ctrl_str = "0" * (n_wires - 1)
+    ctrl_str = [0] * (n_wires - 1)
     CX = MultiControlledX(
         control_values=ctrl_str,
         wires=wires,
@@ -149,7 +151,9 @@ def test_grover_diffusion_matrix(n_wires):
 
 
 def test_grover_diffusion_matrix_results():
-    """Test that the matrix gives the same result as when running the example in the documentation `here <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.templates.subroutines.GroverOperator.html>`_"""
+    """Test that the matrix gives the same result as when running the example in the documentation
+    `here <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.templates.subroutines.GroverOperator.html>`_
+    """
     n_wires = 3
     wires = list(range(n_wires))
 
@@ -201,9 +205,11 @@ def test_expand(wires):
 
     expected_wires = decomposition_wires(wires)
 
-    for actual_op, expected_class, expected_wires in zip(decomp, decomp_3wires, expected_wires):
+    assert len(decomp) == len(decomp_3wires) == len(expected_wires)
+
+    for actual_op, expected_class, expected_wire in zip(decomp, decomp_3wires, expected_wires):
         assert isinstance(actual_op, expected_class)
-        assert actual_op.wires == qml.wires.Wires(expected_wires)
+        assert actual_op.wires == qml.wires.Wires(expected_wire)
 
 
 @pytest.mark.parametrize("n_wires", [6, 13])
@@ -246,3 +252,13 @@ def test_matrix(tol):
     assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
     # reordering should not affect this particular matrix
     assert np.allclose(res_reordered, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("n_wires", [2, 3, 5])
+def test_decomposition_matrix(n_wires):
+    """Test that the decomposition and the matrix match."""
+    wires = list(range(n_wires))
+    op = qml.GroverOperator(wires)
+    mat1 = op.matrix()
+    mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wires)
+    assert np.allclose(mat1, mat2)

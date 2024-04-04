@@ -19,7 +19,7 @@ import numpy as np
 from scipy.sparse.linalg import expm
 import pennylane as qml
 
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.tape import QuantumTape
 from pennylane.queuing import QueuingManager
 
@@ -56,17 +56,14 @@ def append_time_evolution(
     and append this unitary.
 
     Args:
-        tape (QuantumTape or .QNode): circuit to transform.
+        tape (QuantumTape or QNode or Callable): circuit to transform.
         riemannian_gradient (.Hamiltonian): Hamiltonian object representing the Riemannian gradient.
         t (float): time evolution parameter.
         n (int): number of Trotter steps.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
 
     """
     new_operations = tape.operations
@@ -74,7 +71,7 @@ def append_time_evolution(
         with QueuingManager.stop_recording():
             new_operations.append(
                 qml.QubitUnitary(
-                    expm(-1j * t * riemannian_gradient.sparse_matrix().toarray()),
+                    expm(-1j * t * riemannian_gradient.sparse_matrix(tape.wires).toarray()),
                     wires=range(len(riemannian_gradient.wires)),
                 )
             )
@@ -224,7 +221,7 @@ class RiemannianGradientOptimizer:
     Define a Hamiltonian cost function to minimize:
 
     >>> coeffs = [-1., -1., -1.]
-    >>> observables = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)]
+    >>> observables = [qml.X(0), qml.Z(1), qml.Y(0) @ qml.X(1)]
     >>> hamiltonian = qml.Hamiltonian(coeffs, observables)
 
     Create an initial state and return the expectation value of the Hamiltonian:
@@ -270,7 +267,7 @@ class RiemannianGradientOptimizer:
         self.circuit = circuit
         self.circuit.construct([], {})
         self.hamiltonian = circuit.func().obs
-        if not isinstance(self.hamiltonian, qml.Hamiltonian):
+        if not isinstance(self.hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             raise TypeError(
                 f"circuit must return the expectation value of a Hamiltonian,"
                 f"received {type(circuit.func().obs)}"
@@ -283,7 +280,9 @@ class RiemannianGradientOptimizer:
                 f"optimizing a {self.nqubits} qubit circuit may be slow.",
                 UserWarning,
             )
-        if restriction is not None and not isinstance(restriction, qml.Hamiltonian):
+        if restriction is not None and not isinstance(
+            restriction, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
+        ):
             raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
         (
             self.lie_algebra_basis_ops,

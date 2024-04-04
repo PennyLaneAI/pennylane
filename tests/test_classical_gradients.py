@@ -24,6 +24,22 @@ from pennylane import numpy as np
 np.random.seed(42)
 
 
+def test_grad_no_ints():
+    """Test that grad raises a `ValueError` if the trainable parameter is an int."""
+
+    x = qml.numpy.array(2)
+
+    def f(x):
+        return x**2
+
+    with pytest.raises(ValueError, match="Autograd does not support differentiation of ints."):
+        qml.grad(f)(x)
+
+    y = qml.numpy.array([2, 2])
+    with pytest.raises(ValueError, match="Autograd does not support differentiation of ints."):
+        qml.jacobian(f)(y)
+
+
 class TestGradientUnivar:
     """Tests gradients of univariate unidimensional functions."""
 

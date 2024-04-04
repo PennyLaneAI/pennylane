@@ -17,10 +17,9 @@ Contains the MERA template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
 from typing import Callable
-
+import numpy as np
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 
 
@@ -51,7 +50,7 @@ def compute_indices(wires, n_block_wires):
             f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
-    if not np.log2(n_wires / n_block_wires).is_integer():
+    if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
         warnings.warn(
             f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
         )
@@ -156,7 +155,7 @@ class MERA(Operation):
             @qml.qnode(dev)
             def circuit(template_weights):
                 qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.PauliZ(wires=1))
+                return qml.expval(qml.Z(1))
 
         It may be necessary to reorder the wires to see the MERA architecture clearly:
 
@@ -257,7 +256,7 @@ class MERA(Operation):
         """
 
         n_wires = len(wires)
-        if not np.log2(n_wires / n_block_wires).is_integer():
+        if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
             warnings.warn(
                 f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
             )

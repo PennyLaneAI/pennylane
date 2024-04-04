@@ -20,7 +20,7 @@ from pennylane import apply, adjoint
 from pennylane.math import mean, shape, round
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumTape, QuantumScript
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 import pennylane as qml
 
@@ -37,18 +37,11 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
     The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
 
     Args:
-        tape (~.QuantumTape): the circuit to be folded
+        tape (QNode or QuantumTape): the quantum circuit to be folded
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
-
-        - If the input is a QNode, an object representing the folded QNode that can be executed
-          with the same arguments as the QNode to obtain the result of the folded circuit.
-
-        - If the input is a tape, a tuple containing a (single-entry) list of generated
-          circuits, together with a post-processing function that extracts the single tape result
-          from the evaluated tape list in order to obtain the result of the folded circuit.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The folded circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
@@ -70,7 +63,7 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
             qml.RX(x[3], wires=0)
             qml.RY(x[4], wires=1)
             qml.RZ(x[5], wires=2)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+            return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
 
     Setting ``scale_factor=1`` does not affect the circuit:
@@ -126,7 +119,7 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
 
             x = np.arange(6)
 
-            H = 1.*qml.PauliX(0) @ qml.PauliX(1) + 1.*qml.PauliX(1) @ qml.PauliX(2)
+            H = 1.*qml.X(0) @ qml.X(1) + 1.*qml.X(1) @ qml.X(2)
 
             def circuit(x):
                 qml.RY(x[0], wires=0)
@@ -268,7 +261,7 @@ def _polyfit(x, y, order):
     # i.e. coeffs = (X.T @ X)**-1 X.T @ y see https://en.wikipedia.org/wiki/Polynomial_regression
     c = qml.math.linalg.pinv(qml.math.transpose(X) @ X)
     c = c @ qml.math.transpose(X)
-    c = qml.math.dot(c, y)
+    c = qml.math.tensordot(c, y, axes=1)
     c = qml.math.transpose(qml.math.transpose(c) / scale)
     return c
 
@@ -354,7 +347,7 @@ def mitigate_with_zne(
     see the example and usage details for further information.
 
     Args:
-        tape (~.QuantumTape): the circuit to be error-mitigated
+        tape (QNode or QuantumTape): the quantum circuit to be error-mitigated
         scale_factors (Sequence[float]): the range of noise scale factors used
         folding (callable): a function that returns a folded circuit for a specified scale factor
         extrapolate (callable): a function that returns an extrapolated result when provided a
@@ -365,7 +358,11 @@ def mitigate_with_zne(
             folding function is stochastic.
 
     Returns:
-        float: the result of evaluating the circuit when mitigated using ZNE
+        qnode (QNode) or tuple[List[.QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the mitigated results in the form of a tensor of a tensor, a tuple, or a nested tuple depending
+        upon the nesting structure of measurements in the original circuit.
 
     **Example:**
 
@@ -388,6 +385,7 @@ def mitigate_with_zne(
 
     .. code-block:: python3
 
+        from functools import partial
         from pennylane import numpy as np
         from pennylane import qnode
 
@@ -400,11 +398,11 @@ def mitigate_with_zne(
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne([1., 2., 3.], fold_global, poly_extrapolate, extrapolate_kwargs={'order': 2})
+        @partial(qml.transforms.mitigate_with_zne, [1., 2., 3.], fold_global, poly_extrapolate, extrapolate_kwargs={'order': 2})
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     Executions of ``circuit`` will now be mitigated:
 
@@ -527,6 +525,10 @@ def mitigate_with_zne(
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
+
+        # content of `results` must be modified in this post-processing function
+        results = list(results)
+
         for i, tape in enumerate(out_tapes):
             # stack the results if there are multiple measurements
             # this will not create ragged arrays since only expval measurements are allowed

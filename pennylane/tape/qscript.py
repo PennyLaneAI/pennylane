@@ -19,23 +19,18 @@ executed by a device.
 
 import contextlib
 import copy
-import warnings
 from collections import Counter
 from typing import List, Union, Optional, Sequence
 
 import pennylane as qml
 from pennylane.measurements import (
-    ClassicalShadowMP,
-    CountsMP,
     MeasurementProcess,
     ProbabilityMP,
-    SampleMP,
-    ShadowExpvalMP,
     StateMP,
     Shots,
 )
 from pennylane.typing import TensorLike
-from pennylane.operation import Observable, Operator, Operation
+from pennylane.operation import Observable, Operator, Operation, _UNSET_BATCH_SIZE
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.wires import Wires
@@ -89,13 +84,11 @@ class QuantumScript:
     Args:
         ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
-        prep (Iterable[Operator]): Argument to specify state preparations to
-            perform at the start of the circuit. These should go at the beginning of ``ops``
-            instead.
 
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
+        trainable_params (None, Sequence[int]): the indices for which parameters are trainable
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -113,7 +106,7 @@ class QuantumScript:
                qml.CNOT((0,"a")),
                qml.RX(0.133, "a")]
 
-        qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
 
     >>> list(qscript)
     [BasisState(array([1, 1]), wires=[0, "a"]),
@@ -121,7 +114,7 @@ class QuantumScript:
     RY(0.543, wires=[0]),
     CNOT(wires=[0, 'a']),
     RX(0.133, wires=['a']),
-    expval(PauliZ(wires=[0]))]
+    expval(Z(0))]
     >>> qscript.operations
     [BasisState(array([1, 1]), wires=[0, "a"]),
     RX(0.432, wires=[0]),
@@ -129,7 +122,7 @@ class QuantumScript:
     CNOT(wires=[0, 'a']),
     RX(0.133, wires=['a'])]
     >>> qscript.measurements
-    [expval(PauliZ(wires=[0]))]
+    [expval(Z(0))]
 
     Iterating over the quantum script can be done by:
 
@@ -140,7 +133,7 @@ class QuantumScript:
     RY(0.543, wires=[0])
     CNOT(wires=[0, 'a'])
     RX(0.133, wires=['a'])
-    expval(PauliZ(wires=[0]))'
+    expval(Z(0))'
 
     Quantum scripts also support indexing and length determination:
 
@@ -161,16 +154,16 @@ class QuantumScript:
     stored in a :class:`pennylane.measurements.Shots` object:
 
     >>> s_vec = [1, 1, 2, 2, 2]
-    >>> qscript = QuantumScript([qml.Hadamard(0)], [qml.expval(qml.PauliZ(0))], shots=s_vec)
+    >>> qscript = QuantumScript([qml.Hadamard(0)], [qml.expval(qml.Z(0))], shots=s_vec)
     >>> qscript.shots.shot_vector
     (ShotCopies(1 shots x 2), ShotCopies(2 shots x 3))
 
     ``ops`` and ``measurements`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
 
-    >>> qscript = QuantumScript((qml.PauliX(i) for i in range(3)))
+    >>> qscript = QuantumScript((qml.X(i) for i in range(3)))
     >>> qscript.circuit
-    [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])]
+    [X(0), X(1), X(2)]
 
     """
 
@@ -179,27 +172,17 @@ class QuantumScript:
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        new_tape = cls(*data, shots=metadata[0])
-        new_tape.trainable_params = metadata[1]
-        return new_tape
+        return cls(*data, shots=metadata[0], trainable_params=metadata[1])
 
     def __init__(
         self,
         ops=None,
         measurements=None,
-        prep=None,
         shots: Optional[Union[int, Sequence, Shots]] = None,
+        trainable_params: Optional[Sequence[int]] = None,
         _update=True,
-    ):  # pylint: disable=too-many-arguments
+    ):
         self._ops = [] if ops is None else list(ops)
-        if prep is not None:
-            warnings.warn(
-                "The `prep` keyword argument is being removed from `QuantumScript`, and "
-                "`StatePrepBase` operations should be placed at the beginning of the `ops` list "
-                "instead.",
-                UserWarning,
-            )
-            self._ops = list(prep) + self._ops
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
 
@@ -207,17 +190,14 @@ class QuantumScript:
         """list[dict[str, Operator or int]]: Parameter information.
         Values are dictionaries containing the corresponding operation and operation parameter index."""
 
-        self._trainable_params = []
+        self._trainable_params = trainable_params
         self._graph = None
         self._specs = None
-        self._output_dim = 0
-        self._batch_size = None
+        self._output_dim = None
+        self._batch_size = _UNSET_BATCH_SIZE
 
         self.wires = _empty_wires
         self.num_wires = 0
-
-        self.is_sampled = False
-        self.all_sampled = False
 
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
@@ -292,7 +272,7 @@ class QuantumScript:
             list[.Operator]: quantum operations
 
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.operations
         [StatePrep([0, 1], wires=[0]), RX(0.432, wires=[0])]
         """
@@ -308,9 +288,9 @@ class QuantumScript:
         **Example**
 
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.observables
-        [expval(PauliZ(wires=[0]))]
+        [expval(Z(0))]
         """
         # TODO: modify this property once devices
         # have been refactored to accept and understand recieving
@@ -319,7 +299,6 @@ class QuantumScript:
 
         for m in self.measurements:
             if m.obs is not None:
-                m.obs.return_type = m.return_type
                 obs.append(m.obs)
             else:
                 obs.append(m)
@@ -336,9 +315,9 @@ class QuantumScript:
         **Example**
 
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.measurements
-        [expval(PauliZ(wires=[0]))]
+        [expval(Z(0))]
         """
         return self._measurements
 
@@ -362,11 +341,15 @@ class QuantumScript:
         Returns:
             int or None: The batch size of the quantum script if present, else ``None``.
         """
+        if self._batch_size is _UNSET_BATCH_SIZE:
+            self._update_batch_size()
         return self._batch_size
 
     @property
     def output_dim(self):
         """The (inferred) output dimension of the quantum script."""
+        if self._output_dim is None:
+            self._update_output_dim()  # this will set _batch_size if it isn't already
         return self._output_dim
 
     @property
@@ -417,17 +400,10 @@ class QuantumScript:
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
+        self._update_circuit_info()  # Updates wires, num_wires; O(ops+obs)
         self._update_par_info()  # Updates _par_info; O(ops+obs)
 
-        # The following line requires _par_info to be up to date
-        self._update_trainable_params()  # Updates the _trainable_params; O(1)
-
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
-        self._update_batch_size()  # Updates _batch_size; O(ops)
-
-        # The following line requires _batch_size to be up to date
-        self._update_output_dim()  # Updates _output_dim; O(obs)
 
     def _update_circuit_info(self):
         """Update circuit metadata
@@ -435,18 +411,9 @@ class QuantumScript:
         Sets:
             wires (~.Wires): Wires
             num_wires (int): Number of wires
-            is_sampled (bool): Whether any measurement is of type ``Sample`` or ``Counts``
-            all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
         """
         self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
         self.num_wires = len(self.wires)
-
-        is_sample_type = [
-            isinstance(m, (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP))
-            for m in self.measurements
-        ]
-        self.is_sampled = any(is_sample_type)
-        self.all_sampled = all(is_sample_type)
 
     def _update_par_info(self):
         """Update the parameter information list. Each entry in the list with an operation and an index
@@ -468,16 +435,6 @@ class QuantumScript:
                     {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
                     for i, d in enumerate(m.obs.data)
                 )
-
-    def _update_trainable_params(self):
-        """Set the trainable parameters
-
-        Sets:
-            _trainable_params (list[int]): Script parameter indices of trainable parameters
-
-        Call `_update_par_info` before `_update_trainable_params`
-        """
-        self._trainable_params = list(range(len(self._par_info)))
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -581,13 +538,15 @@ class QuantumScript:
 
         >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
         ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.trainable_params
         [0, 1, 2]
         >>> qscript.trainable_params = [0] # set only the first parameter as trainable
         >>> qscript.get_parameters()
         [0.432]
         """
+        if self._trainable_params is None:
+            self._trainable_params = list(range(len(self._par_info)))
         return self._trainable_params
 
     @trainable_params.setter
@@ -642,7 +601,7 @@ class QuantumScript:
 
         >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
         ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
 
         By default, all parameters are trainable and will be returned:
 
@@ -665,11 +624,12 @@ class QuantumScript:
         if trainable_only:
             params = []
             for p_idx in self.trainable_params:
-                op = self._par_info[p_idx]["op"]
-                if operations_only and hasattr(op, "return_type"):
+                par_info = self._par_info[p_idx]
+                if operations_only and isinstance(self[par_info["op_idx"]], MeasurementProcess):
                     continue
 
-                op_idx = self._par_info[p_idx]["p_idx"]
+                op = par_info["op"]
+                op_idx = par_info["p_idx"]
                 params.append(op.data[op_idx])
             return params
 
@@ -703,7 +663,7 @@ class QuantumScript:
 
         >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
         ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
 
         A new tape can be created by passing new parameters along with the indices
         to be updated. To modify all parameters in the above qscript:
@@ -758,10 +718,12 @@ class QuantumScript:
         new_operations = new_ops[: len(self.operations)]
         new_measurements = new_ops[len(self.operations) :]
 
-        new_tape = self.__class__(new_operations, new_measurements, shots=self.shots)
-        new_tape.trainable_params = self.trainable_params
-
-        return new_tape
+        return self.__class__(
+            new_operations,
+            new_measurements,
+            shots=self.shots,
+            trainable_params=self.trainable_params,
+        )
 
     # ========================================================
     # MEASUREMENT SHAPE
@@ -792,7 +754,7 @@ class QuantumScript:
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.shape(dev)
             (4,)
-            >>> m = [qml.state(), qml.expval(qml.PauliZ(0)), qml.probs((0,1))]
+            >>> m = [qml.state(), qml.expval(qml.Z(0)), qml.probs((0,1))]
             >>> qs = QuantumScript(measurements=m)
             >>> qs.shape(dev)
             ((4,), (), (4,))
@@ -824,7 +786,7 @@ class QuantumScript:
         if len(shapes) == 1:
             return shapes[0]
 
-        if len(shots.shot_vector) > 1:
+        if shots.num_copies > 1:
             # put the shot vector axis before the measurement axis
             shapes = tuple(zip(*shapes))
 
@@ -881,19 +843,21 @@ class QuantumScript:
             _ops = self.operations.copy()
             _measurements = self.measurements.copy()
 
-        new_qscript = self.__class__(ops=_ops, measurements=_measurements, shots=self.shots)
+        new_qscript = self.__class__(
+            ops=_ops,
+            measurements=_measurements,
+            shots=self.shots,
+            trainable_params=list(self.trainable_params),
+        )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
         new_qscript.num_wires = self.num_wires
-        new_qscript.is_sampled = self.is_sampled
-        new_qscript.all_sampled = self.all_sampled
         new_qscript._update_par_info()
-        new_qscript.trainable_params = self.trainable_params.copy()
         new_qscript._obs_sharing_wires = self._obs_sharing_wires
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
-        new_qscript._batch_size = self.batch_size
-        new_qscript._output_dim = self.output_dim
+        new_qscript._batch_size = self._batch_size
+        new_qscript._output_dim = self._output_dim
 
         return new_qscript
 
@@ -937,8 +901,8 @@ class QuantumScript:
 
         >>> new_qscript = qscript.expand(depth=2)
         >>> new_qscript.operations
-        [PauliX(wires=[0]),
-        PauliX(wires=['a']),
+        [X(0),
+        X('a'),
         RZ(0.543, wires=[0]),
         RY(0.1, wires=[0]),
         RZ(0.4, wires=[0]),
@@ -977,7 +941,7 @@ class QuantumScript:
         quantum circuit:
 
         >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
         >>> qscript.graph
         <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
@@ -989,7 +953,11 @@ class QuantumScript:
         """
         if self._graph is None:
             self._graph = qml.CircuitGraph(
-                self.operations, self.observables, self.wires, self._par_info, self.trainable_params
+                self.operations,
+                self.measurements,
+                self.wires,
+                self._par_info,
+                self.trainable_params,
             )
 
         return self._graph
@@ -1004,7 +972,7 @@ class QuantumScript:
         **Example**
          >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
          ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0, 1))]
-         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
+         >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0) @ qml.Z(1))])
 
         Asking for the specs produces a dictionary of useful information about the circuit:
 
@@ -1106,8 +1074,8 @@ class QuantumScript:
         qasm_str += f"qreg q[{len(wires)}];\n"
         qasm_str += f"creg c[{len(wires)}];\n"
 
-        # get the user applied circuit operations
-        operations = self.operations.copy()
+        # get the user applied circuit operations without interface information
+        operations = qml.transforms.convert_to_numpy_parameters(self).operations
 
         if rotations:
             # if requested, append diagonalizing gates corresponding
@@ -1118,7 +1086,7 @@ class QuantumScript:
         # pylint: disable=no-member
         just_ops = QuantumScript(operations)
         operations = just_ops.expand(
-            depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES
+            depth=10, stop_at=lambda obj: obj.name in OPENQASM_GATES
         ).operations
 
         # create the QASM code representing the operations
@@ -1179,20 +1147,20 @@ class QuantumScript:
 
         **Example:**
 
-        >>> circuit = qml.tape.QuantumScript([qml.PauliX("a")], [qml.expval(qml.PauliZ("b"))])
-        >>> map_circuit_to_standard_wires(circuit).circuit
-        [PauliX(wires=[0]), expval(PauliZ(wires=[1]))]
+        >>> circuit = qml.tape.QuantumScript([qml.X("a")], [qml.expval(qml.Z("b"))])
+        >>> circuit.map_to_standard_wires().circuit
+        [X(0), expval(Z(1))]
 
         If any measured wires are not in any operations, they will be mapped last:
 
-        >>> circuit = qml.tape.QuantumScript([qml.PauliX(1)], [qml.probs(wires=[0, 1])])
-        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit).circuit
-        [PauliX(wires=[0]), probs(wires=[1, 0])]
+        >>> circuit = qml.tape.QuantumScript([qml.X(1)], [qml.probs(wires=[0, 1])])
+        >>> circuit.map_to_standard_wires().circuit
+        [X(0), probs(wires=[1, 0])]
 
         If no wire-mapping is needed, then the returned circuit *is* the inputted circuit:
 
-        >>> circuit = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(1))])
-        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit) is circuit
+        >>> circuit = qml.tape.QuantumScript([qml.X(0)], [qml.expval(qml.Z(1))])
+        >>> circuit.map_to_standard_wires() is circuit
         True
 
         """
@@ -1206,7 +1174,8 @@ class QuantumScript:
             return self
 
         wire_map = {w: i for i, w in enumerate(op_wires + meas_only_wires)}
-        return qml.map_wires(self, wire_map)
+        tapes, fn = qml.map_wires(self, wire_map)
+        return fn(tapes)
 
 
 def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):

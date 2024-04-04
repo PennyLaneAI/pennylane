@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains decompositions for (numerically-specified) arbitrary
-unitary operations into sequences of elementary operations.
+r"""This module contains decompositions for quantum circuits.
 """
 
-from .single_qubit_unitary import one_qubit_decomposition
-from .two_qubit_unitary import two_qubit_decomposition
+from .clifford_t_transform import clifford_t_decomposition

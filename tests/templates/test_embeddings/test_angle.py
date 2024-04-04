@@ -20,6 +20,12 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qml.AngleEmbedding(features=[1, 2, 3], wires=range(3), rotation="Z")
+    qml.ops.functions.assert_valid(op)
+
+
 def test_repr():
     """Test the custom repr for angle embedding."""
     op = qml.AngleEmbedding(features=[1, 2, 3], wires=range(3), rotation="Z")

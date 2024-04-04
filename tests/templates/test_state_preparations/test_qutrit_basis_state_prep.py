@@ -20,6 +20,16 @@ import numpy as np
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+
+    basis_state = [2, 1, 0, 2]
+    wires = [1, 2, 6, 8]
+    op = qml.QutritBasisStatePreparation(basis_state, wires)
+
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

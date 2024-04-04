@@ -55,6 +55,20 @@ class TestInitialization:
             assert line.get_ydata() == (wire, wire)
         plt.close()
 
+    def test_figsize_classical_wires(self):
+        """Test the figsize is correct if classical wires are present."""
+        n_wires = 4
+        c_wires = 4
+        n_layers = 1
+
+        drawer = MPLDrawer(n_wires=n_wires, n_layers=n_layers, c_wires=c_wires)
+
+        assert drawer.fig.get_figheight() == n_wires + 1 + 0.25 * 4 + 0.5
+        assert drawer.fig.get_figwidth() == n_layers + 3
+
+        assert drawer.ax.get_xlim() == (-2, 2)
+        assert drawer.ax.get_ylim() == (n_wires + 0.25 * 4 + 0.5, -1)
+
     def test_customfigsize(self):
         """Tests a custom figsize alters the size"""
 
@@ -62,6 +76,15 @@ class TestInitialization:
 
         assert drawer.fig.get_figwidth() == 5
         assert drawer.fig.get_figheight() == 5
+        plt.close()
+
+    def test_customfigure(self):
+        """Tests a custom figure is used"""
+
+        fig = plt.figure()
+        drawer = MPLDrawer(1, 1, fig=fig)
+
+        assert drawer.fig == fig
         plt.close()
 
     def test_config_params_set(self):
@@ -144,6 +167,21 @@ class TestLabels:
             assert text.get_color() == rgba_red
 
         plt.close()
+
+
+def test_erase_wire():
+    """Test the erase wire method."""
+
+    drawer = MPLDrawer(5, 1)
+    drawer.erase_wire(1, 0, 3)
+
+    assert len(drawer.ax.patches) == 1
+    assert drawer.ax.patches[0].get_xy() == (1, -0.1)
+    assert drawer.ax.patches[0].get_width() == 3
+    assert drawer.ax.patches[0].get_height() == 0.2
+    assert drawer.ax.patches[0].get_facecolor() == drawer.fig.get_facecolor()
+    assert drawer.ax.patches[0].get_edgecolor() == drawer.fig.get_facecolor()
+    assert drawer.ax.patches[0].zorder > drawer.ax.lines[0].zorder
 
 
 class TestBoxGate:
@@ -444,6 +482,7 @@ class TestCTRL:
         drawer = MPLDrawer(1, 4)
         with pytest.warns(UserWarning, match="control indicators are hidden behind an operator"):
             drawer.ctrl(0, control_wires, target_wires)
+        plt.close()
 
     @pytest.mark.parametrize("control_wires,target_wires", [((0,), (1, 2)), ((2,), (0, 1))])
     def test_ctrl_no_warning_without_overlap(self, control_wires, target_wires):
@@ -451,6 +490,7 @@ class TestCTRL:
         with warnings.catch_warnings(record=True) as w:
             drawer.ctrl(0, control_wires, target_wires)
         assert len(w) == 0
+        plt.close()
 
     def test_target_x(self):
         """Tests hidden target_x drawing method"""
@@ -616,7 +656,7 @@ class TestMeasure:
         assert box.get_width() == drawer._box_length - 2 * drawer._pad
 
         arc = drawer.ax.patches[1]
-        assert arc.center == (0, drawer._box_length / 16)
+        assert arc.center == (0, 0.15 * drawer._box_length)
         assert arc.theta1 == 180
         assert arc.theta2 == 0
         assert allclose(arc.height, 0.55 * drawer._box_length)
@@ -624,7 +664,64 @@ class TestMeasure:
 
         arrow = drawer.ax.patches[2]
         assert isinstance(arrow, FancyArrow)
+        assert len(drawer.ax.texts) == 0
+        plt.close()
 
+    def test_measure_multiple_wires(self):
+        """Tests the measure method when multiple wires are provided."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2)
+        drawer.measure(layer=0, wires=(0, 1))
+
+        box = drawer.ax.patches[0]
+        assert box.get_x() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_y() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_width() == drawer._box_length - 2 * drawer._pad
+        assert box.get_height() == drawer._box_length - 2 * drawer._pad + 1
+
+        arc = drawer.ax.patches[1]
+        assert arc.center == (0, 0.5 + 0.15 * drawer._box_length)
+        assert arc.theta1 == 180
+        assert arc.theta2 == 0
+        assert allclose(arc.height, 0.55 * drawer._box_length)
+        assert arc.width == 0.6 * drawer._box_length
+
+        arrow = drawer.ax.patches[2]
+        assert isinstance(arrow, FancyArrow)
+        assert len(drawer.ax.texts) == 0
+        plt.close()
+
+    def test_measure_classical_wires(self):
+        """Tests the measure method when multiple wires are provided."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2, c_wires=2)
+        drawer.measure(layer=0, wires=(2, 3))
+
+        box = drawer.ax.patches[0]
+        assert box.get_x() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_y() == 2 - drawer._box_length / 2.0 + drawer._pad
+        assert box.get_width() == drawer._box_length - 2 * drawer._pad
+        assert box.get_height() == drawer._box_length - 2 * drawer._pad + drawer._cwire_scaling
+
+        arc = drawer.ax.patches[1]
+        assert arc.center == (0, 2 + drawer._cwire_scaling / 2 + 0.15 * drawer._box_length)
+        assert arc.theta1 == 180
+        assert arc.theta2 == 0
+        assert allclose(arc.height, 0.55 * drawer._box_length)
+        assert arc.width == 0.6 * drawer._box_length
+
+        arrow = drawer.ax.patches[2]
+        assert isinstance(arrow, FancyArrow)
+        assert len(drawer.ax.texts) == 0
+        plt.close()
+
+    def test_measure_text(self):
+        """Test adding a postselection label to a measure box."""
+        drawer = MPLDrawer(1, 1)
+        drawer.measure(0, 0, text="0")
+        assert len(drawer.ax.texts) == 1
+        assert drawer.ax.texts[0].get_text() == "0"
+        assert drawer.ax.texts[0].get_position() == (0.05 * 0.75, 0.225)
         plt.close()
 
     def test_measure_formatted(self):
@@ -762,6 +859,62 @@ class TestAutosize:
         plt.close()
 
 
+class TestClassicalWires:
+    def test_classical_wire(self):
+        """Test the addition of horiziontal classical wires."""
+        drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
+
+        layers = [0, 0, 1, 1]
+        wires = [0, 1, 1, 0]
+        drawer.classical_wire(layers, wires)
+
+        [_, cwire] = drawer.ax.lines
+        assert cwire.get_xdata() == layers
+        assert cwire.get_ydata() == [0, 1, 1, 0]  # cwires are scaledc
+
+        [pe1, pe2] = cwire.get_path_effects()
+
+        # probably not a good way to test this, but the best I can figure out
+        assert pe1._gc == {
+            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "foreground": plt.rcParams["lines.color"],
+        }
+        assert pe2._gc == {
+            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "foreground": plt.rcParams["figure.facecolor"],
+        }
+
+        plt.close()
+
+    def test_cwire_join(self):
+        """Test the cwire join method."""
+        drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
+
+        drawer.cwire_join(1, 2)
+
+        [_, eraser] = drawer.ax.lines
+
+        assert eraser.get_xdata() == (0.8, 1)
+        assert eraser.get_ydata() == (1.25, 1.25)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+        plt.close()
+
+    def test_cwire_join_erase_right(self):
+        """Test the cwire join method."""
+        drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
+
+        drawer.cwire_join(1, 1, erase_right=True)
+
+        [_, eraser] = drawer.ax.lines
+
+        assert eraser.get_xdata() == (0.8, 1.2)
+        assert eraser.get_ydata() == (1, 1)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+        plt.close()
+
+
 class TestCond:
     """Test the cond double-wire drawing function."""
 
@@ -782,6 +935,7 @@ class TestCond:
             ((0.97, 0.97), (0.03, 1)),
         ]
         assert [line.get_data() for line in drawer._wire_lines] == wire_data_before
+        plt.close()
 
     def test_cond_two_ctrl_wires(self):
         """Tests cond from two separated wires."""
@@ -802,6 +956,7 @@ class TestCond:
             ((0.375, 0.97), (1.97, 1.97)),
             ((0.375, 0.97), (2.03, 2.03)),
         ]
+        plt.close()
 
     def test_cond_two_ctrl_wires_upward(self):
         """Test cond when the conditional operation is above the control wires."""
@@ -820,6 +975,7 @@ class TestCond:
             ((0.375, 0.97), (0.97, 0.97)),
             ((0.375, 0.97), (1.03, 1.03)),
         ]
+        plt.close()
 
     @pytest.mark.parametrize(
         "ctrl_wires, target_wires",
@@ -835,3 +991,4 @@ class TestCond:
         drawer = MPLDrawer(n_wires=4, n_layers=2)
         with pytest.raises(ValueError, match="Cannot draw interspersed mid-circuit measurements"):
             drawer.cond(layer=1, measured_layer=0, wires=ctrl_wires, wires_target=target_wires)
+        plt.close()

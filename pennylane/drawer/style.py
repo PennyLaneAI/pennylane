@@ -151,6 +151,15 @@ def _pennylane():
     if "Quicksand" in {font.name for font in fm.FontManager().ttflist}:  # pragma: no cover
         plt.rcParams["font.family"] = "Quicksand"
     plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["path.sketch"] = None
+
+
+@_needs_mpl
+def _pennylane_sketch():
+    """Apply the PennyLane-Sketch style to matplotlib's configuration. This function
+    modifies ``plt.rcParams``.
+    """
+    _pennylane()
     plt.rcParams["path.sketch"] = (1, 250, 1)
 
 
@@ -178,6 +187,7 @@ _styles_map = {
     "black_white_dark": _black_white_dark,
     "sketch": _sketch,
     "pennylane": _pennylane,
+    "pennylane_sketch": _pennylane_sketch,
     "sketch_dark": _sketch_dark,
     "solarized_light": _solarized_light,
     "solarized_dark": _solarized_dark,
@@ -209,6 +219,7 @@ def use_style(style: str):
     * ``'black_white_dark'``
     * ``'sketch'``
     * ``'pennylane'``
+    * ``'pennylane_sketch'``
     * ``'sketch_dark'``
     * ``'solarized_light'``
     * ``'solarized_dark'``
@@ -226,7 +237,7 @@ def use_style(style: str):
             qml.CSWAP(wires=(0,2,3))
             qml.RX(x, wires=0)
             qml.CRZ(z, wires=(3,0))
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
 
         fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)

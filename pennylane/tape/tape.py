@@ -19,7 +19,7 @@ import copy
 from threading import RLock
 
 import pennylane as qml
-from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
+from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP, MeasurementProcess
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 from pennylane.pytrees import register_pytree
@@ -65,9 +65,9 @@ def _validate_computational_basis_sampling(measurements):
 
         with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
             pauliz_for_cb_obs = (
-                qml.PauliZ(all_wires)
+                qml.Z(all_wires)
                 if len(all_wires) == 1
-                else qml.operation.Tensor(*[qml.PauliZ(w) for w in all_wires])
+                else qml.operation.Tensor(*[qml.Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:
@@ -184,14 +184,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         (diagonal_measurements, new_measurements),
     ]:
         for obj in queue:
-            stop = stop_at(obj)
+            stop_at_meas = not expand_measurements and isinstance(obj, MeasurementProcess)
 
-            if not expand_measurements:
-                # Measurements should not be expanded; treat measurements
-                # as a stopping condition
-                stop = stop or isinstance(obj, qml.measurements.MeasurementProcess)
-
-            if stop:
+            if stop_at_meas or stop_at(obj):
                 # do not expand out the object; append it to the
                 # new tape, and continue to the next object in the queue
                 new_queue.append(obj)
@@ -227,10 +222,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
     new_tape.num_wires = tape.num_wires
-    new_tape.is_sampled = tape.is_sampled
-    new_tape.all_sampled = tape.all_sampled
-    new_tape._batch_size = tape.batch_size
-    new_tape._output_dim = tape.output_dim
+    new_tape._batch_size = tape._batch_size
+    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -249,16 +242,16 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     If a ``StatePrepBase`` occurs as the first operation of a tape, the operation will not be expanded:
 
-    >>> ops = [qml.StatePrep([0, 1], wires=0), qml.PauliZ(1), qml.StatePrep([1, 0], wires=0)]
+    >>> ops = [qml.StatePrep([0, 1], wires=0), qml.Z(1), qml.StatePrep([1, 0], wires=0)]
     >>> tape = qml.tape.QuantumScript(ops, [])
     >>> new_tape = qml.tape.tape.expand_tape_state_prep(tape)
     >>> new_tape.operations
-    [StatePrep(array([0, 1]), wires=[0]), PauliZ(wires=[1]), MottonenStatePreparation(array([1, 0]), wires=[0])]
+    [StatePrep(array([0, 1]), wires=[0]), Z(1), MottonenStatePreparation(array([1, 0]), wires=[0])]
 
     To force expansion, the keyword argument ``skip_first`` can be set to ``False``:
 
     >>> new_tape = qml.tape.tape.expand_tape_state_prep(tape, skip_first=False)
-    [MottonenStatePreparation(array([0, 1]), wires=[0]), PauliZ(wires=[1]), MottonenStatePreparation(array([1, 0]), wires=[0])]
+    [MottonenStatePreparation(array([0, 1]), wires=[0]), Z(1), MottonenStatePreparation(array([1, 0]), wires=[0])]
     """
     first_op = tape.operations[0]
     new_ops = (
@@ -280,10 +273,8 @@ def expand_tape_state_prep(tape, skip_first=True):
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
     new_tape.num_wires = tape.num_wires
-    new_tape.is_sampled = tape.is_sampled
-    new_tape.all_sampled = tape.all_sampled
-    new_tape._batch_size = tape.batch_size
-    new_tape._output_dim = tape.output_dim
+    new_tape._batch_size = tape._batch_size
+    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -301,6 +292,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
+        trainable_params (None, Sequence[int]): the indices for which parameters are trainable
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the tape is only an intermediary step.
 
@@ -324,7 +316,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
-            qml.expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.Z(0))
 
     A ``QuantumTape`` can also be constructed directly from an :class:`~.AnnotatedQueue`:
 
@@ -335,7 +327,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
-            qml.expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.Z(0))
 
         tape = qml.tape.QuantumTape.from_queue(q)
 
@@ -343,11 +335,11 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     about the quantum circuit can be queried:
 
     >>> list(tape)
-    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(PauliZ(wires=[0]))]
+    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(Z(0))]
     >>> tape.operations
     [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> tape.observables
-    [expval(PauliZ(wires=[0]))]
+    [expval(Z(0))]
     >>> tape.get_parameters()
     [0.432, 0.543, 0.133]
     >>> tape.wires
@@ -366,7 +358,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     RY(0.543, wires=[0])
     CNOT(wires=[0, 'a'])
     RX(0.133, wires=['a'])
-    expval(PauliZ(wires=[0]))
+    expval(Z(0))
 
     Tapes can also as sequences and support indexing and the ``len`` function:
 
@@ -423,12 +415,14 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         self,
         ops=None,
         measurements=None,
-        prep=None,
         shots=None,
+        trainable_params=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, shots, _update=_update)
+        QuantumScript.__init__(
+            self, ops, measurements, shots, trainable_params=trainable_params, _update=_update
+        )
 
     def __enter__(self):
         QuantumTape._lock.acquire()
@@ -440,6 +434,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         QueuingManager.remove_active_queue()
         QuantumTape._lock.release()
         self._process_queue()
+        self._trainable_params = None
 
     def adjoint(self):
         adjoint_tape = super().adjoint()

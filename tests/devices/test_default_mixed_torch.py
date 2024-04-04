@@ -415,6 +415,7 @@ class TestPassthruIntegration:
         expected = torch.tensor(exp_fn(a), dtype=torch.float64)
         assert torch.allclose(a.grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(reason="see pytorch/pytorch/issues/94397")
     def test_state_vector_differentiability(self, tol):
         """Test that the device state vector can be differentiated directly"""
         dev = qml.device("default.mixed", wires=1)

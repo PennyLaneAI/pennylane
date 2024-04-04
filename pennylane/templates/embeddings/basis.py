@@ -15,8 +15,8 @@ r"""
 Contains the BasisEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
@@ -140,14 +140,14 @@ class BasisEmbedding(Operation):
 
         >>> features = torch.tensor([1, 0, 1])
         >>> qml.BasisEmbedding.compute_decomposition(features, wires=["a", "b", "c"])
-        [PauliX(wires=['a']),
-         PauliX(wires=['c'])]
+        [X('a'),
+         X('c')]
         """
         if not qml.math.is_abstract(basis_state):
             ops_list = []
             for wire, bit in zip(wires, basis_state):
                 if bit == 1:
-                    ops_list.append(qml.PauliX(wire))
+                    ops_list.append(qml.X(wire))
             return ops_list
 
         ops_list = []

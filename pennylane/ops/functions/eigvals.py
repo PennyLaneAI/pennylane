@@ -22,8 +22,8 @@ from functools import reduce, partial
 import scipy
 
 import pennylane as qml
-from pennylane.transforms.op_transforms import OperationTransformError
-from pennylane.transforms.core import transform
+from pennylane.transforms import TransformError
+from pennylane import transform
 from pennylane.typing import TensorLike
 
 
@@ -32,16 +32,20 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
     .. note::
 
-        For a :class:`~.SparseHamiltonian` object, the eigenvalues are computed with the efficient
-        ``scipy.sparse.linalg.eigsh`` method which returns :math:`k` eigenvalues. The default value
-        of :math:`k` is :math:`1`. For an :math:`N \times N` sparse matrix, :math:`k` must be
-        smaller than :math:`N - 1`, otherwise ``scipy.sparse.linalg.eigsh`` fails. If the requested
-        :math:`k` is equal or larger than :math:`N - 1`, the regular ``qml.math.linalg.eigvalsh``
-        is applied on the dense matrix. For more details see the ``scipy.sparse.linalg.eigsh``
-        `documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
+        - For a :class:`~.SparseHamiltonian` object, the eigenvalues are computed with the efficient
+          ``scipy.sparse.linalg.eigsh`` method which returns :math:`k` eigenvalues. The default value
+          of :math:`k` is :math:`1`. For an :math:`N \times N` sparse matrix, :math:`k` must be
+          smaller than :math:`N - 1`, otherwise ``scipy.sparse.linalg.eigsh`` fails. If the requested
+          :math:`k` is equal or larger than :math:`N - 1`, the regular ``qml.math.linalg.eigvalsh``
+          is applied on the dense matrix. For more details see the ``scipy.sparse.linalg.eigsh``
+          `documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
+        - A second-quantized :mod:`molecular Hamiltonian <pennylane.qchem.molecular_hamiltonian>` is
+          independent of the number of electrons and its eigenspectrum contains the energies of the
+          neutral and charged molecules. Therefore, the `smallest` eigenvalue returned by ``qml.eigvals``
+          for a molecular Hamiltonian might not always correspond to the neutral molecule.
 
     Args:
-        op (.Operator or .QuantumTape): A quantum operator or tape.
+        op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
         k (int): The number of eigenvalues to be returned for a :class:`~.SparseHamiltonian`.
         which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`. The
             possible methods are ``'LM'`` (largest in magnitude), ``'SM'`` (smallest in magnitude),
@@ -49,16 +53,17 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
             from each end of the spectrum).
 
     Returns:
-        TensorLike or (Sequence[.QuantumTape], Callable): If an operator is provided as input, the eigenvalues
-        are returned directly. If a quantum tape is provided as input, a list of transformed tapes and a post-processing
-        function are returned. When called, this function will return the unitary matrix in the appropriate autodiff
-        framework (Autograd, TensorFlow, PyTorch, JAX) given its parameters.
+        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        If an operator is provided as input, the eigenvalues are returned directly in the form of a tensor.
+        Otherwise, the transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
+        Executing this circuit will provide the eigenvalues as a tensor.
 
     **Example**
 
     Given an operation, ``qml.eigvals`` returns the eigenvalues:
 
-    >>> op = qml.PauliZ(0) @ qml.PauliX(1) - 0.5 * qml.PauliY(1)
+    >>> op = qml.Z(0) @ qml.X(1) - 0.5 * qml.Y(1)
     >>> qml.eigvals(op)
     array([-1.11803399, -1.11803399,  1.11803399,  1.11803399])
 
@@ -93,7 +98,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
             def circuit(theta):
                 qml.RX(theta, wires=1)
-                qml.PauliZ(wires=0)
+                qml.Z(0)
 
         We can use ``qml.eigvals`` to generate a new function that returns the eigenvalues
         corresponding to the function ``circuit``:
@@ -106,12 +111,11 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
-            raise OperationTransformError(
-                "Input is not an Operator, tape, QNode, or quantum function"
-            )
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
         return _eigvals_tranform(op, k=k, which=which)
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, qml.ops.Hamiltonian):
+
         warnings.warn(
             "For Hamiltonians, the eigenvalues will be computed numerically. "
             "This may be computationally intensive for a large number of wires. "
@@ -138,7 +142,8 @@ def _eigvals_tranform(
     tape: qml.tape.QuantumTape, k=1, which="SA"
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     def processing_fn(res):
-        op_wires = [op.wires for op in res[0].operations]
+        [qs] = res
+        op_wires = [op.wires for op in qs.operations]
         all_wires = qml.wires.Wires.all_wires(op_wires).tolist()
         unique_wires = qml.wires.Wires.unique_wires(op_wires).tolist()
 
@@ -148,14 +153,14 @@ def _eigvals_tranform(
                 "This may be computationally intensive for a large number of wires.",
                 UserWarning,
             )
-            matrix = qml.matrix(res[0])
+            matrix = qml.matrix(qs, wire_order=qs.wires)
             return qml.math.linalg.eigvals(matrix)
 
         # TODO: take into account wire ordering, by reordering eigenvalues
         # as per operator wires/wire ordering, and by inserting implicit identity
         # matrices (eigenvalues [1, 1]) at missing locations.
 
-        ev = [eigvals(op, k=k, which=which) for op in res[0].operations]
+        ev = [eigvals(op, k=k, which=which) for op in qs.operations]
 
         if len(ev) == 1:
             return ev[0]

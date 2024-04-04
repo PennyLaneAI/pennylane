@@ -17,7 +17,8 @@ from functools import partial
 
 import pytest
 import pennylane as qml
-from pennylane.transforms.core import transform, TransformError
+from pennylane.transforms.core import transform, TransformError, TransformContainer
+from pennylane.typing import TensorLike
 
 dev = qml.device("default.qubit", wires=2)
 
@@ -100,6 +101,7 @@ def first_valid_transform(
     """A valid transform."""
     tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
+    _ = (qml.PauliX(0), qml.S(0))
     return [tape], lambda x: x
 
 
@@ -109,7 +111,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
         return qml.math.sum(results)
@@ -149,6 +151,73 @@ def informative_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quan
     return [tape], fn
 
 
+class TestTransformContainer:
+    """Tests for the TransformContainer dataclass."""
+
+    def test_repr(self):
+        """Tests for the repr of a transform container."""
+        t1 = qml.transforms.core.TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        assert repr(t1) == "<compile([], {'num_passes': 2, 'expand_depth': 1})>"
+
+    def test_equality(self):
+        """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
+
+        t1 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t2 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t3 = TransformContainer(
+            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
+        )
+        t4 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 2}
+        )
+
+        t5 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
+        t6 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-7,))
+
+        # test for equality of identical transformers
+        assert t1 == t2
+
+        # test for inequality of different transformers
+        assert t1 != t3
+        assert t2 != t3
+        assert t1 != 2
+        assert t1 != t4
+        assert t5 != t6
+        assert t5 != t1
+
+        # Test equality with the same args
+        t5_copy = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
+        assert t5 == t5_copy
+
+    def test_the_transform_container_attributes(self):
+        """Test the transform container attributes."""
+        container = qml.transforms.core.TransformContainer(
+            first_valid_transform, args=[0], kwargs={}, classical_cotransform=None
+        )
+
+        q_transform, args, kwargs, cotransform, is_informative, final_transform = container
+
+        assert q_transform is first_valid_transform
+        assert args == [0]
+        assert kwargs == {}
+        assert cotransform is None
+        assert not is_informative
+        assert not final_transform
+
+        assert container.transform is first_valid_transform
+        assert container.args == [0]
+        assert not container.kwargs
+        assert container.classical_cotransform is None
+        assert not container.is_informative
+        assert not container.final_transform
+
+
 class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
@@ -182,12 +251,18 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
         assert not qnode_circuit.transform_program
 
+        assert qnode_transformed.device is qnode_circuit.device
+
+        with dev.tracker:
+            qnode_circuit(0.1)
+        assert dev.tracker.totals["executions"] == 1
+
         assert isinstance(qnode_transformed, qml.QNode)
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
         assert isinstance(
             qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
-        assert not dispatched_transform.is_informative
+        assert dispatched_transform.is_informative is False
 
     def test_integration_dispatcher_with_informative_transform(self):
         """Test that no error is raised with the transform function and that the transform dispatcher returns
@@ -250,31 +325,24 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
-        """Test that a warning is raised with the transform function and that the transform dispatcher returns
-        the right object."""
+    def test_integration_dispatcher_with_valid_transform_decorator_fails(self, valid_transform):
+        """Test that an error is raised with the transform function."""
 
         dispatched_transform = transform(valid_transform)
         targs = [0]
 
-        msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been deprecated"
-        with pytest.warns(UserWarning, match=msg):
+        msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been removed"
+        with pytest.raises(TransformError, match=msg):
 
             @dispatched_transform(targs)
             @qml.qnode(device=dev)
-            def qnode_circuit(a):
+            def qnode_circuit(a):  # pylint:disable=unused-variable
                 """QNode circuit."""
                 qml.Hadamard(wires=0)
                 qml.CNOT(wires=[0, 1])
                 qml.PauliX(wires=0)
                 qml.RZ(a, wires=1)
                 return qml.expval(qml.PauliZ(wires=0))
-
-        assert isinstance(qnode_circuit, qml.QNode)
-        assert isinstance(qnode_circuit.transform_program, qml.transforms.core.TransformProgram)
-        assert isinstance(
-            qnode_circuit.transform_program.pop_front(), qml.transforms.core.TransformContainer
-        )
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""
@@ -344,13 +412,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
 
-    @pytest.mark.parametrize("non_valid_transform", non_valid_transforms)
-    def test_dispatcher_signature_non_valid_transform(self, non_valid_transform):
-        """Test the non-valid transforms raises a Transform error."""
-
-        with pytest.raises(TransformError):
-            transform(non_valid_transform)
-
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_dispatcher_signature_classical_cotransform(self, valid_transform):
         """Test that  valid transforms with non-valid co transform raises a Transform error."""
@@ -365,42 +426,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         with pytest.raises(TransformError, match="The function to register, "):
             transform(non_callable)
-
-    def test_error_no_tape_transform(self):
-        """Test that a transform without tape as arg is not valid."""
-
-        with pytest.raises(TransformError, match="The first argument of a transform must be tape."):
-            transform(no_tape_transform)
-
-    def test_error_no_quantumtape_transform(self):
-        """Test that a transform needs tape to be a quantum tape in order to be valid."""
-
-        with pytest.raises(
-            TransformError, match="The type of the tape argument must be a QuantumTape."
-        ):
-            transform(no_quantum_tape_transform)
-
-    def test_error_no_processing_fn_transform(self):
-        """Test that a transform without processing fn return is not valid."""
-
-        with pytest.raises(TransformError, match="The return of a transform must match"):
-            transform(no_processing_fn_transform)
-
-    def test_error_no_tape_sequence_transform(self):
-        """Test that a transform not returning a sequence of tape is not valid."""
-
-        with pytest.raises(
-            TransformError, match="The first return of a transform must be a sequence of tapes:"
-        ):
-            transform(no_tape_sequence_transform)
-
-    def test_error_no_callable_return(self):
-        """Test that a transform not returning a callable is not valid."""
-
-        with pytest.raises(
-            TransformError, match="The second return of a transform must be a callable"
-        ):
-            transform(no_callable_return)
 
     def test_expand_transform_not_callable(self):
         """Test that an expand transform must be a callable otherwise it is not valid."""
@@ -446,27 +471,68 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert dispatched_transform.expand_transform is None
         assert dispatched_transform.classical_cotransform is None
 
-    def test_the_transform_container_attributes(self):
-        """Test the transform container attributes."""
-        container = qml.transforms.core.TransformContainer(
-            first_valid_transform, args=[0], kwargs={}, classical_cotransform=None
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    @pytest.mark.parametrize("batch_type", (tuple, list))
+    def test_batch_transform(self, valid_transform, batch_type, num_margin=1e-8):
+        """Test that dispatcher can dispatch onto a batch of tapes."""
+
+        def check_batch(batch):
+            return isinstance(batch, Sequence) and all(
+                isinstance(tape, qml.tape.QuantumScript) for tape in batch
+            )
+
+        def comb_postproc(results: TensorLike, fn1: Callable, fn2: Callable):
+            return fn1(fn2(results))
+
+        # Create a simple device and tape
+        tmp_dev = qml.device("default.qubit", wires=3)
+
+        H = qml.Hamiltonian(
+            [0.5, 1.0, 1.0], [qml.PauliZ(2), qml.PauliY(2) @ qml.PauliZ(1), qml.PauliZ(1)]
         )
+        measur = [qml.expval(H)]
+        ops = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
+        tape = qml.tape.QuantumTape(ops, measur)
 
-        q_transform, args, kwargs, cotransform, is_informative, final_transform = container
+        ############################################################
+        ### Test with two elementary user-defined transforms
+        ############################################################
 
-        assert q_transform is first_valid_transform
-        assert args == [0]
-        assert kwargs == {}
-        assert cotransform is None
-        assert not is_informative
-        assert not final_transform
+        dispatched_transform1 = transform(valid_transform)
+        dispatched_transform2 = transform(valid_transform)
 
-        assert container.transform is first_valid_transform
-        assert container.args == [0]
-        assert not container.kwargs
-        assert container.classical_cotransform is None
-        assert not container.is_informative
-        assert not container.final_transform
+        batch1, fn1 = dispatched_transform1(tape, index=0)
+        assert check_batch(batch1)
+
+        batch2, fn2 = dispatched_transform2(batch1, index=0)
+        assert check_batch(batch2)
+
+        result = tmp_dev.execute(batch2)
+        assert isinstance(result, TensorLike)
+
+        ############################################################
+        ### Test with two `concrete` transforms
+        ############################################################
+
+        tape = qml.tape.QuantumTape(ops, measur)
+
+        batch1, fn1 = qml.transforms.hamiltonian_expand(tape)
+        assert check_batch(batch1)
+
+        batch2, fn2 = qml.transforms.merge_rotations(batch1)
+        assert check_batch(batch2)
+
+        result = tmp_dev.execute(batch2)
+        assert isinstance(result, TensorLike)
+
+        # check that final batch and post-processing functions are what we expect after the two transforms
+        fin_ops = [qml.Hadamard(0), qml.RX(0.8, 0), qml.CNOT([0, 1])]
+        tp1 = qml.tape.QuantumTape(fin_ops, [qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliZ(1))])
+        tp2 = qml.tape.QuantumTape(fin_ops, [qml.expval(qml.PauliY(2) @ qml.PauliZ(1))])
+        fin_batch = batch_type([tp1, tp2])
+
+        assert all(qml.equal(tapeA, tapeB) for tapeA, tapeB in zip(fin_batch, batch2))
+        assert abs(comb_postproc(result, fn1, fn2).item() - 0.5) < num_margin
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_custom_qnode_transform(self, valid_transform):
@@ -546,10 +612,17 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
 
-        assert len(program) == 4
-        assert len(new_program) == 5
+        assert len(program) == 5
+        assert len(new_program) == 6
 
         assert new_program[-1].transform is valid_transform
+
+        @qml.qnode(new_dev)
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        circuit()
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
@@ -607,3 +680,18 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             dispatched_transform = transform(valid_transform, expand_transform=valid_transform)
             dispatched_transform(device, index=0)
+
+    def test_sphinx_build(self, monkeypatch):
+        """Test that transforms are not created during Sphinx builds"""
+        monkeypatch.setenv("SPHINX_BUILD", "1")
+
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+
+            @qml.transforms.core.transform
+            def custom_transform(  # pylint:disable=unused-variable
+                tape: qml.tape.QuantumTape, index: int
+            ) -> (Sequence[qml.tape.QuantumTape], Callable):
+                """A valid transform."""
+                tape = tape.copy()
+                tape._ops.pop(index)  # pylint:disable=protected-access
+                return [tape], lambda x: x

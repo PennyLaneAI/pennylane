@@ -235,6 +235,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arcsin"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arccos"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "mod"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
@@ -263,9 +264,14 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
-ar.register_function(
-    "tensorflow", "asarray", lambda x, **kwargs: _i("tf").convert_to_tensor(x, **kwargs)
-)
+
+def _tf_convert_to_tensor(x, **kwargs):
+    if isinstance(x, _i("tf").Tensor) and "dtype" in kwargs:
+        return _i("tf").cast(x, **kwargs)
+    return _i("tf").convert_to_tensor(x, **kwargs)
+
+
+ar.register_function("tensorflow", "asarray", _tf_convert_to_tensor)
 ar.register_function(
     "tensorflow",
     "hstack",
@@ -274,6 +280,22 @@ ar.register_function(
 
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
+ar.register_function(
+    "tensorflow",
+    "full",
+    lambda shape, fill_value, **kwargs: _i("tf").fill(
+        shape if isinstance(shape, (tuple, list)) else (shape), fill_value, **kwargs
+    ),
+)
+ar.register_function(
+    "tensorflow",
+    "isnan",
+    lambda tensor, **kwargs: _i("tf").math.is_nan(_i("tf").math.real(tensor), **kwargs)
+    | _i("tf").math.is_nan(_i("tf").math.imag(tensor), **kwargs),
+)
+ar.register_function(
+    "tensorflow", "any", lambda tensor, **kwargs: _i("tf").reduce_any(tensor, **kwargs)
+)
 ar.register_function(
     "tensorflow",
     "sqrt",
@@ -319,13 +341,7 @@ ar.register_function("tensorflow", "round", _round_tf)
 
 
 def _ndim_tf(tensor):
-    try:
-        ndim = _i("tf").experimental.numpy.ndim(tensor)
-        if ndim is None:
-            return len(tensor.shape)
-        return ndim
-    except AttributeError:
-        return len(tensor.shape)
+    return len(tensor.shape)
 
 
 ar.register_function("tensorflow", "ndim", _ndim_tf)
@@ -517,6 +533,7 @@ ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsquee
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 ar.register_function("torch", "equal", lambda x, y: _i("torch").eq(x, y))
+ar.register_function("torch", "mod", lambda x, y: x % y)
 
 ar.register_function(
     "torch",
@@ -582,16 +599,34 @@ def _coerce_types_torch(tensors):
     torch = _i("torch")
 
     # Extract existing set devices, if any
-    device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
-    if len(device_set) > 1:  # pragma: no cover
-        # GPU specific case
-        device_names = ", ".join(str(d) for d in device_set)
-        raise RuntimeError(
-            f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
-        )
+    device_set = set()
+    dev_indices = set()
+    for t in tensors:
+        if isinstance(t, torch.Tensor):
+            device_set.add(t.device.type)
+            dev_indices.add(t.device.index)
+        else:
+            device_set.add("cpu")
+            dev_indices.add(None)
 
-    device = device_set.pop() if len(device_set) == 1 else None
-    tensors = [torch.as_tensor(t, device=device) for t in tensors]
+    if len(device_set) > 1:  # pragma: no cover
+        # If data exists on two separate GPUs, outright fail
+        if len([i for i in dev_indices if i is not None]) > 1:
+            device_names = ", ".join(str(d) for d in device_set)
+
+            raise RuntimeError(
+                f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
+            )
+        # Otherwise, automigrate data from CPU to GPU and carry on.
+        dev_indices.remove(None)
+        dev_id = dev_indices.pop()
+        tensors = [
+            torch.as_tensor(t, device=torch.device(f"cuda:{dev_id}"))
+            for t in tensors  # pragma: no cover
+        ]
+    else:
+        device = device_set.pop()
+        tensors = [torch.as_tensor(t, device=device) for t in tensors]
 
     dtypes = {i.dtype for i in tensors}
 

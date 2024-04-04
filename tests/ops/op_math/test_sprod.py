@@ -22,9 +22,9 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.ops.op_math.sprod import SProd, s_prod
+from pennylane.ops.op_math import SProd, s_prod, Prod, Sum
 from pennylane.wires import Wires
 
 
@@ -85,15 +85,15 @@ ops = (
 )
 
 ops_rep = (
-    "1.0*(PauliX(wires=[0]))",
-    "0.0*(PauliZ(wires=[0]))",
-    "1j*(Hadamard(wires=[0]))",
-    "1.23*(CNOT(wires=[0, 1]))",
-    "4.56*(RX(1.23, wires=[1]))",
-    "(1+2j)*(Identity(wires=[0]))",
-    "10*(IsingXX(4.56, wires=[2, 3]))",
-    "0j*(Toffoli(wires=[1, 2, 3]))",
-    "42*(Rot(0.34, 1.0, 0, wires=[0]))",
+    "1.0 * X(0)",
+    "0.0 * Z(0)",
+    "1j * Hadamard(wires=[0])",
+    "1.23 * CNOT(wires=[0, 1])",
+    "4.56 * RX(1.23, wires=[1])",
+    "(1+2j) * I(0)",
+    "10 * IsingXX(4.56, wires=[2, 3])",
+    "0j * Toffoli(wires=[1, 2, 3])",
+    "42 * Rot(0.34, 1.0, 0, wires=[0])",
 )
 
 
@@ -181,9 +181,43 @@ class TestInitialization:
 
         assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
 
+    def test_base_gets_cast_to_new_type(self):
+        """Test that Tensor and Hamiltonian instances get cast to new types."""
+        base_H = qml.Hamiltonian([1.1, 2.2], [qml.PauliZ(0), qml.PauliZ(1)])
+        op_H = qml.s_prod(2j, base_H)
+        assert isinstance(op_H.base, Sum)
+
+        base_T = qml.PauliZ(0) @ qml.PauliZ(1)
+        op_T = qml.s_prod(2j, base_T)
+        assert isinstance(op_T.base, Prod)
+
 
 class TestMscMethods:
     """Test miscellaneous methods of the SProd class."""
+
+    def test_string_with_single_pauli(self):
+        """Test the string representation with single pauli"""
+        res = qml.s_prod(0.5, qml.PauliX("a"))
+        true_res = "0.5 * X('a')"
+        assert repr(res) == true_res
+
+        res = qml.s_prod(0.5, qml.PauliX(0))
+        true_res = "0.5 * X(0)"
+        assert repr(res) == true_res
+
+    def test_string_with_sum_of_pauli(self):
+        """Test the string representation with single pauli"""
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX("b")))
+        true_res = "0.5 * (X('a') + X('b'))"
+        assert repr(res) == true_res
+
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX(0), qml.PauliX(1)))
+        true_res = "0.5 * (X(0) + X(1))"
+        assert repr(res) == true_res
+
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX(1)))
+        true_res = "0.5 * (X('a') + X(1))"
+        assert repr(res) == true_res
 
     @pytest.mark.parametrize("op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, op_scalar_tup, op_rep):
@@ -677,6 +711,13 @@ class TestProperties:
             op = s_prod(scalar, qml.PauliX(wires=0))
             assert op.is_hermitian == hermitian_state
 
+    @pytest.mark.tf
+    def test_no_dtype_promotion(self):
+        import tensorflow as tf
+
+        op = qml.s_prod(tf.constant(0.5), qml.X(0))
+        assert op.scalar.dtype == next(iter(op.pauli_rep.values())).dtype
+
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
@@ -742,13 +783,13 @@ class TestProperties:
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
         """Test the pauli rep is produced as expected."""
-        assert op._pauli_rep == rep  # pylint: disable=protected-access
+        assert op.pauli_rep == rep
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self):
         """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
         op = qml.s_prod(2, base)
-        assert op._pauli_rep is None  # pylint: disable=protected-access
+        assert op.pauli_rep is None
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""
@@ -771,10 +812,11 @@ class TestProperties:
     def test_different_batch_sizes_raises_error(self):
         """Test that using different batch sizes for base and scalar raises an error."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
+            _ = op.batch_size
 
 
 class TestSimplify:
@@ -974,13 +1016,10 @@ class TestIntegration:
         @qml.qnode(dev)
         def my_circ():
             qml.PauliX(0)
-            return qml.probs(op=sprod_op)
+            return qml.probs(op=sprod_op), qml.probs(op=qml.Hadamard(1))
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for " "rotating probabilities yet.",
-        ):
-            my_circ()
+        res1, res2 = my_circ()
+        assert qml.math.allclose(res1, res2)
 
     def test_measurement_process_sample(self):
         """Test SProd class instance in sample measurement process."""

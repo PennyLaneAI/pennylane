@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the transform program class.
+This module contains the ``TransformProgram`` class.
 """
 from functools import partial
-from typing import Callable, List, Tuple, Optional, Sequence
+from typing import Callable, List, Tuple, Optional, Sequence, Union
+
+import numpy as np
 
 import pennylane as qml
 from pennylane.typing import Result, ResultBatch
@@ -101,14 +103,50 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
 
 
 class TransformProgram:
-    """Class that contains a transform program and the methods to interact with it. The order of execution is the order
-    in the list containing the containers.
+    """Class that contains a transform program and the methods to interact with it.
+
+    The order of execution is the order in the list containing the containers.
+
+    The main case where one would have to interact directly with a transform program is when developing a
+    :class:`Device <pennylane.devices.Device>`. In this case, the pre-processing method of a device
+    returns a transform program. You should directly refer to the device API documentation for more details.
 
     .. warning::
 
-        This class is developer-facing and should not be used directly.
+        This class is developer-facing and should not be used directly. Instead, use
+        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
+        transform.
 
-    .. seealso:: :func:`~.pennylane.transforms.core.transform`
+    .. seealso:: :func:`~.pennylane.transform`
+
+    **Implemented Dunder methods**
+
+    Programs have several implemented dunder methods for easy manipulation.
+
+    >>> program = TransformProgram()
+    >>> program.add_transform(qml.compile)
+    >>> program.add_transform(qml.transforms.cancel_inverses)
+    >>> [t for t in program]  # Iteration
+    [<compile([], {})>, <cancel_inverses([], {})>]
+    >>> program[0]
+    <compile([], {})>
+    >>> program[::-1]
+    TransformProgram(cancel_inverses, compile)
+    >>> len(program)
+    2
+    >>> True if program else False
+    True
+    >>> True if TransformProgram() else False
+    False
+    >>> program2 = copy.copy(program)
+    >>> program2 == program
+    True
+    >>> qml.compile in program
+    True
+    >>> qml.transforms.hamiltonian_expand in program
+    False
+    >>> program + program
+    TransformProgram(compile, cancel_inverses, compile, cancel_inverses)
 
     """
 
@@ -125,9 +163,11 @@ class TransformProgram:
         """int: Return the number transforms in the program."""
         return len(self._transform_program)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> Union["TransformProgram", "TransformContainer"]:
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         transform program"""
+        if isinstance(idx, slice):
+            return TransformProgram(self._transform_program[idx])
         return self._transform_program[idx]
 
     def __bool__(self):
@@ -148,6 +188,19 @@ class TransformProgram:
         contents = ", ".join(f"{transform_c.transform.__name__}" for transform_c in self)
         return f"TransformProgram({contents})"
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, TransformProgram):
+            return False
+
+        return self._transform_program == other._transform_program
+
+    def __contains__(self, obj):
+        if isinstance(obj, TransformContainer):
+            return obj in self._transform_program
+        if isinstance(obj, TransformDispatcher):
+            return any(obj.transform == t.transform for t in self)
+        return False
+
     def push_back(self, transform_container: TransformContainer):
         """Add a transform (container) to the end of the program.
 
@@ -159,7 +212,10 @@ class TransformProgram:
 
         # Program can only contain one informative transform and at the end of the program
         if self.has_final_transform:
-            raise TransformError("The transform program already has a terminal transform.")
+            if transform_container.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
+            self._transform_program.insert(-1, transform_container)
+            return
         self._transform_program.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):
@@ -178,7 +234,7 @@ class TransformProgram:
         """Add a transform (dispatcher) to the end of the program.
 
         Note that this should be a function decorated with/called by
-        `qml.transforms.transform`, and not a `TransformContainer`.
+        ``qml.transforms.transform``, and not a ``TransformContainer``.
 
         Args:
             transform (TransformDispatcher): The transform to add to the transform program.
@@ -267,7 +323,7 @@ class TransformProgram:
 
     @property
     def is_informative(self) -> bool:
-        """Check if the transform program is informative or not.
+        """``True`` if the transform program is informative.
 
         Returns:
             bool: Boolean
@@ -276,8 +332,8 @@ class TransformProgram:
 
     @property
     def has_final_transform(self) -> bool:
-        """Check if the transform program has a terminal transform or not."""
-        return self[-1].final_transform if self else False
+        """``True`` if the transform program has a terminal transform."""
+        return self[-1].final_transform if self else False  # pylint: disable=no-member
 
     def has_classical_cotransform(self) -> bool:
         """Check if the transform program has some classical cotransforms.
@@ -286,6 +342,36 @@ class TransformProgram:
             bool: Boolean
         """
         return any(t.classical_cotransform is not None for t in self)
+
+    def set_classical_component(self, qnode, args, kwargs):
+        """Set the classical jacobians and argnums if the transform is hybrid with a classical cotransform."""
+        if not self.has_classical_cotransform():
+            return
+        hybrid = self[-1].kwargs.pop("hybrid", True)  # pylint: disable=no-member
+
+        if hybrid:
+            argnums = self[-1].kwargs.pop("argnums", None)  # pylint: disable=no-member
+            self._set_all_classical_jacobians(qnode, args, kwargs, argnums)
+            self._set_all_argnums(qnode, args, kwargs, argnums)
+
+    def prune_dynamic_transform(self):
+        """Ensure a single ``dynamic_one_shot`` transform is applied."""
+        trans_type = np.zeros(len(self._transform_program), dtype=np.int32)
+        for i, t in enumerate(self._transform_program):
+            if "dynamic_one_shot" in str(t):
+                trans_type[i] = 1
+            if "mid_circuit_measurements" in str(t):
+                trans_type[i] = 2
+        if sum(trans_type) < 2:
+            return
+        keep = 2 if 2 in trans_type else 1
+        found = False
+        for i, ttype in enumerate(reversed(trans_type)):
+            if not found and ttype == keep:
+                found = True
+                continue
+            if found and ttype in [1, 2]:
+                self._transform_program.pop(len(self._transform_program) - 1 - i)
 
     def _set_all_classical_jacobians(
         self, qnode, args, kwargs, argnums
@@ -383,31 +469,13 @@ class TransformProgram:
         level.
         """
 
-        def jax_argnums_to_tape_trainable(program, argnums, args, kwargs):
-            import jax  # pylint: disable=import-outside-toplevel
-
-            with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
-                trace = jax.interpreters.ad.JVPTrace(main, 0)
-
-            args_jvp = [
-                jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-                if i in argnums
-                else arg
-                for i, arg in enumerate(args)
-            ]
-
-            qnode.construct(args_jvp, kwargs)
-            tape = qnode.qtape
-            tapes, _ = program((tape,))
-            del trace
-            return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
-
         argnums_list = []
         for index, transform in enumerate(self):
             argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
-            if transform.classical_cotransform and argnums:
-                params = jax_argnums_to_tape_trainable(
-                    TransformProgram(self[0:index]), argnums, args, kwargs
+            # pylint: disable=protected-access
+            if (transform._use_argnum or transform.classical_cotransform) and argnums:
+                params = qml.math.jax_argnums_to_tape_trainable(
+                    qnode, argnums, TransformProgram(self[0:index]), args, kwargs
                 )
                 argnums_list.append([qml.math.get_trainable_indices(param) for param in params])
             else:
@@ -453,7 +521,7 @@ class TransformProgram:
                     slices_classical.append(slice(start_classical, start_classical + 1))
                     start_classical += 1
 
-            if cotransform:
+            if cotransform and self._classical_jacobians:
                 batch_postprocessing_classical = partial(
                     _batch_postprocessing, individual_fns=classical_fns, slices=slices_classical
                 )

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
+# pylint:disable=use-implicit-booleaness-not-comparison
 from functools import partial
 import pytest
 from flaky import flaky
@@ -34,7 +35,7 @@ many_shots_shot_vector = tuple([1000000] * 3)
 fallback_shot_vec = tuple([1000000] * 4)
 
 # Pick 4 angles in the [-2 * np.pi, np.pi] interval
-angles = [-6.28318531, -3.92699082, 0.78539816, 3.14159265]
+angles = (-6.28318531, -3.92699082, 0.78539816, 3.14159265)
 
 
 def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
@@ -1705,7 +1706,7 @@ class TestParameterShiftRule:
         """Test an expectation value and the variance of involutory and non-involutory observables work well with
         multiple trainable parameters"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec, seed=12393)
 
         a = 0.54
         b = -0.423
@@ -1846,12 +1847,12 @@ class TestParameterShiftRule:
         (cost3, [2, 3]),
     ]
 
-    @pytest.mark.xfail(
-        reason="batch_transform uses qml.execute and is incompatible with shot vectors atm"
-    )
     @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_expval)
     def test_output_shape_matches_qnode_expval(self, cost, expected_shape):
         """Test that the transform output shape matches that of the QNode."""
+        if cost.__name__ != "cost1":
+            pytest.xfail(reason="new return shape specification")
+
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=4, shots=shot_vec)
 
@@ -1877,12 +1878,12 @@ class TestParameterShiftRule:
         (cost6, [2, 3, 4]),
     ]
 
-    @pytest.mark.xfail(
-        reason="batch_transform uses qml.execute and is incompatible with shot vectors atm"
-    )
     @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, expected_shape):
         """Test that the transform output shape matches that of the QNode."""
+        if cost.__name__ != "cost4":
+            pytest.xfail(reason="wrong return shape specification")
+
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=4, shots=shot_vec)
 
@@ -2010,6 +2011,7 @@ class TestParameterShiftRule:
 
 
 # TODO: allow broadcast=True
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("broadcast", [False])
 class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be
@@ -2028,7 +2030,7 @@ class TestHamiltonianExpvalGradients:
             qml.CNOT(wires=[0, 1])
             obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             coeffs = np.array([0.1, 0.2, 0.3])
-            H = np.dot(obs, coeffs)
+            H = qml.dot(coeffs, obs)
             qml.var(H)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)

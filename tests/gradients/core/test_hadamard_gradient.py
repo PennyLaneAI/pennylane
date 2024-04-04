@@ -15,7 +15,6 @@
 Tests for the gradients.hadamard_gradient module.
 """
 
-import warnings
 import pytest
 
 import pennylane as qml
@@ -72,6 +71,16 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
         _match = "Computing the gradient of broadcasted tapes with the Hadamard test gradient"
         with pytest.raises(NotImplementedError, match=_match):
+            qml.gradients.hadamard_grad(tape)
+
+    def test_tape_with_partitioned_shots_multiple_measurements_raises(self):
+        """Test that an error is raised with multiple measurements and partitioned shots."""
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.1, wires=0)],
+            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))],
+            shots=(1000, 10000),
+        )
+        with pytest.raises(NotImplementedError):
             qml.gradients.hadamard_grad(tape)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -509,28 +518,6 @@ class TestHadamardGrad:
                 assert isinstance(r, qml.numpy.ndarray)
                 assert len(r) == expected_shape[1]
 
-    def test_multi_measure_no_warning(self):
-        """Test computing the gradient of a tape that contains multiple
-        measurements omits no warnings."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        par1 = qml.numpy.array(0.3)
-        par2 = qml.numpy.array(0.1)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(par1, wires=0)
-            qml.RX(par2, wires=1)
-            qml.probs(wires=[1, 2])
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        with warnings.catch_warnings(record=True) as record:
-            grad_fn(tape, dev=dev)
-
-        assert len(record) == 0
-
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):
         """Tests that the shots attribute is copied to the new tapes"""
@@ -792,7 +779,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd_legacy(self):
+    def test_no_trainable_params_qnode_autograd_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -808,7 +795,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.torch
-    def test_no_trainable_params_qnode_torch_legacy(self):
+    def test_no_trainable_params_qnode_torch_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.torch", wires=2)
@@ -824,7 +811,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf_legacy(self):
+    def test_no_trainable_params_qnode_tf_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -840,7 +827,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.jax
-    def test_no_trainable_params_qnode_jax_legacy(self):
+    def test_no_trainable_params_qnode_jax_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.jax", wires=2)
@@ -1153,9 +1140,6 @@ class TestHadamardTestGradDiff:
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=3)
         execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute

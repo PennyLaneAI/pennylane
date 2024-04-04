@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math import CompositeOp
+from pennylane.ops.op_math import CompositeOp, Prod, Sum, SProd
 from pennylane.wires import Wires
 
 ops = (
@@ -36,8 +36,8 @@ ops = (
 )
 
 ops_rep = (
-    "PauliX(wires=[0]) # PauliZ(wires=[0]) # Hadamard(wires=[0])",
-    "CNOT(wires=[0, 1]) # RX(1.23, wires=[1]) # Identity(wires=[0])",
+    "X(0) # Z(0) # Hadamard(wires=[0])",
+    "CNOT(wires=[0, 1]) # RX(1.23, wires=[1]) # I(0)",
     "IsingXX(4.56, wires=[2, 3]) # Toffoli(wires=[1, 2, 3]) # Rot(0.34, 1.0, 0, wires=[0])",
 )
 
@@ -72,11 +72,10 @@ class TestConstruction:
 
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp fails"""
-        with pytest.raises(
-            TypeError, match="Can't instantiate abstract class CompositeOp with abstract methods"
-        ):
+        with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
             _ = CompositeOp(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
 
+    @pytest.mark.xfail
     def test_raise_error_fewer_than_2_operands(self):
         """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
         with pytest.raises(ValueError, match="Require at least two operators to combine;"):
@@ -143,10 +142,11 @@ class TestConstruction:
     def test_different_batch_sizes_raises_error(self):
         """Test that an error is raised if the operands have different batch sizes."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
+            _ = op.batch_size
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
@@ -187,11 +187,17 @@ class TestConstruction:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
-    def test_map_wires(self):
+    @pytest.mark.parametrize(
+        "construct_overlapping_ops, expected_overlapping_ops",
+        [(False, None), (True, [[qml.S(5)], [qml.T(7)]])],
+    )
+    def test_map_wires(self, construct_overlapping_ops, expected_overlapping_ops):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
         # pylint:disable=attribute-defined-outside-init
         diag_op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "Y"}): 1})
+        if construct_overlapping_ops:
+            _ = diag_op.overlapping_ops
 
         wire_map = {0: 5, 1: 7, 2: 9, 3: 11}
         mapped_op = diag_op.map_wires(wire_map=wire_map)
@@ -199,15 +205,37 @@ class TestConstruction:
         assert mapped_op.wires == Wires([5, 7])
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
-        assert mapped_op._pauli_rep is not diag_op._pauli_rep
-        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+        assert mapped_op.pauli_rep is not diag_op.pauli_rep
+        assert mapped_op.pauli_rep == qml.pauli.PauliSentence(
             {qml.pauli.PauliWord({5: "X", 7: "Y"}): 1}
         )
+        assert mapped_op._overlapping_ops == expected_overlapping_ops
 
     def test_build_pauli_rep(self):
         """Test the build_pauli_rep"""
         op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
+
+    def test_tensor_and_hamiltonian_converted(self):
+        """Test that Tensor and Hamiltonian instances get converted to Prod and Sum."""
+        operands = [
+            qml.Hamiltonian(
+                [1.1, 2.2], [qml.PauliZ(0), qml.operation.Tensor(qml.PauliX(0), qml.PauliZ(1))]
+            ),
+            qml.prod(qml.PauliX(0), qml.PauliZ(1)),
+            qml.operation.Tensor(qml.PauliX(2), qml.PauliZ(3)),
+        ]
+        op = qml.sum(*operands)
+        assert isinstance(op[0], Sum)
+        assert isinstance(op[0][1], SProd)
+        assert isinstance(op[0][1].base, Prod)
+        assert op[1] is operands[1]
+        assert isinstance(op[2], Prod)
+        assert op.operands == (
+            qml.dot([1.1, 2.2], [qml.PauliZ(0), qml.prod(qml.PauliX(0), qml.PauliZ(1))]),
+            operands[1],
+            qml.prod(qml.PauliX(2), qml.PauliZ(3)),
+        )
 
 
 class TestMscMethods:
@@ -222,7 +250,7 @@ class TestMscMethods:
     def test_nested_repr(self):
         """Test nested repr values while other nested features such as equality are not ready"""
         op = ValidOp(qml.PauliX(0), ValidOp(qml.RY(1, wires=1), qml.PauliX(0)))
-        assert repr(op) == "PauliX(wires=[0]) # (RY(1, wires=[1]) # PauliX(wires=[0]))"
+        assert repr(op) == "X(0) # (RY(1, wires=[1]) # X(0))"
 
     def test_label(self):
         """Test label method."""

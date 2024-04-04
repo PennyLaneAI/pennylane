@@ -22,6 +22,7 @@ from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
+from pennylane.math import expand_matrix
 from pennylane.operation import (
     AnyWires,
     DecompositionUndefinedError,
@@ -30,14 +31,14 @@ from pennylane.operation import (
     Operator,
     OperatorPropertyUndefined,
     Tensor,
-    expand_matrix,
 )
-from pennylane.ops.qubit import Hamiltonian
 from pennylane.wires import Wires
 
 from .sprod import SProd
 from .sum import Sum
+from .linear_combination import LinearCombination
 from .symbolicop import ScalarSymbolicOp
+from ..qubit.hamiltonian import Hamiltonian
 
 
 def exp(op, coeff=1, num_steps=None, id=None):
@@ -78,13 +79,13 @@ def exp(op, coeff=1, num_steps=None, id=None):
     This symbolic operator can be used to make general rotation operators:
 
     >>> x = np.array(1.23)
-    >>> op = qml.exp( qml.PauliX(0), -0.5j * x)
+    >>> op = qml.exp(qml.X(0), -0.5j * x)
     >>> qml.math.allclose(op.matrix(), qml.RX(x, wires=0).matrix())
     True
 
     This can even be used for more complicated generators:
 
-    >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+    >>> t = qml.X(0) @ qml.X(1) + qml.Y(0) @ qml.Y(1)
     >>> isingxy = qml.exp(t, 0.25j * x)
     >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
     True
@@ -95,15 +96,15 @@ def exp(op, coeff=1, num_steps=None, id=None):
 
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     qml.exp(qml.PauliX(0), -0.5j * x)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     qml.exp(qml.X(0), -0.5j * x)
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit)(1.23))
     0: ──Exp─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
 
-    >>> obs = qml.exp(qml.PauliZ(0), 3)
+    >>> obs = qml.exp(qml.Z(0), 3)
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit():
     ...     return qml.expval(obs)
@@ -130,13 +131,13 @@ class Exp(ScalarSymbolicOp, Operation):
     This symbolic operator can be used to make general rotation operators:
 
     >>> x = np.array(1.23)
-    >>> op = Exp( qml.PauliX(0), -0.5j * x)
+    >>> op = Exp( qml.X(0), -0.5j * x)
     >>> qml.math.allclose(op.matrix(), qml.RX(x, wires=0).matrix())
     True
 
     This can even be used for more complicated generators:
 
-    >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+    >>> t = qml.X(0) @ qml.X(1) + qml.Y(0) @ qml.Y(1)
     >>> isingxy = Exp(t, 0.25j * x)
     >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
     True
@@ -147,15 +148,15 @@ class Exp(ScalarSymbolicOp, Operation):
 
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     Exp(qml.PauliX(0), -0.5j * x)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     Exp(qml.X(0), -0.5j * x)
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit)(1.23))
     0: ──Exp─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
 
-    >>> obs = Exp(qml.PauliZ(0), 3)
+    >>> obs = Exp(qml.Z(0), 3)
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit():
     ...     return qml.expval(obs)
@@ -176,6 +177,8 @@ class Exp(ScalarSymbolicOp, Operation):
 
     # pylint: disable=too-many-arguments
     def __init__(self, base, coeff=1, num_steps=None, id=None):
+        if not isinstance(base, Operator):
+            raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
         super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
         self.num_steps = num_steps
@@ -222,7 +225,7 @@ class Exp(ScalarSymbolicOp, Operation):
             coeff *= base.scalar
             base = base.base
         is_pauli_rot = qml.pauli.is_pauli_word(self.base) and math.real(self.coeff) == 0
-        is_hamiltonian = isinstance(base, Hamiltonian)
+        is_hamiltonian = isinstance(base, (Hamiltonian, LinearCombination))
         is_sum_of_pauli_words = isinstance(base, Sum) and all(
             qml.pauli.is_pauli_word(o) for o in base
         )
@@ -268,7 +271,7 @@ class Exp(ScalarSymbolicOp, Operation):
             )
 
         # Change base to `Sum`/`Prod`
-        if isinstance(base, Hamiltonian):
+        if isinstance(base, (Hamiltonian, LinearCombination)):
             base = qml.dot(base.coeffs, base.ops)
         elif isinstance(base, Tensor):
             base = qml.prod(*base.obs)
@@ -276,11 +279,10 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        if self.num_steps is not None and isinstance(base, (Hamiltonian, Sum)):
+        if self.num_steps is not None and isinstance(base, Sum):
             # Apply trotter decomposition
-            coeffs = base.coeffs if isinstance(base, Hamiltonian) else [1] * len(base)
+            coeffs, ops = [1] * len(base), base.operands
             coeffs = [c * coeff for c in coeffs]
-            ops = base.ops if isinstance(base, Hamiltonian) else base.operands
             return self._trotter_decomposition(ops, coeffs)
 
         # Store operator classes with generators
@@ -301,12 +303,19 @@ class Exp(ScalarSymbolicOp, Operation):
             if op_class not in {qml.PauliRot, qml.PCPhase}:
                 g, c = qml.generator(op_class)(coeff, base.wires)
                 # Some generators are not wire-ordered (e.g. OrbitalRotation)
-                new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
+                mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 
-                if qml.equal(base, new_g) and math.real(coeff) == 0:
+                if qml.equal(mapped_wires_g, base) and math.real(coeff) == 0:
                     coeff = math.real(
                         -1j / c * coeff
                     )  # cancel the coefficients added by the generator
+                    return [op_class(coeff, g.wires)]
+
+                # could have absorbed the coefficient.
+                simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
+
+                if qml.equal(simplified_g, base) and math.real(coeff) == 0:
+                    coeff = math.real(-1j * coeff)  # cancel the coefficients added by the generator
                     return [op_class(coeff, g.wires)]
 
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
@@ -429,10 +438,10 @@ class Exp(ScalarSymbolicOp, Operation):
             \quad \Longrightarrow \quad
             e^{c \mathbf{M}} \mathbf{v} = e^{c \lambda} \mathbf{v}
 
-        >>> obs = Exp(qml.PauliX(0), 3)
+        >>> obs = Exp(qml.X(0), 3)
         >>> qml.eigvals(obs)
         array([20.08553692,  0.04978707])
-        >>> np.exp(3 * qml.eigvals(qml.PauliX(0)))
+        >>> np.exp(3 * qml.eigvals(qml.X(0)))
         tensor([20.08553692,  0.04978707], requires_grad=True)
 
         """
@@ -475,8 +484,7 @@ class Exp(ScalarSymbolicOp, Operation):
         we get the generator
 
         >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
+          0.5 * Y(0) + Z(0) @ X(1)
 
         """
         if self.base.is_hermitian and not np.real(self.coeff):

@@ -49,7 +49,7 @@ class Select(Operation):
     **Example**
 
     >>> dev = qml.device('default.qubit', wires=4)
-    >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
+    >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
     >>> @qml.qnode(dev)
     >>> def circuit():
     >>>     qml.Select(ops, control=[0,1])
@@ -72,9 +72,12 @@ class Select(Operation):
     def _unflatten(cls, data, metadata) -> "Select":
         return cls(data, metadata)
 
+    def __repr__(self):
+        return f"Select(ops={self.ops}, control={self.control})"
+
     def __init__(self, ops, control, id=None):
         control = qml.wires.Wires(control)
-        self.hyperparameters["ops"] = ops
+        self.hyperparameters["ops"] = tuple(ops)
         self.hyperparameters["control"] = control
 
         if 2 ** len(control) < len(ops):
@@ -98,6 +101,11 @@ class Select(Operation):
 
         all_wires = target_wires + control
         super().__init__(*self.data, wires=all_wires, id=id)
+
+    def map_wires(self, wire_map: dict) -> "Select":
+        new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
+        new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
+        return Select(new_ops, new_control)
 
     def __copy__(self):
         """Copy this op"""
@@ -142,12 +150,12 @@ class Select(Operation):
 
         **Example**
 
-        >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
+        >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
         >>> op = qml.Select(ops, control=[0,1])
         >>> op.decomposition()
-        [MultiControlledX(wires=[0, 1, 2], control_values="00"),
-         MultiControlledX(wires=[0, 1, 3], control_values="01"),
-         Controlled(PauliY(wires=[2]), control_wires=[0, 1], control_values=[True, False]),
+        [MultiControlledX(wires=[0, 1, 2], control_values=[0, 0]),
+         MultiControlledX(wires=[0, 1, 3], control_values=[0, 1]),
+         Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
         return self.compute_decomposition(self.ops, control=self.control)
@@ -177,11 +185,11 @@ class Select(Operation):
 
         **Example**
 
-        >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
+        >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
         >>> qml.Select.compute_decomposition(ops, control=[0,1])
-        [MultiControlledX(wires=[0, 1, 2], control_values="00"),
-         MultiControlledX(wires=[0, 1, 3], control_values="01"),
-         Controlled(PauliY(wires=[2]), control_wires=[0, 1], control_values=[True, False]),
+        [MultiControlledX(wires=[0, 1, 2], control_values=[0, 0]),
+         MultiControlledX(wires=[0, 1, 3], control_values=[0, 1),
+         Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
         states = list(itertools.product([0, 1], repeat=len(control)))

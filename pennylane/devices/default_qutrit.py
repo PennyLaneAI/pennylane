@@ -30,9 +30,10 @@ from .._version import __version__
 # tolerance for numerical errors
 tolerance = 1e-10
 
-OMEGA = np.exp(2 * np.pi * 1j / 3)
+OMEGA = qml.math.exp(2 * np.pi * 1j / 3)
 
 
+# pylint: disable=too-many-arguments
 class DefaultQutrit(QutritDevice):
     """Default qutrit device for PennyLane.
 
@@ -87,11 +88,33 @@ class DefaultQutrit(QutritDevice):
 
     # Identity is supported as an observable for qml.state() to work correctly. However, any
     # measurement types that rely on eigenvalue decomposition will not work with qml.Identity
-    observables = {
-        "THermitian",
-        "GellMann",
-        "Identity",
-    }
+    observables = {"THermitian", "GellMann", "Identity", "Prod"}
+
+    # Static methods to use qml.math to allow for backprop differentiation
+    _reshape = staticmethod(qml.math.reshape)
+    _flatten = staticmethod(qml.math.flatten)
+    _transpose = staticmethod(qml.math.transpose)
+    _dot = staticmethod(qml.math.dot)
+    _stack = staticmethod(qml.math.stack)
+    _conj = staticmethod(qml.math.conj)
+    _roll = staticmethod(qml.math.roll)
+    _cast = staticmethod(qml.math.cast)
+    _tensordot = staticmethod(qml.math.tensordot)
+    _real = staticmethod(qml.math.real)
+    _imag = staticmethod(qml.math.imag)
+
+    @staticmethod
+    def _reduce_sum(array, axes):
+        return qml.math.sum(array, tuple(axes))
+
+    @staticmethod
+    def _asarray(array, dtype=None):
+        # Support float
+        if not hasattr(array, "__len__"):
+            return np.asarray(array, dtype=dtype)
+
+        res = qml.math.cast(array, dtype=dtype)
+        return res
 
     def __init__(
         self,
@@ -350,6 +373,12 @@ class DefaultQutrit(QutritDevice):
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             returns_state=True,
+            passthru_devices={
+                "autograd": "default.qutrit",
+                "tf": "default.qutrit",
+                "torch": "default.qutrit",
+                "jax": "default.qutrit",
+            },
         )
         return capabilities
 
@@ -417,7 +446,7 @@ class DefaultQutrit(QutritDevice):
         device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [3] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
+        axes = (list(range(len(device_wires), 2 * len(device_wires))), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions

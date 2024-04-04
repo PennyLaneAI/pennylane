@@ -16,7 +16,7 @@ from typing import List, Union, Tuple
 
 import numpy as np
 import pennylane as qml
-from pennylane.ops import Sum, Hamiltonian, SProd, Prod
+from pennylane.ops import Sum, Hamiltonian, SProd, Prod, LinearCombination
 from pennylane.measurements import (
     SampleMeasurement,
     Shots,
@@ -59,7 +59,7 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
         elif mp.obs is None:
             mp_no_obs.append(mp)
             mp_no_obs_indices.append(i)
-        elif isinstance(mp.obs, (Sum, Hamiltonian, SProd, Prod)):
+        elif isinstance(mp.obs, (Hamiltonian, Sum, SProd, Prod)):
             # Sum, Hamiltonian, SProd, and Prod are treated as valid Pauli words, but
             # aren't accepted in qml.pauli.group_observables
             mp_other_obs.append([mp])
@@ -108,7 +108,9 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
     num_executions = 0
     num_shots = 0
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, qml.Hamiltonian):
+        if isinstance(group[0], ExpectationMP) and isinstance(
+            group[0].obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
+        ):
             indices = group[0].obs.grouping_indices
             H_executions = len(indices) if indices else len(group[0].obs.ops)
             num_executions += H_executions
@@ -179,11 +181,14 @@ def measure_with_samples(
     Returns:
         List[TensorLike[Any]]: Sample measurement results
     """
+
     groups, indices = _group_measurements(mps)
 
     all_res = []
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Hamiltonian):
+        if isinstance(group[0], ExpectationMP) and isinstance(
+            group[0].obs, (Hamiltonian, LinearCombination)
+        ):
             measure_fn = _measure_hamiltonian_with_samples
         elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
             measure_fn = _measure_sum_with_samples
@@ -264,27 +269,37 @@ def _measure_with_samples_diagonalizing_gates(
             # currently we call sample_state for each shot entry, but it may be
             # better to call sample_state just once with total_shots, then use
             # the shot_range keyword argument
-            samples = sample_state(
-                state,
-                shots=s,
-                is_state_batched=is_state_batched,
-                wires=wires,
-                rng=rng,
-                prng_key=prng_key,
-            )
+            try:
+                samples = sample_state(
+                    state,
+                    shots=s,
+                    is_state_batched=is_state_batched,
+                    wires=wires,
+                    rng=rng,
+                    prng_key=prng_key,
+                )
+            except ValueError as e:
+                if str(e) != "probabilities contain NaN":
+                    raise e
+                samples = qml.math.full((s, len(wires)), 0)
 
             processed_samples.append(_process_single_shot(samples))
 
         return tuple(zip(*processed_samples))
 
-    samples = sample_state(
-        state,
-        shots=shots.total_shots,
-        is_state_batched=is_state_batched,
-        wires=wires,
-        rng=rng,
-        prng_key=prng_key,
-    )
+    try:
+        samples = sample_state(
+            state,
+            shots=shots.total_shots,
+            is_state_batched=is_state_batched,
+            wires=wires,
+            rng=rng,
+            prng_key=prng_key,
+        )
+    except ValueError as e:
+        if str(e) != "probabilities contain NaN":
+            raise e
+        samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
     return _process_single_shot(samples)
 
@@ -352,7 +367,7 @@ def _measure_hamiltonian_with_samples(
         )
         return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
-    unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
+    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
@@ -380,7 +395,7 @@ def _measure_sum_with_samples(
         )
         return sum(results)
 
-    unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
+    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 

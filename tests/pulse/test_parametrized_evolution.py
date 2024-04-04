@@ -14,7 +14,7 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
-# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel
+# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access
 from functools import reduce
 import numpy as np
 
@@ -27,13 +27,79 @@ from pennylane.tape import QuantumTape
 from pennylane.devices import DefaultQubit, DefaultQubitLegacy
 
 
-class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
+class MyOp(qml.RX):
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
     has_adjoint = False
     has_decomposition = False
     has_diagonalizing_gates = False
+
+
+def amp0(p, t):
+    return p * t
+
+
+def amp1(p, t):
+    return p[0] * t + p[1]
+
+
+H0 = qml.PauliX(1) + amp0 * qml.PauliZ(0) + amp0 * qml.PauliY(1)
+params0_ = [0.5, 0.5]
+
+H1 = qml.PauliX(1) + amp0 * qml.PauliZ(0) + amp1 * qml.PauliY(1)
+params1_ = (0.5, [0.5, 0.5])
+
+example_pytree_evolutions = [
+    qml.pulse.ParametrizedEvolution(H0),
+    qml.pulse.ParametrizedEvolution(H0, params0_),
+    qml.pulse.ParametrizedEvolution(H0, t=0.3),
+    qml.pulse.ParametrizedEvolution(H0, params0_, t=0.5),
+    qml.pulse.ParametrizedEvolution(H0, params0_, t=[0.5, 1.0]),
+    qml.pulse.ParametrizedEvolution(H0, params0_, t=0.5, return_intermediate=True),
+    qml.pulse.ParametrizedEvolution(
+        H0, params0_, t=0.5, return_intermediate=True, complementary=True
+    ),
+    qml.pulse.ParametrizedEvolution(
+        H0, params0_, t=0.5, return_intermediate=True, complementary=True, atol=1e-4, rtol=1e-4
+    ),
+    qml.pulse.ParametrizedEvolution(
+        H0,
+        params0_,
+        t=0.5,
+        return_intermediate=True,
+        complementary=True,
+        atol=1e-4,
+        rtol=1e-4,
+        dense=True,
+    ),
+    qml.pulse.ParametrizedEvolution(H1, params1_, t=0.5),
+    qml.pulse.ParametrizedEvolution(H1, params1_, t=0.5, return_intermediate=True),
+]
+
+
+@pytest.mark.jax
+class TestPytree:
+    """Testing pytree related functionality"""
+
+    @pytest.mark.parametrize("evol", example_pytree_evolutions)
+    def test_flatten_unflatten_identity(self, evol):
+        """Test that flattening and unflattening is yielding the same parametrized evolution"""
+        assert evol._unflatten(*evol._flatten()) == evol
+
+
+@pytest.mark.jax
+def test_standard_validity():
+    """Run standard validity checks on the parametrized evolution."""
+
+    def f1(p, t):
+        return p * t
+
+    H = f1 * qml.PauliY(0)
+    params = (0.5,)
+
+    ev = qml.pulse.ParametrizedEvolution(H, params, 0.5)
+    qml.ops.functions.assert_valid(ev, skip_pickle=True)
 
 
 def time_independent_hamiltonian():
@@ -558,7 +624,7 @@ class TestIntegration:
         H = time_dependent_hamiltonian()
 
         dev = device_class(wires=2)
-        t = 2
+        t = 0.1
 
         def generator(params):
             time_step = 1e-3
@@ -658,28 +724,28 @@ class TestIntegration:
 
         coeffs = [1, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliX(2)]
-        H1 = qml.dot(coeffs, ops)
+        H1_ = qml.dot(coeffs, ops)
 
         def f3(p, t):
             return jnp.cos(t) * (p + 1)
 
         coeffs = [7, f3]
         ops = [qml.PauliX(0), qml.PauliX(2)]
-        H2 = qml.dot(coeffs, ops)
+        H2_ = qml.dot(coeffs, ops)
 
         dev = device_class(wires=8)
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit1(params):
-            qml.evolve(H1)(params[0], t=2)
-            qml.evolve(H2)(params[1], t=2)
+            qml.evolve(H1_)(params[0], t=2)
+            qml.evolve(H2_)(params[1], t=2)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit2(params):
-            qml.evolve(H1 + H2)(params, t=2)
+            qml.evolve(H1_ + H2_)(params, t=2)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
         params1 = [(1.0, 2.0), (3.0,)]
@@ -761,7 +827,7 @@ class TestIntegration:
 
 @pytest.mark.jax
 def test_map_wires():
-    """Test that map wires returns a new ParameterizedEvolution, with wires updated on
+    """Test that map wires returns a new ParametrizedEvolution, with wires updated on
     both the operator and the corresponding Hamiltonian"""
 
     def f1(p, t):

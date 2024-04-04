@@ -610,6 +610,7 @@ class TestPatternMatchingOptimization:
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
+    @pytest.mark.slow
     def test_vbe_adder_3_pattern_matching(self):
         """Test pattern matching algorithm for vbe_adder_3 with a CNOTs template."""
 
@@ -888,7 +889,7 @@ class TestPatternMatching:
 
         pattern = qml.tape.QuantumScript.from_queue(q_pattern)
         circuit_dag = commutation_dag(circuit)()
-        pattern_dag = commutation_dag(pattern)()
+        pattern_dag = commutation_dag(pattern)
 
         wires, target_wires, control_wires = _update_qubits(circuit_dag, [0, 5, 1, 2, 4])
 
@@ -997,7 +998,7 @@ class TestPatternMatching:
 
         pattern = qml.tape.QuantumScript.from_queue(q_pattern)
         circuit_dag = commutation_dag(circuit)()
-        pattern_dag = commutation_dag(pattern)()
+        pattern_dag = commutation_dag(pattern)
 
         max_matches = pattern_matching(circuit_dag, pattern_dag)
         expected_longest_match = [[1, 1], [2, 2], [3, 6]]
@@ -1034,7 +1035,7 @@ class TestPatternMatching:
 
         pattern = qml.tape.QuantumScript.from_queue(q_pattern)
         circuit_dag = commutation_dag(circuit)()
-        pattern_dag = commutation_dag(pattern)()
+        pattern_dag = commutation_dag(pattern)
 
         max_matches = [x.match for x in pattern_matching(circuit_dag, pattern_dag)]
         assert [[1, 6], [5, 9]] in max_matches

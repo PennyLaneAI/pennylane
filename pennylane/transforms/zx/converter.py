@@ -19,9 +19,10 @@ from typing import Sequence, Callable
 from collections import OrderedDict
 import numpy as np
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.op_transforms import OperationTransformError
-from pennylane.transforms.core import transform
+from pennylane.transforms import TransformError
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 
@@ -54,9 +55,15 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
     Args:
-        tape(QuantumTape, Operation): The PennyLane quantum circuit.
+        tape(QNode or QuantumTape or Callable or Operation): The PennyLane quantum circuit.
         expand_measurements(bool): The expansion will be applied on measurements that are not in the Z-basis and
             rotations will be added to the operations.
+
+    Returns:
+        graph (pyzx.Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the ZX graph in the form of a PyZX graph.
 
     **Example**
 
@@ -74,13 +81,13 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
             qml.RZ(p[0], wires=1),
             qml.RZ(p[1], wires=1),
             qml.RX(p[2], wires=0),
-            qml.PauliZ(wires=0),
+            qml.Z(0),
             qml.RZ(p[3], wires=1),
-            qml.PauliX(wires=1),
+            qml.X(1),
             qml.CNOT(wires=[0, 1]),
             qml.CNOT(wires=[1, 0]),
             qml.SWAP(wires=[0, 1]),
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
         params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
         g = circuit(params)
@@ -101,9 +108,9 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
                 qml.RZ(5 / 4 * np.pi, wires=1),
                 qml.RZ(3 / 4 * np.pi, wires=1),
                 qml.RX(0.1, wires=0),
-                qml.PauliZ(wires=0),
+                qml.Z(0),
                 qml.RZ(0.3, wires=1),
-                qml.PauliX(wires=1),
+                qml.X(1),
                 qml.CNOT(wires=[0, 1]),
                 qml.CNOT(wires=[1, 0]),
                 qml.SWAP(wires=[0, 1]),
@@ -131,7 +138,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
             @qml.transforms.to_zx
             @qml.qnode(device=dev)
             def mod_5_4():
-                qml.PauliX(wires=4),
+                qml.X(4),
                 qml.Hadamard(wires=4),
                 qml.CNOT(wires=[3, 4]),
                 qml.adjoint(qml.T(wires=[4])),
@@ -194,10 +201,10 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
                 qml.Hadamard(wires=[4]),
                 qml.CNOT(wires=[1, 4]),
                 qml.CNOT(wires=[0, 4]),
-                return qml.expval(qml.PauliZ(wires=0))
+                return qml.expval(qml.Z(0))
 
         The circuit contains 63 gates; 28 :func:`qml.T` gates, 28 :func:`qml.CNOT`, 6 :func:`qml.Hadmard` and
-        1 :func:`qml.PauliX`. We applied the ``qml.transforms.to_zx`` decorator in order to transform our circuit to
+        1 :func:`qml.X`. We applied the ``qml.transforms.to_zx`` decorator in order to transform our circuit to
         a ZX graph.
 
         You can get the PyZX graph by simply calling the QNode:
@@ -216,7 +223,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
         8
 
         If you give a closer look, the circuit contains now 53 gates; 8 :func:`qml.T` gates, 28 :func:`qml.CNOT`, 6 :func:`qml.Hadmard` and
-        1 :func:`qml.PauliX` and 10 :func:`qml.S`. We successfully reduced the T-count by 20 and have ten additional
+        1 :func:`qml.X` and 10 :func:`qml.S`. We successfully reduced the T-count by 20 and have ten additional
         S gates. The number of CNOT gates remained the same.
 
         The :func:`from_zx` transform can now convert the optimized circuit back into PennyLane operations:
@@ -227,16 +234,17 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
 
             wires = qml.wires.Wires([4, 3, 0, 2, 1])
             wires_map = dict(zip(tape_opt.wires, wires))
-            tape_opt_reorder = qml.map_wires(input=tape_opt, wire_map=wires_map)
+            tapes_opt_reorder, fn = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
+            tape_opt_reorder = fn(tapes_opt_reorder)
 
             @qml.qnode(device=dev)
             def mod_5_4():
                 for g in tape_opt_reorder:
                     qml.apply(g)
-                return qml.expval(qml.PauliZ(wires=0))
+                return qml.expval(qml.Z(0))
 
         >>> mod_5_4()
-        -0.9999999999999989
+        tensor(1., requires_grad=True)
 
     .. note::
 
@@ -246,11 +254,9 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
         Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
     """
     # If it is a simple operation just transform it to a tape
-    if not isinstance(tape, qml.operation.Operator):
+    if not isinstance(tape, Operator):
         if not isinstance(tape, (qml.tape.QuantumScript, qml.QNode)) and not callable(tape):
-            raise OperationTransformError(
-                "Input is not an Operator, tape, QNode, or quantum function"
-            )
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
         return _to_zx_transform(tape, expand_measurements=expand_measurements)
 
     return to_zx(QuantumScript([tape]))
@@ -302,7 +308,8 @@ def _to_zx_transform(
 
         consecutive_wires = Wires(range(len(res[0].wires)))
         consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires))
-        mapped_tape = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
+        mapped_tapes, fn = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
+        mapped_tape = fn(mapped_tapes)
 
         inputs = []
 
@@ -315,7 +322,7 @@ def _to_zx_transform(
             q_mapper.set_qubit(i, i)
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
-        stop_crit = qml.BooleanFn(lambda obj: obj.name in gate_types)
+        stop_crit = qml.BooleanFn(lambda obj: isinstance(obj, Operator) and obj.name in gate_types)
         mapped_tape = qml.tape.tape.expand_tape(
             mapped_tape, depth=10, stop_at=stop_crit, expand_measurements=expand_measurements
         )
@@ -336,7 +343,7 @@ def _to_zx_transform(
             else:
                 expanded_operations.append(op)
 
-        expanded_tape = QuantumScript(expanded_operations, mapped_tape.measurements, [])
+        expanded_tape = QuantumScript(expanded_operations, mapped_tape.measurements)
 
         _add_operations_to_graph(expanded_tape, graph, gate_types, q_mapper, c_mapper)
 
@@ -403,13 +410,13 @@ def from_zx(graph, decompose_phases=True):
             qml.RZ(p[0], wires=0),
             qml.RZ(p[1], wires=0),
             qml.RX(p[2], wires=1),
-            qml.PauliZ(wires=1),
+            qml.Z(1),
             qml.RZ(p[3], wires=0),
-            qml.PauliX(wires=0),
+            qml.X(0),
             qml.CNOT(wires=[1, 0]),
             qml.CNOT(wires=[0, 1]),
             qml.SWAP(wires=[1, 0]),
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
         params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
         g = circuit(params)
@@ -419,14 +426,14 @@ def from_zx(graph, decompose_phases=True):
     You can check that the operations are similar but some were decomposed in the process.
 
     >>> pennylane_tape.operations
-    [PauliZ(wires=[0]),
+    [Z(0),
      T(wires=[0]),
      RX(0.1, wires=[1]),
-     PauliZ(wires=[0]),
+     Z(0),
      Adjoint(T(wires=[0])),
-     PauliZ(wires=[1]),
+     Z(1),
      RZ(0.3, wires=[0]),
-     PauliX(wires=[0]),
+     X(0),
      CNOT(wires=[1, 0]),
      CNOT(wires=[0, 1]),
      CNOT(wires=[1, 0]),
@@ -535,7 +542,7 @@ def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
                 )
                 return [op]
             if param.numerator in (3, 5):
-                op1 = qml.PauliZ(wires=qubit_1)
+                op1 = qml.Z(qubit_1)
                 op2 = (
                     qml.adjoint(qml.T(wires=qubit_1))
                     if param.numerator == 3
@@ -543,7 +550,7 @@ def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
                 )
                 return [op1, op2]
         if param == 1:
-            op = qml.PauliZ(wires=qubit_1) if type_1 == VertexType.Z else qml.PauliX(wires=qubit_1)
+            op = qml.Z(qubit_1) if type_1 == VertexType.Z else qml.X(qubit_1)
             return [op]
         if param != 0:
             scaled_param = np.pi * float(param)

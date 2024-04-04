@@ -114,6 +114,13 @@ class Shots:
     >>> shots.total_shots, shots.shot_vector
     (1210, (ShotCopies(10 shots x 1), ShotCopies(100 shots x 4), ShotCopies(200 shots x 4)))
 
+    Example constructing a Shots instance by multiplying an existing one by an int or float:
+
+    >>> Shots(100) * 2
+    Shots(total_shots=200, shot_vector=(ShotCopies(200 shots x 1),))
+    >>> Shots([7, (100, 2)]) * 1.5
+    Shots(total_shots=310, shot_vector=(ShotCopies(10 shots x 1), ShotCopies(150 shots x 2)))
+
     One should also note that specifying a single tuple of length 2 is considered two different
     shot values, and *not* a tuple-pair representing shots and copies to avoid special behaviour
     depending on the iterable type:
@@ -221,6 +228,21 @@ class Shots:
 
     def __bool__(self):
         return self.total_shots is not None
+
+    def __mul__(self, scalar):
+        if not isinstance(scalar, (int, float)):
+            raise TypeError("Can't multiply Shots with non-integer or float type.")
+        if self.total_shots is None:
+            return self
+
+        scaled_shot_vector = tuple(
+            ShotCopies(int(i.shots * scalar), i.copies) for i in self.shot_vector
+        )
+
+        return self.__class__(scaled_shot_vector)
+
+    def __rmul__(self, scalar):
+        return self.__mul__(scalar)
 
     @property
     def has_partitioned_shots(self):

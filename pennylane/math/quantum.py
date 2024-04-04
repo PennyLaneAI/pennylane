@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Differentiable quantum functions"""
-# pylint: disable=import-outside-toplevel
-import itertools
 import functools
 
+# pylint: disable=import-outside-toplevel
+import itertools
 from string import ascii_letters as ABC
+
 from autoray import numpy as np
 from numpy import float64
 
 import pennylane as qml
-
 from . import single_dispatch  # pylint:disable=unused-import
+from .matrix_manipulation import _permute_dense_matrix
 from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
 from .utils import is_abstract, allclose, cast, convert_like, cast_like
-from .matrix_manipulation import _permute_dense_matrix
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -55,7 +55,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     Consider the following ansatz and observable list:
 
-    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(2)]
+    >>> obs_list = [qml.X(0) @ qml.Z(1), qml.Y(2)]
     >>> ansatz = qml.templates.StronglyEntanglingLayers
 
     We can construct a QNode to output the probability distribution in the shared eigenbasis of the
@@ -79,14 +79,13 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
     >>> weights = np.random.random(shape, requires_grad=True)
     >>> cov = qml.math.cov_matrix(circuit(weights), obs_list)
     >>> cov
-    array([[0.98707611, 0.03665537],
-         [0.03665537, 0.99998377]])
+    tensor([[0.9275379 , 0.05233832], [0.05233832, 0.99335545]], requires_grad=True)
 
     Autodifferentiation is fully supported using all interfaces.
     Here we use autograd:
 
     >>> cost_fn = lambda weights: qml.math.cov_matrix(circuit(weights), obs_list)[0, 1]
-    >>> qml.grad(cost_fn)(weights)[0]
+    >>> qml.grad(cost_fn)(weights)
     array([[[ 4.94240914e-17, -2.33786398e-01, -1.54193959e-01],
             [-3.05414996e-17,  8.40072236e-04,  5.57884080e-04],
             [ 3.01859411e-17,  8.60411436e-03,  6.15745204e-04]],
@@ -239,7 +238,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
 
     # Compute the partial trace
     traced_wires = [x for x in consecutive_indices if x not in indices]
-    density_matrix = _batched_partial_trace(density_matrix, traced_wires)
+    density_matrix = partial_trace(density_matrix, traced_wires, c_dtype=c_dtype)
 
     if batch_dim is None:
         density_matrix = density_matrix[0]
@@ -248,49 +247,64 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
-def _batched_partial_trace(density_matrix, indices):
+def partial_trace(matrix, indices, c_dtype="complex128"):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
-        density_matrix (tensor_like): 3D density matrix tensor. This tensor should be of size
-            ``(batch_dim, 2**N, 2**N)``, for some integer number of wires``N``.
+        matrix (tensor_like): 2D or 3D density matrix tensor. For a 2D tensor, the size is assumed to be
+            ``(2**n, 2**n)``, for some integer number of wires ``n``. For a 3D tensor, the first dimension is assumed to be the batch dimension, ``(batch_dim, 2**N, 2**N)``.
+
         indices (list(int)): List of indices to be traced.
 
     Returns:
-        tensor_like: (reduced) Density matrix of size ``(batch_dim, 2**len(wires), 2**len(wires))``
+        tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
+
+    .. seealso:: :func:`pennylane.math.reduce_dm`, and :func:`pennylane.math.reduce_statevector`
 
     **Example**
 
-    >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    ...               [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
-    >>> _batched_partial_trace(x, indices=[0])
-    array([[[1, 0],
-            [0, 0]],
+    We can compute the partial trace of the matrix ``x`` with respect to its 0th index.
 
-           [[0, 0],
-            [0, 1]]])
+    >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    >>> partial_trace(x, indices=[0])
+    array([[1, 0], [0, 0]])
+
+    We can also pass a batch of matrices ``x`` to the function and return the partial trace of each matrix with respect to each matrix's 0th index.
+
+    >>> x = np.array([
+        [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    ])
+    >>> partial_trace(x, indices=[0])
+    array([[[1, 0], [0, 0]], [[0, 0], [0, 1]]])
+
+    The partial trace can also be computed with respect to multiple indices within different frameworks such as TensorFlow.
 
     >>> x = tf.Variable([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    ...                  [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
-    >>> _batched_partial_trace(x, indices=[1])
+    ... [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
+    >>> partial_trace(x, indices=[1])
     <tf.Tensor: shape=(2, 2, 2), dtype=complex128, numpy=
-    array([[[1.+0.j, 0.+0.j],
-            [0.+0.j, 0.+0.j]],
+    array([[[1.+0.j, 0.+0.j], [0.+0.j, 0.+0.j]], [[1.+0.j, 0.+0.j], [0.+0.j, 0.+0.j]]])>
 
-           [[1.+0.j, 0.+0.j],
-            [0.+0.j, 0.+0.j]]])>
     """
     # Autograd does not support same indices sum in backprop, and tensorflow
     # has a limit of 8 dimensions if same indices are used
-    if get_interface(density_matrix) in ["autograd", "tensorflow"]:
-        return _batched_partial_trace_nonrep_indices(density_matrix, indices)
+    matrix = cast(matrix, dtype=c_dtype)
+    if qml.math.ndim(matrix) == 2:
+        is_batched = False
+        batch_dim, dim = 1, matrix.shape[1]
+    else:
+        is_batched = True
+        batch_dim, dim = matrix.shape[:2]
+
+    if get_interface(matrix) in ["autograd", "tensorflow"]:
+        return _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim)
 
     # Dimension and reshape
-    batch_dim, dim = density_matrix.shape[:2]
     num_indices = int(np.log2(dim))
     rho_dim = 2 * num_indices
 
-    density_matrix = np.reshape(density_matrix, [batch_dim] + [2] * 2 * num_indices)
+    matrix = np.reshape(matrix, [batch_dim] + [2] * 2 * num_indices)
     indices = np.sort(indices)
 
     # For loop over wires
@@ -304,32 +318,31 @@ def _batched_partial_trace(density_matrix, indices):
         state_indices = "".join(state_indices)
 
         einsum_indices = f"a{state_indices}"
-        density_matrix = einsum(einsum_indices, density_matrix)
+        matrix = einsum(einsum_indices, matrix)
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        density_matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
+        matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
     )
-    return reduced_density_matrix
+    return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 
 
-def _batched_partial_trace_nonrep_indices(density_matrix, indices):
+def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.
     """
-    # Dimension and reshape
-    batch_dim, dim = density_matrix.shape[:2]
+
     num_indices = int(np.log2(dim))
     rho_dim = 2 * num_indices
-    density_matrix = np.reshape(density_matrix, [batch_dim] + [2] * 2 * num_indices)
+    matrix = np.reshape(matrix, [batch_dim] + [2] * 2 * num_indices)
 
-    kraus = cast(np.eye(2), density_matrix.dtype)
+    kraus = cast(np.eye(2), matrix.dtype)
 
     kraus = np.reshape(kraus, (2, 1, 2))
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
 
-    kraus = convert_like(kraus, density_matrix)
-    kraus_dagger = convert_like(kraus_dagger, density_matrix)
+    kraus = convert_like(kraus, matrix)
+    kraus_dagger = convert_like(kraus_dagger, matrix)
     # For loop over wires
     for target_wire in indices:
         # Tensor indices of density matrix
@@ -361,13 +374,13 @@ def _batched_partial_trace_nonrep_indices(density_matrix, indices):
             f"{kraus_index}{new_row_indices}{row_indices}, a{state_indices},"
             f"{kraus_index}{col_indices}{new_col_indices}->a{new_state_indices}"
         )
-        density_matrix = einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
+        matrix = einsum(einsum_indices, kraus, matrix, kraus_dagger)
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        density_matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
+        matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
     )
-    return reduced_density_matrix
+    return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 
 
 def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
@@ -569,7 +582,7 @@ def _compute_purity(density_matrix):
 
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the Von Neumann entropy from a density matrix on a given subsystem. It supports all
-    interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+    interfaces (NumPy, Autograd, Torch, TensorFlow and Jax).
 
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
@@ -653,7 +666,7 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     The mutual information is a measure of correlation between two subsystems.
     More specifically, it quantifies the amount of information obtained about
     one system by measuring the other system. It supports all interfaces
-    (Numpy, Autograd, Torch, Tensorflow and Jax).
+    (NumPy, Autograd, Torch, TensorFlow and Jax).
 
     Each state must be given as a density matrix. To find the mutual information given
     a pure state, call :func:`~.math.dm_from_state_vector` first.
@@ -923,7 +936,7 @@ def _check_state_vector(state_vector):
 
 def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the maximum entropy of a density matrix on a given subsystem. It supports all
-    interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+    interfaces (NumPy, Autograd, Torch, TensorFlow and Jax).
 
     .. math::
         S_{\text{max}}( \rho ) = \log( \text{rank} ( \rho ))
@@ -1014,6 +1027,90 @@ def _compute_max_entropy(density_matrix, base):
     maximum_entropy = qml.math.log(rank) / div_base
 
     return maximum_entropy
+
+
+def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
+    r"""Compute the minimum entropy from a density matrix.
+
+    .. math::
+        S_{\text{min}}( \rho ) = -\log( \max_{i} ( p_{i} ))
+
+    Args:
+        state (tensor_like): Density matrix of shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
+        indices (list(int)): List of indices in the considered subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: The minimum entropy of the considered subsystem.
+
+    **Example**
+
+    The minimum entropy of a subsystem for any state vector can be obtained by first calling
+    :func:`~.math.dm_from_state_vector` on the input. Here is an example for the
+    maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
+
+    >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> x = dm_from_state_vector(x)
+    >>> min_entropy(x, indices=[0])
+    0.6931472
+
+    The logarithm base can be changed. For example:
+
+    >>> min_entropy(x, indices=[0], base=2)
+    1.0
+
+    The minimum entropy can be obtained by providing a quantum state as a density matrix. For example:
+
+    >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
+    >>> min_entropy(y, indices=[0])
+    0.6931472
+
+    The Von Neumann entropy is always greater than the minimum entropy.
+
+    >>> x = [np.cos(np.pi/8), 0, 0, -1j*np.sin(np.pi/8)]
+    >>> x = dm_from_state_vector(x)
+    >>> vn_entropy(x, indices=[1])
+    0.4164955
+    >>> min_entropy(x, indices=[1])
+    0.1583472
+
+    """
+    density_matrix = reduce_dm(state, indices, check_state, c_dtype)
+    minimum_entropy = _compute_min_entropy(density_matrix, base)
+
+    return minimum_entropy
+
+
+def _compute_min_entropy(density_matrix, base):
+    r"""Compute the minimum entropy from a density matrix
+
+    Args:
+        density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
+        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
+
+    Returns:
+        float: Minimum entropy of the density matrix.
+
+    **Example**
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> _compute_min_entropy(x)
+    0.6931472
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> _compute_min_entropy(x, base=2)
+    1.0
+    """
+    # Change basis if necessary
+    div_base = np.log(base) if base else 1
+
+    evs, _ = qml.math.linalg.eigh(density_matrix)
+    evs = qml.math.real(evs)
+    minimum_entropy = -qml.math.log(qml.math.max(evs)) / div_base
+
+    return minimum_entropy
 
 
 def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):

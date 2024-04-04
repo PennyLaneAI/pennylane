@@ -21,6 +21,8 @@ from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
+from pennylane.compiler import compiler
+from pennylane.compiler.compiler import CompileError
 
 from .symbolicop import SymbolicOp
 
@@ -28,6 +30,7 @@ from .symbolicop import SymbolicOp
 # pylint: disable=no-member
 def adjoint(fn, lazy=True):
     """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
+    :func:`~.qjit` compatible.
 
     Args:
         fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
@@ -36,6 +39,7 @@ def adjoint(fn, lazy=True):
     Keyword Args:
         lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a ``Adjoint`` class
             and handled later. If ``lazy=False``, operation-specific adjoint decompositions are first attempted.
+            Setting ``lazy=False`` is not supported when used with :func:`~.qjit`.
 
     Returns:
         (function or :class:`~.operation.Operator`): If an Operator is provided, returns an Operator that is the adjoint.
@@ -44,7 +48,17 @@ def adjoint(fn, lazy=True):
 
     .. note::
 
-        The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and observables may have different adjoint and inverse operators.
+        The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and
+        observables may have different adjoint and inverse operators.
+
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        See :func:`catalyst.adjoint` for more details.
+
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
 
     .. note::
 
@@ -69,7 +83,7 @@ def adjoint(fn, lazy=True):
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit2(y):
     ...     qml.adjoint(qml.RY(y, wires=0))
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit2)("y"))
     0: ──RY(y)†─┤  <Z>
     >>> print(qml.draw(circuit2, expansion_strategy="device")(0.1))
@@ -93,13 +107,41 @@ def adjoint(fn, lazy=True):
         def circuit(a):
             my_ops(a, wire=0)
             qml.adjoint(my_ops)(a, wire=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     Printing this out, we can see that the inverse quantum
     function has indeed been applied:
 
     >>> print(qml.draw(circuit)(0.2))
     0: ──RX(0.20)──SX──SX†──RX(0.20)†─┤  <Z>
+
+    **Example with compiler**
+
+    The adjoint used in a compilation context can be applied on control flow.
+
+    .. code-block:: python
+
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def workflow(theta, n, wires):
+            def func():
+                @qml.for_loop(0, n, 1)
+                def loop_fn(i):
+                    qml.RX(theta, wires=wires)
+
+                loop_fn()
+            qml.adjoint(func)()
+            return qml.probs()
+
+    >>> workflow(jnp.pi/2, 3, 0)
+    array([0.5, 0.5])
+
+    .. warning::
+
+        The Catalyst adjoint function does not support performing the adjoint
+        of quantum functions that contain mid-circuit measurements.
 
     .. details::
         :title: Lazy Evaluation
@@ -109,14 +151,20 @@ def adjoint(fn, lazy=True):
         an :meth:`.Operator.adjoint` method is the object wrapped with the :class:`~.ops.op_math.Adjoint`
         wrapper class.
 
-        >>> qml.adjoint(qml.PauliZ(0), lazy=False)
-        PauliZ(wires=[0])
+        >>> qml.adjoint(qml.Z(0), lazy=False)
+        Z(0)
         >>> qml.adjoint(qml.RX, lazy=False)(1.0, wires=0)
         RX(-1.0, wires=[0])
         >>> qml.adjoint(qml.S, lazy=False)(0)
         Adjoint(S)(wires=[0])
 
     """
+    if active_jit := compiler.active_compiler():
+        if lazy is False:
+            raise CompileError("Setting lazy=False is not supported with qjit.")
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if not callable(fn):
@@ -172,7 +220,7 @@ class Adjoint(SymbolicOp):
     array([[1.-0.j, 0.-0.j],
        [0.-0.j, 0.-1.j]])
     >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
-    (PauliX(wires=[0]), 0.5)
+    (X(0), 0.5)
     >>> Adjoint(qml.RX(1.234, wires=0)).data
     (1.234,)
 
@@ -194,13 +242,13 @@ class Adjoint(SymbolicOp):
         If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
         well.
 
-        >>> op = Adjoint(1.0 * qml.PauliX(0))
+        >>> op = Adjoint(1.0 * qml.X(0))
         >>> isinstance(op, qml.operation.Observable)
         True
         >>> isinstance(op, qml.operation.Operation)
         False
-        >>> Adjoint(qml.PauliX(0)) @ qml.PauliY(1)
-        Adjoint(PauliX)(wires=[0]) @ PauliY(wires=[1])
+        >>> Adjoint(qml.X(0)) @ qml.Y(1)
+        (Adjoint(X(0))) @ Y(1)
 
     """
 
@@ -240,10 +288,6 @@ class Adjoint(SymbolicOp):
     def __repr__(self):
         return f"Adjoint({self.base})"
 
-    # pylint: disable=protected-access
-    def _check_batching(self, params):
-        self.base._check_batching(params)
-
     @property
     def ndim_params(self):
         return self.base.ndim_params
@@ -253,7 +297,7 @@ class Adjoint(SymbolicOp):
         return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
 
     def matrix(self, wire_order=None):
-        if isinstance(self.base, qml.Hamiltonian):
+        if isinstance(self.base, qml.ops.Hamiltonian):
             base_matrix = qml.matrix(self.base, wire_order=wire_order)
         else:
             base_matrix = self.base.matrix(wire_order=wire_order)
@@ -357,7 +401,7 @@ class AdjointOperation(Adjoint, Operation):
         return self.base.has_generator
 
     def generator(self):
-        return -1.0 * self.base.generator()
+        return -1 * self.base.generator()
 
 
 class AdjointObs(Adjoint, Observable):

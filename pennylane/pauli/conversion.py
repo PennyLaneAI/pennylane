@@ -21,7 +21,17 @@ from typing import Union, Tuple
 
 import pennylane as qml
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import (
+    Hamiltonian,
+    LinearCombination,
+    Identity,
+    PauliX,
+    PauliY,
+    PauliZ,
+    Prod,
+    SProd,
+    Sum,
+)
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
@@ -70,35 +80,35 @@ def _generalized_pauli_decompose(
        -1. +0.j  , -0.5+0.j  ,  1. -0.j  ,  0. -0.25j, -0.5+0.j  ,
        -0.5+0.j  ,  0. +0.25j])
     >>> obs
-    [Identity(wires=[0]) @ Identity(wires=[1]),
-    Identity(wires=[0]) @ PauliX(wires=[1]),
-    Identity(wires=[0]) @ PauliY(wires=[1]),
-    Identity(wires=[0]) @ PauliZ(wires=[1]),
-    PauliX(wires=[0]) @ Identity(wires=[1]),
-    PauliX(wires=[0]) @ PauliX(wires=[1]),
-    PauliX(wires=[0]) @ PauliZ(wires=[1]),
-    PauliY(wires=[0]) @ PauliY(wires=[1]),
-    PauliZ(wires=[0]) @ Identity(wires=[1]),
-    PauliZ(wires=[0]) @ PauliX(wires=[1]),
-    PauliZ(wires=[0]) @ PauliY(wires=[1]),
-    PauliZ(wires=[0]) @ PauliZ(wires=[1])]
+    [I(0) @ I(1),
+    I(0) @ X(1),
+    I(0) @ Y(1),
+    I(0) @ Z(1),
+    X(0) @ I(1),
+    X(0) @ X(1),
+    X(0) @ Z(1),
+    Y(0) @ Y(1),
+    Z(0) @ I(1),
+    Z(0) @ X(1),
+    Z(0) @ Y(1),
+    Z(0) @ Z(1)]
 
     We can also set custom wires using the ``wire_order`` argument:
 
     >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A, wire_order=['a', 'b'])
     >>> obs
-    [Identity(wires=['a']) @ Identity(wires=['b']),
-    Identity(wires=['a']) @ PauliX(wires=['b']),
-    Identity(wires=['a']) @ PauliY(wires=['b']),
-    Identity(wires=['a']) @ PauliZ(wires=['b']),
-    PauliX(wires=['a']) @ Identity(wires=['b']),
-    PauliX(wires=['a']) @ PauliX(wires=['b']),
-    PauliX(wires=['a']) @ PauliZ(wires=['b']),
-    PauliY(wires=['a']) @ PauliY(wires=['b']),
-    PauliZ(wires=['a']) @ Identity(wires=['b']),
-    PauliZ(wires=['a']) @ PauliX(wires=['b']),
-    PauliZ(wires=['a']) @ PauliY(wires=['b']),
-    PauliZ(wires=['a']) @ PauliZ(wires=['b'])]
+    [I('a') @ I('b'),
+    I('a') @ X('b'),
+    I('a') @ Y('b'),
+    I('a') @ Z('b'),
+    X('a') @ I('b'),
+    X('a') @ X('b'),
+    X('a') @ Z('b'),
+    Y('a') @ Y('b'),
+    Z('a') @ I('b'),
+    Z('a') @ X('b'),
+    Z('a') @ Y('b'),
+    Z('a') @ Z('b')]
 
     .. details::
         :title: Advanced Usage Details
@@ -111,7 +121,7 @@ def _generalized_pauli_decompose(
         >>> coeffs
         ([-1. +0.j , -1. +0.5j, -0.5-1.j , -1. +0.j ])
         >>> obs
-        [Identity(wires=[0]), PauliX(wires=[0]), PauliY(wires=[0]), PauliZ(wires=[0])]
+        [I(0), X(0), Y(0), Z(0)]
 
         We can also use the method within a differentiable workflow and obtain gradients:
 
@@ -121,7 +131,7 @@ def _generalized_pauli_decompose(
         ... def circuit(A):
         ...    coeffs, _ = qml.pauli.conversion._generalized_pauli_decompose(A, padding=True)
         ...    qml.RX(qml.math.real(coeffs[2]), 0)
-        ...    return qml.expval(qml.PauliZ(0))
+        ...    return qml.expval(qml.Z(0))
         >>> qml.grad(circuit)(A)
         array([[0.+0.j        , 0.+0.23971277j]])
 
@@ -325,7 +335,7 @@ def pauli_decompose(
             }
         )
 
-    return Hamiltonian(coeffs, obs)
+    return qml.Hamiltonian(coeffs, obs)
 
 
 def pauli_sentence(op):
@@ -340,10 +350,24 @@ def pauli_sentence(op):
     Returns:
         .PauliSentence: the PauliSentence representation of an arithmetic operator or Hamiltonian
     """
-    if (ps := op._pauli_rep) is not None:  # pylint: disable=protected-access
+
+    if isinstance(op, PauliWord):
+        return PauliSentence({op: 1.0})
+
+    if isinstance(op, PauliSentence):
+        return op
+
+    if (ps := op.pauli_rep) is not None:
         return ps
 
     return _pauli_sentence(op)
+
+
+def is_pauli_sentence(op):
+    """Returns True of the operator is a PauliSentence and False otherwise."""
+    if op.pauli_rep is not None:
+        return True
+    return False
 
 
 @singledispatch
@@ -378,13 +402,13 @@ def _(op: Tensor):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
     factors = (_pauli_sentence(factor) for factor in op.obs)
-    return reduce(lambda a, b: a * b, factors)
+    return reduce(lambda a, b: a @ b, factors)
 
 
 @_pauli_sentence.register
 def _(op: Prod):
     factors = (_pauli_sentence(factor) for factor in op)
-    return reduce(lambda a, b: a * b, factors)
+    return reduce(lambda a, b: a @ b, factors)
 
 
 @_pauli_sentence.register
@@ -395,22 +419,39 @@ def _(op: SProd):
     return ps
 
 
-@_pauli_sentence.register
-def _(op: Hamiltonian):
+@_pauli_sentence.register(qml.ops.Hamiltonian)
+def _(op: qml.ops.Hamiltonian):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
-    summands = []
-    for coeff, term in zip(*op.terms()):
-        ps = _pauli_sentence(term)
-        for pw, sub_coeff in ps.items():
-            ps[pw] = coeff * sub_coeff
-        summands.append(ps)
+    def term_2_pauli_word(term):
+        if isinstance(term, Tensor):
+            pw = {obs.wires[0]: obs.name[-1] for obs in term.non_identity_obs}
+        elif isinstance(term, Identity):
+            pw = {}
+        else:
+            pw = dict([(term.wires[0], term.name[-1])])
+        return PauliWord(pw)
 
-    return reduce(lambda a, b: a + b, summands) if len(summands) > 0 else PauliSentence()
+    ps = PauliSentence()
+    for coeff, term in zip(*op.terms()):
+        sub_ps = PauliSentence({term_2_pauli_word(term): coeff})
+        ps += sub_ps
+
+    return ps
+
+
+@_pauli_sentence.register(LinearCombination)
+def _(op: LinearCombination):
+    if not all(is_pauli_word(o) for o in op.ops):
+        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
+
+    return op._build_pauli_rep()  # pylint: disable=protected-access
 
 
 @_pauli_sentence.register
 def _(op: Sum):
-    summands = (_pauli_sentence(summand) for summand in op)
-    return reduce(lambda a, b: a + b, summands)
+    ps = PauliSentence()
+    for term in op:
+        ps += _pauli_sentence(term)
+    return ps

@@ -74,7 +74,7 @@ The easiest way of computing expectation values with classical shadows in PennyL
 
 .. code-block:: python3
 
-    H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+    H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
     dev = qml.device("default.qubit", wires=range(2), shots=10000)
     @qml.qnode(dev)
@@ -89,7 +89,7 @@ The easiest way of computing expectation values with classical shadows in PennyL
 The big advantage of this way of computing expectation values is that it is differentiable.
 
 >>> qnode(x)
-tensor(1.827, requires_grad=True)
+array(1.9242)
 >>> qml.grad(qnode)(x)
 -0.44999999999999984
 

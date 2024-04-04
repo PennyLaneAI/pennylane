@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 @transform
@@ -31,15 +31,13 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     and provides a function to recombine the results.
 
     Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value
-            of the Hamiltonian
+        tape (QNode or QuantumTape or Callable): the quantum circuit used when calculating the
+            expectation value of the Hamiltonian
         group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
             If grouping information can be found in the Hamiltonian, it will be used even if group=False.
 
     Returns:
-        tuple[Sequence[.QuantumTape], Callable]: Returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions to compute the expectation value.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -47,13 +45,13 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     .. code-block:: python3
 
-        H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+        H = qml.Y(2) @ qml.Z(1) + 0.5 * qml.Z(2) + qml.Z(1)
 
     and a tape of the form,
 
     .. code-block:: python3
 
-        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
         tape = qml.tape.QuantumTape(ops, [qml.expval(H)])
 
     We can use the ``hamiltonian_expand`` transform to generate new tapes and a classical
@@ -64,7 +62,7 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     We can evaluate these tapes on a device:
 
     >>> dev = qml.device("default.qubit", wires=3)
-    >>> res = dev.batch_execute(tapes)
+    >>> res = dev.execute(tapes)
 
     Applying the processing function results in the expectation value of the Hamiltonian:
 
@@ -76,18 +74,18 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 2., 3.], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+        H = qml.Hamiltonian([1., 2., 3.], [qml.Z(0), qml.X(1), qml.X(0)])
 
         tape = qml.tape.QuantumTape(ops, [qml.expval(H)])
 
-    With grouping, the Hamiltonian gets split into two groups of observables (here ``[qml.PauliZ(0)]`` and
-    ``[qml.PauliX(1), qml.PauliX(0)]``):
+    With grouping, the Hamiltonian gets split into two groups of observables (here ``[qml.Z(0)]`` and
+    ``[qml.X(1), qml.X(0)]``):
 
     >>> tapes, fn = qml.transforms.hamiltonian_expand(tape)
     >>> len(tapes)
     2
 
-    Without grouping it gets split into three groups (``[qml.PauliZ(0)]``, ``[qml.PauliX(1)]`` and ``[qml.PauliX(0)]``):
+    Without grouping it gets split into three groups (``[qml.Z(0)]``, ``[qml.X(1)]`` and ``[qml.X(0)]``):
 
     >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
     >>> len(tapes)
@@ -97,7 +95,7 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     .. code-block:: python3
 
-        obs = [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)]
+        obs = [qml.Z(0), qml.X(1), qml.X(0)]
         coeffs = [1., 2., 3.]
         H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
 
@@ -115,7 +113,10 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     if (
         len(tape.measurements) != 1
-        or not isinstance(hamiltonian := tape.measurements[0].obs, qml.Hamiltonian)
+        or not isinstance(
+            hamiltonian := tape.measurements[0].obs,
+            (qml.ops.Hamiltonian, qml.ops.LinearCombination),
+        )
         or not isinstance(tape.measurements[0], ExpectationMP)
     ):
         raise ValueError(
@@ -224,18 +225,18 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
 
     .. code-block:: python3
 
-        S = qml.sum(qml.prod(qml.PauliY(2), qml.PauliZ(1)), qml.s_prod(0.5, qml.PauliZ(2)), qml.PauliZ(1))
+        S = qml.sum(qml.prod(qml.Y(2), qml.Z(1)), qml.s_prod(0.5, qml.Z(2)), qml.Z(1))
 
     and a tape of the form,
 
     .. code-block:: python3
 
-        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
         measurements = [
             qml.expval(S),
-            qml.expval(qml.PauliZ(0)),
-            qml.expval(qml.PauliX(1)),
-            qml.expval(qml.PauliZ(2))
+            qml.expval(qml.Z(0)),
+            qml.expval(qml.X(1)),
+            qml.expval(qml.Z(2))
         ]
         tape = qml.tape.QuantumTape(ops, measurements)
 
@@ -245,18 +246,18 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
     >>> for tape in tapes:
     ...     print(tape.measurements)
-    [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
-    [expval(PauliZ(wires=[2]))]
-    [expval(PauliZ(wires=[1]))]
-    [expval(PauliZ(wires=[0]))]
-    [expval(PauliX(wires=[1]))]
+    [expval(Y(2) @ Z(1))]
+    [expval(Z(2))]
+    [expval(Z(1))]
+    [expval(Z(0))]
+    [expval(X(1))]
 
     Five tapes are generated: the first three contain the summands of the `Sum` operator,
     and the last two contain the remaining observables. Note that the scalars of the scalar products
     have been removed. In the processing function, these values will be multiplied by the result obtained
     from executing the tapes.
 
-    Additionally, the observable expval(PauliZ(wires=[2])) occurs twice in the original tape, but only once
+    Additionally, the observable expval(Z(2)) occurs twice in the original tape, but only once
     in the transformed tapes. When there are multipe identical measurements in the circuit, the measurement
     is performed once and the outcome is copied when obtaining the final result. This will also be resolved
     when the processing function is applied.
@@ -264,7 +265,7 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     We can evaluate these tapes on a device:
 
     >>> dev = qml.device("default.qubit", wires=3)
-    >>> res = dev.batch_execute(tapes)
+    >>> res = dev.execute(tapes)
 
     Applying the processing function results in the expectation value of the Hamiltonian:
 
@@ -276,19 +277,19 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
 
     .. code-block:: python3
 
-        S = qml.sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
+        S = qml.sum(qml.Z(0), qml.s_prod(2, qml.X(1)), qml.s_prod(3, qml.X(0)))
 
-        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
         tape = qml.tape.QuantumTape(ops, [qml.expval(S)])
 
     With grouping, the Sum gets split into two groups of observables (here
-    ``[qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1))]`` and ``[qml.s_prod(3, qml.PauliX(0))]``):
+    ``[qml.Z(0), qml.s_prod(2, qml.X(1))]`` and ``[qml.s_prod(3, qml.X(0))]``):
 
     >>> tapes, fn = qml.transforms.sum_expand(tape, group=True)
     >>> for tape in tapes:
     ...     print(tape.measurements)
-    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]
-    [expval(PauliX(wires=[0]))]
+    [expval(Z(0)), expval(X(1))]
+    [expval(X(0))]
     """
     # Populate these 2 dictionaries with the unique measurement objects, the index of the
     # initial measurement on the tape and the coefficient

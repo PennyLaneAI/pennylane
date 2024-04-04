@@ -70,7 +70,7 @@ class DefaultQubitTorch(DefaultQubitLegacy):
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True)
     >>> res = circuit(weights)
@@ -99,7 +99,7 @@ class DefaultQubitTorch(DefaultQubitLegacy):
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True, device='cuda')
     >>> res = circuit(weights)
@@ -218,9 +218,7 @@ class DefaultQubitTorch(DefaultQubitLegacy):
                 ),
             )
 
-        ops_and_obs = circuit.operations + circuit.observables
-
-        par_torch_device = self._get_parameter_torch_device(ops_and_obs)
+        par_torch_device = self._get_parameter_torch_device(circuit.operations)
 
         if not self._torch_device_specified:
             self._torch_device = par_torch_device

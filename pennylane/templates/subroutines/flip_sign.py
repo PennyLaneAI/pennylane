@@ -88,6 +88,7 @@ class FlipSign(Operation):
                 raise ValueError(
                     "expected an integer equal or greater than zero for basic flipping state"
                 )
+        n = tuple(n)
 
         if len(wires) != len(n):
             raise ValueError(
@@ -141,13 +142,11 @@ class FlipSign(Operation):
         op_list = []
 
         if arr_bin[-1] == 0:
-            op_list.append(qml.PauliX(wires[-1]))
+            op_list.append(qml.X(wires[-1]))
 
-        op_list.append(
-            qml.ctrl(qml.PauliZ(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
-        )
+        op_list.append(qml.ctrl(qml.Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
 
         if arr_bin[-1] == 0:
-            op_list.append(qml.PauliX(wires[-1]))
+            op_list.append(qml.X(wires[-1]))
 
         return op_list

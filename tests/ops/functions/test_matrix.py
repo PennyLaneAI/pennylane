@@ -16,6 +16,7 @@ Unit tests for the get_unitary_matrix transform
 """
 # pylint: disable=too-few-public-methods,too-many-function-args
 from functools import reduce, partial
+from warnings import catch_warnings
 
 import pytest
 
@@ -23,7 +24,8 @@ from gate_data import I, X, Y, Z, H, S, CNOT, Rotx as RX, Roty as RY
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import TransformError
+from pennylane.pauli import PauliWord, PauliSentence
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -58,7 +60,7 @@ class TestSingleOperation:
     def test_non_parametric_gates_qfunc(self, op_class):
         """Verify that the matrices of non-parametric one qubit gates is correct
         when provided as a qfunc"""
-        res = qml.matrix(op_class)(wires=0)
+        res = qml.matrix(op_class, wire_order=[0])(wires=0)
         expected = op_class(wires=0).matrix()
         assert np.allclose(res, expected)
 
@@ -92,7 +94,7 @@ class TestSingleOperation:
     def test_parametric_gates_qfunc(self, op_class):
         """Verify that the matrices of non-parametric one qubit gates is correct
         when provided as a qfunc"""
-        res = qml.matrix(op_class)(0.54, wires=0)
+        res = qml.matrix(op_class, wire_order=[0])(0.54, wires=0)
         expected = op_class(0.54, wires=0).matrix()
         assert np.allclose(res, expected)
 
@@ -109,13 +111,13 @@ class TestSingleOperation:
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_adjoint(self, op_class):
         """Test that the adjoint is correctly taken into account"""
-        res = qml.matrix(qml.adjoint(op_class))(0.54, wires=0)
+        res = qml.matrix(qml.adjoint(op_class), wire_order=[0])(0.54, wires=0)
         expected = op_class(-0.54, wires=0).matrix()
         assert np.allclose(res, expected)
 
     def test_ctrl(self):
         """Test that the ctrl is correctly taken into account"""
-        res = qml.matrix(qml.ctrl(qml.PauliX, 0))(wires=1)
+        res = qml.matrix(qml.ctrl(qml.PauliX, 0), wire_order=[0, 1])(wires=1)
         expected = CNOT
         assert np.allclose(res, expected)
 
@@ -341,7 +343,7 @@ class TestCustomWireOrdering:
             qml.PauliZ(wires=2)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        matrix = qml.matrix(tape)
+        matrix = qml.matrix(tape, wire_order=tape.wires)
         expected_matrix = np.kron(X, np.kron(Y, Z))
         assert np.allclose(matrix, expected_matrix)
 
@@ -357,7 +359,7 @@ class TestCustomWireOrdering:
             qml.PauliY(wires=1)
             qml.PauliZ(wires=2)
 
-        matrix = qml.matrix(testcircuit)()
+        matrix = qml.matrix(testcircuit, wire_order=[0, 1, 2])()
         expected_matrix = np.kron(X, np.kron(Y, Z))
         assert np.allclose(matrix, expected_matrix)
 
@@ -394,6 +396,62 @@ class TestCustomWireOrdering:
         expected_matrix = np.kron(RY(x), np.kron(X, Z))
         assert np.allclose(testcircuit2(x), expected_matrix)
 
+    @pytest.mark.parametrize("wire_order", [[0, 2, 1], [1, 0, 2], [2, 1, 0]])
+    def test_pauli_word_wireorder(self, wire_order):
+        """Test changing the wire order when using PauliWord"""
+        pw = PauliWord({0: "X", 1: "Y", 2: "Z"})
+        op = qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2)
+        assert qml.math.allclose(qml.matrix(pw, wire_order), qml.matrix(op, wire_order))
+
+    @pytest.mark.parametrize("wire_order", [[0, 2, 1], [1, 0, 2], [2, 1, 0]])
+    def test_pauli_sentence_wireorder(self, wire_order):
+        """Test changing the wire order when using PauliWord"""
+        pauli1 = PauliWord({0: "X", 1: "Y", 2: "Z"})
+        pauli2 = PauliWord({0: "Y", 1: "Z", 2: "X"})
+        ps = PauliSentence({pauli1: 1.5, pauli2: 0.5})
+
+        op1 = qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2)
+        op2 = qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(2)
+        op = 1.5 * op1 + 0.5 * op2
+        assert qml.math.allclose(qml.matrix(ps, wire_order), qml.matrix(op, wire_order))
+
+
+pw1 = PauliWord({0: "X", 1: "Z"})
+pw2 = PauliWord({0: "Y", 1: "Z"})
+pw3 = PauliWord({"a": "Y", "b": "Z"})
+op_pairs = (
+    (pw1, qml.prod(qml.PauliX(0), qml.PauliZ(1))),
+    (pw2, qml.prod(qml.PauliY(0), qml.PauliZ(1))),
+    # (pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))), # uncomment after fix 5041
+)
+
+
+class TestPauliWordPauliSentence:
+    @pytest.mark.parametrize("pw, op", op_pairs)
+    def test_PauliWord_matrix(self, pw, op):
+        """Test that a PauliWord is correctly transformed using qml.matrix"""
+        res = qml.matrix(pw, wire_order=[0, 1])
+        true_res = qml.matrix(op)
+        assert qml.math.allclose(res, true_res)
+
+    @pytest.mark.parametrize("pw, op", op_pairs)
+    def test_PauliSentence_matrix(self, pw, op):
+        """Test that a PauliWord is correctly transformed using qml.matrix"""
+        res = qml.matrix(PauliSentence({pw: 0.5}), wire_order=[0, 1])
+        true_res = qml.matrix(qml.s_prod(0.5, op))
+        assert qml.math.allclose(res, true_res)
+
+    @pytest.mark.xfail
+    def test_PauliSentence_matrix_xfail(self, pw, op):
+        """Test that a PauliWord is correctly transformed using qml.matrix"""
+        # needs fix https://github.com/PennyLaneAI/pennylane/pull/5041
+        # once fixed, uncomment the last line in op_pairs above, i.e. add
+        # (pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))),
+        pw, op = pw3, qml.prod(qml.PauliY("a"), qml.PauliZ("b"))
+        res = qml.matrix(PauliSentence({pw: 0.5}), wire_order=["a", "b"])
+        true_res = qml.matrix(qml.s_prod(0.5, op))
+        assert qml.math.allclose(res, true_res)
+
 
 class TestTemplates:
     """These tests are useful as they test operators that might not have
@@ -409,7 +467,7 @@ class TestTemplates:
             op.decomposition()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        expected = qml.matrix(tape)
+        expected = qml.matrix(tape, wire_order=tape.wires)
         np.allclose(res, expected)
 
     def test_qfunc(self):
@@ -421,7 +479,7 @@ class TestTemplates:
 
         weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
-        res = qml.matrix(circuit)(weights, x)
+        res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
@@ -430,7 +488,7 @@ class TestTemplates:
             qml.RX(x, wires=0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        expected = qml.matrix(tape)
+        expected = qml.matrix(tape, wire_order=[0, 1])
         np.allclose(res, expected)
 
     def test_nested_instantiated(self):
@@ -453,7 +511,7 @@ class TestTemplates:
             op.decomposition()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        expected = qml.matrix(tape)
+        expected = qml.matrix(tape, wire_order=[0, 1])
         np.allclose(res, expected)
 
     def test_nested_qfunc(self):
@@ -473,7 +531,7 @@ class TestTemplates:
 
         weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
-        res = qml.matrix(circuit)(weights, x)
+        res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
@@ -482,7 +540,7 @@ class TestTemplates:
             qml.RX(x, wires=0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        expected = qml.matrix(tape)
+        expected = qml.matrix(tape, wire_order=[0, 1])
         np.allclose(res, expected)
 
 
@@ -490,7 +548,7 @@ class TestValidation:
     def test_invalid_argument(self):
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
         with pytest.raises(
-            OperationTransformError,
+            TransformError,
             match="Input is not an Operator, tape, QNode, or quantum function",
         ):
             _ = qml.matrix(None)
@@ -505,13 +563,13 @@ class TestValidation:
         wires = [0, "b"]
 
         with pytest.raises(
-            OperationTransformError,
+            TransformError,
             match=r"Wires in circuit \[1, 0\] are inconsistent with those in wire_order \[0, 'b'\]",
         ):
             qml.matrix(circuit, wire_order=wires)()
 
         with pytest.raises(
-            OperationTransformError,
+            TransformError,
             match=r"Wires in circuit \[0\] are inconsistent with those in wire_order \[1\]",
         ):
             qml.matrix(qml.PauliX(0), wire_order=[1])
@@ -523,7 +581,7 @@ class TestInterfaces:
         """Test with tensorflow interface"""
         import tensorflow as tf
 
-        @qml.matrix
+        @partial(qml.matrix, wire_order=[0, 1, 2])
         def circuit(beta, theta):
             qml.RZ(beta, wires=0)
             qml.RZ(theta[0], wires=1)
@@ -579,7 +637,7 @@ class TestInterfaces:
     def test_autograd(self):
         """Test with autograd interface"""
 
-        @qml.matrix
+        @partial(qml.matrix, wire_order=[0, 1, 2])
         def circuit(theta):
             qml.RZ(theta[0], wires=0)
             qml.RZ(theta[1], wires=1)
@@ -604,11 +662,8 @@ class TestInterfaces:
         """Test with JAX interface"""
 
         from jax import numpy as jnp
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
-
-        @qml.matrix
+        @partial(qml.matrix, wire_order=[0, 1, 2])
         def circuit(theta):
             qml.RZ(theta[0], wires=0)
             qml.RZ(theta[1], wires=1)
@@ -642,14 +697,14 @@ class TestDifferentiation:
             qml.CNOT(wires=[0, 1])
 
         def loss(theta):
-            U = qml.matrix(circuit)(theta)
+            U = qml.matrix(circuit, wire_order=[0, 1])(theta)
             return qml.math.real(qml.math.trace(U))
 
         x = jax.numpy.array(v)
 
         l = loss(x)
         dl = jax.grad(loss)(x)
-        matrix = qml.matrix(circuit)(x)
+        matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
 
         assert isinstance(matrix, jax.numpy.ndarray)
         assert np.allclose(l, 2 * np.cos(v / 2))
@@ -666,14 +721,14 @@ class TestDifferentiation:
             qml.CNOT(wires=[0, 1])
 
         def loss(theta):
-            U = qml.matrix(circuit)(theta)
+            U = qml.matrix(circuit, wire_order=[0, 1])(theta)
             return qml.math.real(qml.math.trace(U))
 
         x = torch.tensor(v, requires_grad=True)
         l = loss(x)
         l.backward()
         dl = x.grad
-        matrix = qml.matrix(circuit)(x)
+        matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
 
         assert isinstance(matrix, torch.Tensor)
         assert np.allclose(l.detach(), 2 * np.cos(v / 2))
@@ -690,14 +745,14 @@ class TestDifferentiation:
             qml.CNOT(wires=[0, 1])
 
         def loss(theta):
-            U = qml.matrix(circuit)(theta)
+            U = qml.matrix(circuit, wire_order=[0, 1])(theta)
             return qml.math.real(qml.math.trace(U))
 
         x = tf.Variable(v)
         with tf.GradientTape() as tape:
             l = loss(x)
         dl = tape.gradient(l, x)
-        matrix = qml.matrix(circuit)(x)
+        matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
 
         assert isinstance(matrix, tf.Tensor)
         assert np.allclose(l, 2 * np.cos(v / 2))
@@ -711,13 +766,13 @@ class TestDifferentiation:
             qml.CNOT(wires=[0, 1])
 
         def loss(theta):
-            U = qml.matrix(circuit)(theta)
+            U = qml.matrix(circuit, wire_order=[0, 1])(theta)
             return qml.math.real(qml.math.trace(U))
 
         x = np.array(v, requires_grad=True)
         l = loss(x)
         dl = qml.grad(loss)(x)
-        matrix = qml.matrix(circuit)(x)
+        matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
 
         assert isinstance(matrix, qml.numpy.tensor)
         assert np.allclose(l, 2 * np.cos(v / 2))
@@ -737,7 +792,75 @@ class TestMeasurements:
     def test_all_measurement_matrices_are_identity(self, measurements, N):
         """Test that the matrix of a script with only observables is Identity."""
         qscript = qml.tape.QuantumScript(measurements=measurements)
-        assert np.array_equal(qml.matrix(qscript), np.eye(N))
+        assert np.array_equal(qml.matrix(qscript, wire_order=qscript.wires), np.eye(N))
+
+
+class TestWireOrderErrors:
+    """Test that wire_order=None raises an error in qml.matrix transform."""
+
+    def test_error_pauli_word(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a PauliWord"""
+        pw = PauliWord({0: "X", 1: "X"})
+        with pytest.raises(ValueError, match=r"wire_order is required"):
+            _ = qml.matrix(pw)
+
+    def test_error_pauli_sentence(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a PauliSentence"""
+        ps = PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0})
+        with pytest.raises(ValueError, match=r"wire_order is required"):
+            _ = qml.matrix(ps)
+
+    def test_error_tape(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a tape."""
+        qs = qml.tape.QuantumScript([qml.PauliX(1), qml.PauliX(0)])
+        with pytest.raises(ValueError, match=r"wire_order is required"):
+            _ = qml.matrix(qs)
+
+    def test_error_qnode(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a QNode."""
+
+        @qml.qnode(qml.device("default.qubit"))  # devices does not provide wire_order
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"wire_order is required"):
+            _ = qml.matrix(circuit)
+
+    def test_error_qfunc(self):
+        """Test that an error is raised when calling qml.matrix without wire_order on a qfunc."""
+
+        def circuit():
+            qml.PauliX(0)
+
+        with pytest.raises(ValueError, match=r"wire_order is required"):
+            _ = qml.matrix(circuit)
+
+    def test_op_class(self):
+        """Tests that an error is raised when calling qml.matrix without wire_order
+        on an operator class with multiple wires."""
+
+        with pytest.raises(ValueError, match=r"wire_order is required"):
+            _ = qml.matrix(qml.CNOT)(wires=[0, 1])
+
+        # No error should be raised if the operator class has only one wire.
+        _ = qml.matrix(qml.Hadamard)(wires=0)
+
+    def test_no_error_cases(self):
+        """Test that an error is not raised when calling qml.matrix on an operator, a
+        single-wire tape, or a QNode with a device that provides wires."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))  # device provides wire_order
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        with catch_warnings(record=True) as record:
+            qml.matrix(qml.PauliX(0))
+            qml.matrix(qml.tape.QuantumScript([qml.PauliX(1)]))
+            qml.matrix(circuit)
+
+        assert len(record) == 0
 
 
 @pytest.mark.jax

@@ -119,7 +119,7 @@ class MPS(Operation):
             @qml.qnode(dev)
             def circuit(template_weights):
                 qml.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.PauliZ(wires=n_wires-1))
+                return qml.expval(qml.Z(n_wires-1))
 
         >>> print(qml.draw(circuit, expansion_strategy='device')(template_weights))
         0: ─╭●──RY(0.10)──────────────────────────────┤

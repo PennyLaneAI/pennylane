@@ -82,11 +82,11 @@ class TestLogging:
 
         log_records_expected = [
             (
-                "pennylane.qnode",
+                "pennylane.workflow.qnode",
                 ["Creating QNode(func=<function TestLogging.test_dq_qnode_execution"],
             ),
             (
-                "pennylane.interfaces.execution",
+                "pennylane.workflow.execution",
                 [
                     "device=<default.qubit device (wires=2)",
                     "gradient_fn=None, interface=None",
@@ -99,7 +99,7 @@ class TestLogging:
             assert all(msg in actual.getMessage() for msg in expected[1])
 
     @pytest.mark.parametrize(
-        "diff_method,num_records", [("parameter-shift", 7), ("backprop", 3), ("adjoint", 7)]
+        "diff_method,num_records", [("parameter-shift", 8), ("backprop", 3), ("adjoint", 6)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parameterised gradients"
@@ -125,7 +125,7 @@ class TestLogging:
 
         log_records_expected = [
             (
-                "pennylane.qnode",
+                "pennylane.workflow.qnode",
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
                     "device=<default.qubit device (wires=2)",
@@ -133,7 +133,7 @@ class TestLogging:
                 ],
             ),
             (
-                "pennylane.interfaces.execution",
+                "pennylane.workflow.execution",
                 [
                     "Entry with args=(tapes=(<QuantumScript: wires=[0], params=1>,)",
                     _grad_log_map[diff_method],

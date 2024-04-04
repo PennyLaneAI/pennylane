@@ -16,6 +16,7 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 import itertools
+import warnings
 from copy import copy
 from functools import reduce, wraps
 from itertools import combinations
@@ -25,11 +26,10 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
-from pennylane.ops.qubit import Hamiltonian
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -65,25 +65,30 @@ def prod(*ops, id=None, lazy=True):
 
         This operator supports batched operands:
 
-        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Prod`
 
     **Example**
 
-    >>> prod_op = prod(qml.PauliX(0), qml.PauliZ(0))
+    >>> prod_op = prod(qml.X(0), qml.Z(0))
     >>> prod_op
-    PauliX(wires=[0]) @ PauliZ(wires=[0])
+    X(0) @ Z(0)
     >>> prod_op.matrix()
     array([[ 0, -1],
            [ 1,  0]])
+    >>> prod_op.simplify()
+    -1j * Y(0)
+    >>> prod_op.terms()
+    ([-1j], [Y(0)])
+
 
     You can also create a prod operator by passing a qfunc to prod, like the following:
 
@@ -94,6 +99,7 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
     """
+    ops = tuple(convert_to_opmath(op) for op in ops)
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
             return ops[0]
@@ -106,6 +112,10 @@ def prod(*ops, id=None, lazy=True):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
+            if len(qs.operations) == 1:
+                if qml.QueuingManager.recording():
+                    qml.apply(qs[0])
+                return qs[0]
             return prod(*qs.operations[::-1], id=id, lazy=lazy)
 
         return wrapper
@@ -138,14 +148,16 @@ class Prod(CompositeOp):
 
     **Example**
 
-    >>> prop_op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=0))
-    >>> prop_op
-    PauliX(wires=[0]) @ PauliZ(wires=[0])
-    >>> qml.matrix(prop_op)
-    array([[ 0,  -1],
-           [ 1,   0]])
-    >>> prop_op.terms()
-    ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+    >>> prod_op = Prod(qml.X(0), qml.PauliZ(1))
+    >>> prod_op
+    X(0) @ Z(1)
+    >>> qml.matrix(prod_op, wire_order=prod_op.wires)
+    array([[ 0,  0,  1,  0],
+           [ 0,  0,  0, -1],
+           [ 1,  0,  0,  0],
+           [ 0, -1,  0,  0]])
+    >>> prod_op.terms()
+    ([1.0], [Z(1) @ X(0)])
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
@@ -153,9 +165,9 @@ class Prod(CompositeOp):
         first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
-    >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
+    >>> op = Prod(qml.X(0), qml.Z(1))
     >>> op.decomposition()
-    [PauliZ(wires=[1]), PauliX(wires=[0])]
+    [Z(1), X(0)]
 
     .. details::
         :title: Usage Details
@@ -163,7 +175,7 @@ class Prod(CompositeOp):
         The Prod operator represents both matrix composition and tensor products
         between operators.
 
-        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.PauliX(wires=0), qml.PauliZ(wires=1))
+        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.X(0), qml.Z(1))
         >>> prod_op.matrix()
         array([[ 0.        +0.j        ,  0.        +0.j        ,
                  0.81677345-0.57695852j,  0.        +0.j        ],
@@ -183,8 +195,8 @@ class Prod(CompositeOp):
 
             @qml.qnode(dev)
             def circuit(theta):
-                qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
-                return qml.expval(qml.PauliZ(1))
+                qml.prod(qml.Z(0), qml.RX(theta, 1))
+                return qml.expval(qml.Z(1))
 
         >>> par = np.array(1.23, requires_grad=True)
         >>> circuit(par)
@@ -198,7 +210,7 @@ class Prod(CompositeOp):
 
         .. code-block:: python
 
-            prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+            prod_op = Prod(qml.Z(0), qml.Hadamard(wires=1))
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
@@ -209,13 +221,17 @@ class Prod(CompositeOp):
         >>> weights = np.array([0.1], requires_grad=True)
         >>> qml.grad(circuit)(weights)
         array([-0.07059289])
+
+        Note that the :meth:`~Prod.terms` method always simplifies and flattens the operands.
+
+        >>> op = qml.ops.Prod(qml.X(0), qml.sum(qml.Y(0), qml.Z(1)))
+        >>> op.terms()
+        ([1j, 1.0], [Z(0), Z(1) @ X(0)])
+
     """
 
     _op_symbol = "@"
     _math_op = math.prod
-
-    def terms(self):  # is this method necessary for this class?
-        return [1.0], [self]
 
     @property
     def is_hermitian(self):
@@ -283,7 +299,10 @@ class Prod(CompositeOp):
         batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
             gen = (
-                (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+                (
+                    (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix()),
+                    op.wires,
+                )
                 for op in ops
             )
 
@@ -308,8 +327,8 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+        if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)
@@ -353,12 +372,8 @@ class Prod(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
-        if all(
-            operand_pauli_reps := [
-                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
-            ]
-        ):
-            return reduce(lambda a, b: a * b, operand_pauli_reps)
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+            return reduce(lambda a, b: a @ b, operand_pauli_reps)
         return None
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
@@ -377,8 +392,13 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
+        r"""
+        Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
+        :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator
+        or pure product of single PL operators.
+        """
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 
@@ -424,6 +444,83 @@ class Prod(CompositeOp):
             op_list[j + 1] = key_op
 
         return op_list
+
+    def terms(self):
+        r"""Representation of the operator as a linear combination of other operators.
+
+        .. math:: O = \sum_i c_i O_i
+
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
+
+        **Example**
+
+        >>> qml.operation.enable_new_opmath()
+        >>> op = X(0) @ (0.5 * X(1) + X(2))
+        >>> op.terms()
+        ([0.5, 1.0],
+         [X(1) @ X(0),
+          X(2) @ X(0)])
+
+        """
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            with qml.QueuingManager.stop_recording():
+                ops = [pauli.operation() for pauli in pr.keys()]
+            return list(pr.values()), ops
+
+        with qml.QueuingManager.stop_recording():
+            global_phase, factors = self._simplify_factors(factors=self.operands)
+            factors = list(itertools.product(*factors))
+
+            factors = [
+                Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors
+            ]
+
+        # harvest coeffs and ops
+        coeffs = []
+        ops = []
+        for factor in factors:
+            if isinstance(factor, SProd):
+                coeffs.append(global_phase * factor.scalar)
+                ops.append(factor.base)
+            else:
+                coeffs.append(global_phase)
+                ops.append(factor)
+        return coeffs, ops
+
+    @property
+    def coeffs(self):
+        r"""
+        Scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
+
+        .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
+        warnings.warn(
+            "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        coeffs, _ = self.terms()
+        return coeffs
+
+    @property
+    def ops(self):
+        r"""
+        Operator terms without scalar coefficients of the operator when flattened out.
+
+        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
+
+        .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
+        warnings.warn(
+            "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        _, ops = self.terms()
+        return ops
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
@@ -504,7 +601,7 @@ class _ProductFactorsGrouping:
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
                 factor = factor.base
-            if isinstance(factor, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
+            if isinstance(factor, (qml.Identity, qml.X, qml.Y, qml.Z)):
                 self._add_pauli_factor(factor=factor, wires=wires)
                 self._remove_non_pauli_factors(wires=wires)
             else:

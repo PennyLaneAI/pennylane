@@ -16,9 +16,9 @@ import warnings
 
 from dataclasses import dataclass
 from typing import Callable, List, Union
+import numpy as np
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.typing import TensorLike
@@ -29,12 +29,12 @@ from pennylane.wires import Wires
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
-    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(0.5j, qml.PauliY(wire))
+    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(0.5j, qml.Y(wire))
 
 
 def ad(wire, d=2):
     """annihilation operator"""
-    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
+    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(-0.5j, qml.Y(wire))
 
 
 # pylint: disable=too-many-arguments
@@ -79,10 +79,11 @@ def transmon_interaction(
         :func:`~.transmon_drive`
 
     Args:
-        qubit_freq (Union[float, list[float]]): List of dressed qubit frequencies. This should be in units
+        qubit_freq (Union[float, list[float], Callable]): List of dressed qubit frequencies. This should be in units
             of frequency (GHz), and will be converted to angular frequency :math:`\omega` internally where
             needed, i.e. multiplied by :math:`2 \pi`. When passing a single float all qubits are assumed to
-            have that same frequency.
+            have that same frequency. When passing a parametrized function, it must have two
+            arguments, the first one being the trainable parameters and the second one being time.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
             When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
         coupling (Union[float, list[float]]): List of coupling strengths. This should be in units
@@ -158,9 +159,9 @@ def transmon_interaction(
         anharmonicity = [0.0] * n_wires
 
     # TODO: make coefficients callable / trainable. Currently not supported
-    if qml.math.ndim(qubit_freq) == 0:
+    if callable(qubit_freq) or qml.math.ndim(qubit_freq) == 0:
         qubit_freq = [qubit_freq] * n_wires
-    if len(qubit_freq) != n_wires:
+    elif len(qubit_freq) != n_wires:
         raise ValueError(
             f"Number of qubit frequencies in {qubit_freq} does not match the provided wires = {wires}"
         )
@@ -332,7 +333,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     :math:`2 \pi A \exp(0) \sin(\pi/2 + 0)\sigma^y = 2 \pi \sigma^y`.
 
     >>> H(params, t)
-    6.283185307179586*(PauliY(wires=[0]))
+    6.283185307179586 * Y(0)
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all
@@ -368,7 +369,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(H)(params, time)
-            return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
+            return qml.expval(qml.Z(0) + qml.Z(1) + qml.Z(2))
 
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of :math:`0.5 \times 2\pi \text{GHz}`)
     and set the drive frequency equal to the qubit frequencies. Note how the order of the construction
@@ -403,7 +404,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq)]
 
-    drive_y_term = sum(qml.PauliY(wire) for wire in wires)
+    drive_y_term = sum(qml.Y(wire) for wire in wires)
 
     observables = [drive_y_term]
 

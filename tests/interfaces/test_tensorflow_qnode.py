@@ -527,17 +527,15 @@ class TestShotsIntegration:
 
         # execute with shots=100
         circuit(weights, shots=100)  # pylint: disable=unexpected-keyword-arg
-        spy.assert_called()
+        spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
         assert dev.shots is None
-        spy = mocker.spy(dev, "sample")
         res = circuit(weights)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
+        spy.assert_called_once()
 
-    @pytest.mark.xfail(reason="TODO: shot-vector support for param shift")
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
@@ -612,14 +610,15 @@ class TestShotsIntegration:
 
         circuit(weights)
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert circuit.gradient_fn is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
         circuit(weights, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert circuit.gradient_fn == "backprop"
 
-        # original QNode settings are unaffected
-        assert circuit.gradient_fn is qml.gradients.param_shift
         circuit(weights)
+        assert circuit.gradient_fn is qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
 
@@ -653,7 +652,7 @@ class TestAdjoint:
         assert circ.device.num_executions == 1
         spy.assert_called_with(mocker.ANY, use_device_state=mocker.ANY)
 
-    def test_resuse_state_multiple_evals(self, mocker, tol, interface):
+    def test_reuse_state_multiple_evals(self, mocker, tol, interface):
         """Tests that the TF interface reuses the device state for adjoint differentiation,
         even where there are intermediate evaluations."""
         dev = qml.device("default.qubit.legacy", wires=2)

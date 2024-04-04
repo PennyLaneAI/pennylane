@@ -15,7 +15,7 @@
 This module contains the functions needed for estimating the number of measurements and the error
 for computing expectation values.
 """
-from pennylane import numpy as np
+import numpy as np
 
 
 def estimate_shots(coeffs, variances=None, error=0.0016):

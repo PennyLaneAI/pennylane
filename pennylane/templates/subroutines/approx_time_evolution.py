@@ -24,6 +24,14 @@ class ApproxTimeEvolution(Operation):
     r"""Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
     of Pauli gates.
 
+    .. note::
+
+        We recommend using :class:`~.TrotterProduct` as the more general operation for approximate
+        matrix exponentiation. One can recover the behaviour of :class:`~.ApproxTimeEvolution` by
+        taking the adjoint:
+
+        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
     .. math:: U(t) \ = \ e^{-i H t},
@@ -53,6 +61,11 @@ class ApproxTimeEvolution(Operation):
     this decomposition is exact for any value of :math:`n` when each term of the Hamiltonian
     commutes with every other term.
 
+    .. warning::
+
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
+        due to the order in which those observables are stored.
+
     .. note::
 
        This template uses the :class:`~.PauliRot` operation in order to implement
@@ -70,6 +83,8 @@ class ApproxTimeEvolution(Operation):
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
+    .. seealso:: :class:`~.TrotterProduct`.
+
     .. details::
         :title: Usage Details
 
@@ -86,13 +101,13 @@ class ApproxTimeEvolution(Operation):
             dev = qml.device('default.qubit', wires=n_wires)
 
             coeffs = [1, 1]
-            obs = [qml.PauliX(0), qml.PauliX(1)]
+            obs = [qml.X(0), qml.X(1)]
             hamiltonian = qml.Hamiltonian(coeffs, obs)
 
             @qml.qnode(dev)
             def circuit(time):
                 ApproxTimeEvolution(hamiltonian, time, 1)
-                return [qml.expval(qml.PauliZ(wires=i)) for i in wires]
+                return [qml.expval(qml.Z(i)) for i in wires]
 
         >>> circuit(1)
         tensor([-0.41614684 -0.41614684], requires_grad=True)
@@ -111,14 +126,13 @@ class ApproxTimeEvolution(Operation):
         return cls(data[0], data[1], n=metadata[0])
 
     def __init__(self, hamiltonian, time, n, id=None):
-        if not isinstance(hamiltonian, qml.Hamiltonian):
+        if getattr(hamiltonian, "pauli_rep", None) is None:
             raise ValueError(
-                f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
+                f"hamiltonian must be a linear combination of pauli words, got {type(hamiltonian).__name__}"
             )
 
         # extract the wires that the op acts on
-        wire_list = [term.wires for term in hamiltonian.ops]
-        wires = qml.wires.Wires.all_wires(wire_list)
+        wires = hamiltonian.wires
 
         self._hyperparameters = {"hamiltonian": hamiltonian, "n": n}
 
@@ -158,7 +172,7 @@ class ApproxTimeEvolution(Operation):
             num_qubits = 2
 
             hamiltonian = qml.Hamiltonian(
-                [0.1, 0.2, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0), qml.PauliX(1)]
+                [0.1, 0.2, 0.3], [qml.Z(0) @ qml.Z(1), qml.X(0), qml.X(1)]
             )
 
             evolution_time = 0.5
@@ -172,38 +186,20 @@ class ApproxTimeEvolution(Operation):
         ... )
         [PauliRot(0.1, ZZ, wires=[0, 1]), PauliRot(0.2, X, wires=[0]), PauliRot(0.3, X, wires=[1])]
         """
-        pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
-
-        theta = []
-        pauli_words = []
-        wires = []
-        coeffs = coeffs_and_time[:-1]
         time = coeffs_and_time[-1]
-        for i, term in enumerate(hamiltonian.ops):
-            word = ""
 
-            try:
-                if isinstance(term.name, str):
-                    word = pauli[term.name]
+        single_round = []
+        with qml.QueuingManager.stop_recording():
+            for pw, coeff in hamiltonian.pauli_rep.items():
+                if len(pw) == 0:
+                    continue
+                theta = 2 * time * coeff / n
+                term_str = "".join(pw.values())
+                wires = qml.wires.Wires(pw.keys())
+                single_round.append(PauliRot(theta, term_str, wires=wires))
 
-                if isinstance(term.name, list):
-                    word = "".join(pauli[j] for j in term.name)
+        full_decomp = single_round * n
+        if qml.QueuingManager.recording():
+            _ = [qml.apply(op) for op in full_decomp]
 
-            except KeyError as error:
-                raise ValueError(
-                    f"hamiltonian must be written in terms of Pauli matrices, got {error}"
-                ) from error
-
-            # skips terms composed solely of identities
-            if word.count("I") != len(word):
-                theta.append((2 * time * coeffs[i]) / n)
-                pauli_words.append(word)
-                wires.append(term.wires)
-
-        op_list = []
-
-        for i in range(n):
-            for j, term in enumerate(pauli_words):
-                op_list.append(PauliRot(theta[j], term, wires=wires[j]))
-
-        return op_list
+        return full_decomp

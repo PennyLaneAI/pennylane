@@ -16,7 +16,6 @@ This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
 from typing import Callable, Sequence
-import warnings
 from functools import partial
 import numpy as np
 
@@ -24,7 +23,7 @@ import pennylane as qml
 
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 from .parameter_shift import _make_zero_rep
 from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
@@ -33,8 +32,8 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_tape_batching,
     assert_no_variance,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
+    choose_trainable_params,
+    find_and_validate_gradient_methods,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -290,7 +289,8 @@ def _expval_pulse_odegen(tape, argnum, atol):
             parameter-shift rule.
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         atol (float): absolute tolerance used to determine vanishing contributions.
 
     Returns:
@@ -403,7 +403,7 @@ def _expval_pulse_odegen(tape, argnum, atol):
 def pulse_odegen(
     tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
+    r"""Transform a circuit to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
     hardware-compatible shift rules.
@@ -428,26 +428,21 @@ def pulse_odegen(
     See the theoretical background section below for more details.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     .. note::
 
@@ -476,9 +471,9 @@ def pulse_odegen(
 
         jax.config.update("jax_enable_x64", True)
         H = (
-            qml.pulse.constant * qml.PauliY(0)
-            + jnp.polyval * qml.PauliY(1)
-            + qml.pulse.constant * (qml.PauliZ(0) @ qml.PauliX(1))
+            qml.pulse.constant * qml.Y(0)
+            + jnp.polyval * qml.Y(1)
+            + qml.pulse.constant * (qml.Z(0) @ qml.X(1))
         )
         params = [jnp.array(0.2), jnp.array([0.6, 0.2]), jnp.array(0.4)]
         t = [0.1, 0.9]
@@ -493,7 +488,7 @@ def pulse_odegen(
         @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
         def circuit(params):
             op = qml.evolve(H)(params, t)
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.X(0))
 
     We registered the ``QNode`` to be differentiated with the ``pulse_odegen`` method.
     This allows us to simply differentiate it with ``jax.grad``, which internally
@@ -691,28 +686,15 @@ def pulse_odegen(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=pulse_odegen)
+    trainable_params = choose_trainable_params(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     return _expval_pulse_odegen(tape, argnum, atol)
-
-
-def _legacy_pulse_generator_wrapper(
-    tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
-) -> (Sequence[qml.tape.QuantumTape], Callable):
-    warnings.warn(
-        "pulse_generator for gradient computation has been renamed to pulse_odegen and will not be available in pennylane v0.34 onwards"
-    )
-    return pulse_odegen(tape, argnum, atol)
-
-
-pulse_generator = transform(_legacy_pulse_generator_wrapper, final_transform=True)
 
 
 @pulse_odegen.custom_qnode_transform

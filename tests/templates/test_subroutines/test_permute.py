@@ -20,6 +20,17 @@ import numpy as np
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qml.Permute([0, 1, 2, 3], wires=(3, 2, 1, 0))
+    qml.ops.functions.assert_valid(op)
+
+
+def test_repr():
+    op = qml.Permute([2, 1, 0], wires=(0, 1, 2))
+    assert repr(op) == "Permute((2, 1, 0), wires=[0, 1, 2])"
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

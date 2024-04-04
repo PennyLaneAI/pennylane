@@ -16,10 +16,10 @@ This module contains the qml.probs measurement.
 """
 from typing import Sequence, Tuple
 
-import pennylane as qml
-from pennylane import numpy as np
-from pennylane.wires import Wires
+import numpy as np
 
+import pennylane as qml
+from pennylane.wires import Wires
 from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
@@ -43,7 +43,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable or MeasurementValue]): Observable (with a ``diagonalizing_gates``
+        op (Observable or MeasurementValue): Observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
@@ -78,8 +78,8 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliZ(wires=0)
-            qml.PauliX(wires=1)
+            qml.Z(0)
+            qml.X(1)
             return qml.probs(op=qml.Hermitian(H, wires=0))
 
     >>> circuit()
@@ -93,17 +93,28 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     the device simulates qubit or continuous variable quantum systems.
     """
     if isinstance(op, MeasurementValue):
+        if len(op.measurements) > 1:
+            raise ValueError(
+                "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected "
+                "using arithmetic operators. To collect probabilities for multiple mid-circuit "
+                "measurements, use a list of mid-circuit measurements with qml.probs()."
+            )
         return ProbabilityMP(obs=op)
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, Sequence):
+        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+            raise qml.QuantumFunctionError(
+                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "MeasurementValues manipulated using arithmetic operators cannot be used when "
+                "collecting statistics for a sequence of mid-circuit measurements."
+            )
+
+        return ProbabilityMP(obs=op)
+
+    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError(
-            "Symbolic Operations are not supported for rotating probabilities yet."
-        )
-
-    if op is not None and not qml.operation.defines_diagonalizing_gates(op):
+    if op is not None and not op.has_diagonalizing_gates:
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
@@ -148,6 +159,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
         len_wires = len(self.wires)
+        if len_wires == 0:
+            len_wires = len(device.wires) if device.wires else 0
         dim = self._get_num_basis_states(len_wires, device)
 
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
@@ -222,6 +235,23 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         prob = qml.math.transpose(prob, desired_axes)
         # flatten and return probabilities
         return qml.math.reshape(prob, flat_shape)
+
+    def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
+        with qml.QueuingManager.stop_recording():
+            helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
+        mapped_counts = helper_counts.process_counts(counts, wire_order)
+
+        num_shots = sum(mapped_counts.values())
+        num_wires = len(next(iter(mapped_counts)))
+        dim = 2**num_wires
+
+        # constructs the probability vector
+        # converts outcomes from binary strings to integers (base 10 representation)
+        prob_vector = qml.math.zeros((dim), dtype="float64")
+        for outcome, occurrence in mapped_counts.items():
+            prob_vector[int(outcome, base=2)] = occurrence / num_shots
+
+        return prob_vector
 
     @staticmethod
     def _count_samples(indices, batch_size, dim):

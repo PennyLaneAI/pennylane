@@ -422,10 +422,6 @@ class TestCommuteControlledInterfaces:
         import jax
         from jax import numpy as jnp
 
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
@@ -482,7 +478,7 @@ def qnode_circuit():
     qml.SX(wires=1)
     qml.PauliX(wires=1)
     qml.CRX(0.1, wires=[0, 1])
-    return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+    return qml.expval(qml.PauliY(1) @ qml.PauliZ(2))
 
 
 class TestTransformDispatch:
@@ -536,4 +532,5 @@ class TestTransformDispatch:
         assert not transformed_qnode.transform_program.is_empty()
         assert len(transformed_qnode.transform_program) == 1
         res = transformed_qnode()
-        assert np.allclose(res, 0.0)
+        expected = qnode_circuit()
+        assert np.allclose(res, expected)

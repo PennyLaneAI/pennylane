@@ -18,10 +18,10 @@ from typing import Sequence, Callable
 
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 import pennylane as qml
-from pennylane.transforms.decompositions import one_qubit_decomposition, two_qubit_decomposition
+from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 
 
 @transform
@@ -41,14 +41,10 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         operations. See usage details below.
 
     Args:
-        tape (QuantumTape): a quantum tape
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -68,7 +64,7 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
         def qfunc():
             qml.QubitUnitary(U, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     The original circuit is:
 
@@ -105,7 +101,7 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 qml.RX(angles[0], wires="a")
                 qml.RY(angles[1], wires="b")
                 qml.CNOT(wires=["b", "a"])
-                return qml.expval(qml.PauliZ(wires="a"))
+                return qml.expval(qml.Z("a"))
 
             dev = qml.device('default.qubit', wires=["a", "b"])
             transformed_qfunc = qml.transforms.unitary_to_rot(circuit)
@@ -138,7 +134,7 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 qml.QubitUnitary(U, wires=["a", "b"])
 
                 qml.CNOT(wires=["b", "a"])
-                return qml.expval(qml.PauliX(wires="a"))
+                return qml.expval(qml.X("a"))
     """
     operations = []
     for op in tape.operations:

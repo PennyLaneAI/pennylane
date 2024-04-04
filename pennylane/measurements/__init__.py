@@ -24,8 +24,9 @@ from by the :class:`SampleMeasurement`, :class:`StateMeasurement` and :class:`Me
 classes. These classes are subclassed to implement measurements in PennyLane.
 
 * Each :class:`SampleMeasurement` subclass represents a sample-based measurement, which contains a
-  :meth:`SampleMeasurement.process_samples` method that processes the sequence of samples generated
-  by the device. This method should always have the same arguments:
+  :meth:`SampleMeasurement.process_samples` method and a :meth:`SampleMeasurement.process_counts` method
+  that process the sequence of samples generated
+  by the device. ``process_samples`` method should always have the same arguments:
 
   * samples (Sequence[complex]): computational basis samples generated for all wires
   * wire_order (Wires): wires determining the subspace that ``samples`` acts on
@@ -34,6 +35,9 @@ classes. These classes are subclassed to implement measurements in PennyLane.
   * bin_size (int): Divides the shot range into bins of size ``bin_size``, and returns the
     measurement statistic separately over each bin. If not provided, the entire shot range is treated
     as a single bin.
+
+  :meth:`SampleMeasurement.process_counts` is currently optional. It accepts a dictionary mapping a string
+  representation of a basis state to an integer and a wire order.
 
   See :class:`CountsMP` for an example.
 
@@ -92,8 +96,8 @@ using arithmetic operators for more complex conditioning:
 
         m0 = qml.measure(0)
         m1 = qml.measure(1)
-        qml.cond(~m0 & m1 == 0, qml.PauliX)(wires=2)
-        return qml.expval(qml.PauliZ(wires=2))
+        qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
+        return qml.expval(qml.Z(2))
 
 Wires can be reused as normal after making mid-circuit measurements. Moreover, a measured wire can also be
 reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qml.measure`` to ``True``.
@@ -113,12 +117,15 @@ ability to collect statistics on single measurement values.
         qml.RX(x, wires=0)
         qml.RY(y, wires=1)
         m0 = qml.measure(1)
-        return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+        return qml.expval(qml.Z(0)), qml.sample(m0)
 
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
 >>> circ(1.0, 2.0, shots=5)
-(array(0.6), array([1, 1, 1, 0, 1]))
+(0.6, array([1, 1, 1, 0, 1]))
+
+PennyLane also supports postselecting on mid-circuit measurement outcomes. To learn more, refer to the documentation
+of :func:`~.pennylane.measure`.
 
 Creating custom measurements
 ----------------------------
@@ -138,10 +145,13 @@ obtained of a given state:
             wires = list(range(len(state)))
             super().__init__(wires=wires)
 
-        def process_samples(self, samples, wire_order, shot_range, bin_size):
+        def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
             counts_mp = qml.counts(wires=self._wires)
             counts = counts_mp.process_samples(samples, wire_order, shot_range, bin_size)
-            return counts.get(self.state, 0)
+            return float(counts.get(self.state, 0))
+
+        def process_counts(self, counts, wire_order):
+            return float(counts.get(self.state, 0))
 
         def __copy__(self):
             return CountState(state=self.state)
@@ -181,7 +191,7 @@ When :math:`\theta = 1.23`, the probability of obtaining the state
 we should obtain the excited state 3333 times approximately.
 
 >>> circuit(1.23)
-tensor(3303., requires_grad=True)
+array(3303.)
 
 Given that the measurement process returns a real scalar value, we can differentiate it
 using the analytic method.
@@ -212,7 +222,7 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     ``MeasurementProcess._flatten`` and ``MeasurementProcess._unflatten`` need to be overwritten if the measurement has additional
     metadata, such as ``seed`` or ``all_outcomes``.
 
-    >>> H = 2.0 * qml.PauliX(0)
+    >>> H = 2.0 * qml.X(0)
     >>> mp = qml.expval(H)
     >>> mp._flatten()
     ((<Hamiltonian: terms=1, wires=[0]>, None), ())

@@ -16,8 +16,8 @@
 from typing import Sequence, Callable
 
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
-from pennylane.math import allclose, stack, cast_like, zeros, is_abstract
+from pennylane.transforms import transform
+from pennylane.math import allclose, stack, cast_like, zeros, is_abstract, get_interface
 from pennylane.queuing import QueuingManager
 
 from pennylane.ops.qubit.attributes import composable_rotations
@@ -35,7 +35,7 @@ def merge_rotations(
     neither gate will be applied.
 
     Args:
-        tape (QuantumTape): A quantum tape.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
         atol (float): After fusion of gates, if the fused angle :math:`\theta` is such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
         include_gates (None or list[str]): A list of specific operations to merge. If
@@ -44,19 +44,19 @@ def merge_rotations(
             only the operations whose names match those in the list will undergo merging.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
-    Consider the following quantum function.
+    >>> dev = qml.device('default.qubit', wires=3)
+
+    You can apply the transform directly on :class:`QNode`
 
     .. code-block:: python
 
-        def qfunc(x, y, z):
+        @merge_rotations
+        @qml.qnode(device=dev)
+        def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RX(y, wires=0)
             qml.CNOT(wires=[1, 2])
@@ -64,37 +64,56 @@ def merge_rotations(
             qml.Hadamard(wires=2)
             qml.CRZ(z, wires=[2, 0])
             qml.RY(-y, wires=1)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
-    The circuit before optimization:
+    >>> circuit(0.1, 0.2, 0.3)
+    0.9553364891256055
 
-    >>> dev = qml.device('default.qubit', wires=3)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(1, 2, 3))
-    0: ──RX(1.00)──RX(2.00)─╭RZ(3.00)────────────┤  <Z>
-    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
-    2: ─╰X─────────H────────╰●───────────────────┤
+    .. details::
+        :title: Usage Details
 
-    By inspection, we can combine the two ``RX`` rotations on the first qubit.
-    On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
+        You can also apply it on quantum function.
 
-    >>> optimized_qfunc = merge_rotations()(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-    0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
-    1: ─╭●───────────│─────────┤
-    2: ─╰X─────────H─╰●────────┤
+        .. code-block:: python
 
-    It is also possible to explicitly specify which rotations ``merge_rotations`` should
-    be merged using the ``include_gates`` argument. For example, if in the above
-    circuit we wanted only to merge the "RX" gates, we could do so as follows:
+            def qfunc(x, y, z):
+                qml.RX(x, wires=0)
+                qml.RX(y, wires=0)
+                qml.CNOT(wires=[1, 2])
+                qml.RY(y, wires=1)
+                qml.Hadamard(wires=2)
+                qml.CRZ(z, wires=[2, 0])
+                qml.RY(-y, wires=1)
+                return qml.expval(qml.Z(0))
 
-    >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-    0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
-    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
-    2: ─╰X─────────H────────╰●───────────────────┤
+        The circuit before optimization:
+
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)(1, 2, 3))
+        0: ──RX(1.00)──RX(2.00)─╭RZ(3.00)────────────┤  <Z>
+        1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+        2: ─╰X─────────H────────╰●───────────────────┤
+
+        By inspection, we can combine the two ``RX`` rotations on the first qubit.
+        On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
+
+        >>> optimized_qfunc = merge_rotations()(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(1, 2, 3))
+        0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
+        1: ─╭●───────────│─────────┤
+        2: ─╰X─────────H─╰●────────┤
+
+        It is also possible to explicitly specify which rotations ``merge_rotations`` should
+        be merged using the ``include_gates`` argument. For example, if in the above
+        circuit we wanted only to merge the "RX" gates, we could do so as follows:
+
+        >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(1, 2, 3))
+        0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
+        1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+        2: ─╰X─────────H────────╰●───────────────────┤
 
     """
     # Expand away adjoint ops
@@ -130,6 +149,7 @@ def merge_rotations(
 
         # We need to use stack to get this to work and be differentiable in all interfaces
         cumulative_angles = stack(current_gate.parameters)
+        interface = get_interface(cumulative_angles)
         # As long as there is a valid next gate, check if we can merge the angles
         while next_gate_idx is not None:
             # Get the next gate
@@ -146,7 +166,9 @@ def merge_rotations(
                     else:
                         cumulative_angles = fuse_rot_angles(
                             cumulative_angles,
-                            cast_like(stack(next_gate.parameters), cumulative_angles),
+                            cast_like(
+                                stack(next_gate.parameters, like=interface), cumulative_angles
+                            ),
                         )
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
@@ -155,7 +177,7 @@ def merge_rotations(
                         cumulative_angles = cumulative_angles + stack(next_gate.parameters)
                     else:
                         cumulative_angles = cumulative_angles + cast_like(
-                            stack(next_gate.parameters), cumulative_angles
+                            stack(next_gate.parameters, like=interface), cumulative_angles
                         )
             # If it is not, we need to stop
             else:

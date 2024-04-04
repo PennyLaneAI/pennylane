@@ -181,7 +181,8 @@ class TestSplitEvolOps:
             # Check that the inserted exponential is correct
             assert qml.equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
 
-    def test_warnings(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")  # this is only an issue with legacy Hamiltonian
+    def test_warnings_legacy_opmath(self):
         """Test that a warning is raised for computing eigenvalues of a Hamiltonian
         for more than four wires but not for fewer wires."""
         import jax
@@ -919,7 +920,7 @@ class TestStochPulseGrad:
 
         dev = qml.device(dev_name, wires=1)
         # Effective rotation parameter
-        p = params[0] * (delta_t := (T[-1] - T[0]))
+        p = params[0] * (delta_t := T[-1] - T[0])
         r = qml.execute([tape], dev, None)
         assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -950,7 +951,7 @@ class TestStochPulseGrad:
         # Prefactor due to the generator being a Pauli sentence
         prefactor = np.sqrt(0.85)
         # Effective rotation parameter
-        p = params[0] * (delta_t := (T[-1] - T[0])) * prefactor
+        p = params[0] * (delta_t := T[-1] - T[0]) * prefactor
         r = qml.execute([tape], dev, None)
         assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -1146,6 +1147,7 @@ class TestStochPulseGrad:
         assert qml.math.allclose(res, exp_grad)
         jax.clear_caches()
 
+    @pytest.mark.slow
     def test_advanced_pulse(self, dev_name):
         """Test the derivative of a more complex pulse."""
         import jax
@@ -1255,6 +1257,7 @@ class TestStochPulseGrad:
         assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
         jax.clear_caches()
 
+    @pytest.mark.slow
     @pytest.mark.parametrize(
         "generator, exp_num_tapes, prefactor",
         [
@@ -1385,6 +1388,7 @@ class TestStochPulseGradIntegration:
         assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.0)
         jax.clear_caches()
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_simple_qnode_expval_two_evolves(self, dev_name, num_split_times, shots, tol):
@@ -1534,7 +1538,6 @@ class TestStochPulseGradIntegration:
             diff_method=stoch_pulse_grad,
             num_split_times=num_split_times,
             sampler_seed=7123,
-            cache=False,  # remove once 3870 is merged
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
@@ -1723,6 +1726,7 @@ class TestStochPulseGradIntegration:
         assert qml.math.allclose(res, exact, atol=1e-3)
         jax.clear_caches()
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("num_params", [1, 2])
     def test_with_two_drives(self, dev_name, num_params):
         """Test that a HardwareHamiltonian only containing two drives

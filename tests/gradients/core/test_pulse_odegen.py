@@ -14,7 +14,7 @@
 """
 Tests for the gradients.pulse_odegen module.
 """
-# pylint:disable=import-outside-toplevel
+# pylint:disable=import-outside-toplevel, use-implicit-booleaness-not-comparison
 
 import copy
 import pytest
@@ -33,25 +33,6 @@ from pennylane.gradients.pulse_gradient_odegen import (
     _one_parameter_paulirot_coeffs,
     _parshift_and_contract,
 )
-
-
-@pytest.mark.jax
-def test_deprecation_warning_pulse_generator():
-    """Test that the warning is raised when trying to use pulse_generator for gradient computation"""
-    import jax
-
-    dev = qml.device("default.qubit", wires=1)
-
-    @qml.qnode(dev, diff_method=qml.gradients.pulse_generator)
-    def qnode(x):
-        qml.evolve(qml.pulse.constant * qml.PauliZ(0))(x, 1.0)
-        return qml.expval(qml.PauliX(0))
-
-    x = jax.numpy.array([0.5])
-    with pytest.warns(
-        UserWarning, match="pulse_generator for gradient computation has been renamed"
-    ):
-        jax.grad(qnode)(x)
 
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
@@ -130,7 +111,7 @@ class TestOneParameterGenerators:
         jax.config.update("jax_enable_x64", True)
 
         num_terms = len(terms)
-        H = qml.math.dot([qml.pulse.constant for _ in range(num_terms)], terms)
+        H = qml.dot([qml.pulse.constant for _ in range(num_terms)], terms)
         params = [jnp.array(0.4), jnp.array(0.9), jnp.array(-0.5)][:num_terms]
         T = t[1] - t[0]
 
@@ -180,7 +161,7 @@ class TestOneParameterGenerators:
             return jax.scipy.linalg.expm(-1j * T * exp)
 
         num_terms = len(terms)
-        H = qml.math.dot([qml.pulse.constant for _ in range(num_terms)], terms)
+        H = qml.dot([qml.pulse.constant for _ in range(num_terms)], terms)
         params = [jnp.array(0.4), jnp.array(0.9), jnp.array(-0.5), jnp.array(0.28)][:num_terms]
         T = t[1] - t[0]
 
@@ -255,7 +236,7 @@ class TestOneParameterGenerators:
         jax.config.update("jax_enable_x64", True)
 
         num_terms = len(terms)
-        H = qml.math.dot([jnp.polyval for _ in range(num_terms)], terms)
+        H = qml.dot([jnp.polyval for _ in range(num_terms)], terms)
         params = [jnp.array([0.4, 0.1, 0.2]), jnp.array([0.9, -0.2, 0.5]), jnp.array([-0.5, 0.2])]
         params = params[:num_terms]
         # Jacobian functions of the effective rotation parameter (all polyval)
@@ -305,7 +286,7 @@ class TestOneParameterGenerators:
         jax.config.update("jax_enable_x64", True)
 
         num_terms = len(terms)
-        H = qml.math.dot([jnp.polyval for _ in range(num_terms)], terms)
+        H = qml.dot([jnp.polyval for _ in range(num_terms)], terms)
         mats = [expand_matrix(term.matrix(), term.wires, H.wires) for term in terms]
         t = jnp.array(t)
 

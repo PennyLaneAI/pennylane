@@ -21,14 +21,16 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import Hamiltonian, SProd, Sum
+from pennylane.ops import Hamiltonian, LinearCombination, SProd, Prod, Sum
+from pennylane.operation import convert_to_H
 
 
+# pylint: disable=too-many-branches
 def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~.Hamiltonian`."""
     wires = op.wires
 
-    if isinstance(gen, qml.Hamiltonian):
+    if isinstance(gen, (Hamiltonian, LinearCombination)):
         H = gen
 
     elif isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
@@ -41,11 +43,15 @@ def _generator_hamiltonian(gen, op):
         H = qml.pauli_decompose(mat, wire_order=wires, hide_identity=True)
 
     elif isinstance(gen, qml.operation.Observable):
-        H = 1.0 * gen
+        H = qml.Hamiltonian([1.0], [gen])
+
+    elif isinstance(gen, (SProd, Prod, Sum)):
+        H = convert_to_H(gen)
 
     return H
 
 
+# pylint: disable=no-member
 def _generator_prefactor(gen):
     r"""Return the generator as ```(obs, prefactor)`` representing
     :math:`G=p \hat{O}`, where
@@ -58,7 +64,10 @@ def _generator_prefactor(gen):
 
     prefactor = 1.0
 
-    if isinstance(gen, Hamiltonian):
+    if isinstance(gen, Prod):
+        gen = qml.simplify(gen)
+
+    if isinstance(gen, (Hamiltonian, LinearCombination)):
         gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
 
     if isinstance(gen, Sum):
@@ -73,6 +82,7 @@ def _generator_prefactor(gen):
             prefactor = abs_coeffs[0]
             coeffs = [c / prefactor for c in coeffs]
             return qml.dot(coeffs, ops), prefactor
+
     elif isinstance(gen, SProd):
         return gen.base, gen.scalar
 
@@ -88,7 +98,7 @@ def _generator_backcompatibility(op):
         "The Operator.generator property is deprecated. Please update the operator so that "
         "\n\t1. Operator.generator() is a method, and"
         "\n\t2. Operator.generator() returns an Operator instance representing the operator.",
-        UserWarning,
+        qml.PennyLaneDeprecationWarning,
     )
     gen = op.generator
 
@@ -142,12 +152,12 @@ def generator(op: qml.operation.Operator, format="prefactor"):
 
     >>> op = qml.CRX(0.6, wires=[0, 1])
     >>> qml.generator(op)
-    (Projector([1], wires=[0]) @ PauliX(wires=[1]), -0.5)
+    (Projector([1], wires=[0]) @ X(1), -0.5)
 
     It can also be used in a functional form:
 
     >>> qml.generator(qml.CRX)(0.6, wires=[0, 1])
-    (Projector([1], wires=[0]) @ PauliX(wires=[1]), -0.5)
+    (Projector([1], wires=[0]) @ X(1), -0.5)
 
     By default, ``generator`` will return the generator in the format of ``(obs, prefactor)``,
     corresponding to :math:`G=p \hat{O}`, where the observable :math:`\hat{O}` will
@@ -158,13 +168,13 @@ def generator(op: qml.operation.Operator, format="prefactor"):
 
     >>> op = qml.RX(0.2, wires=0)
     >>> qml.generator(op, format="prefactor")  # output will always be (obs, prefactor)
-    (PauliX(wires=[0]), -0.5)
+    (X(0), -0.5)
     >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian
-    <Hamiltonian: terms=1, wires=[0]>
+    (-0.5) [X0]
     >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])
     >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`
-    -0.5*(PauliX(wires=[0]))
+    -0.5 * X(0)
     """
 
     def processing_fn(*args, **kwargs):

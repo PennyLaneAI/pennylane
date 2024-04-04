@@ -26,7 +26,9 @@ be reset with ``qml.drawer.use_style('black_white')``.
     available_styles
     use_style
 
-The following images are generated via the code:
+The following images are generated via the following code, where ``style`` is
+replaced by an available style specification string (e.g., ``"pennylane"`` or
+``"solarized_light"``):
 
 .. code-block:: python
 
@@ -42,6 +44,12 @@ The following images are generated via the code:
     qml.drawer.use_style(style)
     fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
 
+Note that the shown ``pennylane`` style can be replicated exactly by having the
+Quicksand Bold font installed and refreshing the Matplotlib font cache (by
+deleting the ``fontlist`` file in the Matplotlib cache directory) — to find the
+cache directory, run ``matplotlib.get_cachedir()``. If this font is not
+available, the drawer will fall back on a default font.
+
 Currently Available Styles
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. |bws| image:: ../_static/style/black_white_style.png
@@ -54,6 +62,9 @@ Currently Available Styles
     :width: 100%
 
 .. |pls| image:: ../_static/style/pennylane_style.png
+    :width: 100%
+
+.. |plw| image:: ../_static/style/pennylane_sketch_style.png
     :width: 100%
 
 .. |skd| image:: ../_static/style/sketch_dark_style.png
@@ -71,7 +82,7 @@ Currently Available Styles
 +-----+-----+-----+
 +|bws|+|bwd|+|sks|+
 +-----+-----+-----+
-+|pls|+|skd|+|sol|+
++|pls|+|plw|+|skd|+
 +-----+-----+-----+
-+|sod|+|def|+     +
++|sol|+|sod|+|def|+
 +-----+-----+-----+

@@ -67,16 +67,16 @@ def state() -> "StateMP":
         is then differentiated:
 
         >>> dev = qml.device('default.qubit', wires=2)
-        >>> qml.qnode(dev, diff_method="backprop")
+        >>> @qml.qnode(dev, diff_method="backprop")
         ... def test(x):
         ...     qml.RY(x, wires=[0])
         ...     return qml.state()
         >>> def cost(x):
         ...     return np.abs(test(x)[0])
         >>> cost(x)
-        tensor(0.98877108, requires_grad=True)
+        0.9987502603949663
         >>> qml.grad(cost)(x)
-        -0.07471906623679961
+        tensor(-0.02498958, requires_grad=True)
     """
     return StateMP()
 
@@ -103,7 +103,7 @@ def density_matrix(wires) -> "DensityMatrixMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliY(wires=0)
+            qml.Y(0)
             qml.Hadamard(wires=1)
             return qml.density_matrix([0])
 
@@ -151,7 +151,7 @@ class StateMP(StateMeasurement):
         num_shot_elements = (
             sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
-        dim = 2 ** len(device.wires)
+        dim = 2 ** len(self.wires) if self.wires else 2 ** len(device.wires)
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
@@ -160,33 +160,22 @@ class StateMP(StateMeasurement):
         if not wires or wire_order == wires:
             return qml.math.cast(state, "complex128")
 
-        if not wires.contains_wires(wire_order):
+        if set(wires) != set(wire_order):
             raise WireError(
-                f"Unexpected wires {set(wire_order) - set(wires)} found in wire order. Expected wire order to be a subset of {wires}"
+                f"Unexpected unique wires {Wires.unique_wires([wires, wire_order])} found. "
+                f"Expected wire order {wire_order} to be a rearrangement of {wires}"
             )
 
-        # pad with zeros, put existing wires last
-        is_state_batched = qml.math.ndim(state) == 2
-        pad_width = 2 ** len(wires) - 2 ** len(wire_order)
-        pad = (pad_width, 0) if qml.math.get_interface(state) == "torch" else (0, pad_width)
         shape = (2,) * len(wires)
         flat_shape = (2 ** len(wires),)
-        if is_state_batched:
+        desired_axes = [wire_order.index(w) for w in wires]
+        if qml.math.ndim(state) == 2:  # batched state
             batch_size = qml.math.shape(state)[0]
-            pad = ((0, 0), pad)
             shape = (batch_size,) + shape
             flat_shape = (batch_size,) + flat_shape
-        else:
-            pad = (pad,)
-
-        state = qml.math.pad(state, pad, mode="constant")
-        state = qml.math.reshape(state, shape)
-
-        # re-order
-        new_wire_order = Wires.unique_wires([wires, wire_order]) + wire_order
-        desired_axes = [new_wire_order.index(w) for w in wires]
-        if is_state_batched:
             desired_axes = [0] + [i + 1 for i in desired_axes]
+
+        state = qml.math.reshape(state, shape)
         state = qml.math.transpose(state, desired_axes)
         state = qml.math.reshape(state, flat_shape)
         return qml.math.cast(state, "complex128")

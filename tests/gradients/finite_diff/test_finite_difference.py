@@ -477,6 +477,15 @@ class TestFiniteDiff:
             def __mul__(self, other):
                 return SpecialObject(self.val * other)
 
+            def __rmul__(self, other):
+                return SpecialObject(other * self.val)
+
+            def __matmul__(self, other):
+                return SpecialObject(self.val @ other)
+
+            def __rmatmul__(self, other):
+                return SpecialObject(other @ self.val)
+
             def __add__(self, other):
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
@@ -1024,9 +1033,6 @@ class TestFiniteDiffGradients:
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
         execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
@@ -1056,6 +1062,43 @@ class TestFiniteDiffGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
+    def test_jax_probs(
+        self, dev_name, approx_order, strategy, tol
+    ):  # pylint: disable=unused-argument
+        """Tests that the output of the finite-difference transform is similar using or not diff method on the QNode."""
+        import jax
+
+        dev = qml.device(dev_name, wires=2)
+        x = jax.numpy.array(0.543)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.RY(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=0), qml.probs(wires=1)
+
+        @qml.qnode(dev, diff_method="finite-diff")
+        def circuit_fd(x):
+            qml.RX(x, wires=[0])
+            qml.RY(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=0), qml.probs(wires=1)
+
+        transform_output = qml.gradients.finite_diff(circuit)(x)
+        framework_output = jax.jacobian(circuit)(x)
+        assert jax.numpy.allclose(
+            jax.numpy.stack(transform_output), jax.numpy.stack(framework_output)
+        )
+
+        transform_output = qml.gradients.finite_diff(circuit_fd)(x)
+        framework_output = jax.jacobian(circuit_fd)(x)
+        assert jax.numpy.allclose(
+            jax.numpy.stack(transform_output), jax.numpy.stack(framework_output)
+        )
+
 
 @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
 @pytest.mark.parametrize("interface", ["jax"])
@@ -1071,9 +1114,6 @@ class TestJaxArgnums:
     def test_single_expectation_value(self, argnums, interface, approx_order, strategy):
         """Test for single expectation value."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1105,9 +1145,6 @@ class TestJaxArgnums:
     def test_multi_expectation_values(self, argnums, interface, approx_order, strategy):
         """Test for multiple expectation values."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1142,9 +1179,6 @@ class TestJaxArgnums:
     def test_hessian(self, argnums, interface, approx_order, strategy):
         """Test for hessian."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 

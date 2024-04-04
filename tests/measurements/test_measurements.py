@@ -24,6 +24,7 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
+    MeasurementValue,
     MidMeasure,
     MidMeasureMP,
     MutualInfoMP,
@@ -337,9 +338,15 @@ class TestProperties:
         are correct if the internal observable is a
         MeasurementValue."""
         m0 = qml.measure(0)
+        m0.measurements[0].id = "abc"
+        m1 = qml.measure(1)
+        m1.measurements[0].id = "def"
 
-        m = qml.expval(m0)
-        assert np.all(m.eigvals() == [0, 1])
+        mp1 = qml.sample(op=[m0, m1])
+        assert np.all(mp1.eigvals() == [0, 1, 2, 3])
+
+        mp2 = qml.sample(op=3 * m0 - m1 / 2)
+        assert np.all(mp2.eigvals() == [0, -0.5, 3, 2.5])
 
     def test_error_obs_and_eigvals(self):
         """Test that providing both eigenvalues and an observable
@@ -368,15 +375,44 @@ class TestProperties:
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
         m = qml.expval(op=qml.PauliZ(wires="a") @ qml.PauliZ(wires="b"))
-        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
+        expected = "expval(Z('a') @ Z('b'))"
         assert str(m) == expected
 
         m = qml.probs(op=qml.PauliZ(wires="a"))
-        expected = "probs(PauliZ(wires=['a']))"
+        expected = "probs(Z('a'))"
         assert str(m) == expected
 
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
         assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
+
+        m0 = MeasurementValue([MidMeasureMP(Wires(0), id="0")], lambda v: v)
+        m1 = MeasurementValue([MidMeasureMP(Wires(1), id="1")], lambda v: v)
+        m = ProbabilityMP(obs=[m0, m1])
+        expected = "probs([MeasurementValue(wires=[0]), MeasurementValue(wires=[1])])"
+        assert repr(m) == expected
+
+        m = ProbabilityMP(obs=m0 * m1)
+        expected = "probs(MeasurementValue(wires=[0, 1]))"
+
+    def test_measurement_value_map_wires(self):
+        """Test that MeasurementProcess.map_wires works correctly when mp.mv
+        is not None."""
+        m0 = qml.measure("a")
+        m1 = qml.measure("b")
+        m2 = qml.measure(0)
+        m3 = qml.measure(1)
+        m2.measurements[0].id = m0.measurements[0].id
+        m3.measurements[0].id = m1.measurements[0].id
+
+        wire_map = {"a": 0, "b": 1}
+
+        mp1 = qml.sample(op=[m0, m1])
+        mapped_mp1 = mp1.map_wires(wire_map)
+        assert qml.equal(mapped_mp1, qml.sample(op=[m2, m3]))
+
+        mp2 = qml.sample(op=m0 * m1)
+        mapped_mp2 = mp2.map_wires(wire_map)
+        assert qml.equal(mapped_mp2, qml.sample(op=m2 * m3))
 
 
 class TestExpansion:
@@ -521,7 +557,7 @@ class TestDiagonalizingGates:
         """Test a measurement that has no expansion"""
         m = qml.sample()
 
-        assert m.diagonalizing_gates() == []
+        assert len(m.diagonalizing_gates()) == 0
 
     def test_obs_diagonalizing_gates(self):
         """Test diagonalizing_gates method with and observable."""
@@ -547,6 +583,9 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qml.math.sum(samples[..., self.wires])
 
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
+
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
@@ -564,6 +603,9 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
+
             @property
             def return_type(self):
                 return Sample
@@ -577,7 +619,7 @@ class TestSampleMeasurement:
 
         with pytest.raises(
             qml.DeviceError,
-            match="Analytic circuits must only contain StateMeasurements; got sample",
+            match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
 
@@ -617,7 +659,9 @@ class TestStateMeasurement:
         def circuit():
             return MyMeasurement()
 
-        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
+        with pytest.raises(
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+        ):
             circuit()
 
 
@@ -635,6 +679,9 @@ class TestMeasurementTransform:
 
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return [True]
+
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 

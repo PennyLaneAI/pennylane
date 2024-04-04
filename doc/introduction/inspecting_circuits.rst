@@ -136,7 +136,7 @@ During normal execution, the snapshots are ignored:
 
     @qml.qnode(dev, interface=None)
     def circuit():
-        qml.Snapshot()
+        qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
         qml.Hadamard(wires=0)
         qml.Snapshot("very_important_state")
         qml.CNOT(wires=[0, 1])
@@ -148,10 +148,10 @@ transform, intermediate device states will be stored and returned alongside the
 results.
 
 >>> qml.snapshots(circuit)()
-{0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
+{0: 1.0,
 'very_important_state': array([0.707+0.j, 0.+0.j, 0.707+0.j, 0.+0.j]),
 2: array([0.707+0.j, 0.+0.j, 0.+0.j, 0.707+0.j]),
-'execution_results': array(0.)}
+'execution_results': 0.0}
 
 Graph representation
 --------------------
@@ -218,21 +218,21 @@ False
 
 
 Another way to construct the "causal" DAG of a circuit is to use the
-:func:`~pennylane.transforms.qcut.tape_to_graph` function used by the ``qcut`` module. This
+:func:`~pennylane.qcut.tape_to_graph` function used by the ``qcut`` module. This
 function takes a quantum tape and creates a ``MultiDiGraph`` instance from the ``networkx`` python package.
 
 Using the above example, we get:
 
->>> g2 = qml.transforms.qcut.tape_to_graph(tape)
+>>> g2 = qml.qcut.tape_to_graph(tape)
 >>> type(g2)
 <class 'networkx.classes.multidigraph.MultiDiGraph'>
 >>> for k, v in g2.adjacency():
 ...    print(k, v)
-Hadamard(wires=[0]) {expval(PauliZ(wires=[0])): {0: {'wire': 0}}}
+Hadamard(wires=[0]) {expval(Z(0)): {0: {'wire': 0}}}
 CNOT(wires=[1, 2]) {CNOT(wires=[2, 3]): {0: {'wire': 2}}, CNOT(wires=[3, 1]): {0: {'wire': 1}}}
 CNOT(wires=[2, 3]) {CNOT(wires=[3, 1]): {0: {'wire': 3}}}
 CNOT(wires=[3, 1]) {}
-expval(PauliZ(wires=[0])) {}
+expval(Z(0)) {}
 
 DAG of non-commuting ops
 ~~~~~~~~~~~~~~~~~~~~~~~~

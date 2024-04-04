@@ -24,7 +24,7 @@ class TestSnapshot:
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
-    def test_default_qubit_legacy(self, method):
+    def test_default_qubit_legacy_opmath(self, method):
         """Test that multiple snapshots are returned correctly on the state-vector simulator."""
         dev = qml.device("default.qubit.legacy", wires=2)
 
@@ -332,3 +332,46 @@ class TestSnapshot:
 
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
+    def test_all_measurement_snapshot(self):
+        """Test that the correct measurement snapshots are returned for different measurement types."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
+            qml.RX(x, wires=0)
+            qml.Snapshot(measurement=qml.var(qml.PauliZ(0)))
+            qml.Snapshot(measurement=qml.probs(0))
+            qml.Snapshot(measurement=qml.state())
+            return qml.expval(qml.PauliZ(0))
+
+        phi = 0.1
+        result = qml.snapshots(circuit)(phi)
+        expected = {
+            0: np.array(1),
+            1: np.array(1 - np.cos(phi) ** 2),
+            2: np.array([np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2]),
+            3: np.array([np.cos(phi / 2), -1j * np.sin(phi / 2)]),
+            "execution_results": np.array(np.cos(phi)),
+        }
+
+        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
+    def test_unsupported_snapshot_measurement(self):
+        """Test that an exception is raised when an unsupported measurement is provided to the snapshot."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            with pytest.raises(
+                ValueError,
+                match="The measurement PauliZ is not supported as it is not an instance "
+                "of <class 'pennylane.measurements.measurements.StateMeasurement'>",
+            ):
+                qml.Snapshot(measurement=qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
+
+        qml.snapshots(circuit)()

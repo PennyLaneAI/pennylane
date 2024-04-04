@@ -283,9 +283,6 @@ class TestComputeJVPSingle:
         """Test that using the JAX interface the dtype of the result is
         determined by the dtype of the dy."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dtype = dtype1
         dtype1 = getattr(jax.numpy, dtype1)
@@ -350,8 +347,8 @@ class TestJVP:
         tangent = np.array([1.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
-        assert tapes == []
-        assert fn(tapes) is None
+        assert tapes == tuple()
+        assert qml.math.allclose(fn(tapes), np.array(0.0))
 
     def test_zero_tangent_single_measurement_single_param(self, batch_dim):
         """A zero tangent vector will return no tapes and a zero matrix"""
@@ -466,7 +463,7 @@ class TestJVP:
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         if batch_dim is not None:
-            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
+            pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
@@ -495,7 +492,7 @@ class TestJVP:
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         if batch_dim is not None:
-            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
+            pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
@@ -529,7 +526,7 @@ class TestJVP:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs and a single parameter"""
         if batch_dim is not None:
-            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
+            pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
 
@@ -564,7 +561,7 @@ class TestJVP:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs and multiple parameters"""
         if batch_dim is not None:
-            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
+            pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
@@ -831,7 +828,7 @@ class TestBatchJVP:
         # to the JVP, so only 2*2=4 quantum evals
         res = fn(dev.execute(v_tapes))
 
-        assert res[0] is None
+        assert qml.math.allclose(res[0], np.array(0.0))
         assert res[1] is not None
 
     def test_all_tapes_no_trainable_parameters(self):
@@ -859,7 +856,8 @@ class TestBatchJVP:
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
 
         assert v_tapes == []
-        assert fn([]) == (None, None)
+        assert qml.math.allclose(fn([])[0], np.array(0.0))
+        assert qml.math.allclose(fn([])[1], np.array(0.0))
 
     def test_zero_tangent(self):
         """A zero dy vector will return no tapes and a zero matrix"""
@@ -981,9 +979,11 @@ class TestBatchJVP:
             tapes,
             tangents,
             param_shift,
-            reduction=lambda jvps, x: jvps.extend(qml.math.reshape(x, (1,)))
-            if not isinstance(x, tuple) and x.shape == ()
-            else jvps.extend(x),
+            reduction=lambda jvps, x: (
+                jvps.extend(qml.math.reshape(x, (1,)))
+                if not isinstance(x, tuple) and x.shape == ()
+                else jvps.extend(x)
+            ),
         )
         res = fn(dev.execute(v_tapes))
 

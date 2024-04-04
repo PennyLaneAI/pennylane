@@ -23,7 +23,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable
+from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.wires import Wires
 
 from .matrix_ops import QubitUnitary
@@ -54,9 +54,13 @@ class Hermitian(Observable):
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "F"
 
@@ -229,11 +233,12 @@ class SparseHamiltonian(Observable):
 
     >>> wires = range(20)
     >>> coeffs = [1 for _ in wires]
-    >>> observables = [qml.PauliZ(i) for i in wires]
+    >>> observables = [qml.Z(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = H.sparse_matrix()
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
+
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -244,11 +249,21 @@ class SparseHamiltonian(Observable):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, id=id)
+        self.H = H
         mat_len = 2 ** len(self.wires)
         if H.shape != (mat_len, mat_len):
             raise ValueError(
                 f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
             )
+
+    def __mul__(self, value):
+        r"""The scalar multiplication operation between a scalar and a SparseHamiltonian."""
+        if not isinstance(value, (int, float)) and qml.math.ndim(value) != 0:
+            raise TypeError(f"Scalar value must be an int or float. Got {type(value)}")
+
+        return qml.SparseHamiltonian(csr_matrix.multiply(self.H, value), wires=self.wires)
+
+    __rmul__ = __mul__
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
@@ -365,10 +380,14 @@ class Projector(Observable):
         0.25
 
     """
+
     name = "Projector"
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (1,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     def __new__(cls, state, wires, **_):
         """Changes parents based on the state representation.
@@ -412,7 +431,7 @@ class Projector(Observable):
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
 
-class BasisStateProjector(Projector):
+class BasisStateProjector(Projector, Operation):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a basis state."""
 
@@ -427,7 +446,7 @@ class BasisStateProjector(Projector):
 
         super().__init__(state, wires=wires, id=id)
 
-    def __new__(cls):  # pylint: disable=arguments-differ
+    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -555,7 +574,7 @@ class StateVectorProjector(Projector):
 
         super().__init__(state, wires=wires, id=id)
 
-    def __new__(cls):  # pylint: disable=arguments-differ
+    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -574,14 +593,14 @@ class StateVectorProjector(Projector):
         **Example:**
 
         >>> state_vector = np.array([0, 1, 1, 0])/np.sqrt(2)
-        >>> StateVectorProjector(state_vector, wires=(0, 1)).label()
+        >>> qml.Projector(state_vector, wires=(0, 1)).label()
         'P'
-        >>> StateVectorProjector(state_vector, wires=(0, 1)).label(base_label="hi!")
+        >>> qml.Projector(state_vector, wires=(0, 1)).label(base_label="hi!")
         'hi!'
         >>> dev = qml.device("default.qubit", wires=1)
         >>> @qml.qnode(dev)
         >>> def circuit(state):
-        ...     return qml.expval(StateVectorProjector(state, [0]))
+        ...     return qml.expval(qml.Projector(state, [0]))
         >>> print(qml.draw(circuit)([1, 0]))
         0: ───┤  <|0⟩⟨0|>
         >>> print(qml.draw(circuit)(np.array([1, 1]) / np.sqrt(2)))

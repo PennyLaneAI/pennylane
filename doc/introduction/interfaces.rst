@@ -31,6 +31,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
 
 .. note::
     If no interface is specified, PennyLane will automatically determine the interface based on provided arguments and keyword arguments.
+    See ``qml.workflow.SUPPORTED_INTERFACES`` for a list of all accepted interface strings.
 
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
@@ -199,7 +200,7 @@ Simulation-based differentiation
 The following methods use `reverse accumulation
 <https://en.wikipedia.org/wiki/Automatic_differentiation#Reverse_accumulation>`__ to compute
 gradients; a well-known example of this approach is backpropagation. These methods are **not** hardware compatible; they are only supported on
-*statevector* simulator devices such as :class:`default.qubit <~.DefaultQubit>`.
+*statevector* simulator devices such as :class:`default.qubit <pennylane.devices.DefaultQubit>`.
 
 However, for rapid prototyping on simulators, these methods typically out-perform forward-mode
 accumulators such as the parameter-shift rule and finite-differences. For more details, see the
@@ -209,7 +210,7 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
 
   This differentiation method is only allowed on simulator
   devices that are classically end-to-end differentiable, for example
-  :class:`default.qubit <~.DefaultQubit>`. This method does *not* work on devices
+  :class:`default.qubit <pennylane.devices.DefaultQubit>`. This method does *not* work on devices
   that estimate measurement statistics using a finite number of shots; please use
   the ``parameter-shift`` rule instead.
 
@@ -237,10 +238,10 @@ with the number of trainable circuit parameters.
 
 * ``"hadamard"``: Use hadamard tests on the generators for all compatible quantum operations arguments.
 
-* :func:`qml.gradients.stoch_pulse_grad <~.stoch_pulse_grad>`: Use a stochastic variant of the
+* :func:`qml.gradients.stoch_pulse_grad <pennylane.gradients.stoch_pulse_grad>`: Use a stochastic variant of the
   parameter-shift rule for pulse programs.
 
-* :func:`qml.gradients.pulse_generator <~.pulse_generator>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
+* :func:`qml.gradients.pulse_odegen <pennylane.gradients.pulse_odegen>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
 
 
 Device gradients
@@ -418,7 +419,7 @@ At the moment, it takes into account the following parameters:
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``               |     :gr:`4`  |   :gr:`4`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     | :rd:`6`     | :rd:`6`     |
+|                  | ``"adjoint"``                |      :gr:`7` |     :gr:`7`   |  :gr:`7`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -432,7 +433,7 @@ At the moment, it takes into account the following parameters:
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``               |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     | :rd:`6`     | :rd:`6`     |
+|                  | ``"adjoint"``                |      :gr:`7` |     :gr:`7`   |  :gr:`7`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -446,7 +447,7 @@ At the moment, it takes into account the following parameters:
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``               |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     | :rd:`6`     | :rd:`6`     |
+|                  | ``"adjoint"``                |      :gr:`7` |     :gr:`7`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -460,7 +461,7 @@ At the moment, it takes into account the following parameters:
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``               |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     | :rd:`6`     | :rd:`6`     |
+|                  | ``"adjoint"``                |      :gr:`7` |     :gr:`7`   |  :gr:`7`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -482,9 +483,9 @@ At the moment, it takes into account the following parameters:
    directly. However, any real scalar-valued post-processing done to the output of the
    circuit will be differentiable. See :ref:`State gradients <State gradients>` for details.
 5. Supported, but only when ``shots=None``. See :ref:`Backpropagation <Analytic backpropagation>` for details.
-6. Not supported. The adjoint differentiation algorithm is only implemented for computing the expectation values of observables. See
+6. Not supported. The adjoint differentiation algorithm is only implemented for analytic simulation. See
    :ref:`Adjoint differentation <Adjoint differentation>` for details.
-7. Supported. Raises warning when ``shots>0`` since the gradient is always computed analytically. See
+7. Supported. Raises error when ``shots>0`` since the gradient is always computed analytically. See
    :ref:`Adjoint differentation <Adjoint differentation>` for details.
 8. Supported.
 9. Not supported. The discretization of the output caused by wave function collapse is

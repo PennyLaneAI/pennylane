@@ -55,10 +55,10 @@ class TestMergeAmplitudeEmbedding:
             qml.AmplitudeEmbedding([0.0, 1.0], wires=0)
             qml.AmplitudeEmbedding([0.0, 1.0], wires=1)
             qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
             return qml.state()
 
-        assert np.allclose(circuit()[0], 1)
+        assert qml.math.allclose(circuit(), np.array([1, -1, -1, 1]) / 2)
 
     def test_repeated_qubit(self):
         """Check that AmplitudeEmbedding cannot be applied if the qubit has already been used."""
@@ -93,8 +93,8 @@ class TestMergeAmplitudeEmbedding:
         """Test that merging preserves the batch dimension"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
         @qml.transforms.merge_amplitude_embedding
+        @qml.qnode(dev)
         def qnode():
             qml.AmplitudeEmbedding([[1, 0], [0, 1]], wires=0)
             qml.AmplitudeEmbedding([1, 0], wires=1)
@@ -169,9 +169,6 @@ class TestMergeAmplitudeEmbeddingInterfaces:
     def test_merge_amplitude_embedding_jax(self):
         """Test QNode in JAX interface."""
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         def qfunc(amplitude):
             qml.AmplitudeEmbedding(amplitude, wires=0)

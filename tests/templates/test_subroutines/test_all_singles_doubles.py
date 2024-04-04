@@ -21,6 +21,18 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    op = qml.AllSinglesDoubles(
+        [1, 2],
+        wires=range(4),
+        hf_state=np.array([1, 1, 0, 0]),
+        singles=[[0, 1]],
+        doubles=[[0, 1, 2, 3]],
+    )
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

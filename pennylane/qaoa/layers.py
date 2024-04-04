@@ -31,7 +31,12 @@ def _diagonal_terms(hamiltonian):
     val = True
 
     for i in hamiltonian.ops:
-        obs = i.obs if isinstance(i, Tensor) else [i]
+        if isinstance(i, Tensor):
+            obs = i.obs
+        elif isinstance(i, qml.ops.Prod):
+            obs = i.operands
+        else:
+            obs = [i]
         for j in obs:
             if j.name not in ("PauliZ", "Identity"):
                 val = False
@@ -66,7 +71,7 @@ def cost_layer(gamma, hamiltonian):
             from pennylane import qaoa
             import pennylane as qml
 
-            cost_h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+            cost_h = qml.Hamiltonian([1, 1], [qml.Z(0), qml.Z(0) @ qml.Z(1)])
 
         We can then pass it into ``qaoa.cost_layer``, within a quantum circuit:
 
@@ -80,9 +85,9 @@ def cost_layer(gamma, hamiltonian):
                 for i in range(2):
                     qml.Hadamard(wires=i)
 
-                cost_layer(gamma, cost_h)
+                qaoa.cost_layer(gamma, cost_h)
 
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
+                return [qml.expval(qml.Z(i)) for i in range(2)]
 
         which gives us a circuit of the form:
 
@@ -90,11 +95,11 @@ def cost_layer(gamma, hamiltonian):
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
-        0: ──H──MultiRZ(1.00)─╭MultiRZ(1.00)─┤  <Z>
-        1: ──H────────────────╰MultiRZ(1.00)─┤  <Z>
+        0: ──H──RZ(1.00)─╭RZZ(1.00)─┤  <Z>
+        1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, qml.Hamiltonian):
+    if not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise ValueError(
             f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )
@@ -128,7 +133,7 @@ def mixer_layer(alpha, hamiltonian):
             from pennylane import qaoa
             import pennylane as qml
 
-            mixer_h = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)])
+            mixer_h = qml.Hamiltonian([1, 1], [qml.X(0), qml.X(0) @ qml.X(1)])
 
         We can then pass it into ``qaoa.mixer_layer``, within a quantum circuit:
 
@@ -144,7 +149,7 @@ def mixer_layer(alpha, hamiltonian):
 
                 qaoa.mixer_layer(alpha, mixer_h)
 
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
+                return [qml.expval(qml.Z(i)) for i in range(2)]
 
         which gives us a circuit of the form:
 
@@ -152,12 +157,11 @@ def mixer_layer(alpha, hamiltonian):
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
-        0: ──H──H──MultiRZ(1.00)──H──H─╭MultiRZ(1.00)──H─┤  <Z>
-        1: ──H──H──────────────────────╰MultiRZ(1.00)──H─┤  <Z>
-
+        0: ──H──RX(1.00)─╭RXX(1.00)─┤  <Z>
+        1: ──H───────────╰RXX(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, qml.Hamiltonian):
+    if not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise ValueError(
             f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )

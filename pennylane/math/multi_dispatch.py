@@ -333,6 +333,7 @@ def dot(tensor1, tensor2, like=None):
     x, y = np.coerce([tensor1, tensor2], like=like)
 
     if like == "torch":
+
         if x.ndim == 0 and y.ndim == 0:
             return x * y
 
@@ -496,7 +497,7 @@ def einsum(indices, *operands, like=None, optimize=None):
             subscript labels. An implicit (classical Einstein summation) calculation is
             performed unless the explicit indicator ‘->’ is included as well as subscript
             labels of the precise output form.
-        operands (tuple[tensor_like]): The tensors for the operation.
+        *operands (tuple[tensor_like]): The tensors for the operation.
 
     Returns:
         tensor_like: The calculation based on the Einstein summation convention.
@@ -540,6 +541,13 @@ def einsum(indices, *operands, like=None, optimize=None):
     if optimize is None or like == "torch":
         # torch einsum doesn't support the optimize keyword argument
         return np.einsum(indices, *operands, like=like)
+    if like == "tensorflow":
+        # Unpacking and casting necessary for higher order derivatives,
+        # and avoiding implicit fp32 down-conversions.
+        op1, op2 = operands
+        op1 = array(op1, like=op1[0], dtype=op1[0].dtype)
+        op2 = array(op2, like=op2[0], dtype=op2[0].dtype)
+        return np.einsum(indices, op1, op2, like=like)
     return np.einsum(indices, *operands, like=like, optimize=optimize)
 
 
@@ -754,14 +762,20 @@ def unwrap(values, max_depth=None):
     """
 
     def convert(val):
-        if isinstance(val, list):
+        if isinstance(val, (tuple, list)):
             return unwrap(val)
         new_val = (
             np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
         )
         return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
-    return [convert(val) for val in values]
+    if isinstance(values, (tuple, list)):
+        return type(values)(convert(val) for val in values)
+    return (
+        np.to_numpy(values, max_depth=max_depth)
+        if isinstance(values, ArrayBox)
+        else np.to_numpy(values)
+    )
 
 
 @multi_dispatch(argnum=[0, 1])
@@ -846,10 +860,74 @@ def norm(tensor, like=None, **kwargs):
             axis_val = kwargs.pop("axis")
             kwargs["dim"] = axis_val
 
+    elif (
+        like == "autograd" and kwargs.get("ord", None) is None and kwargs.get("axis", None) is None
+    ):
+        norm = _flat_autograd_norm
+
     else:
         from scipy.linalg import norm
 
     return norm(tensor, **kwargs)
+
+
+@multi_dispatch(argnum=[0])
+def svd(tensor, like=None, **kwargs):
+    """Compute the singular value decomposition of a tensor in each interface.
+
+    The singular value decomposition for a matrix :math:`A` consist of three matrices :math:`S`,
+    :math:`U` and :math:`V_h`, such that:
+
+    .. math::
+
+        A = U . Diag(S) . V_h
+
+    Args:
+        tensor (tensor_like): input tensor
+        compute_uv (bool):  if ``True``, the full decomposition is returned
+
+
+    Returns:
+        :math:`S`, :math:`U` and :math:`V_h` or :math:`S`: full decomposition
+        if ``compute_uv`` is ``True`` or ``None``, or only the singular values
+        if ``compute_uv`` is ``False``
+    """
+    if like == "tensorflow":
+        from tensorflow.linalg import svd, adjoint
+
+        # Tensorflow results need some post-processing to keep it similar to other frameworks.
+
+        if kwargs.get("compute_uv", True):
+            S, U, V = svd(tensor, **kwargs)
+            return U, S, adjoint(V)
+        return svd(tensor, **kwargs)
+
+    if like == "jax":
+        from jax.numpy.linalg import svd
+
+    elif like == "torch":
+        # Torch is deprecating torch.svd() in favour of torch.linalg.svd().
+        # The new UI is slightly different and breaks the logic for the multi dispatching.
+        # This small workaround restores the compute_uv control argument.
+        if kwargs.get("compute_uv", True) is False:
+            from torch.linalg import svdvals as svd
+        else:
+            from torch.linalg import svd
+        if kwargs.get("compute_uv", None) is not None:
+            kwargs.pop("compute_uv")
+
+    else:
+        from numpy.linalg import svd
+
+    return svd(tensor, **kwargs)
+
+
+def _flat_autograd_norm(tensor, **kwargs):  # pylint: disable=unused-argument
+    """Helper function for computing the norm of an autograd tensor when the order or axes are not
+    specified. This is used for differentiability."""
+    x = np.ravel(tensor)
+    sq_norm = np.dot(x, np.conj(x))
+    return np.real(np.sqrt(sq_norm))
 
 
 @multi_dispatch(argnum=[1])
@@ -917,7 +995,7 @@ def detach(tensor, like=None):
     return tensor
 
 
-def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
+def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
     The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
     of Jax in order to mark trainable parameters.
@@ -925,7 +1003,8 @@ def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
     Args:
         qnode(qml.QNode): the quantum node.
         argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
-        expand_fn(callable): the function that is expanding the tape.
+        program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
+
 
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
@@ -936,18 +1015,19 @@ def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
         trace = jax.interpreters.ad.JVPTrace(main, 0)
 
     args_jvp = [
-        jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-        if i in argnums
-        else arg
+        (
+            jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+            if i in argnums
+            else arg
+        )
         for i, arg in enumerate(args)
     ]
 
     qnode.construct(args_jvp, kwargs)
     tape = qnode.qtape
-    tape = expand_fn(tape)
-    params = tape.get_parameters(trainable_only=False)
+    tapes, _ = program((tape,))
     del trace
-    return params
+    return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
 
 
 @multi_dispatch(tensor_list=[1])

@@ -57,7 +57,7 @@ def shadow_expval(H, k=1, seed=None):
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+        H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
         dev = qml.device("default.qubit", wires=range(2), shots=10000)
         @qml.qnode(dev)
@@ -72,18 +72,18 @@ def shadow_expval(H, k=1, seed=None):
     We can compute the expectation value of H as well as its gradient in the usual way.
 
     >>> circuit(x, H)
-    tensor(1.827, requires_grad=True)
+    array(1.8774)
     >>> qml.grad(circuit)(x, H)
     -0.44999999999999984
 
     In ``shadow_expval``, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
     to include all observables that you want to estimate from a single measurement in the same execution.
 
-    >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+    >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
     >>> circuit(x, Hs)
-    [ 1.88586e+00,  4.50000e-03,  1.32000e-03, -1.92000e-03]
+    array([ 1.881 , -0.0312, -0.0027, -0.0087])
     >>> qml.jacobian(circuit)(x, Hs)
-    [-0.48312, -0.00198, -0.00375,  0.00168]
+    array([-0.4518,  0.0174, -0.0216, -0.0063])
     """
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
@@ -178,7 +178,7 @@ def classical_shadow(wires, seed=None):
 
             ops = [qml.Hadamard(wires=0), qml.CNOT(wires=(0,1))]
             measurements = [qml.classical_shadow(wires=(0,1))]
-            tape = qml.tape.QuantumTape(ops, measurements)
+            tape = qml.tape.QuantumTape(ops, measurements, shots=5)
 
         >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0]
         >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0]
@@ -195,10 +195,10 @@ def classical_shadow(wires, seed=None):
             dev = qml.device("default.qubit", wires=2, shots=5)
 
             measurements1 = [qml.classical_shadow(wires=(0,1), seed=10)]
-            tape1 = qml.tape.QuantumTape(ops, measurements1)
+            tape1 = qml.tape.QuantumTape(ops, measurements1, shots=5)
 
             measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
-            tape2 = qml.tape.QuantumTape(ops, measurements2)
+            tape2 = qml.tape.QuantumTape(ops, measurements2, shots=5)
 
         >>> bits1, recipes1 = qml.execute([tape1], device=dev, gradient_fn=None)[0]
         >>> bits2, recipes2 = qml.execute([tape2], device=dev, gradient_fn=None)[0]
@@ -284,7 +284,7 @@ class ClassicalShadowMP(MeasurementTransform):
         n_snapshots = device.shots
         seed = self.seed
 
-        with qml.interfaces.set_shots(device, shots=1):
+        with qml.workflow.set_shots(device, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(device.map_wires(wires))
@@ -293,7 +293,7 @@ class ClassicalShadowMP(MeasurementTransform):
             # are the same for different executions with the same seed
             rng = np.random.RandomState(seed)
             recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+            obs_list = [qml.X, qml.Y, qml.Z]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
 
@@ -349,9 +349,9 @@ class ClassicalShadowMP(MeasurementTransform):
 
         obs_list = np.stack(
             [
-                qml.PauliX.compute_matrix(),
-                qml.PauliY.compute_matrix(),
-                qml.PauliZ.compute_matrix(),
+                qml.X.compute_matrix(),
+                qml.Y.compute_matrix(),
+                qml.Z.compute_matrix(),
             ]
         )
 
@@ -536,8 +536,12 @@ class ShadowExpvalMP(MeasurementTransform):
     def return_type(self):
         return ShadowExpval
 
-    def shape(self, device, shots):  # pylint: disable=unused-argument
-        return ()
+    def shape(self, device, shots):
+        is_single_op = isinstance(self.H, Operator)
+        if not shots.has_partitioned_shots:
+            return () if is_single_op else (len(self.H),)
+        base = () if is_single_op else (len(self.H),)
+        return (base,) * sum(s.copies for s in shots.shot_vector)
 
     @property
     def wires(self):

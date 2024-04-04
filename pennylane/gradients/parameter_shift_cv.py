@@ -24,22 +24,27 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, VarianceMP
-from pennylane.transforms.core import transform
+from pennylane.measurements import (
+    ExpectationMP,
+    ProbabilityMP,
+    StateMP,
+    VarianceMP,
+    MeasurementProcess,
+)
+from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
-
+from pennylane.gradients.gradient_transform import (
+    _contract_qjac_with_cjac,
+    choose_trainable_params,
+    _validate_gradient_methods,
+)
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
-from .gradient_transform import (
-    choose_grad_methods,
-    _grad_method_validation,
-    _no_trainable_grad,
-)
+from .gradient_transform import _no_trainable_grad
 from .parameter_shift import _get_operation_recipe, expval_param_shift
 
 
-def _grad_method(tape, idx):
+def _grad_method_cv(tape, idx):
     """Determine the best CV parameter-shift gradient recipe for a given
     parameter index of a tape.
 
@@ -54,7 +59,8 @@ def _grad_method(tape, idx):
             or ``"0"`` (constant parameter).
     """
 
-    op = tape._par_info[idx]["op"]
+    par_info = tape._par_info[idx]
+    op = par_info["op"]
 
     if op.grad_method in (None, "F"):
         return op.grad_method
@@ -74,7 +80,8 @@ def _grad_method(tape, idx):
             continue
 
         # get the set of operations betweens the operation and the observable
-        ops_between = tape.graph.nodes_between(op, m.obs)
+        op_or_mp = tape[par_info["op_idx"]]
+        ops_between = tape.graph.nodes_between(op_or_mp, m)
 
         if not ops_between:
             # if there is no path between the operation and the observable,
@@ -86,6 +93,7 @@ def _grad_method(tape, idx):
         # intervening gates, and the type of the observable.
         best_method = "A"
 
+        ops_between = [o.obs if isinstance(o, MeasurementProcess) else o for o in ops_between]
         if any(not k.supports_heisenberg for k in ops_between):
             # non-Gaussian operators present in-between the operation
             # and the observable. Must fallback to numeric differentiation.
@@ -122,25 +130,19 @@ def _grad_method(tape, idx):
     return "A"
 
 
-def _gradient_analysis_cv(tape):
-    """Update the parameter information dictionary of the tape with
-    gradient information of each parameter."""
-    if getattr(tape, "_gradient_fn", None) is param_shift_cv:
-        # gradient analysis for param_shift_cv has already been performed on this tape
-        return
-
-    tape._gradient_fn = param_shift_cv
-
-    for idx, info in enumerate(tape._par_info):
-        info["grad_method"] = _grad_method(tape, idx)
+def _find_gradient_methods_cv(tape, trainable_param_indices):
+    """Find the best gradient methods for each parameter."""
+    return {
+        idx: _grad_method_cv(tape, tape.trainable_params[idx]) for idx in trainable_param_indices
+    }
 
 
-def _gradient_analysis_and_validation_cv(tape, method):
-    """Update the parameter information dictionary of the tape with
-    gradient information of each parameter. Subsequently validate the
-    gradient methods and return diff_methods."""
-    _gradient_analysis_cv(tape)
-    return _grad_method_validation(method, tape)
+def _gradient_analysis_and_validation_cv(tape, method, trainable_param_indices):
+    """Find the best gradient methods for each parameter. Subsequently, validate
+    the gradient methods and return diff_methods."""
+    diff_methods = _find_gradient_methods_cv(tape, trainable_param_indices)
+    _validate_gradient_methods(tape, method, diff_methods)
+    return diff_methods
 
 
 def _transform_observable(obs, Z, device_wires):
@@ -392,7 +394,8 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         # transform the descendant observables into their derivatives using Z
         transformed_obs_idx = []
 
-        for obs in observable_descendents:
+        for mp in observable_descendents:
+            obs = mp if mp.obs is None else mp.obs
             # get the index of the descendent observable
             # pylint:disable=undefined-loop-variable
             for obs_idx, tape_obs in enumerate(tape.observables):
@@ -524,7 +527,7 @@ def param_shift_cv(
     parameters with respect to its inputs.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         dev (pennylane.Device): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
@@ -556,16 +559,11 @@ def param_shift_cv(
         force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     This transform supports analytic gradients of Gaussian CV operations using
     the parameter-shift rule. This gradient method returns *exact* gradients,
@@ -646,7 +644,9 @@ def param_shift_cv(
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
+        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
+        of the QNode decorator, and differentiating with your preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
@@ -694,7 +694,9 @@ def param_shift_cv(
         )
 
     method = "analytic" if fallback_fn is None else "best"
-    diff_methods = _gradient_analysis_and_validation_cv(tape, method)
+
+    trainable_params = choose_trainable_params(tape, argnum)
+    method_map = _gradient_analysis_and_validation_cv(tape, method, trainable_params)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -710,10 +712,9 @@ def param_shift_cv(
         shapes.append(len(data[0]))
         fns.append(data[1])
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in method_map.values()):
         return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    method_map = choose_grad_methods(diff_methods, argnum)
     var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
 
     unsupported_params = []

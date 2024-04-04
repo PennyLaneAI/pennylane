@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the qml.transforms.classical_jacobian function."""
+"""Tests for the qml.gradients.classical_jacobian function."""
 # pylint: disable=too-many-arguments
 import pytest
 import numpy as np
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.transforms.classical_jacobian import classical_jacobian
+from pennylane.gradients.classical_jacobian import classical_jacobian
 
 a = pnp.array(-2.1, requires_grad=True)
 b = pnp.array(0.71, requires_grad=True)

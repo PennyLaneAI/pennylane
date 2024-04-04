@@ -18,12 +18,13 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
+
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Operator, DecompositionUndefinedError, EigvalsUndefinedError
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -116,9 +117,9 @@ class MeasurementProcess(ABC):
     quantum variational circuit.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue, Sequence[.MeasurementValue]]): The observable that
+            is to be measured as part of the measurement process. Not all measurement processes
+            require observables (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -126,6 +127,8 @@ class MeasurementProcess(ABC):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    # pylint:disable=too-many-instance-attributes
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
@@ -145,13 +148,20 @@ class MeasurementProcess(ABC):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        obs: Optional[Operator] = None,
+        obs: Optional[
+            Union[
+                Operator,
+                "qml.measurements.MeasurementValue",
+                Sequence["qml.measurements.MeasurementValue"],
+            ]
+        ] = None,
         wires: Optional[Wires] = None,
         eigvals: Optional[TensorLike] = None,
         id: Optional[str] = None,
     ):
-        if obs is not None and obs.name == "MeasurementValue":
-            self.mv = obs
+        if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
+            # Cast sequence of measurement values to list
+            self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
             self.obs = None
         else:
             self.obs = obs
@@ -175,19 +185,6 @@ class MeasurementProcess(ABC):
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
             self._eigvals = qml.math.asarray(eigvals)
-
-        # TODO: remove the following lines once devices
-        # have been refactored to accept and understand receiving
-        # measurement processes rather than specific observables.
-
-        # The following lines are only applicable for measurement processes
-        # that do not have corresponding observables (e.g., Probability). We use
-        # them to 'trick' the device into thinking it has received an observable.
-
-        # Below, we imitate an identity observable, so that the
-        # device undertakes no action upon receiving this observable.
-        self.name = "Identity"
-        self.data = []
 
         # Queue the measurement process
         self.queue()
@@ -285,16 +282,15 @@ class MeasurementProcess(ABC):
 
     def __repr__(self):
         """Representation of this class."""
-        if self.obs is None:
-            if self._eigvals is None:
-                return f"{self.return_type.value}(wires={self.wires.tolist()})"
+        if self.mv:
+            return f"{self.return_type.value}({repr(self.mv)})"
+        if self.obs:
+            return f"{self.return_type.value}({self.obs})"
+        if self._eigvals is not None:
             return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if getattr(self.obs, "return_type", None) is None:
-            return f"{self.return_type.value}({self.obs})"
-
-        return f"{self.obs}"
+        return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
@@ -315,6 +311,8 @@ class MeasurementProcess(ABC):
         This is the union of all the Wires objects of the measurement.
         """
         if self.mv is not None:
+            if isinstance(self.mv, list):
+                return qml.wires.Wires.all_wires([m.wires for m in self.mv])
             return self.mv.wires
 
         if self.obs is not None:
@@ -349,7 +347,7 @@ class MeasurementProcess(ABC):
 
         **Example:**
 
-        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
+        >>> m = MeasurementProcess(Expectation, obs=qml.X(1))
         >>> m.eigvals()
         array([1, -1])
 
@@ -357,10 +355,17 @@ class MeasurementProcess(ABC):
             array: eigvals representation
         """
         if self.mv is not None:
+            if getattr(self.mv, "name", None) == "MeasurementValue":
+                # Indexing a MeasurementValue gives the output of the processing function
+                # for the binary number corresponding to the index.
+                return qml.math.asarray([self.mv[i] for i in range(2 ** len(self.wires))])
             return qml.math.arange(0, 2 ** len(self.wires), 1)
 
         if self.obs is not None:
-            return self.obs.eigvals()
+            try:
+                return qml.eigvals(self.obs)
+            except DecompositionUndefinedError as e:
+                raise EigvalsUndefinedError from e
         return self._eigvals
 
     @property
@@ -472,10 +477,12 @@ class MeasurementProcess(ABC):
         """
         new_measurement = copy.copy(self)
         if self.mv is not None:
-            mv = copy.copy(self.mv)
-            mv.measurements = [m.map_wires(wire_map=wire_map) for m in mv.measurements]
-            new_measurement.mv = mv
-        if self.obs is not None:
+            new_measurement.mv = (
+                self.mv.map_wires(wire_map=wire_map)
+                if getattr(self.mv, "name", None) == "MeasurementValue"
+                else [m.map_wires(wire_map=wire_map) for m in self.mv]
+            )
+        elif self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         elif self._wires is not None:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
@@ -509,10 +516,10 @@ class SampleMeasurement(MeasurementProcess):
     >>> dev = qml.device("default.qubit", wires=2, shots=1000)
     >>> @qml.qnode(dev)
     ... def circuit():
-    ...     qml.PauliX(0)
+    ...     qml.X(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
     >>> circuit()
-    tensor([1000,    0], requires_grad=True)
+    (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
 
     @abstractmethod
@@ -533,6 +540,17 @@ class SampleMeasurement(MeasurementProcess):
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
+        """
+
+    @abstractmethod
+    def process_counts(self, counts: dict, wire_order: Wires):
+        """Calculate the measurement given a counts histogram dictionary.
+
+        Args:
+            counts (dict): a dictionary matching the format returned by :class:`~.CountsMP`
+            wire_order (Wires): the wire order used in producing the counts
+
+        Note that the input dictionary may only contain states with non-zero entries (``all_outcomes=False``).
         """
 
 

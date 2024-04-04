@@ -21,6 +21,8 @@ import numpy as np
 import pennylane as qml
 
 from pennylane import math
+from pennylane.measurements import MidMeasureMP
+from pennylane.ops import Conditional
 
 SQRT2INV = 1 / math.sqrt(2)
 
@@ -149,7 +151,11 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
 
 @singledispatch
 def apply_operation(
-    op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None
+    op: qml.operation.Operator,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **_,
 ):
     """Apply and operator to a given state.
 
@@ -190,7 +196,7 @@ def apply_operation(
     >>> state
     tensor([[1., 0.],
         [0., 0.]], requires_grad=True)
-    >>> apply_operation(qml.PauliX(0), state)
+    >>> apply_operation(qml.X(0), state)
     tensor([[0., 0.],
         [1., 0.]], requires_grad=True)
 
@@ -210,33 +216,110 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
 
 @apply_operation.register
-def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None):
+def apply_conditional(
+    op: Conditional, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
+    """Applies a conditional operation.
+
+    Args:
+        op (Operator): The operation to apply to ``state``
+        state (TensorLike): The starting state.
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+        debugger (_Debugger): The debugger to use
+        mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+
+    Returns:
+        ndarray: output state
+    """
+    if op.meas_val.concretize(mid_measurements):
+        return apply_operation(
+            op.then_op,
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+            mid_measurements=mid_measurements,
+        )
+    return state
+
+
+@apply_operation.register
+def apply_mid_measure(
+    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+):
+    """Applies a native mid-circuit measurement.
+
+    Args:
+        op (Operator): The operation to apply to ``state``
+        state (TensorLike): The starting state.
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+        debugger (_Debugger): The debugger to use
+        mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+
+    Returns:
+        ndarray: output state
+    """
+    if is_state_batched:
+        raise ValueError("MidMeasureMP cannot be applied to batched states.")
+    if not np.allclose(np.linalg.norm(state), 1.0):
+        mid_measurements[op] = 0
+        return np.zeros_like(state)
+    wire = op.wires
+    probs = qml.devices.qubit.measure(qml.probs(wire), state)
+
+    try:  # pragma: no cover
+        sample = np.random.binomial(1, probs[1])
+    except ValueError as e:  # pragma: no cover
+        if probs[1] > 1:  # MachEps error, safe to catch
+            sample = np.random.binomial(1, np.round(probs[1], 15))
+        else:  # Other general error, continue to fail
+            raise e
+
+    mid_measurements[op] = sample
+    if op.postselect is not None and sample != op.postselect:
+        return np.zeros_like(state)
+    axis = wire.toarray()[0]
+    slices = [slice(None)] * qml.math.ndim(state)
+    slices[axis] = int(not sample)
+    state[tuple(slices)] = 0.0
+    state_norm = np.linalg.norm(state)
+    state = state / state_norm
+    if op.reset and sample == 1:
+        state = apply_operation(
+            qml.X(wire), state, is_state_batched=is_state_batched, debugger=debugger
+        )
+    return state
+
+
+@apply_operation.register
+def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.Identity` operation by just returning the input state."""
     return state
 
 
 @apply_operation.register
-def apply_global_phase(op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None):
+def apply_global_phase(
+    op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None, **_
+):
     """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
     return qml.math.exp(-1j * qml.math.cast(op.data[0], complex)) * state
 
 
 @apply_operation.register
-def apply_paulix(op: qml.PauliX, state, is_state_batched: bool = False, debugger=None):
+def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
     axis = op.wires[0] + is_state_batched
     return math.roll(state, 1, axis)
 
 
 @apply_operation.register
-def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False, debugger=None):
+def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply pauliz to state."""
 
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
-        return apply_operation_tensordot(op, state)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
@@ -247,14 +330,14 @@ def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False, debugger
 
 
 @apply_operation.register
-def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=None):
+def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply cnot gate to state."""
     target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + is_state_batched
     control_axes = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
-        return apply_operation_tensordot(op, state)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, control_axes, n_dim)
     sl_1 = _get_slice(1, control_axes, n_dim)
@@ -272,41 +355,155 @@ def apply_swap(op: qml.SWAP, state, is_state_batched: bool = False, debugger=Non
 
 
 @apply_operation.register
-def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
+def apply_multicontrolledx(
+    op: qml.MultiControlledX,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **_,
+):
+    r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
+    for 8 operation wires or less. Otherwise, apply a custom kernel based on
+    composing transpositions, rolling of control axes and the CNOT logic above."""
+    if len(op.wires) < 9:
+        return _apply_operation_default(op, state, is_state_batched, debugger)
+    ctrl_wires = [w + is_state_batched for w in op.control_wires]
+    # apply x on all control wires with control value 0
+    roll_axes = [w for val, w in zip(op.control_values, ctrl_wires) if val is False]
+    for ax in roll_axes:
+        state = math.roll(state, 1, ax)
+
+    orig_shape = math.shape(state)
+    # Move the axes into the order [(batch), other, target, controls]
+    transpose_axes = (
+        np.array(
+            [
+                w - is_state_batched
+                for w in range(len(orig_shape))
+                if w - is_state_batched not in op.wires
+            ]
+            + [op.wires[-1]]
+            + op.wires[:-1].tolist()
+        )
+        + is_state_batched
+    )
+    state = math.transpose(state, transpose_axes)
+
+    # Reshape the state into 3-dimensional array with axes [batch+other, target, controls]
+    state = math.reshape(state, (-1, 2, 2 ** (len(op.wires) - 1)))
+
+    # The part of the state to which we want to apply PauliX is now in the last entry along the
+    # third axis. Extract it, apply the PauliX along the target axis (1), and append a dummy axis
+    state_x = math.roll(state[:, :, -1], 1, 1)[:, :, np.newaxis]
+
+    # Stack the transformed part of the state with the unmodified rest of the state
+    state = math.concatenate([state[:, :, :-1], state_x], axis=2)
+
+    # Reshape into original shape and undo the transposition
+    state = math.transpose(math.reshape(state, orig_shape), np.argsort(transpose_axes))
+
+    # revert x on all "wrong" controls
+    for ax in roll_axes:
+        state = math.roll(state, 1, ax)
+    return state
+
+
+@apply_operation.register
+def apply_grover(
+    op: qml.GroverOperator,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **_,
+):
+    """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
+    wires) or via standard matrix based methods (else)."""
+    if len(op.wires) < 9:
+        return _apply_operation_default(op, state, is_state_batched, debugger)
+    return _apply_grover_without_matrix(state, op.wires, is_state_batched)
+
+
+def _apply_grover_without_matrix(state, op_wires, is_state_batched):
+    r"""Apply GroverOperator to state. This method uses that this operator
+    is :math:`2*P-\mathbb{I}`, where :math:`P` is the projector onto the
+    all-plus state. This allows us to compute the new state by replacing summing
+    over all axes on which the operation acts, and "filling in" the all-plus state
+    in the resulting lower-dimensional state via a Kronecker product.
+    """
+    num_wires = len(op_wires)
+    # 2 * Squared normalization of the all-plus state on the op wires
+    # (squared, because we skipped the normalization when summing, 2* because of the def of Grover)
+    prefactor = 2 ** (1 - num_wires)
+
+    # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
+    sum_axes = [w + is_state_batched for w in op_wires]
+    collapsed = math.sum(state, axis=tuple(sum_axes))
+
+    if num_wires == (len(qml.math.shape(state)) - is_state_batched):
+        # If the operation acts on all wires, we can skip the tensor product with all-ones state
+        new_shape = (-1,) + (1,) * num_wires if is_state_batched else (1,) * num_wires
+        return prefactor * math.reshape(collapsed, new_shape) - state
+        # [todo]: Once Tensorflow support expand_dims with multiple axes in the second argument,
+        # use the following line instead of the two above.
+        # return prefactor * math.expand_dims(collapsed, sum_axes) - state
+
+    all_plus = math.cast_like(math.full([2] * num_wires, prefactor), state)
+    # After the Kronecker product (realized with tensordot with axes=0), we need to move
+    # the new axes to the summed-away axes' positions. Finally, subtract the original state.
+    source = list(range(math.ndim(collapsed), math.ndim(state)))
+    # Probably it will be better to use math.full or math.tile to create the outer product
+    # here computed with math.tensordot. However, Tensorflow and Torch do not have full support
+    return math.moveaxis(math.tensordot(collapsed, all_plus, axes=0), source, sum_axes) - state
+
+
+@apply_operation.register
+def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **_):
     """Take a snapshot of the state"""
     if debugger is not None and debugger.active:
-        flat_state = math.flatten(state)
-        if op.tag:
-            debugger.snapshots[op.tag] = flat_state
+        measurement = op.hyperparameters["measurement"]
+        if measurement:
+            snapshot = qml.devices.qubit.measure(measurement, state)
         else:
-            debugger.snapshots[len(debugger.snapshots)] = flat_state
+            flat_shape = (math.shape(state)[0], -1) if is_state_batched else (-1,)
+            snapshot = math.cast(math.reshape(state, flat_shape), complex)
+        if op.tag:
+            debugger.snapshots[op.tag] = snapshot
+        else:
+            debugger.snapshots[len(debugger.snapshots)] = snapshot
     return state
 
 
 # pylint:disable = no-value-for-parameter, import-outside-toplevel
 @apply_operation.register
 def apply_parametrized_evolution(
-    op: qml.pulse.ParametrizedEvolution, state, is_state_batched: bool = False, debugger=None
+    op: qml.pulse.ParametrizedEvolution,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **_,
 ):
     """Apply ParametrizedEvolution by evolving the state rather than the operator matrix
     if we are operating on more than half of the subsystem"""
-    if is_state_batched and op.batch_size is None:
-        raise RuntimeError(
-            "ParameterizedEvolution does not support standard broadcasting, but received a batched state"
-        )
 
     # shape(state) is static (not a tracer), we can use an if statement
-    num_wires = len(qml.math.shape(state))
+    num_wires = len(qml.math.shape(state)) - is_state_batched
     state = qml.math.cast(state, complex)
-    if 2 * len(op.wires) > num_wires and not op.hyperparameters["complementary"]:
-        # the subsystem operated is more than half of the system based on the state vector --> evolve state
-        return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires)
-    # otherwise --> evolve matrix
-    return _apply_operation_default(op, state, is_state_batched, debugger)
+    if (
+        2 * len(op.wires) <= num_wires
+        or op.hyperparameters["complementary"]
+        or (is_state_batched and op.hyperparameters["return_intermediate"])
+    ):
+        # the subsystem operated on is half as big as the total system, or less
+        # or we want complementary time evolution
+        # or both the state and the operation have a batch dimension
+        # --> evolve matrix
+        return _apply_operation_default(op, state, is_state_batched, debugger)
+    # otherwise --> evolve state
+    return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires, is_state_batched)
 
 
 def _evolve_state_vector_under_parametrized_evolution(
-    operation: qml.pulse.ParametrizedEvolution, state, num_wires
+    operation: qml.pulse.ParametrizedEvolution, state, num_wires, is_state_batched
 ):
     """Uses an odeint solver to compute the evolution of the input ``state`` under the given
     ``ParametrizedEvolution`` operation.
@@ -341,7 +538,13 @@ def _evolve_state_vector_under_parametrized_evolution(
             "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
         )
 
-    state = state.flatten()
+    if is_state_batched:
+        batch_dim = state.shape[0]
+        state = qml.math.moveaxis(state.reshape((batch_dim, 2**num_wires)), 1, 0)
+        out_shape = [2] * num_wires + [batch_dim]  # this shape is before moving the batch_dim back
+    else:
+        state = state.flatten()
+        out_shape = [2] * num_wires
 
     with jax.ensure_compile_time_eval():
         H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(  # pragma: no cover
@@ -355,7 +558,9 @@ def _evolve_state_vector_under_parametrized_evolution(
         return (-1j * H_jax(operation.data, t=t)) @ y
 
     result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
-    out_shape = [2] * num_wires
     if operation.hyperparameters["return_intermediate"]:
         return qml.math.reshape(result, [-1] + out_shape)
-    return qml.math.reshape(result[-1], out_shape)
+    result = qml.math.reshape(result[-1], out_shape)
+    if is_state_batched:
+        return qml.math.moveaxis(result, -1, 0)
+    return result

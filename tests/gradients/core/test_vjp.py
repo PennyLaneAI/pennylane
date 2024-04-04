@@ -117,7 +117,7 @@ class TestComputeVJP:
 
     def test_zero_dy_single_measurement_multi_params(self):
         """A zero dy vector will return a zero matrix"""
-        dy = np.zeros([2])
+        dy = np.zeros(1)
         jac = tuple([np.array(0.1), np.array(0.2)])
 
         vjp = qml.gradients.compute_vjp_single(dy, jac)
@@ -178,9 +178,6 @@ class TestComputeVJP:
         """Test that using the JAX interface the dtype of the result is
         determined by the dtype of the dy."""
         import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dtype = dtype1
         dtype1 = getattr(jax.numpy, dtype1)

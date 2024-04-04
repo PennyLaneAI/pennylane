@@ -65,7 +65,7 @@ def mutual_info(wires0, wires1, log_base=None):
 
     >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit_mutual)(param)
-    1.2464504802804612
+    tensor(1.24645048, requires_grad=True)
 
     .. note::
 

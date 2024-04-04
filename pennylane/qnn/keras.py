@@ -69,7 +69,7 @@ class KerasLayer(Layer):
             qml.Rot(*weights_0, wires=0)
             qml.RY(weight_1, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
     The signature of the QNode **must** contain an ``inputs`` named argument for input data,
     with all other arguments to be treated as internal weights. We can then convert to a Keras
@@ -130,7 +130,7 @@ class KerasLayer(Layer):
                 x = tf.zeros((batch_dim, n_qubits))
                 return qlayer(x).shape
 
-        >>> print_output_shape([qml.expval(qml.PauliZ(0))])
+        >>> print_output_shape([qml.expval(qml.Z(0))])
         TensorShape([5])
         >>> print_output_shape([qml.probs(wires=[0, 1])])
         TensorShape([5, 4])
@@ -140,7 +140,7 @@ class KerasLayer(Layer):
         If the QNode returns multiple measurements, then the measurement results will be flattened
         and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
 
-        >>> print_output_shape([qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])])
+        >>> print_output_shape([qml.expval(qml.Z(0)), qml.probs(wires=[0, 1])])
         TensorShape([5, 5])
         >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
         TensorShape([5, 204])
@@ -233,7 +233,7 @@ class KerasLayer(Layer):
             def qnode(inputs, weights):
                 qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
                 qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
 
@@ -384,6 +384,7 @@ class KerasLayer(Layer):
 
         # reshape to the correct number of batch dims
         if has_batch_dim:
+            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
             new_shape = tf.concat([batch_dims, tf.shape(results)[1:]], axis=0)
             results = tf.reshape(results, new_shape)
 
@@ -438,17 +439,14 @@ class KerasLayer(Layer):
         if self._initialized and hasattr(self.qnode, item):
             return getattr(self.qnode, item)
 
-        try:
-            return self.__dict__[item]
-        except KeyError as exc:
-            raise AttributeError(item) from exc
+        return super().__getattr__(item)
 
     def __setattr__(self, item, val):
         """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
         if self._initialized and hasattr(self.qnode, item):
             setattr(self.qnode, item, val)
         else:
-            self.__dict__[item] = val
+            super().__setattr__(item, val)
 
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the

@@ -23,15 +23,16 @@ from pennylane.devices import DefaultQubit
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
 
-
+# device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
-    [DefaultQubit(), "finite-diff", False],
-    [DefaultQubit(), "parameter-shift", False],
-    [DefaultQubit(), "backprop", True],
-    [DefaultQubit(), "adjoint", True],
-    [DefaultQubit(), "adjoint", False],
-    [DefaultQubit(), "spsa", False],
-    [DefaultQubit(), "hadamard", False],
+    [DefaultQubit(), "finite-diff", False, False],
+    [DefaultQubit(), "parameter-shift", False, False],
+    [DefaultQubit(), "backprop", True, False],
+    [DefaultQubit(), "adjoint", True, False],
+    [DefaultQubit(), "adjoint", False, False],
+    [DefaultQubit(), "adjoint", False, True],
+    [DefaultQubit(), "spsa", False, False],
+    [DefaultQubit(), "hadamard", False, False],
 ]
 
 TOL_FOR_SPSA = 1.0
@@ -44,18 +45,25 @@ interface_and_qubit_device_and_diff_method = [
 
 
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
+    "interface,dev,diff_method,grad_on_execution,device_vjp",
+    interface_and_qubit_device_and_diff_method,
 )
 class TestQNode:
     """Test that using the QNode with TensorFlow integrates with the PennyLane stack"""
 
-    def test_execution_with_interface(self, dev, diff_method, grad_on_execution, interface):
+    def test_execution_with_interface(
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
+    ):
         """Test execution works with the interface"""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -86,14 +94,18 @@ class TestQNode:
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == ()
 
-    def test_interface_swap(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_interface_swap(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface):
         """Test that the TF interface can be applied to a QNode
         with a pre-existing interface"""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
         @qnode(
-            dev, interface="autograd", diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface="autograd",
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -120,7 +132,7 @@ class TestQNode:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(grad1, grad2, atol=tol, rtol=0)
 
-    def test_drawing(self, dev, diff_method, grad_on_execution, interface):
+    def test_drawing(self, dev, diff_method, grad_on_execution, device_vjp, interface):
         """Test circuit drawing when using the TF interface"""
 
         x = tf.Variable(0.1, dtype=tf.float64)
@@ -128,7 +140,11 @@ class TestQNode:
         z = tf.Variable(0.4, dtype=tf.float64)
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(p1, p2=y, **kwargs):
             qml.RX(p1, wires=0)
@@ -141,11 +157,14 @@ class TestQNode:
         expected = "0: ──RX(0.10)──RX(0.40)─╭●─┤  State\n1: ──RY(0.06)───────────╰X─┤  State"
         assert result == expected
 
-    def test_jacobian(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_jacobian(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface):
         """Test jacobian calculation"""
-        kwargs = dict(
-            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "grad_on_execution": grad_on_execution,
+            "interface": interface,
+            "device_vjp": device_vjp,
+        }
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
@@ -161,7 +180,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
             res = tf.stack(res)
 
@@ -173,11 +192,11 @@ class TestQNode:
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [a, b])
+        res = tape.jacobian(res, [a, b], experimental_use_pfor=not device_vjp)
         expected = [[-tf.sin(a), tf.sin(a) * tf.sin(b)], [0, -tf.cos(a) * tf.cos(b)]]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_options(self, dev, diff_method, grad_on_execution, interface):
+    def test_jacobian_options(self, dev, diff_method, grad_on_execution, device_vjp, interface):
         """Test setting finite-difference jacobian options"""
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite diff and spsa.")
@@ -191,18 +210,21 @@ class TestQNode:
             approx_order=2,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a)
 
-        tape.jacobian(res, a)
+        tape.jacobian(res, a, experimental_use_pfor=not device_vjp)
 
-    def test_changing_trainability(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_changing_trainability(
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+    ):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method in ["backprop", "adjoint", "spsa"]:
@@ -220,6 +242,7 @@ class TestQNode:
             interface=interface,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
             **diff_kwargs,
         )
         def circuit(a, b):
@@ -228,7 +251,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
             res = tf.stack(res)
 
@@ -238,7 +261,7 @@ class TestQNode:
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac = tape.jacobian(res, [a, b])
+        jac = tape.jacobian(res, [a, b], experimental_use_pfor=not device_vjp)
         expected = [
             [-tf.sin(a), tf.sin(a) * tf.sin(b)],
             [0, -tf.cos(a) * tf.cos(b)],
@@ -249,7 +272,7 @@ class TestQNode:
         a = tf.Variable(0.54, dtype=tf.float64)
         b = tf.constant(0.8, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
             res = tf.stack(res)
 
@@ -259,18 +282,22 @@ class TestQNode:
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac = tape.jacobian(res, a)
+        jac = tape.jacobian(res, a, experimental_use_pfor=not device_vjp)
         expected = [-tf.sin(a), tf.sin(a) * tf.sin(b)]
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-    def test_classical_processing(self, dev, diff_method, grad_on_execution, interface):
+    def test_classical_processing(self, dev, diff_method, grad_on_execution, device_vjp, interface):
         """Test classical processing within the quantum tape"""
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.constant(0.2, dtype=tf.float64)
         c = tf.Variable(0.3, dtype=tf.float64)
 
         @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+            dev,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(x, y, z):
             qml.RY(x * z, wires=0)
@@ -278,24 +305,30 @@ class TestQNode:
             qml.RX(z + z**2 + tf.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [0, 2]
             assert circuit.qtape.get_parameters() == [a * c, c + c**2 + tf.sin(a)]
 
-        res = tape.jacobian(res, [a, b, c])
+        res = tape.jacobian(res, [a, b, c], experimental_use_pfor=not device_vjp)
 
         assert isinstance(res[0], tf.Tensor)
         assert res[1] is None
         assert isinstance(res[2], tf.Tensor)
 
-    def test_no_trainable_parameters(self, dev, diff_method, grad_on_execution, interface):
+    def test_no_trainable_parameters(
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
+    ):
         """Test evaluation if there are no trainable parameters"""
 
         @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+            dev,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -306,7 +339,7 @@ class TestQNode:
         a = 0.1
         b = tf.constant(0.2, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
             res = tf.stack(res)
 
@@ -317,24 +350,30 @@ class TestQNode:
         assert isinstance(res, tf.Tensor)
 
         # can't take the gradient with respect to "a" since it's a Python scalar
-        grad = tape.jacobian(res, b)
+        grad = tape.jacobian(res, b, experimental_use_pfor=not device_vjp)
         assert grad is None
 
     @pytest.mark.parametrize("U", [tf.constant([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]])])
-    def test_matrix_parameter(self, dev, diff_method, grad_on_execution, U, tol, interface):
+    def test_matrix_parameter(
+        self, dev, diff_method, grad_on_execution, device_vjp, U, tol, interface
+    ):
         """Test that the TF interface works correctly
         with a matrix parameter"""
         a = tf.Variable(0.1, dtype=tf.float64)
 
         @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+            dev,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(U, a)
 
         if diff_method == "finite-diff":
@@ -342,15 +381,20 @@ class TestQNode:
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
-        res = tape.jacobian(res, a)
+        res = tape.jacobian(res, a, experimental_use_pfor=not device_vjp)
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_differentiable_expand(
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+    ):
         """Test that operation and nested tapes expansion
         is differentiable"""
-        kwargs = dict(
-            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "grad_on_execution": grad_on_execution,
+            "interface": interface,
+            "device_vjp": device_vjp,
+        }
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
@@ -374,7 +418,7 @@ class TestQNode:
             U3(p[0], p[1], p[2], wires=0)
             return qml.expval(qml.PauliX(0))
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, p)
 
         expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
@@ -382,7 +426,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, p)
+        res = tape.jacobian(res, p, experimental_use_pfor=not device_vjp)
         expected = np.array(
             [
                 tf.cos(p[1]) * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
@@ -422,7 +466,6 @@ class TestShotsIntegration:
         res = circuit(weights, shots=100)  # pylint: disable=unexpected-keyword-arg
         assert res.shape == (100, 2)
 
-    @pytest.mark.xfail(reason="TODO: shot-vector support for param shift")
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
@@ -492,29 +535,34 @@ class TestShotsIntegration:
         circuit(weights, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert circuit.gradient_fn == "backprop"
+        assert circuit.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
+        assert circuit.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
+    "interface,dev,diff_method,grad_on_execution,device_vjp",
+    interface_and_qubit_device_and_diff_method,
 )
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
-    def test_probability_differentiation(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_probability_differentiation(
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+    ):
         """Tests correct output shape and evaluation for a tape
         with multiple probs outputs"""
-        kwargs = dict(
-            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
-        elif diff_method == "spsa":
+        kwargs = {
+            "diff_method": diff_method,
+            "grad_on_execution": grad_on_execution,
+            "interface": interface,
+            "device_vjp": device_vjp,
+        }
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
@@ -529,7 +577,7 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0]), qml.probs(wires=[1])
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(x, y)
             res = tf.stack(res)
 
@@ -541,7 +589,7 @@ class TestQubitIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [x, y])
+        res = tape.jacobian(res, [x, y], experimental_use_pfor=not device_vjp)
         expected = np.array(
             [
                 [
@@ -556,15 +604,18 @@ class TestQubitIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_ragged_differentiation(
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+    ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        kwargs = dict(
-            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
-        if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
-        elif diff_method == "spsa":
+        kwargs = {
+            "diff_method": diff_method,
+            "grad_on_execution": grad_on_execution,
+            "interface": interface,
+            "device_vjp": device_vjp,
+        }
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
@@ -579,7 +630,7 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(x, y)
             res = tf.experimental.numpy.hstack(res)
 
@@ -592,7 +643,7 @@ class TestQubitIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [x, y])
+        res = tape.jacobian(res, [x, y], experimental_use_pfor=not device_vjp)
         expected = np.array(
             [
                 [-tf.sin(x), -tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
@@ -601,7 +652,9 @@ class TestQubitIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_second_derivative(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_second_derivative(
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+    ):
         """Test second derivative calculation of a scalar valued QNode"""
         if diff_method not in {"parameter-shift", "backprop", "hadamard"}:
             pytest.skip("Test only supports parameter-shift or backprop")
@@ -612,6 +665,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -641,7 +695,7 @@ class TestQubitIntegration:
         ]
         assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
 
-    def test_hessian(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_hessian(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface):
         """Test hessian calculation of a scalar valued QNode"""
         if diff_method not in {"parameter-shift", "backprop", "hadamard"}:
             pytest.skip("Test only supports parameter-shift or backprop")
@@ -652,6 +706,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -680,7 +735,9 @@ class TestQubitIntegration:
         ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
-    def test_hessian_vector_valued(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_hessian_vector_valued(
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+    ):
         """Test hessian calculation of a vector valued QNode"""
         if diff_method not in {"parameter-shift", "backprop", "hadamard"}:
             pytest.skip("Test only supports parameter-shift or backprop")
@@ -691,6 +748,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -733,7 +791,7 @@ class TestQubitIntegration:
         np.testing.assert_allclose(hess, expected_hess, atol=tol, rtol=0, verbose=True)
 
     def test_hessian_vector_valued_postprocessing(
-        self, dev, diff_method, grad_on_execution, tol, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
     ):
         """Test hessian calculation of a vector valued QNode with post-processing"""
         if diff_method not in {"parameter-shift", "backprop", "hadamard"}:
@@ -745,6 +803,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -783,7 +842,7 @@ class TestQubitIntegration:
         ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
-    def test_hessian_ragged(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_hessian_ragged(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface):
         """Test hessian calculation of a ragged QNode"""
         if diff_method not in {"parameter-shift", "backprop", "hadamard"}:
             pytest.skip("Test only supports parameter-shift or backprop")
@@ -794,6 +853,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -844,16 +904,18 @@ class TestQubitIntegration:
         ]
         np.testing.assert_allclose(hess, expected_hess, atol=tol, rtol=0, verbose=True)
 
-    def test_state(self, dev, diff_method, grad_on_execution, tol, interface):
+    def test_state(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface):
         """Test that the state can be returned and differentiated"""
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support states")
 
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -877,14 +939,19 @@ class TestQubitIntegration:
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
-    def test_projector(self, state, dev, diff_method, grad_on_execution, tol, interface):
+    def test_projector(
+        self, state, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+    ):
         """Test that the variance of a projector is correctly returned"""
-        kwargs = dict(
-            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "grad_on_execution": grad_on_execution,
+            "interface": interface,
+            "device_vjp": device_vjp,
+        }
         if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support projectors")
-        elif diff_method == "hadamard":
+            pytest.skip("adjoint supports either all expvals or all diagonal measurements.")
+        if diff_method == "hadamard":
             pytest.skip("Variance not implemented yet.")
         elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -916,15 +983,65 @@ class TestQubitIntegration:
         ]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    def test_postselection_differentiation(
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
+    ):
+        """Test that when postselecting with default.qubit, differentiation works correctly."""
+
+        if diff_method in ["adjoint", "spsa", "hadamard"]:
+            pytest.skip("Diff method does not support postselection.")
+
+        @qml.qnode(
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+        def circuit(phi, theta):
+            qml.RX(phi, wires=0)
+            qml.CNOT([0, 1])
+            qml.measure(wires=0, postselect=1)
+            qml.RX(theta, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+        def expected_circuit(theta):
+            qml.PauliX(1)
+            qml.RX(theta, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        phi = tf.Variable(1.23)
+        theta = tf.Variable(4.56)
+
+        assert np.allclose(circuit(phi, theta), expected_circuit(theta))
+
+        with tf.GradientTape() as res_tape:
+            res = circuit(phi, theta)
+        gradient = res_tape.gradient(res, [phi, theta])
+
+        with tf.GradientTape() as expected_tape:
+            expected = expected_circuit(theta)
+        exp_theta_grad = expected_tape.gradient(expected, theta)
+
+        assert np.allclose(gradient, [0.0, exp_theta_grad])
+
 
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
+    "interface,dev,diff_method,grad_on_execution,device_vjp",
+    interface_and_qubit_device_and_diff_method,
 )
 class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
     with the TF interface"""
 
-    def test_gradient_expansion(self, dev, diff_method, grad_on_execution, interface):
+    def test_gradient_expansion(self, dev, diff_method, grad_on_execution, device_vjp, interface):
         """Test that a *supported* operation with no gradient recipe is
         expanded for both parameter-shift and finite-differences, but not for execution."""
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
@@ -942,6 +1059,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.Hadamard(wires=0)
@@ -964,7 +1082,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(
-        self, dev, diff_method, grad_on_execution, max_diff, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, max_diff, interface
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""
@@ -983,6 +1101,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             interface=interface,
+            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.Hadamard(wires=0)
@@ -1000,16 +1119,17 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(
-        self, dev, diff_method, grad_on_execution, max_diff, tol, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, max_diff, tol, interface
     ):
         """Test that if there are non-commuting groups and the number of shots is None
         the first and second order gradients are correctly evaluated"""
-        kwargs = dict(
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            max_diff=max_diff,
-            interface=interface,
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "grad_on_execution": grad_on_execution,
+            "max_diff": max_diff,
+            "interface": interface,
+            "device_vjp": device_vjp,
+        }
         if diff_method in ["adjoint", "hadamard"]:
             pytest.skip("The adjoint/hadamard method does not yet support Hamiltonians")
         elif diff_method == "spsa":
@@ -1064,7 +1184,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_finite_shots(
-        self, dev, diff_method, grad_on_execution, max_diff, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, max_diff, interface
     ):
         """Test that the Hamiltonian is correctly measured if there
         are non-commuting groups and the number of shots is finite
@@ -1091,6 +1211,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             interface=interface,
+            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
@@ -1398,6 +1519,36 @@ class TestAutograph:
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("grad_on_execution", [True, False])
+    def test_autograph_adjoint_multi_out(self, grad_on_execution, decorator, interface, tol):
+        """Test that a parameter-shift QNode can be compiled
+        using @tf.function, and differentiated to second order"""
+
+        @decorator
+        @qnode(
+            DefaultQubit(),
+            diff_method="adjoint",
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+        )
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))
+
+        x = tf.Variable(0.5, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res = qml.math.hstack(circuit(x))
+        g = tape.jacobian(res, x)
+        a = x * 1.0
+
+        expected_res = [tf.cos(a), tf.sin(a)]
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-tf.sin(a), tf.cos(a)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
     def test_autograph_ragged_differentiation(self, decorator, interface, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
@@ -1508,16 +1659,23 @@ class TestAutograph:
 
 
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
+    "interface,dev,diff_method,grad_on_execution,device_vjp",
+    interface_and_qubit_device_and_diff_method,
 )
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
 
-    def test_grad_single_measurement_param(self, dev, diff_method, grad_on_execution, interface):
+    def test_grad_single_measurement_param(
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
+    ):
         """For one measurement and one param, the gradient is a float."""
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -1535,12 +1693,16 @@ class TestReturn:
         assert grad.shape == ()
 
     def test_grad_single_measurement_multiple_param(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1561,12 +1723,16 @@ class TestReturn:
         assert grad[1].shape == ()
 
     def test_grad_single_measurement_multiple_param_array(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -1585,54 +1751,58 @@ class TestReturn:
         assert grad.shape == (2,)
 
     def test_jacobian_single_measurement_param_probs(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1)
+        a = tf.Variable(0.1, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a)
 
-        jac = tape.jacobian(res, a)
+        jac = tape.jacobian(res, a, experimental_use_pfor=not device_vjp)
 
         assert isinstance(jac, tf.Tensor)
         assert jac.shape == (4,)
 
     def test_jacobian_single_measurement_probs_multiple_param(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1)
-        b = tf.Variable(0.2)
+        a = tf.Variable(0.1, dtype=tf.float64)
+        b = tf.Variable(0.2, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
 
-        jac = tape.jacobian(res, (a, b))
+        jac = tape.jacobian(res, (a, b), experimental_use_pfor=not device_vjp)
 
         assert isinstance(jac, tuple)
 
@@ -1643,80 +1813,85 @@ class TestReturn:
         assert jac[1].shape == (4,)
 
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned."""
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = tf.Variable([0.1, 0.2])
+        a = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a)
 
-        jac = tape.jacobian(res, a)
+        jac = tape.jacobian(res, a, experimental_use_pfor=not device_vjp)
 
         assert isinstance(jac, tf.Tensor)
         assert jac.shape == (4, 2)
 
     def test_jacobian_multiple_measurement_single_param(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The jacobian of multiple measurements with a single params return an array."""
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1)
+        a = tf.Variable(0.1, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a)
             res = tf.experimental.numpy.hstack(res)
 
-        jac = tape.jacobian(res, a)
+        jac = tape.jacobian(res, a, experimental_use_pfor=not device_vjp)
 
         assert isinstance(jac, tf.Tensor)
         assert jac.shape == (5,)
 
     def test_jacobian_multiple_measurement_multiple_param(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
 
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of probabilities.")
-
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1)
-        b = tf.Variable(0.2)
+        a = tf.Variable(0.1, dtype=tf.float64)
+        b = tf.Variable(0.2, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
             res = tf.experimental.numpy.hstack(res)
 
-        jac = tape.jacobian(res, (a, b))
+        jac = tape.jacobian(res, (a, b), experimental_use_pfor=not device_vjp)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -1728,33 +1903,36 @@ class TestReturn:
         assert jac[1].shape == (5,)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of probabilities.")
-
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = tf.Variable([0.1, 0.2])
+        a = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a)
             res = tf.experimental.numpy.hstack(res)
 
-        jac = tape.jacobian(res, a)
+        jac = tape.jacobian(res, a, experimental_use_pfor=not device_vjp)
 
         assert isinstance(jac, tf.Tensor)
         assert jac.shape == (5, 2)
 
-    def test_hessian_expval_multiple_params(self, dev, diff_method, grad_on_execution, interface):
+    def test_hessian_expval_multiple_params(
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
+    ):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -1768,6 +1946,7 @@ class TestReturn:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1794,7 +1973,7 @@ class TestReturn:
         assert hess[1].shape == (2,)
 
     def test_hessian_expval_multiple_param_array(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
 
@@ -1809,6 +1988,7 @@ class TestReturn:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -1827,7 +2007,9 @@ class TestReturn:
         assert isinstance(hess, tf.Tensor)
         assert hess.shape == (2, 2)
 
-    def test_hessian_var_multiple_params(self, dev, diff_method, grad_on_execution, interface):
+    def test_hessian_var_multiple_params(
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
+    ):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -1844,6 +2026,7 @@ class TestReturn:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1869,7 +2052,9 @@ class TestReturn:
         assert isinstance(hess[1], tf.Tensor)
         assert hess[1].shape == (2,)
 
-    def test_hessian_var_multiple_param_array(self, dev, diff_method, grad_on_execution, interface):
+    def test_hessian_var_multiple_param_array(
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
+    ):
         """The hessian of single measurement with a multiple params array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -1885,6 +2070,7 @@ class TestReturn:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -1904,7 +2090,7 @@ class TestReturn:
         assert hess.shape == (2, 2)
 
     def test_hessian_probs_expval_multiple_params(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
@@ -1919,6 +2105,7 @@ class TestReturn:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1946,7 +2133,7 @@ class TestReturn:
         assert hess[1].shape == (6,)
 
     def test_hessian_probs_expval_multiple_param_array(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
 
@@ -1964,6 +2151,7 @@ class TestReturn:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -1984,7 +2172,7 @@ class TestReturn:
         assert hess.shape == (3, 2, 2)
 
     def test_hessian_probs_var_multiple_params(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
@@ -2001,6 +2189,7 @@ class TestReturn:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2028,7 +2217,7 @@ class TestReturn:
         assert hess[1].shape == (6,)
 
     def test_hessian_probs_var_multiple_param_array(
-        self, dev, diff_method, grad_on_execution, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "adjoint":
@@ -2044,6 +2233,7 @@ class TestReturn:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -2075,3 +2265,38 @@ def test_no_ops():
 
     res = circuit()
     assert isinstance(res, tf.Tensor)
+
+
+def test_error_device_vjp_jacobian():
+    """Test a ValueError is raised if a jacobian is attempted to be computed with device_vjp=True."""
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))
+
+    x = tf.Variable(0.1)
+
+    with tf.GradientTape() as tape:
+        y = qml.math.hstack(circuit(x))
+
+    with pytest.raises(ValueError):
+        tape.jacobian(y, x)
+
+
+def test_error_device_vjp_state_float32():
+    """Test a ValueError is raised is state differentiation is attemped with float32 parameters."""
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.probs(wires=0)
+
+    x = tf.Variable(0.1, dtype=tf.float32)
+    with pytest.raises(ValueError, match="tensorflow with adjoint differentiation of the state"):
+        with tf.GradientTape():
+            circuit(x)

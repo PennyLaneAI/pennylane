@@ -22,6 +22,12 @@ from gate_data import QFT
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qml.QFT(wires=(0, 1, 2))
+    qml.ops.functions.assert_valid(op)
+
+
 class TestQFT:
     """Tests for the qft operations"""
 

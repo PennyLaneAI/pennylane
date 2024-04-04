@@ -19,6 +19,13 @@ from pennylane import numpy as np
 from pennylane.ops.op_math import Evolution, Exp
 
 
+def test_basic_validity():
+    """Assert the basic validity of an evolution op."""
+    base = qml.prod(qml.PauliX(0), qml.PauliY(1))
+    op = Evolution(base, 5.2)
+    qml.ops.functions.assert_valid(op)
+
+
 class TestEvolution:
     """Test Evolution(Exp) class that takes a parameter x and a generator G and defines an evolution exp(ixG)"""
 
@@ -64,11 +71,19 @@ class TestEvolution:
         U = Evolution(qml.PauliX(0), 3)
         assert U.base == U.generator()
 
-    def test_num_params_for_parametric_base(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_num_params_for_parametric_bas_legacy_opmath(self):
         base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
         op = Evolution(base_op, 1.23)
 
         assert base_op.num_params == 2
+        assert op.num_params == 1
+
+    def test_num_params_for_parametric_base(self):
+        base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
+        op = Evolution(base_op, 1.23)
+
+        assert base_op.num_params == 1
         assert op.num_params == 1
 
     def test_data(self):
@@ -100,14 +115,14 @@ class TestEvolution:
         t = qml.PauliX(0) @ qml.PauliX(1)
         isingxx = Evolution(t, 0.25)
 
-        assert repr(isingxx) == "Evolution(-0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
+        assert repr(isingxx) == "Evolution(-0.25j X(0) @ X(1))"
 
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
-        base = qml.S(0) @ qml.PauliX(0)
+        base = qml.S(0) @ qml.X(0)
         op = Evolution(base, 3)
 
-        assert repr(op) == "Evolution(-3j S(wires=[0]) @ PauliX(wires=[0]))"
+        assert repr(op) == "Evolution(-3j S(wires=[0]) @ X(0))"
 
     @pytest.mark.parametrize(
         "op,decimals,expected",

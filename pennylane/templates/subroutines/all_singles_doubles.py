@@ -105,7 +105,7 @@ class AllSinglesDoubles(Operation):
             @qml.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
                 qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             # Evaluate the QNode for a given set of parameters
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))
@@ -140,14 +140,17 @@ class AllSinglesDoubles(Operation):
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
+        if hf_state[0].dtype != np.dtype("int"):
+            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
+
+        singles = tuple(tuple(s) for s in singles)
+        doubles = tuple(tuple(d) for d in doubles)
+
         self._hyperparameters = {
-            "hf_state": qml.math.toarray(hf_state),
+            "hf_state": tuple(hf_state),
             "singles": singles,
             "doubles": doubles,
         }
-
-        if hf_state.dtype != np.dtype("int"):
-            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
 
         super().__init__(weights, wires=wires, id=id)
 

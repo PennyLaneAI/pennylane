@@ -55,12 +55,14 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
         Currently, not all templates have been updated to support broadcasting.
 
     Args:
-        tape (.QuantumTape): Broadcasted tape to be expanded
+        tape (QNode or QuantumTape or Callable): Broadcasted tape to be expanded
 
     Returns:
-        function or tuple[list[.QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object resembling the (broadcasted) input QNode
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+        - If the input is a QNode, the broadcasted input QNode
           that computes the QNode output serially with multiple circuit evaluations and
           stacks (and squeezes) the results into one batch of results.
 
@@ -85,7 +87,7 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     >>> @qml.qnode(dev)
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
 
     We can then call ``broadcast_expand`` on the QNode and store the
     expanded ``QNode``:
@@ -110,13 +112,13 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     We also can call the transform manually on a tape:
 
     >>> ops = [qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)]
-    >>> measurements = [qml.expval(qml.PauliZ(0))]
+    >>> measurements = [qml.expval(qml.Z(0))]
     >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tapes, fn = qml.transforms.broadcast_expand(tape)
     >>> tapes
     [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>]
     >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
-    array([0.98006658, 0.82533561, 0.54030231])
+    tensor([0.98006658, 0.82533561, 0.54030231], requires_grad=True)
     """
     # pylint: disable=protected-access
     if tape.batch_size is None:
@@ -135,8 +137,9 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
 
         output_tapes = []
         for ops in new_ops:
-            new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
-            new_tape.trainable_params = tape.trainable_params
+            new_tape = qml.tape.QuantumScript(
+                ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+            )
             output_tapes.append(new_tape)
 
         def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:

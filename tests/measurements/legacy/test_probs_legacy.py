@@ -175,12 +175,14 @@ class TestProbs:
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
     def test_observable_is_measurement_value(
-        self, shots, phi, mocker, tol, tol_stochastic
+        self, shots, phi, mocker, tol, tol_stochastic, device_name
     ):  # pylint: disable=too-many-arguments
         """Test that probs for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+        np.random.seed(42)
+        dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -202,7 +204,54 @@ class TestProbs:
             for r in res:  # pylint: disable=not-an-iterable
                 assert np.allclose(r, expected, atol=atol, rtol=0)
 
-        custom_measurement_process(new_dev, spy)
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value_list(
+        self, shots, phi, mocker, tol, tol_stochastic, device_name
+    ):  # pylint: disable=too-many-arguments
+        """Test that probs for mid-circuit measurement values
+        are correct for a list of measurement value."""
+        np.random.seed(42)
+        dev = qml.device(device_name, wires=6, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(0.5 * phi, 1)
+            m1 = qml.measure(1)
+            qml.RX(2.0 * phi, 2)
+            m2 = qml.measure(2)
+            return qml.probs(op=[m0, m1, m2])
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "probability")
+
+        res = circuit(phi, shots=shots)
+
+        @qml.qnode(dev)
+        def expected_circuit(phi):
+            qml.RX(phi, 0)
+            qml.RX(0.5 * phi, 1)
+            qml.RX(2.0 * phi, 2)
+            return qml.probs(wires=[0, 1, 2])
+
+        expected = expected_circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+
+        if not isinstance(shots, list):
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        else:
+            for r in res:  # pylint: disable=not-an-iterable
+                assert np.allclose(r, expected, atol=atol, rtol=0)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
 
     def test_integration(self, tol, mocker):
         """Test the probability is correct for a known state preparation."""
@@ -316,7 +365,7 @@ class TestProbs:
             qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
         state = np.array([1, 0])
-        matrix = qml.matrix(circuit_rotated)(0.56)
+        matrix = qml.matrix(circuit_rotated, wire_order=[0])(0.56)
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 1)
         expected = expected.flatten()
@@ -349,7 +398,7 @@ class TestProbs:
             qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
         state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-        matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2])(0.56, 0.1)
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 3)
         expected = np.einsum("ijk->i", expected).flatten()
@@ -386,7 +435,7 @@ class TestProbs:
             qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
         state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-        matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2])(0.56, 0.1)
         state = np.dot(matrix, state)
 
         expected = np.reshape(np.abs(state) ** 2, [2] * 3)
@@ -427,7 +476,7 @@ class TestProbs:
             qml.PauliX(wires=3)
             qml.Hermitian(hermitian, wires=wire).diagonalizing_gates()
 
-        matrix = qml.matrix(circuit_rotated)()
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2, 3])()
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -471,7 +520,7 @@ class TestProbs:
             qml.PauliZ(wires=3)
             operation(wires=wire).diagonalizing_gates()
 
-        matrix = qml.matrix(circuit_rotated)()
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2, 3])()
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -514,7 +563,7 @@ class TestProbs:
             observable[0](wires=0).diagonalizing_gates()
             observable[1](wires=1).diagonalizing_gates()
 
-        matrix = qml.matrix(circuit_rotated)()
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2, 3])()
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 

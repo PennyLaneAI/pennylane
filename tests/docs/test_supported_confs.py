@@ -37,6 +37,7 @@ from pennylane.measurements import (
     VnEntropy,
     MutualInfo,
 )
+from pennylane.measurements.measurements import ObservableReturnTypes
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -162,7 +163,7 @@ def get_variable(interface, wire_specs, complex=False):
         return np.array([0.1] * num_wires, requires_grad=True)
     if interface == "jax":
         # complex dtype is required for JAX when holomorphic gradient is used
-        return jnp.array([0.1] * num_wires, dtype=np.complex64 if complex else None)
+        return jnp.array([0.1] * num_wires, dtype=np.complex128 if complex else None)
     if interface == "tf":
         # complex dtype is required for TF when the gradients have non-zero
         # imaginary parts, otherwise they will be ignored
@@ -263,26 +264,13 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_device(self, interface, return_type, shots, wire_specs):
         """Test diff_method=device raises an error for all interfaces for default.qubit"""
-        msg = (
-            "The default.qubit device does not provide a native "
-            "method for computing the jacobian."
-        )
+        msg = "does not support device with requested circuit"
 
         with pytest.raises(QuantumFunctionError, match=msg):
             get_qnode(interface, "device", return_type, shots, wire_specs)
 
-    @pytest.mark.parametrize("return_type", return_types)
-    @pytest.mark.parametrize("wire_specs", wire_specs_list)
-    def test_none_backprop(self, return_type, wire_specs):
-        """Test interface=None and diff_method=backprop raises an error"""
-        with pytest.raises(
-            QuantumFunctionError,
-            match=r"Device default\.qubit does not support backprop with .*gradient_method='backprop'.*interface=None",
-        ):
-            get_qnode(None, "backprop", return_type, None, wire_specs)
-
     @pytest.mark.parametrize(
-        "diff_method", ["adjoint", "parameter-shift", "finite-diff", "spsa", "hadamard"]
+        "diff_method", ["adjoint", "parameter-shift", "finite-diff", "spsa", "hadamard", "backprop"]
     )
     @pytest.mark.parametrize("return_type", return_types)
     @pytest.mark.parametrize("shots", shots_list)
@@ -294,15 +282,15 @@ class TestSupportedConfs:
         x = get_variable(None, wire_specs)
 
         msg = None
-        if not shots and return_type is Sample:
-            msg = "Analytic circuits must only contain StateMeasurements"
-        elif diff_method == "adjoint":
-            if shots:
-                msg = (
-                    "Circuits with finite shots must be executed with non-analytic gradient methods"
-                )
-            elif return_type not in ("Hermitian", "Projector", Expectation):
-                msg = "Adjoint differentiation method does not support measurement .*"
+        error_type = qml.DeviceError
+        if diff_method == "adjoint" and (shots is not None or return_type is Sample):
+            error_type = qml.QuantumFunctionError
+            msg = f"does not support {diff_method} with requested circuit"
+        elif diff_method == "backprop" and shots:
+            error_type = qml.QuantumFunctionError
+            msg = f"does not support {diff_method} with requested circuit"
+        elif not shots and return_type is Sample:
+            msg = "not accepted for analytic simulation"
         elif shots and return_type in (
             VnEntropy,
             MutualInfo,
@@ -310,10 +298,10 @@ class TestSupportedConfs:
             "StateCost",
             "StateVector",
         ):
-            msg = "Circuits with finite shots must only contain"
+            msg = "not accepted with finite shots on"
 
         if msg is not None:
-            with pytest.raises(qml.DeviceError, match=msg):
+            with pytest.raises(error_type, match=msg):
                 circuit(x)
         else:
             circuit(x)
@@ -345,10 +333,12 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_backprop_finite_shots(self, interface, return_type, wire_specs):
         """Test diff_method=backprop fails for all interfaces when shots>0"""
-        msg = "Backpropagation is only supported when shots=None."
+        msg = "does not support backprop with requested circuit."
 
+        x = get_variable(None, wire_specs)
+        qn = get_qnode(interface, "backprop", return_type, 100, wire_specs)
         with pytest.raises(QuantumFunctionError, match=msg):
-            get_qnode(interface, "backprop", return_type, 100, wire_specs)
+            qn(x)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -359,15 +349,19 @@ class TestSupportedConfs:
     def test_all_adjoint_nonexp(self, interface, return_type, shots, wire_specs):
         """Test diff_method=adjoint raises an error for non-expectation
         measurements for all interfaces"""
-        msg = (
-            "Circuits with finite shots must be executed with non-analytic gradient methods"
-            if shots
-            else "Adjoint differentiation method does not support measurement .*"
-        )
 
         circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
-        x = get_variable(interface, wire_specs)
-        with pytest.raises(qml.DeviceError, match=msg):
+        x = get_variable(interface, wire_specs, complex=True)
+
+        if shots is not None:
+            with pytest.raises(qml.QuantumFunctionError):
+                compute_gradient(x, interface, circuit, return_type)
+        elif return_type == ObservableReturnTypes.Probability and interface == "tf":
+            with pytest.raises(Exception):
+                # tensorflow.python.framework.errors_impl.InvalidArgumentError
+                # TODO: figure out why
+                compute_gradient(x, interface, circuit, return_type)
+        else:
             compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
@@ -386,8 +380,8 @@ class TestSupportedConfs:
             circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
             x = get_variable(interface, wire_specs)
             with pytest.raises(
-                qml.DeviceError,
-                match="Circuits with finite shots must be executed with non-analytic gradient methods",
+                qml.QuantumFunctionError,
+                match="does not support adjoint with requested circuit",
             ):
                 compute_gradient(x, interface, circuit, return_type)
 
@@ -426,11 +420,11 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs, complex=complex)
         if shots is not None:
-            with pytest.raises(
-                qml.DeviceError, match="Circuits with finite shots must only contain"
-            ):
+            with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
                 compute_gradient(x, interface, circuit, return_type, complex=complex)
         else:
+            if interface == "torch" and return_type == "StateVector":
+                pytest.xfail(reason="see pytorch/pytorch/issues/94397")
             with pytest.raises(ValueError, match=msg):
                 compute_gradient(x, interface, circuit, return_type, complex=complex)
 
@@ -450,9 +444,7 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
         if shots is not None and return_type in (VnEntropy, MutualInfo):
-            with pytest.raises(
-                qml.DeviceError, match="Circuits with finite shots must only contain"
-            ):
+            with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
                 compute_gradient(x, interface, circuit, return_type)
         else:
             compute_gradient(x, interface, circuit, return_type)
@@ -491,8 +483,14 @@ class TestSupportedConfs:
     def test_all_sample_none_shots(self, interface, diff_method, wire_specs):
         """Test sample measurement fails for all interfaces and diff_methods
         when shots=None"""
+        if diff_method in {"adjoint"}:
+            error_type = qml.QuantumFunctionError
+            msg = "does not support adjoint with requested circuit"
+        else:
+            error_type = qml.DeviceError
+            msg = "not accepted for analytic simulation"
 
-        with pytest.raises(qml.DeviceError, match="Analytic circuits must only contain"):
+        with pytest.raises(error_type, match=msg):
             circuit = get_qnode(interface, diff_method, Sample, None, wire_specs)
             x = get_variable(interface, wire_specs)
             circuit(x)
@@ -523,6 +521,8 @@ class TestSupportedConfs:
         """Test gradient of state directly succeeds for non-autograd interfaces"""
         circuit = get_qnode(interface, "backprop", "StateVector", None, wire_specs)
         x = get_variable(interface, wire_specs, complex=True)
+        if interface == "torch":
+            pytest.xfail(reason="see pytorch/pytorch/issues/94397")
         compute_gradient(x, interface, circuit, "StateVector", complex=True)
 
     wire_specs_list = [
@@ -549,7 +549,7 @@ class TestSupportedConfs:
         if return_type in (VnEntropy, MutualInfo):
             if shots:
                 err_cls = qml.DeviceError
-                msg = "Circuits with finite shots must only contain"
+                msg = "not accepted with finite shots"
             else:
                 err_cls = ValueError
                 msg = "Computing the gradient of circuits that return the state with the Hadamard test gradient transform is not supported"

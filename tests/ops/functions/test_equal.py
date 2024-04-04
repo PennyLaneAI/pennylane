@@ -15,17 +15,20 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-public-methods
 import itertools
 
+from copy import deepcopy
 import numpy as np
 import pytest
+
 
 import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.ops.op_math import SymbolicOp, Controlled
+from pennylane.templates.subroutines import ControlledSequence
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
@@ -110,7 +113,6 @@ PARAMETRIZED_OPERATIONS_COMBINATIONS = list(
     )
 )
 
-
 PARAMETRIZED_MEASUREMENTS = [
     qml.sample(qml.PauliY(0)),
     qml.sample(wires=0),
@@ -186,7 +188,6 @@ PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
         2,
     )
 )
-
 
 equal_hamiltonians = [
     (
@@ -1256,13 +1257,90 @@ class TestMeasurementsEqual:
             qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="test_id"),
         )
 
+    @pytest.mark.parametrize("mp_fn", [qml.probs, qml.sample, qml.counts])
+    def test_mv_list_as_op(self, mp_fn):
+        """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality
+        correctly."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(1)
+        mv4 = qml.measure(0)
+        mv4.measurements[0].id = mv1.measurements[0].id
 
+        mp1 = mp_fn(op=[mv1, mv2])
+        mp2 = mp_fn(op=[mv4, mv2])
+        mp3 = mp_fn(op=[mv1, mv3])
+        mp4 = mp_fn(op=[mv2, mv1])
+
+        assert qml.equal(mp1, mp1)
+        assert qml.equal(mp1, mp2)
+        assert not qml.equal(mp1, mp3)
+        assert not qml.equal(mp1, mp4)
+
+    def test_mv_list_and_arithmetic_as_op(self):
+        """Test that comparing measurements using composite measurement values and
+        a list of measurement values fails."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        mp1 = qml.sample(op=m0 * m1)
+        mp2 = qml.sample(op=[m0, m1])
+
+        assert not qml.equal(mp1, mp2)
+
+    @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.counts])
+    def test_mv_arithmetic_as_op(self, mp_fn):
+        """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality
+        correctly."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(1)
+        mv4 = qml.measure(0)
+        mv4.measurements[0].id = mv1.measurements[0].id
+
+        mp1 = mp_fn(op=mv1 * mv2)
+        mp2 = mp_fn(op=mv4 * mv2)
+        mp3 = mp_fn(op=mv2 * mv1)
+        mp4 = mp_fn(op=mv1 * mv3)
+
+        assert qml.equal(mp1, mp1)
+        assert qml.equal(mp1, mp2)
+        assert qml.equal(mp1, mp3)
+        assert not qml.equal(mp1, mp4)
+
+    def test_shadow_expval_list_versus_operator(self):
+        """Check that if one shadow expval has an operator and the other has a list, they are not equal."""
+
+        op = qml.X(0)
+        m1 = qml.shadow_expval(H=op)
+        m2 = qml.shadow_expval(H=[op])
+        assert not qml.equal(m1, m2)
+
+
+@pytest.mark.usefixtures("use_legacy_opmath")  # TODO update qml.equal with new opmath
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
+
+    def test_identity_equal(self):
+        """Test that comparing two Identities always returns True regardless of wires"""
+        I1 = qml.Identity()
+        I2 = qml.Identity(wires=[-1])
+        I3 = qml.Identity(wires=[0, 1, 2, 3])
+        I4 = qml.Identity(wires=["a", "b"])
+
+        assert qml.equal(I1, I2)
+        assert qml.equal(I1, I3)
+        assert qml.equal(I1, I4)
+        assert qml.equal(I2, I3)
+        assert qml.equal(I2, I4)
+        assert qml.equal(I3, I4)
 
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
     def test_hamiltonian_equal(self, H1, H2, res):
         """Tests that equality can be checked between Hamiltonians"""
+        if not qml.operation.active_new_opmath():
+            H1 = qml.operation.convert_to_legacy_H(H1)
+            H2 = qml.operation.convert_to_legacy_H(H2)
+
         assert qml.equal(H1, H2) == qml.equal(H2, H1)
         assert qml.equal(H1, H2) == res
 
@@ -1275,12 +1353,20 @@ class TestObservablesComparisons:
     @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
     def test_hamiltonians_and_tensors_equal(self, H, T, res):
         """Tests that equality can be checked between a Hamiltonian and a Tensor"""
+        if not qml.operation.active_new_opmath():
+            H = qml.operation.convert_to_legacy_H(H)
+            T = qml.operation.Tensor(*T.operands)
+
         assert qml.equal(H, T) == qml.equal(T, H)
         assert qml.equal(H, T) == res
 
     @pytest.mark.parametrize(("op1", "op2", "res"), equal_pauli_operators)
     def test_pauli_operator_equals(self, op1, op2, res):
         """Tests that equality can be checked between PauliX/Y/Z operators, and between Pauli operators and Hamiltonians"""
+        if not qml.operation.active_new_opmath():
+            op1 = qml.operation.convert_to_legacy_H(op1)
+            op2 = qml.operation.convert_to_legacy_H(op2)
+
         assert qml.equal(op1, op2) == qml.equal(op2, op1)
         assert qml.equal(op1, op2) == res
 
@@ -1316,6 +1402,11 @@ class TestSymbolicOpComparison:
     """Test comparison for subclasses of SymbolicOp"""
 
     WIRES = [(5, 5, True), (6, 7, False)]
+    CONTROL_WIRES_SEQUENCE = [
+        ([1, 2], [1, 2], True),
+        ([1, 2], [1, 3], False),
+        ([1, 2, 3], [3, 2, 1], False),
+    ]
 
     BASES = [
         (qml.PauliX(0), qml.PauliX(0), True),
@@ -1333,8 +1424,16 @@ class TestSymbolicOpComparison:
         """Test that comparing SymoblicOp operators of mismatched arithmetic depth returns False"""
         base1 = qml.PauliX(0)
         base2 = qml.prod(qml.PauliX(0), qml.PauliY(1))
+
         op1 = Controlled(base1, control_wires=2)
         op2 = Controlled(base2, control_wires=2)
+
+        assert op1.arithmetic_depth == 1
+        assert op2.arithmetic_depth == 2
+        assert qml.equal(op1, op2) is False
+
+        op1 = ControlledSequence(base1, control=2)
+        op2 = ControlledSequence(base2, control=2)
 
         assert op1.arithmetic_depth == 1
         assert op2.arithmetic_depth == 2
@@ -1345,6 +1444,11 @@ class TestSymbolicOpComparison:
         base = SymbolicOp(qml.RX(1.2, 0))
         op1 = Controlled(base, control_wires=2)
         op2 = Controlled(base, control_wires=2)
+
+        assert not qml.equal(op1, op2)
+
+        op1 = ControlledSequence(base, control=2)
+        op2 = ControlledSequence(base, control=2)
 
         assert not qml.equal(op1, op2)
 
@@ -1364,12 +1468,31 @@ class TestSymbolicOpComparison:
         assert not qml.equal(op1, op2)
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
 
+        op1 = ControlledSequence(base1, control=1)
+        op2 = ControlledSequence(base2, control=1)
+
+        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+
     @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
     def test_controlled_comparison(self, base):
         """Test that Controlled operators can be compared"""
         op1 = Controlled(base, control_wires=7, control_values=0)
         op2 = Controlled(base, control_wires=7, control_values=0)
         assert qml.equal(op1, op2)
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_controlled_sequence_comparison(self, base):
+        """Test that ControlledSequence operators can be compared"""
+        op1 = ControlledSequence(base, control=7)
+        op2 = ControlledSequence(base, control=7)
+        assert qml.equal(op1, op2)
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_controlled_sequence_deepcopy_comparison(self, base):
+        """Test that equal is compatible with deepcopy"""
+        op1 = ControlledSequence(base, control=7)
+        assert qml.equal(op1, deepcopy(op1))
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     def test_controlled_base_operator_wire_comparison(self, wire1, wire2, res):
@@ -1380,14 +1503,27 @@ class TestSymbolicOpComparison:
         op2 = Controlled(base2, control_wires=1)
         assert qml.equal(op1, op2) == res
 
-    @pytest.mark.parametrize(
-        ("base1", "base2", "res"),
-        [(qml.PauliX(0), qml.PauliX(0), True), (qml.PauliX(0), qml.PauliY(0), False)],
-    )
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_controlled_sequence_base_operator_wire_comparison(self, wire1, wire2, res):
+        """Test that equal compares operator wires for ControlledSequence operators"""
+        base1 = qml.PauliX(wire1)
+        base2 = qml.PauliX(wire2)
+        op1 = ControlledSequence(base1, control=1)
+        op2 = ControlledSequence(base2, control=1)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("base1", "base2", "res"), BASES)
     def test_controlled_base_operator_comparison(self, base1, base2, res):
         """Test that equal compares base operators for Controlled operators"""
-        op1 = Controlled(base1, control_wires=1)
-        op2 = Controlled(base2, control_wires=1)
+        op1 = Controlled(base1, control_wires=2)
+        op2 = Controlled(base2, control_wires=2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("base1", "base2", "res"), BASES)
+    def test_controlled_sequence_base_operator_comparison(self, base1, base2, res):
+        """Test that equal compares base operators for ControlledSequence operators"""
+        op1 = ControlledSequence(base1, control=2)
+        op2 = ControlledSequence(base2, control=2)
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
@@ -1397,6 +1533,45 @@ class TestSymbolicOpComparison:
         base2 = qml.Hadamard(0)
         op1 = Controlled(base1, control_wires=wire1)
         op2 = Controlled(base2, control_wires=wire2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("controls1", "controls2"), [([0, 1], [0, 1]), ([1, 1], [1, 0])])
+    def test_control_values_comparison(self, controls1, controls2):
+        """Test that equal compares control values for Controlled operators"""
+        base1 = qml.PauliX(wires=0)
+        base2 = qml.PauliX(wires=0)
+
+        op1 = qml.ops.op_math.Controlled(base1, control_wires=[1, 2], control_values=controls1)
+        op2 = qml.ops.op_math.Controlled(base2, control_wires=[1, 2], control_values=controls2)
+
+        assert qml.equal(op1, op2) == np.allclose(controls1, controls2)
+
+    @pytest.mark.parametrize(
+        ("wires1", "controls1", "wires2", "controls2", "res"),
+        [
+            ([1, 2], [0, 1], [1, 2], [0, 1], True),
+            ([1, 2], [0, 1], [2, 1], [0, 1], False),
+            ([1, 2], [0, 1], [2, 1], [1, 0], True),
+        ],
+    )
+    def test_differing_control_wire_order(self, wires1, controls1, wires2, controls2, res):
+        """Test that equal compares control wires and their respective control values
+        without regard for wire order"""
+        base1 = qml.PauliX(wires=0)
+        base2 = qml.PauliX(wires=0)
+
+        op1 = qml.ops.op_math.Controlled(base1, control_wires=wires1, control_values=controls1)
+        op2 = qml.ops.op_math.Controlled(base2, control_wires=wires2, control_values=controls2)
+
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("wires1", "wires2", "res"), CONTROL_WIRES_SEQUENCE)
+    def test_control_sequence_wires_comparison(self, wires1, wires2, res):
+        """Test that equal compares control for ControlledSequence operators"""
+        base1 = qml.Hadamard(0)
+        base2 = qml.Hadamard(0)
+        op1 = ControlledSequence(base1, control=wires1)
+        op2 = ControlledSequence(base2, control=wires2)
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
@@ -1438,7 +1613,22 @@ class TestSymbolicOpComparison:
         op2 = qml.exp(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
-    @pytest.mark.parametrize("bases_bases_match", BASES)
+    def test_exp_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance."""
+        op1 = qml.exp(qml.PauliX(0), 0.12345)
+        op2 = qml.exp(qml.PauliX(0), 0.12356)
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
+
+    additional_cases = [
+        (qml.sum(qml.PauliX(0), qml.PauliY(0)), qml.sum(qml.PauliY(0), qml.PauliX(0)), True),
+        (qml.sum(qml.PauliX(0), qml.PauliY(1)), qml.sum(qml.PauliX(1), qml.PauliY(0)), False),
+        (qml.prod(qml.PauliX(0), qml.PauliY(1)), qml.prod(qml.PauliY(1), qml.PauliX(0)), True),
+        (qml.prod(qml.PauliX(0), qml.PauliY(1)), qml.prod(qml.PauliX(1), qml.PauliY(0)), False),
+    ]
+
+    @pytest.mark.parametrize("bases_bases_match", BASES + additional_cases)
     @pytest.mark.parametrize("params_params_match", PARAMS)
     def test_s_prod_comparison(self, bases_bases_match, params_params_match):
         """Test that equal compares two objects of the SProd class"""
@@ -1447,6 +1637,14 @@ class TestSymbolicOpComparison:
         op1 = qml.s_prod(param1, base1)
         op2 = qml.s_prod(param2, base2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
+
+    def test_s_prod_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance."""
+        op1 = qml.s_prod(0.12345, qml.PauliX(0))
+        op2 = qml.s_prod(0.12356, qml.PauliX(0))
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
 
 
 class TestProdComparisons:
@@ -1537,6 +1735,14 @@ class TestProdComparisons:
         op2 = qml.prod(*base_list2)
         assert qml.equal(op1, op2) == res
 
+    def test_prod_of_prods(self):
+        """Test that prod of prods and just an equivalent Prod get compared correctly"""
+        X = qml.PauliX
+
+        op1 = (0.5 * X(0)) @ (0.5 * X(1)) @ (0.5 * X(2)) @ (0.5 * X(3)) @ (0.5 * X(4))
+        op2 = qml.prod(*[0.5 * X(i) for i in range(5)])
+        assert qml.equal(op1, op2)
+
 
 class TestSumComparisons:
     """Tests comparisons between Sum operators"""
@@ -1613,6 +1819,40 @@ class TestSumComparisons:
         op1 = qml.sum(*base_list1)
         op2 = qml.sum(*base_list2)
         assert qml.equal(op1, op2) == res
+
+    def test_sum_equal_order_invarient(self):
+        """Test that the order of operations doesn't affect equality"""
+        H1 = qml.prod(qml.PauliX(0), qml.PauliX(1))
+        H2 = qml.s_prod(1.0, qml.sum(qml.PauliY(0), qml.PauliY(1)))
+
+        true_res = qml.sum(
+            qml.s_prod(2j, qml.prod(qml.PauliZ(0), qml.PauliX(1))),
+            qml.s_prod(2j, qml.prod(qml.PauliX(0), qml.PauliZ(1))),
+        )
+        true_res = true_res.simplify()
+
+        res = qml.prod(H1, H2) - qml.prod(H2, H1)
+        res = res.simplify()
+
+        assert true_res == res
+
+    def test_sum_of_sums(self):
+        """Test that sum of sums and just an equivalent sum get compared correctly"""
+        X = qml.PauliX
+        op1 = (
+            0.5 * X(0)
+            + 0.5 * X(1)
+            + 0.5 * X(2)
+            + 0.5 * X(3)
+            + 0.5 * X(4)
+            + 0.5 * X(5)
+            + 0.5 * X(6)
+            + 0.5 * X(7)
+            + 0.5 * X(8)
+            + 0.5 * X(9)
+        )
+        op2 = qml.sum(*[0.5 * X(i) for i in range(10)])
+        assert qml.equal(op1, op2)
 
 
 def f1(p, t):
@@ -1720,3 +1960,112 @@ class TestParametrizedEvolutionComparisons:
 
         assert qml.equal(ev1(params1, t), ev2(params2, t))
         assert not qml.equal(ev1(params1, t), ev3(params3, t))
+
+    def test_different_times(self):
+        """Test that times are compared for two ParametrizedEvolution ops"""
+        coeffs1 = [3, f1, f2]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+
+        h1 = qml.dot(coeffs1, ops)
+
+        params1 = [6.0, 7.0]
+        t = 3
+
+        ev1 = qml.pulse.ParametrizedEvolution(h1, params1)
+        ev11 = qml.pulse.ParametrizedEvolution(h1, params1)
+        ev2 = qml.pulse.ParametrizedEvolution(h1, params1, t)
+        ev3 = qml.pulse.ParametrizedEvolution(h1, params1, 0.5)
+
+        assert qml.equal(ev1, ev11)
+        assert not qml.equal(ev1, ev2)
+        assert not qml.equal(ev1, ev3)
+        assert not qml.equal(ev2, ev3)
+
+
+class TestQuantumScriptComparisons:
+    tape1 = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10
+    )
+    tape2 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=10)
+    tape3 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=None)
+    tape4 = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10
+    )
+    tape5 = qml.tape.QuantumScript(
+        [qml.PauliX(0)],
+        [qml.expval(qml.PauliZ(0))],
+        shots=10,
+        trainable_params=2,
+    )
+    tape6 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliX(0))], shots=10)
+    tape7 = qml.tape.QuantumScript(
+        [qml.PauliX(0)],
+        [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))],
+        shots=10,
+    )
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape2, tape7), (tape2, tape6)])
+    def test_non_equal_measurement_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape) is False
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape2, tape3)])
+    def test_non_equal_shot_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape) is False
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape2, tape2)])
+    def test_equal_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape)
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape1, tape2)])
+    def test_non_equal_operators_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape) is False
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape1, tape4)])
+    def test_different_tolerances_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape, atol=1e-5)
+        assert qml.equal(tape, other_tape, rtol=0, atol=1e-7) is False
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape2, tape5)])
+    def test_non_equal_training_params_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape) is False
+
+
+class TestBasisRotation:
+    rotation_mat = np.array(
+        [
+            [-0.618452, -0.68369054 - 0.38740723j],
+            [-0.78582258, 0.53807284 + 0.30489424j],
+        ]
+    )
+    op1 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat)
+    op2 = qml.BasisRotation(wires=range(2), unitary_matrix=np.array(rotation_mat))
+    op3 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
+    op4 = qml.BasisRotation(wires=range(2, 4), unitary_matrix=rotation_mat)
+
+    @pytest.mark.parametrize("op, other_op", [(op1, op3)])
+    def test_different_tolerances_comparison(self, op, other_op):
+        assert qml.equal(op, other_op, atol=1e-5)
+        assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
+
+    @pytest.mark.parametrize("op, other_op", [(op1, op2)])
+    def test_non_equal_training_params_comparison(self, op, other_op):
+        assert qml.equal(op, other_op)
+
+    @pytest.mark.parametrize("op, other_op", [(op1, op4)])
+    def test_non_equal_training_wires(self, op, other_op):
+        assert qml.equal(op, other_op) is False
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", [op1])
+    def test_non_equal_interfaces(self, op):
+        import jax
+
+        rotation_mat_jax = jax.numpy.array(
+            [
+                [-0.618452, -0.68369054 - 0.38740723j],
+                [-0.78582258, 0.53807284 + 0.30489424j],
+            ]
+        )
+        other_op = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
+        assert qml.equal(op, other_op, check_interface=False)
+        assert qml.equal(op, other_op) is False

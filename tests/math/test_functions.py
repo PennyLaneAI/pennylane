@@ -1550,7 +1550,7 @@ class TestTake:
     def test_array_indexing_autograd(self):
         """Test that indexing with a sequence properly extracts
         the elements from the flattened tensor"""
-        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=np.float64)
         indices = [0, 2, 3, 6, -2]
 
         def cost_fn(t):
@@ -1593,7 +1593,7 @@ class TestTake:
     def test_multidimensional_indexing_along_axis_autograd(self):
         """Test that indexing with a sequence properly extracts
         the elements from the specified tensor axis"""
-        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=np.float64)
         indices = np.array([[0, 0], [1, 0]])
 
         def cost_fn(t):

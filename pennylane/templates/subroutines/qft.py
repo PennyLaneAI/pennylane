@@ -63,6 +63,7 @@ class QFT(Operation):
 
         circuit_qft(np.array([1.0, 0.0, 0.0], requires_grad=False))
     """
+
     num_wires = AnyWires
     grad_method = None
 
@@ -70,6 +71,9 @@ class QFT(Operation):
         wires = qml.wires.Wires(wires)
         self.hyperparameters["n_wires"] = len(wires)
         super().__init__(wires=wires, id=id)
+
+    def _flatten(self):
+        return tuple(), (self.wires, tuple())
 
     @property
     def num_params(self):
