@@ -569,8 +569,8 @@ class TestValidation:
             qml.matrix(circuit, wire_order=wires)()
 
         with pytest.raises(
-            TransformError,
-            match=r"Wires in circuit \[0\] are inconsistent with those in wire_order \[1\]",
+            ValueError,
+            match=r"the matrix for the specified wire order because it does not contain all the Pauli sentence",
         ):
             qml.matrix(qml.PauliX(0), wire_order=[1])
 
