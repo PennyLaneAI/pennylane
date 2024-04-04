@@ -155,7 +155,7 @@ class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
     @pytest.mark.parametrize("ham_constructor", [qml.ops.Hamiltonian, qml.ops.LinearCombination])
-    @pytest.mark.filterwarnings("ignore::PennyLaneDeprecationWarning")
+    @pytest.mark.filterwarnings("ignore::pennylane.PennyLaneDeprecationWarning")
     def test_hamiltonian_diff(self, ham_constructor, device_kwargs, tol):
         """Tests a simple VQE gradient using parameter-shift rules."""
 
