@@ -2506,13 +2506,12 @@ class Tensor(Observable):
 
         if len(self.non_identity_obs) == 0:
             # Return a single Identity as the tensor only contains Identities
-            obs = qml.Identity(self.wires[0])
-        elif len(self.non_identity_obs) == 1:
-            obs = self.non_identity_obs[0]
-        else:
-            obs = Tensor(*self.non_identity_obs)
-
-        return obs
+            return qml.Identity(self.wires[0]) if self.wires else qml.Identity()
+        return (
+            self.non_identity_obs[0]
+            if len(self.non_identity_obs) == 1
+            else Tensor(*self.non_identity_obs)
+        )
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current tensor with its wires changed according to the given
