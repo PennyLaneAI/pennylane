@@ -79,12 +79,7 @@ from pennylane.operation import Tensor
                 qml.s_prod(-0.5, qml.sum(qml.THermitian(GELL_MANN[1], 0), qml.GellMann(0, 2))),
                 qml.sum(qml.GellMann(1, 3), qml.THermitian(GELL_MANN[6], 1)),
             ),
-        ),
-        (
-            qml.ops.LinearCombination([2.0, 3.0], [qml.Hermitian(np.eye(2), 0), qml.X(0)]),
-            (1.0, -np.eye(2), -1.0),
-            qml.ops.LinearCombination([1.0, -1.0], [qml.Hermitian(-np.eye(2), 0), qml.X(0)]),
-        ),
+        )
     ],
 )
 def test_composite_ops(op, new_params, expected_op):
@@ -227,26 +222,53 @@ def test_hamiltonian_legacy_opmath(H, new_coeffs, expected_H):
 
 
 TEST_BIND_LINEARCOMBINATION = [
-    (
+    (# LinearCombination with only data being the coeffs
         qml.ops.LinearCombination(
             [1.1, 2.1, 3.1],
-            [qml.prod(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+            [qml.prod(qml.PauliZ(0), qml.X(1)), qml.Hadamard(1), qml.Y(0)],
         ),
         [1.2, 2.2, 3.2],
         qml.ops.LinearCombination(
             [1.2, 2.2, 3.2],
-            [qml.prod(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+            [qml.prod(qml.PauliZ(0), qml.X(1)), qml.Hadamard(1), qml.Y(0)],
         ),
     ),
-    (
+    (# LinearCombination with Hermitian that carries extra data
         qml.ops.LinearCombination(
-            [1.6, -1], [qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1), qml.PauliX(1)]
+            [1.6, -1], [qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1), qml.X(1)]
         ),
         [-1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
         qml.ops.LinearCombination(
-            [-1, 1.6], [qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1), qml.PauliX(1)]
+            [-1, 1.6], [qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1), qml.X(1)]
         ),
     ),
+    (# LinearCombination with prod that contains Hermitian that carries extra data
+        qml.ops.LinearCombination(
+            [1.6, -1], [qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)), qml.X(1)]
+        ),
+        [-1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
+        qml.ops.LinearCombination(
+            [-1, 1.6], [qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)), qml.X(1)]
+        ),
+    ),
+    (# LinearCombination with prod that contains Hermitian that carries extra data
+        qml.ops.LinearCombination(
+            [1.6, -1], [qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)), qml.X(1)]
+        ),
+        [-1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
+        qml.ops.LinearCombination(
+            [-1, 1.6], [qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)), qml.X(1)]
+        ),
+    ),
+    (# LinearCombination with Projector that carries extra data and prod that contains Hermitian that carries extra data
+        qml.ops.LinearCombination(
+            [1.0, 1.6, -1], [qml.Projector(np.array([1., 0.]), 0), qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)), qml.X(1)]
+        ),
+        [-1.0, np.array([0., 1.]), -1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
+        qml.ops.LinearCombination(
+            [-1.0, -1, 1.6], [qml.Projector(np.array([0., 1.]), 0), qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)), qml.X(1)]
+        ),
+    )
 ]
 
 
@@ -262,6 +284,9 @@ def test_linear_combination(H, new_coeffs, expected_H):
 
     assert qml.equal(new_H, expected_H)
     assert new_H is not H
+    assert all(no is not o for no, o in zip(new_H.operands, H.operands))
+    assert all(no is not o for no, o in zip(new_H.coeffs, H.coeffs))
+    assert all(no is not o for no, o in zip(new_H.ops, H.ops))
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")

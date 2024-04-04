@@ -104,7 +104,7 @@ def bind_new_parameters_linear_combination(
 ):
     new_coeffs, new_ops = [], []
     i = 0
-    for o in op.ops:
+    for o in copy.deepcopy(op.ops):
         new_coeffs.append(params[i])
         i += 1
         if o.data:
