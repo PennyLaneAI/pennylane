@@ -33,8 +33,8 @@ on:
         required: false
         type: string
         default: ''
-      use_new_opmath:
-        description: Whether to use the new op_math or not when running the tests
+      disable_new_opmath:
+        description: Whether to disable the new op_math or not when running the tests
         required: false
         type: boolean
         default: false
