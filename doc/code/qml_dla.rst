@@ -3,7 +3,7 @@ qml.dla
 
 (Dynamical) Lie Algebra functionality in PennyLane.
 
-See our :doc:`introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra/>`.
+See our :doc:`introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`.
 
 .. currentmodule:: pennylane.dla
 
