@@ -58,12 +58,8 @@ def adjoint_repr(dla):
     Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
     >>> n = 2
-    >>> gens = [
-    ...     PauliSentence({PauliWord({i:"X", i+1:"X"}): 1.}) for i in range(n-1)
-    ... ]
-    >>> gens += [
-    ...     PauliSentence({PauliWord({i:"Z"}): 1.}) for i in range(n)
-    ... ]
+    >>> gens = [PauliSentence({PauliWord({i:"X", i+1:"X"}): 1.}) for i in range(n-1)]
+    >>> gens += [PauliSentence({PauliWord({i:"Z"}): 1.}) for i in range(n)]
     >>> dla = qml.dla.lie_closure(gens)
     >>> print(dla)
     [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), -1.0 * Y(0) @ Y(1)]
