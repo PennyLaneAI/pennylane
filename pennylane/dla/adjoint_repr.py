@@ -16,7 +16,6 @@ from itertools import combinations
 
 import numpy as np
 
-import pennylane as qml
 from pennylane.pauli import PauliSentence
 
 
