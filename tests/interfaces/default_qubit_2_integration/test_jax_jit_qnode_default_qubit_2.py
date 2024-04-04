@@ -1027,7 +1027,7 @@ class TestQubitIntegration:
             pytest.skip("Diff method does not support postselection.")
         if dev.name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention")
-        elif getattr(dev, "short_name", "") == "lightning.qubit":
+        elif dev.name == "lightning.qubit":
             pytest.xfail("lightning qubit does not support postselection.")
 
         @qml.qnode(
@@ -1369,7 +1369,7 @@ class TestQubitIntegrationHigherOrder:
         """Test that the state can be returned and differentiated"""
 
         if (
-            getattr(dev, "short_name", "") == "lightning.qubit"
+            dev.name == "lightning.qubit"
             and diff_method == "adjoint"
             and grad_on_execution
         ):
