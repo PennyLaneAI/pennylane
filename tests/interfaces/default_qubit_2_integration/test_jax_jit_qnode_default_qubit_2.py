@@ -1368,11 +1368,7 @@ class TestQubitIntegrationHigherOrder:
     def test_state(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
         """Test that the state can be returned and differentiated"""
 
-        if (
-            dev.name == "lightning.qubit"
-            and diff_method == "adjoint"
-            and grad_on_execution
-        ):
+        if dev.name == "lightning.qubit" and diff_method == "adjoint" and grad_on_execution:
             pytest.xfail("lightning.qubit does not support adjoint with the state.")
 
         x = jax.numpy.array(0.543)
