@@ -182,10 +182,12 @@ def pytest_addoption(parser):
     parser.addoption("--disable-opmath", action="store", default=False)
 
 
+# pylint: disable=eval-used
 @pytest.fixture(scope="session", autouse=True)
 def disable_opmath_if_requested(request):
     disable_opmath = request.config.getoption("--disable-opmath")
-    if disable_opmath:
+    # value from yaml file is a string, convert to boolean
+    if eval(disable_opmath):
         qml.operation.disable_new_opmath()
 
 

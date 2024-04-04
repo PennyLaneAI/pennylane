@@ -97,8 +97,8 @@ on:
       disable_new_opmath:
         description: Whether to disable the new op_math or not when running the tests
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: "False"
 
 jobs:
   test:
