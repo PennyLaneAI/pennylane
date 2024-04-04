@@ -70,9 +70,8 @@ class ErrorOperation(Operation):
         the error of the operation.
     """
 
-    @property
     @abstractmethod
-    def error(self) -> AlgorithmicError:
+    def error(self, *args, **kwargs) -> AlgorithmicError:
         """Computes the error of the operation.
 
         Returns:
@@ -94,7 +93,7 @@ class SpectralNormError(AlgorithmicError):
     >>> s1 = SpectralNormError(0.01)
     >>> s2 = SpectralNormError(0.02)
     >>> s1.combine(s2)
-    <SpectralNormError(0.03)>
+    SpectralNormError(0.03)
     """
 
     def __repr__(self):

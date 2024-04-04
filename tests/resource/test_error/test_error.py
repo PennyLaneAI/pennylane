@@ -139,7 +139,7 @@ class TestSpectralNormError:
         exact_op = qml.RX(phi, 1)
 
         res = SpectralNormError.get_error(approx_op, exact_op)
-        assert res == expected
+        assert np.isclose(res, expected)
 
     def test_no_operator_matrix_defined(self):
         """Test that get_error fails if the operator matrix is not defined"""
@@ -167,12 +167,11 @@ class TestErrorOperation:
         """Test that error method works as expected"""
 
         class SimpleErrorOperation(ErrorOperation):
-            @property
             def error(self):
                 return len(self.wires)
 
         no_error_op = SimpleErrorOperation(wires=[1, 2, 3])
-        assert no_error_op.error == 3
+        assert no_error_op.error() == 3
 
     def test_no_error_method(self):
         """Test error is raised if the error method is not defined."""

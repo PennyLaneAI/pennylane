@@ -68,6 +68,7 @@ observables = {
     "Projector",
     "SparseHamiltonian",
     "Hamiltonian",
+    "LinearCombination",
     "Sum",
     "SProd",
     "Prod",
@@ -169,7 +170,7 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return (
+    return not isinstance(op, MidMeasureMP) and (
         op.num_params == 0
         or not qml.operation.is_trainable(op)
         or (op.num_params == 1 and op.has_generator)
@@ -190,7 +191,7 @@ def _supports_adjoint(circuit):
 
     try:
         prog((circuit,))
-    except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
+    except (qml.operation.DecompositionUndefinedError, qml.DeviceError, AttributeError):
         return False
     return True
 
@@ -210,9 +211,7 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
     program.add_transform(
-        decompose,
-        stopping_condition=adjoint_ops,
-        name=name,
+        decompose, stopping_condition=adjoint_ops, name=name, skip_initial_state_prep=False
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(

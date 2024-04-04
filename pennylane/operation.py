@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
+# pylint: disable=protected-access, no-member
 r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
@@ -192,6 +192,7 @@ return newer arithmetic operators, the ``operation`` module provides the followi
     ~disable_new_opmath
     ~active_new_opmath
     ~convert_to_opmath
+    ~convert_to_legacy_H
 
 Other
 ~~~~~
@@ -248,6 +249,7 @@ import itertools
 import warnings
 from enum import IntEnum
 from typing import List
+from contextlib import contextmanager
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -267,7 +269,7 @@ from .pytrees import register_pytree
 # =============================================================================
 
 SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
-__use_new_opmath = False
+__use_new_opmath = True
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
 
 
@@ -1084,7 +1086,14 @@ class Operator(abc.ABC):
             if (
                 not isinstance(
                     self,
-                    (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase, qml.Identity),
+                    (
+                        qml.Barrier,
+                        qml.Snapshot,
+                        qml.ops.Hamiltonian,
+                        qml.ops.LinearCombination,
+                        qml.GlobalPhase,
+                        qml.Identity,
+                    ),
                 )
                 and len(qml.wires.Wires(wires)) == 0
             ):
@@ -1897,7 +1906,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__matmul__(other=other)
 
-        if isinstance(other, (Tensor, qml.Hamiltonian)):
+        if isinstance(other, (Tensor, qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.__rmatmul__(self)
 
         if isinstance(other, Observable):
@@ -1958,7 +1967,7 @@ class Observable(Operator):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, qml.Hamiltonian):
+        if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.compare(self)
         if isinstance(other, (Tensor, Observable)):
             return other._obs_data() == self._obs_data()
@@ -1972,7 +1981,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__add__(other=other)
 
-        if isinstance(other, qml.Hamiltonian):
+        if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
@@ -1998,7 +2007,7 @@ class Observable(Operator):
         if active_new_opmath():
             return super().__sub__(other=other)
 
-        if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
+        if isinstance(other, (Observable, Tensor, qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return self + (-1 * other)
         return super().__sub__(other=other)
 
@@ -2216,7 +2225,7 @@ class Tensor(Observable):
         return 1 + max(o.arithmetic_depth for o in self.obs)
 
     def __matmul__(self, other):
-        if isinstance(other, qml.Hamiltonian):
+        if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.__rmatmul__(self)
 
         if isinstance(other, Observable):
@@ -2497,13 +2506,12 @@ class Tensor(Observable):
 
         if len(self.non_identity_obs) == 0:
             # Return a single Identity as the tensor only contains Identities
-            obs = qml.Identity(self.wires[0])
-        elif len(self.non_identity_obs) == 1:
-            obs = self.non_identity_obs[0]
-        else:
-            obs = Tensor(*self.non_identity_obs)
-
-        return obs
+            return qml.Identity(self.wires[0]) if self.wires else qml.Identity()
+        return (
+            self.non_identity_obs[0]
+            if len(self.non_identity_obs) == 1
+            else Tensor(*self.non_identity_obs)
+        )
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current tensor with its wires changed according to the given
@@ -2936,7 +2944,7 @@ def gen_is_multi_term_hamiltonian(obj):
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
-    return isinstance(o, qml.Hamiltonian) and len(o.coeffs) > 1
+    return isinstance(o, (qml.ops.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
 
 
 def enable_new_opmath():
@@ -3007,7 +3015,7 @@ def convert_to_opmath(op):
     Returns:
         Operator: An operator using the new arithmetic operations, if relevant
     """
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         c, ops = op.terms()
         ops = tuple(convert_to_opmath(o) for o in ops)
         return qml.dot(c, ops)
@@ -3016,11 +3024,46 @@ def convert_to_opmath(op):
     return op
 
 
+@contextmanager
+def disable_new_opmath_cm():
+    r"""Allows to use the old operator arithmetic within a
+    temporary context using the `with` statement."""
+
+    was_active = qml.operation.active_new_opmath()
+    try:
+        if was_active:
+            disable_new_opmath()
+        yield
+    except Exception as e:
+        raise e
+    finally:
+        if was_active:
+            enable_new_opmath()
+        else:
+            disable_new_opmath()
+
+
+@contextmanager
+def enable_new_opmath_cm():
+    r"""Allows to use the new operator arithmetic within a
+    temporary context using the `with` statement."""
+
+    was_active = qml.operation.active_new_opmath()
+    if not was_active:
+        enable_new_opmath()
+    yield
+    if was_active:
+        enable_new_opmath()
+    else:
+        disable_new_opmath()
+
+
 # pylint: disable=too-many-branches
-def convert_to_legacy_H(op):
+def convert_to_H(op):
     """
-    Converts arithmetic operators into :class:`~pennylane.Hamiltonian` instance.
-    Objects of any other type are returned directly.
+    Converts arithmetic operators into a :class:`~pennylane.ops.Hamiltonian` or
+    :class:`~pennylane.ops.LinearCombination` instance, depending on whether
+    new_opmath is enabled. Objects of any other type are returned directly.
 
     Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
     :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
@@ -3029,7 +3072,8 @@ def convert_to_legacy_H(op):
         op (Operator): The operator instance to convert.
 
     Returns:
-        Operator: The operator as a :class:`~pennylane.Hamiltonian` instance
+        Operator: The operator as a :class:`~pennylane.ops.LinearCombination` instance
+            if `active_new_opmath()`, otherwise a :class:`~pennylane.ops.Hamiltonian`
     """
     if not isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
         return op
@@ -3038,6 +3082,7 @@ def convert_to_legacy_H(op):
     ops = []
 
     op = qml.simplify(op)
+    product = qml.ops.op_math.Prod if active_new_opmath() else Tensor
 
     if isinstance(op, Observable):
         coeffs.append(1.0)
@@ -3048,13 +3093,13 @@ def convert_to_legacy_H(op):
         if isinstance(op.base, Observable):
             ops.append(op.base)
         elif isinstance(op.base, qml.ops.op_math.Prod):
-            ops.append(qml.operation.Tensor(*op.base))
+            ops.append(product(*op.base))
         else:
             raise ValueError("The base of scalar product must be an observable or a product.")
 
     elif isinstance(op, qml.ops.Prod):
         coeffs.append(1.0)
-        ops.append(qml.operation.Tensor(*op))
+        ops.append(product(*op))
 
     elif isinstance(op, qml.ops.Sum):
         for factor in op:
@@ -3063,14 +3108,14 @@ def convert_to_legacy_H(op):
                 if isinstance(factor.base, Observable):
                     ops.append(factor.base)
                 elif isinstance(factor.base, qml.ops.op_math.Prod):
-                    ops.append(qml.operation.Tensor(*factor.base))
+                    ops.append(product(*factor.base))
                 else:
                     raise ValueError(
                         "The base of scalar product must be an observable or a product."
                     )
             elif isinstance(factor, (qml.ops.Prod)):
                 coeffs.append(1.0)
-                ops.append(qml.operation.Tensor(*factor))
+                ops.append(product(*factor))
             elif isinstance(factor, Observable):
                 coeffs.append(1.0)
                 ops.append(factor)
@@ -3083,6 +3128,25 @@ def convert_to_legacy_H(op):
         raise ValueError("Could not convert to Hamiltonian. Some or all observables are not valid.")
 
     return qml.Hamiltonian(coeffs, ops)
+
+
+def convert_to_legacy_H(op):
+    """
+    Converts arithmetic operators into a legacy :class:`~pennylane.Hamiltonian` instance.
+    Objects of any other type are returned directly.
+
+    Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
+    :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
+
+    Args:
+        op (Operator): The operator instance to convert.
+
+    Returns:
+        Operator: The operator as a :class:`~pennylane.Hamiltonian` instance
+    """
+    with disable_new_opmath_cm():
+        res = convert_to_H(op)
+    return res
 
 
 def __getattr__(name):
