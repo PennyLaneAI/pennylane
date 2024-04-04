@@ -282,7 +282,29 @@ def excitations(electrons, orbitals, delta_sz=0):
     return singles, doubles
 
 
-def hf_state(electrons, orbitals):
+def _beta_matrix(orbitals):
+    r"""Generate the beta matrix for conversion from occupation number basis to the Bravyi-Kitaev basis.
+
+    Args:
+        orbitals (int): Number of *spin* orbitals. If an active space is defined,
+    this is the number of active spin-orbitals.
+
+    Returns:
+        array: Transformation matrix `
+    """
+
+    bin_range = int(np.ceil(np.log2(orbitals)))
+    beta = np.array([[1, 0], [1, 1]])
+
+    for binary in range(1, bin_range + 1):
+        beta = np.kron(np.eye(2, dtype=int), beta)
+        for col in range(0, 2**binary):
+            beta[2 ** (binary + 1) - 1, col] = 1
+
+    return beta[0:orbitals, 0:orbitals]
+
+
+def hf_state(electrons, orbitals, basis="occupation_num"):
     r"""Generate the occupation-number vector representing the Hartree-Fock state.
 
     The many-particle wave function in the Hartree-Fock (HF) approximation is a `Slater determinant
@@ -310,6 +332,15 @@ def hf_state(electrons, orbitals):
     >>> state = hf_state(2, 6)
     >>> print(state)
     [1 1 0 0 0 0]
+
+    >>> state = hf_state(2, 6, basis="parity")
+    >>> print(state)
+    [1 0 0 0 0 0]
+
+    >>> state = hf_state(2, 6, basis="bravyi_kitaev")
+    >>> print(state)
+    [1 0 0 0 0 0]
+
     """
 
     if electrons <= 0:
@@ -325,6 +356,14 @@ def hf_state(electrons, orbitals):
         )
 
     state = np.where(np.arange(orbitals) < electrons, 1, 0)
+
+    if basis == "parity":
+        pi_matrix = np.ones((orbitals, orbitals))
+        pi_matrix = np.tril(pi_matrix)
+        state = np.matmul(pi_matrix, state) % 2
+    elif basis == "bravyi_kitaev":
+        beta_matrix = _beta_matrix(orbitals)
+        state = np.matmul(beta_matrix, state) % 2
 
     return np.array(state)
 

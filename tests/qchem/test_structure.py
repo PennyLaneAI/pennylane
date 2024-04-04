@@ -232,6 +232,33 @@ def test_hf_state(electrons, orbitals, exp_state):
     assert np.allclose(res_state, exp_state)
 
 
+def test_hf_state_basis():
+    r"""Test the correctness of the generated vector in user defined basis"""
+
+    electrons = 2
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False)
+
+    mol = qml.qchem.Molecule(symbols, geometry, charge=0)
+    h_ferm = qchem.fermionic_hamiltonian(mol)()
+    qubits = len(h_ferm.wires)
+
+    occ_state = qchem.hf_state(electrons, qubits, basis="occupation_num")
+    parity_state = qchem.hf_state(electrons, qubits, basis="parity")
+
+    occ_h = qml.jordan_wigner(h_ferm, ps=True).hamiltonian()
+    parity_h = qml.parity_transform(h_ferm, qubits, ps=True).hamiltonian()
+
+    dev = qml.device("default.qubit", wires=qubits)
+
+    @qml.qnode(dev)
+    def circuit(hf_state, h):
+        qml.BasisState(hf_state, wires=range(qubits))
+        return qml.expval(h)
+
+    assert circuit(occ_state, occ_h) == circuit(parity_state, parity_h)
+
+
 @pytest.mark.parametrize(
     ("electrons", "orbitals", "msg_match"),
     [
