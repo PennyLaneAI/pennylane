@@ -226,16 +226,14 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     if (
         len(tape.measurements) != 1
-        or not isinstance(
-            hamiltonian := tape.measurements[0].obs,
-            (qml.ops.Hamiltonian, qml.ops.LinearCombination),
-        )
+        or not hasattr(tape.measurements[0].obs, "grouping_indices")
         or not isinstance(tape.measurements[0], ExpectationMP)
     ):
         raise ValueError(
-            "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
+            "Passed tape must end in `qml.expval(H)` where H can define grouping_indices"
         )
 
+    hamiltonian = tape.measurements[0].obs
     if len(hamiltonian.terms()[1]) == 0:
         raise ValueError(
             "The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion."
