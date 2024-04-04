@@ -120,7 +120,6 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
     tensor([0.98006658, 0.82533561, 0.54030231], requires_grad=True)
     """
-    # pylint: disable=protected-access
     if tape.batch_size is None:
         output_tapes = [tape]
 
@@ -143,14 +142,35 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
             output_tapes.append(new_tape)
 
         def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
-            if len(tape.measurements) > 1:
-                processed_results = [
-                    qml.math.squeeze(
-                        qml.math.stack([results[b][i] for b in range(tape.batch_size)])
+            # if len(tape.measurements) > 1:
+            #     processed_results = [
+            #         qml.math.squeeze(
+            #             qml.math.stack([results[b][i] for b in range(tape.batch_size)])
+            #         )
+            #         for i in range(len(tape.measurements))
+            #     ]
+            #     return tuple(processed_results)
+            # return qml.math.squeeze(qml.math.stack(results))
+            if tape.shots.has_partitioned_shots:
+                if len(tape.measurements) > 1:
+                    return tuple(
+                        tuple(
+                            qml.math.stack([results[b][s][i] for b in range(tape.batch_size)])
+                            for i in range(len(tape.measurements))
+                        )
+                        for s in range(tape.shots.num_copies)
                     )
+
+                return tuple(
+                    qml.math.stack([results[b][s] for b in range(tape.batch_size)])
+                    for s in range(tape.shots.num_copies)
+                )
+
+            if len(tape.measurements) > 1:
+                return tuple(
+                    qml.math.stack([results[b][i] for b in range(tape.batch_size)])
                     for i in range(len(tape.measurements))
-                ]
-                return tuple(processed_results)
-            return qml.math.squeeze(qml.math.stack(results))
+                )
+            return qml.math.stack(results)
 
     return output_tapes, processing_fn

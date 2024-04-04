@@ -157,7 +157,7 @@ def mid_circuit_measurements(
     and use the ``qml.defer_measurements`` transform otherwise.
     """
 
-    if tape.shots and tape.batch_size is None:
+    if tape.shots:
         return qml.dynamic_one_shot(tape)
     return qml.defer_measurements(tape, device=device)
 

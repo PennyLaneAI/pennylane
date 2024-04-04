@@ -297,6 +297,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `dynamic_one_shot` transform now works with broadcasting.
+
+* `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
+
 * Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
   [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
 
