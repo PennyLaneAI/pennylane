@@ -180,6 +180,9 @@
   [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
   [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
 
+* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
+  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
@@ -289,6 +292,9 @@
   [(#5441)](https://github.com/PennyLaneAI/pennylane/pull/5441)
 
 <h3>Bug fixes 🐛</h3>
+
+* Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
+  [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
 
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
   [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
