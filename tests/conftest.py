@@ -179,7 +179,9 @@ def tear_down_thermitian():
 
 
 def pytest_addoption(parser):
-    parser.addoption("--disable-opmath", action="store", default=False)
+    parser.addoption(
+        "--disable-opmath", action="store", default=False, help="Whether to disable new_opmath"
+    )
 
 
 # pylint: disable=eval-used

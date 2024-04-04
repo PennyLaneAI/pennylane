@@ -49,18 +49,13 @@ I_broadcasted = I[pnp.newaxis]
 def test_that_opmath_is_enabled():
     """Confirm that the tests are running by default with new_opmath enabled"""
     if not qml.operation.active_new_opmath():
-        raise RuntimeError
+        raise RuntimeError("new_opmath is disabled!")
 
 
 def test_that_opmath_is_disabled():
     """Confirm that the tests are running by default with new_opmath disabled"""
     if qml.operation.active_new_opmath():
-        raise RuntimeError
-
-
-def test_that_this_file_is_being_tested():
-    """Confirm that this file is running in tests"""
-    raise RuntimeError("This test should fail")
+        raise RuntimeError("new_opmath is enabled!")
 
 
 class TestOperatorConstruction:
