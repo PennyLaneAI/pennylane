@@ -79,7 +79,7 @@ from pennylane.operation import Tensor
                 qml.s_prod(-0.5, qml.sum(qml.THermitian(GELL_MANN[1], 0), qml.GellMann(0, 2))),
                 qml.sum(qml.GellMann(1, 3), qml.THermitian(GELL_MANN[6], 1)),
             ),
-        )
+        ),
     ],
 )
 def test_composite_ops(op, new_params, expected_op):
@@ -222,7 +222,7 @@ def test_hamiltonian_legacy_opmath(H, new_coeffs, expected_H):
 
 
 TEST_BIND_LINEARCOMBINATION = [
-    (# LinearCombination with only data being the coeffs
+    (  # LinearCombination with only data being the coeffs
         qml.ops.LinearCombination(
             [1.1, 2.1, 3.1],
             [qml.prod(qml.PauliZ(0), qml.X(1)), qml.Hadamard(1), qml.Y(0)],
@@ -233,7 +233,7 @@ TEST_BIND_LINEARCOMBINATION = [
             [qml.prod(qml.PauliZ(0), qml.X(1)), qml.Hadamard(1), qml.Y(0)],
         ),
     ),
-    (# LinearCombination with Hermitian that carries extra data
+    (  # LinearCombination with Hermitian that carries extra data
         qml.ops.LinearCombination(
             [1.6, -1], [qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1), qml.X(1)]
         ),
@@ -242,33 +242,59 @@ TEST_BIND_LINEARCOMBINATION = [
             [-1, 1.6], [qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1), qml.X(1)]
         ),
     ),
-    (# LinearCombination with prod that contains Hermitian that carries extra data
+    (  # LinearCombination with prod that contains Hermitian that carries extra data
         qml.ops.LinearCombination(
-            [1.6, -1], [qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)), qml.X(1)]
+            [1.6, -1],
+            [
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)),
+                qml.X(1),
+            ],
         ),
         [-1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
         qml.ops.LinearCombination(
-            [-1, 1.6], [qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)), qml.X(1)]
+            [-1, 1.6],
+            [
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)),
+                qml.X(1),
+            ],
         ),
     ),
-    (# LinearCombination with prod that contains Hermitian that carries extra data
+    (  # LinearCombination with prod that contains Hermitian that carries extra data
         qml.ops.LinearCombination(
-            [1.6, -1], [qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)), qml.X(1)]
+            [1.6, -1],
+            [
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)),
+                qml.X(1),
+            ],
         ),
         [-1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
         qml.ops.LinearCombination(
-            [-1, 1.6], [qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)), qml.X(1)]
+            [-1, 1.6],
+            [
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)),
+                qml.X(1),
+            ],
         ),
     ),
-    (# LinearCombination with Projector that carries extra data and prod that contains Hermitian that carries extra data
+    (  # LinearCombination with Projector that carries extra data and prod that contains Hermitian that carries extra data
         qml.ops.LinearCombination(
-            [1.0, 1.6, -1], [qml.Projector(np.array([1., 0.]), 0), qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)), qml.X(1)]
+            [1.0, 1.6, -1],
+            [
+                qml.Projector(np.array([1.0, 0.0]), 0),
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)),
+                qml.X(1),
+            ],
         ),
-        [-1.0, np.array([0., 1.]), -1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
+        [-1.0, np.array([0.0, 1.0]), -1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
         qml.ops.LinearCombination(
-            [-1.0, -1, 1.6], [qml.Projector(np.array([0., 1.]), 0), qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)), qml.X(1)]
+            [-1.0, -1, 1.6],
+            [
+                qml.Projector(np.array([0.0, 1.0]), 0),
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)),
+                qml.X(1),
+            ],
         ),
-    )
+    ),
 ]
 
 
