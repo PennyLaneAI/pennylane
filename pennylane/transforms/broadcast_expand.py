@@ -155,22 +155,28 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 if len(tape.measurements) > 1:
                     return tuple(
                         tuple(
-                            qml.math.stack([results[b][s][i] for b in range(tape.batch_size)])
+                            qml.math.squeeze(
+                                qml.math.stack([results[b][s][i] for b in range(tape.batch_size)])
+                            )
                             for i in range(len(tape.measurements))
                         )
                         for s in range(tape.shots.num_copies)
                     )
 
                 return tuple(
-                    qml.math.stack([results[b][s] for b in range(tape.batch_size)])
+                    qml.math.squeeze(
+                        qml.math.stack([results[b][s] for b in range(tape.batch_size)])
+                    )
                     for s in range(tape.shots.num_copies)
                 )
 
             if len(tape.measurements) > 1:
                 return tuple(
-                    qml.math.stack([results[b][i] for b in range(tape.batch_size)])
+                    qml.math.squeeze(
+                        qml.math.stack([results[b][i] for b in range(tape.batch_size)])
+                    )
                     for i in range(len(tape.measurements))
                 )
-            return qml.math.stack(results)
+            return qml.math.squeeze(qml.math.stack(results))
 
     return output_tapes, processing_fn
