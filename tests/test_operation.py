@@ -46,18 +46,6 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-def test_that_opmath_is_enabled():
-    """Confirm that the tests are running by default with new_opmath enabled"""
-    if not qml.operation.active_new_opmath():
-        raise RuntimeError("new_opmath is disabled!")
-
-
-def test_that_opmath_is_disabled():
-    """Confirm that the tests are running by default with new_opmath disabled"""
-    if qml.operation.active_new_opmath():
-        raise RuntimeError("new_opmath is enabled!")
-
-
 class TestOperatorConstruction:
     """Test custom operators' construction."""
 
