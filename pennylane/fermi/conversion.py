@@ -335,7 +335,7 @@ def bravyi_kitaev(
     .. math::
         \begin{align*}
            a_0 &= \frac{1}{2} \left ( X_0  + iY_{0} \right ), \\\\
-           a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{P(n)}\right ), \\\\
+           a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{P(n)}\right ). \\\\
         \end{align*}
 
 
