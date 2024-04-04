@@ -295,6 +295,9 @@
 * A code example in the `qml.measure` docstring has been added that showcases returning mid-circuit measurement statistics from QNodes.
   [(#5441)](https://github.com/PennyLaneAI/pennylane/pull/5441)
 
+* The computational basis convention used for `qml.measure` — 0 and 1 rather than ±1 — has been clarified in its docstring.
+  [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
+
 <h3>Bug fixes 🐛</h3>
 
 * Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
