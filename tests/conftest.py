@@ -41,7 +41,7 @@ class DummyDevice(DefaultGaussian):
 
 @pytest.fixture(autouse=True)
 def set_numpy_seed():
-    np.random.seed(9872343)
+    np.random.seed(9872653)
     yield
 
 
