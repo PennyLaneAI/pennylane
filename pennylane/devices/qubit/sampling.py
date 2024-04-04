@@ -16,7 +16,7 @@ from typing import List, Union, Tuple
 
 import numpy as np
 import pennylane as qml
-from pennylane.ops import Sum, Hamiltonian, SProd, Prod
+from pennylane.ops import Sum, Hamiltonian, SProd, Prod, LinearCombination
 from pennylane.measurements import (
     SampleMeasurement,
     Shots,
@@ -59,7 +59,7 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
         elif mp.obs is None:
             mp_no_obs.append(mp)
             mp_no_obs_indices.append(i)
-        elif isinstance(mp.obs, (Sum, Hamiltonian, SProd, Prod)):
+        elif isinstance(mp.obs, (Hamiltonian, Sum, SProd, Prod)):
             # Sum, Hamiltonian, SProd, and Prod are treated as valid Pauli words, but
             # aren't accepted in qml.pauli.group_observables
             mp_other_obs.append([mp])
@@ -92,6 +92,13 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     return all_mp_groups, all_indices
 
 
+def _get_num_shots_for_expval_H(obs):
+    indices = obs.grouping_indices
+    if indices:
+        return len(indices)
+    return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
+
+
 # pylint: disable=no-member
 def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
     """Get the total number of qpu executions and shots.
@@ -108,9 +115,10 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
     num_executions = 0
     num_shots = 0
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, qml.Hamiltonian):
-            indices = group[0].obs.grouping_indices
-            H_executions = len(indices) if indices else len(group[0].obs.ops)
+        if isinstance(group[0], ExpectationMP) and isinstance(
+            group[0].obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
+        ):
+            H_executions = _get_num_shots_for_expval_H(group[0].obs)
             num_executions += H_executions
             if tape.shots:
                 num_shots += tape.shots.total_shots * H_executions
@@ -184,7 +192,9 @@ def measure_with_samples(
 
     all_res = []
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Hamiltonian):
+        if isinstance(group[0], ExpectationMP) and isinstance(
+            group[0].obs, (Hamiltonian, LinearCombination)
+        ):
             measure_fn = _measure_hamiltonian_with_samples
         elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
             measure_fn = _measure_sum_with_samples

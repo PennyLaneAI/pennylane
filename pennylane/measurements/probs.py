@@ -17,9 +17,9 @@ This module contains the qml.probs measurement.
 from typing import Sequence, Tuple
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.wires import Wires
-
 from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
@@ -43,7 +43,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable or MeasurementValue]): Observable (with a ``diagonalizing_gates``
+        op (Observable or MeasurementValue): Observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
@@ -111,15 +111,10 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
         return ProbabilityMP(obs=op)
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError(
-            "Symbolic Operations are not supported for rotating probabilities yet."
-        )
-
-    if op is not None and not qml.operation.defines_diagonalizing_gates(op):
+    if op is not None and not op.has_diagonalizing_gates:
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
@@ -242,26 +237,18 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return qml.math.reshape(prob, flat_shape)
 
     def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
+        with qml.QueuingManager.stop_recording():
+            helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
+        mapped_counts = helper_counts.process_counts(counts, wire_order)
 
-        # when reducing wires, two keys may become equal
-        # the following structure was chosen to maintain compatibility with 'process_samples'
-        if mapped_wires:
-            mapped_counts = {}
-            for outcome, occurrence in counts.items():
-                mapped_outcome = "".join(outcome[i] for i in mapped_wires)
-                mapped_counts[mapped_outcome] = mapped_counts.get(mapped_outcome, 0) + occurrence
-            counts = mapped_counts
-
-        num_shots = sum(counts.values())
-        num_wires = len(next(iter(counts)))
+        num_shots = sum(mapped_counts.values())
+        num_wires = len(next(iter(mapped_counts)))
         dim = 2**num_wires
 
         # constructs the probability vector
         # converts outcomes from binary strings to integers (base 10 representation)
         prob_vector = qml.math.zeros((dim), dtype="float64")
-        for outcome, occurrence in counts.items():
+        for outcome, occurrence in mapped_counts.items():
             prob_vector[int(outcome, base=2)] = occurrence / num_shots
 
         return prob_vector

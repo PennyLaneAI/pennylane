@@ -224,9 +224,14 @@ class SpecialUnitary(Operation):
     >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
     ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
 
+    .. seealso::
+
+        For more details on using this operator in applications, see the
+        :doc:`SU(N) gate demo <demos/tutorial_here_comes_the_sun>`.
+
     .. warning::
 
-        This operation only is differentiable when using the JAX, Torch or Tensorflow
+        This operation only is differentiable when using the JAX, Torch or TensorFlow
         interfaces, even when using hardware-compatible differentiation techniques like
         the parameter-shift rule.
 
@@ -276,7 +281,7 @@ class SpecialUnitary(Operation):
             -0.29040522+0.00830631j,  0.15015337-0.76933485j]])
 
     The ``SpecialUnitary`` operation also can be differentiated with hardware-compatible
-    differentiation techniques if the JAX, Torch or Tensorflow interface is used.
+    differentiation techniques if the JAX, Torch or TensorFlow interface is used.
     See the theoretical background section below for details.
 
     .. details::
@@ -535,7 +540,7 @@ class SpecialUnitary(Operation):
 
             An auto-differentiation framework is required for this function.
             The matrix exponential is not differentiable in Autograd. Therefore this function
-            only supports JAX, Torch and Tensorflow.
+            only supports JAX, Torch and TensorFlow.
 
         """
         theta = self.data[0]

@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,18 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""
+The ``error`` module provides classes and functionality to track and propagate the
+algorithmic error from advanced quantum algorithms.
 """
-Deprecated module. Please see ``pennylane.workflow``.
-"""
-from warnings import warn
 
-import pennylane as qml
-from pennylane import workflow
-
-
-def __getattr__(name):
-    warn(
-        "pennylane.interfaces has been moved into pennylane.workflow. Please import from there instead.",
-        qml.PennyLaneDeprecationWarning,
-    )
-    return getattr(workflow, name)
+from .trotter_error import _one_norm_error, _commutator_error
+from .error import AlgorithmicError, ErrorOperation, SpectralNormError

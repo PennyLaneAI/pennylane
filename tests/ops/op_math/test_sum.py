@@ -14,7 +14,7 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-# pylint: disable=eval-used
+# pylint: disable=eval-used, unused-argument
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -28,7 +28,6 @@ from pennylane.wires import Wires
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
 
-X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 
 no_mat_ops = (
     qml.Barrier,
@@ -247,7 +246,7 @@ class TestInitialization:
     ]
     Hamiltonian_mixed = qml.dot(coeffs_, ops_)
 
-    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # all operands have pauli representation
+    SUM_TERMS_OP_PAIRS_MIXEDPAULI = (  # not all operands have pauli representation
         (
             qml.sum(*(i * qml.Hadamard(i) for i in range(1, 5))),
             [float(i) for i in range(1, 5)],
@@ -291,6 +290,17 @@ class TestInitialization:
         assert coeffs == coeffs_true
         assert ops1 == ops_true
 
+    @pytest.mark.parametrize(
+        "op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_PAULI + SUM_TERMS_OP_PAIRS_MIXEDPAULI
+    )
+    def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
+        """Test that calling Prod.terms does not queue anything."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.apply(op)
+            _, _ = op.terms()
+
+        assert q.queue == [op]
+
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
@@ -306,7 +316,6 @@ class TestInitialization:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
-    qml.operation.enable_new_opmath()
     SUM_REPR = (
         (qml.sum(X(0), Y(1), Z(2)), "X(0) + Y(1) + Z(2)"),
         (X(0) + X(1) + X(2), "X(0) + X(1) + X(2)"),
@@ -321,14 +330,12 @@ class TestInitialization:
             "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * ((X(0) @ Y(1)) @ Z(1))\n)",
         ),
     )
-    qml.operation.disable_new_opmath()
 
     @pytest.mark.parametrize("op, repr_true", SUM_REPR)
     def test_repr(self, op, repr_true):
         """Test the string representation of Sum instances"""
         assert repr(op) == repr_true
 
-    qml.operation.enable_new_opmath()
     SUM_REPR_EVAL = (
         X(0) + Y(1) + Z(2),  # single line output
         0.5 * X(0) + 3.5 * Y(1) + 10 * Z(2),  # single line output
@@ -338,14 +345,11 @@ class TestInitialization:
         + 1000000000 * Z(2),  # multiline output
         # qml.sum(*[0.5 * X(i) for i in range(10)]) # multiline output needs fixing of https://github.com/PennyLaneAI/pennylane/issues/5162 before working
     )
-    qml.operation.disable_new_opmath()
 
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
-        qml.operation.enable_new_opmath()
         assert qml.equal(eval(repr(op)), op)
-        qml.operation.disable_new_opmath()
 
 
 class TestMatrix:
@@ -821,6 +825,57 @@ class TestProperties:
         """Test that the pauli rep gives the expected result."""
         assert op.pauli_rep == rep
 
+    def test_flatten_unflatten(self):
+        """Test that we can flatten/unflatten a Sum correctly."""
+        # pylint: disable=protected-access
+        op = Sum(qml.PauliX(0), qml.PauliZ(0))
+        new_op = Sum._unflatten(*op._flatten())
+
+        assert op == new_op
+        assert new_op.grouping_indices is None
+
+    @pytest.mark.parametrize("grouping_type", ("qwc", "commuting", "anticommuting"))
+    @pytest.mark.parametrize("method", ("lf", "rlf"))
+    def test_flatten_unflatten_with_groups(self, grouping_type, method):
+        """Test that we can flatten/unflatten a Sum correctly when grouping indices are available."""
+        # pylint: disable=protected-access
+        op = Sum(
+            qml.PauliX(0),
+            qml.s_prod(2.0, qml.PauliX(1)),
+            qml.s_prod(3.0, qml.PauliZ(0)),
+            grouping_type=grouping_type,
+            method=method,
+        )
+        new_op = Sum._unflatten(*op._flatten())
+
+        assert new_op == op
+        assert new_op.grouping_indices == op.grouping_indices
+
+        old_coeffs, old_ops = op.terms()
+        new_coeffs, new_ops = new_op.terms()
+
+        assert old_coeffs == new_coeffs
+        assert old_ops == new_ops
+
+    def test_grouping_indices_setter(self):
+        """Test that grouping indices can be set"""
+        H = qml.sum(*[qml.X("a"), qml.X("b"), qml.Y("b")])
+
+        H.grouping_indices = [[0, 1], [2]]
+
+        assert isinstance(H.grouping_indices, tuple)
+        assert H.grouping_indices == ((0, 1), (2,))
+
+    def test_grouping_indices_setter_error(self):
+        """Test that setting incompatible indices raises an error"""
+        H = qml.sum(*[qml.X("a"), qml.X("b"), qml.Y("b")])
+
+        with pytest.raises(
+            ValueError,
+            match="The grouped index value needs to be a tuple of tuples of integers between 0",
+        ):
+            H.grouping_indices = [[0, 1, 3], [2]]
+
 
 class TestSimplify:
     """Test Sum simplify method and depth property."""
@@ -1163,20 +1218,6 @@ class TestIntegration:
         true_var = qnp.array(3 / 2)
         assert qnp.allclose(var, true_var)
 
-    # def test_measurement_process_probs(self):
-    #     dev = qml.device("default.qubit", wires=2)
-    #     sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
-    #
-    #     @qml.qnode(dev)
-    #     def my_circ():
-    #         qml.PauliX(0)
-    #         return qml.probs(op=sum_op)
-    #
-    #     hand_computed_probs = qnp.array([0.573223935039, 0.073223277604, 0.573223935039, 0.073223277604])
-    #     returned_probs = qnp.array([0.0732233, 0.43898224, 0.06101776, 0.4267767])
-    #     # TODO[Jay]: which of these two is correct?
-    #     assert qnp.allclose(my_circ(), returned_probs)
-
     def test_measurement_process_probs(self):
         """Test Sum class instance in probs measurement process raises error."""
         dev = qml.device("default.qubit", wires=2)
@@ -1187,11 +1228,11 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.probs(op=sum_op)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        x_probs = np.array([0.5, 0.5])
+        h_probs = np.array([np.cos(-np.pi / 4 / 2) ** 2, np.sin(-np.pi / 4 / 2) ** 2])
+        expected = np.tensordot(x_probs, h_probs, axes=0).flatten()
+        out = my_circ()
+        assert qml.math.allclose(out, expected)
 
     def test_measurement_process_sample(self):
         """Test Sum class instance in sample measurement process."""
@@ -1291,6 +1332,156 @@ class TestArithmetic:
             assert s1.wires == s2.wires
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
+
+
+class TestGrouping:
+    """Test grouping functionality of Sum"""
+
+    def test_non_pauli_error(self):
+        """Test that grouping non-Pauli observables is not supported."""
+        op = Sum(qml.PauliX(0), Prod(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(2))
+
+        with pytest.raises(
+            ValueError, match="Cannot compute grouping for Sums containing non-Pauli"
+        ):
+            op.compute_grouping()
+
+    def test_grouping_is_correct_kwarg(self):
+        """Basic test checking that grouping with a kwarg works as expected"""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        # check with qml.dot
+        op1 = qml.dot(coeffs, obs, grouping_type="qwc")
+        assert op1.grouping_indices == ((0, 1), (2,))
+
+        # check with qml.sum
+        sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        op2 = qml.sum(*sprods, grouping_type="qwc")
+        assert op2.grouping_indices == ((0, 1), (2,))
+
+        # check with Sum directly
+        op3 = Sum(*sprods, grouping_type="qwc")
+        assert op3.grouping_indices == ((0, 1), (2,))
+
+    def test_grouping_is_correct_compute_grouping(self):
+        """Basic test checking that grouping with compute_grouping works as expected"""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        op = qml.dot(coeffs, obs, grouping_type=None)
+        assert op.grouping_indices is None
+
+        op.compute_grouping(grouping_type="qwc")
+        assert op.grouping_indices == ((0, 1), (2,))
+
+    def test_grouping_does_not_alter_queue(self):
+        """Tests that grouping is invisible to the queue."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.dot(coeffs, obs, grouping_type="qwc")
+
+        assert q.queue == [op]
+
+    def test_grouping_for_non_groupable_sums(self):
+        """Test that grouping is computed correctly, even if no observables commute"""
+        a = qml.PauliX(0)
+        b = qml.PauliY(0)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        op = qml.dot(coeffs, obs, grouping_type="qwc")
+        assert op.grouping_indices == ((0,), (1,), (2,))
+
+    def test_grouping_method_can_be_set(self):
+        """Tests that the grouping method can be controlled by kwargs.
+        This is done by changing from default to 'rlf' and checking the result."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        # compute grouping during construction with qml.dot
+        op1 = qml.dot(coeffs, obs, grouping_type="qwc", method="lf")
+        assert op1.grouping_indices == ((2, 1), (0,))
+
+        # compute grouping during construction with qml.sum
+        sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        op2 = qml.sum(*sprods, grouping_type="qwc", method="lf")
+        assert op2.grouping_indices == ((2, 1), (0,))
+
+        # compute grouping during construction with Sum
+        op3 = Sum(*sprods, grouping_type="qwc", method="lf")
+        assert op3.grouping_indices == ((2, 1), (0,))
+
+        # compute grouping separately
+        op4 = qml.dot(coeffs, obs, grouping_type=None)
+        op4.compute_grouping(method="lf")
+        assert op4.grouping_indices == ((2, 1), (0,))
+
+    @pytest.mark.parametrize(
+        "grouping_type, grouping_indices",
+        [("commuting", ((0, 1), (2,))), ("anticommuting", ((1,), (0, 2)))],
+    )
+    def test_grouping_type_can_be_set(self, grouping_type, grouping_indices):
+        """Tests that the grouping type can be controlled by kwargs.
+        This is done by changing from default to 'commuting' or 'anticommuting'
+        and checking the result."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        # compute grouping during construction with qml.dot
+        op1 = qml.dot(coeffs, obs, grouping_type=grouping_type)
+        assert op1.grouping_indices == grouping_indices
+
+        # compute grouping during construction with qml.sum
+        sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        op2 = qml.sum(*sprods, grouping_type=grouping_type)
+        assert op2.grouping_indices == grouping_indices
+
+        # compute grouping during construction with Sum
+        op3 = Sum(*sprods, grouping_type=grouping_type)
+        assert op3.grouping_indices == grouping_indices
+
+        # compute grouping separately
+        op4 = qml.dot(coeffs, obs, grouping_type=None)
+        op4.compute_grouping(grouping_type=grouping_type)
+        assert op4.grouping_indices == grouping_indices
+
+    @pytest.mark.parametrize("shots", [None, 1000])
+    def test_grouping_integration(self, shots):
+        """Test that grouping does not impact the results of a circuit."""
+        dev = qml.device("default.qubit", shots=shots)
+
+        @qml.qnode(dev)
+        def qnode(grouping_type):
+            H = qml.dot(
+                [1.0, 2.0, 3.0],
+                [qml.X(0), qml.prod(qml.X(0), qml.X(1)), qml.prod(qml.X(0), qml.X(1), qml.X(2))],
+                grouping_type=grouping_type,
+            )
+            for i in range(3):
+                qml.Hadamard(i)
+            return qml.expval(H)
+
+        assert np.allclose(qnode("qwc"), 6.0)
+        assert np.allclose(qnode(None), 6.0)
 
 
 class TestSupportsBroadcasting:

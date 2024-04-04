@@ -177,7 +177,7 @@ class Pow(ScalarSymbolicOp):
         super().__init__(base, scalar=z, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+            if (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
                 self.batch_size is None
             ):
                 pr = base_pauli_rep
