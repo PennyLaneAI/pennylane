@@ -563,7 +563,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
-        if "lightning" in getattr(dev, "name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
 
         kwargs = dict(
@@ -601,7 +601,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
-        if "lightning" in getattr(dev, "name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
@@ -667,7 +667,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if "lightning" in getattr(dev, "name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
 
         kwargs = dict(
@@ -719,7 +719,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
-        if "lightning" in getattr(dev, "name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
