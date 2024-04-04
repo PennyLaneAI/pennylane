@@ -255,6 +255,15 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert coeffs == coeffs_true
         assert ops1 == ops_true
 
+    def test_terms_pauli_rep_wire_order(self):
+        """Test that the wire order of the terms is the same as the wire order of the original
+        operands when the Prod has a valid pauli_rep"""
+        H = qml.prod(X(0), X(1), X(2))
+        _, H_ops = H.terms()
+
+        assert len(H_ops) == 1
+        assert H_ops[0].wires == H.wires
+
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
         x = qml.numpy.array([1.0, 2.0, 3.0])
@@ -1035,8 +1044,8 @@ class TestProperties:
         """
         op = qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
         pw = list(op.pauli_rep.keys())[0]
-        assert list(pw.keys()) == [1, 0, 2]
-        assert list(pw.values()) == ["Y", "X", "Z"]
+        assert list(pw.keys()) == [0, 1, 2]
+        assert list(pw.values()) == ["X", "Y", "Z"]
 
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
@@ -1119,7 +1128,7 @@ class TestSimplify:
         """Test the simplify method with a product of sums."""
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
         final_op = qml.sum(
-            Prod(qml.PauliX(1), qml.PauliX(0)),
+            Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ qml.RX(1, 1),
             qml.PauliX(1) @ qml.RX(1, 0),
             qml.RX(1, 0) @ qml.RX(1, 1),
