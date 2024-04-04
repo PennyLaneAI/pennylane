@@ -423,6 +423,8 @@ documentation.
     Currently, postselection support is only available on :class:`~.pennylane.devices.DefaultQubit`. Using
     postselection on other devices will raise an error.
 
+.. _mid_circuit_measurements_statistics:
+
 Mid-circuit measurement statistics
 **********************************
 
