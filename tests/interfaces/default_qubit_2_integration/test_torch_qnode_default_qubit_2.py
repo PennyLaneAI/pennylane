@@ -658,7 +658,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if "Lightning" in getattr(dev, "name", ""):
+        if "lightning" in getattr(dev, "name", ""):
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = {}
         if diff_method == "spsa":
@@ -716,7 +716,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if "Lightning" in getattr(dev, "name", ""):
+        if "lightning" in getattr(dev, "name", ""):
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
@@ -1068,6 +1068,8 @@ class TestQubitIntegration:
 
         if dev.name == "param_shift.qubit":
             pytest.skip("parameter shift does not support measuring the state.")
+        if "lightning" in getattr(dev, "name", ""):
+            pytest.xfail("Lightning devices do not support state with adjoint diff.")
 
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
