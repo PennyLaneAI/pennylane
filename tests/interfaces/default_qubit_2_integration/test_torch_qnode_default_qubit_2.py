@@ -658,7 +658,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if "lightning" in getattr(dev, "short_name", ""):
+        if "Lightning" in getattr(dev, "name", ""):
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = {}
         if diff_method == "spsa":
@@ -716,7 +716,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if "lightning" in getattr(dev, "short_name", ""):
+        if "Lightning" in getattr(dev, "name", ""):
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
