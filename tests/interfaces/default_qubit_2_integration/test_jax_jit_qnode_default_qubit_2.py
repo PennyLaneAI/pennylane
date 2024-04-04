@@ -81,7 +81,7 @@ class TestQNode:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = np.array(0.1, requires_grad=True)
+        a = jax.numpy.array(0.1)
         jax.jit(circuit)(a)
 
         assert circuit.interface == interface
