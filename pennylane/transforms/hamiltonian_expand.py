@@ -42,7 +42,7 @@ def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
         # pylint: disable=no-member
         if isinstance(r_group, (tuple, list, qml.numpy.builtins.SequenceBox)):
             r_group = qml.math.stack(r_group)
-        if getattr(r_group, "shape", tuple()) == ():
+        if qml.math.shape(r_group) == ():
             r_group = qml.math.reshape(r_group, (1,))
         if batch_size:
             r_group = r_group.T
