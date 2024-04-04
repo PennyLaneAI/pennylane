@@ -291,8 +291,8 @@ PennyLane device capabilities.
 >>> transformed_qnode(*pars)
 tensor([0.90165331, 0.09834669], requires_grad=True)
 
-The decorator syntax applies equally well, and finally, ``defer_measurements`` may
-be applied to a QNode directly, too:
+``qml.defer_measurements`` applies equally well as decorator and functional call, and
+may be used on both QNodes and quantum functions:
 
 .. code-block:: python
 
