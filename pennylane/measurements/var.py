@@ -123,7 +123,9 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
             samples = qml.sample(
-                op=op, eigvals=self._eigvals, wires=self.wires if op is None else None
+                op=op,
+                eigvals=self._eigvals,
+                wires=self.wires if self._eigvals is not None else None,
             ).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
