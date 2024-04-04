@@ -405,13 +405,15 @@ def _update_set(j, bin_rng):
     """
     indices = np.array([], dtype=int)
 
-    if bin_rng % 2 == 0:
-        if j < bin_rng / 2:
-            indices = np.append(indices, np.append(bin_rng - 1, _update_set(j, int(bin_rng / 2))))
-        else:
-            indices = np.append(
-                indices, _update_set(j - int(bin_rng / 2), int(bin_rng / 2)) + int(bin_rng / 2)
-            )
+    if bin_rng % 2 != 0:
+        return indices
+        
+    if j < bin_rng / 2:
+        indices = np.append(indices, np.append(bin_rng - 1, _update_set(j, int(bin_rng / 2))))
+    else:
+        indices = np.append(
+            indices, _update_set(j - int(bin_rng / 2), int(bin_rng / 2)) + int(bin_rng / 2)
+        )
     return indices
 
 
