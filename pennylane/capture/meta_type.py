@@ -31,11 +31,13 @@ def enable_plexpr():
     """Enable the capture of PlExpr."""
     if not has_jax:
         raise ImportError("plexpr requires jax.")
+    global _USE_DEFAULT_CALL
     _USE_DEFAULT_CALL = False
 
 
 def disable_plexpr():
     """Disable the capture of PlExpr."""
+    global _USE_DEFAULT_CALL
     _USE_DEFAULT_CALL = True
 
 
