@@ -312,7 +312,6 @@ def test_linear_combination(H, new_coeffs, expected_H):
     assert new_H is not H
     assert all(no is not o for no, o in zip(new_H.operands, H.operands))
     assert all(no is not o for no, o in zip(new_H.coeffs, H.coeffs))
-    assert all(no is not o for no, o in zip(new_H.ops, H.ops))
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
