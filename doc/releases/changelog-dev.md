@@ -200,6 +200,9 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
+  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
