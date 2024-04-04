@@ -21,7 +21,7 @@ def test_error_is_raised_for_dimension_mismatch():
 
     with pytest.raises(
         ValueError,
-        match="Can't create or annihilate a particle on qubit number 6 for a system with only 6 qubits",
+        match="Can't create or annihilate a particle on qubit index 6 for a system with only 6 qubits",
     ):
         bravyi_kitaev(FermiWord({(0, 1): "-", (1, 0): "+", (2, 6): "-"}), 6)
 

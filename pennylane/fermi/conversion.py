@@ -146,6 +146,8 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
             if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = qml.math.real(qubit_operator[pw])
 
+    qubit_operator.simplify(tol=1e-16)
+
     if not ps:
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
 
@@ -392,82 +394,86 @@ def bravyi_kitaev(
     return _bravyi_kitaev_dispatch(fermi_operator, n, ps, wire_map, tol)
 
 
-def _update_set(j, bin_rng):
+def _update_set(j, bin_range):
     """
     Computes the update set of the j-th orbital in n qubits.
 
     Args:
         j (int) : the orbital index
-        bin_rng (int) : Binary range for given number of qubits
+        bin_range (int) : Binary range for given number of qubits
 
     Returns:
         numpy.ndarray: Array containing the update set
     """
-    indices = np.array([], dtype=int)
 
-    if bin_rng % 2 != 0:
+    indices = np.array([], dtype=int)
+    midpoint = int(bin_range / 2)
+    if bin_range % 2 != 0:
         return indices
-        
-    if j < bin_rng / 2:
-        indices = np.append(indices, np.append(bin_rng - 1, _update_set(j, int(bin_rng / 2))))
+
+    if j < midpoint:
+        indices = np.append(indices, np.append(bin_range - 1, _update_set(j, midpoint)))
     else:
-        indices = np.append(
-            indices, _update_set(j - int(bin_rng / 2), int(bin_rng / 2)) + int(bin_rng / 2)
-        )
+        indices = np.append(indices, _update_set(j - midpoint, midpoint) + midpoint)
     return indices
 
 
-def _parity_set(j, bin_rng):
+def _parity_set(j, bin_range):
     """
     Computes the parity set of the j-th orbital in n qubits.
 
     Args:
         j (int) : the orbital index
-        bin_rng (int) : Binary range for given number of qubits
+        bin_range (int) : Binary range for given number of qubits
 
     Returns:
         numpy.ndarray: Array of qubits which determine the parity of qubit j
     """
 
     indices = np.array([], dtype=int)
-    if bin_rng % 2 == 0:
-        if j < bin_rng / 2:
-            indices = np.append(indices, _parity_set(j, int(bin_rng / 2)))
-        else:
-            indices = np.append(
-                indices,
-                np.append(
-                    _parity_set(j - int(bin_rng / 2), int(bin_rng / 2)) + int(bin_rng / 2),
-                    int(bin_rng / 2 - 1),
-                ),
-            )
+    midpoint = int(bin_range / 2)
+    if bin_range % 2 != 0:
+        return indices
+
+    if j < midpoint:
+        indices = np.append(indices, _parity_set(j, midpoint))
+    else:
+        indices = np.append(
+            indices,
+            np.append(
+                _parity_set(j - midpoint, midpoint) + midpoint,
+                midpoint - 1,
+            ),
+        )
 
     return indices
 
 
-def _flip_set(j, bin_rng):
+def _flip_set(j, bin_range):
     """
     Computes the flip set of the j-th orbital in n qubits.
 
     Args:
         j (int) : the orbital index
-        bin_rng (int) : Binary range for given number of qubits
+        bin_range (int) : Binary range for given number of qubits
     Returns:
         numpy.ndarray: Array containing information if the phase of orbital j is same as qubit j.
     """
+
     indices = np.array([])
-    if bin_rng % 2 == 0:
-        if j < bin_rng / 2:
-            indices = np.append(indices, _flip_set(j, int(bin_rng / 2)))
-        elif bin_rng / 2 <= j < bin_rng - 1:
-            indices = np.append(
-                indices, _flip_set(j - int(bin_rng / 2), int(bin_rng / 2)) + int(bin_rng / 2)
-            )
-        else:
-            indices = np.append(
-                np.append(indices, _flip_set(j - bin_rng / 2, bin_rng / 2) + bin_rng / 2),
-                bin_rng / 2 - 1,
-            )
+    midpoint = int(bin_range / 2)
+    if bin_range % 2 != 0:
+        return indices
+
+    if j < midpoint:
+        indices = np.append(indices, _flip_set(j, midpoint))
+    elif midpoint <= j < bin_range - 1:
+        indices = np.append(indices, _flip_set(j - midpoint, midpoint) + midpoint)
+    else:
+        indices = np.append(
+            np.append(indices, _flip_set(j - midpoint, midpoint) + midpoint),
+            midpoint - 1,
+        )
     return indices
 
 
@@ -485,23 +491,20 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
     coeffs = {"+": -0.5j, "-": 0.5j}
     qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
 
-    rng = 1
-    while np.power(2, rng) < n:
-        rng += 1
-    bin_rng = np.power(2, rng)
+    bin_range = int(2 ** np.ceil(np.log2(n)))
 
     for item in fermi_operator.items():
         (_, wire), sign = item
         if wire >= n:
             raise ValueError(
-                f"Can't create or annihilate a particle on qubit number {wire} for a system with only {n} qubits."
+                f"Can't create or annihilate a particle on qubit index {wire} for a system with only {n} qubits."
             )
 
-        U_set = list(filter(lambda x: x < n, _update_set(wire, bin_rng)))
-        update_string = dict(zip(U_set, ["X"] * len(U_set)))
+        u_set = [u for u in _update_set(wire, bin_range) if u < n]
+        update_string = dict(zip(u_set, ["X"] * len(u_set)))
 
-        P_set = _parity_set(wire, bin_rng)
-        parity_string = dict(zip(P_set, ["Z"] * len(P_set)))
+        p_set = _parity_set(wire, bin_range)
+        parity_string = dict(zip(p_set, ["Z"] * len(p_set)))
 
         if wire % 2 == 0:
             qubit_operator @= PauliSentence(
@@ -511,10 +514,10 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
                 }
             )
         else:
-            F_set = _flip_set(wire, bin_rng)
+            f_set = _flip_set(wire, bin_range)
 
-            R_set = np.setdiff1d(P_set, F_set)
-            remainder_string = dict(zip(R_set, ["Z"] * len(R_set)))
+            r_set = np.setdiff1d(p_set, f_set)
+            remainder_string = dict(zip(r_set, ["Z"] * len(r_set)))
 
             qubit_operator @= PauliSentence(
                 {

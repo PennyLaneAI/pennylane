@@ -117,7 +117,7 @@
 
   ```
 
-* Added new function `qml.fermi.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
+* Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
   [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
 
 ```python
