@@ -58,6 +58,11 @@ def test_that_opmath_is_disabled():
         raise RuntimeError
 
 
+def test_that_this_file_is_being_tested():
+    """Confirm that this file is running in tests"""
+    raise RuntimeError("This test should fail")
+
+
 class TestOperatorConstruction:
     """Test custom operators' construction."""
 
