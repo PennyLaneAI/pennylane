@@ -93,6 +93,8 @@ class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
 
+    # pylint: disable=too-few-public-methods
+
     @pytest.mark.parametrize(
         "c_dtype",
         [
