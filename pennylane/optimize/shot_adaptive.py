@@ -311,7 +311,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         tape = qnode.tape
         [expval] = tape.measurements
         coeffs, observables = (
-            expval.obs.terms() if isinstance(expval.obs, qml.Hamiltonian) else ([1.0], [expval.obs])
+            expval.obs.terms()
+            if isinstance(expval.obs, (qml.ops.LinearCombination, qml.ops.Hamiltonian))
+            else ([1.0], [expval.obs])
         )
 
         if self.lipschitz is None:

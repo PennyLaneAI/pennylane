@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
+  
+  - Last supported version of ``manylinux2014`` with v0.36
+  - Fully migrated to ``manylinux_2_28`` with v0.37
+
 * ``MultiControlledX`` is the only controlled operation that still supports specifying control
   values with a bit string. In the future, it will no longer accepts strings as control values.
 
@@ -33,6 +38,20 @@ Pending deprecations
 * ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
 
   - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
+
+* Accessing ``qml.ops.Hamiltonian`` with new operator arithmetic enabled is deprecated. Using ``qml.Hamiltonian``
+  with new operator arithmetic enabled now returns a ``LinearCombination`` instance. Some functionality
+  may not work as expected, and use of the Hamiltonian class with the new operator arithmetic will not
+  be supported in future releases of PennyLane.
+
+  You can update your code to the new operator arithmetic by using ``qml.Hamiltonian`` instead of importing
+  the Hamiltonian class directly or via ``qml.ops.Hamiltonian``. When the new operator arithmetic is enabled, 
+  ``qml.Hamiltonian`` will access the new corresponding implementation. 
+
+  Alternatively, to continue accessing the legacy functionality, you can use 
+  ``qml.operation.disable_new_opmath()``.
+
+  - Deprecated in v0.36
 
 Completed deprecation cycles
 ----------------------------
