@@ -373,6 +373,7 @@ def bravyi_kitaev(
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> bravyi_kitaev(w, n=6)
+    (
     -0.25j * Y(0)
     + (-0.25+0j) * (X(0) @ Z(1))
     + (0.25+0j) * X(0)
