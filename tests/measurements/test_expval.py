@@ -160,15 +160,10 @@ class TestExpval:
     def test_eigvals_instead_of_observable(self):
         """Tests process samples with eigvals instead of observables"""
 
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.sample()
-
-        samples = circuit(shots=10)
-        assert qml.expval(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == 1
+        shots = 100
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        expected = qml.expval(qml.PauliZ(0)).process_samples(samples, [0, 1])
+        assert qml.expval(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""

@@ -164,6 +164,15 @@ class TestProcessSamples:
         assert result[1] == np.count_nonzero(samples[:, 0] == 0)
         assert result[-1] == np.count_nonzero(samples[:, 0] == 1)
 
+    def test_count_eigvals_multi_wire_error(self):
+        """Tests that multiple wires is not supported for eigvals"""
+
+        with pytest.raises(
+            ValueError,
+            match="specifying more than one wire is not supported",
+        ):
+            qml.counts(eigvals=[1, -1], wires=[0, 1])
+
     def test_count_eigvals(self):
         """Tests that eigvals are used instead of obs for counts"""
 
