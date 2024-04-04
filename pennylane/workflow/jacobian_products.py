@@ -725,6 +725,7 @@ class LightningVJPs(DeviceDerivatives):
         self._processed_gradient_kwargs = {
             key: value for key, value in self._gradient_kwargs.items() if key != "method"
         }
+        self._uses_new_device = not isinstance(device, qml.Device)
 
     def compute_vjp(self, tapes, dy):
         if not all(
@@ -742,7 +743,7 @@ class LightningVJPs(DeviceDerivatives):
                     "Lightning device VJPs are not supported with jax jacobians."
                 )
 
-            if self._device._new_API:  # pylint: disable=protected-access
+            if self._uses_new_device:
                 out = self._device.compute_vjp(numpy_tape, dyi, self._execution_config)
             else:
                 vjp_f = self._device.vjp(
