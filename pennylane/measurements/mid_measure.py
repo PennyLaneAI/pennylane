@@ -28,8 +28,11 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
+    Computational basis measurements are performed using the 0, 1 convention
+    rather than the ±1 convetion. 
+
     Measurement outcomes can be obtained and used to conditionally apply
-    operations.
+    operations with :func:`~.cond`.
 
     If a device doesn't support mid-circuit measurements natively, then the
     QNode will apply the :func:`defer_measurements` transform.
