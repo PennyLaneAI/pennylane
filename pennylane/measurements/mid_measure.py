@@ -15,11 +15,11 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional
+from typing import TypeVar, Optional
 import numpy as np
 
 import pennylane as qml
-from pennylane.capture import Meta
+from pennylane.capture import JaxPRMeta
 from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, MidMeasure
@@ -308,7 +308,7 @@ class MidMeasureMP(MeasurementProcess):
         return "MidMeasureMP"
 
 
-class MeasurementValue(Generic[T], metaclass=Meta):
+class MeasurementValue(metaclass=JaxPRMeta):
     """A class representing unknown measurement outcomes in the qubit model.
 
     Measurements on a single qubit in the computational basis are assumed.

@@ -19,12 +19,12 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional, Union
 
 import pennylane as qml
-from pennylane.capture import Meta
+from pennylane.capture import JaxPRMeta
 from pennylane.operation import Operator, DecompositionUndefinedError, EigvalsUndefinedError
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
@@ -113,7 +113,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess(metaclass=Meta):
+class MeasurementProcess(metaclass=JaxPRMeta):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
