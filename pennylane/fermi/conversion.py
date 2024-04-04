@@ -378,6 +378,7 @@ def bravyi_kitaev(
     + (-0.25+0j) * (X(0) @ Z(1))
     + (0.25+0j) * X(0)
     + 0.25j * (Y(0) @ Z(1))
+    )
 
     >>> bravyi_kitaev(w, n=6, ps=True)
     -0.25j * Y(0)
