@@ -9,5 +9,4 @@ See our :doc:`introduction to Dynamical Lie Algebras for quantum practitioners <
 
 .. automodapi:: pennylane.dla
     :no-heading:
-    :include-all-objects:
-    :skip: PauliVSpace
+    :no-inherited-members:
