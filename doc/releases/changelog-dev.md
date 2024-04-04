@@ -292,6 +292,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Tensorflow can now handle devices with float32 results but float64 input parameters.
+  [(#5446)](https://github.com/PennyLaneAI/pennylane/pull/5446)
 
 * Fix Torch tensor locality with autoray-registered coerce method.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
