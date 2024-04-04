@@ -23,7 +23,6 @@ from cachetools import LRUCache
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices import ExecutionConfig
 from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch, TensorLike
 
@@ -744,8 +743,7 @@ class LightningVJPs(DeviceDerivatives):
                 )
 
             if self._device._new_API:  # pylint: disable=protected-access
-                config = ExecutionConfig(gradient_keyword_arguments=self._processed_gradient_kwargs)
-                out = self._device.compute_vjp(numpy_tape, dyi, config)
+                out = self._device.compute_vjp(numpy_tape, dyi, self._execution_config)
             else:
                 vjp_f = self._device.vjp(
                     numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
