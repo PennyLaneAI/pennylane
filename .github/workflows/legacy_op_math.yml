@@ -12,4 +12,4 @@ jobs:
     with:
       branch: ${{ github.ref }}  # this should be set back to master before merging
       run_lightened_ci: false
-      disable_new_opmath: true
+      disable_new_opmath: "True"
