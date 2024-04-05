@@ -46,12 +46,6 @@ class FABLE(Operation):
     .. code-block:: python
 
         input_matrix= np.array([[0.1,0.2],[0.2,0.1]])
-        ancilla = [0]
-        s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
-        wires_i = list(range(1, 1 + s))
-        wires_j = list(range(1 + s, 1 + 2 * s))
-        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
-
         dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def example_circuit():
@@ -59,6 +53,12 @@ class FABLE(Operation):
             return qml.state()
 
     We can see that :math:`input_matrix` has been block encoded in the matrix of the circuit:
+
+    >>> ancilla = [0]
+    >>> s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
+    >>> wires_i = list(range(1, 1 + s))
+    >>> wires_j = list(range(1 + s, 1 + 2 * s))
+    >>> wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
 
     >>> rows = len(input_matrix) * qml.matrix(circuit, wire_order=wire_order)
         ().real[0 : len(input_matrix), 0 : len(input_matrix)]
