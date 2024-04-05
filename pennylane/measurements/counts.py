@@ -161,11 +161,8 @@ def counts(
             )
         wires = Wires(wires)
 
-    if eigvals is not None and len(wires) > 1:
-        raise ValueError(
-            "If eigvals are provided instead of an observable, specifying more than one wire "
-            "is not supported."
-        )
+    if eigvals is not None and (wires is None or len(wires) > 1):
+        raise ValueError("When sampling with observables, a single wire must be specified.")
 
     return CountsMP(obs=op, wires=wires, eigvals=eigvals, all_outcomes=all_outcomes)
 

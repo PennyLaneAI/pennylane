@@ -169,9 +169,15 @@ class TestProcessSamples:
 
         with pytest.raises(
             ValueError,
-            match="specifying more than one wire is not supported",
+            match="When sampling with observables, a single wire must be specified.",
         ):
             qml.counts(eigvals=[1, -1], wires=[0, 1])
+
+        with pytest.raises(
+            ValueError,
+            match="When sampling with observables, a single wire must be specified.",
+        ):
+            qml.counts(eigvals=[1, -1])
 
     def test_count_eigvals(self):
         """Tests that eigvals are used instead of obs for counts"""
