@@ -1,7 +1,7 @@
 qml.dla
 =======
 
-(Dynamical) Lie Algebra functionality in PennyLane.
+(Dynamical) Lie Algebra functionality in PennyLane
 
 See our `introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
 
@@ -9,4 +9,5 @@ See our `introduction to Dynamical Lie Algebras for quantum practitioners <https
 
 .. automodapi:: pennylane.dla
     :no-heading:
+    :no-main-docstr:
     :no-inherited-members:
