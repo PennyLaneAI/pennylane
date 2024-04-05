@@ -253,6 +253,12 @@ class ParametrizedHamiltonian:
                 f"must be the same. Received len(params) = {len(params)} parameters but "
                 f"expected {len(self.coeffs_parametrized)} parameters."
             )
+        H_fixed = self.H_fixed()
+        H_param = self.H_parametrized(params, t)
+        if H_param == 0:
+            return H_fixed
+        if H_fixed == 0:
+            return H_param
         return qml.sum(self.H_fixed(), self.H_parametrized(params, t))
 
     def __repr__(self):
