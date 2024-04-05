@@ -16,7 +16,7 @@ Unit tests for the `pennylane.qcut` package.
 """
 # pylint: disable=protected-access,too-few-public-methods,too-many-arguments
 # pylint: disable=too-many-public-methods,comparison-with-callable
-# pylint: disable=no-value-for-parameter,no-member,not-callable
+# pylint: disable=no-value-for-parameter,no-member,not-callable, use-implicit-booleaness-not-comparison
 import copy
 import itertools
 import string
@@ -5871,10 +5871,10 @@ class TestCutCircuitWithHamiltonians:
             # each frag should have the device size constraint satisfied.
             assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
 
-    @pytest.mark.xfail
     def test_hamiltonian_with_tape(self):
         """Test that an expand function that generates multiple tapes is applied before the transform and the transform
         returns correct results."""
+
         ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)]
         coeffs = [0.4567, 0.25, 0.25, 0.5]
 

@@ -519,6 +519,7 @@ class TestApply:
         expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_apply_ops_not_supported(self, mocker, monkeypatch):
         """Test that when a version of TensorFlow before 2.3.0 is used, the _apply_ops dictionary is
         empty and application of a CNOT gate is performed using _apply_unitary_einsum"""
@@ -927,6 +928,7 @@ class TestApplyBroadcasted:
         expected = np.einsum("ij,lj->li", mat, state)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_direct_eval_hamiltonian_broadcasted_tf(self):
         """Tests that the correct result is returned when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with TF."""
