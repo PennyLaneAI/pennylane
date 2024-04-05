@@ -720,12 +720,13 @@ class LightningVJPs(DeviceDerivatives):
         }
         return f"<LightningVJPs: {long_to_short_name[type(self._device).__name__]}, {self._gradient_kwargs}>"
 
-    def __init__(self, device, gradient_kwargs=None):
-        super().__init__(device, gradient_kwargs=gradient_kwargs)
+    def __init__(
+        self, device, gradient_kwargs=None, execution_config: "qml.devices.ExecutionConfig" = None
+    ):
+        super().__init__(device, gradient_kwargs=gradient_kwargs, execution_config=execution_config)
         self._processed_gradient_kwargs = {
             key: value for key, value in self._gradient_kwargs.items() if key != "method"
         }
-        self._uses_new_device = not isinstance(device, qml.Device)
 
     def compute_vjp(self, tapes, dy):
         if not all(
@@ -744,7 +745,10 @@ class LightningVJPs(DeviceDerivatives):
                 )
 
             if self._uses_new_device:
-                out = self._device.compute_vjp(numpy_tape, dyi, self._execution_config)
+                if self._execution_config is not None:
+                    out = self._device.compute_vjp(numpy_tape, dyi, self._execution_config)
+                else:
+                    out = self._device.compute_vjp(numpy_tape, dyi)
             else:
                 vjp_f = self._device.vjp(
                     numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
