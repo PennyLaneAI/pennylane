@@ -265,7 +265,7 @@ class Shots:
     def bins(self):
         """
         Yields:
-            tuple: A tuple containing the lower and upper bounds for each shot quantity shot_vector.
+            tuple: A tuple containing the lower and upper bounds for each shot quantity in shot_vector.
 
         Example:
             >>> shots = Shots((1, 1, 2, 3))
