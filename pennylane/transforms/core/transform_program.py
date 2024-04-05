@@ -364,13 +364,16 @@ class TransformProgram:
                 trans_type[i] = 2
         if sum(trans_type) < 2:
             return
-        keep = 2 if 2 in trans_type else 1
-        found = False
+        keep = 1 if 1 in trans_type else 2
+        index = -1
         for i, ttype in enumerate(reversed(trans_type)):
-            if not found and ttype == keep:
-                found = True
-                continue
-            if found and ttype in [1, 2]:
+            if ttype == keep:
+                index = i
+                break
+        if index == -1:
+            raise IndexError("Index not found.")
+        for i, ttype in enumerate(reversed(trans_type)):
+            if ttype in [1, 2] and i != index:
                 self._transform_program.pop(len(self._transform_program) - 1 - i)
 
     def _set_all_classical_jacobians(

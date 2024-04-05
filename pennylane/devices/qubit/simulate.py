@@ -270,10 +270,11 @@ def simulate(
 
     """
     if circuit.shots and has_mid_circuit_measurements(circuit):
+        if circuit.shots.total_shots == 1:
+            return simulate_one_shot_native_mcm(circuit, rng, prng_key, debugger, interface)
         return simulate_tree_mcm(
             circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
         )
-        # return simulate_one_shot_native_mcm(circuit, rng, prng_key, debugger, interface)
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
