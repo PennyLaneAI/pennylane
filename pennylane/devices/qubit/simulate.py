@@ -31,6 +31,7 @@ from pennylane.measurements import (
     SampleMP,
     VarianceMP,
 )
+from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
@@ -268,8 +269,7 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
-    has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
-    if circuit.shots and has_mcm:
+    if circuit.shots and has_mid_circuit_measurements(circuit):
         return simulate_tree_mcm(
             circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
         )
@@ -680,47 +680,3 @@ def has_mid_circuit_measurements(
         bool: Whether the circuit contains a MidMeasureMP object
     """
     return any(isinstance(op, MidMeasureMP) for op in circuit.operations)
-
-
-def gather_mcm(measurement, samples):
-    """Combines, gathers and normalizes several measurements with non-trivial measurement values.
-
-    Args:
-        measurement (MeasurementProcess): measurement
-        samples (List[dict]): Mid-circuit measurement samples
-
-    Returns:
-        TensorLike: The combined measurement outcome
-    """
-    mv = measurement.mv
-    if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
-        wires = qml.wires.Wires(range(len(mv)))
-        if isinstance(samples, Sequence):
-            mcm_samples = list(
-                np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1)) for m in mv
-            )
-        else:
-            mcm_samples = list(m.concretize(samples).reshape((-1, 1)) for m in mv)
-        mcm_samples = np.concatenate(mcm_samples, axis=1)
-        meas_tmp = measurement.__class__(wires=wires)
-        return meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    if isinstance(samples, Sequence):
-        mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
-    else:
-        mcm_samples = mv.concretize(samples).reshape((-1, 1))
-    use_as_is = len(mv.measurements) == 1
-    if use_as_is:
-        wires, meas_tmp = mv.wires, measurement
-    else:
-        # For composite measurements, `mcm_samples` has one column but
-        # `mv.wires` usually includes several wires. We therefore need to create a
-        # single-wire measurement for `process_samples` to handle the conversion
-        # correctly.
-        if isinstance(measurement, (ExpectationMP, VarianceMP)):
-            mcm_samples = mcm_samples.ravel()
-        wires = qml.wires.Wires(0)
-        meas_tmp = measurement.__class__(wires=wires)
-    new_measurement = meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    if isinstance(measurement, CountsMP) and not use_as_is:
-        new_measurement = dict(sorted((int(x, 2), y) for x, y in new_measurement.items()))
-    return new_measurement

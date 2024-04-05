@@ -278,13 +278,19 @@ def gather_mcm(measurement, samples):
     mv = measurement.mv
     if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
         wires = qml.wires.Wires(range(len(mv)))
-        mcm_samples = list(
-            np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1)) for m in mv
-        )
+        if isinstance(samples, Sequence):
+            mcm_samples = list(
+                np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1)) for m in mv
+            )
+        else:
+            mcm_samples = list(m.concretize(samples).reshape((-1, 1)) for m in mv)
         mcm_samples = np.concatenate(mcm_samples, axis=1)
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
+    if isinstance(samples, Sequence):
+        mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
+    else:
+        mcm_samples = mv.concretize(samples).reshape((-1, 1))
     use_as_is = len(mv.measurements) == 1
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement
