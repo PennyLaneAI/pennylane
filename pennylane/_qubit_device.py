@@ -286,11 +286,6 @@ class QubitDevice(Device):
         )
         if has_mcm:
             mid_measurements = kwargs["mid_measurements"]
-            if any(v == -1 for v in mid_measurements.values()):
-                # the state is likely non-orthonormal, let's orthonormalize it
-                self._state[:] = 0.0
-                slices = [slice(0, 1, 1)] * qml.math.ndim(self._state)
-                self._state[tuple(slices)] = 1.0
         else:
             mid_measurements = None
 
@@ -318,8 +313,7 @@ class QubitDevice(Device):
 
         else:
             results = self.statistics(circuit, mid_measurements=mid_measurements)
-            single_measurement = len(circuit.measurements) == 1 and not has_mcm
-
+            single_measurement = len(circuit.measurements) == 1
             results = results[0] if single_measurement else tuple(results)
         # increment counter for number of executions of qubit device
         self._num_executions += 1

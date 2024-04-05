@@ -19,7 +19,13 @@ import copy
 from threading import RLock
 
 import pennylane as qml
-from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP, MeasurementProcess
+from pennylane.measurements import (
+    CountsMP,
+    ProbabilityMP,
+    SampleMP,
+    MeasurementProcess,
+    MeasurementRegisterMP,
+)
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 from pennylane.pytrees import register_pytree
@@ -58,10 +64,14 @@ def _validate_computational_basis_sampling(measurements):
             if cb_obs.wires == empty_wires:
                 all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
                 break
-
-            all_wires.append(cb_obs.wires)
+            if not isinstance(cb_obs, MeasurementRegisterMP):
+                all_wires.append(cb_obs.wires)
             if idx == len(comp_basis_sampling_obs) - 1:
                 all_wires = qml.wires.Wires.all_wires(all_wires)
+
+        # This happens when a MeasurementRegisterMP is the only computational basis state measurement
+        if all_wires == empty_wires:
+            return
 
         with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
             pauliz_for_cb_obs = (
