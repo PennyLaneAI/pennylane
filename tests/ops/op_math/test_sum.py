@@ -309,7 +309,7 @@ class TestInitialization:
         ),
         (
             0.5 * (X(0) @ (0.5 * X(1))) + 0.7 * X(1) + 0.8 * (X(0) @ Y(1) @ Z(1)),
-            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * ((X(0) @ Y(1)) @ Z(1))\n)",
+            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * (X(0) @ Y(1) @ Z(1))\n)",
         ),
     )
 
@@ -870,9 +870,11 @@ class TestSimplify:
             qml.RX(1.9, wires=1),
             qml.PauliX(0),
         )
-        dunder_sum_op = sum(ops_to_sum)
+        s1 = qml.sum(ops_to_sum[0], ops_to_sum[1])
+        s2 = qml.sum(s1, ops_to_sum[2])
+        nested_sum = qml.sum(s2, ops_to_sum[3])
         class_sum_op = Sum(*ops_to_sum)
-        assert dunder_sum_op.arithmetic_depth == 3
+        assert nested_sum.arithmetic_depth == 3
         assert class_sum_op.arithmetic_depth == 1
 
     def test_simplify_method(self):
