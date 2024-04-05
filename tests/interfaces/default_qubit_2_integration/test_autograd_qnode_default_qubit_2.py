@@ -94,9 +94,9 @@ class TestQNode:
 
         assert circuit.qtape.interface is None
 
-        # without the interface, the QNode simply returns a scalar array
-        assert isinstance(res, np.ndarray)
-        assert res.shape == tuple()  # pylint: disable=comparison-with-callable
+        # without the interface, the QNode simply returns a scalar array or float
+        assert isinstance(res, (np.ndarray, float))
+        assert qml.math.shape(res) == tuple()  # pylint: disable=comparison-with-callable
 
     def test_execution_with_interface(
         self, interface, dev, diff_method, grad_on_execution, device_vjp
@@ -1318,6 +1318,9 @@ class TestQubitIntegration:
 
     def test_state(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test that the state can be returned and differentiated"""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("Lightning does not support state adjoint diff.")
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)

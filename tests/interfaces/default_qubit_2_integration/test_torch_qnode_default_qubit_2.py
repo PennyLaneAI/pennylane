@@ -218,7 +218,6 @@ class TestQNode:
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
     # TODO: fix this behavior with float: already present before return type.
-    @pytest.mark.xfail
     def test_jacobian_dtype(
         self,
         interface,
@@ -228,6 +227,8 @@ class TestQNode:
         device_vjp,
     ):
         """Test calculating the jacobian with a different datatype"""
+        if not "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("Failing unless lightning.qubit")
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 

@@ -1242,6 +1242,9 @@ class TestQubitIntegrationHigherOrder:
     def test_state(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
         """Test that the state can be returned and differentiated"""
 
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("Lightning does not support state adjoint differentiation.")
+
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
