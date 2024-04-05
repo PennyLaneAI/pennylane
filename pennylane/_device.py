@@ -1016,7 +1016,7 @@ class Device(abc.ABC):
 
                 supports_prod = self.supports_observable(o.name)
                 if not supports_prod:
-                    raise DeviceError(f"Observables Prod not supported on device {self.short_name}")
+                    raise DeviceError(f"Observable Prod not supported on device {self.short_name}")
 
                 simplified_op = o.simplify()
                 if isinstance(simplified_op, qml.ops.Prod):
