@@ -493,8 +493,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
 
     bin_range = int(2 ** np.ceil(np.log2(n)))
 
-    for item in fermi_operator.items():
-        (_, wire), sign = item
+    for (_, wire), sign in fermi_operator.items():
         if wire >= n:
             raise ValueError(
                 f"Can't create or annihilate a particle on qubit index {wire} for a system with only {n} qubits."
