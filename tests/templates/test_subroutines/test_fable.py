@@ -21,17 +21,17 @@ from pennylane.templates.state_preparations.mottonen import compute_theta, gray_
 from pennylane import numpy as pnp
 
 
-def generate_FABLE_circuit(A, tol):
+def generate_FABLE_circuit(input_matrix, tol):
     """Circuit that manually creates FABLE gates for tests."""
-    alphas = qml.math.arccos(A).flatten()
+    alphas = qml.math.arccos(input_matrix).flatten()
     thetas = compute_theta(alphas)
 
-    ancilla = ["ancilla"]
-    s = int(qml.math.log2(qml.math.shape(A)[0]))
-    wires_i = list(range(s))
-    wires_j = list(range(s, 2 * s))
+    ancilla = [0]
+    s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
+    wires_i = list(range(1, 1 + s))
+    wires_j = list(range(1 + s, 1 + 2 * s))
 
-    code = gray_code(2 * qml.math.sqrt(len(A)))
+    code = gray_code(2 * qml.math.sqrt(len(input_matrix)))
     n_selections = len(code)
 
     control_wires = [
@@ -104,10 +104,10 @@ class TestFable:
 
     def test_fable_real(self, input_matrix):
         """Test that FABLE produces the right circuit given a real-valued matrix"""
-        ancilla = ["ancilla"]
-        s = int(np.log2(np.array(input_matrix).shape[0]))
-        wires_i = [f"i{index}" for index in range(s)]
-        wires_j = [f"j{index}" for index in range(s)]
+        ancilla = [0]
+        s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
+        wires_i = list(range(1, 1 + s))
+        wires_j = list(range(1 + s, 1 + 2 * s))
         wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
 
         dev = qml.device("default.qubit")
@@ -230,13 +230,42 @@ class TestFable:
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit_default(input_matrix):
-            qml.FABLE(input_matrix)
+            qml.FABLE(input_matrix, 0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit_jax(input_matrix):
+            qml.FABLE(input_matrix, 0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        grad_fn = jax.grad(circuit_default)
+        grads = grad_fn(input_jax)
+
+        grad_fn2 = jax.grad(circuit_jax)
+        grads2 = grad_fn2(input_jax)
+
+        assert qml.math.allclose(grads, grads2)
+
+    @pytest.mark.jax
+    def test_fable_grad_jax_jit(self, input_matrix):
+        """Test that FABLE is differentiable when using jax."""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit")
+
+        input_jax = jnp.array(input_matrix)
+
+        @jax.jit
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit_default(input_matrix):
+            qml.FABLE(input_matrix, 0)
             return qml.expval(qml.PauliZ(wires=0))
 
         @jax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
-            qml.FABLE(input_matrix, 0)
+            generate_FABLE_circuit(input_matrix, 0)
             return qml.expval(qml.PauliZ(wires=0))
 
         grad_fn = jax.grad(circuit_default)
@@ -274,10 +303,10 @@ class TestFable:
 
     def test_default_lightning_devices(self, input_matrix):
         """Test that FABLE executes with the default.qubit and lightning.qubit simulators."""
-        ancilla = ["ancilla"]
-        s = int(np.log2(np.array(input_matrix).shape[0]))
-        wires_i = [f"i{index}" for index in range(s)]
-        wires_j = [f"j{index}" for index in range(s)]
+        ancilla = [0]
+        s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
+        wires_i = list(range(1, 1 + s))
+        wires_j = list(range(1 + s, 1 + 2 * s))
         wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
 
         dev = qml.device("default.qubit")

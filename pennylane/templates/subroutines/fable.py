@@ -47,7 +47,7 @@ class FABLE(Operation):
 
         input_matrix = np.array([[0.1, 0.2],
                 [0.3, 0.4]])
-        wire_order = ["ancilla", "i1", "i0", "j1", "j0"]
+        wire_order = ["ancilla", "i0", "j0"]
 
         dev = qml.device('default.qubit')
         @qml.qnode(dev)
@@ -112,10 +112,10 @@ class FABLE(Operation):
 
         self._hyperparameters = {"tol": tol}
 
-        ancilla = ["ancilla"]
+        ancilla = [0]
         s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
-        wires_i = [f"i{index}" for index in range(s)]
-        wires_j = [f"j{index}" for index in range(s)]
+        wires_i = list(range(1, 1 + s))
+        wires_j = list(range(1 + s, 1 + 2 * s))
 
         all_wires = Wires(ancilla) + Wires(wires_i) + Wires(wires_j)
         super().__init__(input_matrix, wires=all_wires, id=id)
