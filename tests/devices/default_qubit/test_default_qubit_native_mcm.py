@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 from functools import reduce
-from typing import Sequence
+from typing import Sequence, Iterable
 
 from flaky import flaky
 import numpy as np
@@ -59,9 +59,9 @@ def validate_samples(shots, results1, results2):
     This is to handle cases when post-selection yields variable shapes.
     Otherwise, fails if the sums of samples differ by more than ``20`` plus 20 percent.
     """
-    if isinstance(shots, Sequence):
-        assert isinstance(results1, Sequence)
-        assert isinstance(results2, Sequence)
+    if isinstance(shots, Iterable):
+        assert isinstance(results1, Iterable)
+        assert isinstance(results2, Iterable)
         assert len(results1) == len(results2)
         for s, r1, r2 in zip(shots, results1, results2):
             validate_samples(s, r1, r2)
@@ -232,8 +232,7 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    if postselect is None or measure_f in (qml.expval, qml.probs, qml.var):
-        validate_measurements(measure_f, shots, results1, results2)
+    validate_measurements(measure_f, shots, results1, results2)
 
 
 # pylint: disable=unused-argument
@@ -282,8 +281,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
     results1 = func1(*params)
     results2 = func2(*params)
 
-    if postselect is None or measure_f in (qml.expval, qml.probs, qml.var):
-        validate_measurements(measure_f, shots, results1, results2)
+    validate_measurements(measure_f, shots, results1, results2)
 
 
 @flaky(max_runs=5)
@@ -315,8 +313,7 @@ def test_single_mcm_single_measure_wires(shots, postselect, reset, measure_f, wi
     results1 = func1(*params)
     results2 = func2(*params)
 
-    if postselect is None or measure_f in (qml.expval, qml.probs, qml.var):
-        validate_measurements(measure_f, shots, results1, results2)
+    validate_measurements(measure_f, shots, results1, results2)
 
 
 @flaky(max_runs=5)
@@ -344,9 +341,8 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    if postselect is None or measure_f in (qml.expval, qml.probs, qml.var):
-        for r1, r2 in zip(results1, results2):
-            validate_measurements(measure_f, shots, r1, r2)
+    for r1, r2 in zip(results1, results2):
+        validate_measurements(measure_f, shots, r1, r2)
 
 
 @flaky(max_runs=5)
@@ -381,8 +377,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
     results1 = func1(param)
     results2 = func2(param)
 
-    if postselect is None or measure_f in (qml.expval, qml.probs, qml.var):
-        validate_measurements(measure_f, shots, results1, results2)
+    validate_measurements(measure_f, shots, results1, results2)
 
 
 @flaky(max_runs=5)
@@ -414,8 +409,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    if postselect is None or measure_f in (qml.expval, qml.probs, qml.var):
-        validate_measurements(measure_f, shots, results1, results2)
+    validate_measurements(measure_f, shots, results1, results2)
 
 
 @flaky(max_runs=5)
@@ -486,3 +480,29 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
     grad2 = qml.grad(func2)(*param)
 
     assert np.allclose(grad1, grad2, atol=0.01, rtol=0.3)
+
+
+@flaky(max_runs=5)
+@pytest.mark.parametrize("shots", [5000, [5000, 5001]])
+# @pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("reset", [False, True])
+@pytest.mark.parametrize("measure_fn", [qml.expval, qml.sample, qml.probs])
+def test_broadcasting_qnode(shots, reset, measure_fn):
+    """Test that executing qnodes with broadcasting work as expected"""
+    dev = qml.device("default.qubit", shots=shots)
+    param = [[np.pi / 3, np.pi / 4], [np.pi / 6, 2 * np.pi / 3]]
+    obs = qml.PauliZ(0) @ qml.PauliZ(1)
+
+    @qml.qnode(dev)
+    def func(x, y):
+        obs_tape(x, y, None, reset)
+        return measure_fn(op=obs)
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(*param)
+    results2 = func2(*param)
+
+    for r1, r2 in zip(results1, results2):
+        validate_measurements(measure_fn, shots, r1, r2)

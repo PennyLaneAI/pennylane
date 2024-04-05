@@ -45,6 +45,11 @@ def _split_operations(ops, num_tapes):
     return new_ops
 
 
+# def _unwrap_counts(res):
+#     """Helper function to unwrap counts dictionaries from 0-D arrays."""
+#     return [r.item() for r in res]
+
+
 @transform
 def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Expand a broadcasted tape into multiple tapes
@@ -142,15 +147,10 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
             output_tapes.append(new_tape)
 
         def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
-            # if len(tape.measurements) > 1:
-            #     processed_results = [
-            #         qml.math.squeeze(
-            #             qml.math.stack([results[b][i] for b in range(tape.batch_size)])
-            #         )
-            #         for i in range(len(tape.measurements))
-            #     ]
-            #     return tuple(processed_results)
-            # return qml.math.squeeze(qml.math.stack(results))
+            # The shape of the results should be as follows: results[i][j][k], where i is the shot
+            # vector index, j is the measurement index, and k is the batch index. The shape that
+            # the processing function receives is results[k][i][j].
+
             if tape.shots.has_partitioned_shots:
                 if len(tape.measurements) > 1:
                     return tuple(
