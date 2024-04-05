@@ -139,7 +139,7 @@
   import pennylane as qml
   fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
 
-  qubit_ham = qml.fermi.bravyi_kitaev(fermi_ham, n=6)
+  qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
   ```
 
   ```pycon
