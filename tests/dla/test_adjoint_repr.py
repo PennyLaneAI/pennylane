@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/dla/adjoint_repr.py functionality"""
+"""Tests for pennylane/dla/structure_constants.py functionality"""
 import pytest
 import numpy as np
 
 import pennylane as qml
 
-from pennylane.dla import adjoint_repr
+from pennylane.dla import structure_constants
 from pennylane.pauli import PauliWord, PauliSentence
 
 ## Construct some example DLAs
@@ -41,21 +41,21 @@ XXZ3 = qml.dla.lie_closure(gens2, pauli=True)
 
 
 class TestAdjointRepr:
-    """Tests for adjoint_repr"""
+    """Tests for structure_constants"""
 
-    def test_adjoint_repr_dim(self):
+    def test_structure_constants_dim(self):
         """Test the dimension of the adjoint repr"""
         d = len(Ising3)
-        adjoint = adjoint_repr(Ising3)
+        adjoint = structure_constants(Ising3)
         assert adjoint.shape == (d, d, d)
         assert adjoint.dtype == float
 
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
-    def test_adjoint_repr_elements(self, dla):
+    def test_structure_constants_elements(self, dla):
         r"""Test relation :math:`[i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma`."""
 
         d = len(dla)
-        ad_rep = adjoint_repr(dla)
+        ad_rep = structure_constants(dla)
         for i in range(d):
             for j in range(d):
 
@@ -71,10 +71,10 @@ class TestAdjointRepr:
     @pytest.mark.parametrize("dla", [Ising3])
     def test_use_operators(self, dla):
         """Test that operators can be passed and lead to the same result"""
-        ad_rep_true = adjoint_repr(dla)
+        ad_rep_true = structure_constants(dla)
 
         ops = [op.operation() for op in dla]
-        ad_rep = adjoint_repr(ops)
+        ad_rep = structure_constants(ops)
         assert qml.math.allclose(ad_rep, ad_rep_true)
 
     def test_raise_error_for_non_paulis(self):
@@ -83,4 +83,4 @@ class TestAdjointRepr:
         with pytest.raises(
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
-            qml.dla.adjoint_repr(generators)
+            qml.dla.structure_constants(generators)
