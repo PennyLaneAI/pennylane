@@ -29,7 +29,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     supplied qubit.
 
     Computational basis measurements are performed using the 0, 1 convention
-    rather than the ±1 convetion. 
+    rather than the ±1 convention. 
 
     Measurement outcomes can be obtained and used to conditionally apply
     operations with :func:`~.cond`.
