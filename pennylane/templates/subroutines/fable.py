@@ -83,7 +83,9 @@ class FABLE(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, input_matrix, tol=0, id=None):
+    def __init__(self, input_matrix, wires, tol=0, id=None):
+        wires = Wires(wires)
+
         if not qml.math.is_abstract(input_matrix):
             if qml.math.any(qml.math.iscomplex(input_matrix)):
                 raise ValueError("Support for imaginary values has not been implemented.")
@@ -105,6 +107,9 @@ class FABLE(Operation):
             input_matrix = qml.math.pad(input_matrix, ((0, dimension - row), (0, dimension - col)))
 
         n = int(qml.math.ceil(qml.math.log2(col)))
+        if len(wires) != 2 * n + 1:
+            raise ValueError(f"Number of wires is incorrect, expected {2*n+1} but got {len(wires)}")
+
         if col < 2**n:
             input_matrix = qml.math.pad(input_matrix, ((0, 2**n - col), (0, 2**n - col)))
             col = 2**n
@@ -115,13 +120,7 @@ class FABLE(Operation):
 
         self._hyperparameters = {"tol": tol}
 
-        ancilla = [0]
-        s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
-        wires_i = list(range(1, 1 + s))
-        wires_j = list(range(1 + s, 1 + 2 * s))
-
-        all_wires = Wires(ancilla) + Wires(wires_i) + Wires(wires_j)
-        super().__init__(input_matrix, wires=all_wires, id=id)
+        super().__init__(input_matrix, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(input_matrix, wires, tol=0):  # pylint:disable=arguments-differ
@@ -184,10 +183,3 @@ class FABLE(Operation):
             op_list.append(qml.Hadamard(w))
 
         return op_list
-
-    def _flatten(self):
-        return self.data, (self._hyperparameters["tol"])
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(data[0], tol=metadata)

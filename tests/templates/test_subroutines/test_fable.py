@@ -89,23 +89,23 @@ class TestFable:
 
     def test_standard_validity(self, input_matrix):
         """Check the operation using the assert_valid function."""
-        op = qml.FABLE(input_matrix, tol=0.01)
+        op = qml.FABLE(input_matrix, wires=range(5), tol=0.01)
         qml.ops.functions.assert_valid(op)
 
     # pylint: disable=protected-access
     def test_flatten_unflatten(self, input_matrix):
         """Test the flatten and unflatten methods."""
-        op = qml.FABLE(input_matrix, tol=0.01)
-        data, metadata = op._flatten()
-        assert data is op.data
-        assert metadata == 0.01
+        op = qml.FABLE(input_matrix, wires=range(5), tol=0.01)
         new_op = type(op)._unflatten(*op._flatten())
         assert qml.equal(op, new_op)
 
     @pytest.mark.parametrize(
-        ("input"),
+        ("input", "wires"),
         [
-            (np.array([[0.1, 0.2], [0.1, 0.2]])),
+            (
+                np.array([[0.1, 0.2], [0.1, 0.2]]),
+                3,
+            ),
             (
                 np.array(
                     [
@@ -118,13 +118,13 @@ class TestFable:
                         [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
                         [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
                     ]
-                )
+                ),
+                7,
             ),
         ],
     )
-    def test_fable_real_for_variety_of_input_matrices(self, input):
+    def test_fable_real_for_variety_of_input_matrices(self, input, wires):
         """Test that FABLE produces the right circuit given a real-valued matrix"""
-        input = np.array([[0.1, 0.2], [0.2, 0.1]])
         ancilla = [0]
         s = int(qml.math.log2(qml.math.shape(input)[0]))
         wires_i = list(range(1, 1 + s))
@@ -135,7 +135,7 @@ class TestFable:
 
         @qml.qnode(dev)
         def circuit():
-            qml.FABLE(input, tol=0.01)
+            qml.FABLE(input_matrix=input, wires=range(wires), tol=0)
             return qml.state()
 
         expected = (
@@ -157,7 +157,7 @@ class TestFable:
 
         @qml.qnode(dev)
         def circuit():
-            qml.FABLE(input_matrix, tol=0.01)
+            qml.FABLE(input_matrix, wires=range(3), tol=0.01)
             return qml.state()
 
         expected = (
@@ -176,14 +176,14 @@ class TestFable:
         with pytest.raises(
             ValueError, match="Support for imaginary values has not been implemented."
         ):
-            qml.FABLE(imaginary_matrix, tol=0.01)
+            qml.FABLE(imaginary_matrix, wires=range(5), tol=0.01)
 
     def test_fable_normalization_error(self, input_matrix):
         """Test if a ValueError is raised when the normalization factor is greater than 1."""
         input_matrix[0, 0] += 10
 
         with pytest.raises(ValueError, match="The subnormalization factor should be lower than 1."):
-            qml.FABLE(input_matrix, tol=0.01)
+            qml.FABLE(input_matrix, wires=range(5), tol=0.01)
 
     def test_warning_for_non_square(self):
         """Test that non-square NxM matrices get warned when inputted."""
@@ -196,7 +196,7 @@ class TestFable:
         )
 
         with pytest.warns(Warning, match="The input matrix should be of shape NxN"):
-            qml.FABLE(non_square_matrix, tol=0.01)
+            qml.FABLE(non_square_matrix, wires=range(5), tol=0.01)
 
     @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_non_square(self):
@@ -209,7 +209,7 @@ class TestFable:
             ]
         )
 
-        op = qml.FABLE(non_square_matrix, tol=0.01)
+        op = qml.FABLE(non_square_matrix, wires=range(5), tol=0.01)
         data = op._flatten()
         assert data[0][0].shape == (4, 4)
 
@@ -223,7 +223,7 @@ class TestFable:
         )
 
         with pytest.warns(Warning, match="The input matrix should be of shape NxN"):
-            qml.FABLE(two_by_three_array, tol=0.01)
+            qml.FABLE(two_by_three_array, wires=range(5), tol=0.01)
 
     @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_not_power(self):
@@ -235,7 +235,7 @@ class TestFable:
             ]
         )
 
-        op = qml.FABLE(two_by_three_array, tol=0.01)
+        op = qml.FABLE(two_by_three_array, wires=range(5), tol=0.01)
         data = op._flatten()
         assert data[0][0].shape == (4, 4)
 
@@ -244,9 +244,9 @@ class TestFable:
         """Test that the Fable operator matrix is correct for jax."""
         import jax.numpy as jnp
 
-        circuit_default = qml.FABLE(input_matrix, 0)
+        circuit_default = qml.FABLE(input_matrix, wires=range(5), tol=0)
         jax_matrix = jnp.array(input_matrix)
-        circuit_jax = qml.FABLE(jax_matrix, 0)
+        circuit_jax = qml.FABLE(jax_matrix, wires=range(5), tol=0)
 
         assert qml.math.allclose(qml.matrix(circuit_default), qml.matrix(circuit_jax))
         assert qml.math.get_interface(qml.matrix(circuit_jax)) == "jax"
@@ -254,9 +254,9 @@ class TestFable:
     @pytest.mark.autograd
     def test_autograd(self, input_matrix):
         """Test that the Fable operator matrix is correct for autograd."""
-        circuit_default = qml.FABLE(input_matrix, 0)
+        circuit_default = qml.FABLE(input_matrix, wires=range(5), tol=0)
         grad_matrix = pnp.array(input_matrix)
-        circuit_grad = qml.FABLE(grad_matrix, 0)
+        circuit_grad = qml.FABLE(grad_matrix, wires=range(5), tol=0)
 
         assert qml.math.allclose(qml.matrix(circuit_default), qml.matrix(circuit_grad))
         assert qml.math.get_interface(qml.matrix(circuit_grad)) == "autograd"
@@ -273,12 +273,12 @@ class TestFable:
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit_default(input_matrix):
-            qml.FABLE(input_matrix, 0)
+            qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
-            qml.FABLE(input_matrix, 0)
+            qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
         grad_fn = jax.grad(circuit_default)
@@ -302,7 +302,7 @@ class TestFable:
         @jax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_default(input_matrix):
-            qml.FABLE(input_matrix, 0)
+            qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
         @jax.jit
@@ -328,7 +328,7 @@ class TestFable:
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit_default(input_matrix):
-            qml.FABLE(input_matrix)
+            qml.FABLE(input_matrix, wires=range(5))
             return qml.expval(qml.PauliZ(wires=0))
 
         @qml.qnode(dev, diff_method="backprop")
@@ -356,14 +356,14 @@ class TestFable:
 
         @qml.qnode(dev)
         def circuit():
-            qml.FABLE(input_matrix, tol=0.01)
+            qml.FABLE(input_matrix, wires=range(5), tol=0.01)
             return qml.state()
 
         dev2 = qml.device("lightning.qubit", wires=wire_order)
 
         @qml.qnode(dev2)
         def circuit_lightning():
-            qml.FABLE(input_matrix, tol=0.01)
+            qml.FABLE(input_matrix, wires=range(5), tol=0.01)
             return qml.state()
 
         expected = (
