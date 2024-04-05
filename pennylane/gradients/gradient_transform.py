@@ -106,14 +106,12 @@ def assert_no_trainable_tape_batching(tape, transform_name):
         tape (`~.QuantumScript`): measurements to analyze
         transform_name (str): Name of the gradient transform that queries the tape
     """
-    if tape.batch_size is not None:
-        trainable_batch_size = None
-        for idx in range(len(tape.trainable_params)):
-            op_batch_size = tape.get_operation(idx)[0].batch_size
-            if op_batch_size is not None:
-                trainable_batch_size = op_batch_size
+    if tape.batch_size is None:
+        return
 
-        if trainable_batch_size is not None:
+    # Iterate over trainable parameters and check the affiliated operations for batching
+    for idx in range(len(tape.trainable_params)):
+        if tape.get_operation(idx)[0].batch_size is not None:
             raise NotImplementedError(
                 "Computing the gradient of broadcasted tapes with respect to the broadcasted "
                 f"parameters using the {transform_name} gradient transform is currently not "
