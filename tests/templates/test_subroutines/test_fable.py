@@ -178,6 +178,12 @@ class TestFable:
         ):
             qml.FABLE(imaginary_matrix, wires=range(5), tol=0.01)
 
+    def test_fable_wires_error(self, input_matrix):
+        """Test if a ValueError is raised when incorrect number of wires are passed in."""
+
+        with pytest.raises(ValueError, match="Number of wires is incorrect"):
+            qml.FABLE(input_matrix, wires=range(4), tol=0.01)
+
     def test_fable_normalization_error(self, input_matrix):
         """Test if a ValueError is raised when the normalization factor is greater than 1."""
         input_matrix[0, 0] += 10
