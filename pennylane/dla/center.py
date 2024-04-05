@@ -29,14 +29,14 @@ def center(g, pauli=False):
     .. math:: \mathfrak{\xi}(\mathfrak{g}) := \{h \in \mathfrak{g} | [h, h_i]=0 \forall h_i \in \mathfrak{g} \}
 
     Args:
-        ops (List[Union[Operator, PauliSentence]]): List of operators for which to find the center.
+        g (List[Union[Operator, PauliSentence]]): List of operators for which to find the center.
         pauli (bool): Indicates whether it is assumed that :class:`~PauliSentence` instances are input and returned.
             This can help with performance to avoid unnecessary conversions from :class:`~PauliSentence` to :class:`~Operator`
             or :class:`~PauliWord` and vice versa. Note that the input in that case also has to be a list of :class:`~PauliSentence` instances.
             Default is ``False``.
 
     Returns:
-        List[Union[Operator, PauliSentence]]: Center of g
+        List[Union[Operator, PauliSentence]]: Center of ``g``
 
     **Example**
 
