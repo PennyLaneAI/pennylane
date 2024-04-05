@@ -19,23 +19,32 @@ import pennylane as qml
 from pennylane.dla import center
 from pennylane.pauli import PauliSentence
 
-TRIVIAL_CENTERS = (
+
+def test_trivial_center():
+    """Test a trivial centers with Identity operators or non-overlapping wires"""
+    ops = []
+    res = center(ops)
+    assert res == []
+
+
+DLA_CENTERS = (
     ([qml.I()], [qml.I()]),  # just the identity
     ([qml.I(), qml.X(0)], [qml.I(), qml.X(0)]),  # identity and some other operator
     ([qml.X(0), qml.X(1)], [qml.X(0), qml.X(1)]),  # two non-overlapping wires
     ([qml.X(0), qml.Y(1)], [qml.X(0), qml.Y(1)]),  # two non-overlapping wires with different ops
     ([qml.X(0), qml.Y(0), qml.Z(0), qml.I()], [qml.I()]),  # non-trivial DLA, but trivial center
+    ([qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)], [qml.X(0)]) # non-trivial DLA
 )
 
 
-@pytest.mark.parametrize("ops, true_res", TRIVIAL_CENTERS)
+@pytest.mark.parametrize("ops, true_res", DLA_CENTERS)
 def test_trivial_center(ops, true_res):
     """Test a trivial centers with Identity operators or non-overlapping wires"""
     res = center(ops)
     assert res == true_res
 
 
-@pytest.mark.parametrize("ops, true_res", TRIVIAL_CENTERS)
+@pytest.mark.parametrize("ops, true_res", DLA_CENTERS)
 def test_trivial_center_pauli(ops, true_res):
     """Test a trivial centers with Identity operators or non-overlapping wires using their pauli_rep"""
     ops = [op.pauli_rep for op in ops]
@@ -45,11 +54,3 @@ def test_trivial_center_pauli(ops, true_res):
     true_res = [op.pauli_rep for op in true_res]
     assert res == true_res
 
-
-def test_center_dla():
-    """Test computing the center for a non-trivial DLA"""
-    generators = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
-    g = qml.dla.lie_closure(generators)
-    res = center(g)
-    true_res = [qml.X(0)]
-    assert res == true_res
