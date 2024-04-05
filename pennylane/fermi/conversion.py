@@ -336,7 +336,7 @@ def bravyi_kitaev(
            a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{P(n)}\right ). \\\\
         \end{align*}
 
-     Similarly, the fermionic creation and annihilation operators for odd-labelled orbitals are mapped to the Pauli operators as
+    Similarly, the fermionic creation and annihilation operators for odd-labelled orbitals are mapped to the Pauli operators as
 
     .. math::
         \begin{align*}
@@ -347,7 +347,7 @@ def bravyi_kitaev(
 
     .. math::
         \begin{align*}
-           a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{R(n)}\right ), \\\\
+           a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{R(n)}\right ). \\\\
         \end{align*}
 
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators, and :math:`U(n)`, :math:`P(n)` and :math:`R(n)` represent the update, parity and remainder sets, respectively [`arXiv:1812.02233 <https://arxiv.org/abs/1812.02233>`_].
