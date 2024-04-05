@@ -75,7 +75,7 @@ def structure_constants(dla):
 
     .. math:: [i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{d-1} f^\gamma_{\alpha, \beta} iG_\gamma.
 
-    Let us confirm those with some examples. Take :math:`[iG_1, iG_3] = [iZ_0, -iY_0 X_1] = -i 2 X_0 X_1 = -i 2 G_0`, so
+    Let us confirm those with an example. Take :math:`[iG_1, iG_3] = [iZ_0, -iY_0 X_1] = -i 2 X_0 X_1 = -i 2 G_0`, so
     we should have :math:`f^0_{1, 3} = -2`, which is indeed the case.
 
     >>> adjoint_rep[0, 1, 3]
