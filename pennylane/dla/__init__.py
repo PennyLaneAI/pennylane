@@ -14,4 +14,4 @@
 """(Dynamical) Lie Algebra functionality in PennyLane"""
 
 from .lie_closure import lie_closure
-from .adjoint_repr import adjoint_repr
+from .adjoint_repr import structure_constants
