@@ -53,10 +53,12 @@ def test_center_pauli(ops, true_res):
     true_res = [op.pauli_rep for op in true_res]
     assert res == true_res
 
+
 GENERATOR_CENTERS = (
     ([qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)], [qml.X(0)]),
-    ([p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]], [p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]])
+    ([p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]], [p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]]),
 )
+
 
 @pytest.mark.parametrize("generators, true_res", GENERATOR_CENTERS)
 def test_center_dla(generators, true_res):
