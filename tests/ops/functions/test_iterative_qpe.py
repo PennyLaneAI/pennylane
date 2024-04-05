@@ -167,6 +167,7 @@ class TestIQPE:
 
         dev = qml.device("default.qubit", shots=1)
 
+        @qml.dynamic_one_shot
         @qml.qnode(dev)
         def circuit():
             m = qml.iterative_qpe(qml.RZ(1.0, wires=[0]), [1], iters=iters)
