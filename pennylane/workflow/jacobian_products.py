@@ -749,7 +749,7 @@ class LightningVJPs(DeviceDerivatives):
                     out = self._device.compute_vjp(numpy_tape, dyi, self._execution_config)
                 else:
                     out = self._device.compute_vjp(numpy_tape, dyi)
-            else:
+            else:  # pragma: no cover
                 vjp_f = self._device.vjp(
                     numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
                 )
