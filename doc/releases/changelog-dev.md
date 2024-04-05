@@ -69,6 +69,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improve the performance of computing the matrix of `qml.QFT`
+  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
+  
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
@@ -187,6 +190,9 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
+  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
@@ -297,6 +303,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
+  creating an inconsistency with other differentiation methods and preventing some use cases.
+  [(#5458)](https://github.com/PennyLaneAI/pennylane/pull/5458)
+
+* Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
+  [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
+
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
   [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
 
@@ -355,4 +368,5 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
 Jay Soni,
-Matthew Silverman.
+Matthew Silverman,
+David Wierichs.
