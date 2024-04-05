@@ -4,7 +4,7 @@
 Return Type Specification
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This page describes the shape and type of the numerical output from executing a quantum circuit
+This section describes the shape and type of the numerical output from executing a quantum circuit
 in PennyLane.
 
 The specification applies for the entire workflow, from the device instance all the
@@ -12,7 +12,7 @@ way up to the ``QNode``.  The result object corresponding to a given circuit
 will match whether the circuit is being passed to a device, processed
 by a transform, having it's derivative bound to an ML interface, or returned from a ``QNode``.
 
-While this document says ``tuple`` and includes examples using ``tuple`` throughout this document, the
+While this section says ``tuple`` and includes examples using ``tuple`` throughout this document, the
 return type specification allows ``tuple`` and ``list`` to be used interchangably.
 When examining and postprocessing
 results, you should always allow for a ``list`` to be substituted for a ``tuple``. Given their
@@ -21,9 +21,9 @@ over ``list`` where feasible.
 
 The level of priority for dimensions from outer dimension to inner dimension is:
 
-1. Quantum Script in batch. No squeezing
-2. Shot choice in a shot vector. Squeezed if no shot vector
-3. Measurement in the quantum script. Squeezed out if only one measurement
+1. Quantum Script in batch. No squeezing.
+2. Shot choice in a shot vector. Squeezed if no shot vector.
+3. Measurement in the quantum script. Squeezed out if only one measurement.
 4. Parameter broadcasting. Squeezed out if no parameter-broadcasting.  Adds to array shape instead of adding tuple nesting.
 5. Fundamental measurement shape.
 
