@@ -34,11 +34,11 @@ def center(g, pauli=False):
             This can help with performance to avoid unnecessary conversions from :class:`~PauliSentence` to :class:`~Operator`
             or :class:`~PauliWord` and vice versa. Note that the input in that case also has to be a list of :class:`~PauliSentence` instances.
             Default is ``False``.
-    
+
     Returns:
         List[Union[Operator, PauliSentence]]: Center of g
-    
-    
+
+
     """
 
     if not pauli:
@@ -50,9 +50,9 @@ def center(g, pauli=False):
         res = op1.commutator(op2)
         res.simplify()
         if res != PauliSentence({}):
-            commutators[j, k] = 1 # dummy value to indicate operators dont commute
+            commutators[j, k] = 1  # dummy value to indicate operators dont commute
             commutators[k, j] = 1
-    
+
     mask = np.all(commutators == 0, axis=0)
     center = list(np.array(g)[mask])
     return center
