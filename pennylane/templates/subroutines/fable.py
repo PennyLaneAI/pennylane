@@ -49,7 +49,7 @@ class FABLE(Operation):
         dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def example_circuit():
-            qml.FABLE(input_matrix, tol=0)
+            qml.FABLE(input_matrix, wires=range(3) tol=0)
             return qml.state()
 
     We can see that :math:`input_matrix` has been block encoded in the matrix of the circuit:
