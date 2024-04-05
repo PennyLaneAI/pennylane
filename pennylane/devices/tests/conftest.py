@@ -210,7 +210,7 @@ def pytest_addoption(parser):
         help="Additional device kwargs.",
     )
     addoption(
-        "--disable-opmath", action="store", default=False, help="Whether to disable new_opmath"
+        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
     )
 
 

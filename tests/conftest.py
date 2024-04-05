@@ -180,7 +180,7 @@ def tear_down_thermitian():
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--disable-opmath", action="store", default=False, help="Whether to disable new_opmath"
+        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
     )
 
 
@@ -188,9 +188,8 @@ def pytest_addoption(parser):
 @pytest.fixture(scope="session", autouse=True)
 def disable_opmath_if_requested(request):
     disable_opmath = request.config.getoption("--disable-opmath")
-
-    # depending on how it's passed, disable_opmath may be a str or bool at this point
-    if str(disable_opmath) == "True":
+    # value from yaml file is a string, convert to boolean
+    if eval(disable_opmath):
         qml.operation.disable_new_opmath()
 
 
