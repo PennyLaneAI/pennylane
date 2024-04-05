@@ -37,7 +37,7 @@ def center(g, pauli=False):
 
     Returns:
         List[Union[Operator, PauliSentence]]: Center of g
-    
+
     **Example**
 
     We can compute the center of a DLA ``g``. For that, we compute the DLA via :func:`~lie_closure`.
