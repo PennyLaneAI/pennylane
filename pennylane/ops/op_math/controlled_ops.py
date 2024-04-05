@@ -14,7 +14,7 @@
 """
 This submodule contains controlled operators based on the ControlledOp class.
 """
-
+# pylint: disable=no-value-for-parameter
 import warnings
 from typing import Iterable
 from functools import lru_cache
