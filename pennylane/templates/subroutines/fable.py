@@ -31,7 +31,8 @@ class FABLE(Operation):
 
 
     Args:
-        input_matrix (tensor_like): an :math:`(N \times N)` matrix to be encoded, where :math:`N` should have dimension equal to :math:`2^n` where :math:`n` is an integer
+        input_matrix (tensor_like): an :math:`(N \times N)` matrix to be encoded,
+            where :math:`N` should have dimension equal to :math:`2^n` where :math:`n` is an integer
         tol (float): rotation gates that have an angle value smaller than this tolerance are removed
         id (str or None): string representing the operation (optional)
 
@@ -56,15 +57,18 @@ class FABLE(Operation):
 
     We can see that :math:`input_matrix` has been block encoded in the matrix of the circuit:
 
-    >>> rows = len(input_matrix) * qml.matrix(circuit, wire_order=wire_order)().real[0 : len(input_matrix), 0 : len(input_matrix)]
+    >>> rows = len(input_matrix) * qml.matrix(circuit, wire_order=wire_order)
+        ().real[0 : len(input_matrix), 0 : len(input_matrix)]
     ... print(f"Block-encoded matrix:\n{rows}", "\n")
     Block-encoded matrix:
     [[0.1 0.2]
     [0.3 0.4]]
 
     .. note::
-        By default it is assumed that the matrix is an :math:`(N \times N)` square matrix, where :math:`N` is a power of 2. However, for matrices of arbitrary size,
-        we add zeros to reach the correct dimension. It is also assumed that the values of the input matrix are within [-1, 1]. Apply a subnormalization factor if needed.
+        By default it is assumed that the matrix is an :math:`(N \times N)` square matrix,
+        where :math:`N` is a power of 2. However, for matrices of arbitrary size,
+        we add zeros to reach the correct dimension. It is also assumed that the values
+        of the input matrix are within [-1, 1]. Apply a subnormalization factor if needed.
     """
 
     num_wires = AnyWires
@@ -84,13 +88,15 @@ class FABLE(Operation):
             alpha = qml.math.linalg.norm(qml.math.ravel(input_matrix), np.inf)
             if alpha > 1:
                 raise ValueError(
-                    "The subnormalization factor should be lower than 1. Ensure that the values of the input matrix are within [-1, 1]."
+                    "The subnormalization factor should be lower than 1."
+                    + "Ensure that the values of the input matrix are within [-1, 1]."
                 )
 
         row, col = qml.math.shape(input_matrix)
         if row != col:
             warnings.warn(
-                f"The input matrix should be of shape NxN, got {input_matrix.shape}. Zeroes were padded automatically."
+                f"The input matrix should be of shape NxN, got {input_matrix.shape}."
+                + "Zeroes were padded automatically."
             )
             dimension = max(row, col)
             input_matrix = qml.math.pad(input_matrix, ((0, dimension - row), (0, dimension - col)))
@@ -100,7 +106,8 @@ class FABLE(Operation):
             input_matrix = qml.math.pad(input_matrix, ((0, 2**n - col), (0, 2**n - col)))
             col = 2**n
             warnings.warn(
-                f"The input matrix should be of shape NxN, where N is a power of 2. Zeroes were padded automatically. Input is now of shape {input_matrix.shape}."
+                "The input matrix should be of shape NxN, where N is a power of 2."
+                + f"Zeroes were padded automatically. Input is now of shape {input_matrix.shape}."
             )
 
         self._hyperparameters = {"tol": tol}
