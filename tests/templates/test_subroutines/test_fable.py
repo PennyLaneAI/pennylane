@@ -102,6 +102,48 @@ class TestFable:
         new_op = type(op)._unflatten(*op._flatten())
         assert qml.equal(op, new_op)
 
+    @pytest.mark.parametrize(
+        ("input"),
+        [
+            (np.array([[0.1, 0.2], [0.1, 0.2]])),
+            (
+                np.array(
+                    [
+                        [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
+                        [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
+                        [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
+                        [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
+                        [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
+                        [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
+                        [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
+                        [0.1, 0.2, -0.1, -0.2, 0.3, 0.4, -0.3, -0.4],
+                    ]
+                )
+            ),
+        ],
+    )
+    def test_fable_real_for_variety_of_input_matrices(self, input):
+        """Test that FABLE produces the right circuit given a real-valued matrix"""
+        input = np.array([[0.1, 0.2], [0.2, 0.1]])
+        ancilla = [0]
+        s = int(qml.math.log2(qml.math.shape(input)[0]))
+        wires_i = list(range(1, 1 + s))
+        wires_j = list(range(1 + s, 1 + 2 * s))
+        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.FABLE(input, tol=0.01)
+            return qml.state()
+
+        expected = (
+            len(input)
+            * qml.matrix(circuit, wire_order=wire_order)().real[0 : len(input), 0 : len(input)]
+        )
+        assert np.allclose(input, expected)
+
     def test_fable_real(self, input_matrix):
         """Test that FABLE produces the right circuit given a real-valued matrix"""
         input_matrix = np.array([[0.1, 0.2], [0.2, 0.1]])
