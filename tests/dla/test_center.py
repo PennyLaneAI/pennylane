@@ -13,9 +13,7 @@
 # limitations under the License.
 """Tests for pennylane/dla/center.py functionality"""
 
-from copy import copy
 import pytest
-import numpy as np
 
 import pennylane as qml
 from pennylane.dla import center
