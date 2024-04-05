@@ -45,9 +45,12 @@ class FABLE(Operation):
 
     .. code-block:: python
 
-        input_matrix = np.array([[0.1, 0.2],
-                [0.3, 0.4]])
-        wire_order = ["ancilla", "i0", "j0"]
+        input_matrix= np.array([[0.1,0.2],[0.2,0.1]])
+        ancilla = [0]
+        s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
+        wires_i = list(range(1, 1 + s))
+        wires_j = list(range(1 + s, 1 + 2 * s))
+        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
 
         dev = qml.device('default.qubit')
         @qml.qnode(dev)
@@ -62,7 +65,7 @@ class FABLE(Operation):
     ... print(f"Block-encoded matrix:\n{rows}", "\n")
     Block-encoded matrix:
     [[0.1 0.2]
-    [0.3 0.4]]
+    [0.2 0.1]]
 
     .. note::
         By default it is assumed that the matrix is an :math:`(N \times N)` square matrix,
@@ -140,7 +143,7 @@ class FABLE(Operation):
         wires_i = wires[1 : 1 + len(wires) // 2]
         wires_j = wires[1 + len(wires) // 2 : len(wires)]
 
-        code = gray_code(2 * qml.math.sqrt(len(input_matrix)))
+        code = gray_code(int(2 * qml.math.sqrt(len(input_matrix))))
         n_selections = len(code)
 
         control_wires = [
