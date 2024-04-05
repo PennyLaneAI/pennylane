@@ -31,7 +31,7 @@ class FABLE(Operation):
 
 
     Args:
-        A (tensor_like): an :math:`(N \times N)` matrix to be encoded, where :math:`N` should have dimension equal to :math:`2^n` where :math:`n` is an integer
+        input_matrix (tensor_like): an :math:`(N \times N)` matrix to be encoded, where :math:`N` should have dimension equal to :math:`2^n` where :math:`n` is an integer
         tol (float): rotation gates that have an angle value smaller than this tolerance are removed
         id (str or None): string representing the operation (optional)
 
@@ -44,20 +44,20 @@ class FABLE(Operation):
 
     .. code-block:: python
 
-        A = np.array([[0.1, 0.2],
+        input_matrix = np.array([[0.1, 0.2],
                 [0.3, 0.4]])
         wire_order = ["ancilla", "i1", "i0", "j1", "j0"]
 
         dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def example_circuit():
-            qml.FABLE(A, tol=0)
+            qml.FABLE(input_matrix, tol=0)
             return qml.state()
 
-    We can see that :math:`A` has been block encoded in the matrix of the circuit:
+    We can see that :math:`input_matrix` has been block encoded in the matrix of the circuit:
 
-    >>> M = len(A) * qml.matrix(circuit, wire_order=wire_order)().real[0 : len(A), 0 : len(A)]
-    ... print(f"Block-encoded matrix:\n{M}", "\n")
+    >>> rows = len(input_matrix) * qml.matrix(circuit, wire_order=wire_order)().real[0 : len(input_matrix), 0 : len(input_matrix)]
+    ... print(f"Block-encoded matrix:\n{rows}", "\n")
     Block-encoded matrix:
     [[0.1 0.2]
     [0.3 0.4]]
@@ -76,49 +76,49 @@ class FABLE(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A, tol=0, id=None):
-        if not qml.math.is_abstract(A):
-            if qml.math.any(qml.math.iscomplex(A)):
+    def __init__(self, input_matrix, tol=0, id=None):
+        if not qml.math.is_abstract(input_matrix):
+            if qml.math.any(qml.math.iscomplex(input_matrix)):
                 raise ValueError("Support for imaginary values has not been implemented.")
 
-            alpha = qml.math.linalg.norm(qml.math.ravel(A), np.inf)
+            alpha = qml.math.linalg.norm(qml.math.ravel(input_matrix), np.inf)
             if alpha > 1:
                 raise ValueError(
                     "The subnormalization factor should be lower than 1. Ensure that the values of the input matrix are within [-1, 1]."
                 )
 
-        M, N = qml.math.shape(A)
-        if M != N:
+        row, col = qml.math.shape(input_matrix)
+        if row != col:
             warnings.warn(
-                f"The input matrix should be of shape NxN, got {A.shape}. Zeroes were padded automatically."
+                f"The input matrix should be of shape NxN, got {input_matrix.shape}. Zeroes were padded automatically."
             )
-            k = max(M, N)
-            A = qml.math.pad(A, ((0, k - M), (0, k - N)))
+            dimension = max(row, col)
+            input_matrix = qml.math.pad(input_matrix, ((0, dimension - row), (0, dimension - col)))
 
-        n = int(qml.math.ceil(qml.math.log2(N)))
-        if N < 2**n:
-            A = qml.math.pad(A, ((0, 2**n - N), (0, 2**n - N)))
-            N = 2**n
+        n = int(qml.math.ceil(qml.math.log2(col)))
+        if col < 2**n:
+            input_matrix = qml.math.pad(input_matrix, ((0, 2**n - col), (0, 2**n - col)))
+            col = 2**n
             warnings.warn(
-                f"The input matrix should be of shape NxN, where N is a power of 2. Zeroes were padded automatically. Input is now of shape {A.shape}."
+                f"The input matrix should be of shape NxN, where N is a power of 2. Zeroes were padded automatically. Input is now of shape {input_matrix.shape}."
             )
 
         self._hyperparameters = {"tol": tol}
 
         ancilla = ["ancilla"]
-        s = int(qml.math.log2(qml.math.shape(A)[0]))
+        s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
         wires_i = [f"i{index}" for index in range(s)]
         wires_j = [f"j{index}" for index in range(s)]
 
         all_wires = Wires(ancilla) + Wires(wires_i) + Wires(wires_j)
-        super().__init__(A, wires=all_wires, id=id)
+        super().__init__(input_matrix, wires=all_wires, id=id)
 
     @staticmethod
-    def compute_decomposition(A, wires, tol=0):  # pylint:disable=arguments-differ
+    def compute_decomposition(input_matrix, wires, tol=0):  # pylint:disable=arguments-differ
         r"""Sequence of gates that represents the efficient circuit produced by the FABLE technique
 
         Args:
-            A (tensor_like): an :math:`(N \times N)` matrix to be encoded
+            input_matrix (tensor_like): an :math:`(N \times N)` matrix to be encoded
             wires (Any or Iterable[Any]): wires that the operator acts on
             tol (float): tolerance
 
@@ -126,14 +126,14 @@ class FABLE(Operation):
             list[.Operator]: list of gates for efficient circuit
         """
         op_list = []
-        alphas = qml.math.arccos(A).flatten()
+        alphas = qml.math.arccos(input_matrix).flatten()
         thetas = compute_theta(alphas)
 
         ancilla = [wires[0]]
         wires_i = wires[1 : 1 + len(wires) // 2]
         wires_j = wires[1 + len(wires) // 2 : len(wires)]
 
-        code = gray_code(2 * qml.math.sqrt(len(A)))
+        code = gray_code(2 * qml.math.sqrt(len(input_matrix)))
         n_selections = len(code)
 
         control_wires = [
