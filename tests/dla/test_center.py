@@ -36,6 +36,7 @@ def test_trivial_center(ops, true_res):
     res = center(ops)
     assert res == true_res
 
+
 @pytest.mark.parametrize("ops, true_res", TRIVIAL_CENTERS)
 def test_trivial_center_pauli(ops, true_res):
     """Test a trivial centers with Identity operators or non-overlapping wires using their pauli_rep"""
@@ -46,11 +47,10 @@ def test_trivial_center_pauli(ops, true_res):
     true_res = [op.pauli_rep for op in true_res]
     assert res == true_res
 
+
 def test_center_dla():
     """Test computing the center for a non-trivial DLA"""
-    generators = [
-        qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)
-    ]
+    generators = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
     g = qml.dla.lie_closure(generators)
     res = center(g)
     true_res = [qml.X(0)]
