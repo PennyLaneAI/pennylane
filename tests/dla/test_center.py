@@ -21,12 +21,13 @@ import pennylane as qml
 from pennylane.dla import center
 
 TRIVIAL_CENTERS = (
-    ([qml.I()], [qml.I()]), # just the identity
-    ([qml.I(), qml.X(0)], [qml.I(), qml.X(0)]), # identity and some other operator
-    ([qml.X(0), qml.X(1)], [qml.X(0), qml.X(1)]), # two non-overlapping wires
-    ([qml.X(0), qml.Y(1)], [qml.X(0), qml.Y(1)]), # two non-overlapping wires with different ops
-    ([qml.X(0), qml.Y(0), qml.Z(0), qml.I()], [qml.I()]), # non-trivial DLA, but trivial center
+    ([qml.I()], [qml.I()]),  # just the identity
+    ([qml.I(), qml.X(0)], [qml.I(), qml.X(0)]),  # identity and some other operator
+    ([qml.X(0), qml.X(1)], [qml.X(0), qml.X(1)]),  # two non-overlapping wires
+    ([qml.X(0), qml.Y(1)], [qml.X(0), qml.Y(1)]),  # two non-overlapping wires with different ops
+    ([qml.X(0), qml.Y(0), qml.Z(0), qml.I()], [qml.I()]),  # non-trivial DLA, but trivial center
 )
+
 
 @pytest.mark.parametrize("ops, true_res", TRIVIAL_CENTERS)
 def test_trivial_center(ops, true_res):
