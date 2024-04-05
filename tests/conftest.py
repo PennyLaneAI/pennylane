@@ -188,8 +188,9 @@ def pytest_addoption(parser):
 @pytest.fixture(scope="session", autouse=True)
 def disable_opmath_if_requested(request):
     disable_opmath = request.config.getoption("--disable-opmath")
-    # value from yaml file is a string, convert to boolean
-    if eval(disable_opmath):
+
+    # depending on how it's passed, disable_opmath may be a str or bool at this point
+    if str(disable_opmath) == "True":
         qml.operation.disable_new_opmath()
 
 
