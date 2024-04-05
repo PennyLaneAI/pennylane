@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script."""
+import copy
+
 # pylint: disable=protected-access
 from collections import Counter
 from functools import singledispatch
 from typing import Optional, Sequence
-import copy
-import warnings
 
-from numpy.random import default_rng
 import numpy as np
+from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -33,11 +33,10 @@ from pennylane.measurements import (
 )
 from pennylane.typing import Result
 
-from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
+from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
-
 
 INTERFACE_TO_LIKE = {
     # map interfaces known by autoray to themselves
@@ -263,19 +262,18 @@ def simulate(
 
     This function assumes that all operations provide matrices.
 
-    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
     >>> simulate(qs)
     (0.36235775447667357,
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
-    if circuit.shots and has_mid_circuit_measurements(circuit):
-        # return simulate_native_mcm(
-        #     circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
-        # )
+    has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
+    if circuit.shots and has_mcm:
         return simulate_tree_mcm(
             circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
         )
+        # return simulate_one_shot_native_mcm(circuit, rng, prng_key, debugger, interface)
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
@@ -588,7 +586,9 @@ def combine_measurements(circuit, measurements, mcm_samples):
 @singledispatch
 def combine_measurements_core(original_measurement, measures):  # pylint: disable=unused-argument
     """Returns the combined measurement value of a given type."""
-    raise TypeError(f"Unsupported measurement of {type(original_measurement).__name__}")
+    raise TypeError(
+        f"Native mid-circuit measurement mode does not support {type(original_measurement).__name__}"
+    )
 
 
 @combine_measurements_core.register
@@ -632,85 +632,6 @@ def _(original_measurement: VarianceMP, measures):  # pylint: disable=unused-arg
     return np.squeeze(np.concatenate(new_sample))
 
 
-# pylint: disable=too-many-arguments
-def simulate_native_mcm(
-    circuit: qml.tape.QuantumScript,
-    rng=None,
-    prng_key=None,
-    debugger=None,
-    interface=None,
-) -> Result:
-    """Simulate a single quantum script with native mid-circuit measurements.
-
-    Args:
-        circuit (QuantumTape): The single circuit to simulate
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
-        debugger (_Debugger): The debugger to use
-        interface (str): The machine learning interface to create the initial state with
-        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the pre-rotated state. Used to pass the state between forward passes and vjp calculations.
-
-    Returns:
-        tuple(TensorLike): The results of the simulation
-    """
-    if circuit.shots.has_partitioned_shots:
-        results = []
-        for s in circuit.shots:
-            aux_circuit = qml.tape.QuantumScript(
-                circuit.operations,
-                circuit.measurements,
-                shots=s,
-                trainable_params=circuit.trainable_params,
-            )
-            results.append(simulate_native_mcm(aux_circuit, rng, prng_key, debugger, interface))
-        return tuple(results)
-    aux_circuit = init_auxiliary_circuit(circuit)
-    all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
-    for _ in range(circuit.shots.total_shots):
-        one_shot_meas, mcm_values_dict = simulate_one_shot_native_mcm(
-            aux_circuit, rng, prng_key, debugger, interface
-        )
-        if one_shot_meas is None:
-            continue
-        valid_shots += 1
-        all_shot_meas = accumulate_native_mcm(aux_circuit, all_shot_meas, one_shot_meas)
-        list_mcm_values_dict.append(mcm_values_dict)
-    if not valid_shots:
-        warnings.warn(
-            "All shots were thrown away as invalid. This can happen for example when post-selecting the 1-branch of a 0-state. Make sure your circuit has some probability of producing a valid shot.",
-            UserWarning,
-        )
-    return parse_native_mid_circuit_measurements(circuit, all_shot_meas, list_mcm_values_dict)
-
-
-def init_auxiliary_circuit(circuit: qml.tape.QuantumScript):
-    """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
-
-    Measurements are replaced by SampleMP measurements on wires and observables found in the
-    original measurements.
-
-    Args:
-        circuit (QuantumTape): The original QuantumScript
-
-    Returns:
-        QuantumScript: A copy of the circuit with modified measurements
-    """
-    new_measurements = []
-    for m in circuit.measurements:
-        if not m.mv:
-            if isinstance(m, VarianceMP):
-                new_measurements.append(SampleMP(obs=m.obs))
-            else:
-                new_measurements.append(m)
-    return qml.tape.QuantumScript(
-        circuit.operations, new_measurements, shots=1, trainable_params=circuit.trainable_params
-    )
-
-
 def simulate_one_shot_native_mcm(
     circuit: qml.tape.QuantumScript,
     rng=None,
@@ -747,40 +668,6 @@ def simulate_one_shot_native_mcm(
     )
 
 
-def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_shot_meas):
-    """Incorporates new measurements in current measurement sequence.
-
-    Args:
-        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
-        all_shot_meas (Sequence[Any]): List of accumulated measurement results
-        one_shot_meas (Sequence[Any]): List of measurement results
-
-    Returns:
-        tuple(TensorLike): The results of the simulation
-    """
-    if len(circuit.measurements) == 1:
-        one_shot_meas = [one_shot_meas]
-    if all_shot_meas is None:
-        new_shot_meas = list(one_shot_meas)
-        for i, (m, s) in enumerate(zip(circuit.measurements, new_shot_meas)):
-            if isinstance(m, SampleMP) and isinstance(s, np.ndarray):
-                new_shot_meas[i] = [s]
-        return new_shot_meas
-    new_shot_meas = all_shot_meas
-    for i, m in enumerate(circuit.measurements):
-        if isinstance(m, CountsMP):
-            tmp = Counter(all_shot_meas[i])
-            tmp.update(Counter(one_shot_meas[i]))
-            new_shot_meas[i] = tmp
-        elif isinstance(m, (ExpectationMP, ProbabilityMP)):
-            new_shot_meas[i] = all_shot_meas[i] + one_shot_meas[i]
-        elif isinstance(m, SampleMP):
-            new_shot_meas[i].append(one_shot_meas[i])
-        else:
-            raise TypeError(f"Unsupported measurement of {type(m).__name__}.")
-    return new_shot_meas
-
-
 def has_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript,
 ):
@@ -793,62 +680,6 @@ def has_mid_circuit_measurements(
         bool: Whether the circuit contains a MidMeasureMP object
     """
     return any(isinstance(op, MidMeasureMP) for op in circuit.operations)
-
-
-def parse_native_mid_circuit_measurements(
-    circuit: qml.tape.QuantumScript, all_shot_meas, mcm_shot_meas
-):
-    """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
-
-    Args:
-        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
-        all_shot_meas (Sequence[Any]): List of accumulated measurement results
-        mcm_shot_meas (Sequence[dict]): List of dictionaries containing the mid-circuit measurement results of each shot
-
-    Returns:
-        tuple(TensorLike): The results of the simulation
-    """
-
-    normalized_meas = []
-    for i, m in enumerate(circuit.measurements):
-        if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
-            raise ValueError(
-                f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
-            )
-        if m.mv and not mcm_shot_meas:
-            meas = measurement_with_no_shots(m)
-        elif m.mv:
-            meas = gather_mcm(m, mcm_shot_meas)
-        elif not all_shot_meas:
-            meas = measurement_with_no_shots(m)
-        else:
-            meas = gather_non_mcm(m, all_shot_meas[i], mcm_shot_meas)
-        if isinstance(m, SampleMP):
-            meas = qml.math.squeeze(meas)
-        normalized_meas.append(meas)
-
-    return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
-
-
-def gather_non_mcm(circuit_measurement, measurement, samples):
-    """Combines, gathers and normalizes several measurements with trivial measurement values.
-
-    Args:
-        circuit_measurement (MeasurementProcess): measurement
-        measurement (TensorLike): measurement results
-        samples (List[dict]): Mid-circuit measurement samples
-
-    Returns:
-        TensorLike: The combined measurement outcome
-    """
-    if isinstance(circuit_measurement, CountsMP):
-        return dict(sorted(measurement.items()))
-    if isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
-        return measurement / len(samples)
-    if isinstance(circuit_measurement, SampleMP):
-        return np.squeeze(np.concatenate(tuple(s.reshape(1, -1) for s in measurement)))
-    # VarianceMP
-    return qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
 
 
 def gather_mcm(measurement, samples):

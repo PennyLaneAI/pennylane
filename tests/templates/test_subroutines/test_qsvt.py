@@ -15,6 +15,8 @@
 Tests for the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
+from copy import copy
+
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
@@ -255,6 +257,34 @@ class TestQSVT:
         assert np.allclose(qml.matrix(op), default_matrix)
         assert qml.math.get_interface(qml.matrix(op)) == "jax"
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
+    )
+    def test_QSVT_jax_with_identity(self, input_matrix, angles, wires):
+        """Test that applying the identity operation before the qsvt function in
+        a JIT context does not affect the matrix for jax.
+
+        The main purpose of this test is to ensure that the types of the block
+        encoding and projector-controlled phase shift data in a QSVT instance
+        are taken into account when inferring the backend of a QuantumScript.
+        """
+        import jax
+
+        def identity_and_qsvt(angles):
+            qml.Identity(wires=wires[0])
+            qml.qsvt(input_matrix, angles, wires)
+
+        @jax.jit
+        def get_matrix_with_identity(angles):
+            return qml.matrix(identity_and_qsvt, wire_order=wires)(angles)
+
+        matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
+        matrix_with_identity = get_matrix_with_identity(angles)
+
+        assert np.allclose(matrix, matrix_with_identity)
+
     @pytest.mark.tf
     @pytest.mark.parametrize(
         ("input_matrix", "angles", "wires"),
@@ -329,6 +359,27 @@ class TestQSVT:
         op = qml.QSVT(qml.Hadamard(0), [qml.Identity(0)])
         assert op.label() == "QSVT"
         assert op.label(base_label="custom_label") == "custom_label"
+
+    def test_data(self):
+        """Test that the data property gets and sets the correct values"""
+        op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        assert op.data == (1, 2, 3)
+        op.data = [4, 5, 6]
+        assert op.data == (4, 5, 6)
+
+    def test_copy(self):
+        """Test that a QSVT operator can be copied."""
+        orig_op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        copy_op = copy(orig_op)
+        assert qml.equal(orig_op, copy_op)
+
+        # Ensure the (nested) operations are copied instead of aliased.
+        assert orig_op is not copy_op
+        assert orig_op.hyperparameters["UA"] is not copy_op.hyperparameters["UA"]
+
+        orig_projectors = orig_op.hyperparameters["projectors"]
+        copy_projectors = copy_op.hyperparameters["projectors"]
+        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
 
 
 class Testqsvt:

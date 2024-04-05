@@ -17,13 +17,12 @@ This module contains the Clifford simulator using ``stim``.
 
 from dataclasses import replace
 from functools import partial
-from numbers import Number
 from typing import Union, Tuple, Sequence
 import concurrent.futures
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
@@ -42,13 +41,12 @@ from pennylane.measurements import (
     ShadowExpvalMP,
 )
 from pennylane.ops.qubit.observables import BasisStateProjector
-from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 
 from .default_qubit import accepted_sample_measurement
-
+from .modifiers import single_tape_support, simulator_tracking
 from .preprocess import (
     decompose,
     validate_observables,
@@ -77,6 +75,7 @@ _OBSERVABLES_MAP = {
     "Identity",
     "Projector",
     "Hamiltonian",
+    "LinearCombination",
     "Sum",
     "SProd",
     "Prod",
@@ -182,6 +181,8 @@ def _pl_obs_to_linear_comb(meas_op):
 
 
 # pylint:disable = too-many-instance-attributes
+@simulator_tracking
+@single_tape_support
 class DefaultClifford(Device):
     r"""A PennyLane device for fast simulation of Clifford circuits using
     `stim <https://github.com/quantumlib/stim/>`_.
@@ -215,7 +216,7 @@ class DefaultClifford(Device):
         @qml.qnode(dev)
         def circuit():
             qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=[1])
+            qml.X(1)
             qml.ISWAP(wires=[0, 1])
             qml.Hadamard(wires=[0])
             return qml.state()
@@ -235,7 +236,7 @@ class DefaultClifford(Device):
         qscripts = [
             qml.tape.QuantumScript(
                 [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])],
-                [qml.expval(qml.PauliZ(0))]
+                [qml.expval(qml.Z(0))]
             )
         ] * num_qscripts
 
@@ -500,51 +501,21 @@ class DefaultClifford(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             seeds = self._rng.integers(2**31 - 1, size=len(circuits))
-            results = tuple(
+            return tuple(
                 self.simulate(c, seed=s, debugger=self._debugger) for c, s in zip(circuits, seeds)
             )
-        else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-            _wrap_simulate = partial(self.simulate, debugger=None)
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
-                results = tuple(exec_map)
+        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
+        _wrap_simulate = partial(self.simulate, debugger=None)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
+            results = tuple(exec_map)
 
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
-
-        if self.tracker.active:
-            self.tracker.update(batches=1)
-            self.tracker.record()
-            for i, c in enumerate(circuits):
-                qpu_executions, shots = get_num_shots_and_executions(c)
-                res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
-                if c.shots:  # pragma: no cover
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        shots=shots,
-                        resources=c.specs["resources"],
-                    )
-                else:
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        resources=c.specs["resources"],
-                    )
-                self.tracker.record()
-
-        return results[0] if is_single_circuit else results
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+        return results
 
     # pylint:disable=no-member,too-many-branches
     def simulate(
@@ -564,7 +535,7 @@ class DefaultClifford(Device):
 
         This function assumes that all operations are Clifford.
 
-        >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.PauliZ(0)), qml.state()])
+        >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.Z(0)), qml.state()])
         >>> qml.devices.DefaultClifford().simulate(qs)
         (array(0),
          array([[0, 1, 0],
@@ -683,7 +654,7 @@ class DefaultClifford(Device):
                 meas_wires = meas.wires if meas.wires else range(stim_circuit.num_qubits)
                 wire_order = {wire: idx for idx, wire in enumerate(meas.wires)}
                 # Decide measurement op
-                meas_op = meas.obs or qml.prod(*[qml.PauliZ(idx) for idx in meas_wires])
+                meas_op = meas.obs or qml.prod(*[qml.Z(idx) for idx in meas_wires])
                 samples = self._measure_observable_sample(
                     meas_op, stim_circuit, num_shots, sample_seed
                 )[0]
@@ -1047,9 +1018,9 @@ class DefaultClifford(Device):
         """Sample a single qubit Pauli measurement from a stim circuit"""
         stim_sm = stim.TableauSimulator()
         stim_sm.do_circuit(stim_ct)
-        return stim_sm.measure_observable(
-            stim.PauliString([0] * meas_idx + meas_ops + [0] * (meas_wire - meas_idx - 1))
-        )
+        res = [0] * meas_idx + meas_ops + [0] * (meas_wire - meas_idx - 1)
+        res = [int(r) for r in res]
+        return stim_sm.measure_observable(stim.PauliString(res))
 
     def _sample_classical_shadow(self, meas, stim_circuit, shots, seed):
         """Measures classical shadows from the state of simulator device"""
@@ -1064,7 +1035,7 @@ class DefaultClifford(Device):
         for recipe in recipes:
             bits.append(
                 [
-                    self._measure_single_sample(stim_circuit, [rec + 1], idx, meas_wire)
+                    self._measure_single_sample(stim_circuit, [int(rec) + 1], idx, meas_wire)
                     for idx, rec in enumerate(recipe)
                 ]
             )

@@ -85,7 +85,7 @@ class QAOAEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(weights, f=None):
                 qml.QAOAEmbedding(features=f, weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             features = [1., 2.]
             layer1 = [0.1, -0.3, 1.5]
@@ -129,7 +129,7 @@ class QAOAEmbedding(Operation):
             @qml.qnode(dev)
             def circuit2(weights, features):
                 qml.QAOAEmbedding(features=features, weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
 
             features = [1., 2.]
@@ -150,7 +150,7 @@ class QAOAEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(weights, f=None):
                 qml.QAOAEmbedding(features=f, weights=weights, wires=range(2), local_field='Z')
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         Choosing ``'Z'`` fields implements a QAOAEmbedding where the second Hamiltonian is a
         1-dimensional Ising model.

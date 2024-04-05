@@ -13,7 +13,6 @@
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
 # pylint:disable=protected-access
-import warnings
 from copy import copy
 from functools import reduce, lru_cache
 from typing import Iterable
@@ -26,7 +25,7 @@ from pennylane import math
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 
 
 I = "I"
@@ -192,6 +191,11 @@ class PauliWord(dict):
                 del mapping[wire]
         super().__init__(mapping)
 
+    @property
+    def pauli_rep(self):
+        """Trivial pauli_rep"""
+        return PauliSentence({self: 1.0})
+
     def __reduce__(self):
         """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
         would cause __setitem__ to be called, which is forbidden on PauliWord.
@@ -267,16 +271,6 @@ class PauliWord(dict):
         Returns:
             PauliSentence
         """
-        if isinstance(other, PauliWord):
-            # this is legacy support and will be removed after a deprecation cycle
-            warnings.warn(
-                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences"
-                "is deprecated, use @ instead. Note also that moving forward the product between two"
-                "PauliWords will return a PauliSentence({new_word: ceoff}) instead of a tuple (coeff, new_word)."
-                "The latter can still be achieved via pw1._matmul(pw2) for lightweight processing",
-                qml.PennyLaneDeprecationWarning,
-            )
-            return self._matmul(other)
 
         if isinstance(other, TensorLike):
             if not qml.math.ndim(other) == 0:
@@ -375,7 +369,7 @@ class PauliWord(dict):
 
         You can also compute the commutator with other operator types if they have a Pauli representation.
 
-        >>> pw.commutator(qml.PauliY(0))
+        >>> pw.commutator(qml.Y(0))
         2j * Z(0)
         """
         if isinstance(other, PauliWord):
@@ -526,10 +520,10 @@ class PauliWord(dict):
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
-            return Hamiltonian([1], [Identity(wires=wire_order)])
+            return qml.Hamiltonian([1], [Identity(wires=wire_order)])
 
         obs = [_make_operation(op, wire) for wire, op in self.items()]
-        return Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
+        return qml.Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
 
     def map_wires(self, wire_map: dict) -> "PauliWord":
         """Return a new PauliWord with the wires mapped."""
@@ -592,6 +586,11 @@ class PauliSentence(dict):
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
+
+    @property
+    def pauli_rep(self):
+        """Trivial pauli_rep"""
+        return self
 
     def __missing__(self, key):
         """If the PauliWord is not in the sentence then the coefficient
@@ -709,13 +708,6 @@ class PauliSentence(dict):
         Returns:
             PauliSentence
         """
-        if isinstance(other, PauliSentence):
-            # this is legacy support and will be removed after a deprecation cycle
-            warnings.warn(
-                "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
-                qml.PennyLaneDeprecationWarning,
-            )
-            return self @ other
 
         if isinstance(other, TensorLike):
             if not qml.math.ndim(other) == 0:
@@ -768,7 +760,7 @@ class PauliSentence(dict):
 
         You can also compute the commutator with other operator types if they have a Pauli representation.
 
-        >>> ps1.commutator(qml.PauliY(0))
+        >>> ps1.commutator(qml.Y(0))
         2j * Z(0)"""
         final_ps = PauliSentence()
 
@@ -840,7 +832,16 @@ class PauliSentence(dict):
             the PauliWord is empty ({}), choose any arbitrary wire from the
             PauliSentence it is composed in.
             """
-            return w or Wires(self.wires[0]) if self.wires else self.wires
+            if w:
+                # PauliWord is not empty, so we can use its wires
+                return Wires(w)
+
+            if wire_order:
+                # PauliWord is empty, treat it as Identity operator on any wire
+                # Pick any arbitrary wire from wire_order
+                return Wires(wire_order[0])
+
+            return wire_order
 
         if len(self) == 0:
             n = len(wire_order) if wire_order is not None else 0
@@ -990,12 +991,12 @@ class PauliSentence(dict):
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
-            return Hamiltonian([], [])
+            return qml.Hamiltonian([], [])
 
         wire_order = wire_order or self.wires
         wire_order = list(wire_order)
 
-        return Hamiltonian(
+        return qml.Hamiltonian(
             list(self.values()),
             [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
         )
@@ -1006,6 +1007,8 @@ class PauliSentence(dict):
         for pw, coeff in items:
             if abs(coeff) <= tol:
                 del self[pw]
+        if len(self) == 0:
+            self = PauliSentence({})  # pylint: disable=self-cls-assignment
 
     def map_wires(self, wire_map: dict) -> "PauliSentence":
         """Return a new PauliSentence with the wires mapped."""

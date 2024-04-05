@@ -62,7 +62,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
             qml.RY(0.9, wires=0),
             qml.CNOT(wires=[0, 1]),
         ]
-        measurements = [qml.expval(qml.PauliZ(1))]
+        measurements = [qml.expval(qml.Z(1))]
         tape = qml.tape.QuantumTape(ops,)
 
     Its corresponding circuit graph can be found using
@@ -80,16 +80,17 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
-        if obs is not None and isinstance(obs, Tensor):
+        if obs is not None and isinstance(obs, (Tensor, qml.ops.Prod)):
             if isinstance(m, SampleMP):
                 raise ValueError(
                     "Sampling from tensor products of observables "
                     "is not supported in circuit cutting"
                 )
-            for o in obs.obs:
-                m_ = m.__class__(obs=o)
 
+            for o in obs.operands if isinstance(obs, qml.ops.op_math.Prod) else obs.obs:
+                m_ = m.__class__(obs=o)
                 _add_operator_node(graph, m_, order, wire_latest_node)
+
         elif isinstance(m, SampleMP) and obs is None:
             for w in m.wires:
                 s_ = qml.sample(qml.Projector([1], wires=w))
@@ -135,7 +136,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
             qml.qcut.PrepareNode(wires=1),
             qml.CNOT(wires=[1, 0]),
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
@@ -202,7 +203,8 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
         if measurement_type is ExpectationMP:
             if len(observables) > 1:
-                measurements_from_graph.append(qml.expval(Tensor(*observables)))
+                prod_type = qml.prod if qml.operation.active_new_opmath() else Tensor
+                measurements_from_graph.append(qml.expval(prod_type(*observables)))
             else:
                 measurements_from_graph.append(qml.expval(obs))
 
@@ -240,7 +242,7 @@ def _create_prep_list():
         return [qml.Identity(wire)]
 
     def _prep_one(wire):
-        return [qml.PauliX(wire)]
+        return [qml.X(wire)]
 
     def _prep_plus(wire):
         return [qml.Hadamard(wire)]

@@ -400,7 +400,7 @@ class TestMidCircuitMeasurements:
             qml.RX(0.5, 0)
             qml.RX(0.5, 1)
             m0 = qml.measure(1, reset=True)
-            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
             qml.CNOT([3, 2])
             qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
                 0.5, wires=[0, 3]
@@ -427,7 +427,7 @@ class TestMidCircuitMeasurements:
             qml.RX(0.5, 0)
             qml.RX(0.5, 1)
             m0 = qml.measure(1, postselect=1)
-            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
             qml.CNOT([3, 2])
             qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
                 0.5, wires=[0, 3]
@@ -482,7 +482,7 @@ class TestMidCircuitMeasurements:
 
             m0 = qml.measure(0, reset=True, postselect=1)
             m1 = qml.measure(1)
-            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values="110")
+            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
             qml.cond(m1, qml.PauliZ)(2)
 
             m2 = qml.measure(1)
@@ -628,7 +628,7 @@ class TestMidCircuitMeasurements:
 
             m0 = qml.measure(0, reset=True, postselect=1)
             m1 = qml.measure(1)
-            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values="110")
+            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
             qml.cond(m1, qml.PauliZ)(2)
 
             m2 = qml.measure(1)
@@ -879,6 +879,29 @@ def test_expansion_strategy(device):
 
     expected_device = "0: ──RX─╭RXX──RX─╭RXX─┤  Probs\n1: ──RZ─╰RXX──RZ─╰RXX─┤       "
     assert draw(circ, expansion_strategy="device", decimals=None)(0.5) == expected_device
+
+
+@pytest.mark.parametrize(
+    "device",
+    [qml.device("default.qubit.legacy", wires=2), qml.device("default.qubit", wires=2)],
+)
+def test_applied_transforms(device):
+    """Test that any transforms applied to the qnode are included in the output."""
+
+    @qml.transform
+    def just_pauli_x(_):
+        new_tape = qml.tape.QuantumScript([qml.PauliX(0)])
+        return (new_tape,), lambda res: res[0]
+
+    @just_pauli_x
+    @qml.qnode(device)
+    def my_circuit(x):
+        qml.RX(x, wires=0)
+        qml.SWAP(wires=(0, 1))
+        return qml.probs(wires=(0, 1))
+
+    expected = "0: ──X─┤  "
+    assert qml.draw(my_circuit)(1.234) == expected
 
 
 def test_draw_with_qfunc():

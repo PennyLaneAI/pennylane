@@ -78,7 +78,7 @@ def draw(
             qml.CRX(a, wires=[0, 1])
             qml.Rot(*w, wires=[1], id="arbitrary")
             qml.CRX(-a, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
     >>> print(qml.draw(circuit)(a=2.3, w=[1.2, 3.2, 0.7]))
     0: ──H─╭●─────────────────────────────────────────╭●─────────┤ ╭<Z@Z>
@@ -106,7 +106,7 @@ def draw(
     >>> @qml.qnode(qml.device('lightning.qubit', wires=1))
     ... def circuit2(x):
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit2)("x"))
     0: ──RX(x)─┤  <Z>
 
@@ -144,7 +144,7 @@ def draw(
         @qml.qnode(qml.device('lightning.qubit', wires=3))
         def longer_circuit(params):
             qml.StronglyEntanglingLayers(params, wires=range(3))
-            return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+            return [qml.expval(qml.Z(i)) for i in range(3)]
 
         print(qml.draw(longer_circuit, max_length=60)(params))
 
@@ -168,7 +168,7 @@ def draw(
     If the device or ``wire_order`` has wires not used by operations, those wires are omitted
     unless requested with ``show_all_wires=True``
 
-    >>> empty_qfunc = lambda : qml.expval(qml.PauliZ(0))
+    >>> empty_qfunc = lambda : qml.expval(qml.Z(0))
     >>> empty_circuit = qml.QNode(empty_qfunc, qml.device('lightning.qubit', wires=3))
     >>> print(qml.draw(empty_circuit, show_all_wires=True)())
     0: ───┤  <Z>
@@ -185,7 +185,7 @@ def draw(
         @qml.qnode(qml.device('default.qubit', wires=1))
         def transformed_circuit(x):
             qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
 
@@ -259,16 +259,16 @@ def _draw_qnode(
             expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
         ):
             qnode.construct(args, kwargs)
+            tapes = qnode.transform_program([qnode.tape])[0]
             program, _ = qnode.device.preprocess()
-            tapes = program([qnode.tape])
+            tapes = program(tapes)[0]
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 tapes = qnode.construct(args, kwargs)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    tapes = program([qnode.tape])
+                program = qnode.transform_program
+                tapes = program([qnode.tape])[0]
 
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
@@ -287,7 +287,7 @@ def _draw_qnode(
                     max_length=max_length,
                     cache=cache,
                 )
-                for t in tapes[0]
+                for t in tapes
             ]
             if show_matrices and cache["matrices"]:
                 mat_str = ""
@@ -373,7 +373,7 @@ def draw_mpl(
             qml.CSWAP(wires=(0,2,3))
             qml.RX(x, wires=0)
             qml.CRZ(z, wires=(3,0))
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
 
         fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
@@ -398,7 +398,7 @@ def draw_mpl(
             def circuit2(x, y):
                 qml.RX(x, wires=0)
                 qml.Rot(*y, wires=0)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             fig, ax = qml.draw_mpl(circuit2, decimals=2)(1.23456, [1.2345,2.3456,3.456])
             fig.show()
@@ -570,8 +570,9 @@ def _draw_mpl_qnode(
     def wrapper(*args, **kwargs_qnode):
         if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
             qnode.construct(args, kwargs)
+            tapes, _ = qnode.transform_program([qnode.tape])
             program, _ = qnode.device.preprocess()
-            tapes, _ = program([qnode.tape])
+            tapes, _ = program(tapes)
             tape = tapes[0]
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
@@ -579,11 +580,8 @@ def _draw_mpl_qnode(
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 qnode.construct(args, kwargs_qnode)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    [tape], _ = program([qnode.tape])
-                else:
-                    tape = qnode.tape
+                program = qnode.transform_program
+                [tape], _ = program([qnode.tape])
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 

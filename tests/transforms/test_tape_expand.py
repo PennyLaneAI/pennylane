@@ -808,7 +808,7 @@ class TestCreateCustomDecompExpandFn:
         # check that new instances of the operator are not affected by the modifications made to get the decomposition
         assert [op1 == op2 for op1, op2 in zip(CustomOp(0).decomposition(), original_decomp)]
 
-    def test_custom_decomp_in_separate_context_legacy(self):
+    def test_custom_decomp_in_separate_context_legacy_opmath(self):
         """Test that the set_decomposition context manager works."""
 
         dev = qml.device("default.qubit.legacy", wires=2)
@@ -940,10 +940,5 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[1].name == "RY"
         assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
 
-        if shots is None:
-            assert decomp_ops[2].name == "CNOT"
-            assert decomp_ops[3].name == "CNOT"
-        else:
-            assert decomp_ops[2].name == "MidMeasureMP"
-            assert decomp_ops[3].name == "CNOT"
-            assert decomp_ops[4].name == "MidMeasureMP"
+        assert decomp_ops[2].name == "CNOT"
+        assert decomp_ops[3].name == "CNOT"

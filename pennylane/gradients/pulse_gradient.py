@@ -396,13 +396,13 @@ def stoch_pulse_grad(
         def sin(p, t):
             return jax.numpy.sin(p * t)
 
-        ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
-        Y_plus_X = qml.dot([1/5, 3/5], [qml.PauliY(0), qml.PauliX(1)])
-        H = 0.5 * qml.PauliX(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
+        ZZ = qml.Z(0) @ qml.Z(1)
+        Y_plus_X = qml.dot([1/5, 3/5], [qml.Y(0), qml.X(1)])
+        H = 0.5 * qml.X(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
 
         def ansatz(params):
             qml.evolve(H)(params, (0.2, 0.4))
-            return qml.expval(qml.PauliY(1))
+            return qml.expval(qml.Y(1))
 
         qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
 
@@ -787,8 +787,8 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
     """
     tapes = []
     gradient_data = []
-    for idx, trainable_idx in enumerate(tape.trainable_params):
-        if trainable_idx not in argnum:
+    for idx in range(tape.num_params):
+        if idx not in argnum:
             # Only the number of tapes is needed to indicate a zero gradient entry
             gradient_data.append((0, None, None, None))
             continue

@@ -15,6 +15,7 @@
 Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
+from functools import partial
 from typing import List, Sequence, Callable
 
 import pennylane as qml
@@ -22,6 +23,118 @@ from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
+
+
+def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
+    """Sums up results for the expectation value of a multi-term observable when grouping is involved.
+
+    Args:
+        res_groupings (ResultBatch): The results from executing the batch of tapes with grouped observables
+        coeff_groupings (List[TensorLike]): The coefficients in the same grouped structure as the results
+        batch_size (Optional[int]): The batch size of the tape and corresponding results
+        offset (TensorLike): A constant offset from the multi-term observable
+
+    Returns:
+        Result: The result of the expectation value for a multi-term observable
+    """
+    dot_products = []
+    for c_group, r_group in zip(coeff_groupings, res_groupings):
+        # pylint: disable=no-member
+        if isinstance(r_group, (tuple, list, qml.numpy.builtins.SequenceBox)):
+            r_group = qml.math.stack(r_group)
+        if qml.math.shape(r_group) == ():
+            r_group = qml.math.reshape(r_group, (1,))
+        if batch_size:
+            r_group = r_group.T
+
+        if len(c_group) == 1 and len(r_group) != 1:
+            dot_products.append(r_group * c_group)
+        else:
+            dot_products.append(qml.math.dot(r_group, c_group))
+    summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+    interface = qml.math.get_deep_interface(res_groupings)
+    return qml.math.asarray(summed_dot_products + offset, like=interface)
+
+
+def _grouping_hamiltonian_expand(tape):
+    """Calculate the expectation value of a tape with a multi-term observable using the grouping
+    present on the observable.
+    """
+    hamiltonian = tape.measurements[0].obs
+    if hamiltonian.grouping_indices is None:
+        # explicitly selected grouping, but indices not yet computed
+        hamiltonian.compute_grouping()
+
+    coeff_groupings = []
+    obs_groupings = []
+    offset = 0
+    coeffs, obs = hamiltonian.terms()
+    for indices in hamiltonian.grouping_indices:
+        group_coeffs = []
+        obs_groupings.append([])
+        for i in indices:
+            if isinstance(obs[i], qml.Identity):
+                offset += coeffs[i]
+            else:
+                group_coeffs.append(coeffs[i])
+                obs_groupings[-1].append(obs[i])
+        coeff_groupings.append(qml.math.stack(group_coeffs))
+    # make one tape per grouping, measuring the
+    # observables in that grouping
+    tapes = []
+    for obs in obs_groupings:
+        new_tape = tape.__class__(tape.operations, (qml.expval(o) for o in obs), shots=tape.shots)
+
+        new_tape = new_tape.expand(stop_at=lambda obj: True)
+        tapes.append(new_tape)
+
+    batch_size = tape.batch_size
+
+    return tapes, partial(
+        grouping_processing_fn,
+        coeff_groupings=coeff_groupings,
+        batch_size=batch_size,
+        offset=offset,
+    )
+
+
+def naive_processing_fn(res, coeffs, offset):
+    """Sum up the results weighted by coefficients to get the expectation value of a multi-term observable.
+
+    Args:
+        res (ResultBatch): The result of executing a batch of tapes where each tape is a different term in the observable
+        coeffs (List(TensorLike)): The weights for each result in ``res``
+        offset (TensorLike): Any constant offset from the multi-term observable
+
+    Returns:
+        Result: the expectation value of the multi-term observable
+    """
+    dot_products = []
+    for c, r in zip(coeffs, res):
+        if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
+            dot_products.append(qml.math.squeeze(r) * c)
+        else:
+            dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
+    summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+    return qml.math.convert_like(summed_dot_products + offset, res[0])
+
+
+def _naive_hamiltonian_expand(tape):
+    """Calculate the expectation value of a multi-term observable using one tape per term."""
+    # make one tape per observable
+    hamiltonian = tape.measurements[0].obs
+    tapes = []
+    offset = 0
+    coeffs = []
+    for c, o in zip(*hamiltonian.terms()):
+        if isinstance(o, qml.Identity):
+            offset += c
+        else:
+            new_tape = tape.__class__(tape.operations, [qml.expval(o)], shots=tape.shots)
+            tapes.append(new_tape)
+            coeffs.append(c)
+
+    return tapes, partial(naive_processing_fn, coeffs=coeffs, offset=offset)
 
 
 @transform
@@ -45,13 +158,13 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     .. code-block:: python3
 
-        H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+        H = qml.Y(2) @ qml.Z(1) + 0.5 * qml.Z(2) + qml.Z(1)
 
     and a tape of the form,
 
     .. code-block:: python3
 
-        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
         tape = qml.tape.QuantumTape(ops, [qml.expval(H)])
 
     We can use the ``hamiltonian_expand`` transform to generate new tapes and a classical
@@ -74,18 +187,18 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 2., 3.], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+        H = qml.Hamiltonian([1., 2., 3.], [qml.Z(0), qml.X(1), qml.X(0)])
 
         tape = qml.tape.QuantumTape(ops, [qml.expval(H)])
 
-    With grouping, the Hamiltonian gets split into two groups of observables (here ``[qml.PauliZ(0)]`` and
-    ``[qml.PauliX(1), qml.PauliX(0)]``):
+    With grouping, the Hamiltonian gets split into two groups of observables (here ``[qml.Z(0)]`` and
+    ``[qml.X(1), qml.X(0)]``):
 
     >>> tapes, fn = qml.transforms.hamiltonian_expand(tape)
     >>> len(tapes)
     2
 
-    Without grouping it gets split into three groups (``[qml.PauliZ(0)]``, ``[qml.PauliX(1)]`` and ``[qml.PauliX(0)]``):
+    Without grouping it gets split into three groups (``[qml.Z(0)]``, ``[qml.X(1)]`` and ``[qml.X(0)]``):
 
     >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
     >>> len(tapes)
@@ -95,7 +208,7 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     .. code-block:: python3
 
-        obs = [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)]
+        obs = [qml.Z(0), qml.X(1), qml.X(0)]
         coeffs = [1., 2., 3.]
         H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
 
@@ -113,90 +226,22 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     if (
         len(tape.measurements) != 1
-        or not isinstance(hamiltonian := tape.measurements[0].obs, qml.Hamiltonian)
+        or not hasattr(tape.measurements[0].obs, "grouping_indices")
         or not isinstance(tape.measurements[0], ExpectationMP)
     ):
         raise ValueError(
-            "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
+            "Passed tape must end in `qml.expval(H)` where H can define grouping_indices"
         )
 
-    if qml.math.shape(hamiltonian.coeffs) == (0,) and qml.math.shape(hamiltonian.ops) == (0,):
+    hamiltonian = tape.measurements[0].obs
+    if len(hamiltonian.terms()[1]) == 0:
         raise ValueError(
             "The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion."
         )
 
-    # note: for backward passes of some frameworks
-    # it is crucial to use the hamiltonian.data attribute,
-    # and not hamiltonian.coeffs when recombining the results
-
     if group or hamiltonian.grouping_indices is not None:
-        if hamiltonian.grouping_indices is None:
-            # explicitly selected grouping, but indices not yet computed
-            hamiltonian.compute_grouping()
-
-        coeff_groupings = [
-            qml.math.stack([hamiltonian.data[i] for i in indices])
-            for indices in hamiltonian.grouping_indices
-        ]
-        obs_groupings = [
-            [hamiltonian.ops[i] for i in indices] for indices in hamiltonian.grouping_indices
-        ]
-
-        # make one tape per grouping, measuring the
-        # observables in that grouping
-        tapes = []
-        for obs in obs_groupings:
-            new_tape = tape.__class__(
-                tape.operations, (qml.expval(o) for o in obs), shots=tape.shots
-            )
-
-            new_tape = new_tape.expand(stop_at=lambda obj: True)
-            tapes.append(new_tape)
-
-        def processing_fn(res_groupings):
-            # pylint: disable=no-member
-            res_groupings = [
-                qml.math.stack(r) if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox)) else r
-                for r in res_groupings
-            ]
-            res_groupings = [
-                qml.math.reshape(r, (1,)) if r.shape == () else r for r in res_groupings
-            ]
-            dot_products = []
-            for c_group, r_group in zip(coeff_groupings, res_groupings):
-                if tape.batch_size:
-                    r_group = r_group.T
-                if len(c_group) == 1 and len(r_group) != 1:
-                    dot_products.append(r_group * c_group)
-                else:
-                    dot_products.append(qml.math.dot(r_group, c_group))
-            summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-
-            return qml.math.convert_like(summed_dot_products, res_groupings[0])
-
-        return tapes, processing_fn
-
-    coeffs = hamiltonian.data
-
-    # make one tape per observable
-    tapes = []
-    for o in hamiltonian.ops:
-        # pylint: disable=protected-access
-        new_tape = tape.__class__(tape.operations, [qml.expval(o)], shots=tape.shots)
-        tapes.append(new_tape)
-
-    # pylint: disable=function-redefined
-    def processing_fn(res):
-        dot_products = []
-        for c, r in zip(coeffs, res):
-            if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
-                dot_products.append(qml.math.squeeze(r) * c)
-            else:
-                dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
-        summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-        return qml.math.convert_like(summed_dot_products, res[0])
-
-    return tapes, processing_fn
+        return _grouping_hamiltonian_expand(tape)
+    return _naive_hamiltonian_expand(tape)
 
 
 # pylint: disable=too-many-branches, too-many-statements
@@ -222,18 +267,18 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
 
     .. code-block:: python3
 
-        S = qml.sum(qml.prod(qml.PauliY(2), qml.PauliZ(1)), qml.s_prod(0.5, qml.PauliZ(2)), qml.PauliZ(1))
+        S = qml.sum(qml.prod(qml.Y(2), qml.Z(1)), qml.s_prod(0.5, qml.Z(2)), qml.Z(1))
 
     and a tape of the form,
 
     .. code-block:: python3
 
-        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
         measurements = [
             qml.expval(S),
-            qml.expval(qml.PauliZ(0)),
-            qml.expval(qml.PauliX(1)),
-            qml.expval(qml.PauliZ(2))
+            qml.expval(qml.Z(0)),
+            qml.expval(qml.X(1)),
+            qml.expval(qml.Z(2))
         ]
         tape = qml.tape.QuantumTape(ops, measurements)
 
@@ -243,18 +288,18 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
     >>> for tape in tapes:
     ...     print(tape.measurements)
-    [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
-    [expval(PauliZ(wires=[2]))]
-    [expval(PauliZ(wires=[1]))]
-    [expval(PauliZ(wires=[0]))]
-    [expval(PauliX(wires=[1]))]
+    [expval(Y(2) @ Z(1))]
+    [expval(Z(2))]
+    [expval(Z(1))]
+    [expval(Z(0))]
+    [expval(X(1))]
 
     Five tapes are generated: the first three contain the summands of the `Sum` operator,
     and the last two contain the remaining observables. Note that the scalars of the scalar products
     have been removed. In the processing function, these values will be multiplied by the result obtained
     from executing the tapes.
 
-    Additionally, the observable expval(PauliZ(wires=[2])) occurs twice in the original tape, but only once
+    Additionally, the observable expval(Z(2)) occurs twice in the original tape, but only once
     in the transformed tapes. When there are multipe identical measurements in the circuit, the measurement
     is performed once and the outcome is copied when obtaining the final result. This will also be resolved
     when the processing function is applied.
@@ -274,19 +319,19 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
 
     .. code-block:: python3
 
-        S = qml.sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
+        S = qml.sum(qml.Z(0), qml.s_prod(2, qml.X(1)), qml.s_prod(3, qml.X(0)))
 
-        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
         tape = qml.tape.QuantumTape(ops, [qml.expval(S)])
 
     With grouping, the Sum gets split into two groups of observables (here
-    ``[qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1))]`` and ``[qml.s_prod(3, qml.PauliX(0))]``):
+    ``[qml.Z(0), qml.s_prod(2, qml.X(1))]`` and ``[qml.s_prod(3, qml.X(0))]``):
 
     >>> tapes, fn = qml.transforms.sum_expand(tape, group=True)
     >>> for tape in tapes:
     ...     print(tape.measurements)
-    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]
-    [expval(PauliX(wires=[0]))]
+    [expval(Z(0)), expval(X(1))]
+    [expval(X(0))]
     """
     # Populate these 2 dictionaries with the unique measurement objects, the index of the
     # initial measurement on the tape and the coefficient

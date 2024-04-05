@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Deprecated module. Please see ``pennylane.workflow``.
+This module contains decorators that can modify an implementation of the :class:`pennylane.devices.Device`
+class and add default behavior.
+
 """
-from warnings import warn
-
-import pennylane as qml
-from pennylane import workflow
-
-
-def __getattr__(name):
-    warn(
-        "pennylane.interfaces has been moved into pennylane.workflow. Please import from there instead.",
-        qml.PennyLaneDeprecationWarning,
-    )
-    return getattr(workflow, name)
+from .single_tape_support import single_tape_support
+from .simulator_tracking import simulator_tracking

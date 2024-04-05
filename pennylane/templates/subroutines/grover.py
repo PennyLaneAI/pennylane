@@ -143,7 +143,7 @@ class GroverOperator(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        ctrl_str = "0" * (len(wires) - 1)
+        ctrl_values = [0] * (len(wires) - 1)
 
         op_list = []
 
@@ -153,7 +153,7 @@ class GroverOperator(Operation):
         op_list.append(PauliZ(wires[-1]))
         op_list.append(
             MultiControlledX(
-                control_values=ctrl_str,
+                control_values=ctrl_values,
                 wires=wires,
                 work_wires=work_wires,
             )

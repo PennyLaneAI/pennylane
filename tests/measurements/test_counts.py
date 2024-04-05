@@ -867,3 +867,74 @@ def test_batched_counts_and_expval_operator_finite_shots(interface):
     assert isinstance(res, tuple) and len(res) == 2
     assert res[0] == type(res[0])([{-1: n_shots}, {1: n_shots}])
     assert len(res[1]) == 2 and qml.math.allequal(res[1], [-1, 1])
+
+
+class TestProcessCounts:
+    """Unit tests for the counts.process_counts method"""
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_should_not_modify_counts_dictionary(self, all_outcomes):
+        """Tests that count dictionary is not modified"""
+
+        counts = {"000": 100, "100": 100}
+        expected = counts.copy()
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        qml.counts(wires=(0, 1), all_outcomes=all_outcomes).process_counts(counts, wire_order)
+
+        assert counts == expected
+
+    def test_all_outcomes_is_true(self):
+        """When all_outcomes is True, 0 count should be added to missing outcomes in the counts dictionary"""
+
+        counts_to_process = {"00": 100, "10": 100}
+        wire_order = qml.wires.Wires((0, 1))
+
+        actual = qml.counts(wires=wire_order, all_outcomes=True).process_counts(
+            counts_to_process, wire_order=wire_order
+        )
+
+        expected_counts = {"00": 100, "01": 0, "10": 100, "11": 0}
+        assert actual == expected_counts
+
+    def test_all_outcomes_is_false(self):
+        """When all_outcomes is True, 0 count should be removed from the counts dictionary"""
+
+        counts_to_process = {"00": 0, "01": 0, "10": 0, "11": 100}
+        wire_order = qml.wires.Wires((0, 1))
+
+        actual = qml.counts(wires=wire_order, all_outcomes=False).process_counts(
+            counts_to_process, wire_order=wire_order
+        )
+
+        expected_counts = {"11": 100}
+        assert actual == expected_counts
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            ((0, 1), {"00": 100, "10": 100}),
+            ((1, 0), {"00": 100, "01": 100}),
+        ],
+    )
+    def test_wire_order(self, wires, expected):
+        """Test impact of wires in qml.counts"""
+        counts = {"000": 100, "100": 100}
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        actual = qml.counts(wires=wires, all_outcomes=False).process_counts(counts, wire_order)
+
+        assert actual == expected
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_process_count_returns_same_count_dictionary(self, all_outcomes):
+        """
+        Test that process_count returns same dictionary when all outcomes are in count dictionary and wire_order is same
+        """
+
+        expected = {"0": 100, "1": 100}
+        wires = qml.wires.Wires(0)
+
+        actual = qml.counts(wires=wires, all_outcomes=all_outcomes).process_counts(expected, wires)
+
+        assert actual == expected

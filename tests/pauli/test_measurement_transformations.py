@@ -120,7 +120,7 @@ class TestMeasurementTransformations:
         (
             [PauliX(0) @ PauliY(1), PauliX(0) @ PauliZ(2)],
             (
-                [RY(-np.pi / 2, wires=[0]), RX(np.pi / 2, wires=[1])],
+                [RX(np.pi / 2, wires=[1]), RY(-np.pi / 2, wires=[0])],
                 [PauliZ(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[0]) @ PauliZ(wires=[2])],
             ),
         ),
@@ -163,14 +163,11 @@ class TestMeasurementTransformations:
         qwc_rot, diag_qwc_grouping = diagonalize_qwc_pauli_words(qwc_grouping)
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple
 
-        assert all(
-            self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
-            for i in range(len(qwc_rot))
-        )
-        assert all(
-            are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
-            for i in range(len(diag_qwc_grouping))
-        )
+        for a, b in zip(qwc_rot, qwc_rot_sol):
+            assert self.are_identical_rotation_gates(a, b)
+
+        for a, b in zip(diag_qwc_grouping, diag_qwc_grouping_sol):
+            assert are_identical_pauli_words(a, b)
 
     not_qwc_groupings = [
         [PauliX("a"), PauliY("a")],

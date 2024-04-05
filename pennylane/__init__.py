@@ -89,9 +89,7 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     defer_measurements,
-    qfunc_transform,
-    op_transform,
-    single_tape_transform,
+    dynamic_one_shot,
     quantum_monte_carlo,
     apply_controlled_Q,
     commutation_dag,
@@ -135,8 +133,6 @@ import pennylane.compiler
 
 import pennylane.data
 
-import pennylane.interfaces
-
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
@@ -147,6 +143,18 @@ class QuantumFunctionError(Exception):
 
 class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
+
+
+del globals()["Hamiltonian"]
+
+
+def __getattr__(name):
+    if name == "Hamiltonian":
+        if pennylane.operation.active_new_opmath():
+            return pennylane.ops.LinearCombination
+        return pennylane.ops.Hamiltonian
+
+    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 
 
 def _get_device_entrypoints():
@@ -273,7 +281,7 @@ def device(name, *args, **kwargs):
         @qml.qnode(dev)
         def circuit(a):
           qml.RX(a, wires=0)
-          return qml.sample(qml.PauliZ(wires=0))
+          return qml.sample(qml.Z(0))
 
     >>> circuit(0.8)  # 10 samples are returned
     array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
@@ -321,7 +329,7 @@ def device(name, *args, **kwargs):
         @qml.qnode(dev, expansion_strategy="device")
         def run_cnot():
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliX(wires=1))
+            return qml.expval(qml.X(1))
 
     >>> print(qml.draw(run_cnot)())
     0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤

@@ -14,7 +14,7 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
-# pylint:disable=protected-access
+# pylint:disable=protected-access, unused-argument
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -87,6 +87,20 @@ ops_hermitian_status = (  # computed manually
     False,  # False
     False,  # False
 )
+
+
+def test_legacy_ops():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
+        _ = H.ops
+
+
+def test_legacy_coeffs():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
+        _ = H.coeffs
 
 
 # currently failing due to has_diagonalizing_gates logic
@@ -246,6 +260,17 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         x = qml.numpy.array([1.0, 2.0, 3.0])
         prod_op = prod(qml.PauliX(0), qml.RX(x, wires=0))
         assert prod_op.batch_size == 3
+
+    @pytest.mark.parametrize(
+        "op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI + PROD_TERMS_OP_PAIRS_MIXED
+    )
+    def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
+        """Test that calling Prod.terms does not queue anything."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.apply(op)
+            _, _ = op.terms()
+
+        assert q.queue == [op]
 
     def test_batch_size_None(self):
         """Test that the batch size is none if no factors have batching."""
@@ -480,6 +505,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert qml.equal(prod_op, qml.PauliX(0))
         assert not isinstance(prod_op, Prod)
 
+    @pytest.mark.xfail  # this requirement has been lifted
     def test_prod_accepts_single_operator_but_Prod_does_not(self):
         """Tests that the prod wrapper can accept a single operator, and return it."""
 
@@ -933,6 +959,26 @@ class TestProperties:
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
 
+    def test_qutrit_eigvals(self):
+        """Test that the eigvals can be computed with qutrit observables."""
+
+        op1 = qml.GellMann(wires=0)
+        op2 = qml.GellMann(index=8, wires=1)
+
+        prod_op = qml.prod(op1, op2)
+        eigs = prod_op.eigvals()
+
+        mat_eigs = np.linalg.eigvals(prod_op.matrix())
+
+        sorted_eigs = np.sort(eigs)
+        sorted_mat_eigs = np.sort(mat_eigs)
+        assert qml.math.allclose(sorted_eigs, sorted_mat_eigs)
+
+        # pylint: disable=import-outside-top-level
+        from pennylane.ops.functions.assert_valid import _check_eigendecomposition
+
+        _check_eigendecomposition(prod_op)
+
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
@@ -1271,7 +1317,11 @@ class TestSimplify:
         """Test that simplifying operators with a valid pauli representation works with tf interface."""
         import tensorflow as tf
 
-        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46j)
+        c1, c2, c3 = (
+            tf.Variable(1.23, dtype=tf.complex128),
+            tf.Variable(2.0, dtype=tf.complex128),
+            tf.Variable(2.46j, dtype=tf.complex128),
+        )
 
         op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
@@ -1382,11 +1432,11 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.probs(op=prod_op)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        x_probs = np.array([0.5, 0.5])
+        h_probs = np.array([np.cos(-np.pi / 4 / 2) ** 2, np.sin(-np.pi / 4 / 2) ** 2])
+        expected = np.tensordot(x_probs, h_probs, axes=0).flatten()
+        out = my_circ()
+        assert qml.math.allclose(out, expected)
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""
