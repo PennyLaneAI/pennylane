@@ -26,7 +26,8 @@ class FABLE(Operation):
     r"""
     Construct a unitary with the fast approximate block encoding method.
 
-    The FABLE method allows to simplify block encoding circuits without reducing accuracy, for matrices of specific structure [`arXiv:2205.00081 <https://arxiv.org/abs/2205.00081>`_].
+    The FABLE method allows to simplify block encoding circuits without reducing accuracy,
+    for matrices of specific structure [`arXiv:2205.00081 <https://arxiv.org/abs/2205.00081>`_].
 
 
     Args:
