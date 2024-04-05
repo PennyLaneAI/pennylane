@@ -55,4 +55,7 @@ def center(g, pauli=False):
 
     mask = np.all(commutators == 0, axis=0)
     center = list(np.array(g)[mask])
+
+    if not pauli:
+        center = [op.operation() for op in center]
     return center
