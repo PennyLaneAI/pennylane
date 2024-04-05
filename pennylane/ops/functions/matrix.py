@@ -212,7 +212,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
         op = 1.0 * op  # convert to a Hamiltonian
 
     if (pr := op.pauli_rep) is not None:
-        return pr.to_mat(wire_order=wire_order, format="csr").toarray()
+        return pr.to_mat(wire_order=wire_order or op.wires, format="csr").toarray()
 
     if isinstance(op, qml.ops.Hamiltonian):
         return op.sparse_matrix(wire_order=wire_order).toarray()
