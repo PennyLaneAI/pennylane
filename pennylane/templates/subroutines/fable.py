@@ -77,14 +77,15 @@ class FABLE(Operation):
     """Gradient computation method."""
 
     def __init__(self, A, tol=0, id=None):
-        if qml.math.any(qml.math.iscomplex(A)):
-            raise ValueError("Support for imaginary values has not been implemented.")
+        if not qml.math.is_abstract(A):
+            if qml.math.any(qml.math.iscomplex(A)):
+                raise ValueError("Support for imaginary values has not been implemented.")
 
-        alpha = qml.math.linalg.norm(qml.math.ravel(A), np.inf)
-        if alpha > 1:
-            raise ValueError(
-                "The subnormalization factor should be lower than 1. Ensure that the values of the input matrix are within [-1, 1]."
-            )
+            alpha = qml.math.linalg.norm(qml.math.ravel(A), np.inf)
+            if alpha > 1:
+                raise ValueError(
+                    "The subnormalization factor should be lower than 1. Ensure that the values of the input matrix are within [-1, 1]."
+                )
 
         M, N = qml.math.shape(A)
         if M != N:
@@ -147,15 +148,21 @@ class FABLE(Operation):
 
         nots = {}
         for theta, control_index in zip(thetas, control_wires):
-            if abs(2 * theta) > tol:
+            if qml.math.is_abstract(theta):
                 for c_wire in nots:
                     op_list.append(qml.CNOT(wires=[c_wire] + ancilla))
                 op_list.append(qml.RY(2 * theta, wires=ancilla))
-                nots = {}
-            if wire_map[control_index] in nots:
-                del nots[wire_map[control_index]]
-            else:
                 nots[wire_map[control_index]] = 1
+            else:
+                if abs(2 * theta) > tol:
+                    for c_wire in nots:
+                        op_list.append(qml.CNOT(wires=[c_wire] + ancilla))
+                    op_list.append(qml.RY(2 * theta, wires=ancilla))
+                    nots = {}
+                if wire_map[control_index] in nots:
+                    del nots[wire_map[control_index]]
+                else:
+                    nots[wire_map[control_index]] = 1
 
         for c_wire in nots:
             op_list.append(qml.CNOT([c_wire] + ancilla))

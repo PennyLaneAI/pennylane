@@ -236,7 +236,7 @@ class TestFable:
         @jax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
-            generate_FABLE_circuit(input_matrix, 0)
+            qml.FABLE(input_matrix, 0)
             return qml.expval(qml.PauliZ(wires=0))
 
         grad_fn = jax.grad(circuit_default)
