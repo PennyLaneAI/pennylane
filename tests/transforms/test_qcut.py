@@ -5874,7 +5874,6 @@ class TestCutCircuitWithHamiltonians:
     def test_hamiltonian_with_tape(self):
         """Test that an expand function that generates multiple tapes is applied before the transform and the transform
         returns correct results."""
-
         ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)]
         coeffs = [0.4567, 0.25, 0.25, 0.5]
 
