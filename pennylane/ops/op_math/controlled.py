@@ -139,6 +139,9 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
     elif control_values is None:
         control_values = [True] * len(control)
 
+    if qml.math.is_abstract(op):
+        return Controlled(op, control, control_values, work_wires=work_wires)
+
     ctrl_op = _try_wrap_in_custom_ctrl_op(
         op, control, control_values=control_values, work_wires=work_wires
     )

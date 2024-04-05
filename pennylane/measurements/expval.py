@@ -54,7 +54,7 @@ def expval(op: Union[Operator, MeasurementValue]):
         ExpectationMP: measurement process instance
     """
     if isinstance(op, MeasurementValue):
-        return ExpectationMP(obs=op)
+        return ExpectationMP(op)
 
     if isinstance(op, Sequence):
         raise ValueError(
@@ -70,7 +70,7 @@ def expval(op: Union[Operator, MeasurementValue]):
     if not qml.math.is_abstract(op) and not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
-    return ExpectationMP(obs=op)
+    return ExpectationMP(op)
 
 
 class ExpectationMP(SampleMeasurement, StateMeasurement):

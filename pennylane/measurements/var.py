@@ -55,16 +55,16 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     0.7701511529340698
     """
     if isinstance(op, MeasurementValue):
-        return VarianceMP(obs=op)
+        return VarianceMP(op)
 
     if isinstance(op, Sequence):
         raise ValueError(
             "qml.var does not support measuring sequences of measurements or observables"
         )
 
-    if not op.is_hermitian:
+    if not qml.math.is_abstract(op) and not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
-    return VarianceMP(obs=op)
+    return VarianceMP(op)
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
@@ -141,4 +141,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             probabilities (array): the probabilities of collapsing to eigen states
         """
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
-        return qml.math.dot(probabilities, (eigvals**2)) - qml.math.dot(probabilities, eigvals) ** 2
+        return (
+            qml.math.dot(probabilities, (eigvals**2)) - qml.math.dot(probabilities, eigvals) ** 2
+        )
