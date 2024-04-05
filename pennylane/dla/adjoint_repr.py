@@ -38,10 +38,10 @@ def adjoint_repr(dla):
 
     .. math:: [i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma.
 
-    The adjoint representation :math:`\left(\text{ad}(iG_\gamma)\right)_{\alpha, \beta} = f^\gamma__{\alpha, \beta}` is given by those structure constants,
+    The adjoint representation :math:`\left(\text{ad}(iG_\gamma)\right)_{\alpha, \beta} = f^\gamma_{\alpha, \beta}` is given by those structure constants,
     which can be computed via
 
-    .. math:: f^\gamma__{\alpha, \beta} = -\frac{\text{tr}\left(i G_\gamma \cdot \left[i G_\alpha, i G_\beta \right] \right)}{\text{tr}\left( G_\gamma G_\gamma \right)}.
+    .. math:: f^\gamma_{\alpha, \beta} = -\frac{\text{tr}\left(i G_\gamma \cdot \left[i G_\alpha, i G_\beta \right] \right)}{\text{tr}\left( G_\gamma G_\gamma \right)}.
 
     The inputs are assumed to be orthogonal. However, we neither assume nor enforce normalization of the DLA elements
     :math:`G_\alpha`, hence the normalization
@@ -81,6 +81,7 @@ def adjoint_repr(dla):
     -2.
 
     We can also look at the overall adjoint action of the first element of the DLA on other elements, :math:`G_0`, ``dla[0] = X(0) @ X(1)``.
+
     >>> adjoint_rep[0]
     array([[ 0.,  0.,  0.,  0.,  0.,  0.],
            [-0.,  0.,  0., -2.,  0.,  0.],
