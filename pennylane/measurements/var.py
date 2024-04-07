@@ -16,32 +16,24 @@
 This module contains the qml.var measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union, Optional
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-from pennylane.typing import TensorLike
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
+from .sample import SampleMP
 from .mid_measure import MeasurementValue
 
 
-def var(
-    op: Union[Operator, MeasurementValue] = None,
-    wires=None,
-    eigvals: Optional[TensorLike] = None,
-) -> "VarianceMP":
+def var(op: Union[Operator, MeasurementValue] = None) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:
         op (Union[Operator, MeasurementValue]): a quantum observable object.
             To get variances for mid-circuit measurements, ``op`` should be a
             ``MeasurementValue``.
-        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY
-            set wires if op is None
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
-            This can only be specified if an observable was not provided.
 
     Returns:
         VarianceMP: Measurement process instance
@@ -71,9 +63,6 @@ def var(
         raise ValueError(
             "qml.var does not support measuring sequences of measurements or observables"
         )
-
-    if op is None:
-        return VarianceMP(wires=wires, eigvals=eigvals)
 
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -122,8 +111,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(
-                op=op,
+            samples = SampleMP(
+                obs=op,
                 eigvals=self._eigvals,
                 wires=self.wires if self._eigvals is not None else None,
             ).process_samples(

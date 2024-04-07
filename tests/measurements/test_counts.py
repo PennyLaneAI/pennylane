@@ -86,8 +86,8 @@ class TestCounts:
         m2 = CountsMP(obs=qml.PauliX(0), all_outcomes=True)
         assert repr(m2) == "CountsMP(X(0), all_outcomes=True)"
 
-        m3 = CountsMP(eigvals=(-1, 1), all_outcomes=False)
-        assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
+        m3 = CountsMP(eigvals=(-1, 1), wires=[0], all_outcomes=False)
+        assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[0], all_outcomes=False)"
 
         mv = qml.measure(0)
         m4 = CountsMP(obs=mv, all_outcomes=False)
@@ -171,20 +171,20 @@ class TestProcessSamples:
             ValueError,
             match="When sampling with observables, a single wire must be specified.",
         ):
-            qml.counts(eigvals=[1, -1], wires=[0, 1])
+            CountsMP(eigvals=[1, -1], wires=[0, 1])
 
         with pytest.raises(
             ValueError,
             match="When sampling with observables, a single wire must be specified.",
         ):
-            qml.counts(eigvals=[1, -1])
+            CountsMP(eigvals=[1, -1])
 
     def test_count_eigvals(self):
         """Tests that eigvals are used instead of obs for counts"""
 
         shots = 100
         samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
-        result = qml.counts(eigvals=[1, -1], wires=0).process_samples(samples, wire_order=[0])
+        result = CountsMP(eigvals=[1, -1], wires=0).process_samples(samples, wire_order=[0])
         assert len(result) == 2
         assert set(result.keys()) == {1, -1}
         assert result[1] == np.count_nonzero(samples[:, 0] == 0)

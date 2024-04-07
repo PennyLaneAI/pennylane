@@ -21,7 +21,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-from pennylane.typing import TensorLike
 
 from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
@@ -31,7 +30,6 @@ def counts(
     op=None,
     wires=None,
     all_outcomes=False,
-    eigvals: Optional[TensorLike] = None,
 ) -> "CountsMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
@@ -48,8 +46,6 @@ def counts(
             op is None
         all_outcomes(bool): determines whether the returned dict will contain only the observed
             outcomes (default), or whether it will display all possible outcomes for the system
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
-            This can only be specified if an observable was not provided.
 
     Returns:
         CountsMP: Measurement process instance
@@ -156,15 +152,12 @@ def counts(
     if wires is not None:
         if op is not None:
             raise ValueError(
-                "Cannot specify the wires to sample if an observable is "
-                "provided. The wires to sample will be determined directly from the observable."
+                "Cannot specify the wires to sample if an observable is provided. The wires "
+                "to sample will be determined directly from the observable."
             )
         wires = Wires(wires)
 
-    if eigvals is not None and (wires is None or len(wires) > 1):
-        raise ValueError("When sampling with observables, a single wire must be specified.")
-
-    return CountsMP(obs=op, wires=wires, eigvals=eigvals, all_outcomes=all_outcomes)
+    return CountsMP(obs=op, wires=wires, all_outcomes=all_outcomes)
 
 
 class CountsMP(SampleMeasurement):
@@ -197,6 +190,10 @@ class CountsMP(SampleMeasurement):
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
+        if wires is not None:
+            wires = Wires(wires)
+        if eigvals is not None and (wires is None or len(wires) > 1):
+            raise ValueError("When sampling with observables, a single wire must be specified.")
         super().__init__(obs, wires, eigvals, id)
 
     def _flatten(self):

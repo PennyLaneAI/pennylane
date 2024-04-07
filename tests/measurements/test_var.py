@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Variance, Shots
+from pennylane.measurements import Variance, Shots, VarianceMP
 
 
 class TestVar:
@@ -141,7 +141,7 @@ class TestVar:
         shots = 100
         samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
         expected = qml.var(qml.PauliZ(0)).process_samples(samples, [0, 1])
-        assert qml.var(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
+        assert VarianceMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""

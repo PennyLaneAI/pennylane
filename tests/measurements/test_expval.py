@@ -163,7 +163,9 @@ class TestExpval:
         shots = 100
         samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
         expected = qml.expval(qml.PauliZ(0)).process_samples(samples, [0, 1])
-        assert qml.expval(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
+        assert (
+            ExpectationMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
+        )
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""

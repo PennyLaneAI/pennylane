@@ -15,21 +15,19 @@
 This module contains the qml.expval measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union, Optional
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-from pennylane.typing import TensorLike
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
+from .sample import SampleMP
 from .mid_measure import MeasurementValue
 
 
 def expval(
     op: Union[Operator, MeasurementValue] = None,
-    wires=None,
-    eigvals: Optional[TensorLike] = None,
 ):
     r"""Expectation value of the supplied observable.
 
@@ -55,10 +53,6 @@ def expval(
         op (Union[Observable, MeasurementValue]): a quantum observable object. To
             get expectation values for mid-circuit measurements, ``op`` should be
             a ``MeasurementValue``.
-        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY
-            set wires if op is None
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
-            This can only be specified if an observable was not provided.
 
     Returns:
         ExpectationMP: measurement process instance
@@ -76,9 +70,6 @@ def expval(
         raise NotImplementedError(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
-
-    if op is None:
-        return ExpectationMP(wires=wires, eigvals=eigvals)
 
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -127,8 +118,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(
-                op=op,
+            samples = SampleMP(
+                obs=op,
                 eigvals=self._eigvals,
                 wires=self.wires if self._eigvals is not None else None,
             ).process_samples(
