@@ -310,7 +310,7 @@ tensor([0.90165331, 0.09834669], requires_grad=True)
     The deferred measurements principle requires an additional wire, or qubit, for each mid-circuit
     measurement, limiting the number of measurements that can be used both on classical simulators
     and quantum hardware. The one-shot transform below does not have this limitation, but has
-    computational cost that scale with the used number of shots.
+    computational cost that scales with the number of shots used.
 
 The one-shot transform
 **********************

@@ -28,7 +28,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
-    Measurement outcomes can be used to conditionally apply operations and measurement
+    Measurement outcomes can be used to conditionally apply operations, and measurement
     statistics can be gathered and returned by a quantum function.
 
     If a device doesn't support mid-circuit measurements natively, then the
