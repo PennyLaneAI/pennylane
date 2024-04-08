@@ -353,7 +353,15 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize(
-    "mcm_f", [lambda x: x * 1, lambda x: x * 2, lambda x: x + 1, lambda x: x & 3]
+    "mcm_f",
+    [
+        lambda x: x * -1,
+        lambda x: x * 1,
+        lambda x: x * 2,
+        lambda x: 1 - x,
+        lambda x: x + 1,
+        lambda x: x & 3,
+    ],
 )
 def test_simple_composite_mcm(postselect, reset, mcm_f):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
