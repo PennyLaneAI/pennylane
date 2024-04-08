@@ -140,7 +140,7 @@
 
   ```python
   import pennylane as qml
-  fermi_ham = qml.from_string('0+ 1-')
+  fermi_ham = qml.fermi.from_string('0+ 1-')
 
   qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
   ```
