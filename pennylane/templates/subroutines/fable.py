@@ -141,7 +141,7 @@ class FABLE(Operation):
         wires_i = wires[1 : 1 + len(wires) // 2]
         wires_j = wires[1 + len(wires) // 2 : len(wires)]
 
-        code = gray_code(int(2 * qml.math.sqrt(len(input_matrix))))
+        code = gray_code((2 * qml.math.log2(len(input_matrix))))
         n_selections = len(code)
 
         control_wires = [
