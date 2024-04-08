@@ -372,10 +372,12 @@ def taper(h, generators, paulixops, paulix_sector):
     >>> paulixops = paulix_ops(generators, 4)
     >>> paulix_sector = [1, -1, -1]
     >>> H_tapered = taper(H, generators, paulixops, paulix_sector)
-    >>> print(H_tapered)
-      ((-0.321034397355757+0j)) [I0]
-    + ((0.1809270275619003+0j)) [X0]
-    + ((0.7959678503869626+0j)) [Z0]
+    >>> H_tapered
+    (
+        (-0.3210343973331179-2.0816681711721685e-17j) * I(0)
+      + (0.7959678504583807+0j) * Z(0)
+      + (0.18092702760702645+0j) * X(0)
+    )
     """
 
     ps_h = pauli_sentence(h)
