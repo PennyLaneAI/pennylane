@@ -21,7 +21,9 @@ from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.operation import Operator
 
 
-def center(g: List[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False) -> List[Union[Operator, PauliSentence]]:
+def center(
+    g: List[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
+) -> List[Union[Operator, PauliSentence]]:
     r"""
     A function to compute the center of a Lie algebra.
 
