@@ -113,11 +113,15 @@ class TestFiniteDiff:
         results of the single-tape derivatives."""
         dev = qml.device("default.qubit")
         x = [0.4, 0.2]
-        tape = qml.tape.QuantumScript([qml.RY(0.6, 0), qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0])
+        tape = qml.tape.QuantumScript(
+            [qml.RY(0.6, 0), qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         batched_tapes, batched_fn = finite_diff(tape)
         batched_grad = batched_fn(dev.execute(batched_tapes))
         separate_tapes = [
-            qml.tape.QuantumScript([qml.RY(0.6, 0), qml.RX(_x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0])
+            qml.tape.QuantumScript(
+                [qml.RY(0.6, 0), qml.RX(_x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+            )
             for _x in x
         ]
         separate_tapes_and_fns = [finite_diff(t) for t in separate_tapes]

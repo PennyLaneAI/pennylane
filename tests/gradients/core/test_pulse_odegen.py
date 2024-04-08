@@ -843,11 +843,16 @@ class TestPulseOdegenEdgeCases:
         params = [jnp.array(0.14)]
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
         op = qml.evolve(ham_single_q_const)(params, 0.1)
-        tape = qml.tape.QuantumScript([qml.RX(x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1])
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
+        )
         batched_tapes, batched_fn = pulse_odegen(tape, argnum=0)
         batched_grad = batched_fn(dev.execute(batched_tapes))
         separate_tapes = [
-            qml.tape.QuantumScript([qml.RX(_x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]) for _x in x
+            qml.tape.QuantumScript(
+                [qml.RX(_x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
+            )
+            for _x in x
         ]
         separate_tapes_and_fns = [pulse_odegen(t, argnum=0) for t in separate_tapes]
         separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
