@@ -392,13 +392,14 @@ def bravyi_kitaev(
     return _bravyi_kitaev_dispatch(fermi_operator, n, ps, wire_map, tol)
 
 
-def _update_set(j, bin_range):
+def _update_set(j, bin_range, n):
     """
     Computes the update set of the j-th orbital in n qubits.
 
     Args:
         j (int) : the orbital index
         bin_range (int) : Binary range for given number of qubits
+        n (int) : number of qubits
 
     Returns:
         numpy.ndarray: Array containing the update set
@@ -410,9 +411,11 @@ def _update_set(j, bin_range):
         return indices
 
     if j < midpoint:
-        indices = np.append(indices, np.append(bin_range - 1, _update_set(j, midpoint)))
+        indices = np.append(indices, np.append(bin_range - 1, _update_set(j, midpoint, n)))
     else:
-        indices = np.append(indices, _update_set(j - midpoint, midpoint) + midpoint)
+        indices = np.append(indices, _update_set(j - midpoint, midpoint, n) + midpoint)
+        
+    indices = np.array([u for u in indices if u < n])
     return indices
 
 
@@ -497,7 +500,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
                 f"Can't create or annihilate a particle on qubit index {wire} for a system with only {n} qubits."
             )
 
-        u_set = [u for u in _update_set(wire, bin_range) if u < n]
+        u_set = _update_set(wire, bin_range, n)
         update_string = dict(zip(u_set, ["X"] * len(u_set)))
 
         p_set = _parity_set(wire, bin_range)

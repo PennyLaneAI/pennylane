@@ -138,9 +138,9 @@
 * Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
   [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
 
-```python
+  ```python
   import pennylane as qml
-  fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+  fermi_ham = qml.from_string('0+ 1-')
 
   qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
   ```
