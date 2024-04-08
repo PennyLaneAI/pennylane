@@ -922,8 +922,7 @@ class TestParamShiftWithBroadcasted:
             qml.RY(y, wires=[0])  # does not have any impact on the expval
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape.trainable_params = [1 - pos]
+        tape = qml.tape.QuantumScript.from_queue(q, trainable_params=[1 - pos])
         assert tape.batch_size == dim
         tapes, fn = qml.gradients.param_shift(tape, argnum=[0])
         assert len(tapes) == 2
