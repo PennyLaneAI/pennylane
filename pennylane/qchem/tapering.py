@@ -143,11 +143,7 @@ def symmetry_generators(h):
     >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
     >>> t = symmetry_generators(H)
     >>> t
-    [<Hamiltonian: terms=1, wires=[0, 1]>,
-     <Hamiltonian: terms=1, wires=[0, 2]>,
-     <Hamiltonian: terms=1, wires=[0, 3]>]
-    >>> print(t[0])
-    (1.0) [Z0 Z1]
+    [Z(0) @ Z(1), Z(0) @ Z(2), Z(0) @ Z(3)]
     """
     num_qubits = len(h.wires)
 
