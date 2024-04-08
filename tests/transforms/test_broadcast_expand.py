@@ -78,6 +78,8 @@ observables_and_exp_fns = [
 class TestBroadcastExpand:
     """Tests for the broadcast_expand transform"""
 
+    # pylint: disable=too-many-arguments
+
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn):
