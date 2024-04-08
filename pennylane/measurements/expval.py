@@ -27,7 +27,7 @@ from .mid_measure import MeasurementValue
 
 
 def expval(
-    op: Union[Operator, MeasurementValue] = None,
+    op: Union[Operator, MeasurementValue],
 ):
     r"""Expectation value of the supplied observable.
 
