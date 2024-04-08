@@ -64,9 +64,6 @@
 * Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
-* `qml.sample`, `qml.expval`, `qml.counts`, `qml.var` now supports specifying `eigvals` instead of observables.
-  [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
-
 <h3>Improvements 🛠</h3>
 
 * Improve the performance of computing the matrix of `qml.QFT`
@@ -347,6 +344,9 @@
 * Update `DefaultQubit.supports_derivatives` to correctly handle circuits containing `MidMeasureMP` with adjoint
   differentiation.
   [(#5434)](https://github.com/PennyLaneAI/pennylane/pull/5434)
+
+* `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
+  [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
 
 <h3>Contributors ✍️</h3>
 
