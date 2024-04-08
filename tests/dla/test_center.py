@@ -21,7 +21,7 @@ from pennylane.pauli import PauliSentence
 
 
 def test_trivial_center():
-    """Test a trivial centers with Identity operators or non-overlapping wires"""
+    """Test that the center of an empty list of generators is an empty list of generators."""
     ops = []
     res = center(ops)
     assert res == []
