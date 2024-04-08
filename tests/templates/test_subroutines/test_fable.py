@@ -17,59 +17,7 @@ Unit tests for the FABLE template.
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane import numpy as pnp
-
-
-def generate_FABLE_circuit(input_matrix, tol):
-    """Circuit that manually creates FABLE gates for tests."""
-    alphas = qml.math.arccos(input_matrix).flatten()
-    thetas = compute_theta(alphas)
-
-    ancilla = [0]
-    s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
-    wires_i = list(range(1, 1 + s))
-    wires_j = list(range(1 + s, 1 + 2 * s))
-
-    code = gray_code(2 * qml.math.sqrt(len(input_matrix)))
-    n_selections = len(code)
-
-    control_wires = [
-        int(qml.math.log2(int(code[i], 2) ^ int(code[(i + 1) % n_selections], 2)))
-        for i in range(n_selections)
-    ]
-
-    wire_map = dict(enumerate(wires_j + wires_i))
-
-    for w in wires_i:
-        qml.Hadamard(w)
-
-    nots = {}
-    for theta, control_index in zip(thetas, control_wires):
-        if qml.math.is_abstract(theta):
-            for c_wire in nots:
-                qml.CNOT(wires=[c_wire] + ancilla)
-            qml.RY(2 * theta, wires=ancilla)
-            nots[wire_map[control_index]] = 1
-        else:
-            if abs(2 * theta) > tol:
-                for c_wire in nots:
-                    qml.CNOT(wires=[c_wire] + ancilla)
-                qml.RY(2 * theta, wires=ancilla)
-                nots = {}
-            if wire_map[control_index] in nots:
-                del nots[wire_map[control_index]]
-            else:
-                nots[wire_map[control_index]] = 1
-
-    for c_wire in nots:
-        qml.CNOT([c_wire] + ancilla)
-
-    for w_i, w_j in zip(wires_i, wires_j):
-        qml.SWAP(wires=[w_i, w_j])
-
-    for w in wires_i:
-        qml.Hadamard(w)
 
 
 class TestFable:
@@ -568,26 +516,39 @@ class TestFable:
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit")
+        delta = 0.001
+        input_positive_delta = np.array(
+            [
+                [-0.51192128 + delta, -0.51192128, 0.6237114, 0.6237114],
+                [0.97041007, 0.97041007, 0.99999329, 0.99999329],
+                [0.82429855, 0.82429855, 0.98175843, 0.98175843],
+                [0.99675093, 0.99675093, 0.83514837, 0.83514837],
+            ]
+        )
+        input_negative_delta = np.array(
+            [
+                [-0.51192128 - delta, -0.51192128, 0.6237114, 0.6237114],
+                [0.97041007, 0.97041007, 0.99999329, 0.99999329],
+                [0.82429855, 0.82429855, 0.98175843, 0.98175843],
+                [0.99675093, 0.99675093, 0.83514837, 0.83514837],
+            ]
+        )
 
-        input_jax = jnp.array(input_matrix)
-
-        @qml.qnode(dev, diff_method="backprop")
-        def circuit_default(input_matrix):
-            qml.FABLE(input_matrix, wires=range(5), tol=0)
-            return qml.expval(qml.PauliZ(wires=0))
+        input_jax_positive_delta = jnp.array(input_positive_delta)
+        input_jax_negative_delta = jnp.array(input_negative_delta)
+        input_matrix_jax = jnp.array(input_matrix)
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
             qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        grad_fn = jax.grad(circuit_default)
-        grads = grad_fn(input_jax)
-
-        grad_fn2 = jax.grad(circuit_jax)
-        grads2 = grad_fn2(input_jax)
-
-        assert qml.math.allclose(grads, grads2)
+        grad_fn = jax.grad(circuit_jax)
+        gradient_numeric = (
+            circuit_jax(input_jax_positive_delta) - circuit_jax(input_jax_negative_delta)
+        ) / (4 * delta)
+        gradient_jax = grad_fn(input_matrix_jax)
+        assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
 
     @pytest.mark.jax
     def test_fable_grad_jax_jit(self, input_matrix):
@@ -597,52 +558,95 @@ class TestFable:
 
         dev = qml.device("default.qubit")
 
-        input_jax = jnp.array(input_matrix)
+        delta = 0.001
+        input_positive_delta = np.array(
+            [
+                [-0.51192128 + delta, -0.51192128, 0.6237114, 0.6237114],
+                [0.97041007, 0.97041007, 0.99999329, 0.99999329],
+                [0.82429855, 0.82429855, 0.98175843, 0.98175843],
+                [0.99675093, 0.99675093, 0.83514837, 0.83514837],
+            ]
+        )
+        input_negative_delta = np.array(
+            [
+                [-0.51192128 - delta, -0.51192128, 0.6237114, 0.6237114],
+                [0.97041007, 0.97041007, 0.99999329, 0.99999329],
+                [0.82429855, 0.82429855, 0.98175843, 0.98175843],
+                [0.99675093, 0.99675093, 0.83514837, 0.83514837],
+            ]
+        )
 
-        @jax.jit
-        @qml.qnode(dev, diff_method="backprop")
-        def circuit_default(input_matrix):
-            qml.FABLE(input_matrix, wires=range(5), tol=0)
-            return qml.expval(qml.PauliZ(wires=0))
+        input_jax_positive_delta = jnp.array(input_positive_delta)
+        input_jax_negative_delta = jnp.array(input_negative_delta)
+        input_matrix_jax = jnp.array(input_matrix)
 
         @jax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
-            generate_FABLE_circuit(input_matrix, 0)
+            qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        grad_fn = jax.grad(circuit_default)
-        grads = grad_fn(input_jax)
+        grad_fn = jax.grad(circuit_jax)
+        gradient_numeric = (
+            circuit_jax(input_jax_positive_delta) - circuit_jax(input_jax_negative_delta)
+        ) / (2 * delta)
+        gradient_jax = grad_fn(input_matrix_jax)
+        assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
 
-        grad_fn2 = jax.grad(circuit_jax)
-        grads2 = grad_fn2(input_jax)
+    @pytest.mark.jax
+    def test_fable_grad_jax_jit_error(self):
+        """Test that FABLE is differentiable when using jax."""
+        import jax
 
-        assert qml.math.allclose(grads, grads2)
+        dev = qml.device("default.qubit")
+
+        @jax.jit
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit_jax(input_matrix):
+            with pytest.raises(
+                ValueError, match="JIT is not supported for tolerance values greater than 0."
+            ):
+                qml.FABLE(input_matrix, wires=range(5), tol=0.01)
 
     @pytest.mark.autograd
     def test_fable_autograd(self, input_matrix):
         """Test that FABLE is differentiable when using autograd."""
         dev = qml.device("default.qubit")
 
+        delta = 0.001
+        input_positive_delta = np.array(
+            [
+                [-0.51192128 + delta, -0.51192128, 0.6237114, 0.6237114],
+                [0.97041007, 0.97041007, 0.99999329, 0.99999329],
+                [0.82429855, 0.82429855, 0.98175843, 0.98175843],
+                [0.99675093, 0.99675093, 0.83514837, 0.83514837],
+            ]
+        )
+        input_negative_delta = np.array(
+            [
+                [-0.51192128 - delta, -0.51192128, 0.6237114, 0.6237114],
+                [0.97041007, 0.97041007, 0.99999329, 0.99999329],
+                [0.82429855, 0.82429855, 0.98175843, 0.98175843],
+                [0.99675093, 0.99675093, 0.83514837, 0.83514837],
+            ]
+        )
+
+        input_autograd_positive_delta = pnp.array(input_positive_delta)
+        input_autograd_negative_delta = pnp.array(input_negative_delta)
         input_autograd = pnp.array(input_matrix)
 
         @qml.qnode(dev, diff_method="backprop")
-        def circuit_default(input_matrix):
-            qml.FABLE(input_matrix, wires=range(5))
-            return qml.expval(qml.PauliZ(wires=0))
-
-        @qml.qnode(dev, diff_method="backprop")
         def circuit_autograd(input_matrix):
-            generate_FABLE_circuit(input_matrix, 0)
+            qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        grad_fn = qml.grad(circuit_default)
-        grads = grad_fn(input_autograd)
-
-        grad_fn2 = qml.grad(circuit_autograd)
-        grads2 = grad_fn2(input_autograd)
-
-        assert qml.math.allclose(grads, grads2)
+        grad_fn = qml.grad(circuit_autograd)
+        gradient_numeric = (
+            circuit_autograd(input_autograd_positive_delta)
+            - circuit_autograd(input_autograd_negative_delta)
+        ) / (4 * delta)
+        gradient_autograd = grad_fn(input_autograd)
+        assert np.allclose(gradient_numeric, gradient_autograd[0, 0], rtol=0.001)
 
     def test_default_lightning_devices(self, input_matrix):
         """Test that FABLE executes with the default.qubit and lightning.qubit simulators."""

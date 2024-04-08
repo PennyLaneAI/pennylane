@@ -55,13 +55,13 @@ class FABLE(Operation):
     We can see that the input_matrix has been block encoded in the matrix of the circuit:
 
     >>> ancilla = [0]
-    >>> s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
+    >>> s = int(qml.math.ceil(qml.math.log2(max(len(input_matrix), len(input_matrix[0])))))
     >>> wires_i = list(range(1, 1 + s))
     >>> wires_j = list(range(1 + s, 1 + 2 * s))
     >>> wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
     >>> expected = (
-            len(input_matrix)
-            * qml.matrix(example_circuit, wire_order=wire_order)().real[0 : len(input_matrix), 0 : len(input_matrix)]
+            2**s
+            * qml.matrix(example_circuit, wire_order=wire_order)().real[0 : 2**s, 0 : 2**s]
         )
     ... print(f"Block-encoded matrix:\n{expected}", "\n")
     Block-encoded matrix:
@@ -97,6 +97,11 @@ class FABLE(Operation):
                     "The subnormalization factor should be lower than 1."
                     + "Ensure that the values of the input matrix are within [-1, 1]."
                 )
+        else:
+            if tol != 0:
+                raise ValueError(
+                    "JIT is not supported for tolerance values greater than 0. Set tol = 0 to run."
+                )
 
         row, col = qml.math.shape(input_matrix)
         if row != col:
@@ -106,10 +111,9 @@ class FABLE(Operation):
             )
             dimension = max(row, col)
             input_matrix = qml.math.pad(input_matrix, ((0, dimension - row), (0, dimension - col)))
+            row, col = qml.math.shape(input_matrix)
 
         n = int(qml.math.ceil(qml.math.log2(col)))
-        if len(wires) != 2 * n + 1:
-            raise ValueError(f"Number of wires is incorrect, expected {2*n+1} but got {len(wires)}")
 
         if col < 2**n:
             input_matrix = qml.math.pad(input_matrix, ((0, 2**n - col), (0, 2**n - col)))
@@ -118,6 +122,9 @@ class FABLE(Operation):
                 "The input matrix should be of shape NxN, where N is a power of 2."
                 + f"Zeroes were padded automatically. Input is now of shape {input_matrix.shape}."
             )
+
+        if len(wires) != 2 * n + 1:
+            raise ValueError(f"Number of wires is incorrect, expected {2*n+1} but got {len(wires)}")
 
         self._hyperparameters = {"tol": tol}
 
