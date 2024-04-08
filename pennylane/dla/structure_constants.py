@@ -21,6 +21,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.typing import TensorLike
 from pennylane.operation import Operator
 
+
 def _all_commutators(ops):
     commutators = {}
     for (j, op1), (k, op2) in combinations(enumerate(ops), r=2):
@@ -31,7 +32,9 @@ def _all_commutators(ops):
     return commutators
 
 
-def structure_constants(dla: List[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False) -> TensorLike:
+def structure_constants(
+    dla: List[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
+) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a DLA.
 
