@@ -457,7 +457,7 @@ def sample_state(
 
     if is_state_batched:
 
-        if np.any(abs_diff > 0) and np.all(abs_diff < cutoff):
+        if any(s > 0 for s in abs_diff) and all(s < cutoff for s in abs_diff):
             probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
 
         # rng.choice doesn't support broadcasting
