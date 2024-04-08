@@ -211,7 +211,7 @@ class TestBatchTransformExecution:
         assert isinstance(res[0], np.ndarray)
         assert res[0].shape == ()
         assert np.allclose(res[0], np.cos(y), atol=0.1)
-    
+
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_no_batch_transform_legacy_opmath(self, mocker):
         """Test functionality to enable and disable"""
