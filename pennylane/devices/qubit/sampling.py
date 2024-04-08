@@ -457,7 +457,16 @@ def sample_state(
 
     if is_state_batched:
 
-        if any(s > 0 for s in abs_diff) and all(s < cutoff for s in abs_diff):
+        normalize_condition = False
+
+        for s in abs_diff:
+            if s != 0:
+                normalize_condition = True
+            if s > cutoff:
+                normalize_condition = False
+                break
+
+        if normalize_condition:
             probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
 
         # rng.choice doesn't support broadcasting
