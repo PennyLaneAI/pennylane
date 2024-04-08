@@ -373,6 +373,9 @@ def reorder_grads(grads, tape_specs):
     return _move_first_axis_to_third_pos(grads, num_params, shots.num_copies, num_measurements)
 
 
+tdot = partial(qml.math.tensordot, axes=[[0], [0]])
+stack = qml.math.stack
+
 # pylint: disable=too-many-return-statements,too-many-branches
 def _contract_qjac_with_cjac(qjac, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
@@ -391,28 +394,20 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
         cjac = cjac[0]
 
     cjac_is_tuple = isinstance(cjac, tuple)
-    # skip_cjac = False
-    # if not cjac_is_tuple:
-    #     is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
-
-    #     if not qml.math.is_abstract(cjac) and (
-    #         is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0]))
-    #     ):
-    #         skip_cjac = True
 
     multi_meas = num_measurements > 1
 
+    # This block only figures out whether there is a single tape parameter or not
     if cjac_is_tuple:
         single_tape_param = False
     else:
+        # Peel out a single measurement's and single shot setting's qjac
         _qjac = qjac
         if multi_meas:
             _qjac = _qjac[0]
         if has_partitioned_shots:
             _qjac = _qjac[0]
         single_tape_param = not isinstance(_qjac, tuple)
-
-    tdot = partial(qml.math.tensordot, axes=[[0], [0]])
 
     if single_tape_param:
         # Without dimension (e.g. expval) or with dimension (e.g. probs)
@@ -421,50 +416,38 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
 
         if not (multi_meas or has_partitioned_shots):
             # Single parameter, single measurements, no shot vector
-            # if skip_cjac:
-            #     return qml.math.moveaxis(_reshape(qjac), 0, -1)
             return tdot(_reshape(qjac), cjac)
 
         if not (multi_meas and has_partitioned_shots):
             # Single parameter, multiple measurements or shot vector, but not both
-            # if skip_cjac:
-            #     return tuple(qml.math.moveaxis(_reshape(q), 0, -1) for q in qjac)
             return tuple(tdot(_reshape(q), cjac) for q in qjac)
 
         # Single parameter, multiple measurements, and shot vector
-        # if skip_cjac:
-        #     return tuple(tuple(qml.math.moveaxis(_reshape(_q), 0, -1) for _q in q) for q in qjac)
         return tuple(tuple(tdot(_reshape(_q), cjac) for _q in q) for q in qjac)
 
     if not multi_meas:
         # Multiple parameters, single measurement
-        qjac = qml.math.stack(qjac)
+        qjac = stack(qjac)
         if not cjac_is_tuple:
+            cjac = stack(cjac)
             if has_partitioned_shots:
-                # if skip_cjac:
-                #     return tuple(qml.math.moveaxis(qml.math.stack(q), 0, -1) for q in qjac)
-                return tuple(tdot(qml.math.stack(q), qml.math.stack(cjac)) for q in qjac)
-            # if skip_cjac:
-            #     return qml.math.moveaxis(qjac, 0, -1)
-            return tdot(qjac, qml.math.stack(cjac))
+                return tuple(tdot(stack(q), cjac) for q in qjac)
+            return tdot(qjac, cjac)
         if has_partitioned_shots:
             return tuple(tuple(tdot(q, c) for c in cjac if c is not None) for q in qjac)
         return tuple(tdot(qjac, c) for c in cjac if c is not None)
 
     # Multiple parameters, multiple measurements
     if not cjac_is_tuple:
+        cjac = stack(cjac)
         if has_partitioned_shots:
-            # if skip_cjac:
-            #     return tuple(tuple(qml.math.moveaxis(qml.math.stack(_q), 0, -1) for _q in q) for q in qjac)
             return tuple(
-                tuple(tdot(qml.math.stack(_q), qml.math.stack(cjac)) for _q in q) for q in qjac
+                tuple(tdot(stack(_q), cjac) for _q in q) for q in qjac
             )
-        # if skip_cjac:
-        #     return tuple(qml.math.moveaxis(qml.math.stack(q), 0, -1) for q in qjac)
-        return tuple(tdot(qml.math.stack(q), qml.math.stack(cjac)) for q in qjac)
+        return tuple(tdot(stack(q), cjac) for q in qjac)
     if has_partitioned_shots:
         return tuple(
-            tuple(tuple(tdot(qml.math.stack(_q), c) for c in cjac if c is not None) for _q in q)
+            tuple(tuple(tdot(stack(_q), c) for c in cjac if c is not None) for _q in q)
             for q in qjac
         )
-    return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
+    return tuple(tuple(tdot(stack(q), c) for c in cjac if c is not None) for q in qjac)
