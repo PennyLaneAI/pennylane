@@ -113,6 +113,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improve the performance of computing the matrix of `qml.QFT`
+  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
+  
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
@@ -334,7 +337,14 @@
 * A code example in the `qml.measure` docstring has been added that showcases returning mid-circuit measurement statistics from QNodes.
   [(#5441)](https://github.com/PennyLaneAI/pennylane/pull/5441)
 
+* The computational basis convention used for `qml.measure` — 0 and 1 rather than ±1 — has been clarified in its docstring.
+  [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
+  creating an inconsistency with other differentiation methods and preventing some use cases.
+  [(#5458)](https://github.com/PennyLaneAI/pennylane/pull/5458)
 
 * Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
   [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
@@ -396,4 +406,5 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
 Jay Soni,
-Matthew Silverman.
+Matthew Silverman,
+David Wierichs.
