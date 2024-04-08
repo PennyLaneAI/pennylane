@@ -192,11 +192,6 @@ class CountsMP(SampleMeasurement):
         self.all_outcomes = all_outcomes
         if wires is not None:
             wires = Wires(wires)
-        if eigvals is not None and (wires is None or 2 ** len(wires) != len(eigvals)):
-            raise ValueError(
-                "When sampling with observables, the number of wires must match the number "
-                "of eigenvalues. The number of eigenvalues should be 2 ** number of wires."
-            )
         super().__init__(obs, wires, eigvals, id)
 
     def _flatten(self):
