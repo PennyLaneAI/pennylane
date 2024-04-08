@@ -225,6 +225,8 @@ class TestJacobianProductResults:
         """Test execute_and_compute_jvp for a simple single input single output."""
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
+        if isinstance(jpc, DeviceJacobianProducts) and "lightning" in jpc._device.name:
+            pytest.skip("Lightning devices don't have JVP method")
 
         x = 0.92
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
@@ -284,6 +286,8 @@ class TestJacobianProductResults:
         """Test execute_and_compute_jvp on a batch with ragged observables and parameters.."""
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
+        if isinstance(jpc, DeviceJacobianProducts) and "lightning" in jpc._device.name:
+            pytest.skip("Lightning devices don't have JVP method")
         x = -0.92
         y = 0.84
         phi = 1.62
