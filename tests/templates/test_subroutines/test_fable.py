@@ -594,19 +594,24 @@ class TestFable:
         assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
 
     @pytest.mark.jax
-    def test_fable_grad_jax_jit_error(self):
+    def test_fable_grad_jax_jit_error(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
+        import jax.numpy as jnp
 
         dev = qml.device("default.qubit")
+        input_matrix_jax = jnp.array(input_matrix)
 
         @jax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
-            with pytest.raises(
-                ValueError, match="JIT is not supported for tolerance values greater than 0."
-            ):
-                qml.FABLE(input_matrix, wires=range(5), tol=0.01)
+            qml.FABLE(input_matrix, wires=range(5), tol=0.01)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with pytest.raises(
+            ValueError, match="JIT is not supported for tolerance values greater than 0."
+        ):
+            circuit_jax(input_matrix_jax)
 
     @pytest.mark.autograd
     def test_fable_autograd(self, input_matrix):
