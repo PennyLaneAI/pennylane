@@ -36,7 +36,7 @@ def lie_closure(
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
     For such generators, one computes all nested commutators :math:`[G_i, [G_j, .., [G_k, G_\ell]]]` until no new operators are generated from commutation.
-    All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
+    All these operators together form the DLA, see e.g. section IIB of `arXiv:2308.01432 <https://arxiv.org/abs/2308.01432>`__.
 
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
@@ -49,7 +49,7 @@ def lie_closure(
             Default is ``False``.
 
     Returns:
-        list[`~.PauliSentence`]: a basis of ``PauliSentence`` instances that is closed under
+        list[:class:`~.PauliSentence`]: a basis of :class:`~.PauliSentence` instances that is closed under
         commutators (Lie closure).
 
     **Example**
