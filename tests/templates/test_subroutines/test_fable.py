@@ -103,7 +103,7 @@ class TestFable:
         ("input", "wires"),
         [
             (
-                np.array([[0.1, 0.2], [0.1, 0.2]]),
+                np.array([[0.1, 0.2], [0.2, 0.1]]),
                 3,
             ),
             (
