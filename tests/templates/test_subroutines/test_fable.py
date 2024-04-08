@@ -689,3 +689,95 @@ class TestFable:
             ]
         )
         assert np.allclose(lightning, expected)
+
+    @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
+    @pytest.mark.parametrize(
+        ("input", "wires"),
+        [
+            (
+                np.random.random((1, 2)),
+                3,
+            ),
+            (
+                np.random.random((1, 1)),
+                3,
+            ),
+            (
+                np.random.random((2, 1)),
+                3,
+            ),
+            (
+                np.random.random((3, 2)),
+                5,
+            ),
+            (
+                np.random.random((4, 2)),
+                5,
+            ),
+            (
+                np.random.random((2, 3)),
+                5,
+            ),
+            (
+                np.random.random((2, 4)),
+                5,
+            ),
+            (
+                np.random.random((3, 4)),
+                5,
+            ),
+            (
+                np.random.random((4, 3)),
+                5,
+            ),
+            (
+                np.random.random((3, 5)),
+                7,
+            ),
+            (
+                np.random.random((3, 6)),
+                7,
+            ),
+            (
+                np.random.random((3, 7)),
+                7,
+            ),
+            (
+                np.random.random((4, 5)),
+                7,
+            ),
+            (
+                np.random.random((5, 5)),
+                7,
+            ),
+            (
+                np.random.random((6, 5)),
+                7,
+            ),
+            (
+                np.random.random((2, 9)),
+                9,
+            ),
+            (
+                np.random.random((9, 3)),
+                9,
+            ),
+        ],
+    )
+    def test_variety_of_matrix_shapes(self, input, wires):
+        ancilla = [0]
+        s = int(qml.math.ceil(qml.math.log2(max(len(input), len(input[0])))))
+        if s == 0:
+            s = 1
+        wires_i = list(range(1, 1 + s))
+        wires_j = list(range(1 + s, 1 + 2 * s))
+        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.FABLE(input_matrix=input, wires=range(wires), tol=0)
+            return qml.state()
+
+        qml.matrix(circuit, wire_order=wire_order)()

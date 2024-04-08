@@ -112,9 +112,9 @@ class FABLE(Operation):
             dimension = max(row, col)
             input_matrix = qml.math.pad(input_matrix, ((0, dimension - row), (0, dimension - col)))
             row, col = qml.math.shape(input_matrix)
-
         n = int(qml.math.ceil(qml.math.log2(col)))
-
+        if n == 0:  ### For edge case where someone puts at 1x1 array.
+            n = 1
         if col < 2**n:
             input_matrix = qml.math.pad(input_matrix, ((0, 2**n - col), (0, 2**n - col)))
             col = 2**n
