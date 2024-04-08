@@ -414,7 +414,7 @@ def _update_set(j, bin_range, n):
         indices = np.append(indices, np.append(bin_range - 1, _update_set(j, midpoint, n)))
     else:
         indices = np.append(indices, _update_set(j - midpoint, midpoint, n) + midpoint)
-        
+
     indices = np.array([u for u in indices if u < n])
     return indices
 
