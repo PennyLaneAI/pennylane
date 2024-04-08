@@ -303,6 +303,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
+  [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
+
 * Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
   creating an inconsistency with other differentiation methods and preventing some use cases.
   [(#5458)](https://github.com/PennyLaneAI/pennylane/pull/5458)

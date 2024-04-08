@@ -285,7 +285,7 @@ def gather_mcm(measurement, samples):
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
     mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
-    use_as_is = len(mv.measurements) == 1
+    use_as_is = len(mv.measurements) == 1 and all(v in (0, 1) for v in mv.branches.values())
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement
     else:
