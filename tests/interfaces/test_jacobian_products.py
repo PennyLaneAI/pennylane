@@ -226,7 +226,7 @@ class TestJacobianProductResults:
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
         if isinstance(jpc, DeviceJacobianProducts) and "lightning" in jpc._device.name:
-            pytest.skip("Lightning devices don't have JVP method")
+            pytest.xfail("Lightning devices don't have JVP method")
 
         x = 0.92
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
