@@ -376,6 +376,7 @@ def reorder_grads(grads, tape_specs):
 tdot = partial(qml.math.tensordot, axes=[[0], [0]])
 stack = qml.math.stack
 
+
 # pylint: disable=too-many-return-statements,too-many-branches
 def _contract_qjac_with_cjac(qjac, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
@@ -441,9 +442,7 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
     if not cjac_is_tuple:
         cjac = stack(cjac)
         if has_partitioned_shots:
-            return tuple(
-                tuple(tdot(stack(_q), cjac) for _q in q) for q in qjac
-            )
+            return tuple(tuple(tdot(stack(_q), cjac) for _q in q) for q in qjac)
         return tuple(tdot(stack(q), cjac) for q in qjac)
     if has_partitioned_shots:
         return tuple(
