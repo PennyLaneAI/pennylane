@@ -669,31 +669,41 @@ batched_state_not_normalized = np.stack(
 
 
 class TestRenormalization:
-    """Test suite for renormalization functionality whenever required."""
+    """Test suite for renormalization functionality."""
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
     def test_sample_state_renorm(self, interface):
-        """Tests renormalization for a non-batched state."""
-
-        state = qml.math.array(two_qubit_state_not_normalized, like=interface)
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
-            _ = sample_state(state, 10)
+        """Test renormalization for a non-batched state."""
 
         state = qml.math.array(two_qubit_state_to_be_normalized, like=interface)
         _ = sample_state(state, 10)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_state_renorm_error(self, interface):
+        """Test that renormalization does not occur if the error is too large."""
+
+        state = qml.math.array(two_qubit_state_not_normalized, like=interface)
+        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+            _ = sample_state(state, 10)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
     def test_sample_batched_state_renorm(self, interface):
-        """Tests renormalization for a batched state."""
+        """Test renormalization for a batched state."""
+
+        state = qml.math.array(batched_state_to_be_normalized, like=interface)
+        _ = sample_state(state, 10, is_state_batched=True)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_batched_state_renorm_error(self, interface):
+        """Test that renormalization does not occur if the error is too large."""
 
         state = qml.math.array(batched_state_not_normalized, like=interface)
         with pytest.raises(ValueError, match="probabilities do not sum to 1"):
             _ = sample_state(state, 10, is_state_batched=True)
-
-        state = qml.math.array(batched_state_to_be_normalized, like=interface)
-        _ = sample_state(state, 10, is_state_batched=True)
 
 
 class TestBroadcasting:
