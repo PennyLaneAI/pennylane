@@ -12,21 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
+from typing import List, Union
 from itertools import combinations
 
 import numpy as np
 
-from pennylane.pauli import PauliSentence
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.operation import Operator
 
 
-def center(g, pauli=False):
+def center(g: List[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False) -> List[Union[Operator, PauliSentence]]:
     r"""
     A function to compute the center of a Lie algebra.
 
     Given a Lie algebra :math:`\mathfrak{g} = \{h_1,.., h_d\}`, the center :math:`\mathfrak{\xi}(\mathfrak{g})`
     is given by all elements in :math:`\mathfrak{g}` that commute with `all` other elements in :math:`\mathfrak{g}`,
 
-    .. math:: \mathfrak{\xi}(\mathfrak{g}) := \{h \in \mathfrak{g} | [h, h_i]=0 \forall h_i \in \mathfrak{g} \}
+    .. math:: \mathfrak{\xi}(\mathfrak{g}) := \{h \in \mathfrak{g} | [h, h_i]=0 \ \forall h_i \in \mathfrak{g} \}
 
     Args:
         g (List[Union[Operator, PauliSentence]]): List of operators for which to find the center.
