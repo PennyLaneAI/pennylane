@@ -148,7 +148,6 @@ class FABLE(Operation):
             int(qml.math.log2(int(code[i], 2) ^ int(code[(i + 1) % n_selections], 2)))
             for i in range(n_selections)
         ]
-
         wire_map = dict(enumerate(wires_j + wires_i))
 
         for w in wires_i:

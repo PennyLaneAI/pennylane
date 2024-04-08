@@ -441,7 +441,6 @@ class TestFable:
 
     def test_fable_real(self, input_matrix):
         """Test that FABLE produces the right circuit given a real-valued matrix"""
-        input_matrix = np.array([[0.1, 0.2], [0.2, 0.1]])
         ancilla = [0]
         s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
         wires_i = list(range(1, 1 + s))
@@ -452,7 +451,7 @@ class TestFable:
 
         @qml.qnode(dev)
         def circuit():
-            qml.FABLE(input_matrix, wires=range(3), tol=0.01)
+            qml.FABLE(input_matrix, wires=range(5), tol=0.01)
             return qml.state()
 
         expected = (
