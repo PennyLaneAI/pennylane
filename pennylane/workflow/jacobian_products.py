@@ -697,7 +697,7 @@ class LightningVJPs(DeviceDerivatives):
     """Calculates VJPs natively using lightning.qubit.
 
     Args:
-        device (LightningBase): a device in the lightning ecosystem (``lightning.qubit``, ``lightning.gpu``, ``lightning.kokkos``.)
+        device (LightningBase): Lightning ecosystem devices ``lightning.gpu`` or ``lightning.kokkos``.
         gradient_kwargs (Optional[dict]):  Any gradient options.
 
     >>> dev = qml.device('lightning.qubit', wires=5)
@@ -720,15 +720,13 @@ class LightningVJPs(DeviceDerivatives):
         }
         return f"<LightningVJPs: {long_to_short_name[type(self._device).__name__]}, {self._gradient_kwargs}>"
 
-    def __init__(
-        self, device, gradient_kwargs=None, execution_config: "qml.devices.ExecutionConfig" = None
-    ):
-        super().__init__(device, gradient_kwargs=gradient_kwargs, execution_config=execution_config)
+    def __init__(self, device, gradient_kwargs=None):
+        super().__init__(device, gradient_kwargs=gradient_kwargs)
         self._processed_gradient_kwargs = {
             key: value for key, value in self._gradient_kwargs.items() if key != "method"
         }
 
-    def compute_vjp(self, tapes, dy):
+    def compute_vjp(self, tapes, dy):  # pragma: no cover
         if not all(
             isinstance(m, qml.measurements.ExpectationMP) for t in tapes for m in t.measurements
         ):
@@ -743,18 +741,10 @@ class LightningVJPs(DeviceDerivatives):
                 raise NotImplementedError(
                     "Lightning device VJPs are not supported with jax jacobians."
                 )
-
-            if self._uses_new_device:
-                if self._execution_config is not None:
-                    out = self._device.compute_vjp(numpy_tape, dyi, self._execution_config)
-                else:
-                    out = self._device.compute_vjp(numpy_tape, dyi)
-            else:  # pragma: no cover
-                vjp_f = self._device.vjp(
-                    numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
-                )
-                out = vjp_f(numpy_tape)
-
+            vjp_f = self._device.vjp(
+                numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
+            )
+            out = vjp_f(numpy_tape)
             if len(tape.trainable_params) == 1:
                 out = (out,)
             results.append(out)
