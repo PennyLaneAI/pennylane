@@ -28,6 +28,8 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
+    Computational basis measurements are performed using the 0, 1 convention
+    rather than the ±1 convention.
     Measurement outcomes can be used to conditionally apply operations, and measurement
     statistics can be gathered and returned by a quantum function.
 
@@ -87,6 +89,11 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     result will return a binary sequence of samples.
     See :ref:`here <mid_circuit_measurements_statistics>` for more details.
 
+    .. Note ::
+
+        Computational basis measurements are performed using the 0, 1 convention rather than the ±1 convention.
+        So, for example, ``expval(qml.measure(0))`` and ``expval(qml.Z(0))`` will give different answers.
+
     .. code-block:: python3
 
         dev = qml.device("default.qubit")
@@ -97,11 +104,11 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
             qml.RY(y, wires=1)
             m0 = qml.measure(1)
             return (
-                qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0), qml.sample(m0)
+                qml.sample(m0), qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0),
             )
 
     >>> circuit(1.0, 2.0, shots=1000)
-    (0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702}, array([0, 1, 1, ..., 1, 1, 1]))
+    (array([0, 1, 1, ..., 1, 1, 1])), 0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702})
 
     Args:
         wires (Wires): The wire to measure.
