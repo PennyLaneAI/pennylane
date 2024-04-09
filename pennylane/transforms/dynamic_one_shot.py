@@ -286,12 +286,6 @@ def gather_mcm(measurement, samples):
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
     if isinstance(measurement, ProbabilityMP):
-        if len(mv.measurements) > 1:
-            raise ValueError(
-                "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected "
-                "using arithmetic operators. To collect probabilities for multiple mid-circuit "
-                "measurements, use a list of mid-circuit measurements with qml.probs()."
-            )
         mcm_samples = np.array([dct[mv.measurements[0]] for dct in samples]).reshape((-1, 1))
         use_as_is = True
     else:

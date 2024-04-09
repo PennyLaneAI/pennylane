@@ -390,7 +390,6 @@ def test_simple_composite_mcm(mcm_f, measure_f):
     validate_measurements(measure_f, shots, results1, results2)
 
 
-# pylint: disable=anomalous-backslash-in-string
 @flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
