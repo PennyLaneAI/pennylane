@@ -37,6 +37,7 @@ qubit_device_and_diff_method = [
     [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
     [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+    [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
     [qml.device("lightning.qubit", wires=5), "parameter-shift", False, False],
 ]
 interface_and_qubit_device_and_diff_method = [

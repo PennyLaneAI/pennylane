@@ -678,7 +678,14 @@ class DeviceJacobianProducts(JacobianProductCalculator):
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         dy = qml.math.unwrap(dy)
-        return self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
+        vjps = self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
+        res = []
+        for t, r in zip(tapes, vjps):
+            if len(t.trainable_params) == 1 and qml.math.shape(r) == ():
+                res.append((r,))
+            else:
+                res.append(r)
+        return res
 
     def compute_jacobian(self, tapes: Batch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover

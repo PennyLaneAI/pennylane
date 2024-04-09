@@ -50,6 +50,10 @@ interface_qubit_device_and_diff_method = [
     ["autograd", DefaultQubit(), "adjoint", False, True],
     ["autograd", DefaultQubit(), "spsa", False, False],
     ["autograd", DefaultQubit(), "hadamard", False, False],
+    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, True],
+    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
     ["auto", DefaultQubit(), "finite-diff", False, False],
     ["auto", DefaultQubit(), "parameter-shift", False, False],
     ["auto", DefaultQubit(), "backprop", True, False],
@@ -57,7 +61,8 @@ interface_qubit_device_and_diff_method = [
     ["auto", DefaultQubit(), "adjoint", False, False],
     ["auto", DefaultQubit(), "spsa", False, False],
     ["auto", DefaultQubit(), "hadamard", False, False],
-    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
 ]
 
 pytestmark = pytest.mark.autograd

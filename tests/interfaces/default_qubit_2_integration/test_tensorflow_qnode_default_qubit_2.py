@@ -35,6 +35,8 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "hadamard", False, False],
     [qml.device("lightning.qubit", wires=4), "adjoint", False, True],
     [qml.device("lightning.qubit", wires=4), "adjoint", False, False],
+    [qml.device("lightning.qubit", wires=4), "adjoint", True, True],
+    [qml.device("lightning.qubit", wires=4), "adjoint", True, False],
 ]
 
 TOL_FOR_SPSA = 1.0
