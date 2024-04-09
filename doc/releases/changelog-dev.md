@@ -153,6 +153,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `LightningVJPs` is now compatible with Lightning devices using the new device API.
+  [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
+
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
