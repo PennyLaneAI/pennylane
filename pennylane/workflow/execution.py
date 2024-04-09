@@ -535,7 +535,7 @@ def execute(
     if (
         device_vjp
         and isinstance(device, qml.Device)
-        and "lightning" not in getattr(device, "short_name", "")
+        and "lightning" not in getattr(device, "short_name", "").lower()
     ):
         raise qml.QuantumFunctionError(
             "device provided jacobian products are not compatible with the old device interface."
@@ -620,9 +620,9 @@ def execute(
 
     if (
         device_vjp
-        and "lightning" in getattr(device, "short_name", "")
+        and getattr(device, "short_name", "") in ("lightning.gpu", "lightning.kokkos")
         and interface in jpc_interfaces
-    ):  # pragma: no cover
+    ):
         if INTERFACE_MAP[interface] == "jax" and "use_device_state" in gradient_kwargs:
             gradient_kwargs["use_device_state"] = False
         tapes = [expand_fn(t) for t in tapes]
