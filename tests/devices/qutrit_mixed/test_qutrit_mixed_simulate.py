@@ -36,7 +36,7 @@ def expected_TRX_circ_expval_values(phi, subspace):
                 np.sqrt(1 / 3) * (np.cos(phi) - np.sin(phi / 2) ** 2),
             ]
         )
-    raise ValueError(f"Test cases doesn't support subspace {subspace}")
+    pytest.skip(f"Test cases doesn't support subspace {subspace}")
 
 
 def expected_TRX_circ_expval_jacobians(phi, subspace):
@@ -46,7 +46,7 @@ def expected_TRX_circ_expval_jacobians(phi, subspace):
         return np.array([-np.cos(phi), -np.sin(phi), 0, 0])
     if subspace == (0, 2):
         return np.array([0, -np.sin(phi) / 2, -np.cos(phi), np.sqrt(1 / 3) * -(1.5 * np.sin(phi))])
-    raise ValueError(f"Test cases doesn't support subspace {subspace}")
+    pytest.skip(f"Test cases doesn't support subspace {subspace}")
 
 
 def expected_TRX_circ_state(phi, subspace):
@@ -93,14 +93,15 @@ def test_custom_operation():
     assert qml.math.allclose(result, -np.sqrt(4 / 3))
 
 
-@pytest.mark.jax
+@pytest.mark.tf
 @pytest.mark.parametrize("op", [qml.TRX(np.pi, 0), qml.QutritBasisState([1], 0)])
-def test_result_has_correct_interface(op):
+@pytest.mark.parametrize("interface", ("jax", "tensorflow", "torch", "autograd", "numpy"))
+def test_result_has_correct_interface(op, interface):
     """Test that even if no interface parameters are given, result is correct."""
     qs = qml.tape.QuantumScript([op], [qml.expval(qml.GellMann(0, 3))])
-    res = simulate(qs, interface="jax")
+    res = simulate(qs, interface=interface)
 
-    assert qml.math.get_interface(res) == "jax"
+    assert qml.math.get_interface(res) == interface
     assert qml.math.allclose(res, -1)
 
 
