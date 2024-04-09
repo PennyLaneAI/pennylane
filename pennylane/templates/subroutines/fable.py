@@ -45,8 +45,8 @@ class FABLE(Operation):
 
     .. code-block:: python
 
-        input_matrix= np.array([[0.1,0.2],[0.2,0.1]])
-        dev = qml.device('default.qubit')
+        input_matrix= np.array([[0.1, 0.2],[0.3, -0.2]])
+        dev = qml.device('default.qubit', wires=3)
         @qml.qnode(dev)
         def example_circuit():
             qml.FABLE(input_matrix, wires=range(3), tol=0)
@@ -54,19 +54,15 @@ class FABLE(Operation):
 
     We can see that the input_matrix has been block encoded in the matrix of the circuit:
 
-    >>> ancilla = [0]
     >>> s = int(qml.math.ceil(qml.math.log2(max(len(input_matrix), len(input_matrix[0])))))
-    >>> wires_i = list(range(1, 1 + s))
-    >>> wires_j = list(range(1 + s, 1 + 2 * s))
-    >>> wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
     >>> expected = (
             2**s
-            * qml.matrix(example_circuit, wire_order=wire_order)().real[0 : 2**s, 0 : 2**s]
+            * qml.matrix(example_circuit)().real[0 : 2**s, 0 : 2**s]
         )
     ... print(f"Block-encoded matrix:\n{expected}", "\n")
     Block-encoded matrix:
     [[0.1 0.2]
-    [0.2 0.1]]
+    [0.3 -0.2]]
 
     .. note::
         By default it is assumed that the matrix is an :math:`(N \times N)` square matrix,
@@ -113,7 +109,7 @@ class FABLE(Operation):
             input_matrix = qml.math.pad(input_matrix, ((0, dimension - row), (0, dimension - col)))
             row, col = qml.math.shape(input_matrix)
         n = int(qml.math.ceil(qml.math.log2(col)))
-        if n == 0:  ### For edge case where someone puts at 1x1 array.
+        if n == 0:  ### For edge case where someone puts a 1x1 array.
             n = 1
         if col < 2**n:
             input_matrix = qml.math.pad(input_matrix, ((0, 2**n - col), (0, 2**n - col)))
@@ -147,8 +143,8 @@ class FABLE(Operation):
         thetas = compute_theta(alphas)
 
         ancilla = [wires[0]]
-        wires_i = wires[1 : 1 + len(wires) // 2]
-        wires_j = wires[1 + len(wires) // 2 : len(wires)]
+        wires_i = wires[1 : 1 + len(wires) // 2][::-1]
+        wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
 
         code = gray_code((2 * qml.math.log2(len(input_matrix))))
         n_selections = len(code)

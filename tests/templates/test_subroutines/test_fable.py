@@ -368,12 +368,6 @@ class TestFable:
     )
     def test_fable_real_for_variety_of_input_matrices(self, input, wires):
         """Test that FABLE produces the right circuit given a real-valued matrix"""
-        ancilla = [0]
-        s = int(qml.math.log2(qml.math.shape(input)[0]))
-        wires_i = list(range(1, 1 + s))
-        wires_j = list(range(1 + s, 1 + 2 * s))
-        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
-
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -383,18 +377,12 @@ class TestFable:
 
         expected = (
             len(input)
-            * qml.matrix(circuit, wire_order=wire_order)().real[0 : len(input), 0 : len(input)]
+            * qml.matrix(circuit, wire_order=range(wires))().real[0 : len(input), 0 : len(input)]
         )
         assert np.allclose(input, expected)
 
     def test_fable_real(self, input_matrix):
         """Test that FABLE produces the right circuit given a real-valued matrix"""
-        ancilla = [0]
-        s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
-        wires_i = list(range(1, 1 + s))
-        wires_j = list(range(1 + s, 1 + 2 * s))
-        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
-
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -404,7 +392,7 @@ class TestFable:
 
         expected = (
             len(input_matrix)
-            * qml.matrix(circuit, wire_order=wire_order)().real[
+            * qml.matrix(circuit, wire_order=range(5))().real[
                 0 : len(input_matrix), 0 : len(input_matrix)
             ]
         )
@@ -679,12 +667,6 @@ class TestFable:
 
     def test_default_lightning_devices(self, input_matrix):
         """Test that FABLE executes with the default.qubit and lightning.qubit simulators."""
-        ancilla = [0]
-        s = int(qml.math.log2(qml.math.shape(input_matrix)[0]))
-        wires_i = list(range(1, 1 + s))
-        wires_j = list(range(1 + s, 1 + 2 * s))
-        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
-
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -692,7 +674,7 @@ class TestFable:
             qml.FABLE(input_matrix, wires=range(5), tol=0.01)
             return qml.state()
 
-        dev2 = qml.device("lightning.qubit", wires=wire_order)
+        dev2 = qml.device("lightning.qubit", wires=range(5))
 
         @qml.qnode(dev2)
         def circuit_lightning():
@@ -701,14 +683,14 @@ class TestFable:
 
         expected = (
             len(input_matrix)
-            * qml.matrix(circuit, wire_order=wire_order)().real[
+            * qml.matrix(circuit, wire_order=range(5))().real[
                 0 : len(input_matrix), 0 : len(input_matrix)
             ]
         )
 
         lightning = (
             len(input_matrix)
-            * qml.matrix(circuit_lightning, wire_order=wire_order)().real[
+            * qml.matrix(circuit_lightning, wire_order=range(5))().real[
                 0 : len(input_matrix), 0 : len(input_matrix)
             ]
         )
@@ -789,14 +771,6 @@ class TestFable:
         ],
     )
     def test_variety_of_matrix_shapes(self, input, wires):
-        ancilla = [0]
-        s = int(qml.math.ceil(qml.math.log2(max(len(input), len(input[0])))))
-        if s == 0:
-            s = 1
-        wires_i = list(range(1, 1 + s))
-        wires_j = list(range(1 + s, 1 + 2 * s))
-        wire_order = ancilla + wires_i[::-1] + wires_j[::-1]
-
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -804,4 +778,4 @@ class TestFable:
             qml.FABLE(input_matrix=input, wires=range(wires), tol=0)
             return qml.state()
 
-        qml.matrix(circuit, wire_order=wire_order)()
+        qml.matrix(circuit, wire_order=range(wires))()
