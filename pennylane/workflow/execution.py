@@ -535,7 +535,7 @@ def execute(
     if (
         device_vjp
         and isinstance(device, qml.Device)
-        and "lightning" not in getattr(device, "name", "").lower()
+        and "lightning" not in getattr(device, "short_name", "").lower()
     ):
         raise qml.QuantumFunctionError(
             "device provided jacobian products are not compatible with the old device interface."
