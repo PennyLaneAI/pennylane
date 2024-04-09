@@ -317,7 +317,10 @@ class QubitDevice(Device):
         else:
             results = self.statistics(circuit)
             single_measurement = len(circuit.measurements) == 1
-
+            if has_mcm:
+                n_mcms = len(mid_measurements)
+                results = results[-n_mcms:]
+                results.extend(list(mid_measurements.values()))
             results = results[0] if single_measurement else tuple(results)
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -339,7 +342,7 @@ class QubitDevice(Device):
             )
             self.tracker.record()
 
-        return (results, mid_measurements) if has_mcm else results
+        return results
 
     def shot_vec_statistics(self, circuit: QuantumTape):
         """Process measurement results from circuit execution using a device
