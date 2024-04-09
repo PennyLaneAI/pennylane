@@ -84,7 +84,7 @@ class TestAttribute:
 
     def test_tensor_check(self):
         """Test that we can ask if a tensor is in the attribute."""
-        assert not qml.PauliX(wires=0) @ qml.PauliZ(wires=1) in new_attribute
+        assert qml.operation.Tensor(qml.PauliX(wires=0), qml.PauliZ(wires=1)) not in new_attribute
 
 
 single_scalar_single_wire_ops = [

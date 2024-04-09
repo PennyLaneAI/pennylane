@@ -261,7 +261,7 @@ class SProd(ScalarSymbolicOp):
     @property
     def has_matrix(self):
         """Bool: Whether or not the Operator returns a defined matrix."""
-        return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
+        return isinstance(self.base, qml.ops.Hamiltonian) or self.base.has_matrix
 
     @staticmethod
     def _matrix(scalar, mat):

@@ -99,6 +99,30 @@ def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
 
 
 @bind_new_parameters.register
+def bind_new_parameters_linear_combination(
+    op: qml.ops.LinearCombination, params: Sequence[TensorLike]
+):
+    new_coeffs, new_ops = [], []
+    i = 0
+    for o in op.ops:
+        new_coeffs.append(params[i])
+        i += 1
+        if o.data:
+            sub_data = params[i : i + len(o.data)]
+            new_ops.append(bind_new_parameters(o, sub_data))
+            i += len(sub_data)
+        else:
+            new_ops.append(o)
+
+    new_H = qml.ops.LinearCombination(new_coeffs, new_ops)
+
+    if op.grouping_indices is not None:
+        new_H.grouping_indices = op.grouping_indices
+
+    return new_H
+
+
+@bind_new_parameters.register
 def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLike]):
     new_operands = []
 
@@ -199,8 +223,8 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
 
 
 @bind_new_parameters.register
-def bind_new_parameters_hamiltonian(op: qml.Hamiltonian, params: Sequence[TensorLike]):
-    new_H = qml.Hamiltonian(params, op.ops)
+def bind_new_parameters_hamiltonian(op: qml.ops.Hamiltonian, params: Sequence[TensorLike]):
+    new_H = qml.ops.Hamiltonian(params, op.ops)
     if op.grouping_indices is not None:
         new_H.grouping_indices = op.grouping_indices
     return new_H

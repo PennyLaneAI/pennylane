@@ -337,7 +337,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 15
+        assert exec_no_opt == 14
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -383,7 +383,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 15
+        assert exec_no_opt == 14
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -429,7 +429,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 15
+        assert exec_no_opt == 14
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -890,6 +890,9 @@ class TestNewVQE:
         assert res[0] == circuit1()
         assert res[1] == circuit1()
 
+    # the LinearCombination implementation does have diagonalizing gates,
+    # but legacy Hamiltonian does not and fails
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -904,6 +907,9 @@ class TestNewVQE:
         with pytest.raises(NotImplementedError):
             circuit()
 
+    # the LinearCombination implementation does have diagonalizing gates,
+    # but legacy Hamiltonian does not and fails
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_error_sample_measurement(self):
         """Tests that error is thrown if sample(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -1013,7 +1019,31 @@ class TestNewVQE:
         dc = jax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
+    @pytest.mark.xfail(
+        reason="diagonalizing gates defined but not used, should not be included in specs"
+    )
     def test_specs(self):
+        """Test that the specs of a VQE circuit can be computed"""
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(H)
+
+        res = qml.specs(circuit)()
+
+        assert res["num_observables"] == 1
+
+        # currently this returns 1 instead, because diagonalizing gates exist for H,
+        # but they aren't used in executing this qnode
+        # to be revisited in [sc-59117]
+        assert res["num_diagonalizing_gates"] == 0
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_specs_legacy_opmath(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])

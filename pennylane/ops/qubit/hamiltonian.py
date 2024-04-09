@@ -22,6 +22,7 @@ from collections.abc import Iterable
 from copy import copy
 import functools
 from typing import List
+from warnings import warn
 import numpy as np
 import scipy
 
@@ -65,6 +66,7 @@ class Hamiltonian(Observable):
 
     The Hamiltonian is represented as a linear combination of other operators, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
+
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
@@ -184,6 +186,16 @@ class Hamiltonian(Observable):
         method="rlf",
         id=None,
     ):
+        if qml.operation.active_new_opmath():
+            warn(
+                "Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. "
+                "Instead, use 'qml.Hamiltonian', or use 'qml.operation.disable_new_opmath()' "
+                "to continue to access the legacy functionality. See "
+                "https://docs.pennylane.ai/en/stable/development/deprecations.html for more "
+                "details.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
@@ -625,6 +637,13 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
+
+        if isinstance(other, qml.operation.Operator):
+            if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
+                pr1.simplify()
+                pr2.simplify()
+                return pr1 == pr2
+
         if isinstance(other, Hamiltonian):
             self.simplify()
             other.simplify()
@@ -643,6 +662,9 @@ class Hamiltonian(Observable):
         coeffs1 = copy(self.coeffs)
         ops1 = self.ops.copy()
 
+        qml.QueuingManager.remove(H)
+        qml.QueuingManager.remove(self)
+
         if isinstance(H, Hamiltonian):
             shared_wires = Wires.shared_wires([self.wires, H.wires])
             if len(shared_wires) > 0:
@@ -657,12 +679,12 @@ class Hamiltonian(Observable):
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
-            return qml.Hamiltonian(coeffs, terms, simplify=True)
+            return Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
             terms = [op @ copy(H) for op in ops1]
 
-            return qml.Hamiltonian(coeffs1, terms, simplify=True)
+            return Hamiltonian(coeffs1, terms, simplify=True)
 
         return NotImplemented
 
@@ -679,7 +701,7 @@ class Hamiltonian(Observable):
         if isinstance(H, (Tensor, Observable)):
             terms = [copy(H) @ op for op in ops1]
 
-            return qml.Hamiltonian(coeffs1, terms, simplify=True)
+            return Hamiltonian(coeffs1, terms, simplify=True)
 
         return NotImplemented
 
@@ -694,14 +716,14 @@ class Hamiltonian(Observable):
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
-            return qml.Hamiltonian(coeffs, ops, simplify=True)
+            return Hamiltonian(coeffs, ops, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
             coeffs = qml.math.concatenate(
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )
             ops.append(H)
-            return qml.Hamiltonian(coeffs, ops, simplify=True)
+            return Hamiltonian(coeffs, ops, simplify=True)
 
         return NotImplemented
 
@@ -712,7 +734,7 @@ class Hamiltonian(Observable):
         if isinstance(a, (int, float)):
             self_coeffs = copy(self.coeffs)
             coeffs = qml.math.multiply(a, self_coeffs)
-            return qml.Hamiltonian(coeffs, self.ops.copy())
+            return Hamiltonian(coeffs, self.ops.copy())
 
         return NotImplemented
 
@@ -749,6 +771,8 @@ class Hamiltonian(Observable):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
             self._coeffs = qml.math.multiply(a, self._coeffs)
+            if self.pauli_rep is not None:
+                self._pauli_rep = qml.math.multiply(a, self._pauli_rep)
             return self
 
         return NotImplemented

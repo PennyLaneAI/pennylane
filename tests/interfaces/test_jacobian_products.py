@@ -54,7 +54,7 @@ legacy_device_jacs = DeviceDerivatives(dev_old, gradient_kwargs={"method": "adjo
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
 device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
-lightning_vjps = LightningVJPs(dev_lightning, {"method": "adjoint_jacobian"})
+lightning_vjps = DeviceJacobianProducts(dev_lightning, execution_config=adjoint_config)
 
 transform_jpc_matrix = [param_shift_jpc, param_shift_cached_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs, device_ps_jacs]
@@ -225,6 +225,8 @@ class TestJacobianProductResults:
         """Test execute_and_compute_jvp for a simple single input single output."""
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
+        if isinstance(jpc, DeviceJacobianProducts) and "lightning" in jpc._device.name:
+            pytest.xfail("Lightning devices don't have JVP method")
 
         x = 0.92
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
@@ -284,6 +286,8 @@ class TestJacobianProductResults:
         """Test execute_and_compute_jvp on a batch with ragged observables and parameters.."""
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
+        if isinstance(jpc, DeviceJacobianProducts) and "lightning" in jpc._device.name:
+            pytest.skip("Lightning devices don't have JVP method")
         x = -0.92
         y = 0.84
         phi = 1.62

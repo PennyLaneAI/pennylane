@@ -24,7 +24,7 @@ class TestSnapshot:
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
-    def test_default_qubit_legacy(self, method):
+    def test_default_qubit_legacy_opmath(self, method):
         """Test that multiple snapshots are returned correctly on the state-vector simulator."""
         dev = qml.device("default.qubit.legacy", wires=2)
 
