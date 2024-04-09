@@ -448,10 +448,34 @@ def sample_state(
     with qml.queuing.QueuingManager.stop_recording():
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
+    # when using the torch interface with float32 as default dtype,
+    # probabilities must be renormalized as they may not sum to one
+    # see https://github.com/PennyLaneAI/pennylane/issues/5444
+    norm = qml.math.sum(probs, axis=-1)
+    abs_diff = np.abs(norm - 1.0)
+    cutoff = 1e-07
+
     if is_state_batched:
+
+        normalize_condition = False
+
+        for s in abs_diff:
+            if s != 0:
+                normalize_condition = True
+            if s > cutoff:
+                normalize_condition = False
+                break
+
+        if normalize_condition:
+            probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
+
         # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
     else:
+
+        if 0 < abs_diff < cutoff:
+            probs /= norm
+
         samples = rng.choice(basis_states, shots, p=probs)
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
