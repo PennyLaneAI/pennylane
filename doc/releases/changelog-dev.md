@@ -306,6 +306,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
+  [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
+
 * The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
   [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
 
