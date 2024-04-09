@@ -167,6 +167,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/chemistry
    introduction/data
    introduction/returns
+   introduction/new_opmath
    introduction/logging
 
 .. toctree::
