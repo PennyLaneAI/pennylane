@@ -330,7 +330,7 @@ class TestFiniteDiff:
 
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=(1, 1000, 1001))
 
         def cost1(x):
             qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
@@ -365,7 +365,7 @@ class TestFiniteDiff:
 
     def test_output_shape_matches_qnode_two_args(self):
         """Test that the transform output shape matches that of a QNode with multiple args."""
-        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=(1, 1000, 1001))
 
         def cost1(x, y, z):
             qml.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)

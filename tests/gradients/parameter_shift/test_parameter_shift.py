@@ -2292,24 +2292,14 @@ class TestParameterShiftRule:
 
         res_parshift = qml.gradients.param_shift(circuit)(x)
 
+        # Check data types
         assert isinstance(res_parshift, exp_type)
-        if len(res_parshift) == 1:
-            res_parshift = res_parshift[0]
-        assert len(res_parshift) == exp_shape[0]
-
-        if len(exp_shape) > 2:
+        if len(exp_shape) > 1:
             for r in res_parshift:
                 assert isinstance(r, np.ndarray)
-                assert len(r) == exp_shape[1]
 
-                for r_ in r:
-                    assert isinstance(r_, np.ndarray)
-                    assert len(r_) == exp_shape[2]
-
-        elif len(exp_shape) > 1:
-            for r in res_parshift:
-                assert isinstance(r, np.ndarray)
-                assert len(r) == exp_shape[1]
+        # Check shape, result can be put into a single array by assumption
+        assert np.allclose(np.squeeze(np.array(res_parshift)).shape, exp_shape)
 
     # TODO: revisit the following test when the Autograd interface supports
     # parameter-shift with the new return type system
