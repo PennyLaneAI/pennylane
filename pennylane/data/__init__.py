@@ -15,7 +15,7 @@
 
 .. note::
 
-    For more details on using datasets, please see the
+    To start using datasets, please first see the
     :doc:`quantum datasets quickstart guide </introduction/data>`.
 
 Overview
@@ -76,6 +76,27 @@ can contain a range of object types, including:
 
 For more details on using datasets, please see the
 :doc:`quantum datasets quickstart guide </introduction/data>`.
+
+Dataset Structure
+-----------------
+
+You can call the 
+:func:`~pennylane.data.list_datasets` function to get a snapshot of the currently available data.
+This function returns a nested dictionary as we show below. 
+
+>>> available_data = qml.data.list_datasets()
+>>> available_data.keys()
+dict_keys(["qspin", "qchem"])
+>>> available_data["qchem"].keys()
+dict_keys(["H2", "LiH", ...])
+>>> available_data['qchem']['H2'].keys()
+dict_keys(["6-31G", "STO-3G"])
+>>> print(available_data['qchem']['H2']['STO-3G'])
+["0.5", "0.54", "0.62", "0.66", ...]
+
+Note that this example limits the results
+of the function calls for clarity and that as more data becomes available, the results of these
+function calls will change.
 
 Creating a Dataset
 ------------------

@@ -74,7 +74,7 @@ To determine what attributes are available for a type of dataset, we can use the
     
     - Spin systems: ``periodicity`` is ``"open"``, ``lattice`` is ``"chain"``, and ``layout`` is ``1x4`` for ``chain`` systems and ``2x2`` for ``rectangular`` systems.
 
-Using Datasets in PennyLane
+Viewing Datasets in PennyLane
 ---------------------------
 
 Once loaded, one can access properties of the datasets:
@@ -97,8 +97,8 @@ use them directly in a PennyLane circuits as follows:
 >>> print(circuit())
 -1.0791430411076344
 
-Dataset Structure
------------------
+Viewing Available Datasets
+--------------------------
 
 You can call the 
 :func:`~pennylane.data.list_datasets` function to get a snapshot of the currently available data.
