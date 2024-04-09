@@ -484,7 +484,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
 
 @flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [5000, [5000, 5001]])
-# @pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_fn", [qml.expval, qml.sample, qml.probs])
 def test_broadcasting_qnode(shots, reset, measure_fn):
