@@ -16,12 +16,23 @@ API."""
 import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
+from semantic_version import Version
+
 
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
 
-    CORRECT_TF_VERSION = int(tf.__version__.split(".", maxsplit=1)[0]) > 1
+    CORRECT_TF_VERSION = Version(tf.__version__) >= Version("2.0.0")
+    try:
+        # this feels a bit hacky, but if users *only* have an old (i.e. PL-compatible) version of Keras installed
+        # then tf.keras doesn't have a version attribute, and we *should be* good to go.
+        # if you have a newer version of Keras installed, then you can use tf.keras.version to check if you
+        # are configured to use Keras 3 or Keras 2
+        CORRECT_KERAS_VERSION = Version(tf.keras.version()) < Version("3.0.0")
+    except AttributeError:
+        CORRECT_KERAS_VERSION = True
+
 except ImportError:
     # The following allows this module to be imported even if TensorFlow is not installed. Users
     # will instead see an ImportError when instantiating the KerasLayer.
@@ -29,6 +40,23 @@ except ImportError:
 
     Layer = ABC
     CORRECT_TF_VERSION = False
+
+
+if not CORRECT_TF_VERSION:
+    import_error_msg = (
+        "KerasLayer requires TensorFlow version 2 or above. The latest "
+        "version of TensorFlow can be installed using:\n "
+        "pip install tensorflow --upgrade\nAlternatively, visit "
+        "https://www.tensorflow.org/install for detailed instructions."
+    )
+elif not CORRECT_KERAS_VERSION:
+    import_error_msg = (
+        f"KerasLayer requires a Keras version lower than 3. You are currently using "
+        f"Keras version {tf.keras.version()}. For instructions on running with Keras 2,"
+        f"visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
+    )
+else:
+    import_error_msg = None
 
 
 class KerasLayer(Layer):
@@ -291,13 +319,8 @@ class KerasLayer(Layer):
         **kwargs,
     ):
         # pylint: disable=too-many-arguments
-        if not CORRECT_TF_VERSION:
-            raise ImportError(
-                "KerasLayer requires TensorFlow version 2 or above. The latest "
-                "version of TensorFlow can be installed using:\n"
-                "pip install tensorflow --upgrade\nAlternatively, visit "
-                "https://www.tensorflow.org/install for detailed instructions."
-            )
+        if import_error_msg:
+            raise ImportError(import_error_msg)
 
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
