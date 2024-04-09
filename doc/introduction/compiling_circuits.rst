@@ -335,7 +335,8 @@ observables and coefficients:
 
 >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
 >>> coeffs = [1.43, 4.21, 0.97]
->>> obs_groupings, coeffs_groupings = qml.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
+>>> groupings = qml.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
+>>> obs_groupings, coeffs_groupings = groupings
 >>> obs_groupings
 [[Z(1), X(0) @ X(1)], [Y(0)]]
 >>> coeffs_groupings

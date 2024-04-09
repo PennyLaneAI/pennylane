@@ -37,7 +37,7 @@ Check out the Catalyst documentation for
 Just-in-time compilation
 ------------------------
 
-Using Catalyst with PennyLane is a simple as using the :func:`@qjit <.qjit>` decorator to
+Using Catalyst with PennyLane is as simple as using the :func:`@qjit <.qjit>` decorator to
 compile your hybrid workflows:
 
 .. code-block:: python
@@ -78,7 +78,7 @@ using ``@jax.jit``:
         # initial parameter
         params = jnp.array([0.54, 0.3154])
 
-        # define the optimizer
+        # define the optimizer using a qjit-decorated function
         opt = jaxopt.GradientDescent(circuit, stepsize=0.4)
         update = lambda i, args: tuple(opt.update(*args))
 

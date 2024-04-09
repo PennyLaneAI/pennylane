@@ -133,7 +133,7 @@ Currently supported devices include:
 * ``default.mixed``: each snapshot saves the density matrix
 * ``default.gaussian``: each snapshot saves the covariance matrix and vector of means
 
-During normal execution, the snapshots are ignored:
+A :class:`~pennylane.Snapshot` can be used in a QNode like any other operation:
 
 .. code-block:: python
 
@@ -148,6 +148,11 @@ During normal execution, the snapshots are ignored:
         qml.Snapshot()
         return qml.expval(qml.X(0))
 
+During normal execution, the snapshots are ignored:
+
+>>> circuit()
+0.0
+
 However, when using the :func:`~pennylane.snapshots`
 transform, intermediate device states will be stored and returned alongside the
 results.
@@ -157,6 +162,9 @@ results.
 'very_important_state': array([0.707+0.j, 0.+0.j, 0.707+0.j, 0.+0.j]),
 2: array([0.707+0.j, 0.+0.j, 0.+0.j, 0.707+0.j]),
 'execution_results': 0.0}
+
+All snapshots are numbered with consecutive integers, and if no tag was provided,
+the number of a snapshot is used as key in the output instead.
 
 Graph representation
 --------------------

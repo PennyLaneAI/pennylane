@@ -502,23 +502,26 @@ def classical_fisher(qnode, argnums=0):
         @qml.qnode(dev)
         def circ(params):
             qml.RX(params[0], wires=0)
-            qml.RX(params[1], wires=0)
-            qml.CNOT(wires=(0,1))
+            qml.CNOT([0, 1])
+            qml.CNOT([1, 0])
+            m = qml.measure(1)
+            qml.cond(m, qml.RY)(params[1], wires=1)
             return qml.probs(wires=range(n_wires))
 
     Executing this circuit yields the ``2**n_wires`` elements of :math:`p_\ell(\bm{\theta})`
 
+    >>> pnp.random.seed(25)
     >>> params = pnp.random.random(2)
     >>> circ(params)
-    [0.61281668 0.         0.         0.38718332]
+    [0.83700176 0.16299824 0.         0.        ]
 
     We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
     by ``classical_fisher()``:
 
     >>> cfim_func = qml.qinfo.classical_fisher(circ)
     >>> cfim_func(params)
-    [[1. 1.]
-     [1. 1.]]
+    [[ 0.90156094 -0.12555804]
+     [-0.12555804  0.01748614]]
 
     This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
 
