@@ -157,6 +157,16 @@ class TestExpval:
             res = func(phi, shots=shots)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
+    def test_eigvals_instead_of_observable(self):
+        """Tests process samples with eigvals instead of observables"""
+
+        shots = 100
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        expected = qml.expval(qml.PauliZ(0)).process_samples(samples, [0, 1])
+        assert (
+            ExpectationMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
+        )
+
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""
         m0 = qml.measure(0)
