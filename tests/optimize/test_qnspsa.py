@@ -435,3 +435,26 @@ def test_template_no_adjoint():
     opt = qml.QNSPSAOptimizer(stepsize=5e-2)
     assert opt.step_and_cost(cost, params)  # just checking it runs without error
     assert not qml.RandomLayers.has_adjoint
+
+
+def test_workflow_integration():
+    """Test that the optimizer can optimize a workflow."""
+
+    num_qubits = 2
+    dev = qml.device("default.qubit", wires=num_qubits)
+
+    @qml.qnode(dev)
+    def cost(params):
+        qml.RX(params[0], wires=0)
+        qml.CRY(params[1], wires=[0, 1])
+        return qml.expval(qml.Z(0) @ qml.Z(1))
+
+    params = qml.numpy.array([0.5, 0.5], requires_grad=True)
+    opt = qml.optimize.QNSPSAOptimizer(stepsize=5e-2)
+    for _ in range(51):
+        params, loss = opt.step_and_cost(cost, params)
+
+    assert qml.math.allclose(loss, -1, atol=1e-3)
+    # compare sine of params and target params as could converge to params + 2* np.pi
+    target_params = np.array([np.pi, 0])
+    assert qml.math.allclose(np.sin(params), np.sin(target_params), atol=1e-2)

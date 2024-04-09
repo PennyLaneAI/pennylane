@@ -49,6 +49,8 @@ class CustomDevice(qml.devices.Device):
 
 
 class CustomDeviceWithDiffMethod(qml.devices.Device):
+    """A device that defines a derivative."""
+
     def execute(self, circuits, execution_config=None):
         return 0
 
@@ -79,6 +81,8 @@ def test_copy():
 
 
 class TestInitialization:
+    """Testing the initialization of the qnode."""
+
     def test_cache_initialization_maxdiff_1(self):
         """Test that when max_diff = 1, the cache initializes to false."""
 
@@ -929,6 +933,9 @@ class TestIntegration:
 
     @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_dynamic_one_shot_if_mcm_unsupported(self, dev_name):
+        """Test an error is raised if the dynamic one shot transform is a applied to a qnode with a device that
+        does not support mid circuit measurements.
+        """
         dev = qml.device(dev_name, wires=2, shots=100)
 
         with pytest.raises(
@@ -1363,6 +1370,8 @@ class TestShots:
 
 
 class TestTransformProgramIntegration:
+    """Tests for the integration of the transform program with the qnode."""
+
     def test_transform_program_modifies_circuit(self):
         """Test qnode integration with a transform that turns the circuit into just a pauli x."""
         dev = qml.device("default.qubit", wires=1)
@@ -1638,6 +1647,8 @@ class TestNewDeviceIntegration:
         """Test a device that has its own custom diff method."""
 
         class CustomDeviceWithDiffMethod2(qml.devices.DefaultQubit):
+            """A device with a custom derivative named hello."""
+
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
@@ -1860,3 +1871,21 @@ class TestTapeExpansion:
         ):
             x = pnp.array([0.5, 0.4, 0.3], requires_grad=True)
             circuit.construct([x], {})
+
+
+def test_resets_after_execution_error():
+    """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
+
+    # pylint: disable=too-few-public-methods
+    class BadOp(qml.operation.Operator):
+        """An operator that will cause an error during execution."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit(x):
+        BadOp(x, wires=0)
+        return qml.state()
+
+    with pytest.raises(qml.DeviceError):
+        circuit(qml.numpy.array(0.1))
+
+    assert circuit.interface == "auto"

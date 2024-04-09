@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -145,14 +145,8 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     return results
 
 
-# pylint: disable=too-many-arguments
 def simulate(
-    circuit: qml.tape.QuantumScript,
-    rng=None,
-    prng_key=None,
-    debugger=None,
-    interface=None,
-    # state_cache: Optional[dict] = None, TODO: remove?
+    circuit: qml.tape.QuantumScript, rng=None, prng_key=None, debugger=None, interface=None
 ) -> Result:
     """Simulate a single quantum script.
 
@@ -168,8 +162,6 @@ def simulate(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
-        # state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the       TODO: remove?
-        #     pre-rotated state. Used to pass the state between forward passes and vjp calculations.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -185,6 +177,4 @@ def simulate(
 
     """
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
-    # if state_cache is not None:           TODO: remove?
-    #     state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
